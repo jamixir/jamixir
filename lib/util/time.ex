@@ -1,4 +1,4 @@
-defmodule JamTime do
+defmodule Util.Time do
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
 
   def base_time do
