@@ -4,20 +4,15 @@ defmodule Storage do
     %{}
   end
 
-  def store(storage, key, value) do
-    new_storage = Map.put(storage, key, value)
-    {:ok, new_storage}
+  def put(storage, key, value) do
+    Map.put(storage, key, value)
   end
 
   def get(storage, key) do
-    case Map.get(storage, key) do
-      nil -> {:error, "Key not found"}
-      value -> {:ok, value}
-    end
+    Map.get(storage, key)
   end
 
-  def remove(storage, key) do
-    new_storage = Map.delete(storage, key)
-    {:ok, new_storage}
+  def delete(storage, key) do
+    Map.delete(storage, key)
   end
 end

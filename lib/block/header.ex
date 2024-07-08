@@ -1,4 +1,5 @@
 defmodule Block.Header do
+  
   defstruct [
     parent_hash: nil, #Hp
     prior_state_root: nil, # Hr
@@ -11,4 +12,14 @@ defmodule Block.Header do
     vrf_signature: nil, # Hv
     block_seal: nil # Hs
   ]
+
+  def is_valid_header?(_, %Block.Header{parent_hash: nil}), do: true
+  def is_valid_header?(storage, header) do
+    case storage[header.parent_hash] do
+      nil -> false
+      parent_header -> 
+      parent_header.timeslot_index < header.timeslot_index and 
+      is_valid_header?(storage, parent_header)
+    end
+  end
 end
