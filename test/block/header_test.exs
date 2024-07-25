@@ -23,11 +23,10 @@ defmodule Block.HeaderTest do
     assert Header.is_valid_header?(s2, header)
   end
 
-  test "is_valid_header?/1 returns true when parent header is valid" do
-    header = %Header{parent_hash: "parent", timeslot_index: 1}
-    
-    s1 = Storage.put(Storage.new, "parent", %Header{timeslot_index: 2})
-    s2 = Storage.put(s1, "header", header)
+  test "is_valid_header?/1 returns false when timeslot_index is in the future" do
+    header = %Header{parent_hash: :parent, timeslot_index: 2}
+    s1 = Storage.put(Storage.new, :parent, %Header{timeslot_index: 3})
+    s2 = Storage.put(s1, :header, header)
 
     assert !Header.is_valid_header?(s2, header)
   end
