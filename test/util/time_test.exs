@@ -19,4 +19,14 @@ defmodule Util.TimeTest do
     future_block_time = Time.current_time() + 10
     refute Time.valid_block_time?(future_block_time)
   end
+
+  test "block timeslot index validation for a past block" do
+    past_block_timeslot_index = div(Time.current_time() - 10, Time.block_duration())
+    assert Time.valid_block_timeslot?(past_block_timeslot_index)
+  end
+
+  test "block timeslot index validation for a future block" do
+    future_block_timeslot_index = div(Time.current_time() + 10, Time.block_duration())
+    refute Time.valid_block_timeslot?(future_block_timeslot_index)
+  end
 end
