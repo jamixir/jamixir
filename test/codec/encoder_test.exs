@@ -45,9 +45,6 @@ defmodule CodecEncoderTest do
     assert Encoder.encode((1 <<< 64) - 1) == <<255, 255, 255, 255, 255, 255, 255, 255, 255>>
   end
 
-
-
-
   test "encode nil" do
     assert Encoder.encode(nil) == <<0>>
   end
@@ -62,11 +59,9 @@ defmodule CodecEncoderTest do
     assert Encoder.encode(binary_data) == binary_data
   end
 
-
   test "encode tuple" do
-    assert Encoder.encode({1, 2, 3}) == <<3,1, 2, 3>>
-    assert Encoder.encode({256, 256}) == <<2, 129,0, 129, 0>>
-
+    assert Encoder.encode({1, 2, 3}) == <<3, 1, 2, 3>>
+    assert Encoder.encode({256, 256}) == <<2, 129, 0, 129, 0>>
   end
 
   test "encode bit list" do
@@ -75,5 +70,4 @@ defmodule CodecEncoderTest do
     assert Encoder.encode([1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1]) == <<81, 43>>
     assert Encoder.encode([]) == <<>>
   end
-
 end

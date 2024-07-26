@@ -1,6 +1,8 @@
 defmodule Jamixir.TCPServer do
   def start(port) do
-    {:ok, listen_socket} = :gen_tcp.listen(port, [:binary, packet: :line, active: false, reuseaddr: true])
+    {:ok, listen_socket} =
+      :gen_tcp.listen(port, [:binary, packet: :line, active: false, reuseaddr: true])
+
     IO.puts("Listening on port #{port}...")
     loop_accept(listen_socket)
   end
@@ -23,7 +25,8 @@ defmodule Jamixir.TCPServer do
         IO.puts("Received: #{data}")
         :gen_tcp.send(socket, "Echo: #{data}")
         handle_client_loop(socket)
-      {:error, _} -> 
+
+      {:error, _} ->
         :gen_tcp.close(socket)
         IO.puts("Client disconnected")
     end

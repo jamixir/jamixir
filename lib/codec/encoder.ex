@@ -6,7 +6,7 @@ defmodule Codec.Encoder do
   import Bitwise
 
   @pow_7 128
-  @pow_64 18446744073709551616
+  @pow_64 18_446_744_073_709_551_616
 
   @doc """
   Encodes a given value into a binary format.
@@ -24,6 +24,7 @@ defmodule Codec.Encoder do
 
   defp do_encode(nil), do: <<0>>
   defp do_encode(value) when is_binary(value), do: value
+
   defp do_encode(value) when is_list(value) do
     if is_bit_list(value) do
       encode_bits(value)
@@ -31,12 +32,11 @@ defmodule Codec.Encoder do
       encode_list(value)
     end
   end
+
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
   defp do_encode(value) when is_list(value), do: encode_list(value)
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
   # defp do_encode(%Block.Header{} = header), do: encode_header(header)
-
-
 
   defp determine_level(x) do
     cond do
@@ -48,10 +48,10 @@ defmodule Codec.Encoder do
   end
 
   defp encode_bytes(_x, 0), do: <<>>
-  defp encode_bytes(x, l), do: <<rem(x, 256)>> <> encode_bytes(div(x, 256), l-1)
+  defp encode_bytes(x, l), do: <<rem(x, 256)>> <> encode_bytes(div(x, 256), l - 1)
 
+  defp encode_integer(x) when x < @pow_7, do: <<x>>
 
-  defp encode_integer(x) when x < @pow_7,  do: <<x>>
   defp encode_integer(x) when x < @pow_64 do
     l = determine_level(x)
     shift = 8 * l
@@ -59,17 +59,14 @@ defmodule Codec.Encoder do
     <<prefix + div(x, 1 <<< shift)>> <> encode_bytes(rem(x, 1 <<< shift), l)
   end
 
-
-
-
   defp encode_list(value) do
     encoded_elements = Enum.map(value, &do_encode/1)
     encoded_length = encode_integer(length(value))
     encoded_length <> Enum.join(encoded_elements, <<>>)
   end
 
-
   defp encode_bits([]), do: <<>>
+
   defp encode_bits(bits) do
     bits
     |> Enum.chunk_every(8)
@@ -80,9 +77,7 @@ defmodule Codec.Encoder do
   defp encode_octet(bits) do
     bits
     |> Enum.with_index()
-    |> Enum.reduce(0, fn {bit, index}, acc -> acc ||| (bit <<< index) end)
+    |> Enum.reduce(0, fn {bit, index}, acc -> acc ||| bit <<< index end)
     |> :binary.encode_unsigned()
   end
-
-
 end

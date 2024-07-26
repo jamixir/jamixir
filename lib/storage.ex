@@ -1,5 +1,4 @@
 defmodule Storage do
-  
   def new do
     %{}
   end
