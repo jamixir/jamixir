@@ -5,11 +5,11 @@ defmodule State do
           validator_keys: list(ValidatorKey.t()),
           services: list(Service.t()),
           entropy_pool: EntropyPool.t(),
-          enqueued_validators: list(Validator.t()),
-          identified_validators: list(Validator.t()),
-          archived_validators: list(Validator.t()),
+          next_validators: list(Validator.t()),
+          curr_validators: list(Validator.t()),
+          prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t()),
-          time: Util.Time.t(),
+          timeslot: Util.Time.t(),
           authorization_queue: AuthorizationQueue.t(),
           privileged_services: list(Identity.t()),
           judgements: list(Judgement.t()),
@@ -27,16 +27,16 @@ defmodule State do
     :services,
     # η: On-chain entropy pool
     :entropy_pool,
-    # ι: Validators enqueued
-    :enqueued_validators,
-    # κ: Validators identified
-    :identified_validators,
-    # λ: Validators archived
-    :archived_validators,
+    # ι: Validators enqueued for next round
+    :next_validators,
+    # κ: Current Validators
+    :curr_validators,
+    # λ: Previous Validators
+    :prev_validators,
     # ρ: Each core's currently assigned report
     :core_reports,
-    # τ: Details of the most recent time
-    :time,
+    # τ: Details of the most recent timeslot
+    :timeslot,
     # φ: Queue which fills the authorization requirement
     :authorization_queue,
     # χ: Identities of services with privileged status
@@ -50,17 +50,17 @@ defmodule State do
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
     # η'
-    new_entropy_pool = update_entropy_pool(h, state.time, state.entropy_pool)
+    new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
     # ψ'
     new_judgements = update_judgements(h, e.judgements, state.judgements)
     # κ'
-    new_identified_validators =
-      update_identified_validators(
+    new_curr_validators =
+      update_curr_validators(
         h,
-        state.time,
-        state.identified_validators,
+        state.timeslot,
+        state.curr_validators,
         state.validator_keys,
-        state.enqueued_validators,
+        state.next_validators,
         new_judgements
       )
 
@@ -73,27 +73,27 @@ defmodule State do
       validator_keys:
         update_validator_keys(
           h,
-          state.time,
+          state.timeslot,
           e.tickets,
           state.validator_keys,
-          state.enqueued_validators,
+          state.next_validators,
           new_entropy_pool,
-          new_identified_validators
+          new_curr_validators
         ),
       # δ'
       services: todo,
       # η'
       entropy_pool: new_entropy_pool,
       # ι'
-      enqueued_validators: todo,
+      next_validators: todo,
       # κ'
-      identified_validators: todo,
+      curr_validators: todo,
       # λ'
-      archived_validators: todo,
+      prev_validators: todo,
       # ρ'
       core_reports: todo,
       # Equation (16) - τ'
-      time: update_time(state.time, h),
+      timeslot: update_timeslot(state.timeslot, h),
       # φ'
       authorization_queue: todo,
       # χ'
@@ -105,7 +105,7 @@ defmodule State do
     }
   end
 
-  defp update_entropy_pool(header, time, entropy_pool) do
+  defp update_entropy_pool(header, timeslot, entropy_pool) do
     # TODO
   end
 
@@ -113,12 +113,12 @@ defmodule State do
     # TODO
   end
 
-  defp update_identified_validators(
+  defp update_curr_validators(
          header,
-         time,
-         identified_validators,
+         timeslot,
+         curr_validators,
          validator_keys,
-         enqueued_validators,
+         next_validators,
          judgements
        ) do
     # TODO
@@ -126,17 +126,17 @@ defmodule State do
 
   defp update_validator_keys(
          header,
-         time,
+         timeslot,
          tickets,
          validator_keys,
-         enqueued_validators,
+         next_validators,
          entropy_pool,
-         identified_validators
+         curr_validators
        ) do
     # TODO
   end
 
-  defp update_time(time, header) do
+  defp update_timeslot(timeslot, header) do
     # TODO
   end
 end
