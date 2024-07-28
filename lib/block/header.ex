@@ -35,16 +35,17 @@ defmodule Block.Header do
     block_seal: nil
   ]
 
-  def is_valid_header?(_, %Block.Header{parent_hash: nil}), do: true
+  def is_valid_header?(_, h = %Block.Header{parent_hash: nil}) do
+    Util.Time.valid_block_timeslot?(h.timeslot)
+  end
 
   def is_valid_header?(storage, header) do
     case storage[header.parent_hash] do
-      nil ->
-        false
-
+      nil -> false
       parent_header ->
         parent_header.timeslot < header.timeslot and
           Util.Time.valid_block_timeslot?(header.timeslot)
     end
   end
+
 end
