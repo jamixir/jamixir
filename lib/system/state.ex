@@ -1,4 +1,4 @@
-defmodule State do
+defmodule System.State do
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
@@ -64,7 +64,7 @@ defmodule State do
         new_judgements
       )
 
-    %State{
+    %System.State{
       # α'
       authorization_requirements: todo,
       # β'
@@ -92,8 +92,8 @@ defmodule State do
       prev_validators: todo,
       # ρ'
       core_reports: todo,
-      # Equation (16) - τ'
-      timeslot: update_timeslot(state.timeslot, h),
+      # Equation (16) Equation (45) => τ' = Ht
+      timeslot: h.timeslot,
       # φ'
       authorization_queue: todo,
       # χ'
@@ -133,10 +133,6 @@ defmodule State do
          entropy_pool,
          curr_validators
        ) do
-    # TODO
-  end
-
-  defp update_timeslot(timeslot, header) do
     # TODO
   end
 end

@@ -3,7 +3,7 @@ defmodule Block.Header do
           parent_hash: binary(),
           prior_state_root: binary(),
           extrinsic_hash: binary(),
-          timeslot_index: integer(),
+          timeslot: integer(),
           epoch: integer() | nil,
           winning_tickets_marker: list(binary()) | nil,
           judgements_marker: list(binary()) | nil,
@@ -20,7 +20,7 @@ defmodule Block.Header do
     # Hx
     extrinsic_hash: nil,
     # Ht
-    timeslot_index: nil,
+    timeslot: nil,
     # He
     epoch: nil,
     # Hw
@@ -43,8 +43,8 @@ defmodule Block.Header do
         false
 
       parent_header ->
-        parent_header.timeslot_index < header.timeslot_index and
-          Util.Time.valid_block_timeslot?(header.timeslot_index)
+        parent_header.timeslot < header.timeslot and
+          Util.Time.valid_block_timeslot?(header.timeslot)
     end
   end
 end

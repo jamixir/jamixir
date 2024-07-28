@@ -34,8 +34,8 @@ defmodule Util.Time do
   Checks if the given block timeslot index is valid by multiplying it by the block duration and comparing to the current time.
   """
 
-  def valid_block_timeslot?(block_timeslot_index) do
-    block_time = block_timeslot_index * @block_duration
+  def valid_block_timeslot?(block_timeslot) do
+    block_time = block_timeslot * @block_duration
     valid_block_time?(block_time)
   end
 end

@@ -21,12 +21,12 @@ defmodule Util.TimeTest do
   end
 
   test "block timeslot index validation for a past block" do
-    past_block_timeslot_index = div(Time.current_time() - 10, Time.block_duration())
-    assert Time.valid_block_timeslot?(past_block_timeslot_index)
+    past_block_timeslot = div(Time.current_time() - 10, Time.block_duration())
+    assert Time.valid_block_timeslot?(past_block_timeslot)
   end
 
   test "block timeslot index validation for a future block" do
-    future_block_timeslot_index = div(Time.current_time() + 10, Time.block_duration())
-    refute Time.valid_block_timeslot?(future_block_timeslot_index)
+    future_block_timeslot= div(Time.current_time() + 10, Time.block_duration())
+    refute Time.valid_block_timeslot?(future_block_timeslot)
   end
 end
