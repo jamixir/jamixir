@@ -1,4 +1,6 @@
 defmodule System.State do
+  alias Util.{Time, Hash}
+
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
@@ -105,8 +107,22 @@ defmodule System.State do
     }
   end
 
-  defp update_entropy_pool(header, timeslot, entropy_pool) do
-    # TODO
+  def update_entropy_pool(header, timeslot, %EntropyPool{
+        current: current_entropy,
+        history: history
+      }) do
+    new_entropy = Hash.blake2b_256(current_entropy <> entropy_vrf(header.vrf_signature))
+
+    history =
+      case Time.new_epoch?(timeslot, header.timeslot) do
+        true -> [new_entropy | Enum.take(history, 2)]
+        false -> history
+      end
+
+    %EntropyPool{
+      current: new_entropy,
+      history: history
+    }
   end
 
   defp update_judgements(header, judgements, state_judgements) do
@@ -134,5 +150,12 @@ defmodule System.State do
          curr_validators
        ) do
     # TODO
+  end
+
+  defp entropy_vrf(value) do
+    # TODO
+
+    # for now, we will just return the value
+    value
   end
 end
