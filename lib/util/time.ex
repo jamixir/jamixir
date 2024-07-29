@@ -2,6 +2,7 @@ defmodule Util.Time do
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
   @block_duration 6
   @epoch_duration 600
+  @epoch_duration 600
 
   @doc """
   Returns the base epoch time in Gregorian seconds.
@@ -15,6 +16,13 @@ defmodule Util.Time do
   """
   def block_duration do
     @block_duration
+  end
+
+  @doc """
+  Returns the epoch duration in blocks.
+  """
+  def epoch_duration do
+    @epoch_duration
   end
 
   @doc """

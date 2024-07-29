@@ -1,6 +1,8 @@
 defmodule System.State do
   alias Util.{Time, Hash}
 
+  alias Util.{Time, Hash}
+
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
