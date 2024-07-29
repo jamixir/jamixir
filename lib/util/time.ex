@@ -51,8 +51,13 @@ defmodule Util.Time do
   Determines if a new epoch has started based on the previous and current timeslots.
   """
   def new_epoch?(previous_timeslot, current_timeslot) do
-    previous_epoch = div(previous_timeslot, @epoch_duration)
-    current_epoch = div(current_timeslot, @epoch_duration)
-    current_epoch > previous_epoch
+    if previous_timeslot >= current_timeslot do
+      {:error,
+       "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
+    else
+      previous_epoch = div(previous_timeslot, @epoch_duration)
+      current_epoch = div(current_timeslot, @epoch_duration)
+      {:ok, current_epoch > previous_epoch}
+    end
   end
 end

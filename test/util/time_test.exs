@@ -31,22 +31,28 @@ defmodule Util.TimeTest do
   end
 
   test "new epoch detection when crossing epoch boundary" do
-    # Last block of the first epoch (assuming epoch_duration is 600)
     previous_timeslot = 599
-    # First block of the second epoch
     current_timeslot = 600
-    assert Time.new_epoch?(previous_timeslot, current_timeslot)
+    assert Time.new_epoch?(previous_timeslot, current_timeslot) == {:ok, true}
   end
 
   test "new epoch detection when within the same epoch" do
     previous_timeslot = 100
     current_timeslot = 200
-    refute Time.new_epoch?(previous_timeslot, current_timeslot)
+    assert Time.new_epoch?(previous_timeslot, current_timeslot) == {:ok, false}
   end
 
   test "new epoch detection with large jump across epochs" do
     previous_timeslot = 599
     current_timeslot = 1200
-    assert Time.new_epoch?(previous_timeslot, current_timeslot)
+    assert Time.new_epoch?(previous_timeslot, current_timeslot) == {:ok, true}
+  end
+
+  test "new epoch detection when previous_timeslot is greater than current_timeslot" do
+    previous_timeslot = 600
+    current_timeslot = 599
+
+    assert Time.new_epoch?(previous_timeslot, current_timeslot) ==
+             {:error, "Previous timeslot is greater than current timeslot"}
   end
 end
