@@ -51,6 +51,14 @@ defmodule System.State do
   # Equation (12)
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
+    beefy_commitment_map = "TODO"
+
+    # Equation (16) Equation (45) => τ' = Ht
+    new_timeslot = h.timeslot
+    # Equation (17)
+    initial_block_history = System.State.RecentBlock.get_initial_block_history(h, state.recent_blocks)
+    # Equation (18)
+    new_recent_blocks = update_recent_blocks(h, e.reports, initial_block_history, beefy_commitment_map)
     # η' Equation (20)
     new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
     # ψ' Equation (23)
@@ -86,7 +94,7 @@ defmodule System.State do
       # α'
       authorization_requirements: todo,
       # β'
-      recent_blocks: todo,
+      recent_blocks: new_recent_blocks,
       # γ'
       validator_keys: new_validator_keys,
       # δ'
@@ -101,8 +109,8 @@ defmodule System.State do
       prev_validators: todo,
       # ρ'
       core_reports: todo,
-      # Equation (16) Equation (45) => τ' = Ht
-      timeslot: h.timeslot,
+      # τ'
+      timeslot: new_timeslot,
       # φ'
       authorization_queue: todo,
       # χ'
@@ -148,4 +156,9 @@ defmodule System.State do
   defp update_prev_validators(header, timeslot, prev_validators, curr_validators) do
     # TODO
   end
+
+  defp update_recent_blocks(header, reports, existing_recent_blocks, beefy_commitment_map) do
+    # TODO
+  end
+
 end
