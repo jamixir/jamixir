@@ -41,11 +41,12 @@ defmodule Block.Header do
 
   def is_valid_header?(storage, header) do
     case storage[header.parent_hash] do
-      nil -> false
+      nil ->
+        false
+
       parent_header ->
         parent_header.timeslot < header.timeslot and
           Util.Time.valid_block_timeslot?(header.timeslot)
     end
   end
-
 end

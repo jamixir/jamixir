@@ -10,5 +10,4 @@ defmodule TestHelper do
   def future_timeslot do
     div(Time.current_time() + 10, Time.block_duration())
   end
-
 end
