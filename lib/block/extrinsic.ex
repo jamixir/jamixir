@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic do
+  # Equation (14)
   defstruct tickets: [], judgements: [], preimages: [], availability: [], reports: []
 
   @type t :: %__MODULE__{

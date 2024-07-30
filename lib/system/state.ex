@@ -18,6 +18,7 @@ defmodule System.State do
           validator_statistics: list(ValidatorStatistic.t())
         }
 
+  # Equation (15) σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
     :authorization_requirements,
@@ -49,13 +50,14 @@ defmodule System.State do
     :validator_statistics
   ]
 
+  # Equation (12)
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
-    # η'
+    # η' Equation (20)
     new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
-    # ψ'
+    # ψ' Equation (23)
     new_judgements = update_judgements(h, e.judgements, state.judgements)
-    # κ'
+    # κ' Equation (21)
     new_curr_validators =
       update_curr_validators(
         h,
@@ -66,22 +68,29 @@ defmodule System.State do
         new_judgements
       )
 
+    # γ' Equation (19)
+    new_validator_keys =
+      update_validator_keys(
+        h,
+        state.timeslot,
+        e.tickets,
+        state.validator_keys,
+        state.next_validators,
+        new_entropy_pool,
+        new_curr_validators
+      )
+
+    # λ' Equation (22)
+    new_prev_validators =
+      update_prev_validators(h, state.timeslot, state.prev_validators, state.curr_validators)
+
     %System.State{
       # α'
       authorization_requirements: todo,
       # β'
       recent_blocks: todo,
       # γ'
-      validator_keys:
-        update_validator_keys(
-          h,
-          state.timeslot,
-          e.tickets,
-          state.validator_keys,
-          state.next_validators,
-          new_entropy_pool,
-          new_curr_validators
-        ),
+      validator_keys: new_validator_keys,
       # δ'
       services: todo,
       # η'
@@ -163,5 +172,9 @@ defmodule System.State do
 
     # for now, we will just return the value
     value
+  end
+
+  defp update_prev_validators(header, timeslot, prev_validators, curr_validators) do
+    # TODO
   end
 end
