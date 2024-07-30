@@ -115,8 +115,14 @@ defmodule System.State do
 
     history =
       case Time.new_epoch?(timeslot, header.timeslot) do
-        true -> [new_entropy | Enum.take(history, 2)]
-        false -> history
+        {:ok, true} ->
+          [new_entropy | Enum.take(history, 2)]
+
+        {:ok, false} ->
+          history
+
+        {:error, reason} ->
+          raise "Error determining new epoch: #{reason}"
       end
 
     %EntropyPool{
@@ -152,7 +158,7 @@ defmodule System.State do
     # TODO
   end
 
-  defp entropy_vrf(value) do
+  def entropy_vrf(value) do
     # TODO
 
     # for now, we will just return the value
