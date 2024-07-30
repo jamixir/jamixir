@@ -3,6 +3,7 @@ defmodule System.StateTest do
 
   alias System.State
   alias Block.Header
+  alias Util.Hash
 
   test "add_block/1 correctly set timeslot" do
     state = %State{}
@@ -22,6 +23,12 @@ defmodule System.StateTest do
       assert updated_state.current != initial_state.current
       # Blake2b hash output size
       assert byte_size(updated_state.current) == 32
+
+      # Calculate expected entropy
+      expected_entropy = Hash.blake2b_256(initial_state.current <> State.entropy_vrf(header.vrf_signature))
+
+      # Assert that the current entropy matches the expected value
+      assert updated_state.current == expected_entropy
     end
 
     test "rotates entropy history on new epoch" do
