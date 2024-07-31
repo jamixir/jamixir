@@ -8,11 +8,13 @@ defmodule System.StateTest do
   test "add_block/1 correctly set timeslot" do
     state = %State{
       entropy_pool: %EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]},
-      timeslot: 6,
+      timeslot: 6
     }
-    block = %Block{header: %Header{timeslot: 7, vrf_signature: "0x00000000000"}, extrinsic: %Block.Extrinsic{}}
 
-
+    block = %Block{
+      header: %Header{timeslot: 7, vrf_signature: "0x00000000000"},
+      extrinsic: %Block.Extrinsic{}
+    }
 
     assert State.add_block(state, block).timeslot === 7
   end
@@ -30,7 +32,8 @@ defmodule System.StateTest do
       assert byte_size(updated_state.current) == 32
 
       # Calculate expected entropy
-      expected_entropy = Hash.blake2b_256(initial_state.current <> State.entropy_vrf(header.vrf_signature))
+      expected_entropy =
+        Hash.blake2b_256(initial_state.current <> State.entropy_vrf(header.vrf_signature))
 
       # Assert that the current entropy matches the expected value
       assert updated_state.current == expected_entropy
