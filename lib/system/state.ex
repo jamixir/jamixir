@@ -1,4 +1,6 @@
 defmodule System.State do
+  alias Util.{Time, Hash}
+
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
@@ -56,9 +58,13 @@ defmodule System.State do
     # Equation (16) Equation (45) => τ' = Ht
     new_timeslot = h.timeslot
     # Equation (17)
-    initial_block_history = System.State.RecentBlock.get_initial_block_history(h, state.recent_blocks)
+    initial_block_history =
+      System.State.RecentBlock.get_initial_block_history(h, state.recent_blocks)
+
     # Equation (18)
-    new_recent_blocks = update_recent_blocks(h, e.reports, initial_block_history, beefy_commitment_map)
+    new_recent_blocks =
+      update_recent_blocks(h, e.reports, initial_block_history, beefy_commitment_map)
+
     # η' Equation (20)
     new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
     # ψ' Equation (23)
@@ -122,8 +128,28 @@ defmodule System.State do
     }
   end
 
-  defp update_entropy_pool(header, timeslot, entropy_pool) do
-    # TODO
+  def update_entropy_pool(header, timeslot, %EntropyPool{
+        current: current_entropy,
+        history: history
+      }) do
+    new_entropy = Hash.blake2b_256(current_entropy <> entropy_vrf(header.vrf_signature))
+
+    history =
+      case Time.new_epoch?(timeslot, header.timeslot) do
+        {:ok, true} ->
+          [new_entropy | Enum.take(history, 2)]
+
+        {:ok, false} ->
+          history
+
+        {:error, reason} ->
+          raise "Error determining new epoch: #{reason}"
+      end
+
+    %EntropyPool{
+      current: new_entropy,
+      history: history
+    }
   end
 
   defp update_judgements(header, judgements, state_judgements) do
@@ -153,6 +179,13 @@ defmodule System.State do
     # TODO
   end
 
+  def entropy_vrf(value) do
+    # TODO
+
+    # for now, we will just return the value
+    value
+  end
+
   defp update_prev_validators(header, timeslot, prev_validators, curr_validators) do
     # TODO
   end
@@ -160,5 +193,4 @@ defmodule System.State do
   defp update_recent_blocks(header, reports, existing_recent_blocks, beefy_commitment_map) do
     # TODO
   end
-
 end

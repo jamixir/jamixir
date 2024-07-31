@@ -3,11 +3,16 @@ defmodule Block.Extrinsic do
   defstruct tickets: [], judgements: [], preimages: [], availability: [], reports: []
 
   @type t :: %__MODULE__{
-          tickets: list(Ticket.t()), # Et
-          judgements: list(Judgement.t()), # Ed
-          preimages: list(Preimage.t()), # Ep
-          availability: list(Availability.t()), # Ea
-          reports: list(Report.t()) # Eg
+          # Et
+          tickets: list(Ticket.t()),
+          # Ed
+          judgements: list(Judgement.t()),
+          # Ep
+          preimages: list(Preimage.t()),
+          # Ea
+          availability: list(Availability.t()),
+          # Eg
+          reports: list(Report.t())
         }
 
   @doc """
