@@ -6,6 +6,7 @@ defmodule Disputes.Verdict do
   """
 
   alias Types
+  alias Disputes.Judgement
 
   @type t :: %__MODULE__{
           work_report_hash: Types.hash(),
@@ -14,14 +15,4 @@ defmodule Disputes.Verdict do
         }
 
   defstruct work_report_hash: <<>>, epoch_index: 0, judgements: []
-end
-
-defmodule Judgement do
-  @type t :: %__MODULE__{
-          validator_index: Types.validator_index(),
-          decision: Types.decision(),
-          signature: Types.ed25519_signature()
-        }
-
-  defstruct validator_index: 0, decision: true, signature: <<>>
 end
