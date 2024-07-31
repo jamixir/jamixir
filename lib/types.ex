@@ -1,4 +1,3 @@
-
 defmodule Types do
   @moduledoc """
   A module for defining common types.
