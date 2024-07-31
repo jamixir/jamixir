@@ -1,28 +1,24 @@
 defmodule Block.Extrinsic do
+  alias Disputes
   # Equation (14)
-  defstruct tickets: [], judgements: [], preimages: [], availability: [], reports: []
+  defstruct tickets: [], disputes: [], preimages: [], availability: [], reports: []
 
   @type t :: %__MODULE__{
-          # Et
           tickets: list(Ticket.t()),
-          # Ed
-          judgements: list(Judgement.t()),
-          # Ep
+          disputes: Disputes.t(),
           preimages: list(Preimage.t()),
-          # Ea
           availability: list(Availability.t()),
-          # Eg
           reports: list(Report.t())
         }
 
   @doc """
   Represents the block extrinsic as described.
-  E ≡ (ET, EJ, EP, EA, EG)
+  E ≡ (ET, ED, EP, EA, EG)
   """
-  def new(tickets, judgements, preimages, availability, reports) do
+  def new(tickets, disputes, preimages, availability, reports) do
     %Block.Extrinsic{
       tickets: tickets,
-      judgements: judgements,
+      disputes: disputes,
       preimages: preimages,
       availability: availability,
       reports: reports
