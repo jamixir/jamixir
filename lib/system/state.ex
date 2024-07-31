@@ -12,10 +12,10 @@ defmodule System.State do
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t()),
-          timeslot: Util.Time.t(),
+          timeslot: integer(),
           authorization_queue: AuthorizationQueue.t(),
           privileged_services: list(Identity.t()),
-          judgements: list(Judgement.t()),
+          judgements: Judgements.t(),
           validator_statistics: list(ValidatorStatistic.t())
         }
 
