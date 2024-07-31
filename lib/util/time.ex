@@ -1,6 +1,8 @@
 defmodule Util.Time do
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
+  # seconds
   @block_duration 6
+  # blocks
   @epoch_duration 600
 
   @doc """
@@ -15,6 +17,13 @@ defmodule Util.Time do
   """
   def block_duration do
     @block_duration
+  end
+
+  @doc """
+  Returns the epoch duration in blocks.
+  """
+  def epoch_duration do
+    @epoch_duration
   end
 
   @doc """
@@ -60,4 +69,14 @@ defmodule Util.Time do
       {:ok, current_epoch > previous_epoch}
     end
   end
+
+  @doc """
+  Determines the epoch index of a given timeslot. Equation (46)
+  """
+  def epoch_index(timeslot), do: div(timeslot, @epoch_duration)
+
+  @doc """
+  Determines the phase of a given timeslot within an epoch. Equation (46)
+  """
+  def epoch_phase(timeslot), do: rem(timeslot, @epoch_duration)
 end
