@@ -1,4 +1,4 @@
-defmodule Judgements do
+defmodule System.State.Judgements do
   @moduledoc """
   Represents the state and operations related to judgements in the disputes system.
   """

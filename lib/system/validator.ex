@@ -1,4 +1,4 @@
-defmodule Validator do
+defmodule System.State.Validator do
   @moduledoc """
   represent a validator, as specified in section 6.3 of the GP.
   """
@@ -12,15 +12,4 @@ defmodule Validator do
 
   defstruct bandersnatch: <<>>, ed25519: <<>>, bls: <<>>, metadata: <<>>
 
-  @doc """
-  Returns a new Validator struct.
-  """
-  def new(bandersnatch, ed25519, bls, metadata) do
-    %Validator{
-      bandersnatch: bandersnatch,
-      ed25519: ed25519,
-      bls: bls,
-      metadata: metadata
-    }
-  end
 end
