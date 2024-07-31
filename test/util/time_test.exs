@@ -54,4 +54,27 @@ defmodule Util.TimeTest do
 
     assert {:error, _error_msg} = Time.new_epoch?(previous_timeslot, current_timeslot)
   end
+
+
+  test "epoch index calculation" do
+    timeslot = 1200
+    assert Time.epoch_index(timeslot) == 2
+
+    timeslot = 599
+    assert Time.epoch_index(timeslot) == 0
+
+    timeslot = 600
+    assert Time.epoch_index(timeslot) == 1
+  end
+
+  test "epoch phase calculation" do
+    timeslot = 1200
+    assert Time.epoch_phase(timeslot) == 0
+
+    timeslot = 599
+    assert Time.epoch_phase(timeslot) == 599
+
+    timeslot = 601
+    assert Time.epoch_phase(timeslot) == 1
+  end
 end
