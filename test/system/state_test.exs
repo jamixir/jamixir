@@ -6,8 +6,13 @@ defmodule System.StateTest do
   alias Util.Hash
 
   test "add_block/1 correctly set timeslot" do
-    state = %State{}
-    block = %Block{header: %Header{timeslot: 7}, extrinsic: %Block.Extrinsic{}}
+    state = %State{
+      entropy_pool: %EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]},
+      timeslot: 6,
+    }
+    block = %Block{header: %Header{timeslot: 7, vrf_signature: "0x00000000000"}, extrinsic: %Block.Extrinsic{}}
+
+
 
     assert State.add_block(state, block).timeslot === 7
   end

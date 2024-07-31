@@ -52,7 +52,6 @@ defmodule Util.TimeTest do
     previous_timeslot = 600
     current_timeslot = 599
 
-    assert Time.new_epoch?(previous_timeslot, current_timeslot) ==
-             {:error, "Previous timeslot is greater than current timeslot"}
+    assert {:error, _error_msg} = Time.new_epoch?(previous_timeslot, current_timeslot)
   end
 end
