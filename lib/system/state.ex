@@ -57,11 +57,11 @@ defmodule System.State do
 
     # Equation (16) Equation (45) => τ' = Ht
     new_timeslot = h.timeslot
-    # Equation (17)
+    # β† Equation (17)
     initial_block_history =
       System.State.RecentBlock.get_initial_block_history(h, state.recent_blocks)
 
-    # Equation (18)
+    # β' Equation (18)
     new_recent_blocks =
       update_recent_blocks(h, e.reports, initial_block_history, beefy_commitment_map)
 
@@ -110,9 +110,9 @@ defmodule System.State do
       # ι'
       next_validators: todo,
       # κ'
-      curr_validators: todo,
+      curr_validators: new_curr_validators,
       # λ'
-      prev_validators: todo,
+      prev_validators: new_prev_validators,
       # ρ'
       core_reports: todo,
       # τ'
@@ -122,7 +122,7 @@ defmodule System.State do
       # χ'
       privileged_services: todo,
       # ψ'
-      judgements: todo,
+      judgements: new_judgements,
       # π'
       validator_statistics: todo
     }
