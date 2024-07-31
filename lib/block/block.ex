@@ -4,6 +4,7 @@ defmodule Block do
           extrinsic: Block.Extrinsic.t()
         }
 
+  # Equation (13)
   defstruct [
     # Hp
     header: nil,
