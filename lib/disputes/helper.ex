@@ -1,15 +1,15 @@
 defmodule Disputes.Helper do
   alias Disputes.{Verdict, Verifier}
   alias System.State
-  alias System.State.{Validator, Judgements}
+  alias System.State.{Validator}
   alias Types
   alias Util.Time
 
   @doc """
   Creates a list of verdicts with the number of positive votes.
   """
-  @spec create_verdicts(list(Verdict.t())) :: list({Types.hash(), integer()})
-  def create_verdicts(valid_verdicts) do
+  @spec create_verdicts_scores(list(Verdict.t())) :: list({Types.hash(), integer()})
+  def create_verdicts_scores(valid_verdicts) do
     valid_verdicts
     |> Enum.map(fn %Verdict{work_report_hash: report_hash, judgements: judgements} ->
       positive_votes = Enum.count(judgements, & &1.decision)
@@ -18,21 +18,25 @@ defmodule Disputes.Helper do
   end
 
   @doc """
-  Updates the  bad set based on the verdicts.
+  Classifies verdicts based on the number of positive votes.
   """
-  @spec update_judgement_sets(list({Types.hash(), integer()}), Judgements.t()) ::
-          {MapSet.t(Types.hash()), MapSet.t(Types.hash()), MapSet.t(Types.hash())}
-  def update_judgement_sets(verdicts, judgements) do
-    badset =
-      Enum.reduce(verdicts, judgements.bad, fn {report_hash, positive_votes}, acc ->
-        if positive_votes == 0 do
-          MapSet.put(acc, report_hash)
-        else
-          acc
-        end
-      end)
+  @spec classify_verdicts(list({Types.hash(), integer()}), integer()) ::
+          list({Types.hash(), atom()})
+  def classify_verdicts(verdict_scores, validator_count) do
+    good_threshold = div(2 * validator_count, 3) + 1
+    wonky_threshold = div(validator_count, 3)
 
-    badset
+    Enum.map(verdict_scores, fn {report_hash, positive_votes} ->
+      classification =
+        cond do
+          positive_votes == good_threshold -> :good
+          positive_votes == 0 -> :bad
+          positive_votes == wonky_threshold -> :wonky
+          true -> :undefined
+        end
+
+      {report_hash, classification}
+    end)
   end
 
   @doc """
@@ -41,21 +45,6 @@ defmodule Disputes.Helper do
 
   def valid_verdict?(verdict, state, timeslot) do
     valid_epoch_index?(verdict, timeslot) and enough_valid_judgements?(verdict, state, timeslot)
-  end
-
-  # Determines the appropriate validator set for the given epoch index.
-  @spec validator_set(Verdict.t(), State.t(), integer()) :: list(Validator.t())
-  defp validator_set(
-         %Verdict{epoch_index: epoch_index},
-         %State{curr_validators: curr_validators, prev_validators: prev_validators},
-         timeslot
-       ) do
-    current_epoch_index = Time.epoch_index(timeslot)
-
-    case current_epoch_index - epoch_index do
-      0 -> curr_validators
-      1 -> prev_validators
-    end
   end
 
   @doc """
@@ -77,6 +66,21 @@ defmodule Disputes.Helper do
     report_hash in state.judgements.bad or
       (report_hash in verdict_badset and
          not MapSet.member?(state.judgements.punish, key))
+  end
+
+  # Determines the appropriate validator set for the given epoch index.
+  @spec validator_set(Verdict.t(), State.t(), integer()) :: list(Validator.t())
+  defp validator_set(
+         %Verdict{epoch_index: epoch_index},
+         %State{curr_validators: curr_validators, prev_validators: prev_validators},
+         timeslot
+       ) do
+    current_epoch_index = Time.epoch_index(timeslot)
+
+    case current_epoch_index - epoch_index do
+      0 -> curr_validators
+      1 -> prev_validators
+    end
   end
 
   # Private functions below.
