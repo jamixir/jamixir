@@ -70,7 +70,7 @@ defmodule System.State do
     # η' Equation (20)
     new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
     # ψ' Equation (23)
-    new_judgements = update_judgements(h, e.judgements, state.judgements)
+    new_judgements = update_judgements(h, e.disputes, state.judgements)
     # κ' Equation (21)
     new_curr_validators =
       update_curr_validators(
@@ -154,8 +154,56 @@ defmodule System.State do
     }
   end
 
-  defp update_judgements(header, judgements, state_judgements) do
-    # TODO
+
+
+  defp update_judgements(header, disputes, state_judgements) do
+    {valid_verdicts, valid_culprits, valid_faults, verdict_scores} = Disputes.Validator.filter_all_components(disputes, state_judgements, header)
+    classified_verdicts = Disputes.Helper.classify_verdicts(verdict_scores, length(state_judgements.curr_validators))
+    {sorted_verdicts, sorted_culprits, sorted_faults} = sort_and_uniq_components(valid_verdicts, valid_culprits, valid_faults)
+    new_judgements = assimilate_judgements(state_judgements, classified_verdicts)
+    new_punish_set = update_punish_set(new_judgements, sorted_culprits, classified_verdicts)
+
+    %Judgements{
+      new_judgements |
+      punish: new_punish_set
+    }
+  end
+
+  defp sort_and_uniq_components(verdicts, culprits, faults) do
+    sorted_verdicts = Enum.sort_by(verdicts, &(&1.work_report_hash))
+    sorted_culprits = Enum.sort_by(culprits, &(&1.validator_key))
+    sorted_faults = Enum.sort_by(faults, &(&1.validator_key))
+
+    sorted_verdicts = Enum.map(sorted_verdicts, fn verdict ->
+      %Disputes.Verdict{verdict | judgements: Enum.sort_by(verdict.judgements, &(&1.validator_index)) |> Enum.uniq_by(&(&1.validator_index))}
+    end)
+
+    {sorted_verdicts, sorted_culprits, sorted_faults}
+  end
+
+  defp assimilate_judgements(%System.State{judgements: state_judgements}, classified_verdicts) do
+    {new_goodset, new_badset, new_wonkyset} =
+      Enum.reduce(classified_verdicts, {state_judgements.good, state_judgements.bad, state_judgements.wonky}, fn {hash, classification}, {good_acc, bad_acc, wonky_acc} ->
+        case classification do
+          :good -> {MapSet.put(good_acc, hash), bad_acc, wonky_acc}
+          :bad -> {good_acc, MapSet.put(bad_acc, hash), wonky_acc}
+          :wonky -> {good_acc, bad_acc, MapSet.put(wonky_acc, hash)}
+          _ -> {good_acc, bad_acc, wonky_acc}
+        end
+      end)
+-
+    %System.State.Judgements{
+      state_judgements
+      | good: new_goodset,
+        bad: new_badset,
+        wonky: new_wonkyset
+    }
+  end
+
+  defp update_punish_set(state_judgements, sorted_culprits, sorted_faults) do
+    Enum.reduce(sorted_culprits ++ sorted_faults, state_judgements.punish, fn component, acc ->
+      MapSet.put(acc, component.validator_key)
+    end)
   end
 
   defp update_curr_validators(
