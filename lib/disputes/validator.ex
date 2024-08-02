@@ -1,19 +1,19 @@
 defmodule Disputes.Validator do
   alias Block.{Header}
-  alias Disputes.{Verdict, Culprit, Fault, Judgement}
-  alias Util.Time
+  alias Disputes.{Verdict, Culprit, Fault, Helper}
   alias System.State
   alias System.State.{Validator, Judgements}
+  alias Types
 
   @doc """
   Filters all components of Disputes extrinsic (verdicts, culprits, faults) for validity.
   """
   def filter_all_components(%Disputes{} = disputes, %State{} = state, %Header{timeslot: timeslot}) do
     valid_verdicts = filter_valid_verdicts(disputes.verdicts, state, timeslot)
-    valid_report_hashes = Enum.map(valid_verdicts, & &1.report_hash)
+    verdicts = Helper.create_verdicts(valid_verdicts)
 
-    valid_culprits = filter_valid_culprits(disputes.culprits, valid_report_hashes, state)
-    valid_faults = filter_valid_faults(disputes.faults, valid_report_hashes, state)
+    valid_culprits = filter_valid_culprits(disputes.culprits, verdicts, state)
+    valid_faults = filter_valid_faults(disputes.faults, verdicts, state)
 
     {valid_verdicts, valid_culprits, valid_faults}
   end
@@ -31,87 +31,26 @@ defmodule Disputes.Validator do
           integer()
         ) :: list(Verdict.t())
   def filter_valid_verdicts(verdicts, state, timeslot) do
-    Enum.filter(verdicts, &valid_verdict?(&1, state, timeslot))
+    Enum.filter(verdicts, &Helper.valid_verdict?(&1, state, timeslot))
   end
 
   @doc """
   Filters and returns only valid culprits.
   """
-  def filter_valid_culprits(culprits, valid_report_hashes, state) do
+  def filter_valid_culprits(culprits, verdicts, state) do
     culprits
     |> Enum.filter(&Culprit.valid_signature?/1)
-    |> filter_valid_offenses(valid_report_hashes, state)
+    |> Enum.filter(&Helper.valid_offense?(&1, verdicts, state))
+    |> Enum.uniq_by(& &1.validator_key)
   end
 
   @doc """
   Filters and returns only valid faults.
   """
-  def filter_valid_faults(faults, valid_report_hashes, state) do
+  def filter_valid_faults(faults, verdicts, state) do
     faults
     |> Enum.filter(&Fault.valid_signature?/1)
-    |> filter_valid_offenses(valid_report_hashes, state)
-  end
-
-  # Determines if a verdict is valid based on the epoch index and number of valid judgements.
-
-  defp valid_verdict?(verdict, state, header) do
-    valid_epoch_index?(verdict, header) and enough_valid_judgements?(verdict, state, header)
-  end
-
-  # Checks if the epoch index is valid for the given verdict.
-
-  defp valid_epoch_index?(%Verdict{epoch_index: epoch_index}, %Header{timeslot: timeslot}) do
-    current_epoch_index = Time.epoch_index(timeslot)
-    (current_epoch_index - epoch_index) in [0, 1]
-  end
-
-  # Determines the appropriate validator set for the given epoch index.
-
-  defp validator_set(
-         %Verdict{epoch_index: epoch_index},
-         %State{curr_validators: curr_validators, prev_validators: prev_validators},
-         %Header{timeslot: timeslot}
-       ) do
-    current_epoch_index = Time.epoch_index(timeslot)
-
-    case current_epoch_index - epoch_index do
-      0 -> curr_validators
-      1 -> prev_validators
-    end
-  end
-
-  # Calculates the required number of valid judgements.
-
-  defp required_judgement_count(validators) do
-    div(length(validators) * 2, 3) + 1
-  end
-
-  # Checks if there are enough valid judgements in a verdict.
-
-  defp enough_valid_judgements?(%Verdict{judgements: judgements} = verdict, state, header) do
-    validator_set = validator_set(verdict, state, header)
-
-    valid_judgments =
-      Enum.filter(judgements, fn %Judgement{signature: sig} ->
-        signature_in_validators?(sig, validator_set)
-      end)
-
-    length(valid_judgments) >= required_judgement_count(validator_set)
-  end
-
-  # Determines if a signature belongs to the validator set.
-
-  defp signature_in_validators?(signature, validators) do
-    Enum.any?(validators, fn %Validator{ed25519: key} -> key == signature end)
-  end
-
-  defp filter_valid_offenses(offenses, valid_report_hashes, state) do
-    Enum.filter(offenses, fn %{
-                               report_hash: report_hash,
-                               validator_key: key
-                             } ->
-      report_hash in valid_report_hashes and not MapSet.member?(state.judgements.punish, key)
-    end)
+    |> Enum.filter(&Helper.valid_offense?(&1, verdicts, state))
     |> Enum.uniq_by(& &1.validator_key)
   end
 end
