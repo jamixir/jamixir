@@ -1,5 +1,6 @@
 defmodule Disputes.Fault do
   alias Types
+  alias Util.Crypto
 
   @type t :: %__MODULE__{
           work_report_hash: Types.hash(),
@@ -18,6 +19,6 @@ defmodule Disputes.Fault do
         signature: signature,
         validator_key: key
       }) do
-    :crypto.verify(:eddsa, :none, work_report_hash, signature, [key, :ed25519])
+    Crypto.verify_signature(signature, work_report_hash, key)
   end
 end
