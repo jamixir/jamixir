@@ -10,12 +10,12 @@ defmodule Disputes.Validator do
   """
   def filter_all_components(%Disputes{} = disputes, %State{} = state, %Header{timeslot: timeslot}) do
     valid_verdicts = filter_valid_verdicts(disputes.verdicts, state, timeslot)
-    verdicts = Helper.create_verdicts(valid_verdicts)
+    verdict_scores = Helper.create_verdicts_scores(valid_verdicts)
 
-    valid_culprits = filter_valid_culprits(disputes.culprits, verdicts, state)
-    valid_faults = filter_valid_faults(disputes.faults, verdicts, state)
+    valid_culprits = filter_valid_culprits(disputes.culprits, verdict_scores, state)
+    valid_faults = filter_valid_faults(disputes.faults, verdict_scores, state)
 
-    {valid_verdicts, valid_culprits, valid_faults}
+    {valid_verdicts, valid_culprits, valid_faults, verdict_scores}
   end
 
   @doc """
@@ -32,6 +32,7 @@ defmodule Disputes.Validator do
         ) :: list(Verdict.t())
   def filter_valid_verdicts(verdicts, state, timeslot) do
     Enum.filter(verdicts, &Helper.valid_verdict?(&1, state, timeslot))
+    |> Enum.uniq_by(& &1.work_report_hash)
   end
 
   @doc """
