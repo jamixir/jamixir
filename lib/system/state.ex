@@ -4,6 +4,8 @@ defmodule System.State do
   alias Disputes
 
 
+  alias System.State.{Validator, Judgements}
+
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
