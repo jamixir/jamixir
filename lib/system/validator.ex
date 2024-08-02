@@ -11,5 +11,4 @@ defmodule System.State.Validator do
         }
 
   defstruct bandersnatch: <<>>, ed25519: <<>>, bls: <<>>, metadata: <<>>
-
 end
