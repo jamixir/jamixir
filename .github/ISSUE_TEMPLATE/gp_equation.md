@@ -1,7 +1,7 @@
 ---
 name: Gray Paper Equation Implementation
 about: Create a report to help us improve
-title: "[GPE] Equation XXX - Explanation"
+title: "[GPE-XXX] - Explanation"
 ---
 
 **GP release**
@@ -12,3 +12,5 @@ title: "[GPE] Equation XXX - Explanation"
 
 **Description**
 Your description
+
+**Depending Issues**
