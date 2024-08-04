@@ -2,6 +2,9 @@
 name: Gray Paper Equation Implementation
 about: Create a report to help us improve
 title: "[GPE-XXX] - Explanation"
+projects:
+  - jamixir/jamixir/1
+
 ---
 
 **GP release**
