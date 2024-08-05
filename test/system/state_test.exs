@@ -2,7 +2,7 @@ defmodule System.StateTest do
   use ExUnit.Case
 
   alias System.State
-  alias Block.{Header, Extrinsic}
+  alias Block.{Header}
   alias Block
   alias Util.Hash
   alias Disputes.{Verdict, Culprit, Fault, Judgement}
@@ -22,7 +22,6 @@ defmodule System.StateTest do
       <<0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0::256>>
 
     {prev_key_public, _} = :crypto.generate_key(:eddsa, :ed25519, prev_key_private)
-    prev_signature = :crypto.sign(:eddsa, :none, <<2::256>>, [prev_key_private, :ed25519])
 
     valid_judgement = %Judgement{
       validator_index: 0,
@@ -74,7 +73,6 @@ defmodule System.StateTest do
       header: header,
       work_report_hash: work_report_hash,
       valid_judgement: valid_judgement,
-      valid_key_private: valid_key_private,
       valid_key_public: valid_key_public
     } do
       validator_count = 3
@@ -109,7 +107,6 @@ defmodule System.StateTest do
       header: header,
       work_report_hash: work_report_hash,
       valid_judgement: valid_judgement,
-      valid_key_private: valid_key_private,
       valid_key_public: valid_key_public
     } do
       validator_count = 3
