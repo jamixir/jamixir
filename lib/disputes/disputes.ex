@@ -3,6 +3,12 @@ defmodule Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
+  alias Block.{Header}
+  alias Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
+  alias System.State
+  alias Types
+  alias Util.Crypto
+
   alias __MODULE__.{Verdict, Culprit, Fault}
 
   @type t :: %__MODULE__{
@@ -14,13 +20,84 @@ defmodule Disputes do
   defstruct verdicts: [], culprits: nil, faults: nil
 
   @doc """
-  Initializes a new Dispute struct with the given lists of verdicts, optionally including culprits and faults.
+  Filters all components of Disputes extrinsic (verdicts, culprits, faults) for validity.
   """
-  def new(verdicts, culprits \\ nil, faults \\ nil) do
-    %Disputes{
-      verdicts: verdicts,
-      culprits: culprits,
-      faults: faults
-    }
+  def validate_and_process_disputes(%Disputes{} = disputes, %State{} = state, %Header{
+        timeslot: timeslot
+      }) do
+    processed_verdicts_map = Helper.process_verdicts(disputes.verdicts, state, timeslot)
+
+    # Filter out verdicts that already exist in the state sets
+    unique_processed_verdicts_map = filter_duplicates(processed_verdicts_map, state.judgements)
+
+    valid_offenses =
+      filter_valid_offenses(
+        disputes.culprits ++ disputes.faults,
+        unique_processed_verdicts_map,
+        state
+      )
+
+    {unique_processed_verdicts_map, valid_offenses}
+  end
+
+  @doc """
+  Filters and returns only valid offenses (culprits and faults).
+  """
+  defp filter_valid_offenses(offenses, processed_verdicts_map, state) do
+    offenses
+    |> Enum.filter(&valid_signature?(&1, processed_verdicts_map))
+    |> Enum.filter(&MapSet.member?(combined_validators(state), &1.validator_key))
+    |> Enum.filter(&offense_in_new_bad_set?(&1, processed_verdicts_map, state))
+    |> Enum.sort_by(& &1.validator_key)
+    |> Enum.uniq_by(& &1.validator_key)
+  end
+
+  defp valid_signature?(%Culprit{validator_key: key, signature: sig, work_report_hash: wrh}, _) do
+    Crypto.verify_signature(sig, wrh, key)
+  end
+
+  defp valid_signature?(%Fault{validator_key: key, signature: sig, work_report_hash: wrh}, _) do
+    Crypto.verify_signature(sig, wrh, key)
+  end
+
+  defp combined_validators(state) do
+    current_validators = state.curr_validators |> Enum.map(& &1.ed25519)
+    previous_validators = state.prev_validators |> Enum.map(& &1.ed25519)
+    punished_keys = MapSet.to_list(state.judgements.punish)
+
+    combined = current_validators ++ previous_validators
+    (combined -- punished_keys) |> MapSet.new()
+  end
+
+  @doc """
+  Eq. (100) and (101) in the paper.
+  Validates whether an offense (culprit or fault) is valid based on
+  report_hash being in the bad set or in the verdict bad set
+
+  """
+  @spec offense_in_new_bad_set?(map(), %{Types.hash() => ProcessedVerdict.t()}, State.t()) :: boolean()
+  defp offense_in_new_bad_set?(
+         %{work_report_hash: report_hash, validator_key: key},
+         processed_verdicts_map,
+         state
+       ) do
+    classification =
+      case Map.get(processed_verdicts_map, report_hash) do
+        %ProcessedVerdict{classification: classification} -> classification
+        _ -> nil
+      end
+
+    classification == :bad or report_hash in state.judgements.bad
+  end
+
+  defp filter_duplicates(processed_verdicts_map, %System.State.Judgements{
+         good: good_set,
+         bad: bad_set,
+         wonky: wonky_set
+       }) do
+    Enum.reject(processed_verdicts_map, fn {hash, _} ->
+      hash in good_set or hash in bad_set or hash in wonky_set
+    end)
+    |> Enum.into(%{})
   end
 end

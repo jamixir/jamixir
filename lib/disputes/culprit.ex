@@ -4,7 +4,6 @@ defmodule Disputes.Culprit do
   """
 
   alias Types
-  alias Util.Crypto
 
   @type t :: %__MODULE__{
           work_report_hash: Types.hash(),
@@ -13,15 +12,4 @@ defmodule Disputes.Culprit do
         }
 
   defstruct work_report_hash: <<>>, validator_key: <<>>, signature: <<>>
-
-  @doc """
-  Checks if the given signature is valid for the given validator key.
-  """
-  def valid_signature?(%__MODULE__{
-        work_report_hash: work_report_hash,
-        signature: signature,
-        validator_key: key
-      }) do
-    Crypto.verify_signature(signature, work_report_hash, key)
-  end
 end
