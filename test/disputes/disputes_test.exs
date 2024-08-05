@@ -1,10 +1,9 @@
 defmodule Disputes.Test do
   use ExUnit.Case
   alias Disputes
-  alias Disputes.{Verdict, Judgement, Helper, ProcessedVerdict, Culprit, Fault}
+  alias Disputes.{Verdict, Judgement, Culprit, Fault}
   alias Types
   alias System.State.{Validator, Judgements}
-  alias System.State
   alias Block.Header
 
   setup do
@@ -122,7 +121,6 @@ defmodule Disputes.Test do
     test "sanity check: processes valid offenses", %{
       state: state,
       header: header,
-      valid_judgement: valid_judgement,
       valid_key_private: valid_key_private,
       valid_key_public: valid_key_public
     } do
@@ -244,7 +242,7 @@ defmodule Disputes.Test do
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
 
-      {processed_verdicts, valid_offenses} =
+      {_processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)
 
       # assert Map.has_key?(processed_verdicts, work_report_hash)
