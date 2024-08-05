@@ -1,8 +1,8 @@
 defmodule System.State do
   alias Util.{Time, Hash}
-  alias System.State.{Safrole, RecentBlock}
+  alias Disputes
+  alias System.State.{Validator, Judgements, Safrole, RecentBlock}
 
-  alias System.State.{Validator, Judgements}
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
@@ -66,12 +66,25 @@ defmodule System.State do
 
     # β' Equation (18)
     new_recent_blocks =
-      update_recent_blocks(h, e.reports, initial_block_history, beefy_commitment_map)
+      case Map.get(e, :reports) do
+        nil -> state.recent_blocks
+        reports -> update_recent_blocks(h, reports, initial_block_history, beefy_commitment_map)
+      end
 
     # η' Equation (20)
-    new_entropy_pool = update_entropy_pool(h, state.timeslot, state.entropy_pool)
+    new_entropy_pool =
+      case Map.get(e, :entropy_pool) do
+        nil -> state.entropy_pool
+        _ -> update_entropy_pool(h, state.timeslot, state.entropy_pool)
+      end
+
     # ψ' Equation (23)
-    new_judgements = update_judgements(h, e.disputes, state.judgements)
+    new_judgements =
+      case Map.get(e, :disputes) do
+        nil -> state.judgements
+        disputes -> update_judgements(h, disputes, state)
+      end
+
     # κ' Equation (21)
     new_curr_validators =
       update_curr_validators(
@@ -85,15 +98,21 @@ defmodule System.State do
 
     # γ' Equation (19)
     new_safrole =
-      update_safrole(
-        h,
-        state.timeslot,
-        e.tickets,
-        state.safrole,
-        state.next_validators,
-        new_entropy_pool,
-        new_curr_validators
-      )
+      case Map.get(e, :tickets) do
+        nil ->
+          state.validator_keys
+
+        tickets ->
+          update_safrole(
+            h,
+            state.timeslot,
+            tickets,
+            state.safrole,
+            state.next_validators,
+            new_entropy_pool,
+            new_curr_validators
+          )
+      end
 
     # λ' Equation (22)
     new_prev_validators =
@@ -155,44 +174,42 @@ defmodule System.State do
     }
   end
 
+  defp update_judgements(header, disputes, state) do
+    {processed_verdicts_map, valid_offenses} =
+      Disputes.validate_and_process_disputes(disputes, state, header)
 
-
-  defp update_judgements(header, disputes, state_judgements) do
-    {valid_verdicts, valid_culprits, valid_faults, verdict_scores} = Disputes.Validator.filter_all_components(disputes, state_judgements, header)
-    classified_verdicts = Disputes.Helper.classify_verdicts(verdict_scores, length(state_judgements.curr_validators))
-    {sorted_verdicts, sorted_culprits, sorted_faults} = sort_and_uniq_components(valid_verdicts, valid_culprits, valid_faults)
-    new_judgements = assimilate_judgements(state_judgements, classified_verdicts)
-    new_punish_set = update_punish_set(new_judgements, sorted_culprits, classified_verdicts)
+    new_judgements = assimilate_judgements(state.judgements, processed_verdicts_map)
+    new_punish_set = update_punish_set(new_judgements, valid_offenses)
 
     %Judgements{
-      new_judgements |
-      punish: new_punish_set
+      new_judgements
+      | punish: new_punish_set
     }
   end
 
-  defp sort_and_uniq_components(verdicts, culprits, faults) do
-    sorted_verdicts = Enum.sort_by(verdicts, &(&1.work_report_hash))
-    sorted_culprits = Enum.sort_by(culprits, &(&1.validator_key))
-    sorted_faults = Enum.sort_by(faults, &(&1.validator_key))
-
-    sorted_verdicts = Enum.map(sorted_verdicts, fn verdict ->
-      %Disputes.Verdict{verdict | judgements: Enum.sort_by(verdict.judgements, &(&1.validator_index)) |> Enum.uniq_by(&(&1.validator_index))}
-    end)
-
-    {sorted_verdicts, sorted_culprits, sorted_faults}
-  end
-
-  defp assimilate_judgements(%System.State{judgements: state_judgements}, classified_verdicts) do
+  defp assimilate_judgements(%System.State.Judgements{} = state_judgements, processed_verdicts_map) do
     {new_goodset, new_badset, new_wonkyset} =
-      Enum.reduce(classified_verdicts, {state_judgements.good, state_judgements.bad, state_judgements.wonky}, fn {hash, classification}, {good_acc, bad_acc, wonky_acc} ->
-        case classification do
-          :good -> {MapSet.put(good_acc, hash), bad_acc, wonky_acc}
-          :bad -> {good_acc, MapSet.put(bad_acc, hash), wonky_acc}
-          :wonky -> {good_acc, bad_acc, MapSet.put(wonky_acc, hash)}
-          _ -> {good_acc, bad_acc, wonky_acc}
+      Enum.reduce(
+        processed_verdicts_map,
+        {state_judgements.good, state_judgements.bad, state_judgements.wonky},
+        fn
+          {_hash, %Disputes.ProcessedVerdict{classification: :good, work_report_hash: hash}},
+          {good_acc, bad_acc, wonky_acc} ->
+            {MapSet.put(good_acc, hash), bad_acc, wonky_acc}
+
+          {_hash, %Disputes.ProcessedVerdict{classification: :bad, work_report_hash: hash}},
+          {good_acc, bad_acc, wonky_acc} ->
+            {good_acc, MapSet.put(bad_acc, hash), wonky_acc}
+
+          {_hash, %Disputes.ProcessedVerdict{classification: :wonky, work_report_hash: hash}},
+          {good_acc, bad_acc, wonky_acc} ->
+            {good_acc, bad_acc, MapSet.put(wonky_acc, hash)}
+
+          _, acc ->
+            acc
         end
-      end)
--
+      )
+
     %System.State.Judgements{
       state_judgements
       | good: new_goodset,
@@ -201,9 +218,9 @@ defmodule System.State do
     }
   end
 
-  defp update_punish_set(state_judgements, sorted_culprits, sorted_faults) do
-    Enum.reduce(sorted_culprits ++ sorted_faults, state_judgements.punish, fn component, acc ->
-      MapSet.put(acc, component.validator_key)
+  defp update_punish_set(state_judgements, offenses) do
+    Enum.reduce(offenses, state_judgements.punish, fn offense, acc ->
+      MapSet.put(acc, offense.validator_key)
     end)
   end
 
