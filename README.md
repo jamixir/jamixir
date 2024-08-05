@@ -20,3 +20,4 @@ mix test
 
 ## Tested Elixir / OTP version
  - Elixir 1.17-otp-26
+ - Erlang 26.2.5
