@@ -40,9 +40,8 @@ defmodule Disputes do
     {unique_processed_verdicts_map, valid_offenses}
   end
 
-  @doc """
-  Filters and returns only valid offenses (culprits and faults).
-  """
+  # Filters and returns only valid offenses (culprits and faults).
+
   defp filter_valid_offenses(offenses, processed_verdicts_map, state) do
     offenses
     |> Enum.filter(&valid_signature?(&1, processed_verdicts_map))
@@ -69,15 +68,14 @@ defmodule Disputes do
     (combined -- punished_keys) |> MapSet.new()
   end
 
-  @doc """
-  Eq. (100) and (101) in the paper.
-  Validates whether an offense (culprit or fault) is valid based on
-  report_hash being in the bad set or in the verdict bad set
+  # Eq. (100) and (101) in the paper.
+  # Validates whether an offense (culprit or fault) is valid based on
+  # report_hash being in the bad set or in the verdict bad set
 
-  """
-  @spec offense_in_new_bad_set?(map(), %{Types.hash() => ProcessedVerdict.t()}, State.t()) :: boolean()
+  @spec offense_in_new_bad_set?(map(), %{Types.hash() => ProcessedVerdict.t()}, State.t()) ::
+          boolean()
   defp offense_in_new_bad_set?(
-         %{work_report_hash: report_hash, validator_key: key},
+         %{work_report_hash: report_hash},
          processed_verdicts_map,
          state
        ) do

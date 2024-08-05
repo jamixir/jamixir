@@ -17,8 +17,6 @@ defmodule Disputes.HelperTest do
     non_validator_key_private =
       <<0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0::256>>
 
-    {non_validator_key_public, _} =
-      :crypto.generate_key(:eddsa, :ed25519, non_validator_key_private)
 
     non_validator_signature =
       :crypto.sign(:eddsa, :none, work_report_hash, [non_validator_key_private, :ed25519])
@@ -147,7 +145,6 @@ defmodule Disputes.HelperTest do
     end
 
     test "verdict gets filtered out due to invalid judgements", %{
-      valid_judgement: valid_judgement,
       judgement_with_invalid_signature: judgement_with_invalid_signature,
       state: state,
       timeslot: timeslot,
@@ -186,7 +183,6 @@ defmodule Disputes.HelperTest do
     end
 
     test "verdict gets filtered out due to invalid index", %{
-      valid_judgement: valid_judgement,
       judgement_with_invalid_index: judgement_with_invalid_index,
       state: state,
       timeslot: timeslot,

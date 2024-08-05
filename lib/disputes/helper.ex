@@ -56,9 +56,7 @@ defmodule Disputes.Helper do
     |> Enum.uniq_by(& &1.validator_index)
   end
 
-  @doc """
-  Determines if a signature in a judgement is valid for the given work report hash.
-  """
+  # Determines if a signature in a judgement is valid for the given work report hash.
   @spec verify_judgement_signature?(Judgement.t(), Types.hash(), list(Validator.t())) :: boolean()
   defp verify_judgement_signature?(
          %Judgement{signature: signature, validator_index: index},
