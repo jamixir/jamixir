@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic do
   alias Disputes
   # Equation (14)
-  defstruct tickets: [], disputes: [], preimages: [], availability: [], reports: []
+  defstruct tickets: [], disputes: nil, preimages: [], availability: [], reports: []
 
   @type t :: %__MODULE__{
           tickets: list(Ticket.t()),
