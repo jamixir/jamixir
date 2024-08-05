@@ -1,75 +1,103 @@
 defmodule Disputes.Helper do
-  alias Disputes.{Verdict, Verifier}
+  alias Disputes.{Verdict, ProcessedVerdict, Judgement}
   alias System.State
-  alias System.State.{Validator}
+  alias System.State.Validator
   alias Types
-  alias Util.Time
+  alias Util.{Time, Crypto}
 
   @doc """
-  Creates a list of verdicts with the number of positive votes.
+  Processes verdicts to generate auxiliary data, scores, and classifications.
   """
-  @spec create_verdicts_scores(list(Verdict.t())) :: list({Types.hash(), integer()})
-  def create_verdicts_scores(valid_verdicts) do
-    valid_verdicts
-    |> Enum.map(fn %Verdict{work_report_hash: report_hash, judgements: judgements} ->
-      positive_votes = Enum.count(judgements, & &1.decision)
-      {report_hash, positive_votes}
+  @spec process_verdicts(list(Verdict.t()), State.t(), integer()) :: %{
+          Types.hash() => ProcessedVerdict.t()
+        }
+  def process_verdicts(verdicts, state, timeslot) do
+    verdicts
+    # Filter out verdicts that are not from the current or previous epoch
+    |> Enum.filter(&valid_epoch_index?(&1, timeslot))
+    # Filter out judgements that are not valid and build auxiliary data
+    |> Enum.map(&filter_and_build_verdict_data(&1, state, timeslot))
+    # Filter out verdicts with incorrect judgement count
+    |> Enum.filter(&valid_judgement_count?/1)
+    # Sort by work report hash
+    |> Enum.sort_by(& &1.work_report_hash)
+    # Ensure uniqueness by work report hash
+    |> Enum.uniq_by(& &1.work_report_hash)
+    # Convert to map for easy lookup
+    |> Enum.into(%{}, fn verdict -> {verdict.work_report_hash, verdict} end)
+  end
+
+  defp filter_and_build_verdict_data(verdict, state, timeslot) do
+    # Determine the validator set to use for this verdict
+    {validator_set_id, validator_set} = validator_set(verdict, state, timeslot)
+    # Filter out invalid judgements
+    valid_judgements = filter_valid_judgements(verdict, validator_set)
+    judgements_count = length(valid_judgements)
+    positive_votes = Enum.count(valid_judgements, & &1.decision)
+    classification = classify_verdict(positive_votes, length(validator_set))
+
+    %ProcessedVerdict{
+      work_report_hash: verdict.work_report_hash,
+      validator_set_id: validator_set_id,
+      judgements_count: judgements_count,
+      validator_set_size: length(validator_set),
+      positive_votes: positive_votes,
+      classification: classification
+    }
+  end
+
+  defp filter_valid_judgements(%Verdict{work_report_hash: wrh, judgements: jms}, validator_set) do
+    # Filter out jusgment that theier singature does not match the validator public key at the given index
+    Enum.filter(jms, fn judgement ->
+      verify_judgement_signature?(judgement, wrh, validator_set)
     end)
+    # Ensure uniqueness by validator index
+    |> Enum.sort_by(& &1.validator_index)
+    |> Enum.uniq_by(& &1.validator_index)
   end
 
   @doc """
-  Classifies verdicts based on the number of positive votes.
+  Determines if a signature in a judgement is valid for the given work report hash.
   """
-  @spec classify_verdicts(list({Types.hash(), integer()}), integer()) ::
-          list({Types.hash(), atom()})
-  def classify_verdicts(verdict_scores, validator_count) do
+  @spec verify_judgement_signature?(Judgement.t(), Types.hash(), list(Validator.t())) :: boolean()
+  defp verify_judgement_signature?(
+         %Judgement{signature: signature, validator_index: index},
+         work_report_hash,
+         validators
+       ) do
+    case Enum.at(validators, index) do
+      %Validator{ed25519: public_key} ->
+        Crypto.verify_signature(signature, work_report_hash, public_key)
+
+      _ ->
+        false
+    end
+  end
+
+  defp valid_judgement_count?(%ProcessedVerdict{
+         validator_set_size: size,
+         judgements_count: judgements_count
+       }) do
+    judgements_count == div(2 * size, 3) + 1
+  end
+
+  defp classify_verdict(positive_votes, validator_count) do
     good_threshold = div(2 * validator_count, 3) + 1
     wonky_threshold = div(validator_count, 3)
 
-    Enum.map(verdict_scores, fn {report_hash, positive_votes} ->
-      classification =
-        cond do
-          positive_votes == good_threshold -> :good
-          positive_votes == 0 -> :bad
-          positive_votes == wonky_threshold -> :wonky
-          true -> :undefined
-        end
-
-      {report_hash, classification}
-    end)
+    cond do
+      positive_votes == good_threshold -> :good
+      positive_votes == 0 -> :bad
+      positive_votes == wonky_threshold -> :wonky
+      true -> :undefined
+    end
   end
 
-  @doc """
-  Determines if a verdict is valid based on the epoch index and number of valid judgements.
-  """
-
-  def valid_verdict?(verdict, state, timeslot) do
-    valid_epoch_index?(verdict, timeslot) and enough_valid_judgements?(verdict, state, timeslot)
+  defp valid_epoch_index?(%Verdict{epoch_index: epoch_index}, timeslot) do
+    current_epoch_index = Time.epoch_index(timeslot)
+    (current_epoch_index - epoch_index) in [0, 1]
   end
 
-  @doc """
-  Eq. (100) and (101) in the paper.
-  Validates whether an offense (culprit or fault) is valid based on
-  a. report_hash being in the bad set or in the verdict bad set
-  b. validator_key not being in the punish set
-  """
-  @spec valid_offense?(map(), list({Types.hash(), integer()}), State.t()) :: boolean()
-  def valid_offense?(
-        %{work_report_hash: report_hash, validator_key: key},
-        verdicts,
-        state
-      ) do
-    verdict_badset =
-      Enum.filter(verdicts, fn {_hash, votes} -> votes == 0 end)
-      |> Enum.map(fn {hash, _votes} -> hash end)
-
-    report_hash in state.judgements.bad or
-      (report_hash in verdict_badset and
-         not MapSet.member?(state.judgements.punish, key))
-  end
-
-  # Determines the appropriate validator set for the given epoch index.
-  @spec validator_set(Verdict.t(), State.t(), integer()) :: list(Validator.t())
   defp validator_set(
          %Verdict{epoch_index: epoch_index},
          %State{curr_validators: curr_validators, prev_validators: prev_validators},
@@ -78,41 +106,8 @@ defmodule Disputes.Helper do
     current_epoch_index = Time.epoch_index(timeslot)
 
     case current_epoch_index - epoch_index do
-      0 -> curr_validators
-      1 -> prev_validators
+      0 -> {:current, curr_validators}
+      1 -> {:previous, prev_validators}
     end
-  end
-
-  # Private functions below.
-
-  # Checks if the epoch index is valid for the given verdict.
-
-  defp valid_epoch_index?(%Verdict{epoch_index: epoch_index}, timeslot) do
-    current_epoch_index = Time.epoch_index(timeslot)
-    (current_epoch_index - epoch_index) in [0, 1]
-  end
-
-  # Checks if there are enough valid judgements in a verdict.
-
-  defp enough_valid_judgements?(
-         %Verdict{judgements: judgements, work_report_hash: message} = verdict,
-         state,
-         timeslot
-       ) do
-    validator_set = validator_set(verdict, state, timeslot)
-
-    valid_judgments =
-      Enum.filter(judgements, fn judgement ->
-        Verifier.verify_judgement_signature?(judgement, message, validator_set)
-      end)
-
-    length(valid_judgments) >= required_judgement_count(validator_set)
-  end
-
-  # Calculates the required number of valid judgements.
-
-  @spec required_judgement_count(list(Validator.t())) :: integer()
-  defp required_judgement_count(validators) do
-    div(length(validators) * 2, 3) + 1
   end
 end
