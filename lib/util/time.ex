@@ -19,12 +19,6 @@ defmodule Util.Time do
     @block_duration
   end
 
-  @doc """
-  Returns the epoch duration in blocks.
-  """
-  def epoch_duration do
-    @epoch_duration
-  end
 
   @doc """
   Returns the epoch duration in blocks.
