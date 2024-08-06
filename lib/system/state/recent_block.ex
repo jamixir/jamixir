@@ -15,8 +15,8 @@ defmodule System.State.RecentBlock do
             work_reports_hashes: nil
 
   # Equation (17) Equation (82)
-  def get_initial_block_history(%Header{prior_state_root: s}, nil), do: []
-  def get_initial_block_history(%Header{prior_state_root: s}, []), do: []
+  def get_initial_block_history(%Header{prior_state_root: _s}, nil), do: []
+  def get_initial_block_history(%Header{prior_state_root: _s}, []), do: []
 
   def get_initial_block_history(%Header{prior_state_root: s}, [most_recent_block | other_blocks]) do
     modified_first_block = %__MODULE__{most_recent_block | state_root: s}

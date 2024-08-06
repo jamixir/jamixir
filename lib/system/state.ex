@@ -152,29 +152,29 @@ defmodule System.State do
     }
   end
 
-  defp update_judgements(header, judgements, state_judgements) do
+  defp update_judgements(_header, _judgements, _state_judgements) do
     # TODO
   end
 
   defp update_curr_validators(
-         header,
-         timeslot,
-         curr_validators,
-         validator_keys,
-         next_validators,
-         judgements
+         _header,
+         _timeslot,
+         _curr_validators,
+         _validator_keys,
+         _next_validators,
+         _judgements
        ) do
     # TODO
   end
 
   defp update_validator_keys(
-         header,
-         timeslot,
-         tickets,
-         validator_keys,
-         next_validators,
-         entropy_pool,
-         curr_validators
+         _header,
+         _timeslot,
+         _tickets,
+         _validator_keys,
+         _next_validators,
+         _entropy_pool,
+         _curr_validators
        ) do
     # TODO
   end
@@ -186,11 +186,11 @@ defmodule System.State do
     value
   end
 
-  defp update_prev_validators(header, timeslot, prev_validators, curr_validators) do
+  defp update_prev_validators(_header, _timeslot, _prev_validators, _curr_validators) do
     # TODO
   end
 
-  defp update_recent_blocks(header, reports, existing_recent_blocks, beefy_commitment_map) do
+  defp update_recent_blocks(_header, _reports, _existing_recent_blocks, _beefy_commitment_map) do
     # TODO
   end
 end

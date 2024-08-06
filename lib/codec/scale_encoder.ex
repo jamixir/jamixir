@@ -4,21 +4,20 @@ defmodule ScaleEncoding do
   end
 
   def encode_integer(value) when value < 0x4000 do
-    <<(value + 0x4000)::16-little>>
+    <<value + 0x4000::16-little>>
   end
 
   def encode_integer(value) when value < 0x40000000 do
-    <<(value + 0x40000000)::32-little>>
+    <<value + 0x40000000::32-little>>
   end
 
-  def encode_integer(value) when value < 0x4000000000000000 do 
-    <<(value + 0x4000000000000000)::64-little>>
+  def encode_integer(value) when value < 0x4000000000000000 do
+    <<value + 0x4000000000000000::64-little>>
   end
 
   def encode_integer(_) do
     raise ArgumentError, "Value out of range for decoding"
   end
-
 
   def decode_integer(<<value::8>>) when value < 0x40 do
     value
@@ -28,11 +27,13 @@ defmodule ScaleEncoding do
     value - 0x4000
   end
 
-  def decode_integer(<<value::32-little>>) when value >= 0x40000000 and value < 0x40000000 + 0x40000000 do
+  def decode_integer(<<value::32-little>>)
+      when value >= 0x40000000 and value < 0x40000000 + 0x40000000 do
     value - 0x40000000
   end
 
-  def decode_integer(<<value::64-little>>) when value >= 0x4000000000000000 and value < 0x4000000000000000 + 0x4000000000000000 do
+  def decode_integer(<<value::64-little>>)
+      when value >= 0x4000000000000000 and value < 0x4000000000000000 + 0x4000000000000000 do
     value - 0x4000000000000000
   end
 
