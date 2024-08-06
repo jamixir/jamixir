@@ -1,7 +1,6 @@
 defmodule System.State do
-  alias System.State.Safrole
   alias Util.{Time, Hash}
-  alias System.State.{SafroleState, RecentBlock}
+  alias System.State.{Safrole, RecentBlock}
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
