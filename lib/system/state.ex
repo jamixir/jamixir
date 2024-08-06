@@ -1,10 +1,11 @@
 defmodule System.State do
+  alias System.State.Safrole
   alias Util.{Time, Hash}
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
-          validator_keys: list(ValidatorKey.t()),
+          safrole: Safrole.t(),
           services: list(Service.t()),
           entropy_pool: EntropyPool.t(),
           next_validators: list(Validator.t()),
@@ -25,7 +26,7 @@ defmodule System.State do
     # β: Details of the most recent blocks
     :recent_blocks,
     # γ: State concerning the determination of validator keys
-    :validator_keys,
+    :safrole,
     # δ: State dealing with services (analogous to smart contract accounts)
     :services,
     # η: On-chain entropy pool
@@ -75,18 +76,18 @@ defmodule System.State do
         h,
         state.timeslot,
         state.curr_validators,
-        state.validator_keys,
+        state.safrole,
         state.next_validators,
         new_judgements
       )
 
     # γ' Equation (19)
-    new_validator_keys =
-      update_validator_keys(
+    new_safrole =
+      update_safrole(
         h,
         state.timeslot,
         e.tickets,
-        state.validator_keys,
+        state.safrole,
         state.next_validators,
         new_entropy_pool,
         new_curr_validators
@@ -102,7 +103,7 @@ defmodule System.State do
       # β'
       recent_blocks: new_recent_blocks,
       # γ'
-      validator_keys: new_validator_keys,
+      safrole: new_safrole,
       # δ'
       services: todo,
       # η'
@@ -160,23 +161,25 @@ defmodule System.State do
          header,
          timeslot,
          curr_validators,
-         validator_keys,
+         safrole,
          next_validators,
          judgements
        ) do
     # TODO
   end
 
-  defp update_validator_keys(
+  defp update_safrole(
          header,
          timeslot,
          tickets,
-         validator_keys,
+         safrole,
          next_validators,
          entropy_pool,
          curr_validators
        ) do
     # TODO
+    
+
   end
 
   def entropy_vrf(value) do
