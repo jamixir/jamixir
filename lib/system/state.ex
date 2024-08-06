@@ -1,5 +1,4 @@
 defmodule System.State do
-  alias System.State.Safrole
   alias Util.{Time, Hash}
   alias System.State.{Safrole, RecentBlock,Validator, Judgements}
   alias Disputes
