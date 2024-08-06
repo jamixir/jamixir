@@ -1,10 +1,11 @@
 defmodule System.State do
   alias Util.{Time, Hash}
+  alias System.State.{SafroleState, RecentBlock}
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
-          validator_keys: list(ValidatorKey.t()),
+          safrole_state: SafroleState.t(),
           services: list(Service.t()),
           entropy_pool: EntropyPool.t(),
           next_validators: list(Validator.t()),
@@ -24,8 +25,8 @@ defmodule System.State do
     :authorization_requirements,
     # β: Details of the most recent blocks
     :recent_blocks,
-    # γ: State concerning the determination of validator keys
-    :validator_keys,
+    # γ: State concerning SAFROLE (determination of validator keys)
+    :safrole_state,
     # δ: State dealing with services (analogous to smart contract accounts)
     :services,
     # η: On-chain entropy pool
@@ -75,18 +76,18 @@ defmodule System.State do
         h,
         state.timeslot,
         state.curr_validators,
-        state.validator_keys,
+        state.safrole_state,
         state.next_validators,
         new_judgements
       )
 
     # γ' Equation (19)
-    new_validator_keys =
-      update_validator_keys(
+    new_safrole_state =
+      update_safrole_state(
         h,
         state.timeslot,
         e.tickets,
-        state.validator_keys,
+        state.safrole_state,
         state.next_validators,
         new_entropy_pool,
         new_curr_validators
@@ -102,7 +103,7 @@ defmodule System.State do
       # β'
       recent_blocks: new_recent_blocks,
       # γ'
-      validator_keys: new_validator_keys,
+      safrole_state: new_safrole_state,
       # δ'
       services: todo,
       # η'
@@ -160,18 +161,18 @@ defmodule System.State do
          _header,
          _timeslot,
          _curr_validators,
-         _validator_keys,
+         _safrole_state,
          _next_validators,
          _judgements
        ) do
     # TODO
   end
 
-  defp update_validator_keys(
+  defp update_safrole_state(
          _header,
          _timeslot,
          _tickets,
-         _validator_keys,
+         _safrole_state,
          _next_validators,
          _entropy_pool,
          _curr_validators
