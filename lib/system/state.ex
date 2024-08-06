@@ -1,4 +1,5 @@
 defmodule System.State do
+  alias System.State.Safrole
   alias Util.{Time, Hash}
   alias Disputes
   alias System.State.{Validator, Judgements, Safrole, RecentBlock}
@@ -100,7 +101,7 @@ defmodule System.State do
     new_safrole =
       case Map.get(e, :tickets) do
         nil ->
-          state.validator_keys
+          state.safrole
 
         tickets ->
           update_safrole(
