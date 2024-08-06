@@ -1,8 +1,7 @@
 defmodule System.State do
-  alias System.State.Safrole
   alias Util.{Time, Hash}
+  alias System.State.{Safrole, RecentBlock,Validator, Judgements}
   alias Disputes
-  alias System.State.{Validator, Judgements, Safrole, RecentBlock}
 
 
   @type t :: %__MODULE__{
