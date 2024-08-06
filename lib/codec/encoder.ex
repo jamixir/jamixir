@@ -65,6 +65,7 @@ defmodule Codec.Encoder do
     encoded_length <> Enum.join(encoded_elements, <<>>)
   end
 
+  # Equation (277)
   defp encode_bits([]), do: <<>>
 
   defp encode_bits(bits) do
