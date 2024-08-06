@@ -1,4 +1,6 @@
 defmodule System.State do
+  alias Util.MMR
+  alias System.State.RecentBlock
   alias Util.{Time, Hash}
   alias System.State.{Safrole, RecentBlock, Validator, Judgements}
   alias Block.Extrinsic.Disputes
@@ -260,7 +262,27 @@ defmodule System.State do
     # TODO
   end
 
-  defp update_recent_blocks(_header, _reports, _existing_recent_blocks, _beefy_commitment_map) do
+  alias System.State.RecentBlock
+
+  defp update_recent_blocks(
+         header,
+         reports,
+         [%RecentBlock{accumulated_result_mmr: mmr}] = existing_recent_blocks,
+         beefy_commitment_map
+       ) do
     # TODO
+
+    # 32 bytes of zeros
+    _posterior_state_root = <<0::256>>
+    _header_hash = Hash.blake2b_256(header)
+    # map the existing_recent_blocks into their mmr component
+
+    merkle_root_of_beefy_map = "TODO"
+    existing_recent_blocks_mmr = Enum.map(existing_recent_blocks, & &1.accumulated_result_mmr)
+    last_mmr = Enum.at(existing_recent_blocks_mmr, -1)
+    mmr = MMR.from(last_mmr)
+    mmr = MMR.append(mmr, beefy_commitment_map)
+
+    #
   end
 end
