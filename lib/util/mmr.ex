@@ -16,6 +16,19 @@ defmodule Util.MMR do
   end
 
   @doc """
+  Create a new MMR from a list of hashes.
+  """
+  def from(list_of_hashes) do
+    %MMR{roots: list_of_hashes}
+  end
+
+  @doc """
+  Convert an MMR to a list of hashes.
+  """
+  def to_list(%MMR{roots: roots}), do: roots
+
+
+  @doc """
   Add a new element to the MMR.
   """
   def append(%MMR{roots: roots} = mmr, data) do

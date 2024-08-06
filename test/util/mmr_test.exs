@@ -10,6 +10,21 @@ defmodule Util.MMRTest do
     assert %MMR{roots: []} = mmr
   end
 
+  test "create MMR from list of hashes" do
+    list_of_hashes = [<<1::256>>, <<2::256>>, <<3::256>>]
+    mmr = MMR.from(list_of_hashes)
+    assert MMR.roots(mmr) == list_of_hashes
+
+    mmr  = MMR.from([])
+    assert MMR.roots(mmr) == []
+  end
+
+  test "convert MMR to list of hashes" do
+    list_of_hashes = [<<1::256>>, <<2::256>>, <<3::256>>]
+    mmr = MMR.from(list_of_hashes)
+    assert MMR.to_list(mmr) == list_of_hashes
+  end
+
   test "append elements to MMR and verify roots" do
     mmr = MMR.new()
     mmr = MMR.append(mmr, "data1")
