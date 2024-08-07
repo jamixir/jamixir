@@ -1,7 +1,5 @@
 defmodule System.State do
-  alias Util.MMR
-  alias System.State.RecentBlock
-  alias Util.{Time, Hash}
+  alias Util.{Time, Hash, MMR}
   alias System.State.{Safrole, RecentBlock, Validator, Judgements}
   alias Block.Extrinsic.Disputes
 
@@ -262,26 +260,38 @@ defmodule System.State do
     # TODO
   end
 
-  alias System.State.RecentBlock
-
   defp update_recent_blocks(
          header,
          reports,
          [%RecentBlock{accumulated_result_mmr: mmr}] = existing_recent_blocks,
-         beefy_commitment_map
+         %BeefyCommitmentMap{commitments: beefy_commitments}
        ) do
     # TODO
 
     # 32 bytes of zeros
     _posterior_state_root = <<0::256>>
     _header_hash = Hash.blake2b_256(header)
-    # map the existing_recent_blocks into their mmr component
 
-    merkle_root_of_beefy_map = "TODO"
+    # Order and deduplicate the commitments by service_index
+    ordered_commitments =
+      beefy_commitments
+      |> Enum.sort_by(&elem(&1, 0))
+      |> Enum.uniq_by(&elem(&1, 0))
+
+    # Concatenate the encoded service_index and hash
+    encoded_commitments =
+      ordered_commitments
+      |> Enum.map(fn {service_index, hash} ->
+        encoded_index = ScaleEncoding.encode_integer(service_index)
+        <<encoded_index::binary-size(4), hash::binary-size(32)>>
+      end)
+
+    # merkleize the encoded commitments
+    well_balanced_merkle_root = Util.MerkleTree.well_balanced_merkle_root(encoded_commitments)
+
     existing_recent_blocks_mmr = Enum.map(existing_recent_blocks, & &1.accumulated_result_mmr)
     last_mmr = Enum.at(existing_recent_blocks_mmr, -1)
-    mmr = MMR.from(last_mmr)
-    mmr = MMR.append(mmr, beefy_commitment_map)
+    _mmr_roots = MMR.from(last_mmr).append(well_balanced_merkle_root).roots
 
     #
   end
