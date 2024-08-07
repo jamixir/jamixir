@@ -65,9 +65,9 @@ defmodule System.State do
 
     # β' Equation (18)
     new_recent_blocks =
-      case Map.get(e, :reports) do
+      case Map.get(e, :guarantees) do
         nil -> state.recent_blocks
-        reports -> update_recent_blocks(h, reports, initial_block_history, beefy_commitment_map)
+        guarantees -> update_recent_blocks(h, guarantees, initial_block_history, beefy_commitment_map)
       end
 
     # η' Equation (20)
@@ -262,8 +262,8 @@ defmodule System.State do
 
   defp update_recent_blocks(
          header,
-         reports,
-         [%RecentBlock{accumulated_result_mmr: mmr}] = existing_recent_blocks,
+         [Block.Extrinsics.Guarantee] = guarantees,
+         [%RecentBlock{}] = existing_recent_blocks,
          %BeefyCommitmentMap{commitments: beefy_commitments}
        ) do
     # TODO
