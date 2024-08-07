@@ -27,7 +27,6 @@ defmodule Util.MMR do
   """
   def to_list(%MMR{roots: roots}), do: roots
 
-
   @doc """
   Add a new element to the MMR.
   """
@@ -63,6 +62,4 @@ defmodule Util.MMR do
   defp replace(roots, i, value) do
     List.replace_at(roots, i, value)
   end
-
-  defp hash(data), do: Hash.blake2b_256(data)
 end
