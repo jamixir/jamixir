@@ -19,7 +19,7 @@ defmodule System.State.RecentBlockTest do
     most_recent_block1 = %RecentBlock{state_root: nil}
     most_recent_block2 = %RecentBlock{state_root: "s2"}
     block_history = [most_recent_block1, most_recent_block2]
-    expected = [%RecentBlock{state_root: "s"}, most_recent_block2]
+    expected = [most_recent_block1, %RecentBlock{state_root: "s"}]
     assert RecentBlock.get_initial_block_history(header, block_history) === expected
   end
 end
