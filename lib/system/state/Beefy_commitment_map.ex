@@ -4,8 +4,9 @@ defmodule System.State.BeefyCommitmentMap do
   see section 12.4
   """
 
+  # Equation (165)
   @type t :: %__MODULE__{
-          commitments: [{non_neg_integer(), Types.hash() | nil}]
+          commitments: [{non_neg_integer(), Types.hash()}]
         }
 
   defstruct commitments: []
