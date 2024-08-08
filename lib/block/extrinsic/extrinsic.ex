@@ -5,7 +5,6 @@ defmodule Block.Extrinsic do
 
   alias Block.Extrinsics.{Guarantee}
 
-
   @type t :: %__MODULE__{
           tickets: list(Ticket.t()),
           disputes: Disputes.t(),

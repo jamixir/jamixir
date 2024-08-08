@@ -15,7 +15,7 @@ defmodule Util.MMRTest do
     mmr = MMR.from(list_of_hashes)
     assert MMR.roots(mmr) == list_of_hashes
 
-    mmr  = MMR.from([])
+    mmr = MMR.from([])
     assert MMR.roots(mmr) == []
   end
 
