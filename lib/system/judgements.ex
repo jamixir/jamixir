@@ -2,15 +2,13 @@ defmodule System.State.Judgements do
   @moduledoc """
   Represents the state and operations related to judgements in the disputes system.
   """
-
-  @type work_report_hash :: <<_::256>>
-  @type ed25519_key :: <<_::256>>
+  alias Types
 
   @type t :: %__MODULE__{
-          good: MapSet.t(work_report_hash),
-          bad: MapSet.t(work_report_hash),
-          wonky: MapSet.t(work_report_hash),
-          punish: MapSet.t(ed25519_key)
+          good: MapSet.t(Types.hash()),
+          bad: MapSet.t(Types.hash()),
+          wonky: MapSet.t(Types.hash()),
+          punish: MapSet.t(Types.ed25519_key())
         }
 
   defstruct good: MapSet.new(),
