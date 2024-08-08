@@ -1,8 +1,7 @@
 defmodule System.State do
   alias Util.{Time, Hash}
-  alias System.State.{Safrole, RecentBlock,Validator, Judgements}
-  alias Disputes
-
+  alias System.State.{Safrole, RecentBlock, Validator, Judgements}
+  alias Block.Extrinsic.Disputes
 
   alias System.State.{Validator, Judgements}
 
@@ -189,7 +188,10 @@ defmodule System.State do
     }
   end
 
-  defp assimilate_judgements(%System.State.Judgements{} = state_judgements, processed_verdicts_map) do
+  defp assimilate_judgements(
+         %System.State.Judgements{} = state_judgements,
+         processed_verdicts_map
+       ) do
     {new_goodset, new_badset, new_wonkyset} =
       Enum.reduce(
         processed_verdicts_map,

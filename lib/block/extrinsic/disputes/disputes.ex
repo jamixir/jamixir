@@ -1,10 +1,11 @@
-defmodule Disputes do
+defmodule Block.Extrinsic.Disputes do
   @moduledoc """
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
-  alias Block.{Header}
-  alias Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
+  alias Block.Header
+  alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
+  alias Block.Extrinsic.Disputes
   alias System.State
   alias Types
   alias Util.Crypto

@@ -1,4 +1,4 @@
-defmodule Disputes.Judgement do
+defmodule Block.Extrinsic.Disputes.Judgement do
   @type t :: %__MODULE__{
           validator_index: Types.validator_index(),
           decision: Types.decision(),

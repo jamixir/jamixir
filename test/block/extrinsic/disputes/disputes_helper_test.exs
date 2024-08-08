@@ -1,6 +1,6 @@
-defmodule Disputes.HelperTest do
+defmodule Block.Extrinsic.Disputes.HelperTest do
   use ExUnit.Case
-  alias Disputes.{Verdict, Judgement, Helper, ProcessedVerdict}
+  alias Block.Extrinsic.Disputes.{Verdict, Judgement, Helper, ProcessedVerdict}
   alias Types
   alias System.State.{Validator, Judgements}
 

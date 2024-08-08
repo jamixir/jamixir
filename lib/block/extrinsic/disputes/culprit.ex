@@ -1,4 +1,4 @@
-defmodule Disputes.Culprit do
+defmodule Block.Extrinsic.Disputes.Culprit do
   @moduledoc """
   Culprits represent validators who have guaranteed incorrect reports.
   """

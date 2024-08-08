@@ -1,4 +1,4 @@
-defmodule Disputes.Verdict do
+defmodule Block.Extrinsic.Disputes.Verdict do
   @moduledoc """
   verdic on the correctness of a work-report.
   the Dispute extrinsic Ed may contain 1 or more verdicts. secion 10.2

@@ -1,4 +1,4 @@
-defmodule Disputes.Fault do
+defmodule Block.Extrinsic.Disputes.Fault do
   alias Types
 
   @type t :: %__MODULE__{

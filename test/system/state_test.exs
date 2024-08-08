@@ -5,7 +5,8 @@ defmodule System.StateTest do
   alias Block.{Header}
   alias Block
   alias Util.Hash
-  alias Disputes.{Verdict, Culprit, Fault, Judgement}
+  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
   alias System.State.{Validator, Judgements}
 
   setup do

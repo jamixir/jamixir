@@ -1,7 +1,7 @@
-defmodule Disputes.Test do
+defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
-  alias Disputes
-  alias Disputes.{Verdict, Judgement, Culprit, Fault}
+  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.Disputes.{Verdict, Judgement, Culprit, Fault}
   alias Types
   alias System.State.{Validator, Judgements}
   alias Block.Header

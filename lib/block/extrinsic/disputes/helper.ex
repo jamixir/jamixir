@@ -1,5 +1,5 @@
-defmodule Disputes.Helper do
-  alias Disputes.{Verdict, ProcessedVerdict, Judgement}
+defmodule Block.Extrinsic.Disputes.Helper do
+  alias Block.Extrinsic.Disputes.{Verdict, ProcessedVerdict, Judgement}
   alias System.State
   alias System.State.Validator
   alias Types
