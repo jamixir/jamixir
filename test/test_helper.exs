@@ -1,4 +1,4 @@
-ExUnit.start(trace: true)
+ExUnit.start()
 
 defmodule TestHelper do
   alias Util.Time, as: Time

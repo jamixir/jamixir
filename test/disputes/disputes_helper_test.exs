@@ -3,7 +3,6 @@ defmodule Disputes.HelperTest do
   alias Disputes.{Verdict, Judgement, Helper, ProcessedVerdict}
   alias Types
   alias System.State.{Validator, Judgements}
-  alias System.State
 
   setup do
     work_report_hash = <<0xAAC4C749F1D5EC07BF0502C8072E95033D48E31B1B9DFDCB8D42BD80445F713E::256>>
@@ -16,7 +15,6 @@ defmodule Disputes.HelperTest do
 
     non_validator_key_private =
       <<0x123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0::256>>
-
 
     non_validator_signature =
       :crypto.sign(:eddsa, :none, work_report_hash, [non_validator_key_private, :ed25519])
@@ -115,6 +113,7 @@ defmodule Disputes.HelperTest do
         epoch_index: 1,
         judgements: [valid_judgement]
       }
+
       processed_verdicts = Helper.process_verdicts([verdcit], state, timeslot)
 
       assert processed_verdicts[verdcit.work_report_hash] == %ProcessedVerdict{
