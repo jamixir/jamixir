@@ -55,7 +55,6 @@ defmodule Util.TimeTest do
     assert {:error, _error_msg} = Time.new_epoch?(previous_timeslot, current_timeslot)
   end
 
-
   test "epoch index calculation" do
     timeslot = 1200
     assert Time.epoch_index(timeslot) == 2

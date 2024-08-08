@@ -66,8 +66,11 @@ defmodule System.State do
     # β' Equation (18)
     new_recent_blocks =
       case Map.get(e, :guarantees) do
-        nil -> state.recent_blocks
-        guarantees -> update_recent_blocks(h, guarantees, initial_block_history, beefy_commitment_map)
+        nil ->
+          state.recent_blocks
+
+        guarantees ->
+          update_recent_blocks(h, guarantees, initial_block_history, beefy_commitment_map)
       end
 
     # η' Equation (20)

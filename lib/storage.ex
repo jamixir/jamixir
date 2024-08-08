@@ -3,7 +3,7 @@ defmodule Storage do
     %{}
   end
 
-  def put(storage, key, value)  do
+  def put(storage, key, value) do
     Map.put(storage, key, value)
   end
 

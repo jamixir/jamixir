@@ -39,7 +39,6 @@ defmodule Util.MerkleTreeTest do
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
-
     test "handles even number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5", "blob6"]
       left_left = "blob1"
@@ -52,11 +51,12 @@ defmodule Util.MerkleTreeTest do
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
-
     test "handles odd number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5"]
       left = Hash.blake2b_256("$node" <> "blob1" <> "blob2")
-      right = Hash.blake2b_256("$node" <> "blob3" <> Hash.blake2b_256( "$node" <> "blob4" <> "blob5"))
+
+      right =
+        Hash.blake2b_256("$node" <> "blob3" <> Hash.blake2b_256("$node" <> "blob4" <> "blob5"))
 
       expected_root = Hash.blake2b_256("$node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
