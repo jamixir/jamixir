@@ -9,4 +9,8 @@ defmodule Util.Hash do
   def blake2b_256(data) do
     Blake2.hash2b(data, 32)
   end
+
+  def keccak_256(data) do
+    ExKeccak.hash_256(data)
+  end
 end

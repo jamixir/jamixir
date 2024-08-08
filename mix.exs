@@ -24,6 +24,7 @@ defmodule Jamixir.MixProject do
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:mox, "~> 1.0", only: :test},
       {:blake2, "~> 1.0"},
+      {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
