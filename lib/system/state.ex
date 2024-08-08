@@ -1,11 +1,11 @@
 defmodule System.State do
   alias Util.{Time, Hash, MMR}
-  alias System.State.{Safrole, RecentBlock, Validator, Judgements}
+  alias System.State.{Validator, Judgements, Safrole, RecentHistory, BeefyCommitmentMap}
   alias Block.Extrinsic.Disputes
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
-          recent_blocks: list(RecentBlock.t()),
+          recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
           services: list(Service.t()),
           entropy_pool: EntropyPool.t(),
@@ -25,7 +25,7 @@ defmodule System.State do
     # α: Authorization requirement for work done on the core
     :authorization_requirements,
     # β: Details of the most recent blocks
-    :recent_blocks,
+    :recent_history,
     # γ: State concerning the determination of validator keys
     :safrole,
     # δ: State dealing with services (analogous to smart contract accounts)
@@ -60,17 +60,17 @@ defmodule System.State do
     # Equation (16) Equation (45) => τ' = Ht
     new_timeslot = h.timeslot
     # β† Equation (17)
-    initial_block_history =
-      System.State.RecentBlock.get_initial_block_history(h, state.recent_blocks)
+    inital_recent_history =
+      RecentHistory.update_latest_posterior_state_root(state.recent_history, h)
 
     # β' Equation (18)
-    new_recent_blocks =
+    new_recent_history =
       case Map.get(e, :guarantees) do
         nil ->
-          state.recent_blocks
+          state.recent_history
 
         guarantees ->
-          update_recent_blocks(h, guarantees, initial_block_history, beefy_commitment_map)
+          update_recent_history(h, guarantees, inital_recent_history)
       end
 
     # η' Equation (20)
@@ -124,7 +124,7 @@ defmodule System.State do
       # α'
       authorization_requirements: todo,
       # β'
-      recent_blocks: new_recent_blocks,
+      recent_history: new_recent_history,
       # γ'
       safrole: new_safrole,
       # δ'
@@ -263,39 +263,47 @@ defmodule System.State do
     # TODO
   end
 
-  defp update_recent_blocks(
+  defp update_recent_history(
          header,
-         [Block.Extrinsics.Guarantee] = guarantees,
-         [%RecentBlock{}] = existing_recent_blocks,
-         %BeefyCommitmentMap{commitments: beefy_commitments}
+         guarantees,
+         %RecentHistory{} = recent_history
        ) do
-    # TODO
-
     # 32 bytes of zeros
-    _posterior_state_root = <<0::256>>
-    _header_hash = Hash.blake2b_256(header)
+    posterior_state_root = <<0::256>>
+    header_hash = Hash.blake2b_256("header")
 
-    # Order and deduplicate the commitments by service_index
-    ordered_commitments =
+    # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
+    # equation (83)
+    well_balanced_merkle_root =
       beefy_commitments
       |> Enum.sort_by(&elem(&1, 0))
-      |> Enum.uniq_by(&elem(&1, 0))
-
-    # Concatenate the encoded service_index and hash
-    encoded_commitments =
-      ordered_commitments
       |> Enum.map(fn {service_index, hash} ->
         encoded_index = ScaleEncoding.encode_integer(service_index)
-        <<encoded_index::binary-size(4), hash::binary-size(32)>>
+        <<encoded_index::binary-size(4), hash>>
       end)
+      |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
 
-    # merkleize the encoded commitments
-    well_balanced_merkle_root = Util.MerkleTree.well_balanced_merkle_root(encoded_commitments)
+    # b - acuumaleted result mmr of the most recent block, appended with the well-balanced merkle root (r)
+    # equation (83)
+    mmr_roots =
+      recent_history.blocks
+      |> Enum.map(& &1.accumulated_result_mmr)
+      |> Enum.at(-1)
+      |> MMR.from()
+      |> MMR.append(well_balanced_merkle_root)
+      |> MMR.roots()
 
-    existing_recent_blocks_mmr = Enum.map(existing_recent_blocks, & &1.accumulated_result_mmr)
-    last_mmr = Enum.at(existing_recent_blocks_mmr, -1)
-    _mmr_roots = MMR.from(last_mmr).append(well_balanced_merkle_root).roots
+    # Work report hashes
+    work_package_hashes =
+      guarantees
+      |> Enum.map(& &1.work_report.specfication.work_package_hash)
 
-    #
+    RecentHistory.add(
+      recent_history,
+      header_hash,
+      posterior_state_root,
+      mmr_roots,
+      work_package_hashes
+    )
   end
 end
