@@ -5,7 +5,7 @@ defmodule System.State.BeefyCommitmentMap do
   """
 
   @type t :: %__MODULE__{
-          commitments: [{non_neg_integer(), <<_::256>> | nil}]
+          commitments: [{non_neg_integer(), Types.hash() | nil}]
         }
 
   defstruct commitments: []
