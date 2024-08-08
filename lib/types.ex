@@ -9,7 +9,7 @@ defmodule Types do
   # 144 bytes
   @type bls_key :: <<_::1152>>
   @type ed25519_signature :: <<_::512>>
-  @type validator_index :: integer()
-  @type epoch_index :: integer()
+  @type validator_index :: non_neg_integer()
+  @type epoch_index :: non_neg_integer()
   @type decision :: boolean()
 end

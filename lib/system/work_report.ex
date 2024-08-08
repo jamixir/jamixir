@@ -1,11 +1,12 @@
 defmodule System.WorkReport do
-  alias System.WorkResult
+  alias System.{WorkResult, AvailabilitySpecification}
+  alias Types
 
   @type t :: %__MODULE__{
-          specfication: AvailabiltySpecification.t(),
+          specfication: AvailabilitySpecification.t(),
           refinemtn_context: RefinementContext.t(),
           core_index: non_neg_integer(),
-          authorizer_hash: <<_::256>>,
+          authorizer_hash: Types.hash(),
           output: binary(),
           work_results: list(WorkResult.t())
         }
