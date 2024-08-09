@@ -1,8 +1,16 @@
 defmodule Block.Extrinsic.Guarantee.WorkResult do
   @moduledoc """
-  A module representing the result of a work-package, including the details of the service state alteration, code hash, payload hash, gas prioritization ratio, and output or error.
+  data conduit by which services’ states
+  may be altered through the computation done within a
+  work-package
+
+  section 11.1
+  equation 123
   """
 
+  @doc """
+  equation 124
+  """
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
   @type t :: %__MODULE__{
