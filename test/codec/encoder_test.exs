@@ -4,6 +4,21 @@ defmodule CodecEncoderTest do
 
   alias Codec.Encoder
 
+  test "encode empty sequence" do
+    assert Encoder.encode([]) == <<>>
+    assert Encoder.encode(<<>>) == <<>>
+  end
+
+  test "encode binary data" do
+    binary_data = <<1, 2, 3, 4, 5>>
+    assert Encoder.encode(binary_data) == binary_data
+  end
+
+  test "encode tuple" do
+    assert Encoder.encode({1, 2, 3}) == <<1, 2, 3>>
+    assert Encoder.encode({127, 101}) == <<127, 101>>
+  end
+
   test "encode integers from 0 to 127" do
     assert Encoder.encode(0) == <<0>>
     assert Encoder.encode(63) == <<63>>
@@ -46,22 +61,12 @@ defmodule CodecEncoderTest do
   end
 
   test "encode nil" do
-    assert Encoder.encode(nil) == <<0>>
+    assert Encoder.encode(nil) == <<>>
   end
 
   test "encode string binary" do
     binary = "hello"
     assert Encoder.encode(binary) == binary
-  end
-
-  test "encode binary data" do
-    binary_data = <<1, 2, 3, 4, 5>>
-    assert Encoder.encode(binary_data) == binary_data
-  end
-
-  test "encode tuple" do
-    assert Encoder.encode({1, 2, 3}) == <<3, 1, 2, 3>>
-    assert Encoder.encode({256, 256}) == <<2, 129, 0, 129, 0>>
   end
 
   test "encode bit list" do

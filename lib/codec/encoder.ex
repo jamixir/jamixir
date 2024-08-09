@@ -22,8 +22,14 @@ defmodule Codec.Encoder do
     Enum.all?(bits, &(&1 in [0, 1]))
   end
 
-  defp do_encode(nil), do: <<0>>
+  # Equation (267)
+  defp do_encode(nil), do: <<>>
+  # Equation (268)
   defp do_encode(value) when is_binary(value), do: value
+  # Equation (269)
+  defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
+  # Equation (270) is not implementable in Elixir,
+  # as it does not have a built-in arbitrary number of arguments in functions
 
   defp do_encode(value) when is_list(value) do
     if is_bit_list(value) do
@@ -35,7 +41,6 @@ defmodule Codec.Encoder do
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
   defp do_encode(value) when is_list(value), do: encode_list(value)
-  defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
   # defp do_encode(%Block.Header{} = header), do: encode_header(header)
 
   defp determine_level(x) do
@@ -61,8 +66,7 @@ defmodule Codec.Encoder do
 
   defp encode_list(value) do
     encoded_elements = Enum.map(value, &do_encode/1)
-    encoded_length = encode_integer(length(value))
-    encoded_length <> Enum.join(encoded_elements, <<>>)
+    Enum.join(encoded_elements, <<>>)
   end
 
   # Equation (277)
