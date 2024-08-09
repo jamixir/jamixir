@@ -1,7 +1,8 @@
 defmodule System.State.RecentHistoryTest do
   use ExUnit.Case
 
-  alias System.State.{RecentHistory, RecentBlock}
+  alias System.State.RecentHistory
+  alias System.State.RecentHistory.RecentBlock
   alias Block.Header
 
   test "update_latest_posterior_state_root/2 returns empty list when given nil" do

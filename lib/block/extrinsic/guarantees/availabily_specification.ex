@@ -1,4 +1,4 @@
-defmodule System.AvailabilitySpecification do
+defmodule Block.Extrinsic.Guarantee.AvailabilitySpecification do
   @moduledoc """
   A module representing the availability specification for a work-package.
   Includes the work-package's hash, an auditable work bundle length, an erasure-root, and a segment-root.

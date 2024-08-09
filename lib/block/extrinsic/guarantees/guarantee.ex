@@ -1,6 +1,5 @@
-defmodule Block.Extrinsics.Guarantee do
-  alias System.WorkReport
-  alias Types
+defmodule Block.Extrinsic.Guarantee do
+  alias Block.Extrinsic.Guarantee.WorkReport
 
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}

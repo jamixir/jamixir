@@ -1,7 +1,13 @@
 defmodule System.State do
-  alias Util.{Time, Hash, MMR}
-  alias System.State.{Validator, Judgements, Safrole, RecentHistory, BeefyCommitmentMap}
-  alias Block.Extrinsic.Disputes
+  alias System.State
+
+  alias System.State.{
+    Validator,
+    Judgements,
+    Safrole,
+    RecentHistory,
+    EntropyPool
+  }
 
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
@@ -55,13 +61,84 @@ defmodule System.State do
   # Equation (12)
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
-    beefy_commitment_map = "TODO"
 
     # Equation (16) Equation (45) => τ' = Ht
     new_timeslot = h.timeslot
     # β† Equation (17)
     inital_recent_history =
       RecentHistory.update_latest_posterior_state_root(state.recent_history, h)
+
+    # δ† Equation (24)
+    # The post-preimage integration, pre-accumulation intermediate state
+
+    services_intermediate =
+      case Map.get(e, :preimages) do
+        nil -> state.services
+        [] -> state.services
+        preimages -> State.Services.process_preimages(state.services, preimages, new_timeslot)
+      end
+
+    # ρ† Equation (25)
+    # post-judgement, pre-assurances-extrinsic intermediate state
+
+    core_reports_intermediate_1 =
+      case Map.get(e, :disputes) do
+        nil -> state.core_reports
+        disputes -> State.CoreReports.process_disputes(state.core_reports, disputes)
+      end
+
+    # ρ‡ Equation (26)
+    # The post-assurances-extrinsic, pre-guarantees-extrinsic, intermediate state
+    core_reports_intermediate_2 =
+      case Map.get(e, :availability) do
+        nil ->
+          core_reports_intermediate_1
+
+        availability ->
+          State.CoreReports.process_availability(core_reports_intermediate_1, availability)
+      end
+
+    # ρ' Equation (27)
+
+    new_core_reports =
+      case Map.get(e, :guarantees) do
+        nil ->
+          core_reports_intermediate_2
+
+        guarantees ->
+          State.CoreReports.posterior_core_reports(
+            core_reports_intermediate_2,
+            guarantees,
+            state.curr_validators,
+            new_timeslot
+          )
+      end
+
+    # The service accumulation-commitment / beefy-commitment map
+    # Equation (28)
+
+    {new_services, privileged_services, new_next_validators, authorization_queue,
+     beefy_commitment_map} =
+      case Map.get(e, :availability) do
+        nil ->
+          {
+            services_intermediate,
+            state.privileged_services,
+            state.next_validators,
+            state.authorization_queue,
+            System.State.BeefyCommitmentMap.stub()
+          }
+
+        availability ->
+          State.Accumulation.accumulate(
+            availability,
+            new_core_reports,
+            services_intermediate,
+            state.privileged_services,
+            state.next_validators,
+            state.authorization_queue
+          )
+      end
 
     # β' Equation (18)
     new_recent_history =
@@ -70,21 +147,26 @@ defmodule System.State do
           state.recent_history
 
         guarantees ->
-          update_recent_history(h, guarantees, inital_recent_history)
+          System.State.RecentHistory.posterior_recent_history(
+            h,
+            guarantees,
+            inital_recent_history,
+            beefy_commitment_map
+          )
       end
 
     # η' Equation (20)
     new_entropy_pool =
       case Map.get(e, :entropy_pool) do
         nil -> state.entropy_pool
-        _ -> update_entropy_pool(h, state.timeslot, state.entropy_pool)
+        _ -> EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
       end
 
     # ψ' Equation (23)
     new_judgements =
       case Map.get(e, :disputes) do
         nil -> state.judgements
-        disputes -> update_judgements(h, disputes, state)
+        disputes -> Judgements.posterior_judgements(h, disputes, state)
       end
 
     # κ' Equation (21)
@@ -105,7 +187,7 @@ defmodule System.State do
           state.safrole
 
         tickets ->
-          update_safrole(
+          Safrole.posterior_safrole(
             h,
             state.timeslot,
             tickets,
@@ -152,83 +234,6 @@ defmodule System.State do
     }
   end
 
-  def update_entropy_pool(header, timeslot, %EntropyPool{
-        current: current_entropy,
-        history: history
-      }) do
-    new_entropy = Hash.blake2b_256(current_entropy <> entropy_vrf(header.vrf_signature))
-
-    history =
-      case Time.new_epoch?(timeslot, header.timeslot) do
-        {:ok, true} ->
-          [new_entropy | Enum.take(history, 2)]
-
-        {:ok, false} ->
-          history
-
-        {:error, reason} ->
-          raise "Error determining new epoch: #{reason}"
-      end
-
-    %EntropyPool{
-      current: new_entropy,
-      history: history
-    }
-  end
-
-  defp update_judgements(header, disputes, state) do
-    {processed_verdicts_map, valid_offenses} =
-      Disputes.validate_and_process_disputes(disputes, state, header)
-
-    new_judgements = assimilate_judgements(state.judgements, processed_verdicts_map)
-    new_punish_set = update_punish_set(new_judgements, valid_offenses)
-
-    %Judgements{
-      new_judgements
-      | punish: new_punish_set
-    }
-  end
-
-  defp assimilate_judgements(
-         %System.State.Judgements{} = state_judgements,
-         processed_verdicts_map
-       ) do
-    {new_goodset, new_badset, new_wonkyset} =
-      Enum.reduce(
-        processed_verdicts_map,
-        {state_judgements.good, state_judgements.bad, state_judgements.wonky},
-        fn
-          {_hash, %Disputes.ProcessedVerdict{classification: :good, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {MapSet.put(good_acc, hash), bad_acc, wonky_acc}
-
-          {_hash, %Disputes.ProcessedVerdict{classification: :bad, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {good_acc, MapSet.put(bad_acc, hash), wonky_acc}
-
-          {_hash, %Disputes.ProcessedVerdict{classification: :wonky, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {good_acc, bad_acc, MapSet.put(wonky_acc, hash)}
-
-          _, acc ->
-            acc
-        end
-      )
-
-    %System.State.Judgements{
-      state_judgements
-      | good: new_goodset,
-        bad: new_badset,
-        wonky: new_wonkyset
-    }
-  end
-
-  defp update_punish_set(state_judgements, offenses) do
-    Enum.reduce(offenses, state_judgements.punish, fn offense, acc ->
-      MapSet.put(acc, offense.validator_key)
-    end)
-  end
-
   defp update_curr_validators(
          _header,
          _timeslot,
@@ -240,70 +245,7 @@ defmodule System.State do
     # TODO
   end
 
-  defp update_safrole(
-         _header,
-         _timeslot,
-         _tickets,
-         _safrole,
-         _next_validators,
-         _entropy_pool,
-         _curr_validators
-       ) do
-    # TODO
-  end
-
-  def entropy_vrf(value) do
-    # TODO
-
-    # for now, we will just return the value
-    value
-  end
-
   defp update_prev_validators(_header, _timeslot, _prev_validators, _curr_validators) do
     # TODO
-  end
-
-  defp update_recent_history(
-         header,
-         guarantees,
-         %RecentHistory{} = recent_history
-       ) do
-    # 32 bytes of zeros
-    posterior_state_root = <<0::256>>
-    header_hash = Hash.blake2b_256("header")
-
-    # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
-    # equation (83)
-    well_balanced_merkle_root =
-      beefy_commitments
-      |> Enum.sort_by(&elem(&1, 0))
-      |> Enum.map(fn {service_index, hash} ->
-        encoded_index = ScaleEncoding.encode_integer(service_index)
-        <<encoded_index::binary-size(4), hash>>
-      end)
-      |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
-
-    # b - acuumaleted result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # equation (83)
-    mmr_roots =
-      recent_history.blocks
-      |> Enum.map(& &1.accumulated_result_mmr)
-      |> Enum.at(-1)
-      |> MMR.from()
-      |> MMR.append(well_balanced_merkle_root)
-      |> MMR.roots()
-
-    # Work report hashes
-    work_package_hashes =
-      guarantees
-      |> Enum.map(& &1.work_report.specfication.work_package_hash)
-
-    RecentHistory.add(
-      recent_history,
-      header_hash,
-      posterior_state_root,
-      mmr_roots,
-      work_package_hashes
-    )
   end
 end

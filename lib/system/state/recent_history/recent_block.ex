@@ -1,4 +1,4 @@
-defmodule System.State.RecentBlock do
+defmodule System.State.RecentHistory.RecentBlock do
   @type t :: %__MODULE__{
           header_hash: Types.hash(),
           accumulated_result_mmr: list(Types.hash() | nil),
