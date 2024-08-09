@@ -3,11 +3,10 @@ defmodule System.State.RecentHistory do
   Manages a list of recent blocks, ensuring the max length is maintained.
   """
 
-  alias System.State.{RecentHistory, BeefyCommitmentMap}
+  alias System.State.{RecentHistory}
   alias System.State.RecentHistory.RecentBlock
   alias Block.Header
   alias Util.{Hash, MMR}
-  alias Block.Extrinsic.Guarantee
 
   @max_length 8
 
@@ -95,6 +94,8 @@ defmodule System.State.RecentHistory do
       ) do
     # 32 bytes of zeros
     posterior_state_root = <<0::256>>
+    # TODO - implement header serialization
+    # header_hash = Hash.blake2b_256(Codex.encode(header))
     header_hash = Hash.blake2b_256("header")
 
     # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map

@@ -114,7 +114,6 @@ defmodule System.State do
           )
       end
 
-    # The service accumulation-commitment / beefy-commitment map
     # Equation (28)
 
     {new_services, privileged_services, new_next_validators, authorization_queue,
