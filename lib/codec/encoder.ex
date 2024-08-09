@@ -16,6 +16,15 @@ defmodule Codec.Encoder do
     do_encode(value)
   end
 
+  # Equation (271)
+  def encode_little_endian(_, 0), do: <<>>
+
+  def encode_little_endian(x, l) do
+    <<rem(x, 256)>> <> encode_little_endian(div(x, 256), l - 1)
+  end
+
+  def encode_le(x, l), do: encode_little_endian(x, l)
+
   # Private Functions
 
   defp is_bit_list(bits) do
