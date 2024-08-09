@@ -30,8 +30,7 @@ defmodule Util.MMR do
   @doc """
   Add a new element to the MMR.
   """
-  def append(%MMR{roots: roots} = mmr, data) do
-    hash = Hash.blake2b_256(data)
+  def append(%MMR{roots: roots} = mmr, hash) do
     new_roots = append_root(roots, hash)
     %MMR{mmr | roots: new_roots}
   end
