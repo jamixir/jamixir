@@ -11,6 +11,7 @@ defmodule Util.MerkleTree do
   def well_balanced_merkle_root(list_of_blobs, hash_func \\ &Hash.blake2b_256/1) do
     case list_of_blobs do
       [] -> raise ArgumentError, "List of blobs cannot be empty"
+      # equation (299)
       [single_blob] -> hash_func.(single_blob)
       _ -> node(list_of_blobs, hash_func)
     end
@@ -18,6 +19,7 @@ defmodule Util.MerkleTree do
 
   @doc """
   Node function N for the Merkle tree.
+  equation (297)
   """
   defp node([], _hash_func), do: <<0::256>>
 

@@ -1,13 +1,21 @@
 defmodule Block.Extrinsic.Guarantee do
+  @moduledoc """
+  Work report guarantee.
+  11.4 , equation 138
+  """
   alias Block.Extrinsic.Guarantee.WorkReport
 
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
   @type t :: %__MODULE__{
-          # E_g
+          # c
+          core_index: non_neg_integer(),
+          # w
           work_report: WorkReport.t(),
+          # t
           timeslot: non_neg_integer(),
+          # a
           credential: credential()
         }
 

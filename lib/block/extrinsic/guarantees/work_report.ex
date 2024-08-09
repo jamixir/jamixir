@@ -1,13 +1,23 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
+  @moduledoc """
+  Work report
+  section 11.1
+  equation 119
+  """
   alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
 
-
   @type t :: %__MODULE__{
+          # s
           specfication: AvailabilitySpecification.t(),
+          # x
           refinemtn_context: RefinementContext.t(),
+          # c
           core_index: non_neg_integer(),
+          # a
           authorizer_hash: Types.hash(),
+          # o
           output: binary(),
+          # r
           work_results: list(WorkResult.t())
         }
 

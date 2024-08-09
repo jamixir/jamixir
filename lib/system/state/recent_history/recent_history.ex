@@ -61,6 +61,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
+  equation (82)
   """
   def update_latest_posterior_state_root(nil, %Header{
         prior_state_root: _s
@@ -86,6 +87,10 @@ defmodule System.State.RecentHistory do
     end
   end
 
+  @doc """
+  Adds a new block to the recent history.
+  equation (83)
+  """
   def posterior_recent_history(
         header,
         guarantees,
