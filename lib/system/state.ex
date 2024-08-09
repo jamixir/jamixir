@@ -3,8 +3,6 @@ defmodule System.State do
   alias System.State.{Safrole, RecentBlock, Validator, Judgements}
   alias Block.Extrinsic.Disputes
 
-  alias System.State.{Validator, Judgements}
-
   @type t :: %__MODULE__{
           authorization_requirements: list(AuthorizationRequirement.t()),
           recent_blocks: list(RecentBlock.t()),
