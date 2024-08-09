@@ -102,10 +102,12 @@ defmodule System.State do
         nil ->
           core_reports_intermediate_2
 
-        guarantees ->
+        _guarantees ->
+          sorted_guarantees = Block.Extrinsic.guarantees(e)
+
           State.CoreReports.posterior_core_reports(
             core_reports_intermediate_2,
-            guarantees,
+            sorted_guarantees,
             state.curr_validators,
             new_timeslot
           )
@@ -141,10 +143,12 @@ defmodule System.State do
         nil ->
           state.recent_history
 
-        guarantees ->
+        _guarantees ->
+          sorted_guarantees = Block.Extrinsic.guarantees(e)
+
           System.State.RecentHistory.posterior_recent_history(
             h,
-            guarantees,
+            sorted_guarantees,
             inital_recent_history,
             beefy_commitment_map
           )
