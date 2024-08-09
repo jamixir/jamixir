@@ -1,4 +1,4 @@
-defmodule System.WorkResult do
+defmodule Block.Extrinsic.Guarantee.WorkResult do
   @moduledoc """
   A module representing the result of a work-package, including the details of the service state alteration, code hash, payload hash, gas prioritization ratio, and output or error.
   """

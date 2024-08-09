@@ -10,4 +10,10 @@ defmodule System.State.BeefyCommitmentMap do
         }
 
   defstruct commitments: []
+
+  def stub do
+    %__MODULE__{
+      commitments: [{0, <<0::256>>}]
+    }
+  end
 end

@@ -18,4 +18,11 @@ defmodule Util.Crypto do
   def verify_signature(signature, payload, public_key) do
     :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
   end
+
+  def entropy_vrf(value) do
+    # TODO
+
+    # for now, we will just return the value
+    value
+  end
 end

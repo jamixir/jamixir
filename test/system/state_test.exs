@@ -7,7 +7,7 @@ defmodule System.StateTest do
   alias Util.Hash
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
-  alias System.State.{Validator, Judgements}
+  alias System.State.{Validator, Judgements, EntropyPool}
 
   setup do
     # Setup keys and signatures
@@ -249,7 +249,7 @@ defmodule System.StateTest do
       initial_state = %EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]}
       timeslot = 9
 
-      updated_state = State.update_entropy_pool(header, timeslot, initial_state)
+      updated_state = EntropyPool.posterior_entropy_pool(header, timeslot, initial_state)
 
       assert updated_state.current != initial_state.current
       # Blake2b hash output size
@@ -257,7 +257,7 @@ defmodule System.StateTest do
 
       # Calculate expected entropy
       expected_entropy =
-        Hash.blake2b_256(initial_state.current <> State.entropy_vrf(header.vrf_signature))
+        Hash.blake2b_256(initial_state.current <> Util.Crypto.entropy_vrf(header.vrf_signature))
 
       # Assert that the current entropy matches the expected value
       assert updated_state.current == expected_entropy
@@ -268,7 +268,7 @@ defmodule System.StateTest do
       initial_state = %EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]}
       timeslot = 599
 
-      updated_state = State.update_entropy_pool(header, timeslot, initial_state)
+      updated_state = EntropyPool.posterior_entropy_pool(header, timeslot, initial_state)
 
       # Check that the history has been updated correctly
       assert hd(updated_state.history) == updated_state.current
@@ -282,7 +282,7 @@ defmodule System.StateTest do
       initial_state = %EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]}
       timeslot = 601
 
-      updated_state = State.update_entropy_pool(header, timeslot, initial_state)
+      updated_state = EntropyPool.posterior_entropy_pool(header, timeslot, initial_state)
 
       assert updated_state.history == initial_state.history
     end

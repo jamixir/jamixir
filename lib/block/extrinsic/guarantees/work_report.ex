@@ -1,6 +1,6 @@
-defmodule System.WorkReport do
-  alias System.{WorkResult, AvailabilitySpecification}
-  alias Types
+defmodule Block.Extrinsic.Guarantee.WorkReport do
+  alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
+
 
   @type t :: %__MODULE__{
           specfication: AvailabilitySpecification.t(),
@@ -19,7 +19,7 @@ defmodule System.WorkReport do
             work_results: []
 
   def new(specfication, refinemtn_context, core_index, authorizer_hash, output, work_results) do
-    %System.WorkReport{
+    %WorkReport{
       specfication: specfication,
       refinemtn_context: refinemtn_context,
       core_index: core_index,
