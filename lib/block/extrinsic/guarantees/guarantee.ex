@@ -9,8 +9,6 @@ defmodule Block.Extrinsic.Guarantee do
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
   @type t :: %__MODULE__{
-          # c
-          core_index: non_neg_integer(),
           # w
           work_report: WorkReport.t(),
           # t
@@ -19,8 +17,7 @@ defmodule Block.Extrinsic.Guarantee do
           credential: credential()
         }
 
-  defstruct core_index: 0,
-            work_report: %WorkReport{},
+  defstruct work_report: %WorkReport{},
             timeslot: 0,
             credential: {0, <<0::512>>}
 end
