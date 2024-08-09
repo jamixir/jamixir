@@ -5,9 +5,6 @@ defmodule Codec.Encoder do
 
   import Bitwise
 
-  @pow_7 128
-  @pow_64 18_446_744_073_709_551_616
-
   @doc """
   Encodes a given value into a binary format.
   """
@@ -52,25 +49,30 @@ defmodule Codec.Encoder do
   defp do_encode(value) when is_list(value), do: encode_list(value)
   # defp do_encode(%Block.Header{} = header), do: encode_header(header)
 
-  defp determine_level(x) do
-    cond do
-      x < 1 <<< 14 -> 1
-      x < 1 <<< 21 -> 2
-      x < 1 <<< 28 -> 3
-      true -> 8
-    end
+  # l = 0 => 2 < x < 2^7
+  # l = 1 => 2^7 <= x < 2^14
+  # l = 2 => 2^14 <= x < 2^21
+  # ...
+  # l = 7 => 2^49 <= x < 2^56
+  defp exists_l_in_N8(x) do
+    # TODO maybe there is a more efficient way to implement this
+    Enum.find(0..7, fn l ->
+      x >= 2 ** (7 * l) and
+        x < 2 ** (7 * (l + 1))
+    end)
   end
 
-  defp encode_bytes(_x, 0), do: <<>>
-  defp encode_bytes(x, l), do: <<rem(x, 256)>> <> encode_bytes(div(x, 256), l - 1)
+  # Equation (273)
+  defp encode_integer(0), do: <<0>>
 
-  defp encode_integer(x) when x < @pow_7, do: <<x>>
+  # Equation (273)
+  defp encode_integer(x) do
+    if x >= 2 ** 64, do: raise(ArgumentError, "Integer value is too large to encode")
 
-  defp encode_integer(x) when x < @pow_64 do
-    l = determine_level(x)
-    shift = 8 * l
-    prefix = 256 - (1 <<< (8 - l))
-    <<prefix + div(x, 1 <<< shift)>> <> encode_bytes(rem(x, 1 <<< shift), l)
+    case exists_l_in_N8(x) do
+      nil -> <<2 ** 8 - 1>> <> encode_le(x, 8)
+      l -> <<2 ** 8 - 2 ** (8 - l) + div(x, 2 ** (8 * l))>> <> encode_le(rem(x, 2 ** (8 * l)), l)
+    end
   end
 
   defp encode_list(value) do
