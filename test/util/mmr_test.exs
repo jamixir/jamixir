@@ -57,7 +57,6 @@ defmodule Util.MMRTest do
     assert MMR.roots(mmr) == [data5_hash, nil, hash1_2_3_4]
   end
 
-
   test "append more elements and verify roots" do
     hashes = [
       hash("data1"),
@@ -80,6 +79,7 @@ defmodule Util.MMRTest do
     hash1_2_3_4 = hash(hash1_2 <> hash3_4)
     assert MMR.roots(mmr) == [Enum.at(hashes, 4), nil, hash1_2_3_4]
   end
+
   test "append elements and verify intermediate roots" do
     mmr = MMR.new()
 
@@ -111,5 +111,4 @@ defmodule Util.MMRTest do
     mmr = MMR.append(mmr, data5_hash)
     assert MMR.roots(mmr) == [data5_hash, nil, hash1_2_3_4]
   end
-
 end

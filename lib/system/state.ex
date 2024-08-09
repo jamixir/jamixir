@@ -70,7 +70,6 @@ defmodule System.State do
 
     # δ† Equation (24)
     # The post-preimage integration, pre-accumulation intermediate state
-
     services_intermediate =
       case Map.get(e, :preimages) do
         nil -> state.services
@@ -80,7 +79,6 @@ defmodule System.State do
 
     # ρ† Equation (25)
     # post-judgement, pre-assurances-extrinsic intermediate state
-
     core_reports_intermediate_1 =
       case Map.get(e, :disputes) do
         nil -> state.core_reports
@@ -99,7 +97,6 @@ defmodule System.State do
       end
 
     # ρ' Equation (27)
-
     new_core_reports =
       case Map.get(e, :guarantees) do
         nil ->
@@ -115,7 +112,6 @@ defmodule System.State do
       end
 
     # Equation (28)
-
     {new_services, privileged_services, new_next_validators, authorization_queue,
      beefy_commitment_map} =
       case Map.get(e, :availability) do

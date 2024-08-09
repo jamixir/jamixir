@@ -20,14 +20,14 @@ defmodule System.State.Safrole do
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   def posterior_safrole(
-         _header,
-         _timeslot,
-         _tickets,
-         _safrole,
-         _next_validators,
-         _entropy_pool,
-         _curr_validators
-       ) do
+        _header,
+        _timeslot,
+        _tickets,
+        _safrole,
+        _next_validators,
+        _entropy_pool,
+        _curr_validators
+      ) do
     # TODO
   end
 end
