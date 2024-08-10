@@ -55,11 +55,13 @@ defmodule Codec.Encoder do
   # ...
   # l = 7 => 2^49 <= x < 2^56
   defp exists_l_in_N8(x) do
-    # TODO maybe there is a more efficient way to implement this
-    Enum.find(0..7, fn l ->
-      x >= 2 ** (7 * l) and
-        x < 2 ** (7 * (l + 1))
-    end)
+    l = trunc(:math.log2(x) / 7)
+
+    if l in 0..7 do
+      l
+    else
+      nil
+    end
   end
 
   # Equation (273)
