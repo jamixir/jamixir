@@ -2,6 +2,7 @@ defmodule Codec.Encoder do
   @moduledoc """
   A module for encoding data structures into binary format.
   """
+  alias Codec.VariableSize
 
   import Bitwise
 
@@ -14,12 +15,14 @@ defmodule Codec.Encoder do
   end
 
   # Equation (271)
+  @spec encode_little_endian(integer(), integer()) :: binary()
   def encode_little_endian(_, 0), do: <<>>
 
   def encode_little_endian(x, l) do
     <<rem(x, 256)>> <> encode_little_endian(div(x, 256), l - 1)
   end
 
+  @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
   # Private Functions
@@ -38,12 +41,17 @@ defmodule Codec.Encoder do
   # Equation (270) is not implementable in Elixir,
   # as it does not have a built-in arbitrary number of arguments in functions
 
+  # Equation (274)
   defp do_encode(value) when is_list(value) do
     if is_bit_list(value) do
       encode_bits(value)
     else
       encode_list(value)
     end
+  end
+
+  defp do_encode(%VariableSize{value: value, size: size}) do
+    do_encode(size) <> do_encode(value)
   end
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
