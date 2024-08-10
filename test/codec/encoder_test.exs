@@ -43,6 +43,16 @@ defmodule CodecEncoderTest do
       assert left == right
     end
 
+    test "encode list" do
+      assert Encoder.encode([1, 2, 3]) == <<1, 2, 3>>
+    end
+
+    test "encode random integer list" do
+      random_list = Enum.map(1..20, fn _ -> :rand.uniform(100) end)
+      expected = Enum.reduce(random_list, <<>>, fn x, acc -> acc <> Encoder.encode(x) end)
+      assert Encoder.encode(random_list) == expected
+    end
+
     test "encode nil" do
       assert Encoder.encode(nil) == <<>>
     end
