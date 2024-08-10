@@ -1,7 +1,7 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
 
-  alias Codec.Encoder
+  alias Codec.{Encoder, VariableSize}
 
   describe "encode_integer/1" do
     test "encode integer 0" do
@@ -81,6 +81,15 @@ defmodule CodecEncoderTest do
       assert Encoder.encode([1, 0, 1, 0, 1, 0, 1, 0, 1, 1]) == <<85, 3>>
       # longer than 8 bits and a multiple of 8
       assert Encoder.encode([0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]) == <<84, 85>>
+    end
+
+    test "encode variable size" do
+      assert Encoder.encode(VariableSize.new([])) == <<0>>
+      assert Encoder.encode(VariableSize.new(<<>>)) == <<0>>
+      assert Encoder.encode(VariableSize.new({})) == <<0>>
+      assert Encoder.encode(VariableSize.new([1, 2])) == <<2, 1, 2>>
+      assert Encoder.encode(VariableSize.new(<<1, 2, 3>>)) == <<3, 1, 2, 3>>
+      assert Encoder.encode(VariableSize.new({1, 2, 3, 4})) == <<4, 1, 2, 3, 4>>
     end
   end
 
