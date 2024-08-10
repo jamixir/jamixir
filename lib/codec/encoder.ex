@@ -50,8 +50,17 @@ defmodule Codec.Encoder do
     end
   end
 
+  # Equation (275)
   defp do_encode(%VariableSize{value: value, size: size}) do
     do_encode(size) <> do_encode(value)
+  end
+
+  # Equation (278)
+  defp do_encode(value) when is_map(value) do
+    encoded_pairs =
+      Enum.map(value, fn {key, value} -> do_encode({do_encode(key), do_encode(value)}) end)
+
+    do_encode(VariableSize.new(encoded_pairs))
   end
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
