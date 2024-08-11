@@ -63,10 +63,24 @@ defmodule CodecEncoderTest do
     end
 
     test "encode bit list" do
-      assert Encoder.encode([0, 1, 0, 1, 1, 0, 1, 0]) == <<90>>
-      assert Encoder.encode([1, 1, 1, 1, 1, 1, 1, 1]) == <<255>>
-      assert Encoder.encode([1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1]) == <<81, 43>>
+      # trivial case
+      assert Encoder.encode([0]) == <<0>>
+      assert Encoder.encode([1]) == <<1>>
+      # empty list
       assert Encoder.encode([]) == <<>>
+      # less than 8 bits long
+      # 101 -> 1*2^0 + 0*2^1 + 1*2^2 = 5
+      assert Encoder.encode([1, 0, 1]) == <<5>>
+      assert Encoder.encode([0, 1, 0, 1, 1]) == <<26>>
+      # exactly 8 bits long
+      # 1 + 4 + 16 + 64
+      assert Encoder.encode([1, 0, 1, 0, 1, 0, 1, 0]) == <<85>>
+      # 11111111 -> 255
+      assert Encoder.encode([1, 1, 1, 1, 1, 1, 1, 1]) == <<255>>
+      # longer than 8 bits but not a multiple of 8
+      assert Encoder.encode([1, 0, 1, 0, 1, 0, 1, 0, 1, 1]) == <<85, 3>>
+      # longer than 8 bits and a multiple of 8
+      assert Encoder.encode([0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]) == <<84, 85>>
     end
   end
 

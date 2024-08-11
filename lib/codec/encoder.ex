@@ -24,9 +24,10 @@ defmodule Codec.Encoder do
 
   # Private Functions
 
-  defp is_bit_list(bits) do
-    Enum.all?(bits, &(&1 in [0, 1]))
-  end
+  defp is_bit_list([]), do: true
+  defp is_bit_list([0 | rest]), do: is_bit_list(rest)
+  defp is_bit_list([1 | rest]), do: is_bit_list(rest)
+  defp is_bit_list(_), do: false
 
   # Equation (267)
   defp do_encode(nil), do: <<>>
@@ -86,16 +87,14 @@ defmodule Codec.Encoder do
   defp encode_bits([]), do: <<>>
 
   defp encode_bits(bits) do
-    bits
-    |> Enum.chunk_every(8)
-    |> Enum.map(&encode_octet/1)
-    |> Enum.join()
+    {chunk, rest} = Enum.split(bits, 8)
+
+    <<encode_octet(chunk)>> <> encode_bits(rest)
   end
 
   defp encode_octet(bits) do
     bits
     |> Enum.with_index()
-    |> Enum.reduce(0, fn {bit, index}, acc -> acc ||| bit <<< index end)
-    |> :binary.encode_unsigned()
+    |> Enum.reduce(0, fn {bit, i}, acc -> acc + bit * 2 ** i end)
   end
 end
