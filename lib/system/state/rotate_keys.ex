@@ -8,7 +8,12 @@ defmodule System.State.RotateKeys do
     Safrole
   }
 
-  # Equation (58)
+  @doc """
+  Equation (58)
+  Rotate keys according to the GP specification.
+  returns tuple :{new_pending, new_current, new_prev, new_epoch_root}
+  """
+
   @spec rotate_keys(
           Header.t(),
           integer(),
@@ -28,7 +33,7 @@ defmodule System.State.RotateKeys do
         curr_validators,
         next_validators,
         %Safrole{pending: pending, epoch_root: epoch_root},
-        %Judgements{punish: offendsers}
+        %Judgements{punish: offenders}
       ) do
     case Time.new_epoch?(timeslot, new_timeslot) do
       {:ok, true} ->
@@ -37,7 +42,7 @@ defmodule System.State.RotateKeys do
 
         # next -> penfing
         # γ_k' = Φ(ι)
-        new_pending = nullify_offenders(next_validators, offendsers)
+        new_pending = nullify_offenders(next_validators, offenders)
         # penfing -> current
         # κ' = γ_k
         new_current = pending
@@ -65,8 +70,10 @@ defmodule System.State.RotateKeys do
           list(Validator.t()),
           MapSet.t(Types.ed25519_key())
         ) :: list(Validator.t())
+  def nullify_offenders([], _offenders), do: []
+
   def nullify_offenders(
-        next_validators = [%System.State.Validator{}],
+        [%System.State.Validator{} | _] = next_validators,
         offenders
       ) do
     Enum.map(next_validators, fn %Validator{} = validator ->
