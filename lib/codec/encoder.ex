@@ -4,8 +4,6 @@ defmodule Codec.Encoder do
   """
   alias Codec.VariableSize
 
-  import Bitwise
-
   @doc """
   Encodes a given value into a binary format.
   """
@@ -57,10 +55,11 @@ defmodule Codec.Encoder do
 
   # Equation (278)
   defp do_encode(value) when is_map(value) do
-    encoded_pairs =
-      Enum.map(value, fn {key, value} -> do_encode({do_encode(key), do_encode(value)}) end)
-
-    do_encode(VariableSize.new(encoded_pairs))
+    value
+    |> Enum.sort_by(fn {key, _} -> key end)
+    |> Enum.map(fn {key, value} -> {do_encode(key), do_encode(value)} end)
+    |> VariableSize.new()
+    |> do_encode
   end
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
@@ -96,8 +95,7 @@ defmodule Codec.Encoder do
   end
 
   defp encode_list(value) do
-    encoded_elements = Enum.map(value, &do_encode/1)
-    Enum.join(encoded_elements, <<>>)
+    value |> Enum.map(&do_encode/1) |> Enum.join()
   end
 
   # Equation (277)
