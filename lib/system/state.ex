@@ -6,7 +6,8 @@ defmodule System.State do
     Judgements,
     Safrole,
     RecentHistory,
-    EntropyPool
+    EntropyPool,
+    RotateKeys
   }
 
   @type t :: %__MODULE__{
@@ -168,38 +169,45 @@ defmodule System.State do
         disputes -> Judgements.posterior_judgements(h, disputes, state)
       end
 
-    # κ' Formula (21) v0.3.4
-    new_curr_validators =
-      update_curr_validators(
+    # κ' Equation (21)
+    # λ' Equation (22)
+    # γ'(gamma_k, gamma_z) Equation (19)
+    {new_safrole_pending, new_curr_validators, new_prev_validators, new_safrole_epoch_root} =
+      RotateKeys.rotate_keys(
         h,
         state.timeslot,
+        state.prev_validators,
         state.curr_validators,
-        state.safrole,
         state.next_validators,
+        state.safrole,
         new_judgements
       )
 
-    # γ' Formula (19) v0.3.4
+    intermediate_safrole =
+      %Safrole{
+        pending: new_safrole_pending,
+        epoch_root: new_safrole_epoch_root,
+        current_epoch_slot_sealers: state.safrole.current_epoch_slot_sealers,
+        ticket_accumulator: state.safrole.ticket_accumulator
+      }
+
+    # γ' Equation (19)
     new_safrole =
       case Map.get(e, :tickets) do
         nil ->
-          state.safrole
+          intermediate_safrole
 
         tickets ->
           Safrole.posterior_safrole(
             h,
             state.timeslot,
             tickets,
-            state.safrole,
+            intermediate_safrole,
             state.next_validators,
             new_entropy_pool,
             new_curr_validators
           )
       end
-
-    # λ' Formula (22) v0.3.4
-    new_prev_validators =
-      update_prev_validators(h, state.timeslot, state.prev_validators, state.curr_validators)
 
     %System.State{
       # α'
@@ -233,18 +241,4 @@ defmodule System.State do
     }
   end
 
-  defp update_curr_validators(
-         _header,
-         _timeslot,
-         _curr_validators,
-         _safrole,
-         _next_validators,
-         _judgements
-       ) do
-    # TODO
-  end
-
-  defp update_prev_validators(_header, _timeslot, _prev_validators, _curr_validators) do
-    # TODO
-  end
 end
