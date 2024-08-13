@@ -4,7 +4,6 @@ defmodule BlockTest do
   alias System.State.Ticket
   alias Block.Extrinsic
   use ExUnit.Case
-  import TestHelper
 
   describe "encode/1" do
     test "encode block smoke test" do
