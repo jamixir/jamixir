@@ -10,7 +10,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # s
           specification: AvailabilitySpecification.t(),
           # x
-          refinemtn_context: RefinementContext.t(),
+          refinement_context: RefinementContext.t(),
           # c
           core_index: non_neg_integer(),
           # a
@@ -22,16 +22,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         }
 
   defstruct specification: {},
-            refinemtn_context: {},
+            refinement_context: {},
             core_index: 0,
             authorizer_hash: <<0::256>>,
             output: "",
             work_results: []
 
-  def new(specification, refinemtn_context, core_index, authorizer_hash, output, work_results) do
+  def new(specification, refinement_context, core_index, authorizer_hash, output, work_results) do
     %WorkReport{
       specification: specification,
-      refinemtn_context: refinemtn_context,
+      refinement_context: refinement_context,
       core_index: core_index,
       authorizer_hash: authorizer_hash,
       output: output,
