@@ -124,7 +124,7 @@ defmodule System.State.RecentHistory do
               |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1))
       end
 
-    # b - acuumaleted result mmr of the most recent block, appended with the well-balanced merkle root (r)
+    # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
     # equation (83)
     mmr_roots =
       case recent_history.blocks do
