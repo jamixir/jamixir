@@ -37,10 +37,6 @@ defmodule Util.MMR do
     %MMR{mmr | roots: new_roots}
   end
 
-  @doc """
-  Return the sequence of roots (peaks).
-  """
-  def roots(%MMR{roots: roots}), do: roots
 
   # equation (304) A
   defp append_root(roots, hash), do: append_root(roots, hash, 0)
