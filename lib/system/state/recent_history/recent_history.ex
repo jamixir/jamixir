@@ -92,7 +92,7 @@ defmodule System.State.RecentHistory do
   equation (83)
   """
   def posterior_recent_history(
-        header,
+        _header,
         guarantees,
         %RecentHistory{} = recent_history,
         beefy_commitment_map

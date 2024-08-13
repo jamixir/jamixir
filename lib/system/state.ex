@@ -114,7 +114,7 @@ defmodule System.State do
       end
 
     # Equation (28)
-    {new_services, privileged_services, new_next_validators, authorization_queue,
+    {_new_services, _privileged_services, _new_next_validators, _authorization_queue,
      beefy_commitment_map} =
       case Map.get(e, :availability) do
         nil ->
