@@ -6,24 +6,18 @@ defmodule Util.MerkleTree do
   alias Util.Hash
 
   @doc """
-  Constructs a well-balanced binary Merkle tree and returns the root hash.
+    Constructs a well-balanced binary Merkle tree and returns the root hash.
   """
-  def well_balanced_merkle_root(list_of_blobs, hash_func \\ &Hash.blake2b_256/1) do
-    case list_of_blobs do
-      [] -> raise ArgumentError, "List of blobs cannot be empty"
-      # equation (299)
-      [single_blob] -> hash_func.(single_blob)
-      _ -> node(list_of_blobs, hash_func)
-    end
-  end
+  def well_balanced_merkle_root(l), do: well_balanced_merkle_root(l, &Hash.blake2b_256/1)
+  def well_balanced_merkle_root([], _), do: raise(ArgumentError, "List of blobs cannot be empty")
+  def well_balanced_merkle_root([single_blob], hash_func), do: hash_func.(single_blob)
+  def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
-  @doc """
-  Node function N for the Merkle tree.
-  equation (297)
-  """
-  defp node([], _hash_func), do: <<0::256>>
+  # Node function N for the Merkle tree.
+  # equation (297)
 
-  defp node([single_blob], _hash_func), do: single_blob
+  defp node([], _), do: <<0::256>>
+  defp node([single_blob], _), do: single_blob
 
   defp node(list_of_blobs, hash_func) do
     mid = div(length(list_of_blobs), 2)
