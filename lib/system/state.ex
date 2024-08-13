@@ -68,7 +68,7 @@ defmodule System.State do
     inital_recent_history =
       RecentHistory.update_latest_posterior_state_root(state.recent_history, h)
 
-    # δ† Equation (24)
+    # δ† Formula (24) v0.3.4
     # The post-preimage integration, pre-accumulation intermediate state
     services_intermediate =
       case Map.get(e, :preimages) do
@@ -77,7 +77,7 @@ defmodule System.State do
         preimages -> State.Services.process_preimages(state.services, preimages, new_timeslot)
       end
 
-    # ρ† Equation (25)
+    # ρ† Formula (25) v0.3.4
     # post-judgement, pre-assurances-extrinsic intermediate state
     core_reports_intermediate_1 =
       case Map.get(e, :disputes) do
@@ -85,7 +85,7 @@ defmodule System.State do
         disputes -> State.CoreReports.process_disputes(state.core_reports, disputes)
       end
 
-    # ρ‡ Equation (26)
+    # ρ‡ Formula (26) v0.3.4
     # The post-assurances-extrinsic, pre-guarantees-extrinsic, intermediate state
     core_reports_intermediate_2 =
       case Map.get(e, :availability) do
@@ -96,7 +96,7 @@ defmodule System.State do
           State.CoreReports.process_availability(core_reports_intermediate_1, availability)
       end
 
-    # ρ' Equation (27)
+    # ρ' Formula (27) v0.3.4
     new_core_reports =
       case Map.get(e, :guarantees) do
         nil ->
@@ -113,7 +113,7 @@ defmodule System.State do
           )
       end
 
-    # Equation (28)
+    # Formula (28) v0.3.4
     {_new_services, _privileged_services, _new_next_validators, _authorization_queue,
      beefy_commitment_map} =
       case Map.get(e, :availability) do

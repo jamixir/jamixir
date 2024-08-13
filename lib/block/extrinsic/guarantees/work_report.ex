@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @moduledoc """
   Work report
   section 11.1
-  equation 119
+  Formula 119 v0.3.4
   """
   alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
 

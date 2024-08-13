@@ -4,7 +4,7 @@ defmodule System.State.BeefyCommitmentMap do
   see section 12.4
   """
 
-  # Equation (165)
+  # Formula (165) v0.3.4
   @type t :: %__MODULE__{
           commitments: [{non_neg_integer(), Types.hash()}]
         }
