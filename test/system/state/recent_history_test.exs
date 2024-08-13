@@ -241,7 +241,7 @@ defmodule System.State.RecentHistoryTest do
         beefy_commitment_map.commitments
         |> Enum.sort_by(&elem(&1, 0))
         |> Enum.map(fn {service_index, hash} ->
-          encoded_index = ScaleEncoding.encode_integer(service_index)
+          encoded_index = Codec.Encoder.encode_little_endian(service_index, 4)
           <<encoded_index::binary, hash::binary>>
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
