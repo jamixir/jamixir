@@ -31,26 +31,28 @@ defmodule Block.Extrinsic do
   Within each guarantee, the credentials are ordered by validator_index.
   Ensures that the core_index in guarantees and validator_index in credentials are unique.
   """
-  def guarantees(%Block.Extrinsic{guarantees: guarantees}) do
+  def unique_sorted_guarantees(%Block.Extrinsic{guarantees: guarantees}) do
+    # Check for duplicate core_index before sorting
+    if Util.Collections.has_duplicates?(guarantees, & &1.work_report.core_index) do
+      raise ArgumentError, "Duplicate core_index found in guarantees"
+    end
+
     sorted_guarantees =
       guarantees
-      |> Enum.sort_by(& &1.work_report.core_index)
       |> Enum.map(fn guarantee ->
-        sorted_credentials = Enum.sort_by(guarantee.credential, &elem(&1, 0))
-
-        if Enum.uniq_by(sorted_credentials, &elem(&1, 0)) != sorted_credentials do
+        # Check for duplicate validator_index before sorting credentials
+        if Util.Collections.has_duplicates?(guarantee.credential, &elem(&1, 0)) do
           raise ArgumentError, "Duplicate validator_index found in credentials"
         end
+
+        sorted_credentials = Enum.sort_by(guarantee.credential, &elem(&1, 0))
 
         %Guarantee{
           guarantee
           | credential: sorted_credentials
         }
       end)
-
-    if Enum.uniq_by(sorted_guarantees, & &1.work_report.core_index) != sorted_guarantees do
-      raise ArgumentError, "Duplicate core_index found in guarantees"
-    end
+      |> Enum.sort_by(& &1.work_report.core_index)
 
     sorted_guarantees
   end

@@ -103,7 +103,7 @@ defmodule System.State do
           core_reports_intermediate_2
 
         _guarantees ->
-          sorted_guarantees = Block.Extrinsic.guarantees(e)
+          sorted_guarantees = Block.Extrinsic.unique_sorted_guarantees(e)
 
           State.CoreReports.posterior_core_reports(
             core_reports_intermediate_2,
@@ -144,7 +144,7 @@ defmodule System.State do
           state.recent_history
 
         _guarantees ->
-          sorted_guarantees = Block.Extrinsic.guarantees(e)
+          sorted_guarantees = Block.Extrinsic.unique_sorted_guarantees(e)
 
           System.State.RecentHistory.posterior_recent_history(
             h,
