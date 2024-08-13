@@ -61,7 +61,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
-  equation (82)
+  Formula (82) v0.3.4
   """
   def update_latest_posterior_state_root(nil, %Header{
         prior_state_root: _s
@@ -89,7 +89,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  equation (83)
+  Formula (83) v0.3.4
   """
   def posterior_recent_history(
         _header,
@@ -104,7 +104,7 @@ defmodule System.State.RecentHistory do
     header_hash = Hash.blake2b_256("header")
 
     # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
-    # equation (83)
+    # Formula (83)
     well_balanced_merkle_root =
       case beefy_commitment_map do
         nil ->
@@ -125,7 +125,7 @@ defmodule System.State.RecentHistory do
       end
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # equation (83)
+    # Formula (83) v0.3.4
     mmr_roots =
       case recent_history.blocks do
         [] ->

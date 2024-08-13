@@ -7,6 +7,7 @@ defmodule Util.MerkleTree do
 
   @doc """
     Constructs a well-balanced binary Merkle tree and returns the root hash.
+    Formula (299) v0.3.4
   """
   def well_balanced_merkle_root(l), do: well_balanced_merkle_root(l, &Hash.blake2b_256/1)
   def well_balanced_merkle_root([], _), do: raise(ArgumentError, "List of blobs cannot be empty")
@@ -14,7 +15,7 @@ defmodule Util.MerkleTree do
   def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
   # Node function N for the Merkle tree.
-  # equation (297)
+  # Formula (297) v0.3.4
 
   defp node([], _), do: <<0::256>>
   defp node([single_blob], _), do: single_blob

@@ -6,7 +6,7 @@ defmodule System.State.RecentHistory.RecentBlock do
           work_report_hashes: list(Types.hash())
         }
 
-  # Equation (81)
+  # Formula (81) v0.3.4
   defstruct header_hash: nil,
             accumulated_result_mmr: [nil],
             state_root: nil,
