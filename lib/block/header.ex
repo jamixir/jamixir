@@ -12,7 +12,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Equation (37)
+  # Formula (37) v0.3.4
   defstruct [
     # Hp
     parent_hash: nil,

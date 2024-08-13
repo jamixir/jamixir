@@ -26,7 +26,7 @@ defmodule System.State do
           validator_statistics: list(ValidatorStatistic.t())
         }
 
-  # Equation (15) σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
+  # Formula (15) v0.3.4 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
     :authorization_requirements,
@@ -58,13 +58,13 @@ defmodule System.State do
     :validator_statistics
   ]
 
-  # Equation (12)
+  # Formula (12) v0.3.4
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
 
-    # Equation (16) Equation (45) => τ' = Ht
+    # Formula (16) Formula (45) => τ' = Ht
     new_timeslot = h.timeslot
-    # β† Equation (17)
+    # β† Formula (17) v0.3.4
     inital_recent_history =
       RecentHistory.update_latest_posterior_state_root(state.recent_history, h)
 
@@ -137,7 +137,7 @@ defmodule System.State do
           )
       end
 
-    # β' Equation (18)
+    # β' Formula (18) v0.3.4
     new_recent_history =
       case Map.get(e, :guarantees) do
         nil ->
@@ -154,21 +154,21 @@ defmodule System.State do
           )
       end
 
-    # η' Equation (20)
+    # η' Formula (20) v0.3.4
     new_entropy_pool =
       case Map.get(e, :entropy_pool) do
         nil -> state.entropy_pool
         _ -> EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
       end
 
-    # ψ' Equation (23)
+    # ψ' Formula (23) v0.3.4
     new_judgements =
       case Map.get(e, :disputes) do
         nil -> state.judgements
         disputes -> Judgements.posterior_judgements(h, disputes, state)
       end
 
-    # κ' Equation (21)
+    # κ' Formula (21) v0.3.4
     new_curr_validators =
       update_curr_validators(
         h,
@@ -179,7 +179,7 @@ defmodule System.State do
         new_judgements
       )
 
-    # γ' Equation (19)
+    # γ' Formula (19) v0.3.4
     new_safrole =
       case Map.get(e, :tickets) do
         nil ->
@@ -197,7 +197,7 @@ defmodule System.State do
           )
       end
 
-    # λ' Equation (22)
+    # λ' Formula (22) v0.3.4
     new_prev_validators =
       update_prev_validators(h, state.timeslot, state.prev_validators, state.curr_validators)
 

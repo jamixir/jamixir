@@ -1,5 +1,6 @@
 defmodule Block.Extrinsic.Disputes do
   @moduledoc """
+  Fomrula 98 v0.3.4
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
@@ -60,6 +61,7 @@ defmodule Block.Extrinsic.Disputes do
     Crypto.verify_signature(sig, wrh, key)
   end
 
+  # 101 and 102 v0.3.4.
   defp combined_validators(state) do
     current_validators = state.curr_validators |> Enum.map(& &1.ed25519)
     previous_validators = state.prev_validators |> Enum.map(& &1.ed25519)
@@ -69,7 +71,7 @@ defmodule Block.Extrinsic.Disputes do
     (combined -- punished_keys) |> MapSet.new()
   end
 
-  # Eq. (100) and (101) in the paper.
+  # Formula 101 and 102 v0.3.4.
   # Validates whether an offense (culprit or fault) is valid based on
   # report_hash being in the bad set or in the verdict bad set
 
@@ -89,6 +91,7 @@ defmodule Block.Extrinsic.Disputes do
     classification == :bad or report_hash in state.judgements.bad
   end
 
+  # Formula 105 v0.3.4.
   defp filter_duplicates(processed_verdicts_map, %System.State.Judgements{
          good: good_set,
          bad: bad_set,

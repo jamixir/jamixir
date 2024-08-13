@@ -12,7 +12,7 @@ defmodule Codec.Encoder do
     do_encode(value)
   end
 
-  # Equation (271)
+  # Formula (271) v0.3.4
   @spec encode_little_endian(integer(), integer()) :: binary()
   def encode_little_endian(_, 0), do: <<>>
 
@@ -30,16 +30,16 @@ defmodule Codec.Encoder do
   defp is_bit_list([1 | rest]), do: is_bit_list(rest)
   defp is_bit_list(_), do: false
 
-  # Equation (267)
+  # Formula (269) v0.3.4
   defp do_encode(nil), do: <<>>
-  # Equation (268)
+  # Formula (270) v0.3.4
   defp do_encode(value) when is_binary(value), do: value
-  # Equation (269)
+  # Formula (271) v0.3.4
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
-  # Equation (270) is not implementable in Elixir,
+  # Formula (272) is not implementable in Elixir,
   # as it does not have a built-in arbitrary number of arguments in functions
 
-  # Equation (274)
+  # Formula (276) v0.3.4
   defp do_encode(value) when is_list(value) do
     if is_bit_list(value) do
       encode_bits(value)
@@ -48,12 +48,12 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Equation (275)
+  # Formula (277) v0.3.4
   defp do_encode(%VariableSize{value: value, size: size}) do
     do_encode(size) <> do_encode(value)
   end
 
-  # Equation (278)
+  # Formula (278) - no longer part of GP in v0.3.4
   defp do_encode(value) when is_map(value) do
     value
     |> Enum.sort_by(fn {key, _} -> key end)
@@ -71,6 +71,7 @@ defmodule Codec.Encoder do
   # l = 2 => 2^14 <= x < 2^21
   # ...
   # l = 7 => 2^49 <= x < 2^56
+  #Formula (275) v0.3.4
   defp exists_l_in_N8(x) do
     l = trunc(:math.log2(x) / 7)
 
@@ -81,10 +82,10 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Equation (273)
+  # Formula (275) v0.3.4
   defp encode_integer(0), do: <<0>>
 
-  # Equation (273)
+  # Formula (275) v0.3.4
   defp encode_integer(x) do
     if x >= 2 ** 64, do: raise(ArgumentError, "Integer value is too large to encode")
 
@@ -98,9 +99,8 @@ defmodule Codec.Encoder do
     value |> Enum.map(&do_encode/1) |> Enum.join()
   end
 
-  # Equation (277)
+  # Formula (279) v0.3.4
   defp encode_bits([]), do: <<>>
-
   defp encode_bits(bits) do
     {chunk, rest} = Enum.split(bits, 8)
 

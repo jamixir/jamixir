@@ -1,6 +1,7 @@
 defmodule System.State.Safrole do
   @moduledoc """
   Sarole  state, as specified in section 6.1 of the GP.
+  Formula 48 v0.3.4
 
   """
   alias System.State.Ticket
