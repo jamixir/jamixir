@@ -61,10 +61,6 @@ defmodule Codec.Encoder do
     end
   end
 
-  defp encodable?(data) do
-    not is_nil(Encodable.impl_for(data))
-  end
-
   # Formula (278) - no longer part of GP in v0.3.4
   defp do_encode(value) when is_map(value) do
     value
@@ -80,6 +76,10 @@ defmodule Codec.Encoder do
   defp do_encode(%_{} = struct) do
     # Delegate to Encodable protocol for structs
     Encodable.encode(struct)
+  end
+
+  defp encodable?(data) do
+    not is_nil(Encodable.impl_for(data))
   end
 
   # defp do_encode(%Block.Header{} = header), do: encode_header(header)
