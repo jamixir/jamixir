@@ -50,4 +50,10 @@ defmodule Block.Header do
           Util.Time.valid_block_timeslot?(header.timeslot)
     end
   end
+
+  defimpl Encodable do
+    def encode(%Block.Header{}) do
+      # TODO
+    end
+  end
 end

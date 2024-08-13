@@ -102,4 +102,10 @@ defmodule Block.Extrinsic.Disputes do
     end)
     |> Enum.into(%{})
   end
+
+  defimpl Encodable do
+    def encode(%Disputes{}) do
+      # TODO
+    end
+  end
 end
