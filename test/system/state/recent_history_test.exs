@@ -250,7 +250,7 @@ defmodule System.State.RecentHistoryTest do
       expected_mmr_roots =
         MMR.new()
         |> MMR.append(expected_merkle_root)
-        |> MMR.roots()
+        |> Map.get(:roots)
 
       assert Enum.at(result.blocks, -1).accumulated_result_mmr == expected_mmr_roots
     end
