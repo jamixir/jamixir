@@ -10,4 +10,10 @@ defmodule System.State.Ticket do
         }
 
   defstruct id: <<>>, attempt: 0
+
+  defimpl Encodable do
+    def encode(%System.State.Ticket{}) do
+      # TODO
+    end
+  end
 end

@@ -53,6 +53,18 @@ defmodule Codec.Encoder do
     do_encode(size) <> do_encode(value)
   end
 
+  defp do_encode(value) when is_struct(value) do
+    if encodable?(value) do
+      Encodable.encode(value)
+    else
+      raise "Struct does not implement Encodable protocol"
+    end
+  end
+
+  defp encodable?(data) do
+    not is_nil(Encodable.impl_for(data))
+  end
+
   # Formula (278) - no longer part of GP in v0.3.4
   defp do_encode(value) when is_map(value) do
     value
@@ -64,6 +76,12 @@ defmodule Codec.Encoder do
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
   defp do_encode(value) when is_list(value), do: encode_list(value)
+
+  defp do_encode(%_{} = struct) do
+    # Delegate to Encodable protocol for structs
+    Encodable.encode(struct)
+  end
+
   # defp do_encode(%Block.Header{} = header), do: encode_header(header)
 
   # l = 0 => 2 < x < 2^7
@@ -71,7 +89,7 @@ defmodule Codec.Encoder do
   # l = 2 => 2^14 <= x < 2^21
   # ...
   # l = 7 => 2^49 <= x < 2^56
-  #Formula (275) v0.3.4
+  # Formula (275) v0.3.4
   defp exists_l_in_N8(x) do
     l = trunc(:math.log2(x) / 7)
 
@@ -101,6 +119,7 @@ defmodule Codec.Encoder do
 
   # Formula (279) v0.3.4
   defp encode_bits([]), do: <<>>
+
   defp encode_bits(bits) do
     {chunk, rest} = Enum.split(bits, 8)
 

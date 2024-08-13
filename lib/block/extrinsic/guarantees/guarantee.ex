@@ -20,4 +20,12 @@ defmodule Block.Extrinsic.Guarantee do
   defstruct work_report: %WorkReport{},
             timeslot: 0,
             credential: {0, <<0::512>>}
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Guarantee
+
+    def encode(%Guarantee{}) do
+      # TODO
+    end
+  end
 end
