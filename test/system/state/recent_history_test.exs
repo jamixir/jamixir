@@ -57,7 +57,7 @@ defmodule System.State.RecentHistoryTest do
     test "handles nil beefy_commitment_map" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
@@ -79,7 +79,7 @@ defmodule System.State.RecentHistoryTest do
     test "handles empty recent_history.blocks" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
@@ -110,7 +110,7 @@ defmodule System.State.RecentHistoryTest do
 
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<4::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<4::256>>}
         }
       }
 
@@ -131,13 +131,13 @@ defmodule System.State.RecentHistoryTest do
     test "verifies work_package_hashes are extracted correctly" do
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
         }
       }
 
@@ -173,7 +173,7 @@ defmodule System.State.RecentHistoryTest do
       # Create a new guarantee with a unique work_package_hash
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<9::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<9::256>>}
         }
       }
 
@@ -210,13 +210,13 @@ defmodule System.State.RecentHistoryTest do
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
         }
       }
 
@@ -259,7 +259,7 @@ defmodule System.State.RecentHistoryTest do
       # Create a guarantee with specific work_package_hashes
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specfication: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 

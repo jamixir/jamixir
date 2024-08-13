@@ -145,7 +145,7 @@ defmodule System.State.RecentHistory do
     # Work report hashes
     work_package_hashes =
       guarantees
-      |> Enum.map(& &1.work_report.specfication.work_package_hash)
+      |> Enum.map(& &1.work_report.specification.work_package_hash)
 
     RecentHistory.add(
       recent_history,
