@@ -1,0 +1,32 @@
+defmodule Util.Collections do
+  @doc """
+  Checks if there are any duplicates in the given collection.
+  Works with any enumerable collection.
+  """
+  def has_duplicates?(collection) do
+    has_duplicates?(collection, & &1)
+  end
+
+  @doc """
+  Checks if there are any duplicates in the given collection based on the provided key function.
+  Works with any enumerable collection.
+  """
+  def has_duplicates?(collection, key_func) when is_function(key_func, 1) do
+    collection
+    |> Enum.reduce_while(%MapSet{}, fn item, seen ->
+      key = key_func.(item)
+
+      if MapSet.member?(seen, key) do
+        # Duplicate found, halt the iteration
+        {:halt, true}
+      else
+        # Continue with updated set
+        {:cont, MapSet.put(seen, key)}
+      end
+    end)
+    |> case do
+      true -> true
+      _ -> false
+    end
+  end
+end
