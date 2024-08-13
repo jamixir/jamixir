@@ -1,7 +1,7 @@
 defmodule System.State.Ticket do
   @moduledoc """
   represent a ticket, as specified in section 6.2 of the GP.
-  equation (51)
+  Formula (51) v0.3.4
   """
 
   @type t :: %__MODULE__{

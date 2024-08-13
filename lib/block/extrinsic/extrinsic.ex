@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic do
   alias Block.Extrinsic.{Disputes, Guarantee}
-  # Equation (14)
+  # Formula (14) v0.3.4
   defstruct tickets: [], disputes: nil, preimages: [], availability: [], guarantees: []
 
   @type t :: %__MODULE__{

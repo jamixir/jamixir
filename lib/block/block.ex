@@ -4,7 +4,7 @@ defmodule Block do
           extrinsic: Block.Extrinsic.t()
         }
 
-  # Equation (13)
+  # Formula (13) v0.3.4
   defstruct [
     # Hp
     header: nil,
