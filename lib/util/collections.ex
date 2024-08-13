@@ -24,9 +24,6 @@ defmodule Util.Collections do
         {:cont, MapSet.put(seen, key)}
       end
     end)
-    |> case do
-      true -> true
-      _ -> false
-    end
+    |> Kernel.==(true)
   end
 end
