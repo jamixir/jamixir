@@ -8,7 +8,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type t :: %__MODULE__{
           # s
-          specfication: AvailabilitySpecification.t(),
+          specification: AvailabilitySpecification.t(),
           # x
           refinemtn_context: RefinementContext.t(),
           # c
@@ -21,16 +21,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           work_results: list(WorkResult.t())
         }
 
-  defstruct specfication: {},
+  defstruct specification: {},
             refinemtn_context: {},
             core_index: 0,
             authorizer_hash: <<0::256>>,
             output: "",
             work_results: []
 
-  def new(specfication, refinemtn_context, core_index, authorizer_hash, output, work_results) do
+  def new(specification, refinemtn_context, core_index, authorizer_hash, output, work_results) do
     %WorkReport{
-      specfication: specfication,
+      specification: specification,
       refinemtn_context: refinemtn_context,
       core_index: core_index,
       authorizer_hash: authorizer_hash,
