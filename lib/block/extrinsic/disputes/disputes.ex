@@ -61,7 +61,7 @@ defmodule Block.Extrinsic.Disputes do
     Crypto.verify_signature(sig, wrh, key)
   end
 
-  # 101 and 102 v0.3.4.
+  # Formula 101 and 102 v0.3.4.
   defp combined_validators(state) do
     current_validators = state.curr_validators |> Enum.map(& &1.ed25519)
     previous_validators = state.prev_validators |> Enum.map(& &1.ed25519)
