@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   """
 
   alias Types
-  alias Disputes.Judgement
+  alias Block.Extrinsic.Disputes.Judgement
 
   @type t :: %__MODULE__{
           work_report_hash: Types.hash(),

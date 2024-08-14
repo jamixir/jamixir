@@ -1,6 +1,4 @@
 defmodule Block do
-  alias Codec.VariableSize
-
   @type t :: %__MODULE__{
           header: Block.Header.t(),
           extrinsic: Block.Extrinsic.t()
