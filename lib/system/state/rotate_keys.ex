@@ -9,7 +9,7 @@ defmodule System.State.RotateKeys do
   }
 
   @doc """
-  Fomrula (58) v0.3.4
+  Formula (58) v0.3.4
   Rotate keys according to the GP specification.
   returns tuple :{new_pending, new_current, new_prev, new_epoch_root}
   """
@@ -40,14 +40,13 @@ defmodule System.State.RotateKeys do
         # Formula (58) -  new epoch - rotate keys
         # {γ_k', κ', λ', γ_z'} = {Φ(ι), γ_k, κ, z}
 
-        # next -> penfing
-        # γ_k' = Φ(ι)
+        # γ_k' = Φ(ι) (next -> pending)
         new_pending = nullify_offenders(next_validators, offenders)
-        # penfing -> current
-        # κ' = γ_k
+
+        # κ' = γ_k (pending -> current)
         new_current = pending
-        # current -> prev
-        # λ' = κ
+
+        # λ' = κ (current -> prev)
         new_prev = curr_validators
 
         # γ_z' = z, z = O([kb ∣ k <- γk ])
@@ -56,7 +55,7 @@ defmodule System.State.RotateKeys do
         {new_pending, new_current, new_prev, new_epoch_root}
 
       {:ok, false} ->
-        # Formula (59) -  same epoch - no rotation
+        # Formula (58) -  same epoch - no rotation
         # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}
         {pending, curr_validators, prev_validators, epoch_root}
 
@@ -65,7 +64,7 @@ defmodule System.State.RotateKeys do
     end
   end
 
-  # Formula (59)
+  # Formula (59) v0.3.4
   @spec nullify_offenders(
           list(Validator.t()),
           MapSet.t(Types.ed25519_key())
