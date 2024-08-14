@@ -5,8 +5,8 @@ defmodule System.State.Ticket do
   """
 
   @type t :: %__MODULE__{
-          id: <<_::256>>,
-          attempt: non_neg_integer()
+          id: Types.hash(),
+          attempt: 0 | 1
         }
 
   defstruct id: <<>>, attempt: 0
