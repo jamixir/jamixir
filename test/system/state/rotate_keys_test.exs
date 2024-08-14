@@ -177,8 +177,6 @@ defmodule System.State.RotateKeysTest do
 
     test "No new epoch, state unchanged", %{
       validator2: v2,
-      header: header,
-      timeslot: timeslot,
       safrole: safrole
     } do
       result =
