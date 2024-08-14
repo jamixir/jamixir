@@ -1,10 +1,10 @@
 defmodule Block.Extrinsic do
-  alias Block.Extrinsic.{Disputes, Guarantee}
+  alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   # Formula (14) v0.3.4
   defstruct tickets: [], disputes: nil, preimages: [], availability: [], guarantees: []
 
   @type t :: %__MODULE__{
-          tickets: list(Ticket.t()),
+          tickets: list(TicketProof.t()),
           disputes: Disputes.t(),
           preimages: list(Preimage.t()),
           availability: list(Availability.t()),
