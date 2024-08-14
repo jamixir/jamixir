@@ -30,33 +30,33 @@ defmodule System.State do
   # Formula (15) v0.3.4 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
-    :authorization_requirements,
+    authorization_requirements: [],
     # β: Details of the most recent blocks
-    :recent_history,
+    recent_history: %RecentHistory{},
     # γ: State concerning the determination of validator keys
-    :safrole,
+    safrole: %Safrole{},
     # δ: State dealing with services (analogous to smart contract accounts)
-    :services,
+    services: [],
     # η: On-chain entropy pool
-    :entropy_pool,
+    entropy_pool: %EntropyPool{},
     # ι: Validators enqueued for next round
-    :next_validators,
+    next_validators: [],
     # κ: Current Validators
-    :curr_validators,
+    curr_validators: [],
     # λ: Previous Validators
-    :prev_validators,
+    prev_validators: [],
     # ρ: Each core's currently assigned report
-    :core_reports,
+    core_reports: [],
     # τ: Details of the most recent timeslot
-    :timeslot,
+    timeslot: 0,
     # φ: Queue which fills the authorization requirement
-    :authorization_queue,
+    authorization_queue: nil,
     # χ: Identities of services with privileged status
-    :privileged_services,
+    privileged_services: [],
     # ψ: Judgements tracked
-    :judgements,
+    judgements: %Judgements{},
     # π: Validator statistics
-    :validator_statistics
+    validator_statistics: []
   ]
 
   # Formula (12) v0.3.4
@@ -240,5 +240,4 @@ defmodule System.State do
       validator_statistics: todo
     }
   end
-
 end
