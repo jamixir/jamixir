@@ -1,7 +1,8 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.{Safrole}
+  alias System.State.{Safrole, EntropyPool, Validator}
+  alias Block.Header
 
   describe "outside_in_sequencer/1" do
     test "reorders an empty list" do

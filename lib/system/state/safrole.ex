@@ -2,17 +2,19 @@ defmodule System.State.Safrole do
   @moduledoc """
   Sarole  state, as specified in section 6.1 of the GP.
   """
-  alias System.State.SealKeyTicket
-  alias System.State.Validator
+  alias System.State.{SealKeyTicket, Validator, EntropyPool}
+  alias Block.Header
+  alias Util.{Time, Hash}
+  alias Codec.{Encoder, Decoder}
 
   @type t :: %__MODULE__{
           # gamma_k
           pending: list(Validator.t()),
           # Formula (49) v0.3.4
           # gamma_z
-          epoch_root: <<_::1152>>,
+          epoch_root: Types.bandersnatch_ring_root(),
           # gamma_s
-          current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(<<_::256>>),
+          current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
@@ -21,22 +23,75 @@ defmodule System.State.Safrole do
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   def posterior_safrole(
-        _header,
-        _timeslot,
-        _tickets,
+        %Header{timeslot: new_timeslot},
+        timeslot,
         safrole,
-        _next_validators,
-        _entropy_pool,
-        _curr_validators
+        entropy_pool,
+        curr_validators
       ) do
-    # TODO
-    safrole
+    new_epoch_index = Time.epoch_index(new_timeslot)
+    current_epoch_index = Time.epoch_index(timeslot)
+    ticket_accumulator_full = length(safrole.ticket_accumulator) == Constants.epoch_length()
+    ticket_submission_ended = Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
+    # Formula (69) v0.3.4
+    posterior_epoch_slot_sealers =
+      calculate_epoch_slot_sealers(
+        new_epoch_index,
+        current_epoch_index,
+        ticket_accumulator_full,
+        ticket_submission_ended,
+        safrole,
+        entropy_pool,
+        curr_validators
+      )
+
+    %{
+      safrole
+      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
+    }
   end
 
+  # Formula (69) v0.3.4 - second arm
+  defp calculate_epoch_slot_sealers(
+         epoch_index,
+         epoch_index,
+         _,
+         _,
+         safrole,
+         _,
+         _
+       ),
+       do: safrole.current_epoch_slot_sealers
+
+  # Formula (69) v0.3.4 - first arm
+  defp calculate_epoch_slot_sealers(
+         new_epoch_index,
+         current_epoch_index,
+         true,
+         true,
+         safrole,
+         _,
+         _
+       )
+       when new_epoch_index == current_epoch_index + 1,
+       do: outside_in_sequencer(safrole.current_epoch_slot_sealers)
+
+  # Formula (69) v0.3.4 - third arm
+  defp calculate_epoch_slot_sealers(
+         _,
+         _,
+         _,
+         _,
+         _,
+         entropy_pool,
+         curr_validators
+       ),
+       do: fallback_key_sequence(entropy_pool, curr_validators)
+
   @doc """
-  Formula (70) v0.3.4
   Z function: Outside-in sequencer function.
   Reorders the list by alternating between the first and last elements.
+  Formula (70) v0.3.4
   """
   @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
   def outside_in_sequencer(tickets) do
@@ -50,6 +105,40 @@ defmodule System.State.Safrole do
     last = List.last(rest)
     middle = Enum.slice(rest, 0, length(rest) - 1)
     do_z(middle, acc ++ [first, last])
+  end
+
+  @doc """
+  Formula (71) v0.3.4
+  Fallback key sequence function.
+  selects an epoch’s worth of validator Bandersnatch keys
+  """
+  @spec fallback_key_sequence(EntropyPool.t(), list(Validator.t())) ::
+          list(Types.bandersnatch_key())
+  def fallback_key_sequence(%EntropyPool{history: [_, eta2 | _]}, current_validators) do
+    validator_set_size = length(current_validators)
+
+    0..(Constants.epoch_length() - 1)
+    |> Enum.map(fn i ->
+      validator_index = generate_index_using_entropy(eta2, i, validator_set_size)
+      Enum.at(current_validators, validator_index).bandersnatch
+    end)
+  end
+
+  @doc """
+  Generate an index in the range [0, validator_set_size) using entropy.
+  """
+  @spec generate_index_using_entropy(binary(), integer()) :: integer()
+  def generate_index_using_entropy(entropy, i) do
+    generate_index_using_entropy(entropy, i, Constants.validator_count())
+  end
+
+  @spec generate_index_using_entropy(binary(), integer(), integer()) :: integer()
+  def generate_index_using_entropy(entropy, i, validator_set_size) do
+    entropy
+    |> Kernel.<>(Encoder.encode_le(i, 4))
+    |> Hash.blake2b_n(4)
+    |> Decoder.decode_le(4)
+    |> rem(validator_set_size)
   end
 
   defimpl Encodable do
