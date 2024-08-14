@@ -56,4 +56,14 @@ defmodule Block.Extrinsic do
 
     sorted_guarantees
   end
+
+  defimpl Encodable do
+    def vs(arg), do: Codec.VariableSize.new(arg)
+
+    def encode(%Block.Extrinsic{} = e) do
+      Codec.Encoder.encode(
+        {vs(e.tickets), e.disputes, vs(e.preimages), vs(e.availability), vs(e.guarantees)}
+      )
+    end
+  end
 end

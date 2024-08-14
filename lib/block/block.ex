@@ -19,11 +19,7 @@ defmodule Block do
       # Formula (280) v0.3.4
       Codec.Encoder.encode({
         h,
-        VariableSize.new(e.tickets),
-        e.disputes,
-        VariableSize.new(e.preimages),
-        VariableSize.new(e.availability),
-        VariableSize.new(e.guarantees)
+        e
       })
     end
   end
