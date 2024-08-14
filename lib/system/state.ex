@@ -169,9 +169,9 @@ defmodule System.State do
         disputes -> Judgements.posterior_judgements(h, disputes, state)
       end
 
-    # κ' Equation (21)
-    # λ' Equation (22)
-    # γ'(gamma_k, gamma_z) Equation (19)
+    # κ' Formula (21) v0.3.4
+    # λ' Formula (22) v0.3.4
+    # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
     {new_safrole_pending, new_curr_validators, new_prev_validators, new_safrole_epoch_root} =
       RotateKeys.rotate_keys(
         h,
@@ -191,7 +191,7 @@ defmodule System.State do
         ticket_accumulator: state.safrole.ticket_accumulator
       }
 
-    # γ' Equation (19)
+    # γ' Formula (19) v0.3.4
     new_safrole =
       case Map.get(e, :tickets) do
         nil ->
