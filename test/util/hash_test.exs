@@ -48,4 +48,8 @@ defmodule Util.HashTest do
       assert Hash.blake2b_256(data) == expected_hash
     end
   end
+
+  describe "default/1" do
+    assert Hash.default("test data") == Hash.blake2b_256("test data")
+  end
 end

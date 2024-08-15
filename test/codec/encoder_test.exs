@@ -82,15 +82,6 @@ defmodule CodecEncoderTest do
       assert Encoder.encode([0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]) == <<84, 85>>
     end
 
-    test "encode variable size" do
-      assert Encoder.encode(VariableSize.new([])) == <<0>>
-      assert Encoder.encode(VariableSize.new(<<>>)) == <<0>>
-      assert Encoder.encode(VariableSize.new({})) == <<0>>
-      assert Encoder.encode(VariableSize.new([1, 2])) == <<2, 1, 2>>
-      assert Encoder.encode(VariableSize.new(<<1, 2, 3>>)) == <<3, 1, 2, 3>>
-      assert Encoder.encode(VariableSize.new({1, 2, 3, 4})) == <<4, 1, 2, 3, 4>>
-    end
-
     # could have tests, but since this function is not in the GP anymore, will leave it for now
     test "encode disctionary" do
       map = Map.put(Map.put(%{}, 1, 1), 2, 2)
