@@ -14,5 +14,4 @@ defmodule NilDiscriminatorTest do
     assert Encoder.encode(NilDiscriminator.new([1])) == <<1, 1>>
     assert Encoder.encode(NilDiscriminator.new([])) == <<1>>
   end
-
 end

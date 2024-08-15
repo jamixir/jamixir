@@ -7,6 +7,7 @@ defmodule Codec.NilDiscriminator do
 
   defimpl Encodable do
     alias Codec.Encoder
+
     def encode(%Codec.NilDiscriminator{value: value}) do
       case value do
         nil -> <<0>>
@@ -14,6 +15,4 @@ defmodule Codec.NilDiscriminator do
       end
     end
   end
-
-
 end

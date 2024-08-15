@@ -21,12 +21,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         }
 
   # Formula (119) v0.3.4
-  defstruct specification: {}, # s
-            refinement_context: {}, # x
-            core_index: 0, # c
-            authorizer_hash: <<0::256>>, # a
-            output: "", # o
-            work_results: [] # r
+  defstruct specification: {},
+            refinement_context: %RefinementContext{},
+            core_index: 0,
+            authorizer_hash: <<0::256>>,
+            output: "",
+            work_results: []
 
   def new(specification, refinement_context, core_index, authorizer_hash, output, work_results) do
     %WorkReport{

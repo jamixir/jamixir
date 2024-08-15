@@ -2,17 +2,28 @@ defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
 
   @type t :: %__MODULE__{
-          parent_hash: Types.hash(), #Hp
-          prior_state_root: Types.hash(), #Hr
-          extrinsic_hash: Types.hash(), #Hx
-          timeslot: integer(), #Ht
-          epoch: integer() | nil, #He
-          winning_tickets_marker: list(binary()) | nil, #Hw
-          judgements_marker: list(binary()) | nil, #Hj
-          o: list(binary()) | nil, #Ho
-          block_author_key_index: Types.max_validators(), #Hi
-          vrf_signature: binary(), #Hv
-          block_seal: binary() #Hs
+          # Hp
+          parent_hash: Types.hash(),
+          # Hr
+          prior_state_root: Types.hash(),
+          # Hx
+          extrinsic_hash: Types.hash(),
+          # Ht
+          timeslot: integer(),
+          # He
+          epoch: integer() | nil,
+          # Hw
+          winning_tickets_marker: list(binary()) | nil,
+          # Hj
+          judgements_marker: list(binary()) | nil,
+          # Ho
+          o: list(binary()) | nil,
+          # Hi
+          block_author_key_index: Types.max_validators(),
+          # Hv
+          vrf_signature: binary(),
+          # Hs
+          block_seal: binary()
         }
 
   # Formula (37) v0.3.4
@@ -65,13 +76,9 @@ defmodule Block.Header do
     Codec.Encoder.encode({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       Codec.Encoder.encode_le(header.timeslot, 4) <>
       Codec.Encoder.encode(
-        {NilDiscriminator.new(header.epoch),
-        NilDiscriminator.new(header.winning_tickets_marker),
-        VariableSize.new(header.judgements_marker),
-        VariableSize.new(header.o),
-        Codec.Encoder.encode_le(header.block_author_key_index,2),
-        header.vrf_signature,
-      }
+        {NilDiscriminator.new(header.epoch), NilDiscriminator.new(header.winning_tickets_marker),
+         VariableSize.new(header.judgements_marker), VariableSize.new(header.o),
+         Codec.Encoder.encode_le(header.block_author_key_index, 2), header.vrf_signature}
       )
   end
 
