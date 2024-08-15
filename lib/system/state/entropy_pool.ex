@@ -12,14 +12,17 @@ defmodule System.State.EntropyPool do
           history: list(binary())
         }
 
+  # Formula (66) v0.3.4
   defstruct current: "", history: []
 
   def posterior_entropy_pool(header, timeslot, %EntropyPool{
         current: current_entropy,
         history: history
       }) do
+    # Formula (67) v0.3.4
     new_entropy = Hash.blake2b_256(current_entropy <> Crypto.entropy_vrf(header.vrf_signature))
 
+    # Formula (68) v0.3.4
     history =
       case Time.new_epoch?(timeslot, header.timeslot) do
         {:ok, true} ->

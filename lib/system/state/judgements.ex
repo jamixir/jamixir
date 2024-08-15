@@ -12,6 +12,7 @@ defmodule System.State.Judgements do
           punish: MapSet.t(Types.ed25519_key())
         }
 
+  # Formula (97) v0.3.4
   defstruct good: MapSet.new(),
             bad: MapSet.new(),
             wonky: MapSet.new(),

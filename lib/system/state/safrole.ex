@@ -1,8 +1,6 @@
 defmodule System.State.Safrole do
   @moduledoc """
   Sarole  state, as specified in section 6.1 of the GP.
-  Formula 48 v0.3.4
-
   """
   alias System.State.Ticket
   alias System.State.Validator
@@ -18,6 +16,7 @@ defmodule System.State.Safrole do
           ticket_accumulator: list(Ticket.t())
         }
 
+  # Formula (48) v0.3.4
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   def posterior_safrole(

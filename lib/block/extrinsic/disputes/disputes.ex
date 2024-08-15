@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes do
   @moduledoc """
-  Fomrula 98 v0.3.4
+  Formula (98) v0.3.4
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
@@ -71,7 +71,8 @@ defmodule Block.Extrinsic.Disputes do
     (combined -- punished_keys) |> MapSet.new()
   end
 
-  # Formula 101 and 102 v0.3.4.
+  # Formula (101) v0.3.4
+  # Formula (102) v0.3.4
   # Validates whether an offense (culprit or fault) is valid based on
   # report_hash being in the bad set or in the verdict bad set
 

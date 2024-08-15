@@ -2,7 +2,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @moduledoc """
   Work report
   section 11.1
-  Formula 119 v0.3.4
   """
   alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
 
@@ -21,12 +20,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           work_results: list(WorkResult.t())
         }
 
-  defstruct specification: {},
-            refinement_context: {},
-            core_index: 0,
-            authorizer_hash: <<0::256>>,
-            output: "",
-            work_results: []
+  # Formula (119) v0.3.4
+  defstruct specification: {}, # s
+            refinement_context: {}, # x
+            core_index: 0, # c
+            authorizer_hash: <<0::256>>, # a
+            output: "", # o
+            work_results: [] # r
 
   def new(specification, refinement_context, core_index, authorizer_hash, output, work_results) do
     %WorkReport{
