@@ -8,7 +8,6 @@ defmodule CodecEncoderTest do
       assert Encoder.encode(0) == <<0>>
     end
 
-    # Equation (273)
     test "encode integer < 2^64" do
       assert Encoder.encode(2 ** 2) == <<4>>
       assert Encoder.encode(2 ** 8) == <<129, 0>>

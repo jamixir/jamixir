@@ -21,12 +21,35 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           # g: the gas prioritization ratio used when determining how much gas should be allocated to execute this item’s accumulate
           gas_prioritization_ratio: non_neg_integer(),
           # o: the output or error of the execution of the code, which may be either an octet sequence in case it was successful, or a member of the set J if not
-          output_or_error: binary() | error()
+          output_or_error: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
-  defstruct service_index: 0,
-            code_hash: <<0::256>>,
-            payload_hash: <<0::256>>,
-            gas_prioritization_ratio: 0,
-            output_or_error: <<>>
+  defstruct service_index: 0, # s
+            code_hash: <<0::256>>, # c
+            payload_hash: <<0::256>>, # l
+            gas_prioritization_ratio: 0, # g
+            output_or_error: {:ok, <<>>} #o
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Guarantee.{WorkResult, WorkExecutionError}
+    alias Codec.{Encoder, VariableSize}
+
+    # Formula (285) v0.3.4
+    def encode(%WorkResult{} = wr) do
+      Encoder.encode_le(wr.service_index, 4) <>
+      Encoder.encode({wr.code_hash, wr.payload_hash}) <>
+      Encoder.encode_le(wr.gas_prioritization_ratio, 8) <>
+      do_encode(wr.output_or_error)
+    end
+
+    # Formula (290) v0.3.4
+    defp do_encode({:ok, b}) do
+      <<0>> <> Encoder.encode(VariableSize.new(b))
+    end
+
+    # Formula (290) v0.3.4
+    defp do_encode({:error, e}) do
+      Encoder.encode(WorkExecutionError.code(e))
+    end
+  end
 end
