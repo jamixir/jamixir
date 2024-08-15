@@ -48,11 +48,6 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (277) v0.3.4
-  defp do_encode(%VariableSize{value: value, size: size}) do
-    do_encode(size) <> do_encode(value)
-  end
-
   defp do_encode(value) when is_struct(value) do
     if encodable?(value) do
       Encodable.encode(value)

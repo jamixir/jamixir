@@ -10,4 +10,12 @@ defmodule Codec.VariableSize do
   defp size(value) when is_binary(value), do: byte_size(value)
   # Default case
   defp size(_value), do: 0
+
+  defimpl Encodable do
+    alias Codec.Encoder
+    # Formula (277) v0.3.4
+    def encode(%Codec.VariableSize{value: value, size: size}) do
+      Encoder.encode(size) <> Encoder.encode(value)
+    end
+  end
 end

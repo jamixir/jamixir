@@ -15,6 +15,8 @@ defmodule Types do
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>
   @type max_age_timeslot_lookup_anchor :: non_neg_integer() # L
+  @type max_validators :: <<_::10>>
+
   @typedoc """
   Fm∈Yk∈HB ⟨x ∈ Y⟩ ⊂ Y96
    valid singly-contextualized signatures of utilizing the se-
