@@ -12,7 +12,7 @@ defmodule Codec.Encoder do
     do_encode(value)
   end
 
-  # Formula (271) v0.3.4
+  # Formula (273) v0.3.4
   @spec encode_little_endian(integer(), integer()) :: binary()
   def encode_little_endian(_, 0), do: <<>>
 
