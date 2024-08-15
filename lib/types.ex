@@ -11,6 +11,7 @@ defmodule Types do
   @type ed25519_signature :: <<_::512>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
+  @type timeslot :: non_neg_integer()
   @type decision :: boolean()
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>

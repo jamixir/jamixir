@@ -37,7 +37,6 @@ defmodule Util.MMR do
     %MMR{mmr | roots: new_roots}
   end
 
-
   # Formula (304) A v0.3.4
   defp append_root(roots, hash), do: append_root(roots, hash, 0)
 

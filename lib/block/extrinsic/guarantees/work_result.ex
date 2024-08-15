@@ -8,7 +8,6 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   Formula 123 v0.3.4
   """
 
-
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
   @type t :: %__MODULE__{

@@ -57,18 +57,13 @@ defmodule Block.HeaderTest do
     test "unsigned_serialize header", %{header: h} do
       # Formula (282) as is v0.3.4
       assert Header.unsigned_serialize(h) ==
-        Codec.Encoder.encode({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
-        Codec.Encoder.encode_le(h.timeslot, 4) <>
-        Codec.Encoder.encode(
-          {NilDiscriminator.new(h.epoch),
-          NilDiscriminator.new(h.winning_tickets_marker),
-          VariableSize.new(h.judgements_marker),
-          VariableSize.new(h.o),
-          Codec.Encoder.encode_le(h.block_author_key_index,2),
-          h.vrf_signature,
-        }
-        )
-
-      end
+               Codec.Encoder.encode({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
+                 Codec.Encoder.encode_le(h.timeslot, 4) <>
+                 Codec.Encoder.encode(
+                   {NilDiscriminator.new(h.epoch), NilDiscriminator.new(h.winning_tickets_marker),
+                    VariableSize.new(h.judgements_marker), VariableSize.new(h.o),
+                    Codec.Encoder.encode_le(h.block_author_key_index, 2), h.vrf_signature}
+                 )
+    end
   end
 end
