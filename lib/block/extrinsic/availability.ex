@@ -16,6 +16,7 @@ defmodule Block.Extrinsic.Availability do
             # e
             segment_root: <<0::256>>
   defimpl Encodable do
+    # Formula (284) v0.3.4
     def encode(%Block.Extrinsic.Availability{} = availability) do
       Codec.Encoder.encode(availability.work_package_hash) <>
         Codec.Encoder.encode_le(availability.work_bundle_length,4) <>
