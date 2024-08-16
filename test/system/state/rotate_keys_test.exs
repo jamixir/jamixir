@@ -5,9 +5,6 @@ defmodule System.State.RotateKeysTest do
   alias Block.Header
   alias TestHelper, as: TH
 
-
-
-
   setup do
     next_validators = Enum.map(1..3, &TH.create_validator/1)
     offenders = MapSet.new([<<1::256>>, <<3::256>>])

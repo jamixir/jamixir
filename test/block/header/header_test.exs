@@ -61,7 +61,7 @@ defmodule Block.HeaderTest do
                  Codec.Encoder.encode_le(h.timeslot, 4) <>
                  Codec.Encoder.encode(
                    {NilDiscriminator.new(h.epoch), NilDiscriminator.new(h.winning_tickets_marker),
-                    VariableSize.new(h.judgements_marker), VariableSize.new(h.o),
+                    VariableSize.new(h.judgements_marker), VariableSize.new(h.offenders_marker),
                     Codec.Encoder.encode_le(h.block_author_key_index, 2), h.vrf_signature}
                  )
     end

@@ -15,8 +15,8 @@ defmodule Types do
   @type decision :: boolean()
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>
-  @type max_age_timeslot_lookup_anchor :: non_neg_integer() # L
-  @type max_validators :: <<_::10>>
+  # L
+  @type max_age_timeslot_lookup_anchor :: non_neg_integer()
 
   @typedoc """
   Fm∈Yk∈HB ⟨x ∈ Y⟩ ⊂ Y96

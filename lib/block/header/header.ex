@@ -17,9 +17,9 @@ defmodule Block.Header do
           # Hj
           judgements_marker: list(binary()) | nil,
           # Ho
-          o: list(binary()) | nil,
+          offenders_marker: list(binary()),
           # Hi
-          block_author_key_index: Types.max_validators(),
+          block_author_key_index: Types.validator_index(),
           # Hv
           vrf_signature: binary(),
           # Hs
@@ -43,7 +43,7 @@ defmodule Block.Header do
     # Hj
     judgements_marker: [],
     # Ho
-    o: [],
+    offenders_marker: [],
     # Hi
     block_author_key_index: 0,
     # Hv
@@ -72,12 +72,13 @@ defmodule Block.Header do
     end
   end
 
+  # Formula (282) v0.3.4
   def unsigned_serialize(%Block.Header{} = header) do
     Codec.Encoder.encode({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       Codec.Encoder.encode_le(header.timeslot, 4) <>
       Codec.Encoder.encode(
         {NilDiscriminator.new(header.epoch), NilDiscriminator.new(header.winning_tickets_marker),
-         VariableSize.new(header.judgements_marker), VariableSize.new(header.o),
+         VariableSize.new(header.judgements_marker), VariableSize.new(header.offenders_marker),
          Codec.Encoder.encode_le(header.block_author_key_index, 2), header.vrf_signature}
       )
   end

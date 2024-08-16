@@ -7,7 +7,10 @@ defmodule System.StateTransition.TimeslotTest do
 
   test "add_block/2 correctly sets timeslot" do
     state = %State{
-      entropy_pool: %State.EntropyPool{current: "initial_entropy", history: ["eta1", "eta2", "eta3"]},
+      entropy_pool: %State.EntropyPool{
+        current: "initial_entropy",
+        history: ["eta1", "eta2", "eta3"]
+      },
       timeslot: 6
     }
 
