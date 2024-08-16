@@ -1,19 +1,17 @@
 ---
-name: Gray Paper Equation Implementation
+name: Gray Paper Formula Implementation
 about: Create a report to help us improve
-title: "[GPE-XXX] - Explanation"
+title: "[GPF-XXX] - "
 projects:
   - jamixir/jamixir/1
 
 ---
 
 **GP release**
-0.3.2
+0.3.4
 
 **Formula**
-(formula text or image)
 
 **Description**
-Your description
 
 **Depending Issues**
