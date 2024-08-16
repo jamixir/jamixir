@@ -50,4 +50,27 @@ defmodule Jamixir.Factory do
       output_or_error: {:ok, <<4>>}
     }
   end
+
+  def work_item_factory do
+    %Block.Extrinsic.WorkItem{
+      service_id: 1,
+      code_hash: <<1::256>>,
+      payload_blob: <<2>>,
+      gas_limit: 3,
+      imported_data_segments: [{<<4::256>>, 5}],
+      blob_hashes_and_lengths: [{<<6::256>>, 7}],
+      exported_data_segments_count: 8
+    }
+  end
+
+  def work_package_factory do
+    %Block.Extrinsic.WorkPackage{
+      authorization_token: <<1>>,
+      service_index: 2,
+      authorization_code_hash: <<3>>,
+      parameterization_blob: <<4>>,
+      context: %RefinementContext{},
+      work_items: [build(:work_item)]
+    }
+  end
 end
