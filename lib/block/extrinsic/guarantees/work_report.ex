@@ -4,10 +4,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   section 11.1
   """
   alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
-
+  alias Block.Extrinsic.Availability
+  # Formula (119) v0.3.4
   @type t :: %__MODULE__{
           # s
-          specification: AvailabilitySpecification.t(),
+          specification: Availability.t(),
           # x
           refinement_context: RefinementContext.t(),
           # c
@@ -28,14 +29,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             output: "",
             work_results: []
 
-  def new(specification, refinement_context, core_index, authorizer_hash, output, work_results) do
-    %WorkReport{
-      specification: specification,
-      refinement_context: refinement_context,
-      core_index: core_index,
-      authorizer_hash: authorizer_hash,
-      output: output,
-      work_results: work_results
-    }
+  defimpl Encodable do
+    alias Codec.VariableSize
+    # Formula (286) v0.3.4
+    def encode(%WorkReport{} = wr) do
+      Codec.Encoder.encode({
+        wr.authorizer_hash,
+        wr.core_index,
+        VariableSize.new(wr.output),
+        wr.refinement_context,
+        wr.specification,
+        VariableSize.new(wr.work_results)
+      })
+    end
   end
 end

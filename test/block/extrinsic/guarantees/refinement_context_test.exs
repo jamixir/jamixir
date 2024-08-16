@@ -1,16 +1,10 @@
 defmodule RefinementContextTest do
   use ExUnit.Case
+  import Jamixir.Factory
 
   setup do
     {:ok,
-     rc: %RefinementContext{
-       anchor: <<1::256>>,
-       posterior_state_root: <<2::256>>,
-       posterior_beefy_root: <<3::256>>,
-       lookup_anchor: <<4::256>>,
-       timeslot: 5,
-       prerequisite: <<6::256>>
-     }}
+     rc: build(:refinement_context)}
   end
 
   test "encode/1 smoke test", %{rc: rc} do
