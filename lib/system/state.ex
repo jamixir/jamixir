@@ -185,16 +185,15 @@ defmodule System.State do
 
     intermediate_safrole =
       %Safrole{
-        pending: new_safrole_pending,
-        epoch_root: new_safrole_epoch_root,
-        current_epoch_slot_sealers: state.safrole.current_epoch_slot_sealers,
-        ticket_accumulator: state.safrole.ticket_accumulator
+        state.safrole
+        | pending: new_safrole_pending,
+          epoch_root: new_safrole_epoch_root
       }
 
     # γ' Formula (19) v0.3.4
     new_safrole =
       case Map.get(e, :tickets) do
-        nil ->
+        [] ->
           intermediate_safrole
 
         tickets ->
