@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   Work report
   section 11.1
   """
-  alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
+  alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
   alias Block.Extrinsic.Availability
   # Formula (119) v0.3.4
   @type t :: %__MODULE__{

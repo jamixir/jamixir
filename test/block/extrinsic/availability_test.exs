@@ -3,8 +3,7 @@ defmodule Block.Extrinsic.AvailabilityTest do
   import Jamixir.Factory
 
   setup do
-    {:ok,
-     availability: build(:availability)}
+    {:ok, availability: build(:availability)}
   end
 
   test "encode/1", %{availability: availability} do

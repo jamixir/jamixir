@@ -3,8 +3,7 @@ defmodule RefinementContextTest do
   import Jamixir.Factory
 
   setup do
-    {:ok,
-     rc: build(:refinement_context)}
+    {:ok, rc: build(:refinement_context)}
   end
 
   test "encode/1 smoke test", %{rc: rc} do
