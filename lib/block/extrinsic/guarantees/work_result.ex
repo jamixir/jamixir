@@ -44,7 +44,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
 
     # Formula (290) v0.3.4
     defp do_encode({:ok, b}) do
-      <<0>> <> Encoder.encode(VariableSize.new(b))
+      Encoder.encode({0, VariableSize.new(b)})
     end
 
     # Formula (290) v0.3.4
