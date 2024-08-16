@@ -1,16 +1,11 @@
 defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   use ExUnit.Case
+  import Jamixir.Factory
   alias Block.Extrinsic.Guarantee.WorkResult
 
   setup do
     {:ok,
-     wr: %WorkResult{
-       service_index: 0,
-       code_hash: <<1::256>>,
-       payload_hash: <<2::256>>,
-       gas_prioritization_ratio: 3,
-       output_or_error: {:ok, <<4>>}
-     }}
+     wr: build(:work_result)}
   end
 
   describe "encode/1" do
