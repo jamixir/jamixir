@@ -23,11 +23,16 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           output_or_error: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
-  defstruct service_index: 0, # s
-            code_hash: <<0::256>>, # c
-            payload_hash: <<0::256>>, # l
-            gas_prioritization_ratio: 0, # g
-            output_or_error: {:ok, <<>>} #o
+  # s
+  defstruct service_index: 0,
+            # c
+            code_hash: <<0::256>>,
+            # l
+            payload_hash: <<0::256>>,
+            # g
+            gas_prioritization_ratio: 0,
+            # o
+            output_or_error: {:ok, <<>>}
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkResult, WorkExecutionError}
@@ -36,9 +41,9 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     # Formula (285) v0.3.4
     def encode(%WorkResult{} = wr) do
       Encoder.encode_le(wr.service_index, 4) <>
-      Encoder.encode({wr.code_hash, wr.payload_hash}) <>
-      Encoder.encode_le(wr.gas_prioritization_ratio, 8) <>
-      do_encode(wr.output_or_error)
+        Encoder.encode({wr.code_hash, wr.payload_hash}) <>
+        Encoder.encode_le(wr.gas_prioritization_ratio, 8) <>
+        do_encode(wr.output_or_error)
     end
 
     # Formula (290) v0.3.4

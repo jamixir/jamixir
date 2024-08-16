@@ -1,7 +1,7 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
 
-  alias Codec.{Encoder, VariableSize}
+  alias Codec.{Encoder}
 
   describe "encode_integer/1" do
     test "encode integer 0" do

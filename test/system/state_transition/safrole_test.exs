@@ -31,6 +31,7 @@ defmodule System.StateTransition.SafroleStateTest do
       pending: [validator2],
       epoch_root: <<0xABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890::256>>
     }
+
     judgements = %Judgements{punish: offenders}
 
     state = %System.State{
@@ -45,10 +46,7 @@ defmodule System.StateTransition.SafroleStateTest do
     # New epoch
     header = %Header{timeslot: 600}
 
-    {:ok,
-     state: state,
-     header: header,
-     validator2: validator2}
+    {:ok, state: state, header: header, validator2: validator2}
   end
 
   describe "safrole state update on new epoch with some validators nullified" do
