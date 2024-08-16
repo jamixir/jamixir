@@ -61,7 +61,7 @@ defmodule Block.Extrinsic.Disputes do
     Crypto.verify_signature(sig, wrh, key)
   end
 
-  # Formula 101 and 102 v0.3.4.
+  # Formula (101) and 102 v0.3.4.
   defp combined_validators(state) do
     current_validators = state.curr_validators |> Enum.map(& &1.ed25519)
     previous_validators = state.prev_validators |> Enum.map(& &1.ed25519)
@@ -92,7 +92,7 @@ defmodule Block.Extrinsic.Disputes do
     classification == :bad or report_hash in state.judgements.bad
   end
 
-  # Formula 105 v0.3.4.
+  # Formula (105) v0.3.4.
   defp filter_duplicates(processed_verdicts_map, %System.State.Judgements{
          good: good_set,
          bad: bad_set,

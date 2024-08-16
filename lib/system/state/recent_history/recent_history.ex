@@ -147,6 +147,7 @@ defmodule System.State.RecentHistory do
       guarantees
       |> Enum.map(& &1.work_report.specification.work_package_hash)
 
+    # Formula (84) v0.3.4
     RecentHistory.add(
       recent_history,
       header_hash,

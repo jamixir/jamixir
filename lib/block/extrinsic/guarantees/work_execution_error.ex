@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
+  # Formula (124) v0.3.4
   @type t :: :infinite | :halt | :bad | :big
 
   # Formula (290) v0.3.4

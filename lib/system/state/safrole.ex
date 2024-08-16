@@ -8,6 +8,7 @@ defmodule System.State.Safrole do
   @type t :: %__MODULE__{
           # gamma_k
           pending: list(Validator.t()),
+          # Formula (49) v0.3.4
           # gamma_z
           epoch_root: <<_::1152>>,
           # gamma_s

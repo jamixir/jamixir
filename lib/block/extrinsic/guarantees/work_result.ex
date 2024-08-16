@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   work-package
 
   section 11.1
-  Formula 123 v0.3.4
+  Formula (123) v0.3.4
   """
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large

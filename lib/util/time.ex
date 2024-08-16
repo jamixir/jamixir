@@ -64,12 +64,14 @@ defmodule Util.Time do
   end
 
   @doc """
-  Determines the epoch index of a given timeslot. Formula (47) v0.3.4
+  Determines the epoch index of a given timeslot.
+  Formula (47) v0.3.4
   """
   def epoch_index(timeslot), do: div(timeslot, @epoch_duration)
 
   @doc """
-  Determines the phase of a given timeslot within an epoch. Formula (47) v0.3.4
+  Determines the phase of a given timeslot within an epoch.
+  Formula (47) v0.3.4
   """
   def epoch_phase(timeslot), do: rem(timeslot, @epoch_duration)
 end

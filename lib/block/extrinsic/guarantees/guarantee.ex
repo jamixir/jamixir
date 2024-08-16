@@ -1,7 +1,8 @@
 defmodule Block.Extrinsic.Guarantee do
   @moduledoc """
   Work report guarantee.
-  11.4 , Formula 138 v0.3.4
+  11.4
+  Formula (138) v0.3.4
   """
   alias Block.Extrinsic.Guarantee.WorkReport
 

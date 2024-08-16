@@ -2,22 +2,29 @@ defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
 
   @type t :: %__MODULE__{
+          # Formula (38) v0.3.4
           # Hp
           parent_hash: Types.hash(),
+          # Formula (42) v0.3.4
           # Hr
           prior_state_root: Types.hash(),
+          # Formula (40) v0.3.4
           # Hx
           extrinsic_hash: Types.hash(),
+          # Formula (41) v0.3.4
           # Ht
           timeslot: integer(),
+          # Formula (44) v0.3.4
           # He
           epoch: integer() | nil,
           # Hw
           winning_tickets_marker: list(binary()) | nil,
+          # Formula (45) v0.3.4
           # Hj
-          judgements_marker: list(binary()) | nil,
+          judgements_marker: list(Types.hash()),
           # Ho
-          offenders_marker: list(binary()),
+          offenders_marker: list(Types.hash()),
+          # Formula (43) v0.3.4
           # Hi
           block_author_key_index: Types.validator_index(),
           # Hv
@@ -52,7 +59,7 @@ defmodule Block.Header do
     block_seal: <<>>
   ]
 
-  # Formula 40 v0.3.4
+  # Formula (40) v0.3.4
   def valid_extrinsic_hash?(header, extrinsic) do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end

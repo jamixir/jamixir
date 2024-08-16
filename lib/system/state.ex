@@ -63,7 +63,8 @@ defmodule System.State do
   def add_block(state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
 
-    # Formula (16) Formula (45) => τ' = Ht
+    # Formula (16) v0.3.4
+    # Formula (46) v0.3.4
     new_timeslot = h.timeslot
     # β† Formula (17) v0.3.4
     inital_recent_history =
