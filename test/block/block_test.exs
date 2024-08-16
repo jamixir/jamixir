@@ -1,7 +1,7 @@
 defmodule BlockTest do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Disputes
-  alias System.State.Ticket
+  alias System.State.SealKeyTicket
   alias Block.Extrinsic
   use ExUnit.Case
 
@@ -9,7 +9,7 @@ defmodule BlockTest do
     test "encode block smoke test" do
       Codec.Encoder.encode(%Block{
         extrinsic: %Extrinsic{
-          tickets: [%Ticket{}],
+          tickets: [%SealKeyTicket{}],
           disputes: %Disputes{},
           preimages: [%{}],
           availability: [%{}],

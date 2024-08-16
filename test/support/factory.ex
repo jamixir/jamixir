@@ -73,4 +73,11 @@ defmodule Jamixir.Factory do
       work_items: [build(:work_item)]
     }
   end
+
+  def seal_key_ticket_factory do
+    %System.State.SealKeyTicket{
+      id: <<1::256>>,
+      entry_index: sequence(:entry_index, & &1)
+    }
+  end
 end
