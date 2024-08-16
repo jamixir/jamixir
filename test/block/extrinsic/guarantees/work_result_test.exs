@@ -1,11 +1,9 @@
 defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Extrinsic.Guarantee.WorkResult
 
   setup do
-    {:ok,
-     wr: build(:work_result)}
+    {:ok, wr: build(:work_result)}
   end
 
   describe "encode/1" do

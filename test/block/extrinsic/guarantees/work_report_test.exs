@@ -2,9 +2,6 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
 
-  alias Block.Extrinsic.Guarantee.{WorkResult, AvailabilitySpecification, WorkReport}
-  alias Block.Extrinsic.Availability
-
   setup do
     {:ok, wr: build(:work_report)}
   end
