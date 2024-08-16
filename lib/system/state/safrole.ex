@@ -2,7 +2,7 @@ defmodule System.State.Safrole do
   @moduledoc """
   Sarole  state, as specified in section 6.1 of the GP.
   """
-  alias System.State.{SealKeyTicket, Validator, EntropyPool}
+  alias System.State.{SealKeyTicket, Validator, EntropyPool, Safrole}
   alias Block.Header
   alias Util.{Time, Hash}
   alias Codec.{Encoder, Decoder}
@@ -45,7 +45,7 @@ defmodule System.State.Safrole do
         curr_validators
       )
 
-    %{
+    %Safrole{
       safrole
       | current_epoch_slot_sealers: posterior_epoch_slot_sealers
     }
