@@ -1,40 +1,15 @@
 defmodule System.State.RotateKeysTest do
   use ExUnit.Case
-  alias System.State.{RotateKeys, Validator, Safrole, Judgements}
+  alias System.State.{RotateKeys, Safrole, Judgements}
   alias Types
   alias Block.Header
+  alias TestHelper, as: TH
 
-  defp is_nullified(%Validator{} = validator) do
-    validator.bandersnatch == <<0::256>> and
-      validator.ed25519 == <<0::256>> and
-      validator.bls == <<0::1152>> and
-      validator.metadata == <<0::1024>>
-  end
+
+
 
   setup do
-    validator1 = %Validator{
-      bandersnatch: <<1::256>>,
-      ed25519: <<1::256>>,
-      bls: <<1::1152>>,
-      metadata: <<1::1024>>
-    }
-
-    validator2 = %Validator{
-      bandersnatch: <<2::256>>,
-      ed25519: <<2::256>>,
-      bls: <<2::1152>>,
-      metadata: <<2::1024>>
-    }
-
-    validator3 = %Validator{
-      bandersnatch: <<3::256>>,
-      ed25519: <<3::256>>,
-      bls: <<3::1152>>,
-      metadata: <<3::1024>>
-    }
-
-    next_validators = [validator1, validator2, validator3]
-
+    next_validators = Enum.map(1..3, &TH.create_validator/1)
     offenders = MapSet.new([<<1::256>>, <<3::256>>])
 
     {:ok, next_validators: next_validators, offenders: offenders}
@@ -49,9 +24,9 @@ defmodule System.State.RotateKeysTest do
 
       # Validator 1 and 3 are nullified, 2 is not
 
-      assert is_nullified(Enum.at(result, 0))
+      assert TH.is_nullified(Enum.at(result, 0))
       assert Enum.at(result, 1) == Enum.at(next_validators, 1)
-      assert is_nullified(Enum.at(result, 2))
+      assert TH.is_nullified(Enum.at(result, 2))
     end
 
     test "returns the same validators if none are in the offenders set", %{
@@ -78,26 +53,7 @@ defmodule System.State.RotateKeysTest do
   end
 
   setup do
-    validator1 = %Validator{
-      bandersnatch: :crypto.strong_rand_bytes(32),
-      ed25519: :crypto.strong_rand_bytes(32),
-      bls: :crypto.strong_rand_bytes(144),
-      metadata: :crypto.strong_rand_bytes(128)
-    }
-
-    validator2 = %Validator{
-      bandersnatch: :crypto.strong_rand_bytes(32),
-      ed25519: :crypto.strong_rand_bytes(32),
-      bls: :crypto.strong_rand_bytes(144),
-      metadata: :crypto.strong_rand_bytes(128)
-    }
-
-    validator3 = %Validator{
-      bandersnatch: :crypto.strong_rand_bytes(32),
-      ed25519: :crypto.strong_rand_bytes(32),
-      bls: :crypto.strong_rand_bytes(144),
-      metadata: :crypto.strong_rand_bytes(128)
-    }
+    [validator1, validator2, validator3] = Enum.map(1..3, fn _ -> TH.random_validator() end)
 
     header = %Header{timeslot: 600}
     timeslot = 0
@@ -129,7 +85,7 @@ defmodule System.State.RotateKeysTest do
           punish: offenders
         })
 
-      assert Enum.all?(new_pending, &is_nullified/1)
+      assert Enum.all?(new_pending, &TH.is_nullified/1)
       assert new_current == safrole.pending
       assert new_prev == [v2]
     end
@@ -169,7 +125,7 @@ defmodule System.State.RotateKeysTest do
           punish: offenders
         })
 
-      assert Enum.count(new_pending, &is_nullified/1) == 2
+      assert Enum.count(new_pending, &TH.is_nullified/1) == 2
       assert Enum.at(new_pending, 1) == v2
       assert new_current == safrole.pending
       assert new_prev == [v2]
