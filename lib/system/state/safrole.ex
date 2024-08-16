@@ -2,7 +2,7 @@ defmodule System.State.Safrole do
   @moduledoc """
   Sarole  state, as specified in section 6.1 of the GP.
   """
-  alias System.State.Ticket
+  alias System.State.SealKeyTicket
   alias System.State.Validator
 
   @type t :: %__MODULE__{
@@ -12,9 +12,9 @@ defmodule System.State.Safrole do
           # gamma_z
           epoch_root: <<_::1152>>,
           # gamma_s
-          current_epoch_slot_sealers: list(Ticket.t()) | list(<<_::256>>),
+          current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(<<_::256>>),
           # gamma_a
-          ticket_accumulator: list(Ticket.t())
+          ticket_accumulator: list(SealKeyTicket.t())
         }
 
   # Formula (48) v0.3.4
@@ -37,7 +37,7 @@ defmodule System.State.Safrole do
   Z function: Outside-in sequencer function.
   Reorders the list by alternating between the first and last elements.
   """
-  @spec outside_in_sequencer([Ticket.t()]) :: [Ticket.t()]
+  @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
   def outside_in_sequencer(tickets) do
     do_z(tickets, [])
   end
