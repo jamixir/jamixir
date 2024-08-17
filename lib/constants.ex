@@ -24,4 +24,25 @@ defmodule Constants do
   """
   @ticket_submission_end 500
   def ticket_submission_end, do: @ticket_submission_end
+
+  @doc """
+  C
+  number of cores
+  """
+  @core_count 341
+  def core_count, do: @core_count
+
+  @doc """
+  O
+  The maximum number of items in the authorizations pool.
+  """
+  @max_authorizations_items 8
+  def max_authorizations_items, do: @max_authorizations_items
+
+  @doc """
+  Q
+  The maximum number of items in the authorization queue.
+  """
+  @max_authorization_queue_items 80
+  def max_authorization_queue_items, do: @max_authorization_queue_items
 end
