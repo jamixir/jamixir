@@ -4,13 +4,30 @@ defmodule Jamixir.Factory do
 
   alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
 
-  def work_report_factory do
-    %WorkReport{
-      specification: build(:availability),
-      refinement_context: %RefinementContext{},
-      core_index: 1
-    }
+  @cores 2
+  @validator_count 4
+  @epoch_length 6
+  @max_authorizers_per_core 2
+  @max_authorize_queue_items 4
 
+  def genesis_state_factory do
+    # Generate a single list of validators to be used for both `next_validators` and `curr_validators`
+    validators = build_list(@validator_count, :random_validator)
+
+    %System.State{
+      authorizer_pool: authorizer_pool_factory(),
+      safrole: safrole_factory(),
+      services: services_factory(),
+      entropy_pool: genesis_entropy_pool_factory(),
+      next_validators: validators,
+      curr_validators: validators,
+      authorizer_queue: authorizer_queue_factory()
+    }
+  end
+
+  # Work Report and Availability Factories
+
+  def work_report_factory do
     %WorkReport{
       specification: build(:availability),
       refinement_context: build(:refinement_context),
@@ -74,10 +91,132 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def seal_key_ticket_factory do
+  # Validator Factories
+
+  def random_validator_factory do
+    %System.State.Validator{
+      bandersnatch: :crypto.strong_rand_bytes(32),
+      ed25519: :crypto.strong_rand_bytes(32),
+      bls: :crypto.strong_rand_bytes(144),
+      metadata: :crypto.strong_rand_bytes(128)
+    }
+  end
+
+  def indexed_validator_factory(index) do
+    %System.State.Validator{
+      bandersnatch: <<index::256>>,
+      ed25519: <<index::256>>,
+      bls: <<index::1152>>,
+      metadata: <<index::1024>>
+    }
+  end
+
+  # Ticket Factories
+  def single_seal_key_ticket_factory do
     %System.State.SealKeyTicket{
       id: <<1::256>>,
+      entry_index: 0
+    }
+  end
+
+  def seal_key_ticket_factory do
+    %System.State.SealKeyTicket{
+      id: random_hash(),
       entry_index: sequence(:entry_index, & &1)
     }
+  end
+
+  # Safrole Factoriy
+  def safrole_factory do
+    %System.State.Safrole{
+      pending: build_list(@validator_count, :random_validator),
+      # Placeholder for epoch root
+      epoch_root: :crypto.strong_rand_bytes(144),
+      current_epoch_slot_sealers: build_list(@epoch_length, :seal_key_ticket),
+      ticket_accumulator: build_list(@epoch_length, :seal_key_ticket)
+    }
+  end
+
+  # Authorizer Factories
+  def authorizer_queue_factory do
+    Enum.map(1..@cores, fn _ ->
+      Enum.map(1..@max_authorize_queue_items, fn _ ->
+        unique_hash_factory()
+      end)
+    end)
+  end
+
+  def authorizer_pool_factory do
+    Enum.map(1..@cores, fn _ ->
+      Enum.map(1..@max_authorizers_per_core, fn _ ->
+        unique_hash_factory()
+      end)
+    end)
+  end
+
+  def unique_hash_factory do
+    :crypto.strong_rand_bytes(32)
+  end
+
+  # Service Factories
+
+  def services_factory do
+    # Create a map with a single ServiceAccount
+    %{1 => build(:service_account)}
+  end
+
+  def service_account_factory do
+    %System.State.ServiceAccount{
+      storage: %{<<1::256>> => <<0xDEADBEEF::32>>},
+      preimage_storage_p: %{<<2::256>> => <<0xCAFEBABE::32>>},
+      preimage_storage_l: %{{<<3::256>>, 0} => [1, 2, 3]},
+      code_hash: <<4::256>>,
+      balance: 1000,
+      gas_limit_g: 5000,
+      gas_limit_m: 10000
+    }
+  end
+
+  # Entropy Pool Factories
+  def genesis_entropy_pool_factory do
+    %System.State.EntropyPool{
+      current: random_hash(),
+      history: []
+    }
+  end
+
+  def full_entropy_pool_factory do
+    %System.State.EntropyPool{
+      current: random_hash(),
+      history: build_list(3, :unique_hash)
+    }
+  end
+
+  # Core Reports Factory
+  def core_reports_factory do
+    List.duplicate(nil, @cores)
+  end
+
+  def privileged_services_factory do
+    %System.State.PriviligedServices{
+      manager_service: sequence(:manager_service, & &1),
+      alter_authorizer_service: sequence(:alter_authorizer_service, & &1),
+      alter_validator_service: sequence(:alter_validator_service, & &1)
+    }
+  end
+
+  # Judgements Factory
+  def judgements_factory do
+    %System.State.Judgements{}
+  end
+
+  # Validator Statistics Factory
+  def validator_statistics_factory do
+    %System.State.ValidatorStatistics{}
+  end
+
+  # Private Helper Functions
+  defp random_hash do
+    :crypto.strong_rand_bytes(32)
   end
 end
