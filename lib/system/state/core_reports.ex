@@ -1,7 +1,14 @@
 defmodule System.State.CoreReports do
   @moduledoc """
-  Handles the processing of core reports, including disputes and availability.
+  Formula (118) v0.3.4
+  Manages the list of core reports, tracking the current work report and timeslot for each core.
   """
+
+  alias System.State.CoreReport
+
+  @type t :: list(CoreReport.t() | nil)
+
+  defstruct reports: []
 
   @doc """
   Processes disputes and updates the core reports accordingly.
