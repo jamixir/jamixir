@@ -21,15 +21,6 @@ defmodule TestHelper do
       validator.metadata == <<0::1024>>
   end
 
-  def random_validator do
-    %Validator{
-      bandersnatch: :crypto.strong_rand_bytes(32),
-      ed25519: :crypto.strong_rand_bytes(32),
-      bls: :crypto.strong_rand_bytes(144),
-      metadata: :crypto.strong_rand_bytes(128)
-    }
-  end
-
   def create_validator(index) do
     %Validator{
       bandersnatch: <<index::256>>,
