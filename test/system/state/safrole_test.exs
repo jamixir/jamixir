@@ -1,5 +1,6 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
+  import Jamixir.Factory
   alias System.State.{Safrole, SealKeyTicket}
 
   describe "outside_in_sequencer/1" do
@@ -8,57 +9,32 @@ defmodule System.State.SafroleTest do
     end
 
     test "reorders a list with a single element" do
-      ticket = %SealKeyTicket{id: <<1::256>>, entry_index: 1}
+      ticket = build(:seal_key_ticket)
       assert Safrole.outside_in_sequencer([ticket]) == [ticket]
     end
 
     test "reorders a list with two elements" do
-      ticket1 = %SealKeyTicket{id: <<1::256>>, entry_index: 1}
-      ticket2 = %SealKeyTicket{id: <<2::256>>, entry_index: 2}
+      tickets = build_list(2, :seal_key_ticket)
 
-      assert Safrole.outside_in_sequencer([ticket1, ticket2]) == [ticket1, ticket2]
+      assert Safrole.outside_in_sequencer(tickets) == tickets
     end
 
     test "reorders a list with three elements" do
-      ticket1 = %SealKeyTicket{id: <<1::256>>, entry_index: 1}
-      ticket2 = %SealKeyTicket{id: <<2::256>>, entry_index: 2}
-      ticket3 = %SealKeyTicket{id: <<3::256>>, entry_index: 3}
+      [t1, t2, t3] = build_list(3, :seal_key_ticket)
 
-      assert Safrole.outside_in_sequencer([ticket1, ticket2, ticket3]) == [
-               ticket1,
-               ticket3,
-               ticket2
-             ]
+      assert Safrole.outside_in_sequencer([t1, t2, t3]) == [t1, t3, t2]
     end
 
     test "reorders a list with four elements" do
-      ticket1 = %SealKeyTicket{id: <<1::256>>, entry_index: 1}
-      ticket2 = %SealKeyTicket{id: <<2::256>>, entry_index: 2}
-      ticket3 = %SealKeyTicket{id: <<3::256>>, entry_index: 3}
-      ticket4 = %SealKeyTicket{id: <<4::256>>, entry_index: 4}
+      [t1, t2, t3, t4] = build_list(4, :seal_key_ticket)
 
-      assert Safrole.outside_in_sequencer([ticket1, ticket2, ticket3, ticket4]) == [
-               ticket1,
-               ticket4,
-               ticket2,
-               ticket3
-             ]
+      assert Safrole.outside_in_sequencer([t1, t2, t3, t4]) == [t1, t4, t2, t3]
     end
 
     test "reorders a list with five elements" do
-      ticket1 = %SealKeyTicket{id: <<1::256>>, entry_index: 1}
-      ticket2 = %SealKeyTicket{id: <<2::256>>, entry_index: 2}
-      ticket3 = %SealKeyTicket{id: <<3::256>>, entry_index: 3}
-      ticket4 = %SealKeyTicket{id: <<4::256>>, entry_index: 4}
-      ticket5 = %SealKeyTicket{id: <<5::256>>, entry_index: 5}
+      [t1, t2, t3, t4, t5] = build_list(5, :seal_key_ticket)
 
-      assert Safrole.outside_in_sequencer([ticket1, ticket2, ticket3, ticket4, ticket5]) == [
-               ticket1,
-               ticket5,
-               ticket2,
-               ticket4,
-               ticket3
-             ]
+      assert Safrole.outside_in_sequencer([t1, t2, t3, t4, t5]) == [t1, t5, t2, t4, t3]
     end
   end
 end
