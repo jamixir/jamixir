@@ -1,7 +1,6 @@
 defmodule WorkItemTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Extrinsic.WorkItem
 
   setup do
     {:ok, wi: build(:work_item)}
