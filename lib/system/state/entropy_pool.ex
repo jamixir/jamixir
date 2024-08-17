@@ -8,12 +8,12 @@ defmodule System.State.EntropyPool do
   alias System.State.EntropyPool
 
   @type t :: %__MODULE__{
-          current: binary(),
-          history: list(binary())
+          current: Types.hash(),
+          history: list(Types.hash())
         }
 
   # Formula (66) v0.3.4
-  defstruct current: "", history: []
+  defstruct current: <<>>, history: []
 
   def posterior_entropy_pool(header, timeslot, %EntropyPool{
         current: current_entropy,

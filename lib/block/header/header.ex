@@ -54,7 +54,7 @@ defmodule Block.Header do
     # Hi
     block_author_key_index: 0,
     # Hv
-    vrf_signature: nil,
+    vrf_signature: <<>>,
     # Hs
     block_seal: <<>>
   ]

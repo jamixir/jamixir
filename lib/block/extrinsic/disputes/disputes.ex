@@ -14,12 +14,12 @@ defmodule Block.Extrinsic.Disputes do
   alias __MODULE__.{Verdict, Culprit, Fault}
 
   @type t :: %__MODULE__{
-          verdicts: list(Verdict.t()) | nil,
-          culprits: list(Culprit.t()) | nil,
-          faults: list(Fault.t()) | nil
+          verdicts: list(Verdict.t()),
+          culprits: list(Culprit.t()),
+          faults: list(Fault.t())
         }
 
-  defstruct verdicts: [], culprits: nil, faults: nil
+  defstruct verdicts: [], culprits: [], faults: []
 
   @doc """
   Filters all components of Disputes extrinsic (verdicts, culprits, faults) for validity.
