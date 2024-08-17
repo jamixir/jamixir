@@ -1,6 +1,7 @@
 defmodule Block.HeaderTest do
   use ExUnit.Case
   import TestHelper
+  import Jamixir.Factory
 
   alias Block.Header
   alias Codec.{NilDiscriminator, VariableSize}
@@ -46,6 +47,10 @@ defmodule Block.HeaderTest do
 
   # Formula (281) v0.3.4
   describe "encode/1" do
+    test "encode header smoke test" do
+      assert Encodable.encode(build(:header))
+    end
+
     test "encode header", %{header: header} do
       assert Encodable.encode(header) ==
                Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)

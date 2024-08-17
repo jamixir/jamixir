@@ -1,7 +1,7 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.{Safrole, SealKeyTicket}
+  alias System.State.{Safrole}
 
   describe "outside_in_sequencer/1" do
     test "reorders an empty list" do

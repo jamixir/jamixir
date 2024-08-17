@@ -3,6 +3,9 @@ defmodule Jamixir.Factory do
   use ExMachina
 
   alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
+  alias Block.{Header, Extrinsic}
+  alias Block.Extrinsic.{Guarantee, Disputes}
+  alias System.State.SealKeyTicket
 
   @cores 2
   @validator_count 4
@@ -213,6 +216,45 @@ defmodule Jamixir.Factory do
   # Validator Statistics Factory
   def validator_statistics_factory do
     %System.State.ValidatorStatistics{}
+  end
+
+  def block_factory do
+    %Block{
+      extrinsic: build(:extrinsic),
+      # %Block.Header{}
+      header: build(:header)
+    }
+  end
+
+  def extrinsic_factory do
+    %Extrinsic{
+      tickets: [%SealKeyTicket{}],
+      disputes: %Disputes{},
+      preimages: [%{}],
+      availability: [%{}],
+      guarantees: [%Guarantee{}]
+    }
+  end
+
+  def header_factory do
+    %Header{
+      timeslot: 1,
+      parent_hash: random_hash(),
+      prior_state_root: random_hash(),
+      epoch: 0,
+      # Hw
+      winning_tickets_marker: [],
+      # Hj
+      judgements_marker: [random_hash()],
+      # Ho
+      offenders_marker: [random_hash()],
+      # Hi
+      block_author_key_index: 0,
+      # Hv
+      vrf_signature: <<>>,
+      # Hs
+      block_seal: <<>>
+    }
   end
 
   # Private Helper Functions

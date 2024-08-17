@@ -1,22 +1,10 @@
 defmodule BlockTest do
-  alias Block.Extrinsic.Guarantee
-  alias Block.Extrinsic.Disputes
-  alias System.State.SealKeyTicket
-  alias Block.Extrinsic
   use ExUnit.Case
+  import Jamixir.Factory
 
   describe "encode/1" do
     test "encode block smoke test" do
-      Codec.Encoder.encode(%Block{
-        extrinsic: %Extrinsic{
-          tickets: [%SealKeyTicket{}],
-          disputes: %Disputes{},
-          preimages: [%{}],
-          availability: [%{}],
-          guarantees: [%Guarantee{}]
-        },
-        header: %Block.Header{}
-      })
+      Codec.Encoder.encode(build(:block))
     end
   end
 end
