@@ -24,12 +24,13 @@ defmodule System.State.Safrole do
         _header,
         _timeslot,
         _tickets,
-        _safrole,
+        safrole,
         _next_validators,
         _entropy_pool,
         _curr_validators
       ) do
     # TODO
+    safrole
   end
 
   @doc """

@@ -27,7 +27,8 @@ defmodule System.State.CoreReports do
   @doc """
   Updates core reports with guarantees and current validators.
   """
-  def posterior_core_reports(_core_reports, _guarantees, _curr_validators, _new_timeslot) do
+  def posterior_core_reports(core_reports, _guarantees, _curr_validators, _new_timeslot) do
     # TODO: Implement the logic to update core reports with guarantees
+    core_reports
   end
 end

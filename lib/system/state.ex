@@ -7,36 +7,40 @@ defmodule System.State do
     Safrole,
     RecentHistory,
     EntropyPool,
-    RotateKeys
+    RotateKeys,
+    ServiceAccount,
+    CoreReports,
+    PriviligedServices,
+    ValidatorStatistics
   }
 
   @type t :: %__MODULE__{
-          authorization_requirements: list(AuthorizationRequirement.t()),
+          authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
-          services: list(Service.t()),
+          services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
-          core_reports: list(CoreReport.t()),
+          core_reports: CoreReports.t(),
           timeslot: integer(),
-          authorization_queue: AuthorizationQueue.t(),
-          privileged_services: list(Identity.t()),
+          authorizer_queue: list(list(Types.hash())),
+          privileged_services: PriviligedServices.t(),
           judgements: Judgements.t(),
-          validator_statistics: list(ValidatorStatistic.t())
+          validator_statistics: ValidatorStatistics.t()
         }
 
   # Formula (15) v0.3.4 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
-    authorization_requirements: [],
+    authorizer_pool: [[]],
     # β: Details of the most recent blocks
     recent_history: %RecentHistory{},
     # γ: State concerning the determination of validator keys
     safrole: %Safrole{},
     # δ: State dealing with services (analogous to smart contract accounts)
-    services: [],
+    services: %{},
     # η: On-chain entropy pool
     entropy_pool: %EntropyPool{},
     # ι: Validators enqueued for next round
@@ -46,17 +50,17 @@ defmodule System.State do
     # λ: Previous Validators
     prev_validators: [],
     # ρ: Each core's currently assigned report
-    core_reports: [],
+    core_reports: %CoreReports{},
     # τ: Details of the most recent timeslot
     timeslot: 0,
     # φ: Queue which fills the authorization requirement
-    authorization_queue: nil,
+    authorizer_queue: [[]],
     # χ: Identities of services with privileged status
-    privileged_services: [],
+    privileged_services: %PriviligedServices{},
     # ψ: Judgements tracked
     judgements: %Judgements{},
     # π: Validator statistics
-    validator_statistics: []
+    validator_statistics: %ValidatorStatistics{}
   ]
 
   # Formula (12) v0.3.4
@@ -73,102 +77,61 @@ defmodule System.State do
     # δ† Formula (24) v0.3.4
     # The post-preimage integration, pre-accumulation intermediate state
     services_intermediate =
-      case Map.get(e, :preimages) do
-        nil -> state.services
-        [] -> state.services
-        preimages -> State.Services.process_preimages(state.services, preimages, new_timeslot)
-      end
+      State.Services.process_preimages(state.services, Map.get(e, :preimages), new_timeslot)
 
     # ρ† Formula (25) v0.3.4
     # post-judgement, pre-assurances-extrinsic intermediate state
     core_reports_intermediate_1 =
-      case Map.get(e, :disputes) do
-        nil -> state.core_reports
-        disputes -> State.CoreReports.process_disputes(state.core_reports, disputes)
-      end
+      State.CoreReports.process_disputes(state.core_reports, Map.get(e, :disputes))
 
     # ρ‡ Formula (26) v0.3.4
     # The post-assurances-extrinsic, pre-guarantees-extrinsic, intermediate state
     core_reports_intermediate_2 =
-      case Map.get(e, :availability) do
-        nil ->
-          core_reports_intermediate_1
+      State.CoreReports.process_availability(
+        core_reports_intermediate_1,
+        Map.get(e, :availability)
+      )
 
-        availability ->
-          State.CoreReports.process_availability(core_reports_intermediate_1, availability)
-      end
+    sorted_guarantees =
+      Block.Extrinsic.unique_sorted_guarantees(e)
 
     # ρ' Formula (27) v0.3.4
     new_core_reports =
-      case Map.get(e, :guarantees) do
-        nil ->
-          core_reports_intermediate_2
-
-        _guarantees ->
-          sorted_guarantees = Block.Extrinsic.unique_sorted_guarantees(e)
-
-          State.CoreReports.posterior_core_reports(
-            core_reports_intermediate_2,
-            sorted_guarantees,
-            state.curr_validators,
-            new_timeslot
-          )
-      end
+      State.CoreReports.posterior_core_reports(
+        core_reports_intermediate_2,
+        sorted_guarantees,
+        state.curr_validators,
+        new_timeslot
+      )
 
     # Formula (28) v0.3.4
-    {_new_services, _privileged_services, _new_next_validators, _authorization_queue,
+    {_new_services, _privileged_services, _new_next_validators, _authorizer_queue,
      beefy_commitment_map} =
-      case Map.get(e, :availability) do
-        nil ->
-          {
-            services_intermediate,
-            state.privileged_services,
-            state.next_validators,
-            state.authorization_queue,
-            System.State.BeefyCommitmentMap.stub()
-          }
-
-        availability ->
-          State.Accumulation.accumulate(
-            availability,
-            new_core_reports,
-            services_intermediate,
-            state.privileged_services,
-            state.next_validators,
-            state.authorization_queue
-          )
-      end
+      State.Accumulation.accumulate(
+        Map.get(e, :availability),
+        new_core_reports,
+        services_intermediate,
+        state.privileged_services,
+        state.next_validators,
+        state.authorizer_queue
+      )
 
     # β' Formula (18) v0.3.4
     new_recent_history =
-      case Map.get(e, :guarantees) do
-        nil ->
-          state.recent_history
-
-        _guarantees ->
-          sorted_guarantees = Block.Extrinsic.unique_sorted_guarantees(e)
-
-          System.State.RecentHistory.posterior_recent_history(
-            h,
-            sorted_guarantees,
-            inital_recent_history,
-            beefy_commitment_map
-          )
-      end
+      System.State.RecentHistory.posterior_recent_history(
+        h,
+        sorted_guarantees,
+        inital_recent_history,
+        beefy_commitment_map
+      )
 
     # η' Formula (20) v0.3.4
     new_entropy_pool =
-      case Map.get(e, :entropy_pool) do
-        nil -> state.entropy_pool
-        _ -> EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
-      end
+      EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
 
     # ψ' Formula (23) v0.3.4
     new_judgements =
-      case Map.get(e, :disputes) do
-        nil -> state.judgements
-        disputes -> Judgements.posterior_judgements(h, disputes, state)
-      end
+      Judgements.posterior_judgements(h, Map.get(e, :disputes), state)
 
     # κ' Formula (21) v0.3.4
     # λ' Formula (22) v0.3.4
@@ -193,25 +156,19 @@ defmodule System.State do
 
     # γ' Formula (19) v0.3.4
     new_safrole =
-      case Map.get(e, :tickets) do
-        [] ->
-          intermediate_safrole
-
-        tickets ->
-          Safrole.posterior_safrole(
-            h,
-            state.timeslot,
-            tickets,
-            intermediate_safrole,
-            state.next_validators,
-            new_entropy_pool,
-            new_curr_validators
-          )
-      end
+      Safrole.posterior_safrole(
+        h,
+        state.timeslot,
+        Map.get(e, :tickets),
+        intermediate_safrole,
+        state.next_validators,
+        new_entropy_pool,
+        new_curr_validators
+      )
 
     %System.State{
       # α'
-      authorization_requirements: todo,
+      authorizer_pool: todo,
       # β'
       recent_history: new_recent_history,
       # γ'
@@ -231,7 +188,7 @@ defmodule System.State do
       # τ'
       timeslot: new_timeslot,
       # φ'
-      authorization_queue: todo,
+      authorizer_queue: todo,
       # χ'
       privileged_services: todo,
       # ψ'
