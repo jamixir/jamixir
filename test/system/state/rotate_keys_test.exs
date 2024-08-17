@@ -1,5 +1,6 @@
 defmodule System.State.RotateKeysTest do
   use ExUnit.Case
+  import Jamixir.Factory
   alias System.State.{RotateKeys, Safrole, Judgements}
   alias Types
   alias Block.Header
@@ -50,7 +51,7 @@ defmodule System.State.RotateKeysTest do
   end
 
   setup do
-    [validator1, validator2, validator3] = Enum.map(1..3, fn _ -> TH.random_validator() end)
+    [validator1, validator2, validator3] = build_list(3, :random_validator)
 
     header = %Header{timeslot: 600}
     timeslot = 0

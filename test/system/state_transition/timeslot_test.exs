@@ -1,17 +1,18 @@
 defmodule System.StateTransition.TimeslotTest do
   use ExUnit.Case
-
+  import Jamixir.Factory
   alias System.State
   alias Block.{Header}
   alias Block
 
   test "add_block/2 correctly sets timeslot" do
     state = %State{
-      entropy_pool: %State.EntropyPool{
-        current: "initial_entropy",
-        history: ["eta1", "eta2", "eta3"]
-      },
-      timeslot: 6
+      build(:genesis_state)
+      | entropy_pool: %State.EntropyPool{
+          current: "initial_entropy",
+          history: ["eta1", "eta2", "eta3"]
+        },
+        timeslot: 6
     }
 
     block = %Block{

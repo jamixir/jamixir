@@ -1,8 +1,9 @@
 defmodule System.StateTransition.JudgementsTest do
   use ExUnit.Case
+  import Jamixir.Factory
 
   alias System.State
-  alias Block.{Header}
+  alias Block.{Header, Extrinsic}
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
   alias System.State.{Validator, Judgements}
@@ -33,9 +34,10 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     state = %System.State{
-      curr_validators: [%Validator{ed25519: valid_key_public}],
-      prev_validators: [%Validator{ed25519: prev_key_public}],
-      judgements: %Judgements{}
+      build(:genesis_state)
+      | curr_validators: [%Validator{ed25519: valid_key_public}],
+        prev_validators: [%Validator{ed25519: prev_key_public}],
+        judgements: %Judgements{}
     }
 
     header = %Header{timeslot: 601}
@@ -77,7 +79,7 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
-    block = %Block{header: header, extrinsic: %{disputes: disputes}}
+    block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
 
@@ -111,7 +113,7 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
-    block = %Block{header: header, extrinsic: %{disputes: disputes}}
+    block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
 
@@ -132,7 +134,7 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
-    block = %Block{header: header, extrinsic: %{disputes: disputes}}
+    block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
 
@@ -163,7 +165,7 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
-    block = %Block{header: header, extrinsic: %{disputes: disputes}}
+    block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
 
@@ -215,7 +217,7 @@ defmodule System.StateTransition.JudgementsTest do
     }
 
     disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: [fault]}
-    block = %Block{header: header, extrinsic: %{disputes: disputes}}
+    block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
 
