@@ -6,7 +6,8 @@ defmodule System.State.Services do
   @doc """
   Processes preimages and updates the service state accordingly.
   """
-  def process_preimages(_services, _preimages, _new_timeslot) do
+  def process_preimages(services, _preimages, _new_timeslot) do
     # TODO: Implement the logic to process preimages
+    services
   end
 end
