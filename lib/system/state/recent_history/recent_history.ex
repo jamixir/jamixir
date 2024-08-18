@@ -92,16 +92,14 @@ defmodule System.State.RecentHistory do
   Formula (83) v0.3.4
   """
   def posterior_recent_history(
-        _header,
+        %Header{} = header,
         guarantees,
         %RecentHistory{} = recent_history,
         beefy_commitment_map
       ) do
     # 32 bytes of zeros
     posterior_state_root = <<0::256>>
-    # TODO - implement header serialization
-    # header_hash = Hash.blake2b_256(Codex.encode(header))
-    header_hash = Hash.blake2b_256("header")
+    header_hash = Hash.default(Codec.Encoder.encode(header))
 
     # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
     # Formula (83)
