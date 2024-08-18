@@ -66,7 +66,7 @@ defmodule System.State.RecentHistoryTest do
 
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee],
           recent_history,
           beefy_commitment_map
@@ -88,7 +88,7 @@ defmodule System.State.RecentHistoryTest do
 
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee],
           recent_history,
           beefy_commitment_map
@@ -118,7 +118,7 @@ defmodule System.State.RecentHistoryTest do
 
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee],
           recent_history,
           beefy_commitment_map
@@ -146,7 +146,7 @@ defmodule System.State.RecentHistoryTest do
 
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee1, guarantee2],
           recent_history,
           beefy_commitment_map
@@ -182,7 +182,7 @@ defmodule System.State.RecentHistoryTest do
       # Call the function to add a new block
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee],
           recent_history,
           beefy_commitment_map
@@ -226,7 +226,7 @@ defmodule System.State.RecentHistoryTest do
       # Call the function to update recent history
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee1, guarantee2],
           recent_history,
           beefy_commitment_map
@@ -269,7 +269,7 @@ defmodule System.State.RecentHistoryTest do
       # Call the function to update recent history
       result =
         System.State.RecentHistory.posterior_recent_history(
-          %{},
+          %Header{},
           [guarantee],
           recent_history,
           %BeefyCommitmentMap{commitments: [{2, <<5::256>>}]}
@@ -277,6 +277,25 @@ defmodule System.State.RecentHistoryTest do
 
       # Verify that the state root in the newly added block is all zeros
       assert Enum.at(result.blocks, -1).state_root == <<0::256>>
+    end
+
+    test "verifies header hash" do
+      header = %Header{block_seal: <<1::256>>}
+
+      # Initialize recent history
+      recent_history = RecentHistory.new()
+
+      # Call the function to update recent history
+      result =
+        System.State.RecentHistory.posterior_recent_history(
+          header,
+          [],
+          recent_history,
+          nil
+        )
+
+      # Verify that the state root in the newly added block is all zeros
+      assert Enum.at(result.blocks, -1).header_hash == Hash.default(Codec.Encoder.encode(header))
     end
   end
 end
