@@ -204,21 +204,27 @@ defmodule System.State do
   def e(v), do: Codec.Encoder.encode(v)
 
   # Formula (292) v0.3.4
-  def state_keys(state) do
-    %{}
-    # C(1) ↦ E([↕x ∣ x <− α])
-    |> Map.put(1, e([e(VariableSize.new(state.authorizer_pool))]))
-    # C(2) ↦ E(φ)
-    |> Map.put(2, e(state.authorizer_queue))
-    # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
-    |> Map.put(3, e(state.recent_history))
-    # C(4) - safrole encoding
-    |> Map.put(4, e(state.safrole))
+  def state_keys(s) do
+    %{
+      # C(1) ↦ E([↕x ∣ x <− α])
+      1 => e(VariableSize.new(s.authorizer_pool)),
+      # C(2) ↦ E(φ)
+      2 => e(s.authorizer_queue),
+      # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+      3 => e(s.recent_history),
+      # C(4) - safrole encoding
+      4 => e(s.safrole),
+      # C(6) ↦ E(η)
+      6 => e(s.entropy_pool)
+    }
     # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
-    # TODO C(6) ↦ E(η)
     # TODO C(7) ↦ E(ι)
     # TODO C(8) ↦ E(κ)
     # TODO C(9) ↦ E(λ)
+    # TODO C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
+    # TODO C(11) ↦ E4(τ)
+    # TODO C(12) ↦ E4(χ)
+    # TODO C(13) ↦ E4(π)
     # """
     |> Map.put(nil, nil)
   end

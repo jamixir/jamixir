@@ -29,5 +29,10 @@ defmodule System.StateTest do
       state = build(:genesis_state)
       assert state_keys(state)[4] == Codec.Encoder.encode(state.safrole)
     end
+
+    test "entropy pool serialization - C(6)" do
+      state = build(:genesis_state)
+      assert state_keys(state)[6] == Codec.Encoder.encode(state.entropy_pool)
+    end
   end
 end
