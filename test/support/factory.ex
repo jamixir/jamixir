@@ -15,15 +15,14 @@ defmodule Jamixir.Factory do
 
   def genesis_state_factory do
     # Generate a single list of validators to be used for both `next_validators` and `curr_validators`
-    validators = build_list(@validator_count, :random_validator)
-
     %System.State{
       authorizer_pool: authorizer_pool_factory(),
       safrole: safrole_factory(),
       services: services_factory(),
       entropy_pool: genesis_entropy_pool_factory(),
-      next_validators: validators,
-      curr_validators: validators,
+      next_validators: build_list(@validator_count, :random_validator),
+      curr_validators: build_list(@validator_count, :random_validator),
+      prev_validators: build_list(@validator_count, :random_validator),
       authorizer_queue: authorizer_queue_factory()
     }
   end

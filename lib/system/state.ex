@@ -214,17 +214,21 @@ defmodule System.State do
       3 => e(s.recent_history),
       # C(4) - safrole encoding
       4 => e(s.safrole),
+      # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
       # C(6) ↦ E(η)
-      6 => e(s.entropy_pool)
+      6 => e(s.entropy_pool),
+      # C(7) ↦ E(ι)
+      7 => e(s.next_validators),
+      # C(8) ↦ E(κ)
+      8 => e(s.curr_validators),
+      # C(9) ↦ E(λ)
+      9 => e(s.prev_validators),
+      # TODO C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
+      # C(11) ↦ E4(τ)
+      11 => Codec.Encoder.encode_le(s.timeslot, 4)
+      # TODO C(12) ↦ E4(χ)
+      # TODO C(13) ↦ E4(π)
     }
-    # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
-    # TODO C(7) ↦ E(ι)
-    # TODO C(8) ↦ E(κ)
-    # TODO C(9) ↦ E(λ)
-    # TODO C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
-    # TODO C(11) ↦ E4(τ)
-    # TODO C(12) ↦ E4(χ)
-    # TODO C(13) ↦ E4(π)
     # """
     |> Map.put(nil, nil)
   end
