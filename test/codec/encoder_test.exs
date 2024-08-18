@@ -109,4 +109,14 @@ defmodule CodecEncoderTest do
       assert Encoder.encode_le(65535, 2) == <<255, 255>>
     end
   end
+
+  describe "encode_mmr/1" do
+    test "encode mmr cases" do
+      assert Encoder.encode_mmr([]) == <<0>>
+      assert Encoder.encode_mmr([2]) == <<1, 1, 2>>
+      assert Encoder.encode_mmr([2, 3]) == <<2, 1, 2, 1, 3>>
+      assert Encoder.encode_mmr([nil, 3]) == <<2, 0, 1, 3>>
+      assert Encoder.encode_mmr([nil, nil]) == <<2, 0, 0>>
+    end
+  end
 end

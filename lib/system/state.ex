@@ -210,7 +210,8 @@ defmodule System.State do
     |> Map.put(1, e([e(VariableSize.new(state.authorizer_pool))]))
     # C(2) ↦ E(φ)
     |> Map.put(2, e(state.authorizer_queue))
-    # TODO C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+    # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+    |> Map.put(3, e(state.recent_history))
     # C(4) - safrole encoding
     |> Map.put(4, e(state.safrole))
     # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
