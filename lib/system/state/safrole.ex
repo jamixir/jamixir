@@ -25,6 +25,7 @@ defmodule System.State.Safrole do
   def posterior_safrole(
         %Header{timeslot: new_timeslot},
         timeslot,
+        _tickets,
         safrole,
         entropy_pool,
         curr_validators

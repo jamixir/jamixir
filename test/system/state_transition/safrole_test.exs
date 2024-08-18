@@ -20,7 +20,7 @@ defmodule System.StateTransition.SafroleStateTest do
     judgements = %Judgements{punish: offenders}
 
     state = %System.State{
-      build(:genesis_state)
+      build(:advanced_state)
       | curr_validators: [validator2],
         prev_validators: [],
         next_validators: [validator1, validator2, validator3],

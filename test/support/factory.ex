@@ -28,6 +28,14 @@ defmodule Jamixir.Factory do
     }
   end
 
+  # state with full entropy pool
+  def advanced_state_factory do
+    %System.State{
+      build(:genesis_state)|
+      entropy_pool: full_entropy_pool_factory(),
+    }
+  end
+
   # Work Report and Availability Factories
 
   def work_report_factory do
@@ -191,7 +199,10 @@ defmodule Jamixir.Factory do
   def full_entropy_pool_factory do
     %System.State.EntropyPool{
       current: random_hash(),
-      history: build_list(3, :unique_hash)
+      history:
+        Enum.map(1..3, fn _ ->
+          unique_hash_factory()
+        end)
     }
   end
 

@@ -165,7 +165,6 @@ defmodule System.State do
         state.timeslot,
         Map.get(e, :tickets),
         intermediate_safrole,
-        state.next_validators,
         new_entropy_pool,
         new_curr_validators
       )
