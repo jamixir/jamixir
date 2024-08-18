@@ -51,4 +51,26 @@ defmodule System.State.Safrole do
     middle = Enum.slice(rest, 0, length(rest) - 1)
     do_z(middle, acc ++ [first, last])
   end
+
+  defimpl Encodable do
+    alias Codec.VariableSize
+    # Equation (292) - C(4)
+    # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
+    def encode(safrole) do
+      sealer_type =
+        case safrole.current_epoch_slot_sealers do
+          [] -> 0
+          [%SealKeyTicket{} | _] -> 0
+          _ -> 1
+        end
+
+      Codec.Encoder.encode({
+        safrole.pending,
+        safrole.epoch_root,
+        sealer_type,
+        safrole.current_epoch_slot_sealers,
+        VariableSize.new(safrole.ticket_accumulator)
+      })
+    end
+  end
 end

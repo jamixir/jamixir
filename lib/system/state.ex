@@ -1,4 +1,5 @@
 defmodule System.State do
+  alias Codec.VariableSize
   alias System.State
 
   alias System.State.{
@@ -15,6 +16,7 @@ defmodule System.State do
   }
 
   @type t :: %__MODULE__{
+          # Formula (85) v0.3.4
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
@@ -25,6 +27,7 @@ defmodule System.State do
           prev_validators: list(Validator.t()),
           core_reports: CoreReports.t(),
           timeslot: integer(),
+          # Formula (85) v0.3.4
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PriviligedServices.t(),
           judgements: Judgements.t(),
@@ -196,5 +199,26 @@ defmodule System.State do
       # π'
       validator_statistics: todo
     }
+  end
+
+  def e(v), do: Codec.Encoder.encode(v)
+
+  # Formula (292) v0.3.4
+  def state_keys(state) do
+    %{}
+    # C(1) ↦ E([↕x ∣ x <− α])
+    |> Map.put(1, e([e(VariableSize.new(state.authorizer_pool))]))
+    # C(2) ↦ E(φ)
+    |> Map.put(2, e(state.authorizer_queue))
+    # TODO C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+    # C(4) - safrole encoding
+    |> Map.put(4, e(state.safrole))
+    # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
+    # TODO C(6) ↦ E(η)
+    # TODO C(7) ↦ E(ι)
+    # TODO C(8) ↦ E(κ)
+    # TODO C(9) ↦ E(λ)
+    # """
+    |> Map.put(nil, nil)
   end
 end
