@@ -214,7 +214,8 @@ defmodule System.State do
       3 => e(s.recent_history),
       # C(4) - safrole encoding
       4 => e(s.safrole),
-      # TODO C(5) ↦ E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
+      # C(5) ↦ judgements encoding
+      5 => e(s.judgements),
       # C(6) ↦ E(η)
       6 => e(s.entropy_pool),
       # C(7) ↦ E(ι)

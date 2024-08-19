@@ -33,6 +33,10 @@ defmodule System.StateTest do
       assert state_keys(state)[4] == Codec.Encoder.encode(state.safrole)
     end
 
+    test "judgements serialization - C(5)", %{state: state} do
+      assert state_keys(state)[5] == Codec.Encoder.encode(state.judgements)
+    end
+
     test "entropy pool serialization - C(6)", %{state: state} do
       assert state_keys(state)[6] == Codec.Encoder.encode(state.entropy_pool)
     end

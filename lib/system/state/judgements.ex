@@ -72,4 +72,17 @@ defmodule System.State.Judgements do
       MapSet.put(acc, offense.validator_key)
     end)
   end
+
+  defimpl Encodable do
+    alias Codec.VariableSize
+    # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
+    def encode(%Judgements{} = j) do
+      Codec.Encoder.encode({
+        VariableSize.new(j.good),
+        VariableSize.new(j.bad),
+        VariableSize.new(j.wonky),
+        VariableSize.new(j.punish)
+      })
+    end
+  end
 end

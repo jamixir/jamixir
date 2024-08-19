@@ -209,7 +209,12 @@ defmodule Jamixir.Factory do
 
   # Judgements Factory
   def judgements_factory do
-    %System.State.Judgements{}
+    %System.State.Judgements{
+      good: [random_hash()],
+      bad: [random_hash()],
+      wonky: [random_hash()],
+      punish: [random_hash()]
+    }
   end
 
   # Validator Statistics Factory

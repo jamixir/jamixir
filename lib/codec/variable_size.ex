@@ -8,6 +8,7 @@ defmodule Codec.VariableSize do
   defp size(value) when is_list(value), do: length(value)
   defp size(value) when is_tuple(value), do: tuple_size(value)
   defp size(value) when is_binary(value), do: byte_size(value)
+  defp size(%MapSet{} = v), do: MapSet.size(v)
   # Default case
   defp size(_value), do: 0
 
