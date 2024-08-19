@@ -23,24 +23,18 @@ defmodule System.State.Safrole do
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   def posterior_safrole(
-        %Header{timeslot: new_timeslot},
+        %Header{} = header,
         timeslot,
         _tickets,
         safrole,
         entropy_pool,
         curr_validators
       ) do
-    new_epoch_index = Time.epoch_index(new_timeslot)
-    current_epoch_index = Time.epoch_index(timeslot)
-    ticket_accumulator_full = length(safrole.ticket_accumulator) == Constants.epoch_length()
-    ticket_submission_ended = Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
     # Formula (69) v0.3.4
     posterior_epoch_slot_sealers =
-      calculate_epoch_slot_sealers(
-        new_epoch_index,
-        current_epoch_index,
-        ticket_accumulator_full,
-        ticket_submission_ended,
+      get_posterior_epoch_slot_sealers(
+        header,
+        timeslot,
         safrole,
         entropy_pool,
         curr_validators
@@ -52,7 +46,32 @@ defmodule System.State.Safrole do
     }
   end
 
+  def get_posterior_epoch_slot_sealers(
+        %Header{timeslot: new_timeslot},
+        timeslot,
+        safrole,
+        entropy_pool,
+        curr_validators
+      ) do
+    new_epoch_index = Time.epoch_index(new_timeslot)
+    current_epoch_index = Time.epoch_index(timeslot)
+    ticket_accumulator_full = length(safrole.ticket_accumulator) == Constants.epoch_length()
+    ticket_submission_ended = Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
+    # Formula (69) v0.3.4
+
+    calculate_epoch_slot_sealers(
+      new_epoch_index,
+      current_epoch_index,
+      ticket_accumulator_full,
+      ticket_submission_ended,
+      safrole,
+      entropy_pool,
+      curr_validators
+    )
+  end
+
   # Formula (69) v0.3.4 - second arm
+  # e′ = e (block is not the first in an epoch)
   defp calculate_epoch_slot_sealers(
          epoch_index,
          epoch_index,
@@ -65,6 +84,8 @@ defmodule System.State.Safrole do
        do: safrole.current_epoch_slot_sealers
 
   # Formula (69) v0.3.4 - first arm
+  # e′ = e + 1 ∧ m ≥ Y ∧ ∣γa ∣ = E
+  # block signals the next epoch and the ticket submission period has ended
   defp calculate_epoch_slot_sealers(
          new_epoch_index,
          current_epoch_index,
@@ -78,6 +99,7 @@ defmodule System.State.Safrole do
        do: outside_in_sequencer(safrole.current_epoch_slot_sealers)
 
   # Formula (69) v0.3.4 - third arm
+  # otherwise
   defp calculate_epoch_slot_sealers(
          _,
          _,
