@@ -1,10 +1,12 @@
 use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
 use ark_ec_vrfs::{prelude::ark_serialize, suites::bandersnatch::edwards::RingContext};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use bandersnatch::{IetfProof, Input, Output, Public, RingProof, Secret};
-use rustler::NifResult;
+use bandersnatch::{IetfProof, Input, Output, PcsParams, Public, RingProof, Secret};
+use rustler::{Error, NifResult};
+use std::sync::OnceLock;
 
 const RING_SIZE: usize = 1023;
+static RING_CTX: OnceLock<RingContext> = OnceLock::new();
 
 // This is the IETF `Prove` procedure output as described in section 2.2
 // of the Bandersnatch VRFs specification
@@ -21,24 +23,6 @@ struct RingVrfSignature {
     output: Output,
     // This contains both the Pedersen proof and actual ring proof.
     proof: RingProof,
-}
-
-// "Static" ring context data
-fn ring_context() -> &'static RingContext {
-    use std::sync::OnceLock;
-    static RING_CTX: OnceLock<RingContext> = OnceLock::new();
-    RING_CTX.get_or_init(|| {
-        use bandersnatch::PcsParams;
-        use std::{fs::File, io::Read};
-        let manifest_dir =
-            std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR is not set");
-        let filename = format!("{}/data/zcash-srs-2-11-uncompressed.bin", manifest_dir);
-        let mut file = File::open(filename).unwrap();
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
-        let pcs_params = PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..]).unwrap();
-        RingContext::from_srs(RING_SIZE, pcs_params).unwrap()
-    })
 }
 
 // Construct VRF Input Point from arbitrary data (section 1.2)
@@ -78,7 +62,8 @@ impl Prover {
         let pts: Vec<_> = self.ring.iter().map(|pk| pk.0).collect();
 
         // Proof construction
-        let ring_ctx = ring_context();
+        let ring_ctx = RING_CTX.get().expect("ring_context_not_initialized");
+
         let prover_key = ring_ctx.prover_key(&pts);
         let prover = ring_ctx.prover(prover_key, self.prover_idx);
         let proof = self.secret.prove(input, output, aux_data, &prover);
@@ -119,13 +104,13 @@ struct Verifier {
 }
 
 impl Verifier {
-    fn _new(ring: Vec<Public>) -> Self {
-        // Backend currently requires the wrapped type (plain affine points)
-        let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
-        let verifier_key = ring_context().verifier_key(&pts);
-        let commitment = verifier_key.commitment();
-        Self { ring, commitment }
-    }
+    // fn _new(ring: Vec<Public>) -> Self {
+    //     // Backend currently requires the wrapped type (plain affine points)
+    //     let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
+    //     let verifier_key = ring_context().verifier_key(&pts);
+    //     let commitment = verifier_key.commitment();
+    //     Self { ring, commitment }
+    // }
 
     /// Anonymous VRF signature verification.
     ///
@@ -145,7 +130,7 @@ impl Verifier {
         let input = vrf_input_point(vrf_input_data);
         let output = signature.output;
 
-        let ring_ctx = ring_context();
+        let ring_ctx = RING_CTX.get().ok_or(())?;
 
         // The verifier key is reconstructed from the commitment and the constant
         // verifier key component of the SRS in order to verify some proof.
@@ -204,6 +189,15 @@ impl Verifier {
         Ok(vrf_output_hash)
     }
 }
+#[rustler::nif]
+pub fn create_ring_context(file_contents: Vec<u8>) -> NifResult<()> {
+    RING_CTX.get_or_init(|| {
+        let pcs_params =
+            PcsParams::deserialize_uncompressed_unchecked(&mut &file_contents[..]).unwrap();
+        RingContext::from_srs(RING_SIZE, pcs_params).unwrap()
+    });
+    Ok(())
+}
 
 #[rustler::nif]
 pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<Vec<u8>> {
@@ -211,7 +205,9 @@ pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<Vec<u8>> {
         .iter()
         .map(|hash| vrf_input_point(&hash[..]).0)
         .collect();
-    let rc = ring_context();
+    let rc = RING_CTX
+        .get()
+        .ok_or(Error::Atom("ring_context_not_initialized"))?;
 
     let verifier_key = rc.verifier_key(&pts);
 
