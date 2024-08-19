@@ -1,4 +1,5 @@
 defmodule System.State do
+  alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias System.State
 
@@ -224,7 +225,8 @@ defmodule System.State do
       8 => e(s.curr_validators),
       # C(9) ↦ E(λ)
       9 => e(s.prev_validators),
-      # TODO C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
+      # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
+      10 => e(s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
       11 => Codec.Encoder.encode_le(s.timeslot, 4)
       # TODO C(12) ↦ E4(χ)

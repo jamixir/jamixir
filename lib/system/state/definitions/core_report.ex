@@ -12,4 +12,16 @@ defmodule System.State.CoreReport do
         }
 
   defstruct work_report: %WorkReport{}, timeslot: 0
+
+  defimpl Encodable do
+    alias System.State.CoreReport
+    # Formula (292) v0.3.4
+    # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
+    def encode(%CoreReport{} = c) do
+      Codec.Encoder.encode({
+        c.work_report,
+        Codec.Encoder.encode_le(c.timeslot, 4)
+      })
+    end
+  end
 end

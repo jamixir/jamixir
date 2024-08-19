@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias System.State.CoreReports
   use ExMachina
 
   alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
@@ -196,7 +197,14 @@ defmodule Jamixir.Factory do
 
   # Core Reports Factory
   def core_reports_factory do
-    List.duplicate(nil, @cores)
+    %CoreReports{reports: [build(:core_report), nil]}
+  end
+
+  def core_report_factory do
+    %System.State.CoreReport{
+      work_report: build(:work_report),
+      timeslot: sequence(:core_report_timeslot, & &1)
+    }
   end
 
   def privileged_services_factory do

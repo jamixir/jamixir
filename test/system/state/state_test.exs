@@ -1,4 +1,5 @@
 defmodule System.StateTest do
+  alias Codec.NilDiscriminator
   use ExUnit.Case
   import Jamixir.Factory
   import System.State
@@ -51,6 +52,15 @@ defmodule System.StateTest do
 
     test "previous validators serialization - C(9)", %{state: state} do
       assert state_keys(state)[9] == Codec.Encoder.encode(state.prev_validators)
+    end
+
+    test "core reports serialization - C(10)", %{state: state} do
+      s = %{state | core_reports: build(:core_reports)}
+
+      expected_to_encode = s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)
+
+      assert state_keys(s)[10] ==
+               Codec.Encoder.encode(expected_to_encode)
     end
 
     test "timeslot serialization - C(11)", %{state: state} do
