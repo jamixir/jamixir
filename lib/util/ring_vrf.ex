@@ -12,7 +12,7 @@ defmodule BandersnatchRingVrf do
       Path.join([current_dir, "native/bandersnatch_ring_vrf/data/zcash-srs-2-11-uncompressed.bin"])
 
     {:ok, file_contents} = File.read(filename)
-    # cobver from binary to list
+    # convert from binary to list
     file_contents = :binary.bin_to_list(file_contents)
     create_ring_context(file_contents)
   end
