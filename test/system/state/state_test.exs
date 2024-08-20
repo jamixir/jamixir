@@ -16,8 +16,7 @@ defmodule System.StateTest do
   describe "state_keys/1" do
     test "authorizer_pool serialization - C(1)", %{h1: h1, h2: h2} do
       state = build(:genesis_state, authorizer_pool: [[h1, h2], [h1]])
-
-      assert state_keys(state)[1] == <<2>> <> h1 <> h2 <> h1
+      assert state_keys(state)[1] == <<2>> <> h1 <> h2 <> <<1>> <> h1
     end
 
     test "authorizer_queue serialization - C(2)", %{h1: h1, h2: h2} do

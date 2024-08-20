@@ -208,7 +208,7 @@ defmodule System.State do
   def state_keys(s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
-      1 => e(VariableSize.new(s.authorizer_pool)),
+      1 => e(s.authorizer_pool |> Enum.map(&VariableSize.new/1)),
       # C(2) ↦ E(φ)
       2 => e(s.authorizer_queue),
       # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
