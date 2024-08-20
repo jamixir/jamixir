@@ -13,12 +13,13 @@ defmodule System.State do
     ServiceAccount,
     CoreReports,
     PriviligedServices,
-    ValidatorStatistics
+    ValidatorStatistics,
+    AuthorizerPool,
+    AuthorizerQueue
   }
 
   @type t :: %__MODULE__{
-          # Formula (85) v0.3.4
-          authorizer_pool: list(list(Types.hash())),
+          authorizer_pool: AuthorizerPool.t(),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
           services: %{integer() => ServiceAccount.t()},
@@ -28,8 +29,7 @@ defmodule System.State do
           prev_validators: list(Validator.t()),
           core_reports: CoreReports.t(),
           timeslot: integer(),
-          # Formula (85) v0.3.4
-          authorizer_queue: list(list(Types.hash())),
+          authorizer_queue: AuthorizerQueue.t(),
           privileged_services: PriviligedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t()
