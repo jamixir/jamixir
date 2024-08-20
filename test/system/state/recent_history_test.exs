@@ -298,4 +298,10 @@ defmodule System.State.RecentHistoryTest do
       assert Enum.at(result.blocks, -1).header_hash == Hash.default(Codec.Encoder.encode(header))
     end
   end
+
+  describe "encode/1" do
+    test "encode recent history smoke test" do
+      Codec.Encoder.encode(%RecentHistory{})
+    end
+  end
 end

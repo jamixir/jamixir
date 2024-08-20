@@ -2,6 +2,7 @@ defmodule Codec.Encoder do
   @moduledoc """
   A module for encoding data structures into binary format.
   """
+  alias Codec.NilDiscriminator
   alias Codec.VariableSize
 
   @doc """
@@ -22,6 +23,13 @@ defmodule Codec.Encoder do
 
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
+
+  # Formula (305) v0.3.4
+  # b ↦ E(↕[¿x ∣ x <− b])
+  @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
+  def encode_mmr(mmr) do
+    do_encode(VariableSize.new(Enum.map(mmr, fn b -> NilDiscriminator.new(b) end)))
+  end
 
   # Private Functions
 
@@ -47,6 +55,8 @@ defmodule Codec.Encoder do
       encode_list(value)
     end
   end
+
+  defp do_encode(%MapSet{} = m), do: MapSet.to_list(m) |> do_encode()
 
   defp do_encode(value) when is_struct(value) do
     if encodable?(value) do

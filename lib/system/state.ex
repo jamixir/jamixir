@@ -1,4 +1,6 @@
 defmodule System.State do
+  alias Codec.NilDiscriminator
+  alias Codec.VariableSize
   alias System.State
 
   alias System.State.{
@@ -15,6 +17,7 @@ defmodule System.State do
   }
 
   @type t :: %__MODULE__{
+          # Formula (85) v0.3.4
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
@@ -25,6 +28,7 @@ defmodule System.State do
           prev_validators: list(Validator.t()),
           core_reports: CoreReports.t(),
           timeslot: integer(),
+          # Formula (85) v0.3.4
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PriviligedServices.t(),
           judgements: Judgements.t(),
@@ -196,5 +200,39 @@ defmodule System.State do
       # π'
       validator_statistics: todo
     }
+  end
+
+  def e(v), do: Codec.Encoder.encode(v)
+
+  # Formula (292) v0.3.4
+  def state_keys(s) do
+    %{
+      # C(1) ↦ E([↕x ∣ x <− α])
+      1 => e(s.authorizer_pool |> Enum.map(&VariableSize.new/1)),
+      # C(2) ↦ E(φ)
+      2 => e(s.authorizer_queue),
+      # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+      3 => e(s.recent_history),
+      # C(4) - safrole encoding
+      4 => e(s.safrole),
+      # C(5) ↦ judgements encoding
+      5 => e(s.judgements),
+      # C(6) ↦ E(η)
+      6 => e(s.entropy_pool),
+      # C(7) ↦ E(ι)
+      7 => e(s.next_validators),
+      # C(8) ↦ E(κ)
+      8 => e(s.curr_validators),
+      # C(9) ↦ E(λ)
+      9 => e(s.prev_validators),
+      # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
+      10 => e(s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)),
+      # C(11) ↦ E4(τ)
+      11 => Codec.Encoder.encode_le(s.timeslot, 4)
+      # TODO C(12) ↦ E4(χ)
+      # TODO C(13) ↦ E4(π)
+    }
+    # """
+    |> Map.put(nil, nil)
   end
 end

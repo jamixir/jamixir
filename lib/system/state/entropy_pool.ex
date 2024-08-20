@@ -40,4 +40,10 @@ defmodule System.State.EntropyPool do
       history: history
     }
   end
+
+  defimpl Encodable do
+    def encode(%EntropyPool{} = e) do
+      Codec.Encoder.encode([e.current] ++ e.history)
+    end
+  end
 end

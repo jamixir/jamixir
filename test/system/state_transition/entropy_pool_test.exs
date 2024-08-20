@@ -47,4 +47,10 @@ defmodule System.StateTransition.EntropyPoolTest do
 
     assert updated_state.history == initial_state.history
   end
+
+  describe "encode/1" do
+    test "entropy pool encoding smoke test" do
+      assert Codec.Encoder.encode(%EntropyPool{current: 1, history: [2, 3, 4]}) == <<1, 2, 3, 4>>
+    end
+  end
 end
