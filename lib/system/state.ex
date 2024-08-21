@@ -112,7 +112,7 @@ defmodule System.State do
       )
 
     # Formula (28) v0.3.4
-    {_new_services, _privileged_services, _new_next_validators, _authorizer_queue,
+    {_new_services, _privileged_services, _new_next_validators, new_authorizer_queue,
      beefy_commitment_map} =
       State.Accumulation.accumulate(
         Map.get(e, :availability),
@@ -123,10 +123,9 @@ defmodule System.State do
         state.authorizer_queue
       )
 
-    new_authorizer_queue = todo
-
+    # α' Formula (29) v0.3.4
     new_authorizer_pool =
-      System.State.posterior_authorizer_pool(
+      posterior_authorizer_pool(
         sorted_guarantees,
         new_authorizer_queue,
         state.authorizer_pool
@@ -183,7 +182,7 @@ defmodule System.State do
 
     %System.State{
       # α'
-      authorizer_pool: todo,
+      authorizer_pool: new_authorizer_pool,
       # β'
       recent_history: new_recent_history,
       # γ'
@@ -203,7 +202,7 @@ defmodule System.State do
       # τ'
       timeslot: new_timeslot,
       # φ'
-      authorizer_queue: todo,
+      authorizer_queue: new_authorizer_queue,
       # χ'
       privileged_services: todo,
       # ψ'
@@ -215,12 +214,6 @@ defmodule System.State do
 
   # Formula (86) and Formula (87) v0.3.4
   def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
-    todo = "TODO"
-  end
-
-
-  def posterior_authorizer_queue(authorizer_queue, guarantees, authorizer_pool) do
-
     todo = "TODO"
   end
 
