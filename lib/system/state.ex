@@ -2,6 +2,8 @@ defmodule System.State do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias System.State
+  alias Constants
+  alias Block.Extrinsic.Guarantee
 
   alias System.State.{
     Validator,
@@ -212,9 +214,37 @@ defmodule System.State do
     }
   end
 
-  # Formula (86) and Formula (87) v0.3.4
+  # Formula (86) v0.3.4
   def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
-    todo = "TODO"
+    Enum.map(0..Constants.core_count(), fn c ->
+      f_c = pool_after_items_processed(c, authorizer_pool, guarantees)
+      updated_pool = add_queue_to_pool(f_c, posterior_authorizer_queue[c])
+      # take rightmost 'max pool length' items: <--O
+      Enum.take(updated_pool, -Constants.max_authorizations_items())
+    end)
+  end
+
+  # Formula (87) v0.3.4 F(c)
+  defp pool_after_items_processed(c, authorizer_pool, guarantees) do
+    if work_report_exists_for_core?(c, guarantees) do
+      # Remove leftmost
+      [_hd | tail] = authorizer_pool[c]
+      tail
+    else
+      # Keep current pool
+      authorizer_pool[c]
+    end
+  end
+
+  # ∃g ∈ EG ∶ (gw)c = c
+  defp work_report_exists_for_core?(core_index, guarantees) do
+    Enum.any?(guarantees, fn %Guarantee{work_report: work_report} ->
+      work_report.core_index == core_index
+    end)
+  end
+
+  defp add_queue_to_pool(f_c, queue_elements) do
+    f_c ++ [queue_elements]
   end
 
   def e(v), do: Codec.Encoder.encode(v)
