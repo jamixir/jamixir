@@ -224,4 +224,17 @@ defmodule System.StateTransition.JudgementsTest do
     assert MapSet.member?(new_state.judgements.bad, work_report_hash)
     assert MapSet.member?(new_state.judgements.punish, valid_key_public)
   end
+
+  describe "encode/1" do
+    test "judgements encoding smoke test" do
+      j = %Judgements{
+        good: MapSet.new([<<1>>, <<2>>]),
+        bad: MapSet.new([<<2>>]),
+        wonky: MapSet.new([<<3>>]),
+        punish: MapSet.new([<<4>>])
+      }
+
+      assert Codec.Encoder.encode(j) == <<2, 1, 2, 1, 2, 1, 3, 1, 4>>
+    end
+  end
 end

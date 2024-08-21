@@ -16,4 +16,14 @@ defmodule System.State.Validator do
         }
 
   defstruct bandersnatch: <<>>, ed25519: <<>>, bls: <<>>, metadata: <<>>
+
+  def key(v), do: v.bandersnatch <> v.ed25519 <> v.bls <> v.metadata
+
+  defimpl Encodable do
+    alias System.State.Validator
+
+    def encode(%Validator{} = v) do
+      Validator.key(v)
+    end
+  end
 end

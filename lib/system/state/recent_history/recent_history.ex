@@ -154,4 +154,24 @@ defmodule System.State.RecentHistory do
       work_package_hashes
     )
   end
+
+  defimpl Encodable do
+    alias Codec.VariableSize
+    # Formula 292 v0.3.4
+    # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+    def encode(%RecentHistory{} = rh) do
+      Codec.Encoder.encode(
+        VariableSize.new(
+          Enum.map(rh.blocks, fn b ->
+            {
+              b.header_hash,
+              Codec.Encoder.encode_mmr(b.accumulated_result_mmr),
+              b.state_root,
+              VariableSize.new(b.work_report_hashes)
+            }
+          end)
+        )
+      )
+    end
+  end
 end

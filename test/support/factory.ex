@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias System.State.CoreReports
   use ExMachina
 
   alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
@@ -15,15 +16,14 @@ defmodule Jamixir.Factory do
 
   def genesis_state_factory do
     # Generate a single list of validators to be used for both `next_validators` and `curr_validators`
-    validators = build_list(@validator_count, :random_validator)
-
     %System.State{
       authorizer_pool: authorizer_pool_factory(),
       safrole: safrole_factory(),
       services: services_factory(),
       entropy_pool: genesis_entropy_pool_factory(),
-      next_validators: validators,
-      curr_validators: validators,
+      next_validators: build_list(@validator_count, :random_validator),
+      curr_validators: build_list(@validator_count, :random_validator),
+      prev_validators: build_list(@validator_count, :random_validator),
       authorizer_queue: authorizer_queue_factory()
     }
   end
@@ -197,7 +197,14 @@ defmodule Jamixir.Factory do
 
   # Core Reports Factory
   def core_reports_factory do
-    List.duplicate(nil, @cores)
+    %CoreReports{reports: [build(:core_report), nil]}
+  end
+
+  def core_report_factory do
+    %System.State.CoreReport{
+      work_report: build(:work_report),
+      timeslot: sequence(:core_report_timeslot, & &1)
+    }
   end
 
   def privileged_services_factory do
@@ -210,7 +217,12 @@ defmodule Jamixir.Factory do
 
   # Judgements Factory
   def judgements_factory do
-    %System.State.Judgements{}
+    %System.State.Judgements{
+      good: [random_hash()],
+      bad: [random_hash()],
+      wonky: [random_hash()],
+      punish: [random_hash()]
+    }
   end
 
   # Validator Statistics Factory

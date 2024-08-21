@@ -55,4 +55,10 @@ defmodule System.StateTransition.SafroleStateTest do
       assert new_state.safrole.epoch_root != state.safrole.epoch_root
     end
   end
+
+  describe "encode/1" do
+    test "encode smoke test" do
+      Codec.Encoder.encode(build(:safrole))
+    end
+  end
 end
