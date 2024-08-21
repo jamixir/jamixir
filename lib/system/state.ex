@@ -71,7 +71,7 @@ defmodule System.State do
   ]
 
   # Formula (12) v0.3.4
-  def add_block(state, %Block{header: h, extrinsic: e}) do
+  def add_block(%System.State{} = state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
 
     # Formula (16) v0.3.4
@@ -121,6 +121,15 @@ defmodule System.State do
         state.privileged_services,
         state.next_validators,
         state.authorizer_queue
+      )
+
+    new_authorizer_queue = todo
+
+    new_authorizer_pool =
+      System.State.posterior_authorizer_pool(
+        sorted_guarantees,
+        new_authorizer_queue,
+        state.authorizer_pool
       )
 
     # β' Formula (18) v0.3.4
@@ -202,6 +211,16 @@ defmodule System.State do
       # π'
       validator_statistics: todo
     }
+  end
+
+  def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
+    # Formula (86) v0.3.4
+    todo = "TODO"
+  end
+
+  def posterior_authorizer_queue(authorizer_queue, guarantees, authorizer_pool) do
+    # Formula (86) v0.3.4
+    todo = "TODO"
   end
 
   def e(v), do: Codec.Encoder.encode(v)
