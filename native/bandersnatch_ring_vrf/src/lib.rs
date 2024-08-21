@@ -1,8 +1,9 @@
 use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
-use ark_ec_vrfs::{prelude::ark_serialize, suites::bandersnatch::edwards::RingContext};
+use ark_ec_vrfs::{prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, BaseField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{IetfProof, Input, Output, PcsParams, Public, RingProof, Secret};
-use rustler::{Error, NifResult};
+use rustler::{Error, NifResult, NifStruct};
+use std::marker::PhantomData;
 use std::sync::OnceLock;
 
 const RING_SIZE: usize = 1023;
@@ -14,6 +15,38 @@ static RING_CTX: OnceLock<RingContext> = OnceLock::new();
 struct IetfVrfSignature {
     output: Output,
     proof: IetfProof,
+}
+
+type S = bandersnatch::BandersnatchSha512Ell2;
+type PcsCommitment =
+    ring_proof::pcs::kzg::commitment::KzgCommitment<<S as ark_ec_vrfs::ring::RingSuite>::Pairing>;
+
+type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
+
+#[derive(Clone, CanonicalSerialize, CanonicalDeserialize, PartialEq, Eq, Debug, NifStruct)]
+#[module = "RingCommitment"]
+pub struct FixedColumnsCommittedBridge {
+    pub points: Vec<PcsCommitment>,
+    pub ring_selector: PcsCommitment,
+}
+
+impl From<FixedColumnsCommittedBridge> for RingCommitment {
+    fn from(bridge: FixedColumnsCommittedBridge) -> Self {
+        Self {
+            points: bridge.points.try_into().expect("sdfsdf"),
+            ring_selector: bridge.ring_selector,
+            phantom: Default::default(),
+        }
+    }
+}
+
+impl From<RingCommitment> for FixedColumnsCommittedBridge {
+    fn from(commitment: RingCommitment) -> Self {
+        Self {
+            points: commitment.points.into(),
+            ring_selector: commitment.ring_selector,
+        }
+    }
 }
 
 // This is the IETF `Prove` procedure output as described in section 4.2
@@ -94,8 +127,6 @@ impl Prover {
         buf
     }
 }
-
-type RingCommitment = ark_ec_vrfs::ring::RingCommitment<bandersnatch::BandersnatchSha512Ell2>;
 
 // Verifier actor.
 struct Verifier {
@@ -200,7 +231,7 @@ pub fn create_ring_context(file_contents: Vec<u8>) -> NifResult<()> {
 }
 
 #[rustler::nif]
-pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<Vec<u8>> {
+pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<FixedColumnsCommittedBridge> {
     let pts: Vec<_> = ring
         .iter()
         .map(|hash| vrf_input_point(&hash[..]).0)
@@ -213,9 +244,28 @@ pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<Vec<u8>> {
 
     let commitment = verifier_key.commitment();
 
-    let mut buf = Vec::new();
-    commitment.serialize_compressed(&mut buf).unwrap();
+    // let mut buf = Vec::new();
+    // commitment.serialize_compressed(&mut buf).unwrap();
 
-    Ok(buf) // Returning the commitment as a Vec<u8>
+    Ok(commitment.into())
 }
+
+#[derive(Debug, NifStruct)]
+#[module = "Point"]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+#[rustler::nif]
+pub fn create_point() -> NifResult<Point> {
+    Ok(Point { x: 1, y: 2 })
+}
+
+#[rustler::nif]
+pub fn read_point(point: Point) -> NifResult<i32> {
+    println!("Point: {:?}", point);
+    Ok(point.x)
+}
+
 rustler::init!("Elixir.BandersnatchRingVrf");
