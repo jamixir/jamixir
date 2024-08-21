@@ -213,13 +213,14 @@ defmodule System.State do
     }
   end
 
+  # Formula (86) and Formula (87) v0.3.4
   def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
-    # Formula (86) v0.3.4
     todo = "TODO"
   end
 
+
   def posterior_authorizer_queue(authorizer_queue, guarantees, authorizer_pool) do
-    # Formula (86) v0.3.4
+
     todo = "TODO"
   end
 
