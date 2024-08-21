@@ -26,5 +26,3 @@ jamixir-*.tar
 /tmp/
 .vscode/
 priv/
-
-native/**/target/
