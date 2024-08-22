@@ -65,5 +65,13 @@ defmodule System.StateTest do
     test "timeslot serialization - C(11)", %{state: state} do
       assert state_keys(state)[11] == Codec.Encoder.encode_le(state.timeslot, 4)
     end
+
+    test "privileged services serialization - C(12)", %{state: state} do
+      assert state_keys(state)[12] == Codec.Encoder.encode(state.privileged_services)
+    end
+
+    test "validator statistics serialization - C(13)", %{state: state} do
+      assert state_keys(state)[13] == Codec.Encoder.encode(state.validator_statistics)
+    end
   end
 end

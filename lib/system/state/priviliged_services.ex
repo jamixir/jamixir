@@ -18,4 +18,16 @@ defmodule System.State.PriviligedServices do
   defstruct manager_service: 0,
             alter_authorizer_service: 0,
             alter_validator_service: 0
+
+  defimpl Encodable do
+    alias System.State.PriviligedServices
+
+    def encode(%PriviligedServices{} = v) do
+      Codec.Encoder.encode({
+        v.manager_service,
+        v.alter_authorizer_service,
+        v.alter_validator_service
+      })
+    end
+  end
 end

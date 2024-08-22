@@ -227,9 +227,11 @@ defmodule System.State do
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
       10 => e(s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
-      11 => Codec.Encoder.encode_le(s.timeslot, 4)
-      # TODO C(12) ↦ E4(χ)
-      # TODO C(13) ↦ E4(π)
+      11 => Codec.Encoder.encode_le(s.timeslot, 4),
+      # C(12) ↦ E4(χ)
+      12 => Codec.Encoder.encode(s.privileged_services),
+      # C(13) ↦ E4(π)
+      13 => Codec.Encoder.encode(s.validator_statistics)
     }
     # """
     |> Map.put(nil, nil)
