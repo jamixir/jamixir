@@ -1,6 +1,6 @@
 defmodule System.State.Safrole do
   @moduledoc """
-  Sarole  state, as specified in section 6.1 of the GP.
+  Safrole  state, as specified in section 6.1 of the GP.
   """
   alias System.State.{SealKeyTicket, Validator, EntropyPool, Safrole}
   alias Block.Header
