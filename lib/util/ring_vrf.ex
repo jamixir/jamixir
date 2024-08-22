@@ -4,6 +4,7 @@ defmodule BandersnatchRingVrf do
   # These functions correspond to the NIFs defined in Rust
   def create_ring_context(_file_contents), do: :erlang.nif_error(:nif_not_loaded)
   def create_verifier(_keys), do: :erlang.nif_error(:nif_not_loaded)
+  def read_commitment(_commitment), do: :erlang.nif_error(:nif_not_loaded)
 
   def init_ring_context() do
     current_dir = File.cwd!()
