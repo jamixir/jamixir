@@ -28,3 +28,4 @@ jamixir-*.tar
 priv/
 
 native/**/target/
+native/**/Cargo.lock
