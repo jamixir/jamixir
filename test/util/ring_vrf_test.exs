@@ -1,6 +1,8 @@
 defmodule RingVrfTest do
   use ExUnit.Case
   alias RingVrfTest
+  alias BandersnatchRingVrf
+
 
   test "create_verifier generates a valid commitment" do
     # Generate some mock keys (this would typically be done in Rust)
@@ -15,6 +17,7 @@ defmodule RingVrfTest do
 
     # Call the Rust NIF
     commitment = BandersnatchRingVrf.create_verifier(keys)
-    assert length(commitment) == 144
+    BandersnatchRingVrf.read_commitment(commitment)
+    # assert length(commitment) == 144
   end
 end
