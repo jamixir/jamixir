@@ -219,7 +219,7 @@ defmodule Jamixir.Factory do
   end
 
   def privileged_services_factory do
-    %System.State.PriviligedServices{
+    %System.State.PrivilegedServices{
       manager_service: sequence(:manager_service, & &1),
       alter_authorizer_service: sequence(:alter_authorizer_service, & &1),
       alter_validator_service: sequence(:alter_validator_service, & &1)

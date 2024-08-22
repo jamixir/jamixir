@@ -12,7 +12,7 @@ defmodule System.State do
     RotateKeys,
     ServiceAccount,
     CoreReports,
-    PriviligedServices,
+    PrivilegedServices,
     ValidatorStatistics
   }
 
@@ -30,7 +30,7 @@ defmodule System.State do
           timeslot: integer(),
           # Formula (85) v0.3.4
           authorizer_queue: list(list(Types.hash())),
-          privileged_services: PriviligedServices.t(),
+          privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t()
         }
@@ -60,7 +60,7 @@ defmodule System.State do
     # φ: Queue which fills the authorization requirement
     authorizer_queue: [[]],
     # χ: Identities of services with privileged status
-    privileged_services: %PriviligedServices{},
+    privileged_services: %PrivilegedServices{},
     # ψ: Judgements tracked
     judgements: %Judgements{},
     # π: Validator statistics

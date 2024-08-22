@@ -58,7 +58,8 @@ defmodule System.State.ValidatorStatistics do
            reports_guaranteed: g,
            availability_assurances: a
          }) do
-      Codec.Encoder.encode([b, t, p, d, g, a])
+      [b, t, p, d, g, a]
+      |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
     end
   end
 end
