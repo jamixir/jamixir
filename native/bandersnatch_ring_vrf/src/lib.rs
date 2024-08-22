@@ -250,22 +250,47 @@ pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<FixedColumnsCommittedBri
     Ok(commitment.into())
 }
 
-#[derive(Debug, NifStruct)]
-#[module = "Point"]
-struct Point {
-    x: i32,
-    y: i32,
+#[rustler::nif]
+pub fn read_commitment(commitment: FixedColumnsCommittedBridge) -> NifResult<()> {
+    let commitment = RingCommitment::from(commitment);
+    println!("Commitment: {:?}", commitment);
+    Ok(())
 }
 
-#[rustler::nif]
-pub fn create_point() -> NifResult<Point> {
-    Ok(Point { x: 1, y: 2 })
-}
+// #[rustler::nif]
+pub fn ring_vrf_verify(
+    commitment: FixedColumnsCommittedBridge,
+    vrf_input_data: Vec<u8>,
+    aux_data: Vec<u8>,
+    signature: Vec<u8>,
+) -> NifResult<[u8; 32]> {
+    use ark_ec_vrfs::ring::Verifier as _;
+    let commitment: RingCommitment = commitment.into();
 
-#[rustler::nif]
-pub fn read_point(point: Point) -> NifResult<i32> {
-    println!("Point: {:?}", point);
-    Ok(point.x)
+    let signature = match RingVrfSignature::deserialize_compressed(&signature[..]) {
+        Ok(sig) => sig,
+        Err(_) => return Err(Error::Atom("invalid_signature")),
+    };
+
+    let input = vrf_input_point(&vrf_input_data);
+    let output = signature.output;
+
+    let ring_ctx = RING_CTX
+        .get()
+        .ok_or(Error::Atom("ring_context_not_initialized"))?;
+
+    let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
+    let verifier = ring_ctx.verifier(verifier_key);
+
+    if Public::verify(input, output, &aux_data, &signature.proof, &verifier).is_err() {
+        return Err(Error::Atom("verification_failed"));
+    }
+
+    let vrf_output_hash: [u8; 32] = output.hash()[..32]
+        .try_into()
+        .map_err(|_| Error::Atom("hash_conversion_failed"))?;
+
+    Ok(vrf_output_hash)
 }
 
 rustler::init!("Elixir.BandersnatchRingVrf");
