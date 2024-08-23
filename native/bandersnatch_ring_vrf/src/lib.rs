@@ -1,13 +1,16 @@
 use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
-use ark_ec_vrfs::{prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, BaseField};
+use ark_ec_vrfs::{
+    prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, BaseField, ScalarField,
+};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{IetfProof, Input, Output, PcsParams, Public, RingProof, Secret};
+use rand_chacha::rand_core::SeedableRng;
 use rustler::{Error, NifResult, NifStruct};
 use std::marker::PhantomData;
 use std::sync::OnceLock;
-
 const RING_SIZE: usize = 1023;
 static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+use ark_ec_vrfs::prelude::ark_ff::PrimeField;
 
 // This is the IETF `Prove` procedure output as described in section 2.2
 // of the Bandersnatch VRFs specification
@@ -244,6 +247,41 @@ pub fn ring_vrf_verify(
         .map_err(|_| Error::Atom("hash_conversion_failed"))?;
 
     Ok(vrf_output_hash)
+}
+
+#[rustler::nif]
+fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<Secret> {
+    let secret = Secret::from_seed(&seed); // Generate a new secret from the seed
+    eprintln!("Secret from seed: {:?}", secret);
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_rand() -> NifResult<Secret> {
+    let mut rng = rand_chacha::ChaCha20Rng::from_seed([42; 32]);
+    let secret = Secret::from_rand(&mut rng); // Generate a new secret using random number generator
+    eprintln!("Secret: {:?}", secret);
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_scalar(scalar_bytes: Vec<u8>) -> NifResult<Secret> {
+    let scalar = ScalarField::<S>::from_le_bytes_mod_order(&scalar_bytes[..]);
+    let secret = Secret::from_scalar(scalar);
+    eprintln!("Secret from scalar: {:?}", secret);
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn get_public_key(secret: Secret) -> NifResult<String> {
+    let public_key_str = format!("{:?}", secret.public());
+    Ok(public_key_str)
+}
+
+#[rustler::nif]
+fn get_private_key(secret: Secret) -> NifResult<String> {
+    let private_key_str = format!("{:?}", secret.scalar);
+    Ok(private_key_str)
 }
 
 rustler::init!("Elixir.BandersnatchRingVrf");

@@ -20,3 +20,4 @@ ring-proof = { package = "ring", git = "https://github.com/daiagi/ring-proof", b
 
 hex = "0.4.3"
 rustler = "0.34.0"
+rand_chacha = { version = "0.3", default-features = false }
