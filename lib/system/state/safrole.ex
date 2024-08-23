@@ -30,19 +30,17 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
-    # Formula (69) v0.3.4
-    posterior_epoch_slot_sealers =
-      get_posterior_epoch_slot_sealers(
-        header,
-        timeslot,
-        safrole,
-        entropy_pool,
-        curr_validators
-      )
-
     %Safrole{
       safrole
-      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
+      | # Formula (69) v0.3.4
+        current_epoch_slot_sealers:
+          get_posterior_epoch_slot_sealers(
+            header,
+            timeslot,
+            safrole,
+            entropy_pool,
+            curr_validators
+          )
     }
   end
 
@@ -75,11 +73,11 @@ defmodule System.State.Safrole do
   defp calculate_epoch_slot_sealers(
          epoch_index,
          epoch_index,
-         _,
-         _,
+         _ticket_accumulator_full,
+         _ticket_submission_ended,
          safrole,
-         _,
-         _
+         _entropy_pool,
+         _curr_validators
        ),
        do: safrole.current_epoch_slot_sealers
 
@@ -89,11 +87,11 @@ defmodule System.State.Safrole do
   defp calculate_epoch_slot_sealers(
          new_epoch_index,
          current_epoch_index,
-         true,
-         true,
+         _ticket_accumulator_full = true,
+         _ticket_submission_ended = true,
          safrole,
-         _,
-         _
+         _entropy_pool,
+         _curr_validators
        )
        when new_epoch_index == current_epoch_index + 1,
        do: outside_in_sequencer(safrole.current_epoch_slot_sealers)
@@ -101,11 +99,11 @@ defmodule System.State.Safrole do
   # Formula (69) v0.3.4 - third arm
   # otherwise
   defp calculate_epoch_slot_sealers(
-         _,
-         _,
-         _,
-         _,
-         _,
+         _new_epoch_index,
+         _current_epoch_index,
+         _ticket_accumulator_full,
+         _ticket_submission_ended,
+         _safrole,
          entropy_pool,
          curr_validators
        ),
