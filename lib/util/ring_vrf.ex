@@ -9,6 +9,9 @@ defmodule BandersnatchRingVrf do
   def ring_vrf_verify(_commitment, _vrf_input_data, _aux_data, _signature),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  def ring_vrf_sign(_ring, _secret, _prover_idx, _vrf_input_data, _aux_data),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   def init_ring_context() do
     current_dir = File.cwd!()
 
