@@ -73,5 +73,9 @@ defmodule System.StateTest do
     test "validator statistics serialization - C(13)", %{state: state} do
       assert state_keys(state)[13] == Codec.Encoder.encode(state.validator_statistics)
     end
+
+    test "service accounts serialization", %{state: state} do
+      assert state_keys(state)[{255, 1}] == Codec.Encoder.encode(state.services[1])
+    end
   end
 end

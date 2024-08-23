@@ -13,7 +13,6 @@ defmodule System.State.ServiceAccount do
   - `b`: Balance
   - `g`, `m`: Gas limits
   """
-
   @type t :: %__MODULE__{
           # s
           storage: %{Types.hash() => binary()},
@@ -38,4 +37,36 @@ defmodule System.State.ServiceAccount do
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0
+
+  # Formula (95) v0.3.4
+  # ai ≡ 2⋅∣al∣ + ∣as∣
+  def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
+    2 * length(Map.keys(l)) + length(Map.keys(s))
+  end
+
+  # al ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
+  def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
+    octets_in_preimage_storage_l =
+      Map.keys(l)
+      |> Enum.map(fn {_h, z} -> 81 + z end)
+      |> Enum.sum()
+
+    # total octets in storage s
+    octets_in_storage =
+      Map.values(s)
+      |> Enum.map(&(32 + length(&1)))
+      |> Enum.sum()
+
+    octets_in_preimage_storage_l + octets_in_storage
+  end
+
+  defimpl Encodable do
+    alias Codec.Encoder
+    alias System.State.ServiceAccount
+    # Formula (292)
+    # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
+    def encode(%ServiceAccount{} = s) do
+      s.code_hash <> Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
+    end
+  end
 end

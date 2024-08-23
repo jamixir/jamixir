@@ -233,7 +233,13 @@ defmodule System.State do
       # C(13) ↦ E4(π)
       13 => Codec.Encoder.encode(s.validator_statistics)
     }
-    # """
-    |> Map.put(nil, nil)
+    |> encode_accounts(s)
+  end
+
+  defp encode_accounts(%{} = state_keys, state = %State{}) do
+    state.services
+    |> Enum.reduce(state_keys, fn {id, service}, ac ->
+      Map.put(ac, {255, id}, Codec.Encoder.encode(service))
+    end)
   end
 end
