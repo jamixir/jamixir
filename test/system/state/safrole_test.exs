@@ -1,7 +1,7 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.{Safrole}
+  alias System.State.Safrole
 
   describe "outside_in_sequencer/1" do
     test "reorders an empty list" do
@@ -35,6 +35,125 @@ defmodule System.State.SafroleTest do
       [t1, t2, t3, t4, t5] = build_list(5, :seal_key_ticket)
 
       assert Safrole.outside_in_sequencer([t1, t2, t3, t4, t5]) == [t1, t5, t2, t4, t3]
+    end
+  end
+
+  describe "generate_index_using_entropy/3" do
+    test "returns a value within the valid range for validator set size" do
+      entropy = :crypto.strong_rand_bytes(32)
+      validator_set_size = 10
+
+      for i <- 0..100 do
+        index = Safrole.generate_index_using_entropy(entropy, i, validator_set_size)
+        assert index >= 0 and index < validator_set_size
+      end
+    end
+
+    test "returns consistent results for the same entropy and index" do
+      entropy = :crypto.strong_rand_bytes(32)
+      validator_set_size = 100
+      index = Safrole.generate_index_using_entropy(entropy, 5, validator_set_size)
+
+      # Re-run with the same entropy and index
+      index_repeated = Safrole.generate_index_using_entropy(entropy, 5, validator_set_size)
+
+      assert index == index_repeated
+    end
+
+    test "handles the case when validator_set_size is 1" do
+      entropy = :crypto.strong_rand_bytes(32)
+      validator_set_size = 1
+
+      for i <- 0..100 do
+        index = Safrole.generate_index_using_entropy(entropy, i, validator_set_size)
+        assert index == 0
+      end
+    end
+  end
+
+  describe "get_posterior_epoch_slot_sealers/5" do
+    setup do
+      safrole = build(:safrole)
+      entropy_pool = build(:full_entropy_pool)
+      validators = build_list(4, :random_validator)
+
+      %{safrole: safrole, entropy_pool: entropy_pool, validators: validators}
+    end
+
+    test "same epoch index, returns current_epoch_slot_sealers", %{safrole: safrole} do
+      header = build(:header, timeslot: 2)
+      timeslot = 1
+
+      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, nil, nil)
+
+      assert result == safrole.current_epoch_slot_sealers
+    end
+
+    test "epoch advances, submission ended, accumulator full, reorders sealers", %{
+      safrole: safrole
+    } do
+      safrole = %{
+        safrole
+        | current_epoch_slot_sealers: build_list(600, :seal_key_ticket),
+          ticket_accumulator: build_list(600, :seal_key_ticket)
+      }
+
+      header = build(:header, timeslot: 600)
+      timeslot = 599
+
+      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, nil, nil)
+
+      expected_result = Safrole.outside_in_sequencer(safrole.current_epoch_slot_sealers)
+      assert result == expected_result
+    end
+
+    test "fallback case: uses fallback_key_sequence", %{
+      safrole: safrole,
+      entropy_pool: entropy_pool,
+      validators: validators
+    } do
+      safrole = %{
+        safrole
+        | current_epoch_slot_sealers: build_list(600, :seal_key_ticket)
+      }
+
+      header = build(:header, timeslot: 600)
+      timeslot = 400
+
+      result =
+        Safrole.get_posterior_epoch_slot_sealers(
+          header,
+          timeslot,
+          safrole,
+          entropy_pool,
+          validators
+        )
+
+      expected_result = Safrole.fallback_key_sequence(entropy_pool, validators)
+      assert result == expected_result
+    end
+
+    test "handles empty current_epoch_slot_sealers", %{
+      safrole: safrole,
+      entropy_pool: entropy_pool,
+      validators: validators
+    } do
+      safrole = %{safrole | current_epoch_slot_sealers: []}
+
+      header = build(:header, timeslot: 600)
+      timeslot = 400
+
+      result =
+        Safrole.get_posterior_epoch_slot_sealers(
+          header,
+          timeslot,
+          safrole,
+          entropy_pool,
+          validators
+        )
+
+      expected_result = Safrole.fallback_key_sequence(entropy_pool, validators)
+      assert result == expected_result
     end
   end
 end
