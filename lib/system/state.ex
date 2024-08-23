@@ -234,12 +234,27 @@ defmodule System.State do
       13 => Codec.Encoder.encode(s.validator_statistics)
     }
     |> encode_accounts(s)
+    |> encode_accounts_storage(s, :storage)
+    |> encode_accounts_storage(s, :preimage_storage_p)
   end
 
+  # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
   defp encode_accounts(%{} = state_keys, state = %State{}) do
     state.services
     |> Enum.reduce(state_keys, fn {id, service}, ac ->
       Map.put(ac, {255, id}, Codec.Encoder.encode(service))
+    end)
+  end
+
+  # ∀(s ↦ a) ∈ δ, (h ↦ v) ∈ as ∶ C(s, h) ↦ v
+  # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, h) ↦ p
+  defp encode_accounts_storage(state_keys, state = %State{}, property) do
+    state.services
+    |> Enum.reduce(state_keys, fn {s, a}, ac ->
+      Map.get(a, property)
+      |> Enum.reduce(ac, fn {h, v}, ac ->
+        Map.put(ac, {s, h}, v)
+      end)
     end)
   end
 end

@@ -76,6 +76,15 @@ defmodule System.StateTest do
 
     test "service accounts serialization", %{state: state} do
       assert state_keys(state)[{255, 1}] == Codec.Encoder.encode(state.services[1])
+
+      [:storage, :preimage_storage_p]
+      |> Enum.each(fn proprety ->
+        state.services
+        |> Enum.each(fn {s, service_account} ->
+          Map.get(service_account, proprety)
+          |> Enum.each(fn {h, v} -> assert state_keys(state)[{s, h}] == v end)
+        end)
+      end)
     end
   end
 end

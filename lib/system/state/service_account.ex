@@ -8,7 +8,7 @@ defmodule System.State.ServiceAccount do
   Formally:
   - `s`: Storage dictionary (D⟨H → Y⟩)
   - `p`: Preimage lookup dictionary (D⟨H → Y⟩)
-  - `l`: Preimage lookup dictionary with additional index (D⟨(H, NL) → ⟦NT ⟧∶3⟩)
+  - `l`: Preimage lookup dictionary with additional index (D⟨(H, NL) → ⟦NT⟧∶3⟩)
   - `c`: Code hash
   - `b`: Balance
   - `g`, `m`: Gas limits
