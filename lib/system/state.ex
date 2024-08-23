@@ -236,6 +236,7 @@ defmodule System.State do
     |> encode_accounts(s)
     |> encode_accounts_storage(s, :storage)
     |> encode_accounts_storage(s, :preimage_storage_p)
+    |> encode_accounts_preimage_storage_l(s)
   end
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
@@ -254,6 +255,25 @@ defmodule System.State do
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
         Map.put(ac, {s, h}, v)
+      end)
+    end)
+  end
+
+  # ∀(s ↦ a) ∈ δ, ((h, l) ↦ t) ∈ al ∶ C(s, E4(l) ⌢ (¬h4∶)) ↦ E(↕[E4(x) ∣ x <− t])
+  defp encode_accounts_preimage_storage_l(state_keys, state = %State{}) do
+    state.services
+    |> Enum.reduce(state_keys, fn {s, a}, ac ->
+      a.preimage_storage_l
+      |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
+        value =
+          t
+          |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+          |> VariableSize.new()
+          |> Codec.Encoder.encode()
+
+        <<_::binary-size(4), rest::binary>> = h
+        key = Codec.Encoder.encode_le(l, 4) <> rest
+        Map.put(ac, {s, key}, value)
       end)
     end)
   end
