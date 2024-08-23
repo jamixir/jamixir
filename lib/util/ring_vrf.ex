@@ -39,14 +39,4 @@ defmodule BandersnatchRingVrf do
   def generate_secret_from_scalar(_scalar_bytes) do
     :erlang.nif_error(:nif_not_loaded)
   end
-
-  # Get the public key from a secret
-  def get_public_key(_secret) do
-    :erlang.nif_error(:nif_not_loaded)
-  end
-
-  # Get the private key (scalar) from a secret
-  def get_private_key(_secret) do
-    :erlang.nif_error(:nif_not_loaded)
-  end
 end

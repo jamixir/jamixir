@@ -258,7 +258,7 @@ fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<Secret> {
 
 #[rustler::nif]
 fn generate_secret_from_rand() -> NifResult<Secret> {
-    let mut rng = rand_chacha::ChaCha20Rng::from_seed([42; 32]);
+    let mut rng = rand_chacha::ChaCha20Rng::from_entropy();
     let secret = Secret::from_rand(&mut rng); // Generate a new secret using random number generator
     eprintln!("Secret: {:?}", secret);
     Ok(secret)
