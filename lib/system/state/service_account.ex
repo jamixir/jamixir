@@ -54,10 +54,18 @@ defmodule System.State.ServiceAccount do
     # total octets in storage s
     octets_in_storage =
       Map.values(s)
-      |> Enum.map(&(32 + length(&1)))
+      |> Enum.map(&(32 + byte_size(&1)))
       |> Enum.sum()
 
     octets_in_preimage_storage_l + octets_in_storage
+  end
+
+  # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
+  @spec threshold_balance(System.State.ServiceAccount.t()) :: number()
+  def threshold_balance(%__MODULE__{} = sa) do
+    Constants.service_minimum_balance() +
+      Constants.additional_minimum_balance_per_item() * items_in_storage(sa) +
+      Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
   end
 
   defimpl Encodable do
@@ -66,7 +74,12 @@ defmodule System.State.ServiceAccount do
     # Formula (292)
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
     def encode(%ServiceAccount{} = s) do
-      s.code_hash <> Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
+      s.code_hash <>
+        Encoder.encode_le(s.balance, 8) <>
+        Encoder.encode_le(s.gas_limit_g, 8) <>
+        Encoder.encode_le(s.gas_limit_m, 8) <>
+        Encoder.encode_le(ServiceAccount.octets_in_storage(s), 8) <>
+        Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
     end
   end
 end
