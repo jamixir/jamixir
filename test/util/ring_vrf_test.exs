@@ -198,4 +198,40 @@ defmodule RingVrfTest do
       _secret = BandersnatchRingVrf.generate_secret_from_scalar(scalar)
     end
   end
+
+  describe "test secret generation" do
+    test "generate_secret_from_seed generates a secret from a seed" do
+      seed = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
+      secret = BandersnatchRingVrf.generate_secret_from_seed(seed)
+
+      IO.inspect(secret, label: "Secret from seed")
+    end
+
+    test "generate_secret_from_rand generates a secret from randomness" do
+      secret = BandersnatchRingVrf.generate_secret_from_rand()
+
+      IO.inspect(secret, label: "Randomly generated secret")
+    end
+
+    test "generate_secret_from_scalar generates a secret from a scalar" do
+      scalar = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
+      secret = BandersnatchRingVrf.generate_secret_from_scalar(scalar)
+
+      IO.inspect(secret, label: "Secret from scalar")
+    end
+
+    test "get_public_key returns the public key from a secret" do
+      secret = BandersnatchRingVrf.generate_secret_from_rand()
+      public_key = BandersnatchRingVrf.get_public_key(secret)
+
+      IO.puts("Public Key: #{public_key}")
+    end
+
+    test "get_private_key returns the private key from a secret" do
+      secret = BandersnatchRingVrf.generate_secret_from_rand()
+      private_key = BandersnatchRingVrf.get_private_key(secret)
+
+      IO.puts("Private Key: #{private_key}")
+    end
+  end
 end
