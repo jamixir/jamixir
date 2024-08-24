@@ -16,4 +16,20 @@ defmodule Block.Extrinsic.Disputes.Verdict do
         }
 
   defstruct work_report_hash: <<>>, epoch_index: 0, judgements: []
+
+  @spec new(Types.hash(), Types.epoch_index(), list(Judgement.t())) :: t()
+  def new(work_report_hash, epoch_index, judgements) do
+    %__MODULE__{
+      work_report_hash: work_report_hash,
+      epoch_index: epoch_index,
+      judgements: sort_and_deduplicate_judgements(judgements)
+    }
+  end
+
+  # Formula (106) v0.3.5
+  defp sort_and_deduplicate_judgements(judgements) do
+    judgements
+    |> Enum.uniq_by(& &1.validator_index)
+    |> Enum.sort_by(& &1.validator_index)
+  end
 end

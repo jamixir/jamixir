@@ -88,11 +88,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -108,11 +104,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       state: state,
       timeslot: timeslot
     } do
-      verdcit = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdcit = Verdict.new(work_report_hash, 1, [valid_judgement])
 
       processed_verdicts = Helper.process_verdicts([verdcit], state, timeslot)
 
@@ -132,11 +124,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 3,
-        judgements: [valid_judgement]
-      }
+      verdict = Verdict.new(work_report_hash, 3, [valid_judgement])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -149,11 +137,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [judgement_with_invalid_signature]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [judgement_with_invalid_signature])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -167,11 +151,8 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement, judgement_with_non_validator_key]
-      }
+      verdict =
+        Verdict.new(work_report_hash, 1, [valid_judgement, judgement_with_non_validator_key])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -187,11 +168,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [judgement_with_invalid_index]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [judgement_with_invalid_index])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -204,17 +181,9 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict1 = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdict1 = Verdict.new(work_report_hash, 1, [valid_judgement])
 
-      verdict2 = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 0,
-        judgements: [valid_judgement]
-      }
+      verdict2 = Verdict.new(work_report_hash, 0, [valid_judgement])
 
       processed_verdicts = Helper.process_verdicts([verdict1, verdict2], state, timeslot)
 
@@ -229,17 +198,9 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      valid_verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      valid_verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
-      invalid_verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [judgement_with_non_validator_key]
-      }
+      invalid_verdict = Verdict.new(work_report_hash, 1, [judgement_with_non_validator_key])
 
       processed_verdicts =
         Helper.process_verdicts([valid_verdict, invalid_verdict], state, timeslot)
@@ -255,11 +216,8 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement, judgement_with_non_validator_key]
-      }
+      verdict =
+        Verdict.new(work_report_hash, 1, [valid_judgement, judgement_with_non_validator_key])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -274,11 +232,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       state: state,
       timeslot: timeslot
     } do
-      verdict = %Verdict{
-        work_report_hash: <<2::256>>,
-        epoch_index: 0,
-        judgements: [prev_judgement]
-      }
+      verdict = Verdict.new(<<2::256>>, 0, [prev_judgement])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -306,11 +260,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
           %Judgement{valid_judgement | validator_index: i - 1, decision: i <= 1}
         end)
 
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: judgements
-      }
+      verdict = Verdict.new(work_report_hash, 1, judgements)
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -326,11 +276,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
       timeslot: timeslot,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [%Judgement{valid_judgement | decision: false}]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 
@@ -357,11 +303,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
           %Judgement{valid_judgement | validator_index: i - 1, decision: i <= 2}
         end)
 
-      verdict = %Verdict{
-        work_report_hash: <<5::256>>,
-        epoch_index: 1,
-        judgements: judgements
-      }
+      verdict = Verdict.new(<<5::256>>, 1, judgements)
 
       processed_verdicts = Helper.process_verdicts([verdict], state, timeslot)
 

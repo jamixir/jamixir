@@ -38,7 +38,8 @@ defmodule System.StateTransition.JudgementsTest do
       | curr_validators: [%Validator{ed25519: valid_key_public}],
         prev_validators: [%Validator{ed25519: prev_key_public}],
         judgements: %Judgements{},
-        timeslot: 600    }
+        timeslot: 600
+    }
 
     header = %Header{timeslot: 601}
 
@@ -72,11 +73,7 @@ defmodule System.StateTransition.JudgementsTest do
         %Judgement{valid_judgement | validator_index: i - 1, decision: true}
       end)
 
-    verdict = %Verdict{
-      work_report_hash: work_report_hash,
-      epoch_index: 1,
-      judgements: positive_votes
-    }
+    verdict = Verdict.new(work_report_hash, 1, positive_votes)
 
     disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
@@ -106,11 +103,7 @@ defmodule System.StateTransition.JudgementsTest do
         %Judgement{valid_judgement | validator_index: i - 1, decision: i == 1}
       end)
 
-    verdict = %Verdict{
-      work_report_hash: work_report_hash,
-      epoch_index: 1,
-      judgements: wonky_votes
-    }
+    verdict = Verdict.new(work_report_hash, 1, wonky_votes)
 
     disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
@@ -127,11 +120,7 @@ defmodule System.StateTransition.JudgementsTest do
     valid_judgement: valid_judgement,
     valid_offense: valid_offense
   } do
-    verdict = %Verdict{
-      work_report_hash: work_report_hash,
-      epoch_index: 1,
-      judgements: [%Judgement{valid_judgement | decision: false}]
-    }
+    verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
     disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
@@ -158,11 +147,7 @@ defmodule System.StateTransition.JudgementsTest do
 
     state = %{state | judgements: state_judgements}
 
-    verdict = %Verdict{
-      work_report_hash: work_report_hash,
-      epoch_index: 1,
-      judgements: [%Judgement{valid_judgement | decision: false}]
-    }
+    verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
     disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
@@ -210,11 +195,7 @@ defmodule System.StateTransition.JudgementsTest do
         judgements: %Judgements{bad: MapSet.new([work_report_hash_1, work_report_hash_2])}
     }
 
-    verdict = %Verdict{
-      work_report_hash: work_report_hash,
-      epoch_index: 1,
-      judgements: [%Judgement{valid_judgement | decision: false}]
-    }
+    verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
     disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: [fault]}
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}

@@ -101,11 +101,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       header: header,
       work_report_hash: work_report_hash
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
       state = %System.State{
         state
@@ -156,13 +152,10 @@ defmodule Block.Extrinsic.Disputes.Test do
         | judgements: %Judgements{bad: MapSet.new([work_report_hash_2])}
       }
 
-      verdict = %Verdict{
-        work_report_hash: work_report_hash_1,
-        epoch_index: 1,
-        judgements: [
+      verdict =
+        Verdict.new(work_report_hash_1, 1, [
           %Judgement{decision: false, validator_index: 0, signature: valid_signature_1}
-        ]
-      }
+        ])
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: [fault]}
 
@@ -185,11 +178,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         | judgements: %Judgements{punish: MapSet.new([culprit.validator_key])}
       }
 
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
 
@@ -207,11 +196,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       work_report_hash: work_report_hash,
       valid_judgement: valid_judgement
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [%Judgement{valid_judgement | decision: true}]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: true}])
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
 
@@ -234,11 +219,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         | judgements: %Judgements{bad: MapSet.new([work_report_hash])}
       }
 
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [valid_judgement]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
 
@@ -256,11 +237,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       work_report_hash: work_report_hash,
       valid_judgement: valid_judgement
     } do
-      verdict = %Verdict{
-        work_report_hash: work_report_hash,
-        epoch_index: 1,
-        judgements: [%Judgement{valid_judgement | decision: false}]
-      }
+      verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
       disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
 
