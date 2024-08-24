@@ -108,7 +108,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         | judgements: %Judgements{good: MapSet.new([work_report_hash])}
       }
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
+      disputes = Disputes.new([verdict], [], [])
       {processed_verdicts, _} = Disputes.validate_and_process_disputes(disputes, state, header)
 
       assert processed_verdicts == %{}
@@ -157,7 +157,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           %Judgement{decision: false, validator_index: 0, signature: valid_signature_1}
         ])
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: [fault]}
+      disputes = Disputes.new([verdict], [culprit], [fault])
 
       {processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)
@@ -180,7 +180,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
+      disputes = Disputes.new([verdict], [culprit], [])
 
       {processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)
@@ -198,7 +198,7 @@ defmodule Block.Extrinsic.Disputes.Test do
     } do
       verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: true}])
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
+      disputes = Disputes.new([verdict], [culprit], [])
 
       {processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)
@@ -221,7 +221,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       verdict = Verdict.new(work_report_hash, 1, [valid_judgement])
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
+      disputes = Disputes.new([verdict], [culprit], [])
 
       {_processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)
@@ -239,7 +239,7 @@ defmodule Block.Extrinsic.Disputes.Test do
     } do
       verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
-      disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: []}
+      disputes = Disputes.new([verdict], [culprit], [])
 
       {processed_verdicts, valid_offenses} =
         Disputes.validate_and_process_disputes(disputes, state, header)

@@ -21,6 +21,15 @@ defmodule Block.Extrinsic.Disputes do
 
   defstruct verdicts: [], culprits: [], faults: []
 
+  @spec new(list(Verdict.t()), list(Culprit.t()), list(Fault.t())) :: t()
+  def new(verdicts, culprits, faults) do
+    %__MODULE__{
+      verdicts: sort_verdicts(verdicts),
+      culprits: sort_culprits(culprits),
+      faults: sort_faults(faults)
+    }
+  end
+
   @doc """
   Filters all components of Disputes extrinsic (verdicts, culprits, faults) for validity.
   """
@@ -42,8 +51,25 @@ defmodule Block.Extrinsic.Disputes do
     {unique_processed_verdicts_map, valid_offenses}
   end
 
-  # Filters and returns only valid offenses (culprits and faults).
+  # Formula (103) v0.3.5
+  defp sort_verdicts(verdicts) do
+    verdicts
+    |> Enum.sort_by(& &1.work_report_hash)
+  end
 
+  # Formula (104) v0.3.5
+  defp sort_culprits(culprits) do
+    culprits
+    |> Enum.sort_by(& &1.validator_key)
+  end
+
+  # Formula (104) v0.3.5
+  defp sort_faults(faults) do
+    faults
+    |> Enum.sort_by(& &1.validator_key)
+  end
+
+  # Filters and returns only valid offenses (culprits and faults).
   defp filter_valid_offenses(offenses, processed_verdicts_map, state) do
     offenses
     |> Enum.filter(&valid_signature?(&1, processed_verdicts_map))

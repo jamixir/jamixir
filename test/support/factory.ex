@@ -31,8 +31,8 @@ defmodule Jamixir.Factory do
   # state with full entropy pool
   def advanced_state_factory do
     %System.State{
-      build(:genesis_state)|
-      entropy_pool: full_entropy_pool_factory(),
+      build(:genesis_state)
+      | entropy_pool: full_entropy_pool_factory()
     }
   end
 

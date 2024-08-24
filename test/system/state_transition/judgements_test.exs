@@ -75,7 +75,7 @@ defmodule System.StateTransition.JudgementsTest do
 
     verdict = Verdict.new(work_report_hash, 1, positive_votes)
 
-    disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
+    disputes = Disputes.new([verdict], [], [])
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
@@ -105,7 +105,7 @@ defmodule System.StateTransition.JudgementsTest do
 
     verdict = Verdict.new(work_report_hash, 1, wonky_votes)
 
-    disputes = %Disputes{verdicts: [verdict], culprits: [], faults: []}
+    disputes = Disputes.new([verdict], [], [])
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
@@ -122,7 +122,7 @@ defmodule System.StateTransition.JudgementsTest do
   } do
     verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
-    disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
+    disputes = Disputes.new([verdict], [valid_offense], [])
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
@@ -149,7 +149,7 @@ defmodule System.StateTransition.JudgementsTest do
 
     verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
-    disputes = %Disputes{verdicts: [verdict], culprits: [valid_offense], faults: []}
+    disputes = Disputes.new([verdict], [valid_offense], [])
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
@@ -197,7 +197,7 @@ defmodule System.StateTransition.JudgementsTest do
 
     verdict = Verdict.new(work_report_hash, 1, [%Judgement{valid_judgement | decision: false}])
 
-    disputes = %Disputes{verdicts: [verdict], culprits: [culprit], faults: [fault]}
+    disputes = Disputes.new([verdict], [culprit], [fault])
     block = %Block{header: header, extrinsic: %Extrinsic{disputes: disputes}}
 
     new_state = State.add_block(state, block)
