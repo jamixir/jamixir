@@ -14,6 +14,7 @@ defmodule Block.Extrinsic.TicketProof do
   @type t :: %__MODULE__{
           # r
           entry_index: 0 | 1,
+          # as N = 2
           # p
           ticket_validity_proof: Types.bandersnatch_ringVRF_proof_of_knowledge()
         }

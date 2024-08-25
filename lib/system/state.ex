@@ -21,8 +21,11 @@ defmodule System.State do
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
+          # Formula (88) v0.3.4 # TODO enforce key to be less than 2^32
+          # Formula (89) v0.3.4
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
+          # Formula (52) v0.3.4
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),

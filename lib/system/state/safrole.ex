@@ -8,13 +8,16 @@ defmodule System.State.Safrole do
   alias Codec.{Encoder, Decoder}
 
   @type t :: %__MODULE__{
+          # Formula (52) v0.3.4
           # gamma_k
           pending: list(Validator.t()),
           # Formula (49) v0.3.4
           # gamma_z
           epoch_root: Types.bandersnatch_ring_root(),
+          # Formula (50) v0.3.4
           # gamma_s
           current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
+          # Formula (50) v0.3.4
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
