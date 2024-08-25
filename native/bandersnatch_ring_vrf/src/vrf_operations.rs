@@ -73,7 +73,6 @@ pub fn ring_vrf_verify<'a>(
         .as_mut_slice()
         .copy_from_slice(&vrf_output_hash_vec);
 
-    // Return the Binary as part of the struct
     Ok(VrfVerificationResult {
         verified,
         vrf_output_hash: vrf_output_hash_bin.release(env),
