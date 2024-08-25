@@ -204,7 +204,7 @@ defmodule RingVrfTest do
     BandersnatchRingVrf.init_ring_context(2)
 
     # Generate a secret key from randomness
-    secret = BandersnatchRingVrf.generate_secret_from_scalar([1, 2, 3])
+    secret = BandersnatchRingVrf.generate_secret_from_rand()
     public = elem(secret, 1)
 
     # Generate a ring of public keys with the public key derived from the secret at index 0
@@ -232,35 +232,30 @@ defmodule RingVrfTest do
       BandersnatchRingVrf.ring_vrf_sign(keys, secret, prover_idx, vrf_input_data, aux_data)
 
     # Verify the signature using the commitment and the same input/aux data
-    vrf_output_hash =
+    %RingVRF.VerificationResult{
+      verified: verified,
+      vrf_output_hash: vrf_output_hash
+    } =
       BandersnatchRingVrf.ring_vrf_verify(commitment, vrf_input_data, aux_data, signature)
 
     # Assert that verification returns true
-    assert vrf_output_hash != nil
+    assert verified
+    assert length(vrf_output_hash) == 32
   end
 
   describe "test secret generation" do
-    @tag :skip
     test "generate_secret_from_seed generates a secret from a seed" do
       seed = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
       secret = BandersnatchRingVrf.generate_secret_from_seed(seed)
-
-      IO.inspect(secret, label: "Secret from seed")
     end
 
-    @tag :skip
     test "generate_secret_from_rand generates a secret from randomness" do
       secret = BandersnatchRingVrf.generate_secret_from_rand()
-
-      IO.inspect(secret, label: "Randomly generated secret")
     end
 
-    @tag :skip
     test "generate_secret_from_scalar generates a secret from a scalar" do
       scalar = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
       secret = BandersnatchRingVrf.generate_secret_from_scalar(scalar)
-
-      IO.inspect(secret, label: "Secret from scalar")
     end
   end
 end
