@@ -3,19 +3,25 @@ use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
 use ark_ec_vrfs::Secret;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{Input, Output, Public, RingProof};
-use rustler::{Error, NifResult};
+use rustler::{Error, NifResult, NifStruct};
 
 use crate::ring_context::ring_context;
 use crate::rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge};
 
 type S = bandersnatch::BandersnatchSha512Ell2;
-
 type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
 
 #[derive(CanonicalSerialize, CanonicalDeserialize)]
 struct RingVrfSignature {
     output: Output,
     proof: RingProof,
+}
+
+#[derive(NifStruct, Debug)]
+#[module = "RingVRF.VerificationResult"]
+pub struct VrfVerificationResult {
+    pub verified: bool,
+    pub vrf_output_hash: Vec<u8>,
 }
 
 fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
@@ -31,7 +37,7 @@ pub fn ring_vrf_verify(
     vrf_input_data: Vec<u8>,
     aux_data: Vec<u8>,
     signature: Vec<u8>,
-) -> NifResult<Vec<u8>> {
+) -> NifResult<VrfVerificationResult> {
     use ark_ec_vrfs::ring::Verifier as _;
     let commitment: RingCommitment = commitment.into();
 
@@ -47,15 +53,16 @@ pub fn ring_vrf_verify(
     let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
     let verifier = ring_ctx.verifier(verifier_key);
 
-    if Public::verify(input, output, &aux_data, &signature.proof, &verifier).is_err() {
-        return Err(Error::Atom("verification_failed"));
-    }
+    let verified = Public::verify(input, output, &aux_data, &signature.proof, &verifier).is_ok();
 
     let vrf_output_hash: Vec<u8> = output.hash()[..32]
         .try_into()
         .map_err(|_| Error::Atom("hash_conversion_failed"))?;
 
-    Ok(vrf_output_hash)
+    Ok(VrfVerificationResult {
+        verified,
+        vrf_output_hash,
+    })
 }
 
 #[rustler::nif]

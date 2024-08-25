@@ -11,7 +11,7 @@ type KzgCommitmentVec = Vec<KzgCommitmentBridge<Pairing>>;
 type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
 
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize, PartialEq, Eq, Debug, NifStruct)]
-#[module = "RingCommitment"]
+#[module = "RingVRF.RingCommitment"]
 pub struct FixedColumnsCommittedBridge {
     pub points: KzgCommitmentVec,
     pub ring_selector: KzgCommitmentBridge<Pairing>,
