@@ -216,12 +216,18 @@ defmodule System.State do
   end
 
   # Formula (86) v0.3.4
-  def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
+  def posterior_authorizer_pool(
+        guarantees,
+        posterior_authorizer_queue,
+        authorizer_pool
+      ) do
     Enum.map(0..Constants.core_count(), fn c ->
       updated_pool_without_queue = pool_after_items_processed(c, authorizer_pool, guarantees)
 
-      updated_pool_with_queue =
-        add_queue_to_pool(updated_pool_without_queue, posterior_authorizer_queue[c])
+      timeslot_index = rem(guarantees[c].timeslot, Constants.max_authorization_queue_items())
+      new_queue_element = posterior_authorizer_queue[c][timeslot_index]
+
+      updated_pool_with_queue = updated_pool_without_queue ++ [new_queue_element]
 
       # take rightmost 'max pool length' items: <--O
       Enum.take(updated_pool_with_queue, -Constants.max_authorizations_items())
@@ -246,10 +252,6 @@ defmodule System.State do
       %Guarantee{work_report: %WorkReport{}} -> true
       _ -> false
     end
-  end
-
-  defp add_queue_to_pool(updated_pool_without_queue, queue_elements) do
-    updated_pool_without_queue ++ [queue_elements]
   end
 
   def e(v), do: Codec.Encoder.encode(v)
