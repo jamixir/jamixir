@@ -1,14 +1,12 @@
 use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
 use ark_ec_vrfs::{
-    prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, BaseField, ScalarField,
+    prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, ScalarField,
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{IetfProof, Input, Output, PcsParams, Public, RingProof, Secret};
 use rand_chacha::rand_core::SeedableRng;
 use rustler::{Error, NifResult, NifStruct};
-use std::marker::PhantomData;
 use std::sync::OnceLock;
-const RING_SIZE: usize = 1023;
 static RING_CTX: OnceLock<RingContext> = OnceLock::new();
 use ark_ec_vrfs::prelude::ark_ff::PrimeField;
 
@@ -69,129 +67,22 @@ fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
     Input::from(point)
 }
 
-// Prover actor.
-struct Prover {
-    pub prover_idx: usize,
-    pub secret: Secret,
-    pub ring: Vec<Public>,
-}
 
-impl Prover {
-    pub fn _new(ring: Vec<Public>, prover_idx: usize) -> Self {
-        Self {
-            prover_idx,
-            secret: Secret::from_seed(&prover_idx.to_le_bytes()),
-            ring,
-        }
-    }
-
-    /// Anonymous VRF signature.
-    ///
-    /// Used for tickets submission.
-    pub fn _ring_vrf_sign(&self, vrf_input_data: &[u8], aux_data: &[u8]) -> Vec<u8> {
-        use ark_ec_vrfs::ring::Prover as _;
-
-        let input = vrf_input_point(vrf_input_data);
-        let output = self.secret.output(input);
-
-        // Backend currently requires the wrapped type (plain affine points)
-        let pts: Vec<_> = self.ring.iter().map(|pk| pk.0).collect();
-
-        // Proof construction
-        let ring_ctx = RING_CTX.get().expect("ring_context_not_initialized");
-
-        let prover_key = ring_ctx.prover_key(&pts);
-        let prover = ring_ctx.prover(prover_key, self.prover_idx);
-        let proof = self.secret.prove(input, output, aux_data, &prover);
-
-        // Output and Ring Proof bundled together (as per section 2.2)
-        let signature = RingVrfSignature { output, proof };
-        let mut buf = Vec::new();
-        signature.serialize_compressed(&mut buf).unwrap();
-        buf
-    }
-
-    /// Non-Anonymous VRF signature.
-    ///
-    /// Used for ticket claiming during block production.
-    /// Not used with Safrole test vectors.
-    pub fn _ietf_vrf_sign(&self, vrf_input_data: &[u8], aux_data: &[u8]) -> Vec<u8> {
-        use ark_ec_vrfs::ietf::Prover as _;
-
-        let input = vrf_input_point(vrf_input_data);
-        let output = self.secret.output(input);
-
-        let proof = self.secret.prove(input, output, aux_data);
-
-        // Output and IETF Proof bundled together (as per section 2.2)
-        let signature = IetfVrfSignature { output, proof };
-        let mut buf = Vec::new();
-        signature.serialize_compressed(&mut buf).unwrap();
-        buf
-    }
-}
-
-// Verifier actor.
-struct Verifier {
-    pub commitment: RingCommitment,
-    pub ring: Vec<Public>,
-}
-
-impl Verifier {
-    /// Non-Anonymous VRF signature verification.
-    ///
-    /// Used for ticket claim verification during block import.
-    /// Not used with Safrole test vectors.
-    ///
-    /// On success returns the VRF output hash.
-    pub fn _ietf_vrf_verify(
-        &self,
-        vrf_input_data: &[u8],
-        aux_data: &[u8],
-        signature: &[u8],
-        signer_key_index: usize,
-    ) -> Result<[u8; 32], ()> {
-        use ark_ec_vrfs::ietf::Verifier as _;
-
-        let signature = IetfVrfSignature::deserialize_compressed(signature).unwrap();
-
-        let input = vrf_input_point(vrf_input_data);
-        let output = signature.output;
-
-        let public = &self.ring[signer_key_index];
-        if public
-            .verify(input, output, aux_data, &signature.proof)
-            .is_err()
-        {
-            println!("Ring signature verification failure");
-            return Err(());
-        }
-        println!("Ietf signature verified");
-
-        // This is the actual value used as ticket-id/score
-        // NOTE: as far as vrf_input_data is the same, this matches the one produced
-        // using the ring-vrf (regardless of aux_data).
-        let vrf_output_hash: [u8; 32] = output.hash()[..32].try_into().unwrap();
-        println!(" vrf-output-hash: {}", hex::encode(vrf_output_hash));
-        Ok(vrf_output_hash)
-    }
-}
 #[rustler::nif]
-pub fn create_ring_context(file_contents: Vec<u8>) -> NifResult<()> {
+pub fn create_ring_context(file_contents: Vec<u8>, ring_size: usize) -> NifResult<()> {
     RING_CTX.get_or_init(|| {
         let pcs_params =
             PcsParams::deserialize_uncompressed_unchecked(&mut &file_contents[..]).unwrap();
-        RingContext::from_srs(RING_SIZE, pcs_params).unwrap()
+        RingContext::from_srs(ring_size, pcs_params).unwrap()
     });
     Ok(())
 }
 
+
+
 #[rustler::nif]
-pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<FixedColumnsCommittedBridge> {
-    let pts: Vec<_> = ring
-        .iter()
-        .map(|hash| vrf_input_point(&hash[..]).0)
-        .collect();
+pub fn create_commitment(ring: Vec<Public>) -> NifResult<FixedColumnsCommittedBridge> {
+    let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
     let rc = RING_CTX
         .get()
         .ok_or(Error::Atom("ring_context_not_initialized"))?;
@@ -201,13 +92,6 @@ pub fn create_verifier(ring: Vec<Vec<u8>>) -> NifResult<FixedColumnsCommittedBri
     let commitment = verifier_key.commitment();
 
     Ok(commitment.into())
-}
-
-#[rustler::nif]
-pub fn read_commitment(commitment: FixedColumnsCommittedBridge) -> NifResult<()> {
-    let commitment = RingCommitment::from(commitment);
-    println!("Commitment: {:?}", commitment);
-    Ok(())
 }
 
 /// Anonymous VRF signature verification.
@@ -221,11 +105,10 @@ pub fn ring_vrf_verify(
     signature: Vec<u8>,
 ) -> NifResult<Vec<u8>> {
     use ark_ec_vrfs::ring::Verifier as _;
-    eprintln!("started");
     let commitment: RingCommitment = commitment.into();
 
     let signature = RingVrfSignature::deserialize_compressed(&signature[..])
-        .map_err(|e| Error::Atom("invalid_signature"))?;
+        .map_err(|_e| Error::Atom("invalid_signature"))?;
 
     let input = vrf_input_point(&vrf_input_data);
 
@@ -250,43 +133,8 @@ pub fn ring_vrf_verify(
 }
 
 #[rustler::nif]
-fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<Secret> {
-    let secret = Secret::from_seed(&seed); // Generate a new secret from the seed
-    eprintln!("Secret from seed: {:?}", secret);
-    Ok(secret)
-}
-
-#[rustler::nif]
-fn generate_secret_from_rand() -> NifResult<Secret> {
-    let mut rng = rand_chacha::ChaCha20Rng::from_entropy();
-    let secret = Secret::from_rand(&mut rng); // Generate a new secret using random number generator
-    eprintln!("Secret: {:?}", secret);
-    Ok(secret)
-}
-
-#[rustler::nif]
-fn generate_secret_from_scalar(scalar_bytes: Vec<u8>) -> NifResult<Secret> {
-    let scalar = ScalarField::<S>::from_le_bytes_mod_order(&scalar_bytes[..]);
-    let secret = Secret::from_scalar(scalar);
-    eprintln!("Secret from scalar: {:?}", secret);
-    Ok(secret)
-}
-
-#[rustler::nif]
-fn get_public_key(secret: Secret) -> NifResult<String> {
-    let public_key_str = format!("{:?}", secret.public());
-    Ok(public_key_str)
-}
-
-#[rustler::nif]
-fn get_private_key(secret: Secret) -> NifResult<String> {
-    let private_key_str = format!("{:?}", secret.scalar);
-    Ok(private_key_str)
-}
-
-#[rustler::nif]
 fn ring_vrf_sign(
-    ring: Vec<Vec<u8>>,      // Vector of public keys as Vec<u8>
+    ring: Vec<Public>,       // Vector of public keys as Vec<u8>
     secret: Secret,          // Secret key
     prover_idx: usize,       // Index of the prover
     vrf_input_data: Vec<u8>, // VRF input data
@@ -297,10 +145,7 @@ fn ring_vrf_sign(
     let input = vrf_input_point(&vrf_input_data);
     let output = secret.output(input);
 
-    let pts: Vec<_> = ring
-        .iter()
-        .map(|hash| vrf_input_point(&hash[..]).0)
-        .collect();
+    let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
 
     let ring_ctx = RING_CTX
         .get()
@@ -316,6 +161,26 @@ fn ring_vrf_sign(
     signature.serialize_compressed(&mut buf).unwrap();
 
     Ok(buf)
+}
+
+#[rustler::nif]
+fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<Secret> {
+    let secret = Secret::from_seed(&seed); // Generate a new secret from the seed
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_rand() -> NifResult<Secret> {
+    let mut rng = rand_chacha::ChaCha20Rng::from_entropy();
+    let secret = Secret::from_rand(&mut rng); // Generate a new secret using random number generator
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_scalar(scalar_bytes: Vec<u8>) -> NifResult<Secret> {
+    let scalar = ScalarField::<S>::from_le_bytes_mod_order(&scalar_bytes[..]);
+    let secret = Secret::from_scalar(scalar);
+    Ok(secret)
 }
 
 rustler::init!("Elixir.BandersnatchRingVrf");
