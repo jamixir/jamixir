@@ -276,8 +276,8 @@ defmodule RingVrfTest do
     prover_idx = 0
 
     # Mock VRF input data and auxiliary data
-    vrf_input_data = "input data" |> :binary.bin_to_list()
-    aux_data = "aux data" |> :binary.bin_to_list()
+    vrf_input_data = "input data"
+    aux_data = "aux data"
     # Sign the data using the secret and the ring
     signature =
       BandersnatchRingVrf.ring_vrf_sign(keys, secret, prover_idx, vrf_input_data, aux_data)
@@ -291,7 +291,7 @@ defmodule RingVrfTest do
 
     # Assert that verification returns true
     assert verified
-    assert length(vrf_output_hash) == 32
+    assert byte_size(vrf_output_hash) == 32
   end
 
   describe "Context influence on output, message doesn't " do
