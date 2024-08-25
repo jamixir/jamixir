@@ -3,7 +3,7 @@ use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
 use ark_ec_vrfs::Secret;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{Input, Output, Public, RingProof};
-use rustler::{Error, NifResult, NifStruct};
+use rustler::{Binary, Env, Error, NifResult, NifStruct, OwnedBinary};
 
 use crate::ring_context::ring_context;
 use crate::rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge};
@@ -17,11 +17,11 @@ struct RingVrfSignature {
     proof: RingProof,
 }
 
-#[derive(NifStruct, Debug)]
+#[derive(NifStruct)]
 #[module = "RingVRF.VerificationResult"]
-pub struct VrfVerificationResult {
+pub struct VrfVerificationResult<'a> {
     pub verified: bool,
-    pub vrf_output_hash: Vec<u8>,
+    pub vrf_output_hash: Binary<'a>,
 }
 
 fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
@@ -32,12 +32,13 @@ fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
 }
 
 #[rustler::nif]
-pub fn ring_vrf_verify(
+pub fn ring_vrf_verify<'a>(
+    env: Env<'a>,
     commitment: FixedColumnsCommittedBridge,
-    vrf_input_data: Vec<u8>,
-    aux_data: Vec<u8>,
-    signature: Vec<u8>,
-) -> NifResult<VrfVerificationResult> {
+    vrf_input_data: Binary,
+    aux_data: Binary,
+    signature: Binary,
+) -> NifResult<VrfVerificationResult<'a>> {
     use ark_ec_vrfs::ring::Verifier as _;
     let commitment: RingCommitment = commitment.into();
 
@@ -53,26 +54,41 @@ pub fn ring_vrf_verify(
     let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
     let verifier = ring_ctx.verifier(verifier_key);
 
-    let verified = Public::verify(input, output, &aux_data, &signature.proof, &verifier).is_ok();
+    let verified = Public::verify(
+        input,
+        output,
+        aux_data.as_slice(),
+        &signature.proof,
+        &verifier,
+    )
+    .is_ok();
 
-    let vrf_output_hash: Vec<u8> = output.hash()[..32]
+    let vrf_output_hash_vec: Vec<u8> = output.hash()[..32]
         .try_into()
         .map_err(|_| Error::Atom("hash_conversion_failed"))?;
 
+    // Create an OwnedBinary from the Vec<u8>
+    let mut vrf_output_hash_bin = OwnedBinary::new(vrf_output_hash_vec.len()).unwrap();
+    vrf_output_hash_bin
+        .as_mut_slice()
+        .copy_from_slice(&vrf_output_hash_vec);
+
+    // Return the Binary as part of the struct
     Ok(VrfVerificationResult {
         verified,
-        vrf_output_hash,
+        vrf_output_hash: vrf_output_hash_bin.release(env),
     })
 }
 
 #[rustler::nif]
-fn ring_vrf_sign(
+fn ring_vrf_sign<'a>(
+    env: Env<'a>,
     ring: Vec<PublicBridge<S>>,
     secret: SecretBridge<S>,
     prover_idx: usize,
-    vrf_input_data: Vec<u8>,
-    aux_data: Vec<u8>,
-) -> NifResult<Vec<u8>> {
+    vrf_input_data: Binary,
+    aux_data: Binary,
+) -> NifResult<Binary<'a>> {
     use ark_ec_vrfs::ring::Prover as _;
 
     let ring: Vec<Public> = ring.into_iter().map(|pk| pk.into()).collect();
@@ -87,11 +103,14 @@ fn ring_vrf_sign(
 
     let prover_key = ring_ctx.prover_key(&pts);
     let prover = ring_ctx.prover(prover_key, prover_idx);
-    let proof = secret.prove(input, output, aux_data, &prover);
+    let proof = secret.prove(input, output, aux_data.as_slice(), &prover);
 
     let signature = RingVrfSignature { output, proof };
     let mut buf = Vec::new();
     signature.serialize_compressed(&mut buf).unwrap();
 
-    Ok(buf)
+    let mut binary = OwnedBinary::new(buf.len()).unwrap();
+    binary.as_mut_slice().copy_from_slice(&buf);
+
+    Ok(binary.release(env))
 }

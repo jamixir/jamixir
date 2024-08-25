@@ -8,14 +8,19 @@ impl<S: Suite> Encoder for PublicBridge<S> {
     fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
         let mut buf = Vec::new();
         S::Codec::point_encode(&self.0, &mut buf);
-        buf.encode(env)
+
+        let mut point_bin = rustler::OwnedBinary::new(buf.len()).unwrap();
+        point_bin.as_mut_slice().copy_from_slice(&buf);
+
+        point_bin.release(env).encode(env)
     }
 }
 
 impl<'a, S: Suite + 'a> Decoder<'a> for PublicBridge<S> {
     fn decode(term: Term<'a>) -> NifResult<Self> {
-        let binary: Vec<u8> = term.decode()?;
-        let point = S::Codec::point_decode(&binary[..])
+        // let binary: Vec<u8> = term.decode()?;
+        let binary: rustler::Binary = term.decode()?;
+        let point = S::Codec::point_decode(binary.as_slice())
             .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
         Ok(PublicBridge(point))
     }

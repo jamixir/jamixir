@@ -3,7 +3,6 @@ use rustler::{Decoder, Encoder, NifResult, Term};
 
 use super::PublicBridge;
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct SecretBridge<S: Suite> {
     pub scalar: ScalarField<S>,
@@ -17,21 +16,24 @@ impl<S: Suite> Encoder for SecretBridge<S> {
         // Encode the scalar field
         S::Codec::scalar_encode(&self.scalar, &mut scalar_buf);
 
+        let mut scalar_bin = rustler::OwnedBinary::new(scalar_buf.len()).unwrap();
+        scalar_bin.as_mut_slice().copy_from_slice(&scalar_buf);
+
         // Encode the public key as a Term
         let public_term = self.public.encode(env);
 
         // Combine both encoded parts into a tuple
-        (scalar_buf, public_term).encode(env)
+        (scalar_bin.release(env), public_term).encode(env)
     }
 }
 
 impl<'a, S: Suite + 'a> Decoder<'a> for SecretBridge<S> {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         // Decode the tuple containing the scalar and public parts
-        let (scalar_buf, public_term): (Vec<u8>, Term<'a>) = term.decode()?;
+        let (scalar_bin, public_term): (rustler::Binary, Term<'a>) = term.decode()?;
 
         // Decode the scalar from the scalar buffer
-        let scalar = S::Codec::scalar_decode(&scalar_buf);
+        let scalar = S::Codec::scalar_decode(scalar_bin.as_slice());
 
         // Decode the public key using the existing Decoder implementation for Public<S>
         let public = public_term.decode()?;
