@@ -267,12 +267,10 @@ defmodule RingVrfTest do
 
     # Prepend the public key to the list of keys
     keys = [public | keys]
-    IO.inspect(keys, label: "Keys")
 
     # Create a verifier (commitment)
     commitment = BandersnatchRingVrf.create_commitment(keys)
     # print commitment
-    IO.inspect(commitment, label: "Commitment")
 
     # Select the prover index (for simplicity, use the first key)
     prover_idx = 0
@@ -288,7 +286,6 @@ defmodule RingVrfTest do
     vrf_output_hash =
       BandersnatchRingVrf.ring_vrf_verify(commitment, vrf_input_data, aux_data, signature)
 
-    IO.inspect(vrf_output_hash, label: "VRF output hash")
     # Assert that verification returns true
     assert vrf_output_hash != nil
   end
