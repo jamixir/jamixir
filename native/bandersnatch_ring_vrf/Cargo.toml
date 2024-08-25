@@ -17,7 +17,8 @@ ark-ec-vrfs = { git = "https://github.com/daiagi/ark-ec-vrfs", features = [
     "test-vectors",
 ] }
 ring-proof = { package = "ring", git = "https://github.com/daiagi/ring-proof", branch = "extended", default-features = false }
-
+ark-ec = { version = "0.4", default-features = false }
+ark-serialize = { version = "0.4", default-features = false, features = ["derive"] }
 hex = "0.4.3"
 rustler = "0.34.0"
 rand_chacha = { version = "0.3", default-features = false }

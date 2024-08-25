@@ -1,11 +1,12 @@
 use ark_ec_vrfs::prelude::ark_serialize;
 use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
+use ark_ec_vrfs::Secret;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use bandersnatch::{Input, Output, Public, RingProof, Secret};
+use bandersnatch::{Input, Output, Public, RingProof};
 use rustler::{Error, NifResult};
 
-use crate::commitment::FixedColumnsCommittedBridge;
 use crate::ring_context::ring_context;
+use crate::rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge};
 
 type S = bandersnatch::BandersnatchSha512Ell2;
 
@@ -59,15 +60,18 @@ pub fn ring_vrf_verify(
 
 #[rustler::nif]
 fn ring_vrf_sign(
-    ring: Vec<Public>,
-    secret: Secret,
+    ring: Vec<PublicBridge<S>>,
+    secret: SecretBridge<S>,
     prover_idx: usize,
     vrf_input_data: Vec<u8>,
     aux_data: Vec<u8>,
 ) -> NifResult<Vec<u8>> {
     use ark_ec_vrfs::ring::Prover as _;
 
+    let ring: Vec<Public> = ring.into_iter().map(|pk| pk.into()).collect();
+
     let input = vrf_input_point(&vrf_input_data);
+    let secret: Secret<S> = secret.into();
     let output = secret.output(input);
 
     let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
