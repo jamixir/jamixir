@@ -20,6 +20,7 @@ defmodule Block.Extrinsic.Disputes.Helper do
     # Filter out verdicts with incorrect judgement count
     |> Enum.filter(&valid_judgement_count?/1)
     # Sort and uniq by work report hash
+    # Formula (103) v0.3.4
     |> Util.Collections.uniq_sorted(& &1.work_report_hash)
     # Convert to map for easy lookup
     |> Enum.into(%{}, fn verdict -> {verdict.work_report_hash, verdict} end)
@@ -49,6 +50,7 @@ defmodule Block.Extrinsic.Disputes.Helper do
     Enum.filter(jms, fn judgement ->
       verify_judgement_signature?(judgement, wrh, validator_set)
     end)
+    # Formula (104) v0.3.4
     # Ensure uniqueness by validator index
     |> Util.Collections.uniq_sorted(& &1.validator_index)
   end

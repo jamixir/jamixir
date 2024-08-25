@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
+  alias Util.Collections
   alias Block.Header
   alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
   alias Block.Extrinsic.Disputes
@@ -49,8 +50,8 @@ defmodule Block.Extrinsic.Disputes do
     |> Enum.filter(&valid_signature?(&1, processed_verdicts_map))
     |> Enum.filter(&MapSet.member?(combined_validators(state), &1.validator_key))
     |> Enum.filter(&offense_in_new_bad_set?(&1, processed_verdicts_map, state))
-    |> Enum.sort_by(& &1.validator_key)
-    |> Enum.uniq_by(& &1.validator_key)
+    # Formula (104) v0.3.4
+    |> Util.Collections.uniq_sorted(& &1.validator_key)
   end
 
   defp valid_signature?(%Culprit{validator_key: key, signature: sig, work_report_hash: wrh}, _) do
