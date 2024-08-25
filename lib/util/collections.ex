@@ -26,4 +26,16 @@ defmodule Util.Collections do
     end)
     |> Kernel.==(true)
   end
+
+  def uniq_sorted(collection) do
+    collection
+    |> Enum.sort()
+    |> Enum.uniq()
+  end
+
+  def uniq_sorted(collection, key_func) when is_function(key_func, 1) do
+    collection
+    |> Enum.sort_by(key_func)
+    |> Enum.uniq_by(key_func)
+  end
 end

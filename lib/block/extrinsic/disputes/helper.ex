@@ -19,10 +19,8 @@ defmodule Block.Extrinsic.Disputes.Helper do
     |> Enum.map(&filter_and_build_verdict_data(&1, state, timeslot))
     # Filter out verdicts with incorrect judgement count
     |> Enum.filter(&valid_judgement_count?/1)
-    # Sort by work report hash
-    |> Enum.sort_by(& &1.work_report_hash)
-    # Ensure uniqueness by work report hash
-    |> Enum.uniq_by(& &1.work_report_hash)
+    # Sort and uniq by work report hash
+    |> Util.Collections.uniq_sorted(& &1.work_report_hash)
     # Convert to map for easy lookup
     |> Enum.into(%{}, fn verdict -> {verdict.work_report_hash, verdict} end)
   end
@@ -52,8 +50,7 @@ defmodule Block.Extrinsic.Disputes.Helper do
       verify_judgement_signature?(judgement, wrh, validator_set)
     end)
     # Ensure uniqueness by validator index
-    |> Enum.sort_by(& &1.validator_index)
-    |> Enum.uniq_by(& &1.validator_index)
+    |> Util.Collections.uniq_sorted(& &1.validator_index)
   end
 
   # Determines if a signature in a judgement is valid for the given work report hash.
