@@ -6,7 +6,7 @@ mod rustler_bridges;
 
 #[rustler::nif]
 fn ring_vrf_sign(
-    ring: Vec<Vec<u8>>,      // Vector of public keys as Vec<u8>
+    ring: Vec<Public>,       // Vector of public keys as Vec<u8>
     secret: Secret,          // Secret key
     prover_idx: usize,       // Index of the prover
     vrf_input_data: Vec<u8>, // VRF input data
@@ -17,10 +17,7 @@ fn ring_vrf_sign(
     let input = vrf_input_point(&vrf_input_data);
     let output = secret.output(input);
 
-    let pts: Vec<_> = ring
-        .iter()
-        .map(|hash| vrf_input_point(&hash[..]).0)
-        .collect();
+    let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
 
     let ring_ctx = RING_CTX
         .get()
@@ -36,6 +33,26 @@ fn ring_vrf_sign(
     signature.serialize_compressed(&mut buf).unwrap();
 
     Ok(buf)
+}
+
+#[rustler::nif]
+fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<Secret> {
+    let secret = Secret::from_seed(&seed); // Generate a new secret from the seed
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_rand() -> NifResult<Secret> {
+    let mut rng = rand_chacha::ChaCha20Rng::from_entropy();
+    let secret = Secret::from_rand(&mut rng); // Generate a new secret using random number generator
+    Ok(secret)
+}
+
+#[rustler::nif]
+fn generate_secret_from_scalar(scalar_bytes: Vec<u8>) -> NifResult<Secret> {
+    let scalar = ScalarField::<S>::from_le_bytes_mod_order(&scalar_bytes[..]);
+    let secret = Secret::from_scalar(scalar);
+    Ok(secret)
 }
 
 rustler::init!("Elixir.BandersnatchRingVrf");
