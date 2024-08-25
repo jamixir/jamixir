@@ -19,9 +19,7 @@ fn ring_vrf_sign(
 
     let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
 
-    let ring_ctx = RING_CTX
-        .get()
-        .ok_or(Error::Atom("ring_context_not_initialized"))?;
+    let ring_ctx = ring_context()?;
 
     let prover_key = ring_ctx.prover_key(&pts);
     let prover = ring_ctx.prover(prover_key, prover_idx);
