@@ -2,7 +2,7 @@ defmodule BandersnatchRingVrf do
   use Rustler, otp_app: :jamixir, crate: :bandersnatch_ring_vrf
 
   # These functions correspond to the NIFs defined in Rust
-  def create_ring_context(_file_contents, _ring_size), do: :erlang.nif_error(:nif_not_loaded)
+  def create_ring_context(_filename, _ring_size), do: :erlang.nif_error(:nif_not_loaded)
   @spec create_commitment(any()) :: any()
   def create_commitment(_keys), do: :erlang.nif_error(:nif_not_loaded)
 
@@ -18,10 +18,7 @@ defmodule BandersnatchRingVrf do
     filename =
       Path.join([current_dir, "native/bandersnatch_ring_vrf/data/zcash-srs-2-11-uncompressed.bin"])
 
-    {:ok, file_contents} = File.read(filename)
-    # convert from binary to list
-    file_contents = :binary.bin_to_list(file_contents)
-    create_ring_context(file_contents, ring_size)
+    create_ring_context(filename, ring_size)
   end
 
   # Function to handle (secret, public_key) pair generation

@@ -1,4 +1,4 @@
-use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
+use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
 use ark_ec_vrfs::{
     prelude::ark_serialize, suites::bandersnatch::edwards::RingContext, ScalarField,
 };
@@ -7,8 +7,32 @@ use bandersnatch::{IetfProof, Input, Output, PcsParams, Public, RingProof, Secre
 use rand_chacha::rand_core::SeedableRng;
 use rustler::{Error, NifResult, NifStruct};
 use std::sync::OnceLock;
-static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+use std::{fs::File, io::Read};
+
 use ark_ec_vrfs::prelude::ark_ff::PrimeField;
+
+static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+#[rustler::nif]
+pub fn create_ring_context(file_path: String, ring_size: usize) -> NifResult<()> {
+    RING_CTX.get_or_init(|| {
+        let mut file = File::open(file_path).expect("Failed to open the SRS file");
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)
+            .expect("Failed to read the SRS file");
+
+        let pcs_params = PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..])
+            .expect("Failed to deserialize PCS parameters");
+        RingContext::from_srs(ring_size, pcs_params).expect("Failed to create RingContext")
+    });
+    Ok(())
+}
+
+pub fn ring_context() -> Result<RingContext, rustler::Error> {
+    RING_CTX
+        .get()
+        .ok_or(Error::Atom("ring_context_not_initialized"))
+        .cloned()
+}
 
 // This is the IETF `Prove` procedure output as described in section 2.2
 // of the Bandersnatch VRFs specification
@@ -67,27 +91,11 @@ fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
     Input::from(point)
 }
 
-
-#[rustler::nif]
-pub fn create_ring_context(file_contents: Vec<u8>, ring_size: usize) -> NifResult<()> {
-    RING_CTX.get_or_init(|| {
-        let pcs_params =
-            PcsParams::deserialize_uncompressed_unchecked(&mut &file_contents[..]).unwrap();
-        RingContext::from_srs(ring_size, pcs_params).unwrap()
-    });
-    Ok(())
-}
-
-
-
 #[rustler::nif]
 pub fn create_commitment(ring: Vec<Public>) -> NifResult<FixedColumnsCommittedBridge> {
     let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
-    let rc = RING_CTX
-        .get()
-        .ok_or(Error::Atom("ring_context_not_initialized"))?;
 
-    let verifier_key = rc.verifier_key(&pts);
+    let verifier_key = ring_context()?.verifier_key(&pts);
 
     let commitment = verifier_key.commitment();
 
@@ -114,9 +122,7 @@ pub fn ring_vrf_verify(
 
     let output = signature.output;
 
-    let ring_ctx = RING_CTX
-        .get()
-        .ok_or(Error::Atom("ring_context_not_initialized"))?;
+    let ring_ctx = ring_context()?;
 
     let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
     let verifier = ring_ctx.verifier(verifier_key);
@@ -147,9 +153,7 @@ fn ring_vrf_sign(
 
     let pts: Vec<_> = ring.iter().map(|pk| pk.0).collect();
 
-    let ring_ctx = RING_CTX
-        .get()
-        .ok_or(Error::Atom("ring_context_not_initialized"))?;
+    let ring_ctx = ring_context()?;
 
     let prover_key = ring_ctx.prover_key(&pts);
     let prover = ring_ctx.prover(prover_key, prover_idx);
