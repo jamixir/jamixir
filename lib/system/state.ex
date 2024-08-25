@@ -4,6 +4,7 @@ defmodule System.State do
   alias System.State
   alias Constants
   alias Block.Extrinsic.Guarantee
+  alias Block.Extrinsic.Guarantee.WorkReport
 
   alias System.State.{
     Validator,
@@ -217,10 +218,13 @@ defmodule System.State do
   # Formula (86) v0.3.4
   def posterior_authorizer_pool(guarantees, posterior_authorizer_queue, authorizer_pool) do
     Enum.map(0..Constants.core_count(), fn c ->
-      f_c = pool_after_items_processed(c, authorizer_pool, guarantees)
-      updated_pool = add_queue_to_pool(f_c, posterior_authorizer_queue[c])
+      updated_pool_without_queue = pool_after_items_processed(c, authorizer_pool, guarantees)
+
+      updated_pool_with_queue =
+        add_queue_to_pool(updated_pool_without_queue, posterior_authorizer_queue[c])
+
       # take rightmost 'max pool length' items: <--O
-      Enum.take(updated_pool, -Constants.max_authorizations_items())
+      Enum.take(updated_pool_with_queue, -Constants.max_authorizations_items())
     end)
   end
 
@@ -238,13 +242,14 @@ defmodule System.State do
 
   # ∃g ∈ EG ∶ (gw)c = c
   defp work_report_exists_for_core?(core_index, guarantees) do
-    Enum.any?(guarantees, fn %Guarantee{work_report: work_report} ->
-      work_report.core_index == core_index
-    end)
+    case Enum.at(guarantees, core_index) do
+      %Guarantee{work_report: %WorkReport{}} -> true
+      _ -> false
+    end
   end
 
-  defp add_queue_to_pool(f_c, queue_elements) do
-    f_c ++ [queue_elements]
+  defp add_queue_to_pool(updated_pool_without_queue, queue_elements) do
+    updated_pool_without_queue ++ [queue_elements]
   end
 
   def e(v), do: Codec.Encoder.encode(v)
