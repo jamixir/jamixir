@@ -13,7 +13,7 @@ defmodule System.State.EntropyPool do
         }
 
   # Formula (66) v0.3.4
-  defstruct current: <<>>, history: []
+  defstruct current: <<>>, history: [<<>>, <<>>, <<>>]
 
   def posterior_entropy_pool(header, timeslot, %EntropyPool{
         current: current_entropy,

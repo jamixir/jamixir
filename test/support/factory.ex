@@ -11,7 +11,7 @@ defmodule Jamixir.Factory do
 
   @cores 2
   @validator_count 4
-  @epoch_length 6
+  @epoch_length 600
   @max_authorizers_per_core 2
   @max_authorize_queue_items 4
 
@@ -136,7 +136,7 @@ defmodule Jamixir.Factory do
   def seal_key_ticket_factory do
     %System.State.SealKeyTicket{
       id: random_hash(),
-      entry_index: sequence(:entry_index, & &1)
+      entry_index: sequence(:entry_index, fn n -> rem(n, 2) end)
     }
   end
 
@@ -195,7 +195,7 @@ defmodule Jamixir.Factory do
   def genesis_entropy_pool_factory do
     %System.State.EntropyPool{
       current: random_hash(),
-      history: []
+      history: [random_hash(), random_hash(), random_hash()]
     }
   end
 
