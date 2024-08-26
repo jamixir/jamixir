@@ -220,20 +220,33 @@ defmodule System.State do
   def posterior_authorizer_pool(
         guarantees,
         posterior_authorizer_queue,
-        authorizer_pool
+        authorizer_pools,
+        %Block.Header{
+          timeslot: ts
+        }
       ) do
-    Enum.map(0..Constants.core_count(), fn c ->
-      updated_pool_without_queue = pool_after_items_processed(c, authorizer_pool, guarantees)
+    # Zip the authorizer pools with the posterior authorizer queue
+    # and use the index to keep track of the core index
+    Enum.zip(authorizer_pools, posterior_authorizer_queue)
+    |> Enum.with_index()
+    |> Enum.map(fn {{current_pool, queue}, core_index} ->
+      # Adjust the current pool by removing the oldest used authorizer
+      adjusted_pool = remove_oldest_used_authorizer(core_index, current_pool, guarantees)
 
-      timeslot_index = rem(guarantees[c].timeslot, Constants.max_authorization_queue_items())
-      new_queue_element = posterior_authorizer_queue[c][timeslot_index]
+      # Calculate the timeslot index using the header's timeslot
+      timeslot_index = rem(ts, Constants.max_authorization_queue_items())
 
-      updated_pool_with_queue = updated_pool_without_queue ++ [new_queue_element]
+      # Pick the correct element from the queue based on the timeslot index
+      selected_queue_element = Enum.at(queue, timeslot_index)
 
-      # take rightmost 'max pool length' items: <--O
-      Enum.take(updated_pool_with_queue, -Constants.max_authorizations_items())
+      # Add the selected queue element to the adjusted pool
+      new_authorizer_pool = adjusted_pool ++ [selected_queue_element]
+
+      # Take only the rightmost elements to ensure the pool size is within the limit
+      Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
     end)
   end
+  
 
   # Formula (87) v0.3.4 F(c)
   defp pool_after_items_processed(c, authorizer_pool, guarantees) do
