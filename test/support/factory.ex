@@ -31,8 +31,8 @@ defmodule Jamixir.Factory do
   # state with full entropy pool
   def advanced_state_factory do
     %System.State{
-      build(:genesis_state)|
-      entropy_pool: full_entropy_pool_factory(),
+      build(:genesis_state)
+      | entropy_pool: full_entropy_pool_factory()
     }
   end
 
@@ -178,9 +178,9 @@ defmodule Jamixir.Factory do
 
   def service_account_factory do
     %System.State.ServiceAccount{
-      storage: %{<<1::256>> => <<0xDEADBEEF::32>>},
-      preimage_storage_p: %{<<2::256>> => <<0xCAFEBABE::32>>},
-      preimage_storage_l: %{{<<3::256>>, 0} => [1, 2, 3]},
+      storage: %{random_hash() => <<0xDEADBEEF::32>>},
+      preimage_storage_p: %{random_hash() => <<0xCAFEBABE::32>>},
+      preimage_storage_l: %{{random_hash(), 0} => [1, 2, 3]},
       code_hash: <<4::256>>,
       balance: 1000,
       gas_limit_g: 5000,

@@ -242,6 +242,29 @@ defmodule System.State do
     |> encode_accounts_preimage_storage_l(s)
   end
 
+  # Formula (291) v0.3.4 - C constructor
+  # (i, s ∈ NS) ↦ [i, n0, n1, n2, n3, 0, 0, . . . ] where n = E4(s)
+  def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
+    <<i::8>> <> Codec.Encoder.encode_le(s, 4) <> <<0::216>>
+  end
+
+  # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
+  def key_to_32_octet({s, h}) do
+    <<n0, n1, n2, n3>> = Codec.Encoder.encode_le(s, 4)
+    <<h_part::binary-size(28), _rest::binary>> = h
+    <<h0, h1, h2, h3, rest::binary>> = h_part
+    <<n0, h0, n1, h1, n2, h2, n3, h3>> <> rest
+  end
+
+  # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
+  def key_to_32_octet(key) when key < 256, do: <<key::8, 0::248>>
+
+  def serialize(state) do
+    state_keys(state)
+    |> Enum.map(fn {k, v} -> {key_to_32_octet(k), v} end)
+    |> Enum.into(%{})
+  end
+
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
   defp encode_accounts(%{} = state_keys, state = %State{}) do
     state.services
