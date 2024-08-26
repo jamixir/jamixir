@@ -5,6 +5,24 @@ defmodule Constants do
   """
 
   @doc """
+  BS = The basic minimum balance which all services require.
+  """
+  @service_minimum_balance 100
+  def service_minimum_balance, do: @service_minimum_balance
+
+  @doc """
+  BI = The additional minimum balance required per item of elective service state.
+  """
+  @additional_minimum_balance_per_item 10
+  def additional_minimum_balance_per_item, do: @additional_minimum_balance_per_item
+
+  @doc """
+  BL = The additional minimum balance required per octet of elective service state.
+  """
+  @additional_minimum_balance_per_octet 1
+  def additional_minimum_balance_per_octet, do: @additional_minimum_balance_per_octet
+
+  @doc """
   V
   The total number of validators.
   """

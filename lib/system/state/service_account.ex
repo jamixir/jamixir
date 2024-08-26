@@ -8,12 +8,11 @@ defmodule System.State.ServiceAccount do
   Formally:
   - `s`: Storage dictionary (D⟨H → Y⟩)
   - `p`: Preimage lookup dictionary (D⟨H → Y⟩)
-  - `l`: Preimage lookup dictionary with additional index (D⟨(H, NL) → ⟦NT ⟧∶3⟩)
+  - `l`: Preimage lookup dictionary with additional index (D⟨(H, NL) → ⟦NT⟧∶3⟩)
   - `c`: Code hash
   - `b`: Balance
   - `g`, `m`: Gas limits
   """
-
   @type t :: %__MODULE__{
           # s
           storage: %{Types.hash() => binary()},
@@ -38,4 +37,49 @@ defmodule System.State.ServiceAccount do
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0
+
+  # Formula (95) v0.3.4
+  # ai ≡ 2⋅∣al∣ + ∣as∣
+  def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
+    2 * length(Map.keys(l)) + length(Map.keys(s))
+  end
+
+  # al ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
+  def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
+    octets_in_preimage_storage_l =
+      Map.keys(l)
+      |> Enum.map(fn {_h, z} -> 81 + z end)
+      |> Enum.sum()
+
+    # total octets in storage s
+    octets_in_storage =
+      Map.values(s)
+      |> Enum.map(&(32 + byte_size(&1)))
+      |> Enum.sum()
+
+    octets_in_preimage_storage_l + octets_in_storage
+  end
+
+  # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
+  @spec threshold_balance(System.State.ServiceAccount.t()) :: number()
+  def threshold_balance(%__MODULE__{} = sa) do
+    Constants.service_minimum_balance() +
+      Constants.additional_minimum_balance_per_item() * items_in_storage(sa) +
+      Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
+  end
+
+  defimpl Encodable do
+    alias Codec.Encoder
+    alias System.State.ServiceAccount
+    # Formula (292)
+    # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
+    def encode(%ServiceAccount{} = s) do
+      s.code_hash <>
+        Encoder.encode_le(s.balance, 8) <>
+        Encoder.encode_le(s.gas_limit_g, 8) <>
+        Encoder.encode_le(s.gas_limit_m, 8) <>
+        Encoder.encode_le(ServiceAccount.octets_in_storage(s), 8) <>
+        Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
+    end
+  end
 end

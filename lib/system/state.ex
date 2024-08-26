@@ -12,7 +12,7 @@ defmodule System.State do
     RotateKeys,
     ServiceAccount,
     CoreReports,
-    PriviligedServices,
+    PrivilegedServices,
     ValidatorStatistics
   }
 
@@ -33,7 +33,7 @@ defmodule System.State do
           timeslot: integer(),
           # Formula (85) v0.3.4
           authorizer_queue: list(list(Types.hash())),
-          privileged_services: PriviligedServices.t(),
+          privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t()
         }
@@ -63,7 +63,7 @@ defmodule System.State do
     # φ: Queue which fills the authorization requirement
     authorizer_queue: [[]],
     # χ: Identities of services with privileged status
-    privileged_services: %PriviligedServices{},
+    privileged_services: %PrivilegedServices{},
     # ψ: Judgements tracked
     judgements: %Judgements{},
     # π: Validator statistics
@@ -230,11 +230,54 @@ defmodule System.State do
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
       10 => e(s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
-      11 => Codec.Encoder.encode_le(s.timeslot, 4)
-      # TODO C(12) ↦ E4(χ)
-      # TODO C(13) ↦ E4(π)
+      11 => Codec.Encoder.encode_le(s.timeslot, 4),
+      # C(12) ↦ E4(χ)
+      12 => Codec.Encoder.encode(s.privileged_services),
+      # C(13) ↦ E4(π)
+      13 => Codec.Encoder.encode(s.validator_statistics)
     }
-    # """
-    |> Map.put(nil, nil)
+    |> encode_accounts(s)
+    |> encode_accounts_storage(s, :storage)
+    |> encode_accounts_storage(s, :preimage_storage_p)
+    |> encode_accounts_preimage_storage_l(s)
+  end
+
+  # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
+  defp encode_accounts(%{} = state_keys, state = %State{}) do
+    state.services
+    |> Enum.reduce(state_keys, fn {id, service}, ac ->
+      Map.put(ac, {255, id}, Codec.Encoder.encode(service))
+    end)
+  end
+
+  # ∀(s ↦ a) ∈ δ, (h ↦ v) ∈ as ∶ C(s, h) ↦ v
+  # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, h) ↦ p
+  defp encode_accounts_storage(state_keys, state = %State{}, property) do
+    state.services
+    |> Enum.reduce(state_keys, fn {s, a}, ac ->
+      Map.get(a, property)
+      |> Enum.reduce(ac, fn {h, v}, ac ->
+        Map.put(ac, {s, h}, v)
+      end)
+    end)
+  end
+
+  # ∀(s ↦ a) ∈ δ, ((h, l) ↦ t) ∈ al ∶ C(s, E4(l) ⌢ (¬h4∶)) ↦ E(↕[E4(x) ∣ x <− t])
+  defp encode_accounts_preimage_storage_l(state_keys, state = %State{}) do
+    state.services
+    |> Enum.reduce(state_keys, fn {s, a}, ac ->
+      a.preimage_storage_l
+      |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
+        value =
+          t
+          |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+          |> VariableSize.new()
+          |> Codec.Encoder.encode()
+
+        <<_::binary-size(4), rest::binary>> = h
+        key = Codec.Encoder.encode_le(l, 4) <> rest
+        Map.put(ac, {s, key}, value)
+      end)
+    end)
   end
 end

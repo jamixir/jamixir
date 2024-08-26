@@ -39,4 +39,27 @@ defmodule System.State.ValidatorStatistics do
 
   defstruct current_epoch_statistics: [],
             previous_epoch_statistics: []
+
+  defimpl Encodable do
+    alias System.State.ValidatorStatistics
+
+    def encode(%ValidatorStatistics{} = v) do
+      Codec.Encoder.encode({
+        v.current_epoch_statistics |> Enum.map(&encode_single_statistic/1),
+        v.previous_epoch_statistics |> Enum.map(&encode_single_statistic/1)
+      })
+    end
+
+    defp encode_single_statistic(%{
+           blocks_produced: b,
+           tickets_introduced: t,
+           preimages_introduced: p,
+           octets_total: d,
+           reports_guaranteed: g,
+           availability_assurances: a
+         }) do
+      [b, t, p, d, g, a]
+      |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+    end
+  end
 end

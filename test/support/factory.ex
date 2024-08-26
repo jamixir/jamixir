@@ -219,7 +219,7 @@ defmodule Jamixir.Factory do
   end
 
   def privileged_services_factory do
-    %System.State.PriviligedServices{
+    %System.State.PrivilegedServices{
       manager_service: sequence(:manager_service, & &1),
       alter_authorizer_service: sequence(:alter_authorizer_service, & &1),
       alter_validator_service: sequence(:alter_validator_service, & &1)
@@ -238,7 +238,21 @@ defmodule Jamixir.Factory do
 
   # Validator Statistics Factory
   def validator_statistics_factory do
-    %System.State.ValidatorStatistics{}
+    %System.State.ValidatorStatistics{
+      current_epoch_statistics: build_list(2, :statistics),
+      previous_epoch_statistics: build_list(2, :statistics)
+    }
+  end
+
+  def statistics_factory do
+    %{
+      blocks_produced: 1,
+      tickets_introduced: 2,
+      preimages_introduced: 3,
+      octets_total: 4,
+      reports_guaranteed: 5,
+      availability_assurances: 6
+    }
   end
 
   def block_factory do

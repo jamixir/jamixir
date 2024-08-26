@@ -1,4 +1,5 @@
 defmodule System.StateTest do
+  alias Codec.VariableSize
   alias Codec.NilDiscriminator
   use ExUnit.Case
   import Jamixir.Factory
@@ -64,6 +65,43 @@ defmodule System.StateTest do
 
     test "timeslot serialization - C(11)", %{state: state} do
       assert state_keys(state)[11] == Codec.Encoder.encode_le(state.timeslot, 4)
+    end
+
+    test "privileged services serialization - C(12)", %{state: state} do
+      assert state_keys(state)[12] == Codec.Encoder.encode(state.privileged_services)
+    end
+
+    test "validator statistics serialization - C(13)", %{state: state} do
+      assert state_keys(state)[13] == Codec.Encoder.encode(state.validator_statistics)
+    end
+
+    test "service accounts serialization", %{state: state} do
+      assert state_keys(state)[{255, 1}] == Codec.Encoder.encode(state.services[1])
+
+      [:storage, :preimage_storage_p]
+      |> Enum.each(fn proprety ->
+        state.services
+        |> Enum.each(fn {s, service_account} ->
+          Map.get(service_account, proprety)
+          |> Enum.each(fn {h, v} -> assert state_keys(state)[{s, h}] == v end)
+        end)
+      end)
+    end
+
+    test "service accounts preimage_storage_l serialization", %{state: state} do
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        service_account.preimage_storage_l
+        |> Enum.each(fn {{h, l}, t} ->
+          <<_::binary-size(4), rest::binary>> = h
+          key = Codec.Encoder.encode_le(l, 4) <> rest
+
+          value =
+            Codec.Encoder.encode(VariableSize.new(t |> Enum.map(&Codec.Encoder.encode_le(&1, 4))))
+
+          assert state_keys(state)[{s, key}] == value
+        end)
+      end)
     end
   end
 end

@@ -1,4 +1,4 @@
-defmodule System.State.PriviligedServices do
+defmodule System.State.PrivilegedServices do
   @moduledoc """
   Formula (96) v0.3.4
 
@@ -18,4 +18,19 @@ defmodule System.State.PriviligedServices do
   defstruct manager_service: 0,
             alter_authorizer_service: 0,
             alter_validator_service: 0
+
+  defimpl Encodable do
+    alias System.State.PrivilegedServices
+
+    def encode(%PrivilegedServices{} = v) do
+      Codec.Encoder.encode(
+        [
+          v.manager_service,
+          v.alter_authorizer_service,
+          v.alter_validator_service
+        ]
+        |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+      )
+    end
+  end
 end
