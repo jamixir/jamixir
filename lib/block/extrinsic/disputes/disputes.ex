@@ -4,7 +4,6 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
-  alias Util.Collections
   alias Block.Header
   alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
   alias Block.Extrinsic.Disputes
