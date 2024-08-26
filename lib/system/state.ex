@@ -131,7 +131,8 @@ defmodule System.State do
       posterior_authorizer_pool(
         sorted_guarantees,
         new_authorizer_queue,
-        state.authorizer_pool
+        state.authorizer_pool,
+        h
       )
 
     # β' Formula (18) v0.3.4
