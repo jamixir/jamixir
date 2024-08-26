@@ -33,19 +33,59 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
+    # Formula (69) v0.3.4
+    posterior_epoch_slot_sealers =
+      get_posterior_epoch_slot_sealers(header, timeslot, safrole, entropy_pool, curr_validators)
+
+    # i = γs′ [Ht ]↺
+    candidate_slot_sealer =
+      Enum.at(posterior_epoch_slot_sealers, rem(header.timeslot, Constants.epoch_length()))
+
+    validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
+
     %Safrole{
       safrole
-      | # Formula (69) v0.3.4
-        current_epoch_slot_sealers:
-          get_posterior_epoch_slot_sealers(
-            header,
-            timeslot,
-            safrole,
-            entropy_pool,
-            curr_validators
-          )
+      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
     }
   end
+
+  defp validate_candidate(
+         %SealKeyTicket{} = candidate_slot_sealer,
+         header,
+         entropy_pool,
+         curr_validators
+       ) do
+    SealKeyTicket.validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
+  end
+
+  defp validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
+       when is_binary(candidate_hash) do
+    validate_candidate_hash(candidate_hash, header, entropy_pool, curr_validators)
+  end
+
+  defp validate_candidate_hash(
+         candidate_hash,
+         %Header{block_author_key_index: h_i} = h,
+         %EntropyPool{
+           history: [_, _, eta3 | _]
+         },
+         curr_validators
+       ) do
+    validator = Enum.at(curr_validators, h_i)
+    message = Header.unsigned_serialize(h)
+    aux_data = "$jam_fallback_seal" <> eta3
+    validate_hash(candidate_hash, validator.bandersnatch, message, aux_data)
+  end
+
+  @dialyzer {:nowarn_function, validate_hash: 4}
+  defp validate_hash(H_a, H_a, message, aux_data) do
+    case Util.Bandersnatch._verify(H_a, message, aux_data, H_a) do
+      {true, _} -> :ok
+      _ -> {:error, :invalid_hash}
+    end
+  end
+
+  defp validate_hash(_, _, _, _), do: {:error, :invalid_candidate_hash}
 
   def get_posterior_epoch_slot_sealers(
         %Header{timeslot: new_timeslot},
