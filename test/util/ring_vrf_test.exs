@@ -21,8 +21,6 @@ defmodule RingVrfTest do
     {keys, secret}
   end
 
-  defp gen_keys(count), do: gen_keys(0, count)
-
   defp init_ring_context_and_gen_keys(count), do: init_ring_context_and_gen_keys(0, count)
 
   defp init_ring_context_and_gen_keys(public_key_index, count) do
@@ -127,7 +125,7 @@ defmodule RingVrfTest do
 
     test "verification fails with altered commitment" do
       {keys, secret} = init_ring_context_and_gen_keys(2)
-      commitment = BandersnatchRingVrf.create_commitment(keys)
+      BandersnatchRingVrf.create_commitment(keys)
       signature = BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "input data", "aux data")
 
       # Alter commitment by generating a new one
