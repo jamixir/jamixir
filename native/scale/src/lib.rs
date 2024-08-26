@@ -1,5 +1,5 @@
 use parity_scale_codec::{Compact, Decode, Encode};
-use rustler::{Env, NifResult, Term};
+use rustler::NifResult;
 
 #[rustler::nif]
 fn encode_integer(number: u64) -> NifResult<Vec<u8>> {
