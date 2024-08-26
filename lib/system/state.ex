@@ -249,23 +249,28 @@ defmodule System.State do
   
 
   # Formula (87) v0.3.4 F(c)
-  defp pool_after_items_processed(c, authorizer_pool, guarantees) do
-    if work_report_exists_for_core?(c, guarantees) do
-      # Remove leftmost
-      [_hd | tail] = authorizer_pool[c]
-      tail
-    else
-      # Keep current pool
-      authorizer_pool[c]
-    end
+  # Formula (87) v0.3.4 
+  # Function to remove the oldest (first from left) used authorizer from the pool
+  def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
+    guarantees
+    |> Enum.find(&(&1.work_report.core_index == core_index))
+    |> maybe_remove_authorizer(current_pool)
   end
 
-  # ∃g ∈ EG ∶ (gw)c = c
-  defp work_report_exists_for_core?(core_index, guarantees) do
-    case Enum.at(guarantees, core_index) do
-      %Guarantee{work_report: %WorkReport{}} -> true
-      _ -> false
-    end
+  defp maybe_remove_authorizer(nil, pool), do: pool
+
+  defp maybe_remove_authorizer(%Guarantee{work_report: %WorkReport{authorizer_hash: hash}}, pool) do
+    # Split the pool into two parts:
+    # - `left` will contain all elements up to (but not including) the first occurrence of `hash`
+    # - `right` will start with the first occurrence of `hash` and include everything after it
+    {left, right} = Enum.split_while(pool, &(&1 != hash))
+
+    # `tl(right)` removes the first element from `right`, which is the `hash` we're trying to remove.
+    # If `right` is empty, `tl(right)` would raise an error, but in this context, we expect `right` to have at least one element.
+    # The result is that the first occurrence of `hash` is removed from the pool.
+
+    # Combine the `left` list (elements before `hash`) with the tail of `right` (elements after `hash`)
+    left ++ tl(right)
   end
 
   def e(v), do: Codec.Encoder.encode(v)
