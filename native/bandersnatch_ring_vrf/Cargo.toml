@@ -11,13 +11,13 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-ark-ec-vrfs = { git = "https://github.com/daiagi/ark-ec-vrfs", features = [
+ark-ec-vrfs = { git = "https://github.com/jamixir/ark-ec-vrfs", features = [
     "bandersnatch",
     "ring",
     "parallel",
     "test-vectors",
 ] }
-ring-proof = { package = "ring", git = "https://github.com/daiagi/ring-proof", branch = "extended", default-features = false }
+ring-proof = { package = "ring", git = "https://github.com/jamixir/ring-proof", branch = "extended", default-features = false }
 ark-ec = { version = "0.4", default-features = false }
 ark-serialize = { version = "0.4", default-features = false, features = ["derive"] }
 hex = "0.4.3"
