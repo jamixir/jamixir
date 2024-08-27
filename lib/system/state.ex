@@ -243,10 +243,14 @@ defmodule System.State do
       new_authorizer_pool = adjusted_pool ++ [selected_queue_element]
 
       # Take only the rightmost elements to ensure the pool size is within the limit
-      Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
+      # Adjust to take only if the pool exceeds the max size
+      if length(new_authorizer_pool) > Constants.max_authorizations_items() do
+        Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
+      else
+        new_authorizer_pool
+      end
     end)
   end
-
 
   # Formula (87) v0.3.4 F(c)
   # Formula (87) v0.3.4
