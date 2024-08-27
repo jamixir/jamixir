@@ -41,51 +41,54 @@ defmodule System.State.Safrole do
     candidate_slot_sealer =
       Enum.at(posterior_epoch_slot_sealers, rem(header.timeslot, Constants.epoch_length()))
 
-    validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
-
-    %Safrole{
-      safrole
-      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
-    }
+    with :ok <- validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators) do
+      %Safrole{
+        safrole
+        | current_epoch_slot_sealers: posterior_epoch_slot_sealers
+      }
+    else
+      {:error, reason} -> {:error, reason}
+    end
   end
 
-  defp validate_candidate(
-         %SealKeyTicket{} = candidate_slot_sealer,
-         header,
-         entropy_pool,
-         curr_validators
-       ) do
+  def validate_candidate(
+        %SealKeyTicket{} = candidate_slot_sealer,
+        header,
+        entropy_pool,
+        curr_validators
+      ) do
     SealKeyTicket.validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
   end
 
-  defp validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
-       when is_binary(candidate_hash) do
+  def validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
+      when is_binary(candidate_hash) do
     validate_candidate_hash(candidate_hash, header, entropy_pool, curr_validators)
   end
 
   defp validate_candidate_hash(
          candidate_hash,
-         %Header{block_author_key_index: h_i} = h,
-         %EntropyPool{
-           history: [_, _, eta3 | _]
-         },
+         %Header{block_author_key_index: h_i, block_seal: h_s} = h,
+         %EntropyPool{history: [_, _, eta3 | _]},
          curr_validators
        ) do
-    validator = Enum.at(curr_validators, h_i)
-    message = Header.unsigned_serialize(h)
-    aux_data = "$jam_fallback_seal" <> eta3
-    validate_hash(candidate_hash, validator.bandersnatch, message, aux_data)
-  end
+    # Retrieve the bandersnatch key for the current block author
+    with %System.State.Validator{bandersnatch: key} <- Enum.at(curr_validators, h_i),
+         true <- key == candidate_hash,
+         message = Header.unsigned_serialize(h),
+         aux_data = SigningContexts.jam_fallback_seal() <> eta3,
+         {:ok, _} <- Util.Bandersnatch._verify(key, message, aux_data, h_s) do
+      :ok
+    else
+      nil ->
+        {:error, :invalid_validator_index}
 
-  @dialyzer {:nowarn_function, validate_hash: 4}
-  defp validate_hash(H_a, H_a, message, aux_data) do
-    case Util.Bandersnatch._verify(H_a, message, aux_data, H_a) do
-      {true, _} -> :ok
-      _ -> {:error, :invalid_hash}
+      false ->
+        {:error, :invalid_candidate_hash}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
-
-  defp validate_hash(_, _, _, _), do: {:error, :invalid_candidate_hash}
 
   def get_posterior_epoch_slot_sealers(
         %Header{timeslot: new_timeslot},

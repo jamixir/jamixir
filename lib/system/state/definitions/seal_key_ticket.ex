@@ -15,20 +15,26 @@ defmodule System.State.SealKeyTicket do
 
   def validate_candidate(
         %__MODULE__{id: ticket_id, entry_index: entry_index},
-        %Header{block_author_key_index: h_i} = header,
+        %Header{block_author_key_index: h_i, block_seal: h_s} = header,
         %EntropyPool{history: [_, _, eta3 | _]},
         curr_validators
       ) do
-    validator = Enum.at(curr_validators, h_i)
+    with %System.State.Validator{bandersnatch: key} <- Enum.at(curr_validators, h_i),
+         message = Header.unsigned_serialize(header),
+         aux_data = SigningContexts.jam_ticket_seal() <> eta3 <> Integer.to_string(entry_index),
+         {:ok, computed_ticket_id} <-
+           Util.Bandersnatch._verify(key, message, aux_data, h_s),
+         true <- computed_ticket_id == ticket_id do
+      :ok
+    else
+      nil ->
+        {:error, :invalid_validator_index}
 
-    message = Header.unsigned_serialize(header)
+      {:error, reason} ->
+        {:error, reason}
 
-    aux_data = "$jam_ticket_seal" <> eta3 <> "#{entry_index}"
-
-    # Verify the ticket id
-    case Util.Bandersnatch._verify(validator.bandersnatch, message, aux_data, ticket_id) do
-      {true, _} -> :ok
-      _ -> {:error, :invalid_ticket}
+      false ->
+        {:error, :invalid_ticket_id}
     end
   end
 
