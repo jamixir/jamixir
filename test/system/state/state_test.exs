@@ -104,4 +104,67 @@ defmodule System.StateTest do
       end)
     end
   end
+
+  # C Constructor
+  # Formula (291) v0.3.4
+  describe "key_to_32_octet" do
+    test "convert integer" do
+      assert key_to_32_octet(0) == :binary.copy(<<0>>, 32)
+      assert key_to_32_octet(7) == <<7>> <> :binary.copy(<<0>>, 31)
+      assert key_to_32_octet(255) == <<255>> <> :binary.copy(<<0>>, 31)
+    end
+
+    test "convert 255 and service id" do
+      assert key_to_32_octet({255, 1}) == <<255>> <> <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 27)
+      assert key_to_32_octet({255, 1024}) == <<255>> <> <<0, 4, 0, 0>> <> :binary.copy(<<0>>, 27)
+
+      assert key_to_32_octet({255, 4_294_967_295}) ==
+               <<255>> <> <<255, 255, 255, 255>> <> :binary.copy(<<0>>, 27)
+    end
+
+    test "error" do
+      key =
+        {1,
+         <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+           0, 0, 3>>}
+
+      assert key_to_32_octet(key) == <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 28)
+    end
+
+    test "convert service id and hash" do
+      hash = "01234567890123456789012345678901"
+
+      assert key_to_32_octet({1, hash}) ==
+               <<1>> <>
+                 "0" <> <<0>> <> "1" <> <<0>> <> "2" <> <<0>> <> "3456789012345678901234567"
+
+      assert key_to_32_octet({1024, hash}) ==
+               <<0>> <>
+                 "0" <> <<4>> <> "1" <> <<0>> <> "2" <> <<0>> <> "3456789012345678901234567"
+
+      assert key_to_32_octet({4_294_967_295, hash}) ==
+               <<255>> <>
+                 "0" <> <<255>> <> "1" <> <<255>> <> "2" <> <<255>> <> "3456789012345678901234567"
+    end
+
+    test "all state keys are encodable with key_to_32_octet" do
+      state = build(:genesis_state)
+
+      state_keys(state)
+      |> Enum.each(fn {k, _} -> assert key_to_32_octet(k) end)
+    end
+  end
+
+  describe "serialize/1" do
+    test "serialized state dictionary" do
+      state = build(:genesis_state)
+      state_keys = state_keys(state)
+      serialized_state = serialize(state)
+
+      state_keys
+      |> Enum.each(fn {k, _} ->
+        assert Map.get(state_keys, k) == Map.get(serialized_state, key_to_32_octet(k))
+      end)
+    end
+  end
 end
