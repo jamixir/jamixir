@@ -8,22 +8,22 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   alias Constants
 
   test "removing no authorizer from pool works" do
-    # Mock guarantees
+    # Stub guarantees
     guarantees = []
 
-    # Mock posterior authorizer queue
+    # Stub posterior authorizer queue
     posterior_authorizer_queue =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
       end)
 
-    # Mock authorizer pools
+    # Stub authorizer pools
     authorizer_pools =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Mock block header with timeslot
+    # Stub block header with timeslot
     block_header = %Header{timeslot: 2}
 
     # Call the function
@@ -55,25 +55,25 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   end
 
   test "removing third authorizer from each core works" do
-    # Mock guarantees - remove the third authorizer for each core
+    # Stub guarantees - remove the third authorizer for each core
     guarantees =
       Enum.map(1..Constants.core_count(), fn i ->
         %Guarantee{work_report: %WorkReport{core_index: i - 1, authorizer_hash: "auth#{i}_3"}}
       end)
 
-    # Mock posterior authorizer queue
+    # Stub posterior authorizer queue
     posterior_authorizer_queue =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
       end)
 
-    # Mock authorizer pools
+    # Stub authorizer pools
     authorizer_pools =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Mock block header with timeslot
+    # Stub block header with timeslot
     block_header = %Header{timeslot: 2}
 
     # Call the function
@@ -105,22 +105,22 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   end
 
   test "partially filled authorizer pools work" do
-    # Mock guarantees - in this case, no authorizers are being removed
+    # Stub guarantees - in this case, no authorizers are being removed
     guarantees = []
 
-    # Mock posterior authorizer queue
+    # Stub posterior authorizer queue
     posterior_authorizer_queue =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
       end)
 
-    # Mock authorizer pools with varying lengths (partially filled)
+    # Stub authorizer pools with varying lengths (partially filled)
     authorizer_pools =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..(Constants.max_authorizations_items() - 3), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Mock block header with timeslot
+    # Stub block header with timeslot
     block_header = %Header{timeslot: 2}
 
     # Call the function
