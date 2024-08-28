@@ -249,12 +249,13 @@ defmodule System.State do
   # Formula (87) v0.3.4 F(c)
   # Function to remove the oldest (first from left) used authorizer from the pool
   def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
-      case Enum.find(guarantees, &(&1.work_report.core_index == core_index)) do
-        nil -> current_pool
-        %Guarantee{work_report: %WorkReport{authorizer_hash: hash}} ->
-          {left, right} = Enum.split_while(current_pool, &(&1 != hash))
-          left ++ tl(right)
-      end
+    case Enum.find(guarantees, &(&1.work_report.core_index == core_index)) do
+      nil ->
+        current_pool
+
+      %Guarantee{work_report: %WorkReport{authorizer_hash: hash}} ->
+        {left, right} = Enum.split_while(current_pool, &(&1 != hash))
+        left ++ tl(right)
     end
   end
 

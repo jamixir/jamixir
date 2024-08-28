@@ -3,7 +3,6 @@ defmodule System.StateTransition.AuthorizerPoolTest do
 
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Block.Header
   alias System.State
   alias Constants
 
@@ -23,7 +22,8 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Stub block header with timeslot
+    # Stub block header timeslot
+    timeslot = 2
 
     # Call the function
     result =
@@ -31,7 +31,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         guarantees,
         posterior_authorizer_queue,
         authorizer_pools,
-        %Header{timeslot: 2}
+        timeslot
       )
 
     # Expected result after processing. Removed
@@ -72,8 +72,8 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Stub block header with timeslot
-    block_header = %Header{timeslot: 2}
+    # Stub block header timeslot
+    timeslot = 2
 
     # Call the function
     result =
@@ -81,7 +81,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         guarantees,
         posterior_authorizer_queue,
         authorizer_pools,
-        block_header
+        timeslot
       )
 
     # Expected result after processing
@@ -119,8 +119,8 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         Enum.map(1..(Constants.max_authorizations_items() - 3), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Stub block header with timeslot
-    block_header = %Header{timeslot: 2}
+    # Stub block header timeslot
+    timeslot = 2
 
     # Call the function
     result =
@@ -128,7 +128,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         guarantees,
         posterior_authorizer_queue,
         authorizer_pools,
-        block_header
+        timeslot
       )
 
     # Expected result after processing
