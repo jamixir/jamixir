@@ -24,7 +24,6 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end)
 
     # Stub block header with timeslot
-    block_header = %Header{timeslot: 2}
 
     # Call the function
     result =
@@ -32,7 +31,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         guarantees,
         posterior_authorizer_queue,
         authorizer_pools,
-        block_header
+        %Header{timeslot: 2}
       )
 
     # Expected result after processing. Removed
