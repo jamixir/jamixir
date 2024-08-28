@@ -6,26 +6,34 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   alias System.State
   alias Constants
 
-  test "removing no authorizer from pool works" do
-    # Stub guarantees
-    guarantees = []
-
-    # Stub posterior authorizer queue
+  setup do
     posterior_authorizer_queue =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
       end)
 
-    # Stub authorizer pools
     authorizer_pools =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Stub block header timeslot
     timeslot = 2
 
-    # Call the function
+    {:ok,
+     %{
+       posterior_authorizer_queue: posterior_authorizer_queue,
+       authorizer_pools: authorizer_pools,
+       timeslot: timeslot
+     }}
+  end
+
+  test "removing no authorizer from pool works", %{
+    posterior_authorizer_queue: posterior_authorizer_queue,
+    authorizer_pools: authorizer_pools,
+    timeslot: timeslot
+  } do
+    guarantees = []
+
     result =
       State.posterior_authorizer_pool(
         guarantees,
@@ -34,7 +42,6 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         timeslot
       )
 
-    # Expected result after processing. Removed
     expected_result =
       Enum.map(1..Constants.core_count(), fn i ->
         [
@@ -49,33 +56,19 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         ]
       end)
 
-    # Assert the result matches the expected result
     assert result == expected_result
   end
 
-  test "removing third authorizer from each core works" do
-    # Stub guarantees - remove the third authorizer for each core
+  test "removing third authorizer from each core works", %{
+    posterior_authorizer_queue: posterior_authorizer_queue,
+    authorizer_pools: authorizer_pools,
+    timeslot: timeslot
+  } do
     guarantees =
       Enum.map(1..Constants.core_count(), fn i ->
         %Guarantee{work_report: %WorkReport{core_index: i - 1, authorizer_hash: "auth#{i}_3"}}
       end)
 
-    # Stub posterior authorizer queue
-    posterior_authorizer_queue =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
-      end)
-
-    # Stub authorizer pools
-    authorizer_pools =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
-      end)
-
-    # Stub block header timeslot
-    timeslot = 2
-
-    # Call the function
     result =
       State.posterior_authorizer_pool(
         guarantees,
@@ -84,7 +77,6 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         timeslot
       )
 
-    # Expected result after processing
     expected_result =
       Enum.map(1..Constants.core_count(), fn i ->
         [
@@ -99,30 +91,20 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         ]
       end)
 
-    # Assert the result matches the expected result
     assert result == expected_result
   end
 
-  test "partially filled authorizer pools work" do
-    # Stub guarantees - in this case, no authorizers are being removed
+  test "partially filled authorizer pools work", %{
+    posterior_authorizer_queue: posterior_authorizer_queue,
+    timeslot: timeslot
+  } do
     guarantees = []
 
-    # Stub posterior authorizer queue
-    posterior_authorizer_queue =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
-      end)
-
-    # Stub authorizer pools with varying lengths (partially filled)
     authorizer_pools =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..(Constants.max_authorizations_items() - 3), fn j -> "auth#{i}_#{j}" end)
       end)
 
-    # Stub block header timeslot
-    timeslot = 2
-
-    # Call the function
     result =
       State.posterior_authorizer_pool(
         guarantees,
@@ -131,13 +113,11 @@ defmodule System.StateTransition.AuthorizerPoolTest do
         timeslot
       )
 
-    # Expected result after processing
     expected_result =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.concat(Enum.at(authorizer_pools, i - 1), ["queue#{i}_3"])
       end)
 
-    # Assert the result matches the expected result
     assert result == expected_result
   end
 end
