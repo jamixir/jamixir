@@ -244,11 +244,7 @@ defmodule System.State do
 
       # Take only the rightmost elements to ensure the pool size is within the limit
       # Adjust to take only if the pool exceeds the max size
-      if length(new_authorizer_pool) > Constants.max_authorizations_items() do
-        Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
-      else
-        new_authorizer_pool
-      end
+Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
     end)
   end
 
