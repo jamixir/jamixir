@@ -135,14 +135,14 @@ struct IetfVrfSignature {
 #[rustler::nif]
 fn ietf_vrf_sign<'a>(
     env: Env<'a>,
-    secret: SecretBridge<S>,
+    secret_bridge: SecretBridge<S>,
     vrf_input_data: Binary,
     aux_data: Binary,
 ) -> NifResult<Binary<'a>> {
     use ark_ec_vrfs::ietf::Prover as _;
 
     let input = vrf_input_point(&vrf_input_data);
-    let secret: Secret<S> = secret.into();
+    let secret: Secret<S> = secret_bridge.into();
     let output = secret.output(input);
 
     let proof = secret.prove(input, output, aux_data.as_slice());
