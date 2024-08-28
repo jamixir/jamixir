@@ -132,7 +132,7 @@ defmodule System.State do
         sorted_guarantees,
         new_authorizer_queue,
         state.authorizer_pool,
-        h
+        h.timeslot
       )
 
     # β' Formula (18) v0.3.4
