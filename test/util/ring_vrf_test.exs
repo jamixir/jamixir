@@ -290,18 +290,13 @@ defmodule RingVrfTest do
 
     test "verification fails with altered auxiliary data" do
       {keys, secret} = init_ring_context_and_gen_keys(4)
-      vrf_input_data = "input data"
-      aux_data = "aux data"
-      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, vrf_input_data, aux_data)
-
-      # Alter the auxiliary data
-      altered_aux_data = "altered aux data"
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, "input data", "aux data")
 
       result =
         BandersnatchRingVrf.ietf_vrf_verify(
           keys,
-          vrf_input_data,
-          altered_aux_data,
+          "input data",
+          "altered aux data",
           signature,
           0
         )
