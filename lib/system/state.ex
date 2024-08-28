@@ -232,7 +232,7 @@ defmodule System.State do
       adjusted_pool = remove_oldest_used_authorizer(core_index, current_pool, guarantees)
 
       # Calculate the timeslot index using the header's timeslot
-      timeslot_index = rem(ts, Constants.max_authorization_queue_items())
+      timeslot_index = rem(timeslot, Constants.max_authorization_queue_items())
 
       # Pick the correct element from the queue based on the timeslot index
       selected_queue_element = Enum.at(queue, timeslot_index)
