@@ -221,9 +221,7 @@ defmodule System.State do
         guarantees,
         posterior_authorizer_queue,
         authorizer_pools,
-        %Block.Header{
-          timeslot: ts
-        }
+        timeslot
       ) do
     # Zip the authorizer pools with the posterior authorizer queue
     # and use the index to keep track of the core index
