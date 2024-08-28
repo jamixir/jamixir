@@ -238,19 +238,13 @@ defmodule RingVrfTest do
   describe "ietf_vrf error scenarios" do
     test "verification fails with invalid signature" do
       {keys, _secret} = init_ring_context_and_gen_keys(8)
-      vrf_input_data = "input data"
-      aux_data = "aux data"
-
       # Provide an invalid/corrupted signature
-      # This is not a valid signature
-      invalid_signature = <<1, 2, 3>>
-
       result =
         BandersnatchRingVrf.ietf_vrf_verify(
           keys,
-          vrf_input_data,
-          aux_data,
-          invalid_signature,
+          "input data",
+          "aux data",
+          <<1, 2, 3>>, # invalid signature
           0
         )
 
