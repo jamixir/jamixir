@@ -198,4 +198,110 @@ defmodule RingVrfTest do
       _secret = BandersnatchRingVrf.generate_secret_from_scalar(scalar)
     end
   end
+
+  describe "ietf_vrf_sign and ietf_vrf_verify" do
+    test "simple sanity test: create key, sign something, get something back" do
+      {_, secret} = init_ring_context_and_gen_keys(1)
+      vrf_input_data = "input data"
+      aux_data = "aux data"
+
+      # Sign using IETF VRF
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, vrf_input_data, aux_data)
+
+      assert byte_size(signature) == 96
+    end
+
+    test "key sign and verify - all ok" do
+      signer_key_index = 2
+      {keys, secret} = init_ring_context_and_gen_keys(signer_key_index, 7)
+      vrf_input_data = "input data"
+      aux_data = "aux data"
+
+      # Sign using IETF VRF
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, vrf_input_data, aux_data)
+
+      # Verify the signature
+      result =
+        BandersnatchRingVrf.ietf_vrf_verify(
+          keys,
+          vrf_input_data,
+          aux_data,
+          signature,
+          signer_key_index
+        )
+
+      assert {:ok, vrf_output_hash} = result
+      assert byte_size(vrf_output_hash) == 32
+    end
+  end
+
+  describe "ietf_vrf error scenarios" do
+    test "verification fails with invalid signature" do
+      {keys, _secret} = init_ring_context_and_gen_keys(8)
+      # Provide an invalid/corrupted signature
+      result =
+        BandersnatchRingVrf.ietf_vrf_verify(
+          keys,
+          "input data",
+          "aux data",
+          <<1, 2, 3>>, # invalid signature
+          0
+        )
+
+      assert {:error, :invalid_signature} = result
+    end
+
+    test "verification fails with mismatched public key" do
+      {keys, secret} = init_ring_context_and_gen_keys(8)
+      vrf_input_data = "input data"
+      aux_data = "aux data"
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, vrf_input_data, aux_data)
+
+      # Alter the key index
+      altered_key_index = 1
+
+      result =
+        BandersnatchRingVrf.ietf_vrf_verify(
+          keys,
+          vrf_input_data,
+          aux_data,
+          signature,
+          altered_key_index
+        )
+
+      assert {:error, :verification_failed} = result
+    end
+
+    test "verification fails with altered input data" do
+      {keys, secret} = init_ring_context_and_gen_keys(50)
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, "input data", "aux data")
+      
+      result =
+        BandersnatchRingVrf.ietf_vrf_verify(
+          keys,
+          "altered input data",
+          "aux data",
+          signature,
+          0
+        )
+
+      assert {:error, :verification_failed} = result
+    end
+
+    test "verification fails with altered auxiliary data" do
+      {keys, secret} = init_ring_context_and_gen_keys(4)
+      signature = BandersnatchRingVrf.ietf_vrf_sign(secret, "input data", "aux data")
+
+      result =
+        BandersnatchRingVrf.ietf_vrf_verify(
+          keys,
+          "input data",
+          "altered aux data",
+          signature,
+          0
+        )
+
+      assert {:error, :verification_failed} = result
+    end
+  end
 end

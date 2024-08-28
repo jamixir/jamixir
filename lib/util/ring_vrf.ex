@@ -44,4 +44,19 @@ defmodule BandersnatchRingVrf do
   def generate_secret_from_scalar(_scalar_bytes) do
     :erlang.nif_error(:nif_not_loaded)
   end
+
+  # IETF VRF Sign
+  # Non-Anonymous VRF signature
+  # Used for ticket claiming during block production
+  # Formula (309) v0.3.4
+  # Formula (310) v0.3.4
+  def ietf_vrf_sign(_secret, _vrf_input_data, _aux_data),
+    do: :erlang.nif_error(:nif_not_loaded)
+
+  # IETF VRF Verify
+  #  Non-Anonymous VRF signature verification.
+  #  Used for ticket claim verification during block import.
+  #  Not used with Safrole test vectors.
+  def ietf_vrf_verify(_ring, _vrf_input_data, _aux_data, _signature, _signer_key_index),
+    do: :erlang.nif_error(:nif_not_loaded)
 end
