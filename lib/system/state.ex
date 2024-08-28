@@ -247,7 +247,6 @@ Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
   end
 
   # Formula (87) v0.3.4 F(c)
-  # Formula (87) v0.3.4
   # Function to remove the oldest (first from left) used authorizer from the pool
   def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
     guarantees
