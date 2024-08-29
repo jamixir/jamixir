@@ -33,8 +33,6 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
-    # Formula (69) v0.3.4
-
     %Safrole{
       safrole
       | current_epoch_slot_sealers:
