@@ -4,34 +4,25 @@ defmodule System.HeaderSealsVerifier do
 
   def verify_block_seal(
         header,
-        state_timeslot,
         ring,
-        posterior_epoch_slot_sealers,
-        entropy_pool_history
+        correct_slot_sealer,
+        entropy_pool_history,
+        slot_seal_type
       ) do
-    vrf_input_data = Header.unsigned_serialize(header)
-    tau_3 = Enum.at(entropy_pool_history, 2)
-
     aux_data =
-      case determine_ticket_or_fallback(
-             header.timeslot,
-             state_timeslot,
-             posterior_epoch_slot_sealers
-           ) do
+      case slot_seal_type do
         :fallback ->
-          "$jam_fallback_seal" <> tau_3
+          "$jam_fallback_seal" <> Enum.at(entropy_pool_history, 2)
 
-        result when result in [:ticket_same, :ticket_shuffle] ->
-          if(result == :ticket_same, do: "$jam_ticket_seal", else: "$jam_ticket_shuffle") <>
-            tau_3 <>
-            (posterior_epoch_slot_sealers
-             |> Enum.at(rem(header.timeslot, length(posterior_epoch_slot_sealers)))
-             |> Map.get(:entry_index))
+        _ ->
+          "$jam_ticket_seal" <>
+            Enum.at(entropy_pool_history, 2) <>
+            Map.get(correct_slot_sealer, :entry_index)
       end
 
     BandersnatchRingVrf.ietf_vrf_verify(
       ring,
-      vrf_input_data,
+      Header.unsigned_serialize(header),
       aux_data,
       header.block_seal,
       header.block_author_key_index
@@ -53,28 +44,64 @@ defmodule System.HeaderSealsVerifier do
         state_timeslot,
         posterior_curr_validators,
         posterior_epoch_slot_sealers,
-        %EntropyPool{history: entrpy_pool_history}
+        current_ticket_accumelator,
+        %EntropyPool{history: entropy_pool_history}
       ) do
     ring = Enum.map(posterior_curr_validators, & &1.bandersnatch)
+
+    correct_slot_sealer =
+      posterior_epoch_slot_sealers
+      |> Enum.at(rem(header.timeslot, length(posterior_epoch_slot_sealers)))
+
+    slot_seal_type =
+      determine_ticket_or_fallback(header.timeslot, state_timeslot, current_ticket_accumelator)
 
     with {:ok, block_seal_output} <-
            verify_block_seal(
              header,
-             state_timeslot,
              ring,
-             posterior_epoch_slot_sealers,
-             entrpy_pool_history
+             correct_slot_sealer,
+             entropy_pool_history,
+             slot_seal_type
+           ),
+         :ok <-
+           validate_ticket_or_fallback(
+             slot_seal_type,
+             correct_slot_sealer,
+             block_seal_output,
+             header.block_author_key_index,
+             posterior_curr_validators
            ),
          {:ok, vrf_signature_output} <-
            verify_vrf_signature(header, ring, block_seal_output) do
-      {:ok,
-       %{
-         block_seal_output: block_seal_output,
-         vrf_signature_output: vrf_signature_output
-       }}
+      {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
       {:error, reason} -> {:error, reason}
+      other -> {:error, other}
     end
+  end
+
+  defp validate_ticket_or_fallback(
+         :fallback,
+         correct_slot_sealer,
+         _block_seal_output,
+         block_author_key_index,
+         posterior_curr_validators
+       ) do
+    proposed_slot_sealer = Enum.at(posterior_curr_validators, block_author_key_index).bandersnatch
+    if proposed_slot_sealer == correct_slot_sealer, do: :ok, else: {:error, :ticket_id_mismatch}
+  end
+
+  defp validate_ticket_or_fallback(
+         _,
+         correct_slot_sealer,
+         block_seal_output,
+         _block_author_key_index,
+         _posterior_curr_validators
+       ) do
+    if Map.get(correct_slot_sealer, :id) == block_seal_output,
+      do: :ok,
+      else: {:error, :ticket_id_mismatch}
   end
 
   def determine_ticket_or_fallback(new_timeslot, timeslot, ticket_accumulator) do
