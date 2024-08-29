@@ -34,12 +34,17 @@ defmodule System.State.Safrole do
         curr_validators
       ) do
     # Formula (69) v0.3.4
-    posterior_epoch_slot_sealers =
-      get_posterior_epoch_slot_sealers(header, timeslot, safrole, entropy_pool, curr_validators)
 
     %Safrole{
       safrole
-      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
+      | current_epoch_slot_sealers:
+          get_posterior_epoch_slot_sealers(
+            header,
+            timeslot,
+            safrole,
+            entropy_pool,
+            curr_validators
+          )
     }
   end
 
