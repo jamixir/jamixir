@@ -37,67 +37,11 @@ defmodule System.State.Safrole do
     posterior_epoch_slot_sealers =
       get_posterior_epoch_slot_sealers(header, timeslot, safrole, entropy_pool, curr_validators)
 
-    # i = γs′ [Ht ]↺
-    # candidate_slot_sealer =
-    #   Enum.at(posterior_epoch_slot_sealers, rem(header.timeslot, Constants.epoch_length()))
-
     %Safrole{
       safrole
       | current_epoch_slot_sealers: posterior_epoch_slot_sealers
     }
-
-    # with :ok <- validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators) do
-
-    #
-    # else
-    #   {:error, reason} -> {:error, reason}
-    # end
   end
-
-  # @spec validate_candidate(
-  #         binary() | System.State.SealKeyTicket.t(),
-  #         Block.Header.t(),
-  #         System.State.EntropyPool.t(),
-  #         any()
-  #       ) :: :ok | {:error, any()}
-  # def validate_candidate(
-  #       %SealKeyTicket{} = candidate_slot_sealer,
-  #       header,
-  #       entropy_pool,
-  #       curr_validators
-  #     ) do
-  #   SealKeyTicket.validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
-  # end
-
-  # def validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
-  #     when is_binary(candidate_hash) do
-  #   validate_candidate_hash(candidate_hash, header, entropy_pool, curr_validators)
-  # end
-
-  # defp validate_candidate_hash(
-  #        candidate_hash,
-  #        %Header{block_author_key_index: h_i, block_seal: h_s} = h,
-  #        %EntropyPool{history: [_, _, eta3 | _]},
-  #        curr_validators
-  #      ) do
-  #   # Retrieve the bandersnatch key for the current block author
-  #   with %System.State.Validator{bandersnatch: key} <- Enum.at(curr_validators, h_i),
-  #        true <- key == candidate_hash,
-  #        message = Header.unsigned_serialize(h),
-  #        aux_data = SigningContexts.jam_fallback_seal() <> eta3,
-  #        {:ok, _} <- Util.Bandersnatch._verify(key, message, aux_data, h_s) do
-  #     :ok
-  #   else
-  #     nil ->
-  #       {:error, :invalid_validator_index}
-
-  #     false ->
-  #       {:error, :invalid_candidate_hash}
-
-  #     {:error, reason} ->
-  #       {:error, reason}
-  #   end
-  # end
 
   # Formula (69) v0.3.4
   def get_posterior_epoch_slot_sealers(
