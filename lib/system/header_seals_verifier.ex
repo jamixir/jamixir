@@ -12,10 +12,10 @@ defmodule System.HeaderSealsVerifier do
     aux_data =
       case slot_seal_type do
         :fallback ->
-          "$jam_fallback_seal" <> Enum.at(entropy_pool_history, 2)
+          SigningContexts.jam_fallback_seal() <> Enum.at(entropy_pool_history, 2)
 
         _ ->
-          "$jam_ticket_seal" <>
+          SigningContexts.jam_ticket_seal() <>
             Enum.at(entropy_pool_history, 2) <>
             Map.get(correct_slot_sealer, :entry_index)
       end
@@ -33,7 +33,7 @@ defmodule System.HeaderSealsVerifier do
     BandersnatchRingVrf.ietf_vrf_verify(
       ring,
       <<>>,
-      "$jam_entropy" <> output_from_block_seal,
+      SigningContexts.jam_entropy() <> output_from_block_seal,
       header.vrf_signature,
       header.block_author_key_index
     )
