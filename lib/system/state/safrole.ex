@@ -4,7 +4,7 @@ defmodule System.State.Safrole do
   """
   alias System.State.{SealKeyTicket, Validator, EntropyPool, Safrole}
   alias Block.Header
-  alias Util.{Time, Hash}
+  alias Util.Hash
   alias Codec.{Encoder, Decoder}
 
   @type t :: %__MODULE__{
@@ -38,58 +38,68 @@ defmodule System.State.Safrole do
       get_posterior_epoch_slot_sealers(header, timeslot, safrole, entropy_pool, curr_validators)
 
     # i = γs′ [Ht ]↺
-    candidate_slot_sealer =
-      Enum.at(posterior_epoch_slot_sealers, rem(header.timeslot, Constants.epoch_length()))
+    # candidate_slot_sealer =
+    #   Enum.at(posterior_epoch_slot_sealers, rem(header.timeslot, Constants.epoch_length()))
 
-    with :ok <- validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators) do
-      %Safrole{
-        safrole
-        | current_epoch_slot_sealers: posterior_epoch_slot_sealers
-      }
-    else
-      {:error, reason} -> {:error, reason}
-    end
+    %Safrole{
+      safrole
+      | current_epoch_slot_sealers: posterior_epoch_slot_sealers
+    }
+
+    # with :ok <- validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators) do
+
+    #
+    # else
+    #   {:error, reason} -> {:error, reason}
+    # end
   end
 
-  def validate_candidate(
-        %SealKeyTicket{} = candidate_slot_sealer,
-        header,
-        entropy_pool,
-        curr_validators
-      ) do
-    SealKeyTicket.validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
-  end
+  # @spec validate_candidate(
+  #         binary() | System.State.SealKeyTicket.t(),
+  #         Block.Header.t(),
+  #         System.State.EntropyPool.t(),
+  #         any()
+  #       ) :: :ok | {:error, any()}
+  # def validate_candidate(
+  #       %SealKeyTicket{} = candidate_slot_sealer,
+  #       header,
+  #       entropy_pool,
+  #       curr_validators
+  #     ) do
+  #   SealKeyTicket.validate_candidate(candidate_slot_sealer, header, entropy_pool, curr_validators)
+  # end
 
-  def validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
-      when is_binary(candidate_hash) do
-    validate_candidate_hash(candidate_hash, header, entropy_pool, curr_validators)
-  end
+  # def validate_candidate(candidate_hash, header, entropy_pool, curr_validators)
+  #     when is_binary(candidate_hash) do
+  #   validate_candidate_hash(candidate_hash, header, entropy_pool, curr_validators)
+  # end
 
-  defp validate_candidate_hash(
-         candidate_hash,
-         %Header{block_author_key_index: h_i, block_seal: h_s} = h,
-         %EntropyPool{history: [_, _, eta3 | _]},
-         curr_validators
-       ) do
-    # Retrieve the bandersnatch key for the current block author
-    with %System.State.Validator{bandersnatch: key} <- Enum.at(curr_validators, h_i),
-         true <- key == candidate_hash,
-         message = Header.unsigned_serialize(h),
-         aux_data = SigningContexts.jam_fallback_seal() <> eta3,
-         {:ok, _} <- Util.Bandersnatch._verify(key, message, aux_data, h_s) do
-      :ok
-    else
-      nil ->
-        {:error, :invalid_validator_index}
+  # defp validate_candidate_hash(
+  #        candidate_hash,
+  #        %Header{block_author_key_index: h_i, block_seal: h_s} = h,
+  #        %EntropyPool{history: [_, _, eta3 | _]},
+  #        curr_validators
+  #      ) do
+  #   # Retrieve the bandersnatch key for the current block author
+  #   with %System.State.Validator{bandersnatch: key} <- Enum.at(curr_validators, h_i),
+  #        true <- key == candidate_hash,
+  #        message = Header.unsigned_serialize(h),
+  #        aux_data = SigningContexts.jam_fallback_seal() <> eta3,
+  #        {:ok, _} <- Util.Bandersnatch._verify(key, message, aux_data, h_s) do
+  #     :ok
+  #   else
+  #     nil ->
+  #       {:error, :invalid_validator_index}
 
-      false ->
-        {:error, :invalid_candidate_hash}
+  #     false ->
+  #       {:error, :invalid_candidate_hash}
 
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
+  #     {:error, reason} ->
+  #       {:error, reason}
+  #   end
+  # end
 
+  # Formula (69) v0.3.4
   def get_posterior_epoch_slot_sealers(
         %Header{timeslot: new_timeslot},
         timeslot,
@@ -97,63 +107,21 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
-    new_epoch_index = Time.epoch_index(new_timeslot)
-    current_epoch_index = Time.epoch_index(timeslot)
-    ticket_accumulator_full = length(safrole.ticket_accumulator) == Constants.epoch_length()
-    ticket_submission_ended = Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
-    # Formula (69) v0.3.4
+    case System.HeaderSealsVerifier.determine_ticket_or_fallback(
+           new_timeslot,
+           timeslot,
+           safrole.ticket_accumulator
+         ) do
+      :ticket_same ->
+        safrole.current_epoch_slot_sealers
 
-    calculate_epoch_slot_sealers(
-      new_epoch_index,
-      current_epoch_index,
-      ticket_accumulator_full,
-      ticket_submission_ended,
-      safrole,
-      entropy_pool,
-      curr_validators
-    )
+      :ticket_shuffle ->
+        outside_in_sequencer(safrole.current_epoch_slot_sealers)
+
+      :fallback ->
+        fallback_key_sequence(entropy_pool, curr_validators)
+    end
   end
-
-  # Formula (69) v0.3.4 - second arm
-  # e′ = e (block is not the first in an epoch)
-  defp calculate_epoch_slot_sealers(
-         epoch_index,
-         epoch_index,
-         _ticket_accumulator_full,
-         _ticket_submission_ended,
-         safrole,
-         _entropy_pool,
-         _curr_validators
-       ),
-       do: safrole.current_epoch_slot_sealers
-
-  # Formula (69) v0.3.4 - first arm
-  # e′ = e + 1 ∧ m ≥ Y ∧ ∣γa ∣ = E
-  # block signals the next epoch and the ticket submission period has ended
-  defp calculate_epoch_slot_sealers(
-         new_epoch_index,
-         current_epoch_index,
-         _ticket_accumulator_full = true,
-         _ticket_submission_ended = true,
-         safrole,
-         _entropy_pool,
-         _curr_validators
-       )
-       when new_epoch_index == current_epoch_index + 1,
-       do: outside_in_sequencer(safrole.current_epoch_slot_sealers)
-
-  # Formula (69) v0.3.4 - third arm
-  # otherwise
-  defp calculate_epoch_slot_sealers(
-         _new_epoch_index,
-         _current_epoch_index,
-         _ticket_accumulator_full,
-         _ticket_submission_ended,
-         _safrole,
-         entropy_pool,
-         curr_validators
-       ),
-       do: fallback_key_sequence(entropy_pool, curr_validators)
 
   @doc """
   Z function: Outside-in sequencer function.
