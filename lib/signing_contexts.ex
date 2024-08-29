@@ -3,26 +3,33 @@ defmodule SigningContexts do
   Defines signing contexts used throughout the system for various cryptographic operations.
   """
 
-  # Ed25519 Availability assurances
-  @jam_available "$jam_available"
-  # BLS Accumulate-result-root-mmr commitment
-  @jam_beefy "$jam_beefy"
-  # On-chain entropy generation
+  # Formula (63) v0.3.4
   @jam_entropy "$jam_entropy"
-  # Bandersnatch Fallback block seal
+  # Formula (64) v0.3.4
   @jam_fallback_seal "$jam_fallback_seal"
-  # Ed25519 Guarantee statements
-  @jam_guarantee "$jam_guarantee"
-  # Ed25519 Audit announcement statements
-  @jam_announce "$jam_announce"
-  # Bandersnatch RingVRF Ticket generation and regular block seal
+  # Formula (65) v0.3.4
   @jam_ticket_seal "$jam_ticket_seal"
-  # Bandersnatch Audit selection entropy
-  @jam_audit "$jam_audit"
+  # Ed25519 Availability assurances
+  # Formula (129) v0.3.4
+  @jam_available "$jam_available"
   # Ed25519 Judgements for valid work-reports
+  # Formula (100) v0.3.4
   @jam_valid "$jam_valid"
   # Ed25519 Judgements for invalid work-reports
+  # Formula (100) v0.3.4
   @jam_invalid "$jam_invalid"
+  # Ed25519 Guarantee statements
+  # Formula (142) v0.3.4
+  @jam_guarantee "$jam_guarantee"
+  # Bandersnatch Audit selection entropy
+  # Formula (193) v0.3.4
+  @jam_audit "$jam_audit"
+  # Ed25519 Audit announcement statements
+  # Formula (199) v0.3.4
+  @jam_announce "$jam_announce"
+  # BLS Accumulate-result-root-mmr commitment
+  # Formula (210) v0.3.4
+  @jam_beefy "$jam_beefy"
 
   @doc "Ed25519 Availability assurances context."
   def jam_available, do: @jam_available
