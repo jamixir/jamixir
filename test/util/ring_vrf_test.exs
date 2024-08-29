@@ -32,154 +32,106 @@ defmodule RingVrfTest do
     test "verification succeeds with larger number of keys and public key in the middle" do
       validator_index = 100
       {keys, secret} = init_ring_context_and_gen_keys(validator_index, 1023)
-
-      # Create a verifier (commitment)
       commitment = BandersnatchRingVrf.create_commitment(keys)
 
-      # Sign with original message
-      signature =
+      {signature, output} =
         BandersnatchRingVrf.ring_vrf_sign(keys, secret, validator_index, "input data", "aux data")
 
-      # Verify with correct commitment
-      %RingVRF.VerificationResult{verified: verified, vrf_output_hash: vrf_output_hash} =
-        BandersnatchRingVrf.ring_vrf_verify(
-          commitment,
-          "input data",
-          "aux data",
-          signature
-        )
+      assert {:ok, vrf_output_hash} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 commitment,
+                 "input data",
+                 "aux data",
+                 signature
+               )
 
-      assert verified
-      assert byte_size(vrf_output_hash) == 32
+      assert vrf_output_hash == output
     end
 
     test "succeeds with a simple ring of size 5" do
-      # Initialize the ring context
-      BandersnatchRingVrf.init_ring_context(5)
-
-      # Generate a secret key from randomness
-      secret = BandersnatchRingVrf.generate_secret_from_rand()
-      public = elem(secret, 1)
-
-      # Generate a ring of public keys with the public key derived from the secret at index 0
-      keys =
-        for _i <- 1..2 do
-          secret = BandersnatchRingVrf.generate_secret_from_rand()
-          elem(secret, 1)
-        end
-
-      # Prepend the public key to the list of keys
-      keys = [public | keys]
-
-      # Create a verifier (commitment)
+      {keys, secret} = init_ring_context_and_gen_keys(5)
       commitment = BandersnatchRingVrf.create_commitment(keys)
-      # print commitment
 
-      # Select the prover index (for simplicity, use the first key)
-      prover_idx = 0
+      {signature, output} =
+        BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "input data", "aux data")
 
-      # Mock VRF input data and auxiliary data
-      vrf_input_data = "input data"
-      aux_data = "aux data"
-      # Sign the data using the secret and the ring
-      signature =
-        BandersnatchRingVrf.ring_vrf_sign(keys, secret, prover_idx, vrf_input_data, aux_data)
+      assert {:ok, vrf_output_hash} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 commitment,
+                 "input data",
+                 "aux data",
+                 signature
+               )
 
-      # Verify the signature using the commitment and the same input/aux data
-      %RingVRF.VerificationResult{
-        verified: verified,
-        vrf_output_hash: vrf_output_hash
-      } =
-        BandersnatchRingVrf.ring_vrf_verify(commitment, vrf_input_data, aux_data, signature)
-
-      # Assert that verification returns true
-      assert verified
+      assert vrf_output_hash == output
       assert byte_size(vrf_output_hash) == 32
     end
   end
 
   describe "failure scenarios" do
     test "verification fails with altered message" do
-      # Initialize the ring context
-
       {keys, secret} = init_ring_context_and_gen_keys(2)
-
-      # Create a verifier (commitment)
       commitment = BandersnatchRingVrf.create_commitment(keys)
 
-      # Sign with original message
-      signature =
+      {signature, _output} =
         BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "original message", "aux data")
 
-      # Verify with altered message
-      %RingVRF.VerificationResult{verified: verified} =
-        BandersnatchRingVrf.ring_vrf_verify(
-          commitment,
-          "altered message",
-          "aux data",
-          signature
-        )
-
-      assert not verified
+      assert {:error, :verification_failed} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 commitment,
+                 "altered message",
+                 "aux data",
+                 signature
+               )
     end
 
     test "verification fails with altered commitment" do
       {keys, secret} = init_ring_context_and_gen_keys(2)
-      BandersnatchRingVrf.create_commitment(keys)
-      signature = BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "input data", "aux data")
 
-      # Alter commitment by generating a new one
+      {signature, _output} =
+        BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "input data", "aux data")
+
       altered_commitment = BandersnatchRingVrf.create_commitment(Enum.reverse(keys))
 
-      %RingVRF.VerificationResult{verified: verified} =
-        BandersnatchRingVrf.ring_vrf_verify(
-          altered_commitment,
-          "input data",
-          "aux data",
-          signature
-        )
-
-      assert not verified
+      assert {:error, :verification_failed} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 altered_commitment,
+                 "input data",
+                 "aux data",
+                 signature
+               )
     end
 
     test "verification fails with wrong prover index" do
       {keys, secret} = init_ring_context_and_gen_keys(6, 20)
-
-      # Create a verifier (commitment)
       commitment = BandersnatchRingVrf.create_commitment(keys)
 
-      # Sign with original message but use the wrong prover index
-      signature = BandersnatchRingVrf.ring_vrf_sign(keys, secret, 8, "input data", "aux data")
+      {signature, _output} =
+        BandersnatchRingVrf.ring_vrf_sign(keys, secret, 8, "input data", "aux data")
 
-      # Verify with correct commitment
-      %RingVRF.VerificationResult{verified: verified} =
-        BandersnatchRingVrf.ring_vrf_verify(
-          commitment,
-          "input data",
-          "aux data",
-          signature
-        )
-
-      assert not verified
+      assert {:error, :verification_failed} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 commitment,
+                 "input data",
+                 "aux data",
+                 signature
+               )
     end
 
     test "verification fails with altered auxiliary data" do
       {keys, secret} = init_ring_context_and_gen_keys(2)
       commitment = BandersnatchRingVrf.create_commitment(keys)
 
-      signature =
+      {signature, _output} =
         BandersnatchRingVrf.ring_vrf_sign(keys, secret, 0, "input data", "original aux data")
 
-      # Verify with altered auxiliary data
-      %RingVRF.VerificationResult{verified: verified} =
-        BandersnatchRingVrf.ring_vrf_verify(
-          commitment,
-          "input data",
-          "altered aux data",
-          signature
-        )
-
-      assert not verified
+      assert {:error, :verification_failed} =
+               BandersnatchRingVrf.ring_vrf_verify(
+                 commitment,
+                 "input data",
+                 "altered aux data",
+                 signature
+               )
     end
   end
 
@@ -244,7 +196,8 @@ defmodule RingVrfTest do
           keys,
           "input data",
           "aux data",
-          <<1, 2, 3>>, # invalid signature
+          # invalid signature
+          <<1, 2, 3>>,
           0
         )
 
@@ -275,7 +228,7 @@ defmodule RingVrfTest do
     test "verification fails with altered input data" do
       {keys, secret} = init_ring_context_and_gen_keys(50)
       signature = BandersnatchRingVrf.ietf_vrf_sign(secret, "input data", "aux data")
-      
+
       result =
         BandersnatchRingVrf.ietf_vrf_verify(
           keys,

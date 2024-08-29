@@ -5,7 +5,7 @@ use ark_ec_vrfs::{
 };
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{Input, Output, Public, RingProof};
-use rustler::{Atom, Binary, Env, Error, NifResult, NifStruct, OwnedBinary};
+use rustler::{Atom, Binary, Env, Error, NifResult, OwnedBinary};
 
 use crate::ring_context::ring_context;
 use crate::rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge};
@@ -30,11 +30,10 @@ struct RingVrfSignature {
     proof: RingProof,
 }
 
-#[derive(NifStruct)]
-#[module = "RingVRF.VerificationResult"]
-pub struct VrfVerificationResult<'a> {
-    pub verified: bool,
-    pub vrf_output_hash: Binary<'a>,
+#[derive(CanonicalSerialize, CanonicalDeserialize)]
+struct IetfVrfSignature {
+    output: Output,
+    proof: IetfProof,
 }
 
 fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
@@ -51,12 +50,12 @@ pub fn ring_vrf_verify<'a>(
     vrf_input_data: Binary,
     aux_data: Binary,
     signature: Binary,
-) -> NifResult<VrfVerificationResult<'a>> {
+) -> NifResult<(Atom, Binary<'a>)> {
     use ark_ec_vrfs::ring::Verifier as _;
     let commitment: RingCommitment = commitment.into();
 
-    let signature = RingVrfSignature::deserialize_compressed(&signature[..])
-        .map_err(|_e| Error::Atom("invalid_signature"))?;
+    let signature = RingVrfSignature::deserialize_compressed(signature.as_slice())
+        .map_err(|_e| Error::Term(Box::new(atoms::invalid_signature())))?;
 
     let input = vrf_input_point(&vrf_input_data);
 
@@ -67,18 +66,21 @@ pub fn ring_vrf_verify<'a>(
     let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
     let verifier = ring_ctx.verifier(verifier_key);
 
-    let verified = Public::verify(
+    if Public::verify(
         input,
         output,
         aux_data.as_slice(),
         &signature.proof,
         &verifier,
     )
-    .is_ok();
+    .is_err()
+    {
+        return Err(Error::Term(Box::new(atoms::verification_failed())));
+    }
 
     let vrf_output_hash_vec: Vec<u8> = output.hash()[..32]
         .try_into()
-        .map_err(|_| Error::Atom("hash_conversion_failed"))?;
+        .map_err(|_| Error::Term(Box::new(atoms::hash_conversion_failed())))?;
 
     // Create an OwnedBinary from the Vec<u8>
     let mut vrf_output_hash_bin = OwnedBinary::new(vrf_output_hash_vec.len()).unwrap();
@@ -86,10 +88,7 @@ pub fn ring_vrf_verify<'a>(
         .as_mut_slice()
         .copy_from_slice(&vrf_output_hash_vec);
 
-    Ok(VrfVerificationResult {
-        verified,
-        vrf_output_hash: vrf_output_hash_bin.release(env),
-    })
+    Ok((atoms::ok(), vrf_output_hash_bin.release(env)))
 }
 
 #[rustler::nif]
@@ -100,7 +99,7 @@ fn ring_vrf_sign<'a>(
     prover_idx: usize,
     vrf_input_data: Binary,
     aux_data: Binary,
-) -> NifResult<Binary<'a>> {
+) -> NifResult<(Binary<'a>, Binary<'a>)> {
     use ark_ec_vrfs::ring::Prover as _;
 
     let ring: Vec<Public> = ring.into_iter().map(|pk| pk.into()).collect();
@@ -121,17 +120,24 @@ fn ring_vrf_sign<'a>(
     let mut buf = Vec::new();
     signature.serialize_compressed(&mut buf).unwrap();
 
-    let mut binary = OwnedBinary::new(buf.len()).unwrap();
-    binary.as_mut_slice().copy_from_slice(&buf);
+    let mut signature_binary = OwnedBinary::new(buf.len()).unwrap();
+    signature_binary.as_mut_slice().copy_from_slice(&buf);
 
-    Ok(binary.release(env))
+    let vrf_output_hash_vec: Vec<u8> = output.hash()[..32]
+        .try_into()
+        .map_err(|_| Error::Term(Box::new(atoms::hash_conversion_failed())))?;
+
+    let mut vrf_output_hash_bin = OwnedBinary::new(vrf_output_hash_vec.len()).unwrap();
+    vrf_output_hash_bin
+        .as_mut_slice()
+        .copy_from_slice(&vrf_output_hash_vec);
+
+    Ok((
+        signature_binary.release(env),
+        vrf_output_hash_bin.release(env),
+    ))
 }
 
-#[derive(CanonicalSerialize, CanonicalDeserialize)]
-struct IetfVrfSignature {
-    output: Output,
-    proof: IetfProof,
-}
 #[rustler::nif]
 fn ietf_vrf_sign<'a>(
     env: Env<'a>,
@@ -168,10 +174,9 @@ fn ietf_vrf_verify<'a>(
 ) -> NifResult<(Atom, Binary<'a>)> {
     use ark_ec_vrfs::ietf::Verifier as _;
 
-    let signature = match IetfVrfSignature::deserialize_compressed(&signature[..]) {
-        Ok(sig) => sig,
-        Err(_) => return Err(Error::Term(Box::new(atoms::invalid_signature()))),
-    };
+    let signature = IetfVrfSignature::deserialize_compressed(signature.as_slice())
+        .map_err(|_e| Error::Term(Box::new(atoms::invalid_signature())))?;
+
     let input = vrf_input_point(&vrf_input_data);
     let output = signature.output;
 
