@@ -36,8 +36,8 @@ defmodule System.HeaderSealsVerifier do
          {:ok, vrf_signature_output} <-
            RingVrf.ietf_vrf_verify(
              ring,
-             <<>>,
              SigningContexts.jam_entropy() <> block_seal_output,
+             <<>>,
              header.vrf_signature,
              header.block_author_key_index
            ) do
