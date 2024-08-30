@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic do
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   # Formula (14) v0.3.4
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], availability: [], guarantees: []
@@ -6,6 +7,7 @@ defmodule Block.Extrinsic do
   @type t :: %__MODULE__{
           tickets: list(TicketProof.t()),
           disputes: Disputes.t(),
+          # Formula (155) v0.3.4
           preimages: list(Preimage.t()),
           availability: list(Availability.t()),
           # Eg
@@ -20,7 +22,8 @@ defmodule Block.Extrinsic do
     %Block.Extrinsic{
       tickets: tickets,
       disputes: disputes,
-      preimages: preimages,
+      # Formula (156) v0.3.4
+      preimages: Util.Collections.uniq_sorted(preimages, & &1.service_index),
       availability: availability,
       guarantees: guarantees
     }

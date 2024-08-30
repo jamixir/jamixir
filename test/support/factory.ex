@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Block.Extrinsic.Preimage
   alias System.State.CoreReports
   use ExMachina
 
@@ -249,7 +250,7 @@ defmodule Jamixir.Factory do
       blocks_produced: 1,
       tickets_introduced: 2,
       preimages_introduced: 3,
-      octets_total: 4,
+      data_size: 4,
       reports_guaranteed: 5,
       availability_assurances: 6
     }
@@ -267,7 +268,7 @@ defmodule Jamixir.Factory do
     %Extrinsic{
       tickets: [%SealKeyTicket{}],
       disputes: %Disputes{},
-      preimages: [%{}],
+      preimages: build_list(2, :preimage),
       availability: [%{}],
       guarantees: [%Guarantee{}]
     }
@@ -292,6 +293,11 @@ defmodule Jamixir.Factory do
       # Hs
       block_seal: <<>>
     }
+  end
+
+  def preimage_factory do
+    id = sequence(:preimage, & &1)
+    Preimage.new(id, <<1, 2, 3, 4, id>>)
   end
 
   def shuffle_hash_factory do

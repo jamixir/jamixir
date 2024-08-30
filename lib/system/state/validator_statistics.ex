@@ -12,7 +12,7 @@ defmodule System.State.ValidatorStatistics do
   - `blocks_produced` (`b`): The number of blocks produced by the validator.
   - `tickets_introduced` (`t`): The number of tickets introduced by the validator.
   - `preimages_introduced` (`p`): The number of preimages introduced by the validator.
-  - `octets_total` (`d`): The total number of octets across all preimages introduced by the validator.
+  - `data_size` (`d`): The total number of octets across all preimages introduced by the validator.
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
@@ -29,7 +29,7 @@ defmodule System.State.ValidatorStatistics do
           # p
           preimages_introduced: non_neg_integer(),
           # d
-          octets_total: non_neg_integer(),
+          data_size: non_neg_integer(),
           # g
           reports_guaranteed: non_neg_integer(),
           # a
@@ -46,7 +46,7 @@ defmodule System.State.ValidatorStatistics do
       blocks_produced: 0,
       tickets_introduced: 0,
       preimages_introduced: 0,
-      octets_total: 0,
+      data_size: 0,
       reports_guaranteed: 0,
       availability_assurances: 0
     }
@@ -61,7 +61,7 @@ defmodule System.State.ValidatorStatistics do
       blocks_produced: b,
       tickets_introduced: t,
       preimages_introduced: p,
-      octets_total: d,
+      data_size: d,
       reports_guaranteed: g,
       availability_assurances: a
     }
@@ -92,9 +92,17 @@ defmodule System.State.ValidatorStatistics do
     author_stats =
       Enum.at(new_current_epoc_stats, header.block_author_key_index, zeroed_statistic())
 
+    # Formula (174) v0.3.4
     new_author_stats = %{
       author_stats
-      | blocks_produced: author_stats.blocks_produced + 1
+      | blocks_produced: author_stats.blocks_produced + 1,
+        tickets_introduced: author_stats.tickets_introduced + length(extrinsic.tickets),
+        preimages_introduced: author_stats.preimages_introduced + length(extrinsic.preimages),
+        data_size:
+          author_stats.data_size +
+            (extrinsic.preimages
+             |> Enum.map(fn b -> byte_size(b.data) end)
+             |> Enum.sum())
     }
 
     new_current_epoc_stats =
@@ -120,7 +128,7 @@ defmodule System.State.ValidatorStatistics do
            blocks_produced: b,
            tickets_introduced: t,
            preimages_introduced: p,
-           octets_total: d,
+           data_size: d,
            reports_guaranteed: g,
            availability_assurances: a
          }) do

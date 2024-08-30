@@ -64,11 +64,11 @@ defmodule System.State.ValidatorStatisticsTest do
     test "updates author blocks produced statistics" do
       validator_statistics = build(:validator_statistics)
 
-      non_author_blocks_produced =
-        Enum.at(validator_statistics.current_epoch_statistics, 0).blocks_produced
-
-      author_blocks_produced =
-        Enum.at(validator_statistics.current_epoch_statistics, 1).blocks_produced
+      [non_author_blocks_produced, author_blocks_produced] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.blocks_produced
+        )
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
@@ -79,11 +79,81 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: 1)
         )
 
-      assert Enum.at(new_stats.current_epoch_statistics, 1).blocks_produced ==
-               author_blocks_produced + 1
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.blocks_produced) ==
+               [non_author_blocks_produced, author_blocks_produced + 1]
+    end
 
-      assert Enum.at(new_stats.current_epoch_statistics, 0).blocks_produced ==
-               non_author_blocks_produced
+    test "updates author tickets introduced statistics" do
+      validator_statistics = build(:validator_statistics)
+
+      [non_author_tickets_introduced, author_tickets_introduced] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.tickets_introduced
+        )
+
+      extrinsic = build(:extrinsic, tickets: build_list(3, :seal_key_ticket))
+
+      new_stats =
+        ValidatorStatistics.posterior_validator_statistics(
+          extrinsic,
+          1,
+          2,
+          validator_statistics,
+          build(:header, block_author_key_index: 1)
+        )
+
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.tickets_introduced) ==
+               [non_author_tickets_introduced, author_tickets_introduced + 3]
+    end
+
+    test "updates author preimages introduced statistics" do
+      validator_statistics = build(:validator_statistics)
+
+      [non_author_preimages_introduced, author_preimages_introduced] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.preimages_introduced
+        )
+
+      extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
+
+      new_stats =
+        ValidatorStatistics.posterior_validator_statistics(
+          extrinsic,
+          1,
+          2,
+          validator_statistics,
+          build(:header, block_author_key_index: 1)
+        )
+
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.preimages_introduced) ==
+               [non_author_preimages_introduced, author_preimages_introduced + 4]
+    end
+
+    test "updates author data size statistics" do
+      validator_statistics = build(:validator_statistics)
+
+      [non_author_data_size, author_data_size] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.data_size
+        )
+
+      extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
+
+      new_stats =
+        ValidatorStatistics.posterior_validator_statistics(
+          extrinsic,
+          1,
+          2,
+          validator_statistics,
+          build(:header, block_author_key_index: 1)
+        )
+
+      # 20 = 4 preimages of 5 bytes
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.data_size) ==
+               [non_author_data_size, author_data_size + 20]
     end
   end
 end
