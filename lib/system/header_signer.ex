@@ -12,21 +12,21 @@ defmodule System.HeaderSigner do
       ) do
     {secret, public_key} = key_pair
 
-    context =
+    seal_context =
       Safrole.get_correct_slot_sealer(epoch_slot_sealers, header.timeslot)
       |> Safrole.construct_sign_context(entropy_pool_history)
 
-    {_, block_seal_output} =
-      RingVrf.ietf_vrf_sign(
+    block_seal_output =
+      RingVrf.ietf_vrf_output(
         secret,
-        context,
-        <<>>
+        seal_context
       )
 
     {vrf_signature, _} =
       RingVrf.ietf_vrf_sign(
         secret,
-        SigningContexts.jam_entropy() <> block_seal_output,
+        SigningContexts.jam_entropy() <>
+          block_seal_output,
         <<>>
       )
 
@@ -39,7 +39,7 @@ defmodule System.HeaderSigner do
     {block_seal, _} =
       RingVrf.ietf_vrf_sign(
         secret,
-        context,
+        seal_context,
         Header.unsigned_serialize(header)
       )
 
