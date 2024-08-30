@@ -2,44 +2,7 @@ defmodule System.HeaderSealsVerifier do
   alias System.State.EntropyPool
   alias Block.Header
 
-  def verify_block_seal(
-        header,
-        ring,
-        correct_slot_sealer,
-        entropy_pool_history
-      ) do
-    aux_data =
-      if is_fallback_sealer?(correct_slot_sealer) do
-        # Formula (61) v0.3.4
-        SigningContexts.jam_fallback_seal() <> Enum.at(entropy_pool_history, 2)
-      else
-        # Formula (60) v0.3.4
-        SigningContexts.jam_ticket_seal() <>
-          Enum.at(entropy_pool_history, 2) <>
-          Map.get(correct_slot_sealer, :entry_index)
-      end
-
-    RingVrf.ietf_vrf_verify(
-      ring,
-      Header.unsigned_serialize(header),
-      aux_data,
-      header.block_seal,
-      header.block_author_key_index
-    )
-  end
-
-  # Formula (62) v0.3.4
-  def verify_vrf_signature(header, ring, output_from_block_seal) do
-    RingVrf.ietf_vrf_verify(
-      ring,
-      <<>>,
-      SigningContexts.jam_entropy() <> output_from_block_seal,
-      header.vrf_signature,
-      header.block_author_key_index
-    )
-  end
-
-  def validate_both_seals(
+  def validate_header_seals(
         header,
         posterior_curr_validators,
         posterior_epoch_slot_sealers,
@@ -53,11 +16,12 @@ defmodule System.HeaderSealsVerifier do
       |> Enum.at(rem(header.timeslot, length(posterior_epoch_slot_sealers)))
 
     with {:ok, block_seal_output} <-
-           verify_block_seal(
-             header,
+           RingVrf.ietf_vrf_verify(
              ring,
-             correct_slot_sealer,
-             entropy_pool_history
+             Util.Safrole.construct_sign_context(correct_slot_sealer, entropy_pool_history),
+             Header.unsigned_serialize(header),
+             header.block_seal,
+             header.block_author_key_index
            ),
 
          # validate ticket id
@@ -70,7 +34,13 @@ defmodule System.HeaderSealsVerifier do
            ),
          # verify that the vrf signature is also a valid bandersnatch signature
          {:ok, vrf_signature_output} <-
-           verify_vrf_signature(header, ring, block_seal_output) do
+           RingVrf.ietf_vrf_verify(
+             ring,
+             <<>>,
+             SigningContexts.jam_entropy() <> block_seal_output,
+             header.vrf_signature,
+             header.block_author_key_index
+           ) do
       {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
       {:error, reason} -> {:error, reason}
@@ -85,7 +55,7 @@ defmodule System.HeaderSealsVerifier do
          posterior_curr_validators
        ) do
     cond do
-      is_fallback_sealer?(correct_slot_sealer) ->
+      Util.Safrole.is_fallback_sealer?(correct_slot_sealer) ->
         proposed_slot_sealer =
           Enum.at(posterior_curr_validators, block_author_key_index).bandersnatch
 
@@ -102,14 +72,4 @@ defmodule System.HeaderSealsVerifier do
         {:error, :ticket_id_mismatch}
     end
   end
-
-  defp is_fallback_sealer?(correct_slot_sealer) do
-    case correct_slot_sealer do
-      <<_::binary>> -> true
-      %{} -> false
-      _ -> raise "Unknown sealer type"
-    end
-  end
-
-
 end
