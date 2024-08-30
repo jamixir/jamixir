@@ -173,10 +173,8 @@ defmodule System.State do
 
     System.HeaderSealsVerifier.validate_both_seals(
       h,
-      state.timeslot,
       new_curr_validators,
       posterior_epoch_slot_sealers,
-      state.safrole.ticket_accumulator,
       state.entropy_pool
     )
 

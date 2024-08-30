@@ -6,24 +6,20 @@ defmodule System.HeaderSealsVerifier do
         header,
         ring,
         correct_slot_sealer,
-        entropy_pool_history,
-        slot_seal_type
+        entropy_pool_history
       ) do
-
     aux_data =
-      # Fotmula (61) v0.3.4
-      case slot_seal_type do
-        :fallback ->
-          SigningContexts.jam_fallback_seal() <> Enum.at(entropy_pool_history, 2)
-
-        _ ->
-          # Formula (60) v0.3.4
-          SigningContexts.jam_ticket_seal() <>
-            Enum.at(entropy_pool_history, 2) <>
-            Map.get(correct_slot_sealer, :entry_index)
+      if is_fallback_sealer?(correct_slot_sealer) do
+        # Formula (61) v0.3.4
+        SigningContexts.jam_fallback_seal() <> Enum.at(entropy_pool_history, 2)
+      else
+        # Formula (60) v0.3.4
+        SigningContexts.jam_ticket_seal() <>
+          Enum.at(entropy_pool_history, 2) <>
+          Map.get(correct_slot_sealer, :entry_index)
       end
 
-    BandersnatchRingVrf.ietf_vrf_verify(
+    RingVrf.ietf_vrf_verify(
       ring,
       Header.unsigned_serialize(header),
       aux_data,
@@ -34,7 +30,7 @@ defmodule System.HeaderSealsVerifier do
 
   # Formula (62) v0.3.4
   def verify_vrf_signature(header, ring, output_from_block_seal) do
-    BandersnatchRingVrf.ietf_vrf_verify(
+    RingVrf.ietf_vrf_verify(
       ring,
       <<>>,
       SigningContexts.jam_entropy() <> output_from_block_seal,
@@ -45,10 +41,8 @@ defmodule System.HeaderSealsVerifier do
 
   def validate_both_seals(
         header,
-        state_timeslot,
         posterior_curr_validators,
         posterior_epoch_slot_sealers,
-        current_ticket_accumelator,
         %EntropyPool{history: entropy_pool_history}
       ) do
     ring = Enum.map(posterior_curr_validators, & &1.bandersnatch)
@@ -58,29 +52,24 @@ defmodule System.HeaderSealsVerifier do
       posterior_epoch_slot_sealers
       |> Enum.at(rem(header.timeslot, length(posterior_epoch_slot_sealers)))
 
-    slot_seal_type =
-      determine_ticket_or_fallback(header.timeslot, state_timeslot, current_ticket_accumelator)
-
     with {:ok, block_seal_output} <-
-      # first check that the block seal is valid bandersnatch signature
            verify_block_seal(
              header,
              ring,
              correct_slot_sealer,
-             entropy_pool_history,
-             slot_seal_type
+             entropy_pool_history
            ),
-           # then, validate ticket id
+
+         # validate ticket id
          :ok <-
-           validate_ticket_or_fallback(
-             slot_seal_type,
+           verify_sealer_match(
              correct_slot_sealer,
              block_seal_output,
              header.block_author_key_index,
              posterior_curr_validators
            ),
+         # verify that the vrf signature is also a valid bandersnatch signature
          {:ok, vrf_signature_output} <-
-          # verify that the vrf signature is also a valid bandersnatch signature
            verify_vrf_signature(header, ring, block_seal_output) do
       {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
@@ -89,51 +78,38 @@ defmodule System.HeaderSealsVerifier do
     end
   end
 
-  defp validate_ticket_or_fallback(
-         :fallback,
+  defp verify_sealer_match(
          correct_slot_sealer,
-         _block_seal_output,
+         block_seal_output,
          block_author_key_index,
          posterior_curr_validators
        ) do
-        # Formula (42) v0.3.4
-    proposed_slot_sealer = Enum.at(posterior_curr_validators, block_author_key_index).bandersnatch
-    # Formula (61)
-    if proposed_slot_sealer == correct_slot_sealer, do: :ok, else: {:error, :ticket_id_mismatch}
-  end
-
-  defp validate_ticket_or_fallback(
-         _,
-         correct_slot_sealer,
-         block_seal_output,
-         _block_author_key_index,
-         _posterior_curr_validators
-       ) do
-    # Formula (60) v0.3.4
-    if Map.get(correct_slot_sealer, :id) == block_seal_output,
-      do: :ok,
-      else: {:error, :ticket_id_mismatch}
-  end
-
-  # Formula (69) v0.3.4
-  def determine_ticket_or_fallback(new_timeslot, timeslot, ticket_accumulator) do
-    current_epoch_index = Util.Time.epoch_index(timeslot)
-    new_epoch_index = Util.Time.epoch_index(new_timeslot)
-
-    ticket_accumulator_full = length(ticket_accumulator) == Constants.epoch_length()
-    ticket_submission_ended = Util.Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
-
     cond do
-      new_epoch_index == current_epoch_index ->
-        :ticket_same
+      is_fallback_sealer?(correct_slot_sealer) ->
+        proposed_slot_sealer =
+          Enum.at(posterior_curr_validators, block_author_key_index).bandersnatch
 
-      new_epoch_index == current_epoch_index + 1 and
-        ticket_accumulator_full and
-          ticket_submission_ended ->
-        :ticket_shuffle
+        if proposed_slot_sealer == correct_slot_sealer do
+          :ok
+        else
+          {:error, :ticket_id_mismatch}
+        end
+
+      Map.get(correct_slot_sealer, :id) == block_seal_output ->
+        :ok
 
       true ->
-        :fallback
+        {:error, :ticket_id_mismatch}
     end
   end
+
+  defp is_fallback_sealer?(correct_slot_sealer) do
+    case correct_slot_sealer do
+      <<_::binary>> -> true
+      %{} -> false
+      _ -> raise "Unknown sealer type"
+    end
+  end
+
+
 end
