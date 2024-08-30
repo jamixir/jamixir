@@ -294,6 +294,10 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def shuffle_hash_factory do
+    Util.Hash.blake2b_256(<<"This generates the shuffle hash for testing">>)
+  end
+
   # Private Helper Functions
   defp random_hash do
     :crypto.strong_rand_bytes(32)
