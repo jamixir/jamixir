@@ -2,6 +2,9 @@ defmodule System.State do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias System.State
+  alias Constants
+  alias Block.Extrinsic.Guarantee
+  alias Block.Extrinsic.Guarantee.WorkReport
 
   alias System.State.{
     Validator,
@@ -71,7 +74,7 @@ defmodule System.State do
   ]
 
   # Formula (12) v0.3.4
-  def add_block(state, %Block{header: h, extrinsic: e}) do
+  def add_block(%System.State{} = state, %Block{header: h, extrinsic: e}) do
     todo = "TODO"
 
     # Formula (16) v0.3.4
@@ -112,7 +115,7 @@ defmodule System.State do
       )
 
     # Formula (28) v0.3.4
-    {_new_services, _privileged_services, _new_next_validators, _authorizer_queue,
+    {_new_services, _privileged_services, _new_next_validators, new_authorizer_queue,
      beefy_commitment_map} =
       State.Accumulation.accumulate(
         Map.get(e, :availability),
@@ -121,6 +124,15 @@ defmodule System.State do
         state.privileged_services,
         state.next_validators,
         state.authorizer_queue
+      )
+
+    # α' Formula (29) v0.3.4
+    new_authorizer_pool =
+      posterior_authorizer_pool(
+        sorted_guarantees,
+        new_authorizer_queue,
+        state.authorizer_pool,
+        h.timeslot
       )
 
     # β' Formula (18) v0.3.4
@@ -174,7 +186,7 @@ defmodule System.State do
 
     %System.State{
       # α'
-      authorizer_pool: todo,
+      authorizer_pool: new_authorizer_pool,
       # β'
       recent_history: new_recent_history,
       # γ'
@@ -194,7 +206,7 @@ defmodule System.State do
       # τ'
       timeslot: new_timeslot,
       # φ'
-      authorizer_queue: todo,
+      authorizer_queue: new_authorizer_queue,
       # χ'
       privileged_services: todo,
       # ψ'
@@ -202,6 +214,49 @@ defmodule System.State do
       # π'
       validator_statistics: todo
     }
+  end
+
+  # Formula (86) v0.3.4
+  def posterior_authorizer_pool(
+        guarantees,
+        posterior_authorizer_queue,
+        authorizer_pools,
+        timeslot
+      ) do
+    # Zip the authorizer pools with the posterior authorizer queue
+    # and use the index to keep track of the core index
+    Enum.zip(authorizer_pools, posterior_authorizer_queue)
+    |> Enum.with_index()
+    |> Enum.map(fn {{current_pool, queue}, core_index} ->
+      # Adjust the current pool by removing the oldest used authorizer
+      adjusted_pool = remove_oldest_used_authorizer(core_index, current_pool, guarantees)
+
+      # Calculate the timeslot index using the header's timeslot
+      timeslot_index = rem(timeslot, Constants.max_authorization_queue_items())
+
+      # Pick the correct element from the queue based on the timeslot index
+      selected_queue_element = Enum.at(queue, timeslot_index)
+
+      # Add the selected queue element to the adjusted pool
+      new_authorizer_pool = adjusted_pool ++ [selected_queue_element]
+
+      # Take only the rightmost elements to ensure the pool size is within the limit
+      # Adjust to take only if the pool exceeds the max size
+      Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
+    end)
+  end
+
+  # Formula (87) v0.3.4 F(c)
+  # Function to remove the oldest (first from left) used authorizer from the pool
+  def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
+    case Enum.find(guarantees, &(&1.work_report.core_index == core_index)) do
+      nil ->
+        current_pool
+
+      %Guarantee{work_report: %WorkReport{authorizer_hash: hash}} ->
+        {left, right} = Enum.split_while(current_pool, &(&1 != hash))
+        left ++ tl(right)
+    end
   end
 
   def e(v), do: Codec.Encoder.encode(v)
