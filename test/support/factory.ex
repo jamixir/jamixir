@@ -15,13 +15,59 @@ defmodule Jamixir.Factory do
   @max_authorizers_per_core 2
   @max_authorize_queue_items 4
 
+  # Validator Key Pairs Factory
+  def validator_key_pairs_factory(count \\ @validator_count) do
+    Enum.map(1..count, fn _ ->
+      keypair = RingVrf.generate_secret_from_rand()
+      {_, public} = keypair
+
+      %{
+        validator: %System.State.Validator{
+          bandersnatch: public,
+          ed25519: :crypto.strong_rand_bytes(32),
+          bls: :crypto.strong_rand_bytes(144),
+          metadata: :crypto.strong_rand_bytes(128)
+        },
+        keypair: keypair
+      }
+    end)
+  end
+
+  # Seal Key Ticket Factory
+  def seal_key_ticket_factory(validator_key_pairs, entropy_pool_history) do
+    ring = Enum.map(validator_key_pairs, & &1.validator.bandersnatch)
+
+    Enum.with_index(validator_key_pairs)
+    |> Enum.map(fn {%{keypair: {secert,_ }}, index} ->
+      entry_index = Enum.random([0, 1])
+
+      context =
+        SigningContexts.jam_ticket_seal() <>
+          Enum.at(entropy_pool_history, 2) <>
+          <<entry_index::8>>
+
+      {_, output} =
+        RingVrf.ring_vrf_sign(
+          ring,
+          secert,
+          index,
+          context,
+          "message"
+        )
+
+      %SealKeyTicket{
+        id: output,
+        entry_index: entry_index
+      }
+    end)
+  end
+
   def genesis_state_factory do
-    # Generate a single list of validators to be used for both `next_validators` and `curr_validators`
     %System.State{
       authorizer_pool: authorizer_pool_factory(),
       safrole: safrole_factory(),
       services: services_factory(),
-      entropy_pool: genesis_entropy_pool_factory(),
+      entropy_pool: entropy_pool_factory(),
       next_validators: build_list(@validator_count, :random_validator),
       curr_validators: build_list(@validator_count, :random_validator),
       prev_validators: build_list(@validator_count, :random_validator),
@@ -30,13 +76,33 @@ defmodule Jamixir.Factory do
     }
   end
 
-  # state with full entropy pool
-  @spec advanced_state_factory() :: System.State.t()
-  def advanced_state_factory do
-    %System.State{
-      build(:genesis_state)
-      | entropy_pool: full_entropy_pool_factory()
+  def genesis_state_with_safrole_factory do
+    validator_key_pairs = validator_key_pairs_factory()
+    validators = Enum.map(validator_key_pairs, & &1.validator)
+    RingVrf.init_ring_context(length(validators))
+
+    entropy_pool = build(:entropy_pool)
+    tickets = seal_key_ticket_factory(validator_key_pairs, entropy_pool.history)
+
+    safrole_state = %System.State.Safrole{
+      pending: validators,
+      epoch_root: :crypto.strong_rand_bytes(144),
+      current_epoch_slot_sealers: tickets,
+      ticket_accumulator: tickets
     }
+
+    state = %System.State{
+      authorizer_pool: authorizer_pool_factory(),
+      safrole: safrole_state,
+      services: services_factory(),
+      entropy_pool: entropy_pool,
+      next_validators: validators,
+      curr_validators: validators,
+      prev_validators: validators,
+      authorizer_queue: authorizer_queue_factory()
+    }
+
+    %{state: state, validator_key_pairs: validator_key_pairs}
   end
 
   # Work Report and Availability Factories
@@ -191,15 +257,9 @@ defmodule Jamixir.Factory do
     }
   end
 
-  # Entropy Pool Factories
-  def genesis_entropy_pool_factory do
-    %System.State.EntropyPool{
-      current: random_hash(),
-      history: [random_hash(), random_hash(), random_hash()]
-    }
-  end
+  # Entropy Pool Factory
 
-  def full_entropy_pool_factory do
+  def entropy_pool_factory do
     %System.State.EntropyPool{
       current: random_hash(),
       history:
