@@ -1,4 +1,4 @@
-defmodule BandersnatchRingVrf do
+defmodule RingVrf do
   use Rustler, otp_app: :jamixir, crate: :bandersnatch_ring_vrf
 
   # load static ring context data from a file
@@ -19,12 +19,12 @@ defmodule BandersnatchRingVrf do
 
   # Formula (312) v0.3.4
   # Formula (313) v0.3.4
-  def ring_vrf_verify(_commitment, _vrf_input_data, _aux_data, _signature),
+  def ring_vrf_verify(_commitment, _context, _message, _signature),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # No explicit formula
   # this is the set of signatures F̄m∈Yr∈YR ⟨x ∈ Y⟩ ⊂ Y784
-  def ring_vrf_sign(_ring, _secret, _prover_idx, _vrf_input_data, _aux_data),
+  def ring_vrf_sign(_ring, _secret, _prover_idx, _context, _message),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # Function to handle (secret, public_key) pair generation
@@ -50,13 +50,13 @@ defmodule BandersnatchRingVrf do
   # Used for ticket claiming during block production
   # Formula (309) v0.3.4
   # Formula (310) v0.3.4
-  def ietf_vrf_sign(_secret, _vrf_input_data, _aux_data),
+  def ietf_vrf_sign(_secret, _context, _message),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # IETF VRF Verify
   #  Non-Anonymous VRF signature verification.
   #  Used for ticket claim verification during block import.
   #  Not used with Safrole test vectors.
-  def ietf_vrf_verify(_ring, _vrf_input_data, _aux_data, _signature, _signer_key_index),
+  def ietf_vrf_verify(_ring, _context, _message, _signature, _signer_key_index),
     do: :erlang.nif_error(:nif_not_loaded)
 end
