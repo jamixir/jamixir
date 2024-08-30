@@ -155,5 +155,29 @@ defmodule System.State.ValidatorStatisticsTest do
       assert Enum.map(new_stats.current_epoch_statistics, & &1.data_size) ==
                [non_author_data_size, author_data_size + 20]
     end
+
+    test "updates author assurances statistics" do
+      validator_statistics = build(:validator_statistics)
+
+      [non_author_availability_assurances, author_availability_assurances] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.availability_assurances
+        )
+
+      extrinsic = build(:extrinsic, assurances: [build(:assurance, validator_index: 1)])
+
+      new_stats =
+        ValidatorStatistics.posterior_validator_statistics(
+          extrinsic,
+          1,
+          2,
+          validator_statistics,
+          build(:header, block_author_key_index: 1)
+        )
+
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
+               [non_author_availability_assurances, author_availability_assurances + 1]
+    end
   end
 end

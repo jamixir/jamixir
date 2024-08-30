@@ -41,7 +41,7 @@ defmodule Codec.Encoder do
   # Formula (269) v0.3.4
   defp do_encode(nil), do: <<>>
   # Formula (270) v0.3.4
-  defp do_encode(value) when is_binary(value), do: value
+  defp do_encode(value) when is_binary(value) or is_bitstring(value), do: value
   # Formula (271) v0.3.4
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
   # Formula (272) is not implementable in Elixir,

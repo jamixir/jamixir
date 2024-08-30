@@ -2,14 +2,14 @@ defmodule Block.Extrinsic do
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   # Formula (14) v0.3.4
-  defstruct tickets: [], disputes: %Disputes{}, preimages: [], availability: [], guarantees: []
+  defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
   @type t :: %__MODULE__{
           tickets: list(TicketProof.t()),
           disputes: Disputes.t(),
           # Formula (155) v0.3.4
           preimages: list(Preimage.t()),
-          availability: list(Availability.t()),
+          assurances: list(Assurance.t()),
           # Eg
           guarantees: list(Guarantee.t())
         }
@@ -18,13 +18,13 @@ defmodule Block.Extrinsic do
   Represents the block extrinsic as described.
   E ≡ (ET, ED, EP, EA, EG)
   """
-  def new(tickets, disputes, preimages, availability, guarantees) do
+  def new(tickets, disputes, preimages, assurances, guarantees) do
     %Block.Extrinsic{
       tickets: tickets,
       disputes: disputes,
       # Formula (156) v0.3.4
       preimages: Util.Collections.uniq_sorted(preimages, & &1.service_index),
-      availability: availability,
+      assurances: assurances,
       guarantees: guarantees
     }
   end
@@ -65,7 +65,7 @@ defmodule Block.Extrinsic do
 
     def encode(%Block.Extrinsic{} = e) do
       Codec.Encoder.encode(
-        {vs(e.tickets), e.disputes, vs(e.preimages), vs(e.availability), vs(e.guarantees)}
+        {vs(e.tickets), e.disputes, vs(e.preimages), vs(e.assurances), vs(e.guarantees)}
       )
     end
   end
