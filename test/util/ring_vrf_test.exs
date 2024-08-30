@@ -5,8 +5,7 @@ defmodule RingVrfTest do
 
   defp gen_keys(public_key_index, count) do
     # Generate a secret key from randomness
-    secret = RingVrf.generate_secret_from_rand()
-    public = elem(secret, 1)
+    {secret, public} = RingVrf.generate_secret_from_rand()
 
     # Generate a ring of public keys
     keys =
