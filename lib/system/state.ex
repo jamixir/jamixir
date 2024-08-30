@@ -171,10 +171,10 @@ defmodule System.State do
         state.curr_validators
       )
 
-    System.HeaderSealsVerifier.validate_both_seals(
+   result =  System.HeaderSealsVerifier.validate_header_seals(
       h,
-      new_curr_validators,
-      posterior_epoch_slot_sealers,
+      state.curr_validators,
+      state.safrole.current_epoch_slot_sealers,
       state.entropy_pool
     )
 

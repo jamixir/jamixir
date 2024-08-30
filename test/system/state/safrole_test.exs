@@ -74,7 +74,7 @@ defmodule System.State.SafroleTest do
   describe "get_posterior_epoch_slot_sealers/5" do
     setup do
       safrole = build(:safrole)
-      entropy_pool = build(:full_entropy_pool)
+      entropy_pool = build(:entropy_pool)
       validators = build_list(4, :random_validator)
 
       %{safrole: safrole, entropy_pool: entropy_pool, validators: validators}
