@@ -66,17 +66,14 @@ pub fn ring_vrf_verify<'a>(
     let verifier_key = ring_ctx.verifier_key_from_commitment(commitment);
     let verifier = ring_ctx.verifier(verifier_key);
 
-    if Public::verify(
+    Public::verify(
         input,
         output,
         aux_data.as_slice(),
         &signature.proof,
         &verifier,
     )
-    .is_err()
-    {
-        return Err(Error::Term(Box::new(atoms::verification_failed())));
-    }
+    .map_err(|_| Error::Term(Box::new(atoms::verification_failed())))?;
 
     let vrf_output_hash_vec: Vec<u8> = output.hash()[..32]
         .try_into()
@@ -144,7 +141,7 @@ fn ietf_vrf_sign<'a>(
     secret_bridge: SecretBridge<S>,
     vrf_input_data: Binary,
     aux_data: Binary,
-) -> NifResult<Binary<'a>> {
+) -> NifResult<(Binary<'a>, Binary<'a>)> {
     use ark_ec_vrfs::ietf::Prover as _;
 
     let input = vrf_input_point(&vrf_input_data);
@@ -157,10 +154,22 @@ fn ietf_vrf_sign<'a>(
     let mut buf = Vec::new();
     signature.serialize_compressed(&mut buf).unwrap();
 
-    let mut binary = OwnedBinary::new(buf.len()).unwrap();
-    binary.as_mut_slice().copy_from_slice(&buf);
+    let mut signature_binary = OwnedBinary::new(buf.len()).unwrap();
+    signature_binary.as_mut_slice().copy_from_slice(&buf);
 
-    Ok(binary.release(env))
+    let vrf_output_hash_vec: Vec<u8> = output.hash()[..32]
+        .try_into()
+        .map_err(|_| Error::Term(Box::new(atoms::hash_conversion_failed())))?;
+
+    let mut vrf_output_hash_bin = OwnedBinary::new(vrf_output_hash_vec.len()).unwrap();
+    vrf_output_hash_bin
+        .as_mut_slice()
+        .copy_from_slice(&vrf_output_hash_vec);
+
+    Ok((
+        signature_binary.release(env),
+        vrf_output_hash_bin.release(env),
+    ))
 }
 
 #[rustler::nif]
@@ -183,12 +192,10 @@ fn ietf_vrf_verify<'a>(
     let public: Public = ring[signer_key_index].into();
 
     // Attempt to verify the signature
-    if public
+    public
         .verify(input, output, aux_data.as_slice(), &signature.proof)
-        .is_err()
-    {
-        return Err(Error::Term(Box::new(atoms::verification_failed())));
-    }
+        .map_err(|_| Error::Term(Box::new(atoms::verification_failed())))?;
+
     let vrf_output_hash_vec: Vec<u8> = match output.hash()[..32].try_into() {
         Ok(hash) => hash,
         Err(_) => return Err(Error::Term(Box::new(atoms::hash_conversion_failed()))),
