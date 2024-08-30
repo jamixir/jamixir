@@ -54,7 +54,7 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
-    case System.HeaderSealsVerifier.determine_ticket_or_fallback(
+    case determine_ticket_or_fallback(
            new_timeslot,
            timeslot,
            safrole.ticket_accumulator
@@ -67,6 +67,28 @@ defmodule System.State.Safrole do
 
       :fallback ->
         fallback_key_sequence(entropy_pool, curr_validators)
+    end
+  end
+
+  # Formula (69) v0.3.4
+  def determine_ticket_or_fallback(new_timeslot, timeslot, ticket_accumulator) do
+    current_epoch_index = Util.Time.epoch_index(timeslot)
+    new_epoch_index = Util.Time.epoch_index(new_timeslot)
+
+    ticket_accumulator_full = length(ticket_accumulator) == Constants.epoch_length()
+    ticket_submission_ended = Util.Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
+
+    cond do
+      new_epoch_index == current_epoch_index ->
+        :ticket_same
+
+      new_epoch_index == current_epoch_index + 1 and
+        ticket_accumulator_full and
+          ticket_submission_ended ->
+        :ticket_shuffle
+
+      true ->
+        :fallback
     end
   end
 
