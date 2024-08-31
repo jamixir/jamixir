@@ -101,19 +101,14 @@ defmodule System.State.ValidatorStatistics do
         data_size:
           author_stats.data_size +
             (extrinsic.preimages
-             |> Enum.map(fn b -> byte_size(b.data) end)
+             |> Enum.map(&byte_size(&1.data))
              |> Enum.sum()),
         # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
         availability_assurances:
           author_stats.availability_assurances +
-            if Enum.any?(
-                 extrinsic.assurances,
-                 &(&1.validator_index == header.block_author_key_index)
-               ) do
-              1
-            else
-              0
-            end
+            (extrinsic.assurances
+             |> Enum.any?(&(&1.validator_index == header.block_author_key_index))
+             |> if(do: 1, else: 0))
     }
 
     new_current_epoc_stats =
