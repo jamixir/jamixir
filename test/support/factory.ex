@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias RingVRF.RingCommitment
   alias Block.Extrinsic.Preimage
   alias System.State.CoreReports
   use ExMachina
@@ -10,20 +11,19 @@ defmodule Jamixir.Factory do
   alias System.State.SealKeyTicket
 
   @cores 2
-  @validator_count 4
+  @validator_count 6
   @epoch_length 600
   @max_authorizers_per_core 2
   @max_authorize_queue_items 4
 
   # Validator Key Pairs Factory
-  def validator_key_pairs_factory(count \\ @validator_count) do
+  def validator_and_key_pairs_factory(count \\ @validator_count) do
     Enum.map(1..count, fn _ ->
       keypair = RingVrf.generate_secret_from_rand()
-      {_, public} = keypair
 
       %{
         validator: %System.State.Validator{
-          bandersnatch: public,
+          bandersnatch: elem(keypair, 1),
           ed25519: :crypto.strong_rand_bytes(32),
           bls: :crypto.strong_rand_bytes(144),
           metadata: :crypto.strong_rand_bytes(128)
@@ -34,11 +34,10 @@ defmodule Jamixir.Factory do
   end
 
   # Seal Key Ticket Factory
-  def seal_key_ticket_factory(validator_key_pairs, entropy_pool_history) do
-    ring = Enum.map(validator_key_pairs, & &1.validator.bandersnatch)
+  def seal_key_ticket_factory(key_pairs, entropy_pool_history) do
+    Enum.map(0..(@epoch_length - 1), fn i ->
+      %{keypair: {secret, _}} = Enum.at(key_pairs, rem(i, length(key_pairs)))
 
-    Enum.with_index(validator_key_pairs)
-    |> Enum.map(fn {%{keypair: {secert,_ }}, index} ->
       entry_index = Enum.random([0, 1])
 
       context =
@@ -46,17 +45,12 @@ defmodule Jamixir.Factory do
           Enum.at(entropy_pool_history, 2) <>
           <<entry_index::8>>
 
-      {_, output} =
-        RingVrf.ring_vrf_sign(
-          ring,
-          secert,
-          index,
-          context,
-          "message"
-        )
-
       %SealKeyTicket{
-        id: output,
+        id:
+          RingVrf.ietf_vrf_output(
+            secret,
+            context
+          ),
         entry_index: entry_index
       }
     end)
@@ -76,9 +70,11 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def genesis_state_with_safrole_factory do
-    validator_key_pairs = validator_key_pairs_factory()
+  def genesis_state_with_safrole_factory(attrs) do
+    validator_count = Map.get(attrs, :validator_count, @validator_count)
+    validator_key_pairs = validator_and_key_pairs_factory(validator_count)
     validators = Enum.map(validator_key_pairs, & &1.validator)
+    public_keys = Enum.map(validator_key_pairs, &(&1.keypair |> elem(1)))
     RingVrf.init_ring_context(length(validators))
 
     entropy_pool = build(:entropy_pool)
@@ -86,7 +82,7 @@ defmodule Jamixir.Factory do
 
     safrole_state = %System.State.Safrole{
       pending: validators,
-      epoch_root: :crypto.strong_rand_bytes(144),
+      epoch_root: RingVrf.create_commitment(public_keys) |> RingCommitment.encode(),
       current_epoch_slot_sealers: tickets,
       ticket_accumulator: tickets
     }
