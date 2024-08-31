@@ -168,15 +168,20 @@ defmodule System.State do
         state.timeslot,
         state.safrole,
         state.entropy_pool,
-        state.curr_validators
+        new_curr_validators
       )
 
-   result =  System.HeaderSealsVerifier.validate_header_seals(
-      h,
-      state.curr_validators,
-      state.safrole.current_epoch_slot_sealers,
-      state.entropy_pool
-    )
+    {:ok, _header_seals} =
+      System.HeaderSeal.validate_header_seals(
+        h,
+        new_curr_validators,
+        posterior_epoch_slot_sealers,
+        state.entropy_pool
+      )
+      |> case do
+        {:ok, result} -> {:ok, result}
+        {:error, reason} -> throw({:error, reason})
+      end
 
     # η' Formula (20) v0.3.4
     new_entropy_pool =
