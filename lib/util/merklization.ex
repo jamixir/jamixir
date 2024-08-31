@@ -7,7 +7,7 @@ defmodule Merklization do
   alias Util.Hash
 
   @doc """
-    Formula (290) v0.3.6
+    Formula (293) v0.3.4
   """
   def encode_branch(left_hash, right_hash) do
     content = <<0::1, left_hash::binary-size(256), right_hash::binary-size(256)>>
@@ -16,7 +16,7 @@ defmodule Merklization do
   end
 
   @doc """
-    Formula (291) v0.3.6
+    Formula (294) v0.3.4
   """
   def encode_leaf(key, hash_value) do
     <<key_intern::binary-size(31), _rest_key::binary>> = key
@@ -54,7 +54,7 @@ defmodule Merklization do
   end
 
   @doc """
-    Formula (292) and (293) v0.3.6
+    Formula (295) and (296) v0.3.4
   """
   def merklize(key, hash_value) do
     if byte_size(hash_value) == 0 do
