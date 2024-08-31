@@ -22,22 +22,6 @@ defmodule Assurance do
           signature: Types.ed25519_signature()
         }
 
-  @doc """
-  Creates a new assurance.
-
-  ## Examples
-
-      iex> %Assurances{validator_index: 1, assurance_values: <<1, 0, 1>>, signature: <<123, 45, 67>>}
-      %Assurances{validator_index: 1, assurance_values: <<1, 0, 1>>, signature: <<123, 45, 67>>}
-
-  """
-  def new(validator_index, assurance_values, signature) do
-    %__MODULE__{
-      validator_index: validator_index,
-      assurance_values: assurance_values,
-      signature: signature
-    }
-  end
 
   defimpl Encodable do
     def encode(%Assurance{} = assurance) do

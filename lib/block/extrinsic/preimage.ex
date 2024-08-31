@@ -12,12 +12,6 @@ defmodule Block.Extrinsic.Preimage do
             # d
             data: <<>>
 
-  def new(service_index, data) do
-    %Block.Extrinsic.Preimage{
-      service_index: service_index,
-      data: data
-    }
-  end
 
   defimpl Encodable do
     def encode(%Block.Extrinsic.Preimage{service_index: i, data: d}) do
