@@ -190,7 +190,6 @@ defmodule System.State do
       ValidatorStatistics.posterior_validator_statistics(
         e,
         state.timeslot,
-        new_timeslot,
         state.validator_statistics,
         h
       )

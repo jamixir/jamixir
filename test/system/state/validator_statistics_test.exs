@@ -32,9 +32,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           build(:extrinsic),
           500,
-          1000,
           validator_statistics,
-          build(:header)
+          build(:header, timeslot: 1000)
         )
 
       assert new_stats.previous_epoch_statistics == current_stats
@@ -53,9 +52,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           build(:extrinsic),
           1,
-          2,
           validator_statistics,
-          build(:header)
+          build(:header, timeslot: 2)
         )
 
       assert new_stats.previous_epoch_statistics == previous_stats
@@ -74,9 +72,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           build(:extrinsic),
           1,
-          2,
           validator_statistics,
-          build(:header, block_author_key_index: 1)
+          build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       assert Enum.map(new_stats.current_epoch_statistics, & &1.blocks_produced) ==
@@ -98,9 +95,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
           1,
-          2,
           validator_statistics,
-          build(:header, block_author_key_index: 1)
+          build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       assert Enum.map(new_stats.current_epoch_statistics, & &1.tickets_introduced) ==
@@ -122,9 +118,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
           1,
-          2,
           validator_statistics,
-          build(:header, block_author_key_index: 1)
+          build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       assert Enum.map(new_stats.current_epoch_statistics, & &1.preimages_introduced) ==
@@ -146,9 +141,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
           1,
-          2,
           validator_statistics,
-          build(:header, block_author_key_index: 1)
+          build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       # 20 = 4 preimages of 5 bytes
@@ -171,9 +165,8 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
           1,
-          2,
           validator_statistics,
-          build(:header, block_author_key_index: 1)
+          build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==

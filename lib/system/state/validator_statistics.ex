@@ -73,14 +73,13 @@ defmodule System.State.ValidatorStatistics do
   def posterior_validator_statistics(
         %Extrinsic{} = extrinsic,
         timeslot,
-        new_timeslot,
         %ValidatorStatistics{} = validator_statistics,
         %Header{} = header
       ) do
     # Formula (172) v0.3.4
     # Formula (173) v0.3.4
     {new_current_epoc_stats, new_previous_epoc_stats} =
-      case Time.new_epoch?(timeslot, new_timeslot) do
+      case Time.new_epoch?(timeslot, header.timeslot) do
         {:ok, true} ->
           {new_epoc_stats(), validator_statistics.current_epoch_statistics}
 

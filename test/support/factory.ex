@@ -297,11 +297,16 @@ defmodule Jamixir.Factory do
 
   def preimage_factory do
     id = sequence(:preimage, & &1)
-    Preimage.new(id, <<1, 2, 3, 4, id>>)
+    %Preimage{service_index: id, data: <<1, 2, 3, 4, id>>}
   end
 
   def assurance_factory do
-    Assurance.new(1, <<1, 0, 1>>, <<123, 45, 67>>)
+    %Assurance{
+      hash: random_hash(),
+      assurance_values: <<1, 0, 1>>,
+      validator_index: 1,
+      signature: <<123, 45, 67>>
+    }
   end
 
   def shuffle_hash_factory do
