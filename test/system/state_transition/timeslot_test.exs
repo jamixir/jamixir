@@ -6,17 +6,28 @@ defmodule System.StateTransition.TimeslotTest do
   alias Block
 
   test "add_block/2 correctly sets timeslot" do
-    state = %State{
-      build(:genesis_state)
-      | entropy_pool: %State.EntropyPool{
-          current: "initial_entropy",
-          history: ["eta1", "eta2", "eta3"]
-        },
-        timeslot: 6
+    %{state: state, validator_key_pairs: validator_key_pairs} = build(:genesis_state_with_safrole)
+
+    {validators, key_pairs} =
+      Enum.unzip(Enum.map(validator_key_pairs, fn %{validator: v, keypair: k} -> {v, k} end))
+
+    state = %{
+      state
+      | timeslot: 6
     }
 
+    block_author_key_index = rem(7, length(validators))
+
+    header =
+      System.HeaderSeal.seal_header(
+        %Header{timeslot: 7, block_author_key_index: block_author_key_index},
+        state.safrole.current_epoch_slot_sealers,
+        state.entropy_pool,
+        Enum.at(key_pairs, block_author_key_index)
+      )
+
     block = %Block{
-      header: %Header{timeslot: 7, vrf_signature: "0x00000000000"},
+      header: header,
       extrinsic: %Block.Extrinsic{}
     }
 
