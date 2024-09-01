@@ -170,10 +170,14 @@ defmodule System.StateTest do
 
   describe "add_block/2" do
     test "add block smoke test" do
-      # state = build(:genesis_state)
-      # block = build(:block)
+      state = build(:genesis_state)
 
-      # new_state = System.State.add_block(state, block)
+      block = %Block{
+        header: %Block.Header{timeslot: 7, vrf_signature: "0x00000000000"},
+        extrinsic: %Block.Extrinsic{}
+      }
+
+      new_state = System.State.add_block(state, block)
     end
   end
 end

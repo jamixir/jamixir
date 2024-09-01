@@ -33,6 +33,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:extrinsic),
           500,
           validator_statistics,
+          [],
           build(:header, timeslot: 1000)
         )
 
@@ -53,6 +54,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:extrinsic),
           1,
           validator_statistics,
+          [],
           build(:header, timeslot: 2)
         )
 
@@ -73,6 +75,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:extrinsic),
           1,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
@@ -96,6 +99,7 @@ defmodule System.State.ValidatorStatisticsTest do
           extrinsic,
           1,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
@@ -119,6 +123,7 @@ defmodule System.State.ValidatorStatisticsTest do
           extrinsic,
           1,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
@@ -142,6 +147,7 @@ defmodule System.State.ValidatorStatisticsTest do
           extrinsic,
           1,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
@@ -166,11 +172,36 @@ defmodule System.State.ValidatorStatisticsTest do
           extrinsic,
           1,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
       assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
                [non_author_availability_assurances, author_availability_assurances + 1]
+    end
+
+    test "update assurance statistics for non authors also" do
+      validator_statistics = build(:validator_statistics)
+
+      [non_author_availability_assurances, author_availability_assurances] =
+        Enum.map(
+          validator_statistics.current_epoch_statistics,
+          & &1.availability_assurances
+        )
+
+      extrinsic = build(:extrinsic, assurances: [build(:assurance, validator_index: 0)])
+
+      new_stats =
+        ValidatorStatistics.posterior_validator_statistics(
+          extrinsic,
+          1,
+          validator_statistics,
+          [],
+          build(:header, block_author_key_index: 1, timeslot: 2)
+        )
+
+      assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
+               [non_author_availability_assurances + 1, author_availability_assurances]
     end
 
     test "raise exception when there is no author statistics" do
@@ -181,6 +212,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:extrinsic),
           0,
           validator_statistics,
+          [],
           build(:header, block_author_key_index: 1000)
         )
       end

@@ -22,6 +22,11 @@ defmodule Block.Extrinsic.Guarantee do
             timeslot: 0,
             credential: [{0, <<0::512>>}]
 
+  def reporters_set(_guarantees) do
+    # TODO
+    []
+  end
+
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee
 

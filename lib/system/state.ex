@@ -191,6 +191,7 @@ defmodule System.State do
         e,
         state.timeslot,
         state.validator_statistics,
+        new_curr_validators,
         h
       )
 

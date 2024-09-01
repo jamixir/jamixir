@@ -16,6 +16,7 @@ defmodule System.State.ValidatorStatistics do
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
+  alias Block.Extrinsic.Guarantee
   alias Util.Time
   alias Block.Header
   alias System.State.ValidatorStatistics
@@ -74,6 +75,7 @@ defmodule System.State.ValidatorStatistics do
         %Extrinsic{} = extrinsic,
         timeslot,
         %ValidatorStatistics{} = validator_statistics,
+        new_curr_validators,
         %Header{} = header
       ) do
     # Formula (172) v0.3.4
@@ -103,17 +105,29 @@ defmodule System.State.ValidatorStatistics do
           author_stats.data_size +
             (extrinsic.preimages
              |> Enum.map(&byte_size(&1.data))
-             |> Enum.sum()),
-        # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
-        availability_assurances:
-          author_stats.availability_assurances +
-            (extrinsic.assurances
-             |> Enum.any?(&(&1.validator_index == header.block_author_key_index))
-             |> if(do: 1, else: 0))
+             |> Enum.sum())
     }
 
     new_current_epoc_stats =
-      List.replace_at(new_current_epoc_stats, header.block_author_key_index, new_author_stats)
+      new_current_epoc_stats
+      |> List.replace_at(header.block_author_key_index, new_author_stats)
+      |> Enum.with_index()
+      |> Enum.map(fn {stats, index} ->
+        %{
+          stats
+          | availability_assurances:
+              stats.availability_assurances +
+                (extrinsic.assurances
+                 |> Enum.any?(&(&1.validator_index == index))
+                 |> if(do: 1, else: 0)),
+            # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
+            reports_guaranteed:
+              author_stats.reports_guaranteed +
+                (Guarantee.reporters_set(extrinsic.guarantees)
+                 |> Enum.any?(&(&1 == Enum.at(index, new_curr_validators)))
+                 |> if(do: 1, else: 0))
+        }
+      end)
 
     %ValidatorStatistics{
       current_epoch_statistics: new_current_epoc_stats,
