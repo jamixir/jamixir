@@ -169,11 +169,11 @@ defmodule System.StateTest do
   end
 
   describe "add_block/2" do
-    # test "add block smoke test" do
-    #   state = build(:genesis_state)
-    #   block = build(:block)
+    test "add block smoke test" do
+      # state = build(:genesis_state)
+      # block = build(:block)
 
-    #   new_state = System.State.add_block(state, block)
-    # end
+      # new_state = System.State.add_block(state, block)
+    end
   end
 end

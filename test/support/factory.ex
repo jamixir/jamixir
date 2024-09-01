@@ -25,11 +25,13 @@ defmodule Jamixir.Factory do
       next_validators: build_list(@validator_count, :random_validator),
       curr_validators: build_list(@validator_count, :random_validator),
       prev_validators: build_list(@validator_count, :random_validator),
-      authorizer_queue: authorizer_queue_factory()
+      authorizer_queue: authorizer_queue_factory(),
+      validator_statistics: build(:validator_statistics)
     }
   end
 
   # state with full entropy pool
+  @spec advanced_state_factory() :: System.State.t()
   def advanced_state_factory do
     %System.State{
       build(:genesis_state)

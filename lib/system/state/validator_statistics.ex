@@ -89,7 +89,9 @@ defmodule System.State.ValidatorStatistics do
       end
 
     author_stats =
-      Enum.at(new_current_epoc_stats, header.block_author_key_index, zeroed_statistic())
+      Enum.at(new_current_epoc_stats, header.block_author_key_index)
+
+    if author_stats == nil, do: raise(ArgumentError, "Author statistics not found")
 
     # Formula (174) v0.3.4
     new_author_stats = %{

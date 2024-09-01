@@ -172,5 +172,18 @@ defmodule System.State.ValidatorStatisticsTest do
       assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
                [non_author_availability_assurances, author_availability_assurances + 1]
     end
+
+    test "raise exception when there is no author statistics" do
+      validator_statistics = build(:validator_statistics)
+
+      assert_raise ArgumentError, "Author statistics not found", fn ->
+        ValidatorStatistics.posterior_validator_statistics(
+          build(:extrinsic),
+          0,
+          validator_statistics,
+          build(:header, block_author_key_index: 1000)
+        )
+      end
+    end
   end
 end
