@@ -9,12 +9,8 @@ defmodule System.StateTransition.JudgementsTest do
   alias System.State.{Validator, Judgements}
 
   setup do
-    %{state: state, validator_key_pairs: validator_key_pairs} =
+    %{state: state, validators: validators, key_pairs: key_pairs} =
       build(:genesis_state_with_safrole, validator_count: 1)
-
-
-    {validators, key_pairs} =
-      Enum.unzip(Enum.map(validator_key_pairs, fn %{validator: v, keypair: k} -> {v, k} end))
 
     work_report_hash = <<0xAAC4C749F1D5EC07BF0502C8072E95033D48E31B1B9DFDCB8D42BD80445F713E::256>>
 
