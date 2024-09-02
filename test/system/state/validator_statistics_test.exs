@@ -14,8 +14,26 @@ defmodule System.State.ValidatorStatisticsTest do
     setup do
       {:ok,
        %{
-         current_stats: [ValidatorStatistics.statistic(1, 2, 3, 4, 5, 6)],
-         previous_stats: [ValidatorStatistics.statistic(11, 12, 13, 14, 15, 16)]
+         current_stats: [
+           %System.State.ValidatorStatistic{
+             blocks_produced: 1,
+             tickets_introduced: 2,
+             preimages_introduced: 3,
+             data_size: 4,
+             reports_guaranteed: 5,
+             availability_assurances: 6
+           }
+         ],
+         previous_stats: [
+           %System.State.ValidatorStatistic{
+             blocks_produced: 11,
+             tickets_introduced: 12,
+             preimages_introduced: 13,
+             data_size: 14,
+             reports_guaranteed: 15,
+             availability_assurances: 16
+           }
+         ]
        }}
     end
 

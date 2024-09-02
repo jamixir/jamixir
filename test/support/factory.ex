@@ -248,7 +248,7 @@ defmodule Jamixir.Factory do
   end
 
   def statistics_factory do
-    %{
+    %System.State.ValidatorStatistic{
       blocks_produced: 1,
       tickets_introduced: 2,
       preimages_introduced: 3,

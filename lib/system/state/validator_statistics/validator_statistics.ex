@@ -16,56 +16,20 @@ defmodule System.State.ValidatorStatistics do
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
+  alias System.State.ValidatorStatistic
   alias Block.Extrinsic.Guarantee
   alias Util.Time
   alias Block.Header
   alias System.State.ValidatorStatistics
   alias Block.Extrinsic
 
-  @type validator_statistics :: %{
-          # b
-          blocks_produced: non_neg_integer(),
-          # t
-          tickets_introduced: non_neg_integer(),
-          # p
-          preimages_introduced: non_neg_integer(),
-          # d
-          data_size: non_neg_integer(),
-          # g
-          reports_guaranteed: non_neg_integer(),
-          # a
-          availability_assurances: non_neg_integer()
-        }
-
   @type t :: %__MODULE__{
-          current_epoch_statistics: list(validator_statistics()),
-          previous_epoch_statistics: list(validator_statistics())
+          current_epoch_statistics: list(ValidatorStatistic.t()),
+          previous_epoch_statistics: list(ValidatorStatistic.t())
         }
-
-  def zeroed_statistic do
-    %{
-      blocks_produced: 0,
-      tickets_introduced: 0,
-      preimages_introduced: 0,
-      data_size: 0,
-      reports_guaranteed: 0,
-      availability_assurances: 0
-    }
-  end
 
   def new_epoc_stats do
-    Enum.map(1..Constants.validator_count(), fn _ -> zeroed_statistic() end)
-  end
-
-  def statistic(b, t, p, d, g, a) do
-    %{
-      blocks_produced: b,
-      tickets_introduced: t,
-      preimages_introduced: p,
-      data_size: d,
-      reports_guaranteed: g,
-      availability_assurances: a
-    }
+    Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
   end
 
   defstruct current_epoch_statistics: [],
@@ -136,25 +100,13 @@ defmodule System.State.ValidatorStatistics do
   end
 
   defimpl Encodable do
-    alias System.State.ValidatorStatistics
+    alias System.State.{ValidatorStatistics, ValidatorStatistic}
 
     def encode(%ValidatorStatistics{} = v) do
       Codec.Encoder.encode({
-        v.current_epoch_statistics |> Enum.map(&encode_single_statistic/1),
-        v.previous_epoch_statistics |> Enum.map(&encode_single_statistic/1)
+        v.current_epoch_statistics |> Enum.map(&Codec.Encoder.encode/1),
+        v.previous_epoch_statistics |> Enum.map(&Codec.Encoder.encode/1)
       })
-    end
-
-    defp encode_single_statistic(%{
-           blocks_produced: b,
-           tickets_introduced: t,
-           preimages_introduced: p,
-           data_size: d,
-           reports_guaranteed: g,
-           availability_assurances: a
-         }) do
-      [b, t, p, d, g, a]
-      |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
     end
   end
 end
