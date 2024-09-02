@@ -184,17 +184,6 @@ defmodule System.State do
         new_curr_validators
       )
 
-    # π' Formula (30) v0.3.4
-    # π' ≺ (EG,EP ,EA,ET , τ, τ ′ (30) , π,H)
-    new_validator_statistics =
-      ValidatorStatistics.posterior_validator_statistics(
-        e,
-        state.timeslot,
-        state.validator_statistics,
-        new_curr_validators,
-        h
-      )
-
     %System.State{
       # α'
       authorizer_pool: new_authorizer_pool,
@@ -222,8 +211,16 @@ defmodule System.State do
       privileged_services: todo,
       # ψ'
       judgements: new_judgements,
-      # π'
-      validator_statistics: new_validator_statistics
+      # π' Formula (30) v0.3.4
+      # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
+      validator_statistics:
+        ValidatorStatistics.posterior_validator_statistics(
+          e,
+          state.timeslot,
+          state.validator_statistics,
+          new_curr_validators,
+          h
+        )
     }
   end
 

@@ -177,7 +177,7 @@ defmodule System.StateTest do
         extrinsic: %Block.Extrinsic{}
       }
 
-System.State.add_block(state, block)
+      System.State.add_block(state, block)
     end
   end
 end

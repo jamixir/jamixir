@@ -22,7 +22,6 @@ defmodule Assurance do
           signature: Types.ed25519_signature()
         }
 
-
   defimpl Encodable do
     def encode(%Assurance{} = assurance) do
       Codec.Encoder.encode(assurance.hash) <>
