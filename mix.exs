@@ -23,7 +23,7 @@ defmodule Jamixir.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:mox, "~> 1.0", only: :test},
+      {:mox, "~> 1.2.0", only: :test},
       {:ex_machina, "~> 2.8.0", only: :test},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},

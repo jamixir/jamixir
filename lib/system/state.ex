@@ -214,7 +214,7 @@ defmodule System.State do
       # π' Formula (30) v0.3.4
       # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
       validator_statistics:
-        ValidatorStatistics.posterior_validator_statistics(
+        Application.get_env(:jamixir, :validator_statistics, ValidatorStatistics).posterior_validator_statistics(
           e,
           state.timeslot,
           state.validator_statistics,

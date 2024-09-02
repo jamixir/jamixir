@@ -16,12 +16,10 @@ defmodule System.State.ValidatorStatistics do
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
-  alias System.State.ValidatorStatistic
+  alias System.State.{Validator, ValidatorStatistic, ValidatorStatistics}
   alias Block.Extrinsic.Guarantee
+  alias Block.{Header, Extrinsic}
   alias Util.Time
-  alias Block.Header
-  alias System.State.ValidatorStatistics
-  alias Block.Extrinsic
 
   @type t :: %__MODULE__{
           current_epoch_statistics: list(ValidatorStatistic.t()),
@@ -35,6 +33,13 @@ defmodule System.State.ValidatorStatistics do
   defstruct current_epoch_statistics: [],
             previous_epoch_statistics: []
 
+  @callback posterior_validator_statistics(
+              Extrinsic.t(),
+              integer(),
+              ValidatorStatistics.t(),
+              list(Validator.t()),
+              Header.t()
+            ) :: ValidatorStatistics.t()
   def posterior_validator_statistics(
         %Extrinsic{} = extrinsic,
         timeslot,

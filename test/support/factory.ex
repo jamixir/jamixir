@@ -272,13 +272,13 @@ defmodule Jamixir.Factory do
       disputes: %Disputes{},
       preimages: build_list(2, :preimage),
       assurances: [%Assurance{}],
-      guarantees: [%Guarantee{}]
+      guarantees: [build(:guarantee)]
     }
   end
 
   def header_factory do
     %Header{
-      timeslot: 1,
+      timeslot: 5,
       parent_hash: random_hash(),
       prior_state_root: random_hash(),
       epoch: 0,
@@ -294,6 +294,14 @@ defmodule Jamixir.Factory do
       vrf_signature: <<>>,
       # Hs
       block_seal: <<>>
+    }
+  end
+
+  def guarantee_factory do
+    %Guarantee{
+      work_report: build(:work_report),
+      timeslot: 5,
+      credential: [{1, random_hash()}]
     }
   end
 

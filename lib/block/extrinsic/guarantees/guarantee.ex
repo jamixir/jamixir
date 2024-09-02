@@ -15,7 +15,7 @@ defmodule Block.Extrinsic.Guarantee do
           # t
           timeslot: non_neg_integer(),
           # a
-          credential: credential()
+          credential: list(credential())
         }
 
   defstruct work_report: %WorkReport{},
