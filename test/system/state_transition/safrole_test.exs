@@ -9,11 +9,8 @@ defmodule System.StateTransition.SafroleStateTest do
 
   describe "safrole state update on new epoch with some validators nullified" do
     setup do
-      %{state: state, validator_key_pairs: validator_key_pairs} =
+      %{state: state, validators: validators, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
-
-      {validators, key_pairs} =
-        Enum.unzip(Enum.map(validator_key_pairs, fn %{validator: v, keypair: k} -> {v, k} end))
 
       state = %{
         state
@@ -61,11 +58,8 @@ defmodule System.StateTransition.SafroleStateTest do
 
   describe "updates state.safrole.current_epoch_slot_sealers" do
     setup do
-      %{state: state, validator_key_pairs: validator_key_pairs} =
+      %{state: state, validators: validators, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
-
-      {validators, key_pairs} =
-        Enum.unzip(Enum.map(validator_key_pairs, fn %{validator: v, keypair: k} -> {v, k} end))
 
       state = %{
         state
