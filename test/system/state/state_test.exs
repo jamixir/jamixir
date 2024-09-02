@@ -1,9 +1,13 @@
 defmodule System.StateTest do
+  alias ElixirSense.Core.State
+  alias System.State.ValidatorStatistics
   alias Codec.VariableSize
   alias Codec.NilDiscriminator
   use ExUnit.Case
   import Jamixir.Factory
   import System.State
+  import Mox
+  setup :verify_on_exit!
 
   setup do
     {:ok,
@@ -165,6 +169,28 @@ defmodule System.StateTest do
       |> Enum.each(fn {k, _} ->
         assert Map.get(state_keys, k) == Map.get(serialized_state, key_to_32_octet(k))
       end)
+    end
+  end
+
+  describe "add_block/2" do
+    test "add block smoke test" do
+      State.add_block(build(:genesis_state), build(:block))
+    end
+
+    test "updates statistics" do
+      Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+
+      on_exit(fn ->
+        # Reset to the actual implementation after the test
+        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+      end)
+
+      ValidatorStatisticsMock
+      |> expect(:posterior_validator_statistics, 1, fn _, _, _, _, _ -> "mockvalue" end)
+
+      new_state = State.add_block(build(:genesis_state), build(:block))
+
+      assert new_state.validator_statistics == "mockvalue"
     end
   end
 end

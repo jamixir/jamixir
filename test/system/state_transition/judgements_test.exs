@@ -38,7 +38,8 @@ defmodule System.StateTransition.JudgementsTest do
       | curr_validators: [%Validator{ed25519: valid_key_public}],
         prev_validators: [%Validator{ed25519: prev_key_public}],
         judgements: %Judgements{},
-        timeslot: 600    }
+        timeslot: 600
+    }
 
     header = %Header{timeslot: 601}
 

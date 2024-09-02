@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Block.Extrinsic.Preimage
   alias System.State.CoreReports
   use ExMachina
 
@@ -24,11 +25,13 @@ defmodule Jamixir.Factory do
       next_validators: build_list(@validator_count, :random_validator),
       curr_validators: build_list(@validator_count, :random_validator),
       prev_validators: build_list(@validator_count, :random_validator),
-      authorizer_queue: authorizer_queue_factory()
+      authorizer_queue: authorizer_queue_factory(),
+      validator_statistics: build(:validator_statistics)
     }
   end
 
   # state with full entropy pool
+  @spec advanced_state_factory() :: System.State.t()
   def advanced_state_factory do
     %System.State{
       build(:genesis_state)
@@ -245,11 +248,11 @@ defmodule Jamixir.Factory do
   end
 
   def statistics_factory do
-    %{
+    %System.State.ValidatorStatistic{
       blocks_produced: 1,
       tickets_introduced: 2,
       preimages_introduced: 3,
-      octets_total: 4,
+      data_size: 4,
       reports_guaranteed: 5,
       availability_assurances: 6
     }
@@ -267,15 +270,15 @@ defmodule Jamixir.Factory do
     %Extrinsic{
       tickets: [%SealKeyTicket{}],
       disputes: %Disputes{},
-      preimages: [%{}],
-      availability: [%{}],
-      guarantees: [%Guarantee{}]
+      preimages: build_list(2, :preimage),
+      assurances: [%Assurance{}],
+      guarantees: [build(:guarantee)]
     }
   end
 
   def header_factory do
     %Header{
-      timeslot: 1,
+      timeslot: 5,
       parent_hash: random_hash(),
       prior_state_root: random_hash(),
       epoch: 0,
@@ -291,6 +294,28 @@ defmodule Jamixir.Factory do
       vrf_signature: <<>>,
       # Hs
       block_seal: <<>>
+    }
+  end
+
+  def guarantee_factory do
+    %Guarantee{
+      work_report: build(:work_report),
+      timeslot: 5,
+      credential: [{1, random_hash()}]
+    }
+  end
+
+  def preimage_factory do
+    id = sequence(:preimage, & &1)
+    %Preimage{service_index: id, data: <<1, 2, 3, 4, id>>}
+  end
+
+  def assurance_factory do
+    %Assurance{
+      hash: random_hash(),
+      assurance_values: <<1, 0, 1>>,
+      validator_index: 1,
+      signature: <<123, 45, 67>>
     }
   end
 

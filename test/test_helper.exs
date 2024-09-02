@@ -2,6 +2,8 @@
 
 ExUnit.start()
 
+Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
+
 defmodule TestHelper do
   alias Util.Time, as: Time
   alias System.State.Validator

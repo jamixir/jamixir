@@ -15,12 +15,17 @@ defmodule Block.Extrinsic.Guarantee do
           # t
           timeslot: non_neg_integer(),
           # a
-          credential: credential()
+          credential: list(credential())
         }
 
   defstruct work_report: %WorkReport{},
             timeslot: 0,
-            credential: {0, <<0::512>>}
+            credential: [{0, <<0::512>>}]
+
+  def reporters_set(_guarantees) do
+    # TODO
+    []
+  end
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee
