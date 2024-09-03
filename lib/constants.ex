@@ -63,4 +63,10 @@ defmodule Constants do
   """
   @max_authorization_queue_items 80
   def max_authorization_queue_items, do: @max_authorization_queue_items
+
+  def erasure_coded_piece_size, do: 684
+  def erasure_coded_exported_segment_size, do: 6
+
+  # 4104
+  def wswc, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
 end
