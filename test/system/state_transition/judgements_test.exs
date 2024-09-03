@@ -135,7 +135,8 @@ defmodule System.StateTransition.JudgementsTest do
     valid_judgement: valid_judgement,
     valid_offense: valid_offense
   } do
-    block = %Block{
+    block = %{
+      build(:block) | 
       header: header,
       extrinsic: %Extrinsic{
         disputes: %Disputes{

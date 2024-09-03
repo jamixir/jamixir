@@ -2,7 +2,8 @@ defmodule System.HeaderSeal do
   alias System.State.EntropyPool
   alias Block.Header
 
-  # Formula (60, 61) v0.3.4
+  # Formula (60) v0.3.4
+  # Formula (61)  v0.3.4  
   def seal_header(
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
@@ -32,7 +33,8 @@ defmodule System.HeaderSeal do
     }
   end
 
-  # Formula (60, 61) v0.3.4
+  # Formula (60) v0.3.4
+  # Formula (61)  v0.3.4
   def validate_header_seals(
         header,
         posterior_curr_validators,
@@ -79,42 +81,25 @@ defmodule System.HeaderSeal do
   end
 
   defp verify_sealer_match(
-         correct_slot_sealer,
-         block_seal_output,
+         <<_::binary>> = correct_slot_sealer,
+         _block_seal_output,
          block_author_key_index,
          posterior_curr_validators
        ) do
-    cond do
-      is_fallback_sealer?(correct_slot_sealer) ->
-        proposed_slot_sealer =
-          Enum.at(posterior_curr_validators, block_author_key_index).bandersnatch
-
-        if proposed_slot_sealer == correct_slot_sealer do
-          :ok
-        else
-          {:error, :ticket_id_mismatch}
-        end
-
-      Map.get(correct_slot_sealer, :id) == block_seal_output ->
-        :ok
-
-      true ->
-        {:error, :ticket_id_mismatch}
+    case Enum.at(posterior_curr_validators, block_author_key_index) do
+      %{bandersnatch: ^correct_slot_sealer} -> :ok
+      _ -> {:error, :ticket_id_mismatch}
     end
   end
 
-  defp is_fallback_sealer?(<<_::binary>>), do: true
-  defp is_fallback_sealer?(%{}), do: false
+  defp verify_sealer_match(%{id: block_seal_output}, block_seal_output, _, _), do: :ok
+  defp verify_sealer_match(_, _, _, _), do: {:error, :ticket_id_mismatch}
 
-  def construct_seal_context(expected_slot_sealer, entropy_pool_history) do
-    if is_fallback_sealer?(expected_slot_sealer) do
-      # XF ⌢ η3
-      SigningContexts.jam_fallback_seal() <> Enum.at(entropy_pool_history, 2)
-    else
-      # XT ⌢ η3 ir
-      SigningContexts.jam_ticket_seal() <>
-        Enum.at(entropy_pool_history, 2) <>
-        <<Map.get(expected_slot_sealer, :entry_index)::8>>
-    end
+  def construct_seal_context(<<_::binary>>, [_n1 | [_n2 | [n3 | _]]]) do
+    SigningContexts.jam_fallback_seal() <> n3
+  end
+
+  def construct_seal_context(%{entry_index: i}, [_n1 | [_n2 | [n3 | _]]]) do
+    SigningContexts.jam_ticket_seal() <> n3 <> <<i::8>>
   end
 end
