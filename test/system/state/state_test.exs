@@ -1,5 +1,5 @@
 defmodule System.StateTest do
-  alias ElixirSense.Core.State
+  alias System.State
   alias System.State.ValidatorStatistics
   alias Codec.VariableSize
   alias Codec.NilDiscriminator
