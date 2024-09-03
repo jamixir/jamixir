@@ -35,6 +35,44 @@ defmodule Block.Extrinsic.WorkPackage do
     work_items: []
   ]
 
+  # 2^11
+  @maximum_exported_items 2048
+  def maximum_exported_items, do: @maximum_exported_items
+
+  # Formula (180) v0.3.4
+  # 12 * 2 ** 20
+  @maximum_size 12_582_912
+  def maximum_size, do: @maximum_size
+
+  def valid?(wp) do
+    valid_data_segments?(wp) && valid_size?(wp)
+  end
+
+  # Formula (179) v0.3.4
+  defp valid_size?(%__MODULE__{work_items: work_items}) do
+    part1 =
+      work_items
+      |> Enum.map(&(length(&1.imported_data_segments) * Constants.wswc()))
+      |> Enum.sum()
+
+    part2 =
+      work_items
+      |> Enum.map(fn i ->
+        i.imported_data_segments |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+      end)
+      |> Enum.sum()
+
+    part1 + part2 <= @maximum_size
+  end
+
+  # Formula (178) v0.3.4
+  defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
+    work_items |> Enum.map(& &1.exported_data_segments_count) |> Enum.sum() <=
+      @maximum_exported_items and
+      work_items |> Enum.map(&length(&1.imported_data_segments)) |> Enum.sum() <=
+        @maximum_exported_items
+  end
+
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     alias Codec.{VariableSize, Encoder}

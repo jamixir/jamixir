@@ -7,6 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   section 11.1
   Formula (123) v0.3.4
   """
+  alias Block.Extrinsic.WorkItem
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
@@ -33,6 +34,17 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             gas_prioritization_ratio: 0,
             # o
             output_or_error: {:ok, <<>>}
+
+  @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
+  def new(%WorkItem{} = wi, output) do
+    %__MODULE__{
+      service_index: wi.service_id,
+      code_hash: wi.code_hash,
+      payload_hash: Util.Hash.default(wi.payload_blob),
+      gas_prioritization_ratio: wi.gas_limit,
+      output_or_error: output
+    }
+  end
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkResult, WorkExecutionError}
