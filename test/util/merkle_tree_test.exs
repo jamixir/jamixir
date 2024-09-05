@@ -62,4 +62,35 @@ defmodule Util.MerkleTreeTest do
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
   end
+
+  describe "c_preprocess/2" do
+    test "empty list" do
+      assert MerkleTree.c_preprocess([], &Hash.blake2b_256/1) == []
+    end
+
+    test "one element list" do
+      blobs = ["blob1"]
+      expected_hashes = [Hash.blake2b_256("$leafblob1")]
+      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+    end
+
+    test "two elements list" do
+      blobs = ["blob1", "blob2"]
+      expected_hashes = [Hash.blake2b_256("$leafblob1"), Hash.blake2b_256("$leafblob2")]
+      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+    end
+
+    test "c_preprocess/2" do
+      blobs = ["blob1", "blob2", "blob3"]
+
+      expected_hashes = [
+        Hash.blake2b_256("$leafblob1"),
+        Hash.blake2b_256("$leafblob2"),
+        Hash.blake2b_256("$leafblob3"),
+        Hash.zero()
+      ]
+
+      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+    end
+  end
 end
