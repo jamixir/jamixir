@@ -19,4 +19,6 @@ defmodule Util.Hash do
   def keccak_256(data), do: ExKeccak.hash_256(data)
 
   def default(data), do: blake2b_256(data)
+
+  def zero(), do: <<0::256>>
 end
