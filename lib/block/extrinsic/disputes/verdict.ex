@@ -10,8 +10,11 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   alias Block.Extrinsic.Disputes.Judgement
 
   @type t :: %__MODULE__{
+          # r
           work_report_hash: Types.hash(),
+          # a
           epoch_index: Types.epoch_index(),
+          # j
           judgements: list(Judgement.t())
         }
 

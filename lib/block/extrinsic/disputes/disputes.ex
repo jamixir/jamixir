@@ -5,17 +5,18 @@ defmodule Block.Extrinsic.Disputes do
   """
 
   alias Block.Header
-  alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict}
+  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Helper, ProcessedVerdict}
   alias Block.Extrinsic.Disputes
   alias System.State
   alias Types
   alias Util.Crypto
 
-  alias __MODULE__.{Verdict, Culprit, Fault}
-
   @type t :: %__MODULE__{
+          # v
           verdicts: list(Verdict.t()),
+          # c
           culprits: list(Culprit.t()),
+          # f
           faults: list(Fault.t())
         }
 

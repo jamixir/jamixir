@@ -7,9 +7,13 @@ defmodule Block.Extrinsic.Disputes.Fault do
   alias Types
 
   @type t :: %__MODULE__{
+          # r
           work_report_hash: Types.hash(),
+          # v
           decision: Types.decision(),
+          # k
           validator_key: Types.ed25519_key(),
+          # s
           signature: Types.ed25519_signature()
         }
 
