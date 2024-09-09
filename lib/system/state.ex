@@ -144,6 +144,10 @@ defmodule System.State do
         beefy_commitment_map
       )
 
+    # η' Formula (20) v0.3.4
+    new_entropy_pool =
+      EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
+
     # ψ' Formula (23) v0.3.4
     new_judgements =
       Judgements.posterior_judgements(h, Map.get(e, :disputes), state)
@@ -182,10 +186,6 @@ defmodule System.State do
         {:ok, result} -> {:ok, result}
         {:error, reason} -> throw({:error, reason})
       end
-
-    # η' Formula (20) v0.3.4
-    new_entropy_pool =
-      EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
 
     intermediate_safrole =
       %Safrole{
