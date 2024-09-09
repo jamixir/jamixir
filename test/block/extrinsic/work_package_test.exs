@@ -1,10 +1,11 @@
 defmodule WorkPackageTest do
+  alias Util.Hash
   alias Block.Extrinsic.WorkPackage
   use ExUnit.Case
   import Jamixir.Factory
 
   setup do
-    {:ok, wp: build(:work_package)}
+    {:ok, wp: build(:work_package, service_index: 0)}
   end
 
   describe "valid?/1" do
@@ -72,10 +73,41 @@ defmodule WorkPackageTest do
     end
   end
 
+  # Formula (182) v0.3.4
+  describe "authorization_code/2" do
+    test "returns authorization_code when it is available in history" do
+      h = :crypto.strong_rand_bytes(32)
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{h => <<7, 7, 7>>},
+          preimage_storage_l: %{{h, 3} => [1]},
+          code_hash: h
+        )
+
+      wp =
+        build(:work_package,
+          authorization_code_hash: service_account.code_hash,
+          context: build(:refinement_context, timeslot: 3)
+        )
+
+      state = build(:genesis_state, services: %{wp.service_index => service_account})
+
+      assert WorkPackage.authorization_code(wp, state) == <<7, 7, 7>>
+
+      assert WorkPackage.implied_authorizer(wp, state) ==
+               Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
+    end
+
+    test "return nil authorization code when it is not available" do
+      assert WorkPackage.authorization_code(build(:work_package), build(:genesis_state)) == nil
+    end
+  end
+
   describe "encode/1" do
     test "encodes a work package", %{wp: wp} do
       assert Codec.Encoder.encode(wp) ==
-               "\x01\x01\x02\0\0\0\x03\x01\x04\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
+               "\x01\x01\0\0\0\0\x03\x01\x04\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
     end
   end
 end

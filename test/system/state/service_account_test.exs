@@ -23,11 +23,11 @@ defmodule System.State.ServiceAccountTest do
 
   describe "octets in storage" do
     test "return correct value for octets in storage", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(sa) == 117
+      assert ServiceAccount.octets_in_storage(sa) == 121
     end
 
     test "empty items in storage", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(%{sa | storage: %{}}) == 81
+      assert ServiceAccount.octets_in_storage(%{sa | storage: %{}}) == 85
     end
 
     test "empty items in preimage storage l", %{sa: sa} do
@@ -37,7 +37,7 @@ defmodule System.State.ServiceAccountTest do
 
   describe "code/1" do
     test "return nil value when code does not exist", %{sa: sa} do
-      assert ServiceAccount.code(sa) == nil
+      assert ServiceAccount.code(%{sa | code_hash: <<4::256>>}) == nil
     end
 
     test "return code when it exists in preimage storage p", %{sa: sa} do
@@ -124,14 +124,17 @@ defmodule System.State.ServiceAccountTest do
 
   describe "threshold balance" do
     test "return correct value for threshold balance", %{sa: sa} do
-      assert ServiceAccount.threshold_balance(sa) == 247
+      assert ServiceAccount.threshold_balance(sa) == 251
     end
   end
 
   describe "encode/1" do
     test "encode service account smoke test" do
-      assert Codec.Encoder.encode(build(:service_account)) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\xE8\x03\0\0\0\0\0\0\x88\x13\0\0\0\0\0\0\x10'\0\0\0\0\0\0u\0\0\0\0\0\0\0\x03\0\0\0"
+      sa = build(:service_account)
+
+      assert Codec.Encoder.encode(sa) ==
+               sa.code_hash <>
+                 "\xE8\x03\0\0\0\0\0\0\x88\x13\0\0\0\0\0\0\x10'\0\0\0\0\0\0y\0\0\0\0\0\0\0\x03\0\0\0"
     end
   end
 end
