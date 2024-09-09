@@ -5,7 +5,7 @@ defmodule System.StateTransition.JudgementsTest do
   alias System.State
   alias Block.{Header, Extrinsic}
   alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
+  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Judgement}
   alias System.State.{Validator, Judgements}
 
   setup do
@@ -197,7 +197,6 @@ defmodule System.StateTransition.JudgementsTest do
     valid_key_public: valid_key_public
   } do
     valid_signature_1 = :crypto.sign(:eddsa, :none, <<1::256>>, [valid_key_private, :ed25519])
-    valid_signature_2 = :crypto.sign(:eddsa, :none, <<2::256>>, [valid_key_private, :ed25519])
 
     state = %{
       state
