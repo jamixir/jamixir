@@ -58,12 +58,14 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   # Formula (178) v0.3.4
-  defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
-    work_items |> Enum.map(& &1.exported_data_segments_count) |> Enum.sum() <=
-      @maximum_exported_items and
-      work_items |> Enum.map(&length(&1.imported_data_segments)) |> Enum.sum() <=
-        @maximum_exported_items
-  end
+defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
+  {exported_sum, imported_sum} =
+    Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
+      {exported_acc + item.exported_data_segments_count, imported_acc + length(item.imported_data_segments)}
+    end)
+
+  exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
+end
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
