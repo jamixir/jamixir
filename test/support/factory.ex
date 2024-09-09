@@ -317,7 +317,13 @@ defmodule Jamixir.Factory do
     key_pairs = Map.get(attrs, :key_pairs)
     timeslot = Map.get(attrs, :timeslot, 1)
 
-    block_author_key_index = rem(timeslot, length(state.safrole.current_epoch_slot_sealers))
+    block_author_key_index =
+      Map.get(
+        attrs,
+        :block_author_key_index,
+        rem(timeslot, length(state.safrole.current_epoch_slot_sealers))
+      )
+
     block_author_key_pair = Enum.at(key_pairs, block_author_key_index)
 
     # Build and seal the header dynamically with the correct timeslot
