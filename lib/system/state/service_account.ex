@@ -101,6 +101,8 @@ defmodule System.State.ServiceAccount do
     end
   end
 
+  def historical_lookup(nil, _, _), do: nil
+
   defp in_storage?(nil, _), do: false
   defp in_storage?([], _), do: false
   defp in_storage?([x], t), do: x <= t

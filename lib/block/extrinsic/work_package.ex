@@ -2,7 +2,10 @@ defmodule Block.Extrinsic.WorkPackage do
   @moduledoc """
   Defines a WorkPackage struct and its types.
   """
+  alias Util.Hash
+  alias System.State.ServiceAccount
   alias Block.Extrinsic.WorkItem
+  alias System.State
 
   @type t :: %__MODULE__{
           # j
@@ -48,6 +51,19 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp)
   end
 
+  # Formula (182) v0.3.4
+  # pc
+  def authorization_code(%__MODULE__{} = wp, %State{services: s}) do
+    Map.get(s, wp.service_index)
+    |> ServiceAccount.historical_lookup(wp.context.timeslot, wp.authorization_code_hash)
+  end
+
+  # Formula (182) v0.3.4
+  # pa
+  def implied_authorizer(%__MODULE__{} = wp, %State{} = state) do
+    Hash.default(authorization_code(wp, state) <> wp.parameterization_blob)
+  end
+
   # Formula (179) v0.3.4
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
@@ -58,14 +74,15 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   # Formula (178) v0.3.4
-defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
-  {exported_sum, imported_sum} =
-    Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
-      {exported_acc + item.exported_data_segments_count, imported_acc + length(item.imported_data_segments)}
-    end)
+  defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
+    {exported_sum, imported_sum} =
+      Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
+        {exported_acc + item.exported_data_segments_count,
+         imported_acc + length(item.imported_data_segments)}
+      end)
 
-  exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
-end
+    exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
+  end
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
