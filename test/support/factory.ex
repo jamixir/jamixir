@@ -22,14 +22,7 @@ defmodule Jamixir.Factory do
       Enum.map(1..count, fn _ ->
         keypair = RingVrf.generate_secret_from_rand()
 
-        validator = %System.State.Validator{
-          bandersnatch: elem(keypair, 1),
-          ed25519: :crypto.strong_rand_bytes(32),
-          bls: :crypto.strong_rand_bytes(144),
-          metadata: :crypto.strong_rand_bytes(128)
-        }
-
-        {validator, keypair}
+        {build(:validator, bandersnatch: elem(keypair, 1)), keypair}
       end)
       |> Enum.unzip()
 
@@ -299,6 +292,7 @@ defmodule Jamixir.Factory do
   # Validator Statistics Factory
   def validator_statistics_factory(attrs) do
     count = Map.get(attrs, :count, @validator_count)
+
     %System.State.ValidatorStatistics{
       current_epoch_statistics: build_list(count, :statistics),
       previous_epoch_statistics: build_list(count, :statistics)
