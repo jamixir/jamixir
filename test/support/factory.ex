@@ -62,17 +62,10 @@ defmodule Jamixir.Factory do
   end
 
   def genesis_state_factory do
-    %System.State{
-      authorizer_pool: authorizer_pool_factory(),
-      safrole: safrole_factory(),
-      services: services_factory(),
-      entropy_pool: entropy_pool_factory(),
-      next_validators: build_list(@validator_count, :random_validator),
-      curr_validators: build_list(@validator_count, :random_validator),
-      prev_validators: build_list(@validator_count, :random_validator),
-      authorizer_queue: authorizer_queue_factory(),
-      validator_statistics: build(:validator_statistics)
-    }
+    %{state: state} =
+      genesis_state_with_safrole_factory(%{})
+
+    state
   end
 
   def genesis_state_with_safrole_factory(attrs) do
@@ -102,7 +95,8 @@ defmodule Jamixir.Factory do
       next_validators: validators,
       curr_validators: validators,
       prev_validators: validators,
-      authorizer_queue: authorizer_queue_factory()
+      authorizer_queue: authorizer_queue_factory(),
+      validator_statistics: build(:validator_statistics)
     }
 
     %{state: state, validators: validators, key_pairs: key_pairs}
@@ -303,20 +297,16 @@ defmodule Jamixir.Factory do
   end
 
   # Validator Statistics Factory
-  def validator_statistics_factory do
+  def validator_statistics_factory(attrs) do
+    count = Map.get(attrs, :count, @validator_count)
     %System.State.ValidatorStatistics{
-      current_epoch_statistics: build_list(2, :statistics),
-      previous_epoch_statistics: build_list(2, :statistics)
+      current_epoch_statistics: build_list(count, :statistics),
+      previous_epoch_statistics: build_list(count, :statistics)
     }
   end
 
   def statistics_factory do
     %System.State.ValidatorStatistic{
-      blocks_produced: 1,
-      tickets_introduced: 2,
-      preimages_introduced: 3,
-      data_size: 4,
-      reports_guaranteed: 5,
       availability_assurances: 6
     }
   end
@@ -324,8 +314,30 @@ defmodule Jamixir.Factory do
   def block_factory do
     %Block{
       extrinsic: build(:extrinsic),
-      # %Block.Header{}
       header: build(:header)
+    }
+  end
+
+  def safrole_block_factory(attrs) do
+    state = Map.get(attrs, :state)
+    key_pairs = Map.get(attrs, :key_pairs)
+    timeslot = Map.get(attrs, :timeslot, 1)
+
+    block_author_key_index = rem(timeslot, length(state.safrole.current_epoch_slot_sealers))
+    block_author_key_pair = Enum.at(key_pairs, block_author_key_index)
+
+    # Build and seal the header dynamically with the correct timeslot
+    header =
+      System.HeaderSeal.seal_header(
+        build(:header, timeslot: timeslot, block_author_key_index: block_author_key_index),
+        state.safrole.current_epoch_slot_sealers,
+        state.entropy_pool,
+        block_author_key_pair
+      )
+
+    %Block{
+      extrinsic: build(:extrinsic),
+      header: header
     }
   end
 
