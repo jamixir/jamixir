@@ -51,7 +51,7 @@ defmodule System.State.RotateKeysTest do
   end
 
   setup do
-    [validator1, validator2, validator3] = build_list(3, :random_validator)
+    [validator1, validator2, validator3] = build_list(3, :validator)
 
     header = %Header{timeslot: 600}
     timeslot = 0

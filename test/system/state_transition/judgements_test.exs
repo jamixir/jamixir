@@ -136,21 +136,21 @@ defmodule System.StateTransition.JudgementsTest do
     valid_offense: valid_offense
   } do
     block = %{
-      build(:block) | 
-      header: header,
-      extrinsic: %Extrinsic{
-        disputes: %Disputes{
-          verdicts: [
-            %Verdict{
-              work_report_hash: work_report_hash,
-              epoch_index: 1,
-              judgements: [%Judgement{valid_judgement | decision: false}]
-            }
-          ],
-          culprits: [valid_offense],
-          faults: []
+      build(:block)
+      | header: header,
+        extrinsic: %Extrinsic{
+          disputes: %Disputes{
+            verdicts: [
+              %Verdict{
+                work_report_hash: work_report_hash,
+                epoch_index: 1,
+                judgements: [%Judgement{valid_judgement | decision: false}]
+              }
+            ],
+            culprits: [valid_offense],
+            faults: []
+          }
         }
-      }
     }
 
     new_state = State.add_block(state, block)
@@ -213,13 +213,7 @@ defmodule System.StateTransition.JudgementsTest do
       header: header,
       extrinsic: %Extrinsic{
         disputes: %Disputes{
-          verdicts: [
-            %Verdict{
-              work_report_hash: <<1::256>>,
-              epoch_index: 1,
-              judgements: [%Judgement{decision: false, signature: valid_signature_1}]
-            }
-          ],
+          verdicts: [],
           culprits: [
             %Culprit{
               work_report_hash: <<1::256>>,
@@ -227,14 +221,7 @@ defmodule System.StateTransition.JudgementsTest do
               signature: valid_signature_1
             }
           ],
-          faults: [
-            %Fault{
-              work_report_hash: <<2::256>>,
-              decision: false,
-              validator_key: valid_key_public,
-              signature: valid_signature_2
-            }
-          ]
+          faults: []
         }
       }
     }
