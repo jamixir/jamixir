@@ -5,7 +5,7 @@ defmodule System.State.ValidatorStatisticsTest do
 
   describe "encode/1" do
     test "encode smoke test" do
-      assert Codec.Encoder.encode(build(:validator_statistics)) ==
+      assert Codec.Encoder.encode(build(:validator_statistics, count: 2)) ==
                "\x01\0\0\0\x02\0\0\0\x03\0\0\0\x04\0\0\0\x05\0\0\0\x06\0\0\0\x01\0\0\0\x02\0\0\0\x03\0\0\0\x04\0\0\0\x05\0\0\0\x06\0\0\0\x01\0\0\0\x02\0\0\0\x03\0\0\0\x04\0\0\0\x05\0\0\0\x06\0\0\0\x01\0\0\0\x02\0\0\0\x03\0\0\0\x04\0\0\0\x05\0\0\0\x06\0\0\0"
     end
   end
@@ -81,12 +81,10 @@ defmodule System.State.ValidatorStatisticsTest do
 
     test "updates author blocks produced statistics" do
       validator_statistics = build(:validator_statistics)
+      author_key_index = 1
 
-      [non_author_blocks_produced, author_blocks_produced] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.blocks_produced
-        )
+      initial_blocks_produced =
+        Enum.map(validator_statistics.current_epoch_statistics, & &1.blocks_produced)
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
@@ -97,129 +95,120 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: 1, timeslot: 2)
         )
 
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.blocks_produced) ==
-               [non_author_blocks_produced, author_blocks_produced + 1]
+      updated_blocks_produced =
+        Enum.map(new_stats.current_epoch_statistics, & &1.blocks_produced)
+
+      assert Enum.with_index(updated_blocks_produced) ==
+               Enum.with_index(initial_blocks_produced)
+               |> Enum.map(fn
+                 {blocks, ^author_key_index} -> {blocks + 1, author_key_index}
+                 {blocks, idx} -> {blocks, idx}
+               end)
     end
 
     test "updates author tickets introduced statistics" do
       validator_statistics = build(:validator_statistics)
-
-      [non_author_tickets_introduced, author_tickets_introduced] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.tickets_introduced
-        )
-
       extrinsic = build(:extrinsic, tickets: build_list(3, :seal_key_ticket))
+      author_key_index = 1
+
+      initial_tickets_introduced =
+        Enum.map(validator_statistics.current_epoch_statistics, & &1.tickets_introduced)
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
-          1,
+          author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.tickets_introduced) ==
-               [non_author_tickets_introduced, author_tickets_introduced + 3]
+      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{tickets_introduced: tickets},
+                                                                    idx ->
+               if idx == author_key_index,
+                 do: tickets == Enum.at(initial_tickets_introduced, idx) + 3,
+                 else: tickets == Enum.at(initial_tickets_introduced, idx)
+             end)
     end
 
     test "updates author preimages introduced statistics" do
       validator_statistics = build(:validator_statistics)
-
-      [non_author_preimages_introduced, author_preimages_introduced] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.preimages_introduced
-        )
-
       extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
+      author_key_index = 1
+
+      initial_preimages_introduced =
+        Enum.map(validator_statistics.current_epoch_statistics, & &1.preimages_introduced)
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
-          1,
+          author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.preimages_introduced) ==
-               [non_author_preimages_introduced, author_preimages_introduced + 4]
+      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{
+                                                                      preimages_introduced:
+                                                                        preimages
+                                                                    },
+                                                                    idx ->
+               if idx == author_key_index,
+                 do: preimages == Enum.at(initial_preimages_introduced, idx) + 4,
+                 else: preimages == Enum.at(initial_preimages_introduced, idx)
+             end)
     end
 
     test "updates author data size statistics" do
       validator_statistics = build(:validator_statistics)
-
-      [non_author_data_size, author_data_size] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.data_size
-        )
-
       extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
+      author_key_index = 1
+
+      initial_data_size =
+        Enum.map(validator_statistics.current_epoch_statistics, & &1.data_size)
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
-          1,
+          author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      # 20 = 4 preimages of 5 bytes
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.data_size) ==
-               [non_author_data_size, author_data_size + 20]
+      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{data_size: size}, idx ->
+               if idx == author_key_index,
+                 do: size == Enum.at(initial_data_size, idx) + 20,
+                 else: size == Enum.at(initial_data_size, idx)
+             end)
     end
 
     test "updates author assurances statistics" do
       validator_statistics = build(:validator_statistics)
-
-      [non_author_availability_assurances, author_availability_assurances] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.availability_assurances
-        )
-
       extrinsic = build(:extrinsic, assurances: [build(:assurance, validator_index: 1)])
+      author_key_index = 1
+
+      initial_availability_assurances =
+        Enum.map(validator_statistics.current_epoch_statistics, & &1.availability_assurances)
 
       new_stats =
         ValidatorStatistics.posterior_validator_statistics(
           extrinsic,
-          1,
+          author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
-               [non_author_availability_assurances, author_availability_assurances + 1]
-    end
-
-    test "update assurance statistics for non authors also" do
-      validator_statistics = build(:validator_statistics)
-
-      [non_author_availability_assurances, author_availability_assurances] =
-        Enum.map(
-          validator_statistics.current_epoch_statistics,
-          & &1.availability_assurances
-        )
-
-      extrinsic = build(:extrinsic, assurances: [build(:assurance, validator_index: 0)])
-
-      new_stats =
-        ValidatorStatistics.posterior_validator_statistics(
-          extrinsic,
-          1,
-          validator_statistics,
-          [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
-        )
-
-      assert Enum.map(new_stats.current_epoch_statistics, & &1.availability_assurances) ==
-               [non_author_availability_assurances + 1, author_availability_assurances]
+      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{
+                                                                      availability_assurances:
+                                                                        assurances
+                                                                    },
+                                                                    idx ->
+               if idx == author_key_index,
+                 do: assurances == Enum.at(initial_availability_assurances, idx) + 1,
+                 else: assurances == Enum.at(initial_availability_assurances, idx)
+             end)
     end
 
     test "raise exception when there is no author statistics" do

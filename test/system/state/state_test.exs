@@ -174,7 +174,9 @@ defmodule System.StateTest do
 
   describe "add_block/2" do
     test "add block smoke test" do
-      State.add_block(build(:genesis_state), build(:block))
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+      State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end
 
     test "updates statistics" do
@@ -188,7 +190,9 @@ defmodule System.StateTest do
       ValidatorStatisticsMock
       |> expect(:posterior_validator_statistics, 1, fn _, _, _, _, _ -> "mockvalue" end)
 
-      new_state = State.add_block(build(:genesis_state), build(:block))
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+      new_state = State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
 
       assert new_state.validator_statistics == "mockvalue"
     end
