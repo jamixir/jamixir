@@ -50,19 +50,11 @@ defmodule Block.Extrinsic.WorkPackage do
 
   # Formula (179) v0.3.4
   defp valid_size?(%__MODULE__{work_items: work_items}) do
-    part1 =
-      work_items
-      |> Enum.map(&(length(&1.imported_data_segments) * Constants.wswc()))
-      |> Enum.sum()
-
-    part2 =
-      work_items
-      |> Enum.map(fn i ->
-        i.imported_data_segments |> Enum.map(&elem(&1, 1)) |> Enum.sum()
-      end)
-      |> Enum.sum()
-
-    part1 + part2 <= @maximum_size
+    Enum.reduce(work_items, 0, fn i, acc ->
+      part1 = length(i.imported_data_segments) * Constants.wswc()
+      part2 = i.blob_hashes_and_lengths |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+      acc + part1 + part2
+    end) <= @maximum_size
   end
 
   # Formula (178) v0.3.4
