@@ -4,7 +4,7 @@ defmodule System.State.Safrole do
   """
   alias System.State.{SealKeyTicket, Validator, EntropyPool, Safrole}
   alias Block.Header
-  alias Util.Hash
+  alias Util.{Hash, Time}
   alias Codec.{Encoder, Decoder}
 
   @type t :: %__MODULE__{
@@ -54,41 +54,18 @@ defmodule System.State.Safrole do
         entropy_pool,
         curr_validators
       ) do
-    case determine_ticket_or_fallback(
-           new_timeslot,
-           timeslot,
-           safrole.ticket_accumulator
-         ) do
-      :ticket_same ->
-        safrole.current_epoch_slot_sealers
-
-      :ticket_shuffle ->
+    # Formula (69) v0.3.4 - second arm
+    if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) do
+      safrole.current_epoch_slot_sealers
+    else
+      # Formula (69) v0.3.4 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
+      if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) + 1 and
+           length(safrole.ticket_accumulator) == Constants.epoch_length() and
+           Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
         outside_in_sequencer(safrole.current_epoch_slot_sealers)
-
-      :fallback ->
+      else
         fallback_key_sequence(entropy_pool, curr_validators)
-    end
-  end
-
-  # Formula (69) v0.3.4
-  def determine_ticket_or_fallback(new_timeslot, timeslot, ticket_accumulator) do
-    current_epoch_index = Util.Time.epoch_index(timeslot)
-    new_epoch_index = Util.Time.epoch_index(new_timeslot)
-
-    ticket_accumulator_full = length(ticket_accumulator) == Constants.epoch_length()
-    ticket_submission_ended = Util.Time.epoch_phase(timeslot) >= Constants.ticket_submission_end()
-
-    cond do
-      new_epoch_index == current_epoch_index ->
-        :ticket_same
-
-      new_epoch_index == current_epoch_index + 1 and
-        ticket_accumulator_full and
-          ticket_submission_ended ->
-        :ticket_shuffle
-
-      true ->
-        :fallback
+      end
     end
   end
 

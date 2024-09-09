@@ -63,7 +63,7 @@ defmodule Jamixir.Factory do
 
   def genesis_state_factory do
     %{state: state} =
-      genesis_state_with_safrole_factory(%{})
+      build(:genesis_state_with_safrole)
 
     state
   end
@@ -170,7 +170,7 @@ defmodule Jamixir.Factory do
 
   # Validator Factories
 
-  def random_validator_factory do
+  def validator_factory do
     %System.State.Validator{
       bandersnatch: :crypto.strong_rand_bytes(32),
       ed25519: :crypto.strong_rand_bytes(32),
@@ -206,7 +206,7 @@ defmodule Jamixir.Factory do
   # Safrole Factoriy
   def safrole_factory do
     %System.State.Safrole{
-      pending: build_list(@validator_count, :random_validator),
+      pending: build_list(@validator_count, :validator),
       # Placeholder for epoch root
       epoch_root: :crypto.strong_rand_bytes(144),
       current_epoch_slot_sealers: build_list(@epoch_length, :seal_key_ticket),

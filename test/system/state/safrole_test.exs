@@ -75,7 +75,7 @@ defmodule System.State.SafroleTest do
     setup do
       safrole = build(:safrole)
       entropy_pool = build(:entropy_pool)
-      validators = build_list(4, :random_validator)
+      validators = build_list(4, :validator)
 
       %{safrole: safrole, entropy_pool: entropy_pool, validators: validators}
     end
