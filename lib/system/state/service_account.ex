@@ -68,6 +68,45 @@ defmodule System.State.ServiceAccount do
       Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
   end
 
+  # Formula (91) v0.3.4
+  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
+    Map.get(p, hash)
+  end
+
+  # Formula (92) v0.3.4
+  def store_preimage(
+        %__MODULE__{preimage_storage_l: l, preimage_storage_p: p} = a,
+        preimage,
+        timeslot
+      ) do
+    hash = Util.Hash.default(preimage)
+
+    a
+    |> Map.put(:preimage_storage_p, Map.put(p, hash, preimage))
+    |> Map.put(:preimage_storage_l, Map.put(l, {hash, byte_size(preimage)}, [timeslot]))
+  end
+
+  # Formula (94) v0.3.4
+  @spec historical_lookup(System.State.ServiceAccount.t(), integer(), Types.hash()) :: binary()
+  def historical_lookup(
+        %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},
+        timeslot,
+        hash
+      ) do
+    case Map.get(ap, hash) do
+      value ->
+        if value != nil and in_storage?(Map.get(al, {hash, byte_size(value)}), timeslot),
+          do: value,
+          else: nil
+    end
+  end
+
+  defp in_storage?(nil, _), do: false
+  defp in_storage?([], _), do: false
+  defp in_storage?([x], t), do: x <= t
+  defp in_storage?([x, y], t), do: x <= t and t < y
+  defp in_storage?([x, y, z], t), do: (x <= t and t < y) or z <= t
+
   defimpl Encodable do
     alias Codec.Encoder
     alias System.State.ServiceAccount
