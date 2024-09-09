@@ -93,4 +93,13 @@ defmodule Util.MerkleTreeTest do
       assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
     end
   end
+
+  describe "merkle_root/1" do
+    test "test that merkle root pre-proccesses the list" do
+      blobs = ["blob1", "blob2", "blob3", "blob4", "blob5", "blob6"]
+      processed_items = MerkleTree.c_preprocess(blobs, &Hash.default/1)
+      expected_root = MerkleTree.well_balanced_merkle_root(processed_items, &Hash.default/1)
+      assert MerkleTree.merkle_root(blobs) == expected_root
+    end
+  end
 end
