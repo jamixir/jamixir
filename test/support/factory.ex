@@ -321,7 +321,7 @@ defmodule Jamixir.Factory do
       Map.get(
         attrs,
         :block_author_key_index,
-        rem(timeslot, length(state.safrole.current_epoch_slot_sealers))
+        rem(timeslot, length(state.curr_validators))
       )
 
     block_author_key_pair = Enum.at(key_pairs, block_author_key_index)

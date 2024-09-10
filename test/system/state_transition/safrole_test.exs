@@ -129,30 +129,63 @@ defmodule System.StateTransition.SafroleStateTest do
       assert new_state.curr_validators == expected_current_validators
     end
 
-    @tag :skip
-    test "replaces current_epoch_slot_sealers when fallback_key_sequence is used", %{
-      state: state,
-      block: block,
-      header: header,
-      key_pairs: key_pairs
-    } do
-      expected_current_validators = state.safrole.pending
-
-      # Simulate the expected outcome of get_posterior_epoch_slot_sealers
-      expected_sealers = Safrole.fallback_key_sequence(state.entropy_pool, state.safrole.pending)
+    test "replaces current_epoch_slot_sealers when fallback_key_sequence is used", %{} do
+      %{state: state, key_pairs: key_pairs} =
+        build(:genesis_state_with_safrole)
 
       state = %{state | timeslot: 499}
-      block_auth_index = 0
+      header = build(:header, timeslot: 600)
+
+      new_entropy_pool =
+        System.State.EntropyPool.posterior_entropy_pool(
+          header,
+          state.timeslot,
+          state.entropy_pool
+        )
+
+      {_, new_curr_validators, _, _} =
+        System.State.RotateKeys.rotate_keys(
+          header,
+          state.timeslot,
+          state.prev_validators,
+          state.curr_validators,
+          state.next_validators,
+          state.safrole,
+          state.judgements
+        )
+
+      posterior_epoch_slot_sealers =
+        System.State.Safrole.get_posterior_epoch_slot_sealers(
+          header,
+          state.timeslot,
+          state.safrole,
+          new_entropy_pool,
+          new_curr_validators
+        )
+
+      # find the index in new_curr_validators
+      # such that new_curr_validators[index].bandersnatch = posterior_epoch_slot_sealers[0]
+      block_auth_index =
+        Enum.find_index(
+          new_curr_validators,
+          &(&1.bandersnatch == Enum.at(posterior_epoch_slot_sealers, 0))
+        )
 
       header =
         System.HeaderSeal.seal_header(
-          %{header | timeslot: 600, block_author_key_index: block_auth_index},
-          expected_sealers,
+          %{header | block_author_key_index: block_auth_index},
+          posterior_epoch_slot_sealers,
           state.entropy_pool,
           Enum.at(key_pairs, block_auth_index)
         )
 
-      block = %{block | header: header}
+      expected_current_validators = state.safrole.pending
+
+      # Simulate the expected outcome of get_posterior_epoch_slot_sealers
+      expected_sealers =
+        Safrole.fallback_key_sequence(new_entropy_pool, expected_current_validators)
+
+      block = build(:block, header: header)
       new_state = State.add_block(state, block)
       assert new_state.safrole.current_epoch_slot_sealers == expected_sealers
       assert new_state.curr_validators == expected_current_validators
