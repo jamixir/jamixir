@@ -7,12 +7,13 @@ defmodule Jamixir.Factory do
 
   alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
   alias Block.{Header, Extrinsic}
+
+  alias Util.Time
   alias Block.Extrinsic.{Guarantee, Disputes}
   alias System.State.SealKeyTicket
 
   @cores 2
   @validator_count 6
-  @epoch_length 600
   @max_authorizers_per_core 2
   @max_authorize_queue_items 4
 
@@ -49,7 +50,7 @@ defmodule Jamixir.Factory do
   end
 
   def seal_key_ticket_factory(key_pairs, entropy_pool_history) do
-    Enum.map(0..(@epoch_length - 1), fn i ->
+    Enum.map(0..(Time.epoch_duration() - 1), fn i ->
       single_seal_key_ticket_factory(key_pairs, entropy_pool_history, i)
     end)
   end
@@ -202,8 +203,8 @@ defmodule Jamixir.Factory do
       pending: build_list(@validator_count, :validator),
       # Placeholder for epoch root
       epoch_root: :crypto.strong_rand_bytes(144),
-      current_epoch_slot_sealers: build_list(@epoch_length, :seal_key_ticket),
-      ticket_accumulator: build_list(@epoch_length, :seal_key_ticket)
+      current_epoch_slot_sealers: build_list(Time.epoch_duration(), :seal_key_ticket),
+      ticket_accumulator: build_list(Time.epoch_duration(), :seal_key_ticket)
     }
   end
 
