@@ -3,17 +3,17 @@ defmodule System.HeaderSeal do
   alias Block.Header
 
   # Formula (60) v0.3.4
-  # Formula (61)  v0.3.4  
+  # Formula (61)  v0.3.4
   def seal_header(
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
-        %EntropyPool{history: entropy_pool_history},
+        %EntropyPool{} = entropy_pool,
         {secret, _}
       ) do
     # associated with formula (60, 61) v0.3.4
     # let i = γs′ [Ht ]↺
     expected_slot_sealer = Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
-    seal_context = construct_seal_context(expected_slot_sealer, entropy_pool_history)
+    seal_context = construct_seal_context(expected_slot_sealer, entropy_pool)
     block_seal_output = RingVrf.ietf_vrf_output(secret, seal_context)
 
     {vrf_signature, _} =
@@ -39,7 +39,7 @@ defmodule System.HeaderSeal do
         header,
         posterior_curr_validators,
         posterior_epoch_slot_sealers,
-        %EntropyPool{history: entropy_pool_history}
+        %EntropyPool{} = entropy_pool
       ) do
     bandersnatch_public_keys = Enum.map(posterior_curr_validators, & &1.bandersnatch)
     # let i = γs′ [Ht ]↺
@@ -51,7 +51,7 @@ defmodule System.HeaderSeal do
     with {:ok, block_seal_output} <-
            RingVrf.ietf_vrf_verify(
              bandersnatch_public_keys,
-             construct_seal_context(expected_slot_sealer, entropy_pool_history),
+             construct_seal_context(expected_slot_sealer, entropy_pool),
              Header.unsigned_serialize(header),
              header.block_seal,
              header.block_author_key_index
@@ -95,11 +95,11 @@ defmodule System.HeaderSeal do
   defp verify_sealer_match(%{id: block_seal_output}, block_seal_output, _, _), do: :ok
   defp verify_sealer_match(_, _, _, _), do: {:error, :ticket_id_mismatch}
 
-  def construct_seal_context(<<_::binary>>, [_n1 | [_n2 | [n3 | _]]]) do
+  def construct_seal_context(<<_::binary>>, %EntropyPool{n3: n3}) do
     SigningContexts.jam_fallback_seal() <> n3
   end
 
-  def construct_seal_context(%{entry_index: i}, [_n1 | [_n2 | [n3 | _]]]) do
+  def construct_seal_context(%{entry_index: i}, %EntropyPool{n3: n3}) do
     SigningContexts.jam_ticket_seal() <> n3 <> <<i::8>>
   end
 end

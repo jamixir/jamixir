@@ -95,12 +95,12 @@ defmodule System.State.Safrole do
   """
   @spec fallback_key_sequence(EntropyPool.t(), list(Validator.t())) ::
           list(Types.bandersnatch_key())
-  def fallback_key_sequence(%EntropyPool{history: [_, eta2 | _]}, current_validators) do
+  def fallback_key_sequence(%EntropyPool{n2: n2}, current_validators) do
     validator_set_size = length(current_validators)
 
     0..(Constants.epoch_length() - 1)
     |> Enum.map(fn i ->
-      validator_index = generate_index_using_entropy(eta2, i, validator_set_size)
+      validator_index = generate_index_using_entropy(n2, i, validator_set_size)
       Enum.at(current_validators, validator_index).bandersnatch
     end)
   end
