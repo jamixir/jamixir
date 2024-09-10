@@ -74,9 +74,8 @@ defmodule System.State do
   ]
 
   # Formula (12) v0.3.4
+  @spec add_block(State.t(), Block.t()) :: State.t()
   def add_block(%System.State{} = state, %Block{header: h, extrinsic: e}) do
-    todo = "TODO"
-
     # Formula (16) v0.3.4
     # Formula (46) v0.3.4
     new_timeslot = h.timeslot
@@ -202,23 +201,27 @@ defmodule System.State do
       # γ'
       safrole: new_safrole,
       # δ'
-      services: todo,
+      # TODO
+      services: nil,
       # η'
       entropy_pool: new_entropy_pool,
       # ι'
-      next_validators: todo,
+      # TODO
+      next_validators: nil,
       # κ'
       curr_validators: new_curr_validators,
       # λ'
       prev_validators: new_prev_validators,
       # ρ'
-      core_reports: todo,
+      # TODO
+      core_reports: nil,
       # τ'
       timeslot: new_timeslot,
       # φ'
       authorizer_queue: new_authorizer_queue,
       # χ'
-      privileged_services: todo,
+      # TODO
+      privileged_services: nil,
       # ψ'
       judgements: new_judgements,
       # π' Formula (30) v0.3.4

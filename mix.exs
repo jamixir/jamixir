@@ -8,7 +8,14 @@ defmodule Jamixir.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ]
     ]
   end
 
@@ -23,8 +30,9 @@ defmodule Jamixir.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:mox, "~> 1.2.0", only: :test},
+      {:mox, "~> 1.1.0", only: :test},
       {:ex_machina, "~> 2.8.0", only: :test},
+      {:excoveralls, "~> 0.18.3", only: :test},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"}

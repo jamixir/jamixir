@@ -7,6 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   section 11.1
   Formula (123) v0.3.4
   """
+  alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkItem
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large

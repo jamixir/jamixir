@@ -9,21 +9,21 @@ defmodule Util.MerkleTree do
     Constructs a well-balanced binary Merkle tree and returns the root hash.
     Formula (299) v0.3.4
   """
-  @spec well_balanced_merkle_root(list(binary())) :: Hash.t()
+  @spec well_balanced_merkle_root(list(binary())) :: Types.hash()
   def well_balanced_merkle_root(l), do: well_balanced_merkle_root(l, &Hash.default/1)
-  @spec well_balanced_merkle_root(list(binary()), (binary() -> Hash.t())) :: Hash.t()
+  @spec well_balanced_merkle_root(list(binary()), (binary() -> Types.hash())) :: Types.hash()
   def well_balanced_merkle_root([], _), do: raise(ArgumentError, "List of blobs cannot be empty")
   def well_balanced_merkle_root([single_blob], hash_func), do: hash_func.(single_blob)
   def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
   # Formula (300) v0.3.4
-  @spec merkle_root(list(binary())) :: Hash.t()
+  @spec merkle_root(list(binary())) :: Types.hash()
   def merkle_root(v), do: merkle_root(v, &Hash.default/1)
-  @spec merkle_root(list(binary()), (binary() -> Hash.t())) :: Hash.t()
+  @spec merkle_root(list(binary()), (binary() -> Types.hash())) :: Types.hash()
   def merkle_root(list, hash_func), do: node(c_preprocess(list, hash_func), hash_func)
 
   # Formula (303) v0.3.4
-  @spec c_preprocess(list(binary()), (binary() -> Hash.t())) :: list(Hash.t())
+  @spec c_preprocess(list(binary()), (binary() -> Types.hash())) :: list(Types.hash())
   def c_preprocess([], _), do: []
 
   def c_preprocess(list, hash_func) do
@@ -44,7 +44,7 @@ defmodule Util.MerkleTree do
 
   # Node function N for the Merkle tree.
   # Formula (297) v0.3.4
-  @spec node(list(binary()), (binary() -> Hash.t())) :: binary() | Hash.t()
+  @spec node(list(binary()), (binary() -> Types.hash())) :: binary() | Types.hash()
   defp node([], _), do: <<0::256>>
   defp node([single_blob], _), do: single_blob
 
