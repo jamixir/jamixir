@@ -2,11 +2,10 @@ defmodule System.StateTransition.TimeslotTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias System.State
-  alias Block.{Header}
   alias Block
 
   test "add_block/2 correctly sets timeslot" do
-    %{state: state, validators: validators, key_pairs: key_pairs} =
+    %{state: state, key_pairs: key_pairs} =
       build(:genesis_state_with_safrole)
 
     state = %{
