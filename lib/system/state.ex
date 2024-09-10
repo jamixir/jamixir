@@ -171,7 +171,7 @@ defmodule System.State do
         h,
         state.timeslot,
         state.safrole,
-        state.entropy_pool,
+        new_entropy_pool,
         new_curr_validators
       )
 
@@ -187,23 +187,12 @@ defmodule System.State do
         {:error, reason} -> throw({:error, reason})
       end
 
-    intermediate_safrole =
-      %Safrole{
-        state.safrole
-        | pending: new_safrole_pending,
-          epoch_root: new_safrole_epoch_root
-      }
-
-    # γ' Formula (19) v0.3.4
-    new_safrole =
-      Safrole.posterior_safrole(
-        h,
-        state.timeslot,
-        Map.get(e, :tickets),
-        intermediate_safrole,
-        new_entropy_pool,
-        new_curr_validators
-      )
+    new_safrole = %{
+      state.safrole
+      | pending: new_safrole_pending,
+        epoch_root: new_safrole_epoch_root,
+        current_epoch_slot_sealers: posterior_epoch_slot_sealers
+    }
 
     %System.State{
       # α'
