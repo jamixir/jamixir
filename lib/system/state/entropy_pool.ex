@@ -26,7 +26,7 @@ defmodule System.State.EntropyPool do
     history =
       case Time.new_epoch?(timeslot, header.timeslot) do
         {:ok, true} ->
-          [new_entropy | Enum.take(history, 2)]
+          [current_entropy | Enum.take(history, 2)]
 
         {:ok, false} ->
           history

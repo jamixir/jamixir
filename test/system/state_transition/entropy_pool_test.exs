@@ -32,7 +32,7 @@ defmodule System.StateTransition.EntropyPoolTest do
     updated_state = EntropyPool.posterior_entropy_pool(header, timeslot, initial_state)
 
     # Check that the history has been updated correctly
-    assert hd(updated_state.history) == updated_state.current
+    assert hd(updated_state.history) == initial_state.current
     assert Enum.at(updated_state.history, 1) == "eta1"
     assert Enum.at(updated_state.history, 2) == "eta2"
     assert length(updated_state.history) == 3
