@@ -1,5 +1,5 @@
 defmodule VectorTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias Block.Header
   alias HTTPoison.Response
   alias GitHubRepoReader
@@ -7,19 +7,18 @@ defmodule VectorTest do
   @owner "w3f"
   @repo "jamtestvectors"
 
-  setup_all do
-    files = GitHubRepoReader.fetch_repo_files(@owner, @repo)
-    {:ok, files: files}
-  end
-
-  @tag :skip
-  test "verify test vectors", %{files: files} do
-    Enum.each(files, fn file ->
+  describe "test vectors" do
+    for file <- GitHubRepoReader.fetch_repo_files(@owner, @repo) do
       if String.ends_with?(file, ".json") do
-        {:ok, json_data} = fetch_and_parse_json(file, "master")
-        assert_expected_results(json_data)
+        @tag file_name: file
+        @tag :test_vectors
+
+        test "verify test vector for #{file}", %{file_name: file_name} do
+          {:ok, json_data} = fetch_and_parse_json(file_name, "master")
+          assert_expected_results(json_data)
+        end
       end
-    end)
+    end
   end
 
   defp fetch_and_parse_json(file, branch = "master") do
@@ -45,7 +44,9 @@ defmodule VectorTest do
     # Example:
     pre_state = System.State.from_json(json_data["pre_state"])
     header = %Header{timeslot: json_data["input"]["slot"]}
-    new_state = System.State.add_block(pre_state, %Block{header: header})
+
+    new_state =
+      System.State.add_block(pre_state, %Block{header: header, extrinsic: %Block.Extrinsic{}})
 
     expected_state = System.State.from_json(json_data["post_state"])
     assert new_state == expected_state

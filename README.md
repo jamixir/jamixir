@@ -10,10 +10,15 @@ Jamixir is the Elixir implementation of the JAM Protocol, as described in the [G
 mix jam
 ```
 
-## How to Run Tests
+## How to Run Unit Tests
 
 ```
 mix test
+```
+
+## How to Run Official Test Vectors
+```
+mix test --only test_vectors
 ```
 
 ## Tested Elixir / OTP version

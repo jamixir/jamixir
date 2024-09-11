@@ -28,6 +28,6 @@ defmodule System.State.Validator do
   end
 
   def from_json(json) do
-    struct(%__MODULE__{}, Utils.hex_to_binary_map(json))
+    struct(%__MODULE__{}, Utils.hex_to_binary(json))
   end
 end

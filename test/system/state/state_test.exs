@@ -194,4 +194,11 @@ defmodule System.StateTest do
       assert new_state.validator_statistics == "mockvalue"
     end
   end
+
+  describe "from_json/1" do
+    test "from_json smoke test" do
+      # state =
+      #   assert State.from_json(json) == state
+    end
+  end
 end
