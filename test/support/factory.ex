@@ -1,6 +1,5 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
-  alias RingVRF.RingCommitment
   alias Block.Extrinsic.Preimage
   alias System.State.CoreReports
   use ExMachina
@@ -76,7 +75,7 @@ defmodule Jamixir.Factory do
 
     safrole_state = %System.State.Safrole{
       pending: validators,
-      epoch_root: RingVrf.create_commitment(public_keys) |> RingCommitment.encode(),
+      epoch_root: RingVrf.create_commitment(public_keys),
       current_epoch_slot_sealers: tickets,
       ticket_accumulator: tickets
     }
