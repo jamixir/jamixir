@@ -8,42 +8,38 @@ defmodule System.State.EntropyPool do
   alias System.State.EntropyPool
 
   @type t :: %__MODULE__{
-          current: Types.hash(),
-          history: list(Types.hash())
+          n0: Types.hash(),
+          n1: Types.hash(),
+          n2: Types.hash(),
+          n3: Types.hash()
         }
 
   # Formula (66) v0.3.4
-  defstruct current: <<>>, history: [<<>>, <<>>, <<>>]
+  defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
-  def posterior_entropy_pool(header, timeslot, %EntropyPool{
-        current: current_entropy,
-        history: history
-      }) do
+  def posterior_entropy_pool(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2, n3: n3}) do
     # Formula (67) v0.3.4
-    new_entropy = Hash.blake2b_256(current_entropy <> Crypto.entropy_vrf(header.vrf_signature))
+    n0_ = Hash.blake2b_256(n0 <> Crypto.entropy_vrf(header.vrf_signature))
 
     # Formula (68) v0.3.4
-    history =
+    {n1_, n2_, n3_} =
       case Time.new_epoch?(timeslot, header.timeslot) do
         {:ok, true} ->
-          [current_entropy | Enum.take(history, 2)]
+          {n0, n1, n2}
 
         {:ok, false} ->
-          history
+          {n1, n2, n3}
 
         {:error, reason} ->
           raise "Error determining new epoch: #{reason}"
       end
 
-    %EntropyPool{
-      current: new_entropy,
-      history: history
-    }
+    %EntropyPool{n0: n0_, n1: n1_, n2: n2_, n3: n3_}
   end
 
   defimpl Encodable do
     def encode(%EntropyPool{} = e) do
-      Codec.Encoder.encode([e.current] ++ e.history)
+      Codec.Encoder.encode({e.n0, e.n1, e.n2, e.n3})
     end
   end
 end

@@ -8,7 +8,7 @@ defmodule System.HeaderSealTest do
   setup do
     %{validators: validators, key_pairs: key_pairs} = validator_and_key_pairs_factory()
     entropy_pool = build(:entropy_pool)
-    epoch_slot_sealers = seal_key_ticket_factory(key_pairs, entropy_pool.history)
+    epoch_slot_sealers = seal_key_ticket_factory(key_pairs, entropy_pool)
 
     {:ok,
      %{
@@ -29,7 +29,7 @@ defmodule System.HeaderSealTest do
       sealed_header =
         HeaderSeal.seal_header(
           h,
-          [single_seal_key_ticket_factory(kp, ep.history, 0)],
+          [single_seal_key_ticket_factory(kp, ep, 0)],
           ep,
           hd(kp)
         )
@@ -40,7 +40,7 @@ defmodule System.HeaderSealTest do
       sealed_header =
         HeaderSeal.seal_header(
           h,
-          [single_seal_key_ticket_factory(kp, ep.history, 0)],
+          [single_seal_key_ticket_factory(kp, ep, 0)],
           ep,
           hd(kp)
         )
@@ -56,7 +56,7 @@ defmodule System.HeaderSealTest do
       sealed_header =
         HeaderSeal.seal_header(
           build(:header, timeslot: 1_000_000),
-          [single_seal_key_ticket_factory(kp, ep.history, 0)],
+          [single_seal_key_ticket_factory(kp, ep, 0)],
           ep,
           {elem(Enum.at(kp, 0), 0), :crypto.strong_rand_bytes(32)}
         )

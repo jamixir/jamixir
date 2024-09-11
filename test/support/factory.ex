@@ -33,14 +33,14 @@ defmodule Jamixir.Factory do
   # Seal Key Ticket Factory
 
   @spec single_seal_key_ticket_factory(list(), any(), integer()) :: System.State.SealKeyTicket.t()
-  def single_seal_key_ticket_factory(key_pairs, entropy_pool_history, i) do
+  def single_seal_key_ticket_factory(key_pairs, entropy_pool, i) do
     {secret, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
 
     entry_index = Enum.random([0, 1])
 
     context =
       SigningContexts.jam_ticket_seal() <>
-        Enum.at(entropy_pool_history, 2) <>
+        entropy_pool.n3 <>
         <<entry_index::8>>
 
     %SealKeyTicket{
@@ -49,9 +49,9 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def seal_key_ticket_factory(key_pairs, entropy_pool_history) do
+  def seal_key_ticket_factory(key_pairs, entropy_pool) do
     Enum.map(0..(Time.epoch_duration() - 1), fn i ->
-      single_seal_key_ticket_factory(key_pairs, entropy_pool_history, i)
+      single_seal_key_ticket_factory(key_pairs, entropy_pool, i)
     end)
   end
 
@@ -72,7 +72,7 @@ defmodule Jamixir.Factory do
     RingVrf.init_ring_context(length(validators))
 
     entropy_pool = build(:entropy_pool)
-    tickets = seal_key_ticket_factory(key_pairs, entropy_pool.history)
+    tickets = seal_key_ticket_factory(key_pairs, entropy_pool)
 
     safrole_state = %System.State.Safrole{
       pending: validators,
@@ -226,7 +226,7 @@ defmodule Jamixir.Factory do
   end
 
   def unique_hash_factory do
-    :crypto.strong_rand_bytes(32)
+    random_hash()
   end
 
   # Service Factories
@@ -252,11 +252,10 @@ defmodule Jamixir.Factory do
 
   def entropy_pool_factory do
     %System.State.EntropyPool{
-      current: random_hash(),
-      history:
-        Enum.map(1..3, fn _ ->
-          unique_hash_factory()
-        end)
+      n0: random_hash(),
+      n1: unique_hash_factory(),
+      n2: unique_hash_factory(),
+      n3: unique_hash_factory()
     }
   end
 
