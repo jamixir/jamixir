@@ -18,7 +18,6 @@ pub struct FixedColumnsCommittedBridge {
 
 impl Encoder for FixedColumnsCommittedBridge {
     fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
-        // Use the same logic as in KzgCommitmentBridge to serialize the points and ring_selector fields
         let mut points_buf = Vec::new();
         for point in &self.points {
             point.0.serialize_compressed(&mut points_buf).unwrap();
@@ -41,7 +40,6 @@ impl Encoder for FixedColumnsCommittedBridge {
     }
 }
 
-// Decoder for FixedColumnsCommittedBridge
 impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let binary: rustler::Binary = term.decode()?;
@@ -67,7 +65,6 @@ impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
     }
 }
 
-// Conversion between FixedColumnsCommittedBridge and RingCommitment
 impl From<FixedColumnsCommittedBridge> for RingCommitment {
     fn from(bridge: FixedColumnsCommittedBridge) -> Self {
         Self {
