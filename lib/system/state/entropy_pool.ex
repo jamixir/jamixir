@@ -39,4 +39,9 @@ defmodule System.State.EntropyPool do
       Codec.Encoder.encode({e.n0, e.n1, e.n2, e.n3})
     end
   end
+
+  def from_json(json) do
+    [n0, n1, n2, n3] = Utils.hex_to_binary(json)
+    %__MODULE__{n0: n0, n1: n1, n2: n2, n3: n3}
+  end
 end
