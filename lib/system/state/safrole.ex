@@ -51,7 +51,7 @@ defmodule System.State.Safrole do
         %Header{timeslot: new_timeslot},
         timeslot,
         safrole,
-        entropy_pool,
+        %EntropyPool{n2: n2},
         curr_validators
       ) do
     # Formula (69) v0.3.4 - second arm
@@ -64,7 +64,7 @@ defmodule System.State.Safrole do
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
         outside_in_sequencer(safrole.current_epoch_slot_sealers)
       else
-        fallback_key_sequence(entropy_pool, curr_validators)
+        fallback_key_sequence(n2, curr_validators)
       end
     end
   end
@@ -93,9 +93,9 @@ defmodule System.State.Safrole do
   Fallback key sequence function.
   selects an epoch’s worth of validator Bandersnatch keys
   """
-  @spec fallback_key_sequence(EntropyPool.t(), list(Validator.t())) ::
+  @spec fallback_key_sequence(Types.hash(), list(Validator.t())) ::
           list(Types.bandersnatch_key())
-  def fallback_key_sequence(%EntropyPool{n2: n2}, current_validators) do
+  def fallback_key_sequence(n2, current_validators) do
     validator_set_size = length(current_validators)
 
     0..(Constants.epoch_length() - 1)

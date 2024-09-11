@@ -19,13 +19,6 @@ defmodule Util.Crypto do
     :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
   end
 
-  def entropy_vrf(value) do
-    # TODO
-
-    # for now, we will just return the value
-    value
-  end
-
   @spec bandersnatch_ring_root(list(Types.bandersnatch_key())) :: Types.bandersnatch_ring_root()
   def bandersnatch_ring_root(validators) do
     # Placeholder logic: concatenate the first 4 bandersnatch keys

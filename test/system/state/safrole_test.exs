@@ -1,6 +1,7 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias System.State.EntropyPool
   alias System.State.Safrole
 
   describe "outside_in_sequencer/1" do
@@ -84,7 +85,7 @@ defmodule System.State.SafroleTest do
       header = build(:header, timeslot: 2)
       timeslot = 1
 
-      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, nil, nil)
+      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
 
       assert result == safrole.current_epoch_slot_sealers
     end
@@ -101,7 +102,7 @@ defmodule System.State.SafroleTest do
       header = build(:header, timeslot: 600)
       timeslot = 599
 
-      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, nil, nil)
+      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
 
       expected_result = Safrole.outside_in_sequencer(safrole.current_epoch_slot_sealers)
       assert result == expected_result
@@ -129,7 +130,7 @@ defmodule System.State.SafroleTest do
           validators
         )
 
-      expected_result = Safrole.fallback_key_sequence(entropy_pool, validators)
+      expected_result = Safrole.fallback_key_sequence(entropy_pool.n2, validators)
       assert result == expected_result
     end
 
@@ -152,7 +153,7 @@ defmodule System.State.SafroleTest do
           validators
         )
 
-      expected_result = Safrole.fallback_key_sequence(entropy_pool, validators)
+      expected_result = Safrole.fallback_key_sequence(entropy_pool.n2, validators)
       assert result == expected_result
     end
   end
