@@ -8,6 +8,7 @@ defmodule System.State.RotateKeysTest do
 
   setup do
     next_validators = Enum.map(1..3, &TH.create_validator/1)
+    RingVrf.init_ring_context(length(next_validators))
     offenders = MapSet.new([<<1::256>>, <<3::256>>])
 
     {:ok, next_validators: next_validators, offenders: offenders}
@@ -78,7 +79,7 @@ defmodule System.State.RotateKeysTest do
          } do
       offenders = MapSet.new([v1.ed25519, v2.ed25519, v3.ed25519])
 
-      {new_pending, new_current, new_prev, _new_epoch_root} =
+      {new_pending, new_current, new_prev, new_epoch_root} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
@@ -86,6 +87,7 @@ defmodule System.State.RotateKeysTest do
       assert Enum.all?(new_pending, &TH.is_nullified/1)
       assert new_current == safrole.pending
       assert new_prev == [v2]
+      assert byte_size(new_epoch_root) == 144
     end
 
     test "New epoch, no validators nullified", %{
@@ -98,7 +100,7 @@ defmodule System.State.RotateKeysTest do
     } do
       offenders = MapSet.new()
 
-      {new_pending, new_current, new_prev, _new_epoch_root} =
+      {new_pending, new_current, new_prev, new_epoch_root} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
@@ -106,6 +108,7 @@ defmodule System.State.RotateKeysTest do
       assert new_pending == [v1, v2, v3]
       assert new_current == safrole.pending
       assert new_prev == [v2]
+      assert byte_size(new_epoch_root) == 144
     end
 
     test "New epoch, some validators nullified", %{
@@ -118,7 +121,7 @@ defmodule System.State.RotateKeysTest do
     } do
       offenders = MapSet.new([v1.ed25519, v3.ed25519])
 
-      {new_pending, new_current, new_prev, _new_epoch_root} =
+      {new_pending, new_current, new_prev, new_epoch_root} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
@@ -127,6 +130,7 @@ defmodule System.State.RotateKeysTest do
       assert Enum.at(new_pending, 1) == v2
       assert new_current == safrole.pending
       assert new_prev == [v2]
+      assert byte_size(new_epoch_root) == 144
     end
 
     test "No new epoch, state unchanged", %{
