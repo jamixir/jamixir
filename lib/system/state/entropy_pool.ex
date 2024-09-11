@@ -4,7 +4,7 @@ defmodule System.State.EntropyPool do
   section 6.4 - Sealing and Entropy Accumulation
   """
 
-  alias Util.{Hash, Time, Crypto}
+  alias Util.{Hash, Time}
   alias System.State.EntropyPool
 
   @type t :: %__MODULE__{
@@ -17,24 +17,22 @@ defmodule System.State.EntropyPool do
   # Formula (66) v0.3.4
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
-  def posterior_entropy_pool(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2, n3: n3}) do
-    # Formula (67) v0.3.4
-    n0_ = Hash.blake2b_256(n0 <> Crypto.entropy_vrf(header.vrf_signature))
 
-    # Formula (68) v0.3.4
+  # Formula (68) v0.3.4
+  def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2, n3: n3} = pool) do
     {n1_, n2_, n3_} =
       case Time.new_epoch?(timeslot, header.timeslot) do
-        {:ok, true} ->
-          {n0, n1, n2}
-
-        {:ok, false} ->
-          {n1, n2, n3}
-
-        {:error, reason} ->
-          raise "Error determining new epoch: #{reason}"
+        {:ok, true} -> {n0, n1, n2}
+        {:ok, false} -> {n1, n2, n3}
+        {:error, reason} -> raise "Error determining new epoch: #{reason}"
       end
 
-    %EntropyPool{n0: n0_, n1: n1_, n2: n2_, n3: n3_}
+    %EntropyPool{pool | n1: n1_, n2: n2_, n3: n3_}
+  end
+
+  # Formula (67) v0.3.4
+  def update_current_history(vrf_output, %EntropyPool{n0: n0} = pool) do
+    %EntropyPool{pool | n0: Hash.blake2b_256(n0 <> vrf_output)}
   end
 
   defimpl Encodable do

@@ -143,10 +143,6 @@ defmodule System.State do
         beefy_commitment_map
       )
 
-    # η' Formula (20) v0.3.4
-    new_entropy_pool =
-      EntropyPool.posterior_entropy_pool(h, state.timeslot, state.entropy_pool)
-
     # ψ' Formula (23) v0.3.4
     new_judgements =
       Judgements.posterior_judgements(h, Map.get(e, :disputes), state)
@@ -165,16 +161,20 @@ defmodule System.State do
         new_judgements
       )
 
+    # η' Formula (20) v0.3.4
+    rotated_history_entropy_pool =
+      EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+
     posterior_epoch_slot_sealers =
       Safrole.get_posterior_epoch_slot_sealers(
         h,
         state.timeslot,
         state.safrole,
-        new_entropy_pool,
+        rotated_history_entropy_pool,
         new_curr_validators
       )
 
-    {:ok, _header_seals} =
+    {:ok, %{vrf_signature_output: vrf_output}} =
       System.HeaderSeal.validate_header_seals(
         h,
         new_curr_validators,
@@ -185,6 +185,9 @@ defmodule System.State do
         {:ok, result} -> {:ok, result}
         {:error, reason} -> throw({:error, reason})
       end
+
+    posterior_entropy_pool =
+      EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool)
 
     new_safrole = %{
       state.safrole
@@ -204,7 +207,7 @@ defmodule System.State do
       # TODO
       services: nil,
       # η'
-      entropy_pool: new_entropy_pool,
+      entropy_pool: posterior_entropy_pool,
       # ι'
       # TODO
       next_validators: nil,

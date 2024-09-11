@@ -137,7 +137,7 @@ defmodule System.StateTransition.SafroleStateTest do
       header = build(:header, timeslot: 600)
 
       new_entropy_pool =
-        System.State.EntropyPool.posterior_entropy_pool(
+        System.State.EntropyPool.rotate_history(
           header,
           state.timeslot,
           state.entropy_pool
@@ -183,7 +183,7 @@ defmodule System.StateTransition.SafroleStateTest do
 
       # Simulate the expected outcome of get_posterior_epoch_slot_sealers
       expected_sealers =
-        Safrole.fallback_key_sequence(new_entropy_pool, expected_current_validators)
+        Safrole.fallback_key_sequence(new_entropy_pool.n2, expected_current_validators)
 
       block = build(:block, header: header)
       new_state = State.add_block(state, block)
