@@ -34,6 +34,7 @@ defmodule Jamixir.MixProject do
       {:mox, "~> 1.2.0", only: :test, elixir: "~> 1.17"},
       {:ex_machina, "~> 2.8.0", only: :test},
       {:excoveralls, "~> 0.18.3", only: :test},
+      {:httpoison, "~> 2.2.1", only: :test},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"}

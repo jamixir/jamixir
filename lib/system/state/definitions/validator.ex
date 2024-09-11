@@ -26,4 +26,8 @@ defmodule System.State.Validator do
       Validator.key(v)
     end
   end
+
+  def from_json(json) do
+    struct(%__MODULE__{}, Utils.hex_to_binary_map(json))
+  end
 end
