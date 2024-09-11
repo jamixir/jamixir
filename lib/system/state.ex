@@ -383,4 +383,28 @@ defmodule System.State do
       end)
     end)
   end
+
+  def from_json(json) do
+    %{
+      "tau" => timeslot,
+      "eta" => entropy_pool,
+      "lambda" => prev_validators,
+      "kappa" => curr_validators,
+      "iota" => next_validators,
+      "gamma_k" => pending,
+      "gamma_a" => ticket_accumulator,
+      "gamma_s" => current_epoch_slot_sealers,
+      "gamma_z" => epoch_root
+    } = json
+
+    %System.State{
+      timeslot: timeslot,
+      entropy_pool: EntropyPool.from_json(entropy_pool),
+      prev_validators: Enum.map(prev_validators, &Validator.from_json/1),
+      curr_validators: Enum.map(curr_validators, &Validator.from_json/1),
+      next_validators: Enum.map(next_validators, &Validator.from_json/1),
+      safrole:
+        Safrole.from_json(pending, epoch_root, current_epoch_slot_sealers, ticket_accumulator)
+    }
+  end
 end
