@@ -1,5 +1,5 @@
 defmodule System.State.RotateKeys do
-  alias Util.{Time, Crypto}
+  alias Util.Time
   alias Block.Header
 
   alias System.State.{
@@ -52,7 +52,7 @@ defmodule System.State.RotateKeys do
         # γ_z' = z, z = O([kb ∣ k <- γk ])
         new_epoch_root = RingVrf.create_commitment(Enum.map(new_pending, & &1.bandersnatch))
 
-        {new_pending, new_current, new_prev, new_epoch_root |> RingVRF.RingCommitment.encode}
+        {new_pending, new_current, new_prev, new_epoch_root}
 
       {:ok, false} ->
         # Formula (58) -  same epoch - no rotation
