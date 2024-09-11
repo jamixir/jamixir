@@ -50,9 +50,9 @@ defmodule System.State.RotateKeys do
         new_prev = curr_validators
 
         # γ_z' = z, z = O([kb ∣ k <- γk ])
-        new_epoch_root = Crypto.bandersnatch_ring_root(Enum.map(new_pending, & &1.bandersnatch))
+        new_epoch_root = RingVrf.create_commitment(Enum.map(new_pending, & &1.bandersnatch))
 
-        {new_pending, new_current, new_prev, new_epoch_root}
+        {new_pending, new_current, new_prev, new_epoch_root |> RingVRF.RingCommitment.encode}
 
       {:ok, false} ->
         # Formula (58) -  same epoch - no rotation
