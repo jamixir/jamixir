@@ -71,7 +71,6 @@ def encode_leaf(key, value) do
 end
 
   @doc """
-    Formula  v0.3.4
     General Merklization Function
 
    Formula (295) v0.3.4
