@@ -87,7 +87,7 @@ end
     Formula  v0.3.4
     General Merklization Function
 
-    (295)
+   Formula (295) v0.3.4
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
     (296)
