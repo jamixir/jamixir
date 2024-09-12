@@ -45,4 +45,73 @@ defmodule Util.CollectionsTest do
                false
     end
   end
+
+  describe "validate_unique_and_ordered/3" do
+    test "empty list is considered valid" do
+      result = Util.Collections.validate_unique_and_ordered([])
+      assert result == {:ok, :valid}
+    end
+
+    test "list with a single element is considered valid" do
+      result = Util.Collections.validate_unique_and_ordered([1])
+      assert result == {:ok, :valid}
+    end
+
+    test "list with unique and ordered elements is considered valid" do
+      result = Util.Collections.validate_unique_and_ordered([1, 2, 3, 4, 5])
+      assert result == {:ok, :valid}
+    end
+
+    test "list with duplicates returns an error" do
+      result = Util.Collections.validate_unique_and_ordered([1, 2, 2, 3, 4])
+      assert result == {:error, :duplicates}
+    end
+
+    test "list with out of order elements returns an error" do
+      result = Util.Collections.validate_unique_and_ordered([1, 3, 2, 4, 5])
+      assert result == {:error, :not_in_order}
+    end
+
+    test "custom key function is applied correctly" do
+      result =
+        Util.Collections.validate_unique_and_ordered(
+          [%{id: 1}, %{id: 2}, %{id: 3}],
+          & &1.id
+        )
+
+      assert result == {:ok, :valid}
+    end
+
+    test "custom comparator is applied correctly" do
+      result =
+        Util.Collections.validate_unique_and_ordered(
+          [5, 4, 3, 2, 1],
+          &(&1),
+          &>=/2
+        )
+
+      assert result == {:ok, :valid}
+    end
+
+    test "list with duplicates based on custom key function returns an error" do
+      result =
+        Util.Collections.validate_unique_and_ordered(
+          [%{id: 1}, %{id: 2}, %{id: 2}],
+          & &1.id
+        )
+
+      assert result == {:error, :duplicates}
+    end
+
+    test "list with out of order elements based on custom comparator returns an error" do
+      result =
+        Util.Collections.validate_unique_and_ordered(
+          [1, 2, 3, 4, 5],
+          &(&1),
+          &>=/2
+        )
+
+      assert result == {:error, :not_in_order}
+    end
+  end
 end
