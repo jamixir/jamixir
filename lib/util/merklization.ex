@@ -90,7 +90,7 @@ end
    Formula (295) v0.3.4
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
-    (296)
+   Formula (296) v0.3.4
                        { H°                       if |d| = 0
     M(d:D(B → (H,Y))) ={ H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
                        { H(bits-1 (B(M(l), M(r)))) otherwise, where Vb,p: (b → p) ed → (b1.. → p) E { l   if bo = 0
