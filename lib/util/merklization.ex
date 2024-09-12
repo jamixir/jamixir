@@ -24,22 +24,9 @@ defmodule Util.Merklization do
   In the case of a branch, the remaining 511 bits are split between the two child node hashes,
   using the last 255 bits of the 0-bit (left) sub-trie identity and the full 256 bits of the 1-bit (right) sub-trie identity.
   """
-  def encode_branch(left_hash, right_hash) do
-    # Convert left and right hashes to bits
-    bits_left = bits(left_hash)
-    bits_right = bits(right_hash)
-
-    left_bitstring = :erlang.list_to_bitstring(bits_left)
-    bit_size = bit_size(left_bitstring)
-    <<_::size(bit_size - 255), last_255_bits_left::bitstring-size(255)>> = left_bitstring
-
-    # Extract the first 255 bits from the right hash
-    <<first_255_bits_right::bitstring-size(255), _::bitstring>> =
-      :erlang.list_to_bitstring(bits_right)
-
-    # Combine into a 512-bit result
-    <<0::1, last_255_bits_left::bitstring-size(255), 1::1,
-      first_255_bits_right::bitstring-size(255)>>
+  def encode_branch(l, r) do
+    [_ | rest] = bits(l)
+    [0] ++ rest ++ bits(r)
   end
 
   @doc """
