@@ -184,4 +184,15 @@ defmodule System.State.JudgementsTest do
       assert result.wonky == state.judgements.wonky
     end
   end
+
+  describe "encode/1" do
+    test "judgements encoding smoke test" do
+      assert Codec.Encoder.encode(%Judgements{
+               good: MapSet.new([<<1>>, <<2>>]),
+               bad: MapSet.new([<<2>>]),
+               wonky: MapSet.new([<<3>>]),
+               punish: MapSet.new([<<4>>])
+             }) == <<2, 1, 2, 1, 2, 1, 3, 1, 4>>
+      end
+  end
 end
