@@ -279,13 +279,52 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def verdict_factory do
+    %Block.Extrinsic.Disputes.Verdict{
+      epoch_index: Time.epoch_index(build(:header).timeslot),
+      work_report_hash: :crypto.strong_rand_bytes(32),
+      judgements: build_list(1, :judgement)
+    }
+  end
+
+  def judgement_factory(attrs) do
+    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
+    {_, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+
+    decision = Map.get(attrs, :decision, true)
+
+    signature =
+      if decision do
+        Util.Crypto.sign(SigningContexts.jam_valid() <> work_report_hash, priv)
+      else
+        Util.Crypto.sign(SigningContexts.jam_invalid() <> work_report_hash, priv)
+      end
+
+    %Block.Extrinsic.Disputes.Judgement{
+      validator_index: Map.get(attrs, :validator_index, 0),
+      decision: decision,
+      signature: signature
+    }
+  end
+
+  def culprit_factory(attrs) do
+    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
+    {pub, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+
+    %Block.Extrinsic.Disputes.Culprit{
+      work_report_hash: work_report_hash,
+      validator_key: pub,
+      signature: Util.Crypto.sign(SigningContexts.jam_guarantee() <> work_report_hash, priv)
+    }
+  end
+
   # Judgements Factory
   def judgements_factory do
     %System.State.Judgements{
-      good: [random_hash()],
-      bad: [random_hash()],
-      wonky: [random_hash()],
-      punish: [random_hash()]
+      good: MapSet.new([random_hash()]),
+      bad: MapSet.new([random_hash()]),
+      wonky: MapSet.new([random_hash()]),
+      punish: MapSet.new([random_hash()])
     }
   end
 
