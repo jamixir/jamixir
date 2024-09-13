@@ -14,13 +14,12 @@ defmodule System.State.JudgementsTest do
     end
   end
 
-  setup do
+  setup_all do
     {current_pub, current_priv} = :crypto.generate_key(:eddsa, :ed25519)
     {prev_pub, prev_priv} = :crypto.generate_key(:eddsa, :ed25519)
 
     current_validator = build(:validator, ed25519: current_pub)
     previous_validator = build(:validator, ed25519: prev_pub)
-
 
     state = %{
       build(:genesis_state)
@@ -193,6 +192,6 @@ defmodule System.State.JudgementsTest do
                wonky: MapSet.new([<<3>>]),
                punish: MapSet.new([<<4>>])
              }) == <<2, 1, 2, 1, 2, 1, 3, 1, 4>>
-      end
+    end
   end
 end
