@@ -85,7 +85,8 @@ defmodule System.State.SafroleTest do
       header = build(:header, timeslot: 2)
       timeslot = 1
 
-      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
+      result =
+        Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
 
       assert result == safrole.current_epoch_slot_sealers
     end
@@ -102,7 +103,8 @@ defmodule System.State.SafroleTest do
       header = build(:header, timeslot: 600)
       timeslot = 599
 
-      result = Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
+      result =
+        Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
 
       expected_result = Safrole.outside_in_sequencer(safrole.current_epoch_slot_sealers)
       assert result == expected_result

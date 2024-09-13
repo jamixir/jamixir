@@ -58,8 +58,8 @@ defmodule System.StateTransition.SafroleStateTest do
       new_state = State.add_block(state, block)
 
       # first and third validators are nullified
-      assert TH.is_nullified(Enum.at(new_state.safrole.pending, 0))
-      assert TH.is_nullified(Enum.at(new_state.safrole.pending, 2))
+      assert TH.nullified?(Enum.at(new_state.safrole.pending, 0))
+      assert TH.nullified?(Enum.at(new_state.safrole.pending, 2))
       # second validator is not nullified
       assert Enum.at(new_state.safrole.pending, 1) == validator2
 

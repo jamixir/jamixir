@@ -16,7 +16,7 @@ defmodule TestHelper do
     div(Time.current_time() + 10, Time.block_duration())
   end
 
-  def is_nullified(%Validator{} = validator) do
+  def nullified?(%Validator{} = validator) do
     validator.bandersnatch == <<0::256>> and
       validator.ed25519 == <<0::256>> and
       validator.bls == <<0::1152>> and

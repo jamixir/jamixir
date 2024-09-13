@@ -30,6 +30,7 @@ defmodule Jamixir.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.2.0", only: :test, elixir: "~> 1.17"},
       {:ex_machina, "~> 2.8.0", only: :test},
       {:excoveralls, "~> 0.18.3", only: :test},

@@ -10,7 +10,7 @@ defmodule Block.Extrinsic.Disputes.HelperTest do
     valid_key_private =
       <<0x935D5AEF2E41122B21A6590B079352130CAEE5EA80B3D9E3B8D7C2E884D64B58::256>>
 
-    {valid_key_public, _privKeyOut} = :crypto.generate_key(:eddsa, :ed25519, valid_key_private)
+    {valid_key_public, _priv_key_out} = :crypto.generate_key(:eddsa, :ed25519, valid_key_private)
     valid_signature = :crypto.sign(:eddsa, :none, work_report_hash, [valid_key_private, :ed25519])
 
     non_validator_key_private =

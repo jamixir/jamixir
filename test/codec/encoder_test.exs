@@ -106,7 +106,7 @@ defmodule CodecEncoderTest do
       assert Encoder.encode_le(256, 1) == <<0>>
       assert Encoder.encode_le(257, 1) == <<1>>
       assert Encoder.encode_le(257, 2) == <<1, 1>>
-      assert Encoder.encode_le(65535, 2) == <<255, 255>>
+      assert Encoder.encode_le(65_535, 2) == <<255, 255>>
     end
   end
 

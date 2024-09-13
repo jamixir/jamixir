@@ -1,14 +1,13 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.{Guarantee, Disputes}
   alias Block.Extrinsic.Preimage
+  alias Block.{Header, Extrinsic}
   alias System.State.CoreReports
   use ExMachina
 
-  alias Block.Extrinsic.Guarantee.{WorkResult, WorkReport}
-  alias Block.{Header, Extrinsic}
-
   alias Util.Time
-  alias Block.Extrinsic.{Guarantee, Disputes}
   alias System.State.SealKeyTicket
 
   @cores 2
@@ -245,7 +244,7 @@ defmodule Jamixir.Factory do
       code_hash: rh,
       balance: 1000,
       gas_limit_g: 5000,
-      gas_limit_m: 10000
+      gas_limit_m: 10_000
     }
   end
 

@@ -42,7 +42,7 @@ defmodule Util.ShuffleTest do
 
     test "shuffle integer list - numeric sequence greater length - same order 2" do
       list = [1, 2, 3, 4, 5, 6]
-      positions = [6, 5, 4, 3, 2, 1, 543, 7665, 2131_312, 7777]
+      positions = [6, 5, 4, 3, 2, 1, 543, 7665, 2_131_312, 7777]
       assert Shuffle.shuffle(list, positions) == [1, 2, 3, 4, 5, 6]
     end
 

@@ -4,9 +4,9 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
-  alias Block.Header
-  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Helper, ProcessedVerdict}
   alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict, Verdict}
+  alias Block.Header
   alias System.State
   alias Types
   alias Util.Crypto
@@ -47,9 +47,11 @@ defmodule Block.Extrinsic.Disputes do
 
   defp filter_valid_offenses(offenses, processed_verdicts_map, state) do
     offenses
-    |> Enum.filter(&valid_signature?(&1, processed_verdicts_map))
-    |> Enum.filter(&MapSet.member?(combined_validators(state), &1.validator_key))
-    |> Enum.filter(&offense_in_new_bad_set?(&1, processed_verdicts_map, state))
+    |> Enum.filter(fn offense ->
+      valid_signature?(offense, processed_verdicts_map) and
+        MapSet.member?(combined_validators(state), offense.validator_key) and
+        offense_in_new_bad_set?(offense, processed_verdicts_map, state)
+    end)
     # Formula (104) v0.3.4
     |> Util.Collections.uniq_sorted(& &1.validator_key)
   end

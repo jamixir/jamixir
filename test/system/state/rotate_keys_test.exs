@@ -23,9 +23,9 @@ defmodule System.State.RotateKeysTest do
 
       # Validator 1 and 3 are nullified, 2 is not
 
-      assert TH.is_nullified(Enum.at(result, 0))
+      assert TH.nullified?(Enum.at(result, 0))
       assert Enum.at(result, 1) == Enum.at(next_validators, 1)
-      assert TH.is_nullified(Enum.at(result, 2))
+      assert TH.nullified?(Enum.at(result, 2))
     end
 
     test "returns the same validators if none are in the offenders set", %{
@@ -84,7 +84,7 @@ defmodule System.State.RotateKeysTest do
           punish: offenders
         })
 
-      assert Enum.all?(new_pending, &TH.is_nullified/1)
+      assert Enum.all?(new_pending, &TH.nullified?/1)
       assert new_current == safrole.pending
       assert new_prev == [v2]
       assert byte_size(new_epoch_root) == 144
@@ -126,7 +126,7 @@ defmodule System.State.RotateKeysTest do
           punish: offenders
         })
 
-      assert Enum.count(new_pending, &TH.is_nullified/1) == 2
+      assert Enum.count(new_pending, &TH.nullified?/1) == 2
       assert Enum.at(new_pending, 1) == v2
       assert new_current == safrole.pending
       assert new_prev == [v2]

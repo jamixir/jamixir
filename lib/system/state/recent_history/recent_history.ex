@@ -3,9 +3,9 @@ defmodule System.State.RecentHistory do
   Manages a list of recent blocks, ensuring the max length is maintained.
   """
 
-  alias System.State.{RecentHistory}
-  alias System.State.RecentHistory.RecentBlock
   alias Block.Header
+  alias System.State.RecentHistory
+  alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, MMR}
 
   @max_length 8
@@ -73,7 +73,7 @@ defmodule System.State.RecentHistory do
   def update_latest_posterior_state_root(%__MODULE__{blocks: blocks} = self, %Header{
         prior_state_root: _s
       })
-      when length(blocks) == 0 do
+      when blocks == [] do
     self
   end
 

@@ -1,10 +1,11 @@
 defmodule System.State do
-  alias Codec.NilDiscriminator
-  alias Codec.VariableSize
-  alias System.State
-  alias Constants
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Codec.NilDiscriminator
+  alias Codec.VariableSize
+  alias Constants
+
+  alias System.State
 
   alias System.State.{
     Validator,
@@ -75,7 +76,7 @@ defmodule System.State do
 
   # Formula (12) v0.3.4
   @spec add_block(State.t(), Block.t()) :: State.t()
-  def add_block(%System.State{} = state, %Block{header: h, extrinsic: e}) do
+  def add_block(state = %State{}, %Block{header: h, extrinsic: e}) do
     # Formula (16) v0.3.4
     # Formula (46) v0.3.4
     new_timeslot = h.timeslot
@@ -136,7 +137,7 @@ defmodule System.State do
 
     # β' Formula (18) v0.3.4
     new_recent_history =
-      System.State.RecentHistory.posterior_recent_history(
+      RecentHistory.posterior_recent_history(
         h,
         sorted_guarantees,
         inital_recent_history,
@@ -345,7 +346,7 @@ defmodule System.State do
   end
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
-  defp encode_accounts(%{} = state_keys, state = %State{}) do
+  defp encode_accounts(state_keys = %{}, state = %State{}) do
     state.services
     |> Enum.reduce(state_keys, fn {id, service}, ac ->
       Map.put(ac, {255, id}, Codec.Encoder.encode(service))

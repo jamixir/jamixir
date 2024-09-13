@@ -17,7 +17,6 @@ defmodule System.State.EntropyPool do
   # Formula (66) v0.3.4
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
-
   # Formula (68) v0.3.4
   def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2, n3: n3} = pool) do
     {n1_, n2_, n3_} =

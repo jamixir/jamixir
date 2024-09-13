@@ -33,10 +33,10 @@ defmodule Codec.Encoder do
 
   # Private Functions
 
-  defp is_bit_list([]), do: true
-  defp is_bit_list([0 | rest]), do: is_bit_list(rest)
-  defp is_bit_list([1 | rest]), do: is_bit_list(rest)
-  defp is_bit_list(_), do: false
+  defp bit_list?([]), do: true
+  defp bit_list?([0 | rest]), do: bit_list?(rest)
+  defp bit_list?([1 | rest]), do: bit_list?(rest)
+  defp bit_list?(_), do: false
 
   # Formula (269) v0.3.4
   defp do_encode(nil), do: <<>>
@@ -49,7 +49,7 @@ defmodule Codec.Encoder do
 
   # Formula (276) v0.3.4
   defp do_encode(value) when is_list(value) do
-    if is_bit_list(value) do
+    if bit_list?(value) do
       encode_bits(value)
     else
       encode_list(value)
@@ -95,7 +95,7 @@ defmodule Codec.Encoder do
   # ...
   # l = 7 => 2^49 <= x < 2^56
   # Formula (275) v0.3.4
-  defp exists_l_in_N8(x) do
+  defp exists_l_in_n8(x) do
     l = trunc(:math.log2(x) / 7)
 
     if l in 0..7 do
@@ -112,14 +112,14 @@ defmodule Codec.Encoder do
   defp encode_integer(x) do
     if x >= 2 ** 64, do: raise(ArgumentError, "Integer value is too large to encode")
 
-    case exists_l_in_N8(x) do
+    case exists_l_in_n8(x) do
       nil -> <<2 ** 8 - 1>> <> encode_le(x, 8)
       l -> <<2 ** 8 - 2 ** (8 - l) + div(x, 2 ** (8 * l))>> <> encode_le(rem(x, 2 ** (8 * l)), l)
     end
   end
 
   defp encode_list(value) do
-    value |> Enum.map(&do_encode/1) |> Enum.join()
+    value |> Enum.map_join(&do_encode/1)
   end
 
   # Formula (279) v0.3.4
