@@ -48,44 +48,38 @@ defmodule Util.Collections do
   - comparator: Function to compare two elements. Defaults to `&<=/2` for ascending order.
 
   ## Returns
-  - {:ok, :valid} if the list has no duplicates and is in order
+  - :ok if the list has no duplicates and is in order
   - {:error, :duplicates} if duplicates are found
   - {:error, :not_in_order} if the list is not in order
 
   """
 
   @spec validate_unique_and_ordered(list(), (any() -> any()), (any(), any() -> boolean())) ::
-          {:ok, :valid} | {:error, :duplicates | :not_in_order}
+          :ok | {:error, :duplicates | :not_in_order}
   def validate_unique_and_ordered(list, key_fn \\ & &1, comparator \\ &<=/2)
 
-  def validate_unique_and_ordered([], _key_fn, _comparator), do: {:ok, :valid}
-  def validate_unique_and_ordered([_], _key_fn, _comparator), do: {:ok, :valid}
+  def validate_unique_and_ordered([], _key_fn, _comparator), do: :ok
+  def validate_unique_and_ordered([_], _key_fn, _comparator), do: :ok
 
-  def validate_unique_and_ordered([a | rest], key_fn, comparator) do
-    do_validate_unique_and_ordered(rest, key_fn.(a), MapSet.new([key_fn.(a)]), key_fn, comparator)
-  end
+  def validate_unique_and_ordered(list, key_fn, comparator) do
+    list
+    |> Enum.reduce_while({:ok, nil, MapSet.new()}, fn item, {_, last, seen} ->
+      current = key_fn.(item)
 
-  defp do_validate_unique_and_ordered([], _last_key, _seen, _key_fn, _comparator),
-    do: {:ok, :valid}
+      cond do
+        MapSet.member?(seen, current) ->
+          {:halt, {:error, :duplicates}}
 
-  defp do_validate_unique_and_ordered([item | rest], last_key, seen, key_fn, comparator) do
-    current_key = key_fn.(item)
+        last != nil and not comparator.(last, current) ->
+          {:halt, {:error, :not_in_order}}
 
-    cond do
-      MapSet.member?(seen, current_key) ->
-        {:error, :duplicates}
-
-      not comparator.(last_key, current_key) ->
-        {:error, :not_in_order}
-
-      true ->
-        do_validate_unique_and_ordered(
-          rest,
-          current_key,
-          MapSet.put(seen, current_key),
-          key_fn,
-          comparator
-        )
+        true ->
+          {:cont, {:ok, current, MapSet.put(seen, current)}}
+      end
+    end)
+    |> case do
+      {:ok, _, _} -> :ok
+      error -> error
     end
   end
 end

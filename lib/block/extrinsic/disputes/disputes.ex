@@ -68,7 +68,7 @@ defmodule Block.Extrinsic.Disputes do
 
       # Formula (103) v0.3.4
       !match?(
-        {:ok, :valid},
+        :ok,
         Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
       ) ->
         {:error, "Invalid order or duplicates in verdict work report hashes"}
@@ -92,7 +92,7 @@ defmodule Block.Extrinsic.Disputes do
       # Formula (106) v0.3.4
       !Enum.all?(verdicts, fn %Verdict{judgements: judgements} ->
         match?(
-          {:ok, :valid},
+          :ok,
           Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
         )
       end) ->
@@ -149,7 +149,7 @@ defmodule Block.Extrinsic.Disputes do
     cond do
       # Formula 104
       !match?(
-        {:ok, :valid},
+        :ok,
         Collections.validate_unique_and_ordered(offenses, & &1.validator_key)
       ) ->
         {:error, "Invalid order or duplicates in #{offense_type} Ed25519 keys"}
