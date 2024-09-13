@@ -4,6 +4,7 @@ defmodule System.State.Judgements do
   """
   alias Block.Header
   alias System.State.Judgements
+  alias Block.Extrinsic.Disputes
 
   @type t :: %__MODULE__{
           good: MapSet.t(Types.hash()),
@@ -21,16 +22,29 @@ defmodule System.State.Judgements do
   @type verdict :: :good | :bad | :wonky
 
   def posterior_judgements(%Header{timeslot: ts}, disputes, state) do
-    case Block.Extrinsic.Disputes.validate_disputes(disputes, state, ts) do
-      {:ok, %{good_set: good_set, bad_set: bad_set, wonky_set: wonky_set}} ->
-        new_judgements = %Judgements{
-          state.judgements
-          | good: MapSet.union(state.judgements.good, good_set),
-            bad: MapSet.union(state.judgements.bad, bad_set),
-            wonky: MapSet.union(state.judgements.wonky, wonky_set)
-        }
+    case Disputes.validate_disputes(
+           disputes,
+           state.curr_validators,
+           state.prev_validators,
+           state.judgements,
+           ts
+         ) do
+      :ok ->
+        new_judgements =
+          posterior_judgement_sets(
+            Map.get(disputes, :verdicts),
+            state.curr_validators,
+            state.prev_validators,
+            state.judgements,
+            ts
+          )
 
-        new_punish_set = update_punish_set(new_judgements, disputes.culprits ++ disputes.faults)
+        # Formula (115) v0.3.4
+        new_punish_set =
+          MapSet.union(
+            state.judgements.punish,
+            MapSet.new(disputes.culprits ++ disputes.faults, & &1.validator_key)
+          )
 
         %Judgements{
           new_judgements
@@ -43,10 +57,43 @@ defmodule System.State.Judgements do
     end
   end
 
-  defp update_punish_set(state_judgements, offenses) do
-    Enum.reduce(offenses, state_judgements.punish, fn offense, acc ->
-      MapSet.put(acc, offense.validator_key)
-    end)
+  defp posterior_judgement_sets(verdicts, curr_validators, prev_validators, judgements, timeslot) do
+    current_epoch = Util.Time.epoch_index(timeslot)
+
+    Enum.reduce(
+      verdicts,
+      judgements,
+      fn verdict, acc ->
+        validator_count =
+          length(
+            Disputes.get_validator_set(
+              curr_validators,
+              prev_validators,
+              current_epoch,
+              verdict.epoch_index
+            )
+          )
+
+        sum_judgements = Disputes.sum_judgements(verdict)
+
+        cond do
+          # Formula (112) v0.3.4
+          sum_judgements == div(2 * validator_count, 3) + 1 ->
+            %{acc | good: MapSet.put(acc.good, verdict.work_report_hash)}
+
+          # Formula (113) v0.3.4
+          sum_judgements == 0 ->
+            %{acc | bad: MapSet.put(acc.bad, verdict.work_report_hash)}
+
+          # Formula (114) v0.3.4
+          sum_judgements == div(validator_count, 3) ->
+            %{acc | wonky: MapSet.put(acc.wonky, verdict.work_report_hash)}
+
+          true ->
+            acc
+        end
+      end
+    )
   end
 
   defimpl Encodable do
