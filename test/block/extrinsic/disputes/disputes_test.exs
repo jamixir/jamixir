@@ -1,10 +1,10 @@
 defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
   alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.Disputes.{Verdict, Judgement, Culprit, Fault}
-  alias Types
-  alias System.State.{Validator, Judgements}
+  alias Block.Extrinsic.Disputes.{Culprit, Fault, Judgement, Verdict}
   alias Block.Header
+  alias System.State.{Judgements, Validator}
+  alias Types
 
   setup do
     work_report_hash = <<0xAAC4C749F1D5EC07BF0502C8072E95033D48E31B1B9DFDCB8D42BD80445F713E::256>>

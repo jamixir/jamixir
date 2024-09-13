@@ -355,7 +355,7 @@ defmodule System.State do
 
   # ∀(s ↦ a) ∈ δ, (h ↦ v) ∈ as ∶ C(s, h) ↦ v
   # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, h) ↦ p
-  defp encode_accounts_storage(state_keys, state = %State{}, property) do
+  defp encode_accounts_storage(state_keys, %State{} = state, property) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)

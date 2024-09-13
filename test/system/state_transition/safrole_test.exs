@@ -1,6 +1,8 @@
 defmodule System.StateTransition.SafroleStateTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias System.State.RotateKeys
+  alias System.State.EntropyPool
   alias System.State
   alias Block.{Header}
   alias Block
@@ -150,14 +152,14 @@ defmodule System.StateTransition.SafroleStateTest do
       header = build(:header, timeslot: 600)
 
       new_entropy_pool =
-        System.State.EntropyPool.rotate_history(
+        EntropyPool.rotate_history(
           header,
           state.timeslot,
           state.entropy_pool
         )
 
       {_, new_curr_validators, _, _} =
-        System.State.RotateKeys.rotate_keys(
+        RotateKeys.rotate_keys(
           header,
           state.timeslot,
           state.prev_validators,
@@ -168,7 +170,7 @@ defmodule System.StateTransition.SafroleStateTest do
         )
 
       posterior_epoch_slot_sealers =
-        System.State.Safrole.get_posterior_epoch_slot_sealers(
+        Safrole.get_posterior_epoch_slot_sealers(
           header,
           state.timeslot,
           state.safrole,
