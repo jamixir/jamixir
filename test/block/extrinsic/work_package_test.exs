@@ -1,11 +1,12 @@
 defmodule WorkPackageTest do
+  alias System.State
   alias Util.Hash
   alias Block.Extrinsic.WorkPackage
   use ExUnit.Case
   import Jamixir.Factory
 
-  setup do
-    {:ok, wp: build(:work_package, service_index: 0)}
+  setup_all do
+    {:ok, wp: build(:work_package, service_index: 0), state: build(:genesis_state)}
   end
 
   describe "valid?/1" do
@@ -75,7 +76,7 @@ defmodule WorkPackageTest do
 
   # Formula (182) v0.3.4
   describe "authorization_code/2" do
-    test "returns authorization_code when it is available in history" do
+    test "returns authorization_code when it is available in history", %{state: state} do
       h = :crypto.strong_rand_bytes(32)
 
       service_account =
@@ -91,7 +92,7 @@ defmodule WorkPackageTest do
           context: build(:refinement_context, timeslot: 3)
         )
 
-      state = build(:genesis_state, services: %{wp.service_index => service_account})
+      state = %State{state | services: %{wp.service_index => service_account}}
 
       assert WorkPackage.authorization_code(wp, state) == <<7, 7, 7>>
 
@@ -99,8 +100,8 @@ defmodule WorkPackageTest do
                Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
     end
 
-    test "return nil authorization code when it is not available" do
-      assert WorkPackage.authorization_code(build(:work_package), build(:genesis_state)) == nil
+    test "return nil authorization code when it is not available", %{state: state} do
+      assert WorkPackage.authorization_code(build(:work_package), state) == nil
     end
   end
 

@@ -8,7 +8,7 @@ defmodule System.StateTransition.JudgementsTest do
   alias Block.Extrinsic.Disputes.{Verdict, Culprit, Judgement}
   alias System.State.{Validator, Judgements}
 
-  setup do
+  setup_all do
     %{state: state, validators: validators, key_pairs: key_pairs} =
       build(:genesis_state_with_safrole, validator_count: 1)
 
@@ -89,6 +89,7 @@ defmodule System.StateTransition.JudgementsTest do
     assert MapSet.member?(State.add_block(state, block).judgements.good, work_report_hash)
   end
 
+  @tag :slow
   test "adds to wonky set", %{
     state: state,
     header: header,

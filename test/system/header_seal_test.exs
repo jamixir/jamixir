@@ -86,6 +86,7 @@ defmodule System.HeaderSealTest do
       assert byte_size(sealed_header.block_seal) == 96
     end
 
+    @tag :slow
     test "successfully validates a header sealed with a fallback sealer", %{
       key_pairs: kp,
       entropy_pool: ep,
@@ -147,6 +148,7 @@ defmodule System.HeaderSealTest do
                )
     end
 
+    @tag :slow
     test "fails validation with an invalid VRF signature", %{
       key_pairs: kp,
       entropy_pool: ep,
@@ -168,6 +170,7 @@ defmodule System.HeaderSealTest do
                )
     end
 
+    @tag :slow
     test "fails validation when ticket ID does not match", %{
       key_pairs: kp,
       entropy_pool: ep,

@@ -5,6 +5,12 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias Block.{Header}
   alias Util.Hash
 
+  setup_all do
+    %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+    {:ok, %{state: state, key_pairs: key_pairs}}
+  end
+
   test "updates entropy with new VRF output" do
     initial_state = %EntropyPool{n0: "initial_entropy", n1: "eta1", n2: "eta2", n3: "eta3"}
 
@@ -48,8 +54,7 @@ defmodule System.StateTransition.EntropyPoolTest do
   end
 
   describe "randmoness accumaltor" do
-    test "correct entropy accumelations" do
-      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+    test "correct entropy accumelations", %{state: state, key_pairs: key_pairs} do
       block = build(:safrole_block, state: state, key_pairs: key_pairs)
 
       expected_slot_sealer =

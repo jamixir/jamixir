@@ -4,10 +4,13 @@ defmodule System.StateTransition.TimeslotTest do
   alias System.State
   alias Block
 
-  test "add_block/2 correctly sets timeslot" do
-    %{state: state, key_pairs: key_pairs} =
-      build(:genesis_state_with_safrole)
+  setup_all do
+    %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
+    {:ok, %{state: state, key_pairs: key_pairs}}
+  end
+
+  test "add_block/2 correctly sets timeslot", %{state: state, key_pairs: key_pairs} do
     state = %{
       state
       | timeslot: 6

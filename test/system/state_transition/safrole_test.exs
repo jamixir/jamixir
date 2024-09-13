@@ -7,10 +7,21 @@ defmodule System.StateTransition.SafroleStateTest do
   alias System.State.{Safrole, Judgements, Safrole}
   alias TestHelper, as: TH
 
+  def genesis_state() do
+    case Process.get(:memoized_genesis_state) do
+      nil ->
+        state = build(:genesis_state_with_safrole)
+        Process.put(:memoized_genesis_state, state)
+        state
+
+      state ->
+        state
+    end
+  end
+
   describe "safrole state update on new epoch with some validators nullified" do
     setup do
-      %{state: state, validators: validators, key_pairs: key_pairs} =
-        build(:genesis_state_with_safrole)
+      %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 
       state = %{
         state
@@ -36,6 +47,7 @@ defmodule System.StateTransition.SafroleStateTest do
       {:ok, state: state, header: header, validator2: Enum.at(validators, 1)}
     end
 
+    @tag :slow
     test "correctly updates safrole state", %{
       state: state,
       header: header,
@@ -58,8 +70,7 @@ defmodule System.StateTransition.SafroleStateTest do
 
   describe "updates state.safrole.current_epoch_slot_sealers" do
     setup do
-      %{state: state, validators: validators, key_pairs: key_pairs} =
-        build(:genesis_state_with_safrole)
+      %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 
       state = %{
         state
@@ -83,6 +94,7 @@ defmodule System.StateTransition.SafroleStateTest do
       {:ok, state: state, block: block, header: header, key_pairs: key_pairs}
     end
 
+    @tag :slow
     test "maintains current_epoch_slot_sealers when epoch does not advance", %{
       state: state,
       block: block
@@ -93,6 +105,7 @@ defmodule System.StateTransition.SafroleStateTest do
                state.safrole.current_epoch_slot_sealers
     end
 
+    @tag :slow
     test "reorders current_epoch_slot_sealers when epoch advances and submission ends", %{
       state: state,
       block: block,
@@ -129,9 +142,9 @@ defmodule System.StateTransition.SafroleStateTest do
       assert new_state.curr_validators == expected_current_validators
     end
 
+    @tag :slow
     test "replaces current_epoch_slot_sealers when fallback_key_sequence is used", %{} do
-      %{state: state, key_pairs: key_pairs} =
-        build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: key_pairs} = genesis_state()
 
       state = %{state | timeslot: 499}
       header = build(:header, timeslot: 600)

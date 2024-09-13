@@ -9,23 +9,26 @@ defmodule System.StateTest do
   import Mox
   setup :verify_on_exit!
 
-  setup do
+  setup_all do
+    %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
     {:ok,
      %{
        h1: unique_hash_factory(),
        h2: unique_hash_factory(),
-       state: build(:genesis_state)
+       state: state,
+       key_pairs: key_pairs
      }}
   end
 
   describe "state_keys/1" do
     test "authorizer_pool serialization - C(1)", %{h1: h1, h2: h2} do
-      state = build(:genesis_state, authorizer_pool: [[h1, h2], [h1]])
+      state = %State{authorizer_pool: [[h1, h2], [h1]]}
       assert state_keys(state)[1] == <<2>> <> h1 <> h2 <> <<1>> <> h1
     end
 
     test "authorizer_queue serialization - C(2)", %{h1: h1, h2: h2} do
-      state = build(:genesis_state, authorizer_queue: [[h1, h2], [h1]])
+      state = %State{authorizer_queue: [[h1, h2], [h1]]}
 
       assert state_keys(state)[2] == h1 <> h2 <> h1
     end
@@ -151,17 +154,14 @@ defmodule System.StateTest do
                  "0" <> <<255>> <> "1" <> <<255>> <> "2" <> <<255>> <> "3456789012345678901234567"
     end
 
-    test "all state keys are encodable with key_to_32_octet" do
-      state = build(:genesis_state)
-
+    test "all state keys are encodable with key_to_32_octet", %{state: state} do
       state_keys(state)
       |> Enum.each(fn {k, _} -> assert key_to_32_octet(k) end)
     end
   end
 
   describe "serialize/1" do
-    test "serialized state dictionary" do
-      state = build(:genesis_state)
+    test "serialized state dictionary", %{state: state} do
       state_keys = state_keys(state)
       serialized_state = serialize(state)
 
@@ -173,13 +173,11 @@ defmodule System.StateTest do
   end
 
   describe "add_block/2" do
-    test "add block smoke test" do
-      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-
+    test "add block smoke test", %{state: state, key_pairs: key_pairs} do
       State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end
 
-    test "updates statistics" do
+    test "updates statistics", %{state: state, key_pairs: key_pairs} do
       Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
       on_exit(fn ->
@@ -190,9 +188,8 @@ defmodule System.StateTest do
       ValidatorStatisticsMock
       |> expect(:posterior_validator_statistics, 1, fn _, _, _, _, _ -> "mockvalue" end)
 
-      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-
-      new_state = State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
+      new_state =
+        State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
 
       assert new_state.validator_statistics == "mockvalue"
     end
