@@ -2,6 +2,8 @@ defmodule System.State.Judgements do
   @moduledoc """
   Represents the state and operations related to judgements in the disputes system.
   """
+  alias Block.Extrinsic.Disputes.Verdict
+  alias Block.Header
   alias System.State.Judgements
   alias Block.Extrinsic.Disputes
 
@@ -20,57 +22,82 @@ defmodule System.State.Judgements do
 
   @type verdict :: :good | :bad | :wonky
 
-  def posterior_judgements(header, disputes, state) do
-    {processed_verdicts_map, valid_offenses} =
-      Disputes.validate_and_process_disputes(disputes, state, header)
+  def posterior_judgements(%Header{timeslot: ts}, disputes, state) do
+    case Disputes.validate_disputes(
+           disputes,
+           state.curr_validators,
+           state.prev_validators,
+           state.judgements,
+           ts
+         ) do
+      :ok ->
+        new_judgements =
+          posterior_judgement_sets(
+            Map.get(disputes, :verdicts),
+            state.curr_validators,
+            state.prev_validators,
+            state.judgements,
+            ts
+          )
 
-    new_judgements = assimilate_judgements(state.judgements, processed_verdicts_map)
-    new_punish_set = update_punish_set(new_judgements, valid_offenses)
+        # Formula (115) v0.3.4
+        new_punish_set =
+          MapSet.union(
+            state.judgements.punish,
+            MapSet.new(disputes.culprits ++ disputes.faults, & &1.validator_key)
+          )
 
-    %Judgements{
-      new_judgements
-      | punish: new_punish_set
-    }
+        %Judgements{
+          new_judgements
+          | punish: new_punish_set
+        }
+
+      {:error, _reason} ->
+        state.judgements
+    end
   end
 
-  defp assimilate_judgements(
-         %System.State.Judgements{} = state_judgements,
-         processed_verdicts_map
-       ) do
-    {new_goodset, new_badset, new_wonkyset} =
-      Enum.reduce(
-        processed_verdicts_map,
-        {state_judgements.good, state_judgements.bad, state_judgements.wonky},
-        fn
-          {_hash, %Disputes.ProcessedVerdict{classification: :good, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {MapSet.put(good_acc, hash), bad_acc, wonky_acc}
+  defp posterior_judgement_sets(verdicts, curr_validators, prev_validators, judgements, timeslot) do
+    current_epoch = Util.Time.epoch_index(timeslot)
 
-          {_hash, %Disputes.ProcessedVerdict{classification: :bad, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {good_acc, MapSet.put(bad_acc, hash), wonky_acc}
+    Enum.reduce(
+      verdicts,
+      judgements,
+      fn verdict, acc ->
+        validator_count =
+          length(
+            Disputes.get_validator_set(
+              curr_validators,
+              prev_validators,
+              current_epoch,
+              verdict.epoch_index
+            )
+          )
 
-          {_hash, %Disputes.ProcessedVerdict{classification: :wonky, work_report_hash: hash}},
-          {good_acc, bad_acc, wonky_acc} ->
-            {good_acc, bad_acc, MapSet.put(wonky_acc, hash)}
+        sum_judgements = Verdict.sum_judgements(verdict)
 
-          _, acc ->
+        cond do
+          # Formula (112) v0.3.4
+          sum_judgements == div(2 * validator_count, 3) + 1 ->
+            %{acc | good: MapSet.put(acc.good, verdict.work_report_hash)}
+
+          # Formula (113) v0.3.4
+          sum_judgements == 0 ->
+            %{acc | bad: MapSet.put(acc.bad, verdict.work_report_hash)}
+
+          # Formula (114) v0.3.4
+          sum_judgements == div(validator_count, 3) ->
+            %{acc | wonky: MapSet.put(acc.wonky, verdict.work_report_hash)}
+
+          true ->
             acc
         end
-      )
-
-    %System.State.Judgements{
-      state_judgements
-      | good: new_goodset,
-        bad: new_badset,
-        wonky: new_wonkyset
-    }
+      end
+    )
   end
 
-  defp update_punish_set(state_judgements, offenses) do
-    Enum.reduce(offenses, state_judgements.punish, fn offense, acc ->
-      MapSet.put(acc, offense.validator_key)
-    end)
+  def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
+    MapSet.union(g, b) |> MapSet.union(w)
   end
 
   defimpl Encodable do

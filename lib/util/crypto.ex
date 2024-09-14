@@ -18,4 +18,8 @@ defmodule Util.Crypto do
   def verify_signature(signature, payload, public_key) do
     :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
   end
+
+  def sign(payload, private_key) do
+    :crypto.sign(:eddsa, :none, payload, [private_key, :ed25519])
+  end
 end

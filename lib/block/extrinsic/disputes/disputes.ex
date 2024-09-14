@@ -4,12 +4,11 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
+  alias System.State.Validator
+  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
   alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.Disputes.{Culprit, Fault, Helper, ProcessedVerdict, Verdict}
-  alias Block.Header
-  alias System.State
-  alias Types
-  alias Util.Crypto
+  alias System.State.Judgements
+  alias Util.{Time, Crypto, Collections}
 
   @type t :: %__MODULE__{
           # v
@@ -22,90 +21,190 @@ defmodule Block.Extrinsic.Disputes do
 
   defstruct verdicts: [], culprits: [], faults: []
 
-  @doc """
-  Filters all components of Disputes extrinsic (verdicts, culprits, faults) for validity.
-  """
-  def validate_and_process_disputes(%Disputes{} = disputes, %State{} = state, %Header{
-        timeslot: timeslot
-      }) do
-    processed_verdicts_map = Helper.process_verdicts(disputes.verdicts, state, timeslot)
-
-    # Filter out verdicts that already exist in the state sets
-    unique_processed_verdicts_map = filter_duplicates(processed_verdicts_map, state.judgements)
-
-    valid_offenses =
-      filter_valid_offenses(
-        disputes.culprits ++ disputes.faults,
-        unique_processed_verdicts_map,
-        state
-      )
-
-    {unique_processed_verdicts_map, valid_offenses}
+  @spec validate_disputes(
+          Disputes.t(),
+          list(Validator.t()),
+          list(Validator.t()),
+          Judgements.t(),
+          integer()
+        ) ::
+          :ok | {:error, String.t()}
+  def validate_disputes(
+        %Disputes{verdicts: verdicts, culprits: culprits, faults: faults},
+        curr_validators,
+        prev_validators,
+        judgements,
+        timeslot
+      ) do
+    with :ok <-
+           validate_verdicts(verdicts, curr_validators, prev_validators, judgements, timeslot),
+         allowed_validator_keys <-
+           compute_allowed_validator_keys(curr_validators, prev_validators, judgements),
+         bad_set <- compute_bad_set(verdicts, judgements),
+         :ok <- validate_offenses(culprits, allowed_validator_keys, bad_set, :culprits),
+         :ok <- validate_offenses(faults, allowed_validator_keys, bad_set, :faults) do
+      :ok
+    end
   end
 
-  # Filters and returns only valid offenses (culprits and faults).
+  defp validate_verdicts([], _, _, _, _), do: :ok
 
-  defp filter_valid_offenses(offenses, processed_verdicts_map, state) do
-    offenses
-    |> Enum.filter(fn offense ->
-      valid_signature?(offense, processed_verdicts_map) and
-        MapSet.member?(combined_validators(state), offense.validator_key) and
-        offense_in_new_bad_set?(offense, processed_verdicts_map, state)
-    end)
-    # Formula (104) v0.3.4
-    |> Util.Collections.uniq_sorted(& &1.validator_key)
-  end
+  defp validate_verdicts(verdicts, curr_validators, prev_validators, judgements, timeslot) do
+    current_epoch = Time.epoch_index(timeslot)
 
-  defp valid_signature?(%Culprit{validator_key: key, signature: sig, work_report_hash: wrh}, _) do
-    Crypto.verify_signature(sig, wrh, key)
-  end
+    cond do
+      # Formula (99) v0.3.4 - epoch index
+      !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
+        {:error, "Invalid epoch index in verdicts"}
 
-  defp valid_signature?(%Fault{validator_key: key, signature: sig, work_report_hash: wrh}, _) do
-    Crypto.verify_signature(sig, wrh, key)
-  end
+      # Formula (98) v0.3.4 - required length ⌊2/3V⌋+1
+      !Enum.all?(verdicts, fn %Verdict{judgements: judgements, epoch_index: epoch_index} ->
+        validator_set =
+            get_validator_set(curr_validators, prev_validators, current_epoch, epoch_index)
 
-  # Formula (101) and 102 v0.3.4.
-  defp combined_validators(state) do
-    current_validators = state.curr_validators |> Enum.map(& &1.ed25519)
-    previous_validators = state.prev_validators |> Enum.map(& &1.ed25519)
-    punished_keys = MapSet.to_list(state.judgements.punish)
+        length(judgements) == div(2 * length(validator_set), 3) + 1
+      end) ->
+        {:error, "Invalid number of judgements in verdicts"}
 
-    combined = current_validators ++ previous_validators
-    (combined -- punished_keys) |> MapSet.new()
+      # Formula (103) v0.3.4
+      !match?(
+        :ok,
+        Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
+      ) ->
+        {:error, "Invalid order or duplicates in verdict work report hashes"}
+
+      # Formula (105) v0.3.4
+      !MapSet.disjoint?(
+        Judgements.union_all(judgements),
+        MapSet.new(verdicts, & &1.work_report_hash)
+      ) ->
+        {:error, "Work report hashes already exist in current judgments"}
+
+      #  Formula (99) v0.3.4 - signatures
+      !Enum.all?(verdicts, fn verdict ->
+        curr_validators
+        |> get_validator_set(prev_validators, current_epoch, verdict.epoch_index)
+        |> valid_signatures?(verdict)
+      end) ->
+        {:error, "Invalid signatures in verdicts"}
+
+      # Formula (106) v0.3.4
+      !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
+        Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
+      end) ->
+        {:error, "Judgements not ordered by validator index or contain duplicates"}
+
+      # Formula (107) v0.3.4
+      # Formula (108) v0.3.4
+      Enum.any?(verdicts, fn verdict ->
+        validator_count =
+            length(
+              get_validator_set(
+                curr_validators,
+                prev_validators,
+                current_epoch,
+                verdict.epoch_index
+              )
+            )
+
+        Verdict.sum_judgements(verdict) not in [
+          0,
+          div(validator_count, 3),
+          div(2 * validator_count, 3) + 1
+        ]
+      end) ->
+        {:error, "Invalid sum of judgements in verdicts"}
+
+      true ->
+        :ok
+    end
   end
 
   # Formula (101) v0.3.4
   # Formula (102) v0.3.4
-  # Validates whether an offense (culprit or fault) is valid based on
-  # report_hash being in the bad set or in the verdict bad set
-
-  @spec offense_in_new_bad_set?(map(), %{Types.hash() => ProcessedVerdict.t()}, State.t()) ::
-          boolean()
-  defp offense_in_new_bad_set?(
-         %{work_report_hash: report_hash},
-         processed_verdicts_map,
-         state
-       ) do
-    classification =
-      case Map.get(processed_verdicts_map, report_hash) do
-        %ProcessedVerdict{classification: classification} -> classification
-        _ -> nil
-      end
-
-    classification == :bad or report_hash in state.judgements.bad
+  defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
+    MapSet.union(
+      MapSet.new(curr_validators, & &1.ed25519),
+      MapSet.new(prev_validators, & &1.ed25519)
+    )
+    |> MapSet.difference(judgements.punish)
   end
 
-  # Formula (105) v0.3.4.
-  defp filter_duplicates(processed_verdicts_map, %System.State.Judgements{
-         good: good_set,
-         bad: bad_set,
-         wonky: wonky_set
-       }) do
-    Enum.reject(processed_verdicts_map, fn {hash, _} ->
-      hash in good_set or hash in bad_set or hash in wonky_set
+  # Formula (112) v0.3.4
+  defp compute_bad_set(verdicts, judgements) do
+    verdicts
+    |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
+    |> Enum.map(& &1.work_report_hash)
+    |> MapSet.new()
+    |> MapSet.union(judgements.bad)
+  end
+
+  defp validate_offenses([], _, _, _), do: :ok
+
+  defp validate_offenses(offenses, allowed_validator_keys, posterior_bad_set, offense_type) do
+    cond do
+      # Formula 104
+      !match?(
+        :ok,
+        Collections.validate_unique_and_ordered(offenses, & &1.validator_key)
+      ) ->
+        {:error, "Invalid order or duplicates in #{offense_type} Ed25519 keys"}
+
+      # Formula 101 and 102 -Check: Ensure all offense work report hashes are in the posterior bad set
+      !Enum.all?(offenses, &MapSet.member?(posterior_bad_set, &1.work_report_hash)) ->
+        {:error, "Work report hash in #{offense_type} not in the posterior bad set"}
+
+      # Formula 101 and 102 - Check if all offense validator keys are valid
+      !Enum.all?(offenses, &MapSet.member?(allowed_validator_keys, &1.validator_key)) ->
+        {:error, "#{offense_type} reported for a validator not in the allowed validator keys"}
+
+      # Formula 101 and 102 - Check signatures
+      !Enum.all?(
+        offenses,
+        fn offense ->
+          msg_base =
+              case offense_type do
+                :culprits ->
+                  SigningContexts.jam_guarantee()
+
+                :faults ->
+                  if offense.decision,
+                    do: SigningContexts.jam_valid(),
+                    else: SigningContexts.jam_invalid()
+              end
+
+          Crypto.verify_signature(
+            offense.signature,
+            msg_base <> offense.work_report_hash,
+            offense.validator_key
+          )
+        end
+      ) ->
+        {:error, "Invalid signature in #{offense_type}"}
+
+      true ->
+        :ok
+    end
+  end
+
+  # Formula (99) v0.3.4
+  def get_validator_set(curr_validators, _prev_validators, current_epoch, current_epoch),
+    do: curr_validators
+
+  def get_validator_set(_curr_validators, prev_validators, current_epoch, epoch_index)
+      when epoch_index == current_epoch - 1,
+      do: prev_validators
+
+  defp valid_signatures?(validator_set, %Verdict{judgements: judgements, work_report_hash: wrh}) do
+    Enum.all?(judgements, fn judgement ->
+      Crypto.verify_signature(
+        judgement.signature,
+        Judgement.signature_base(judgement) <> wrh,
+        Enum.at(validator_set, judgement.validator_index).ed25519
+      )
     end)
-    |> Enum.into(%{})
   end
+
 
   defimpl Encodable do
     def encode(%Disputes{}) do
