@@ -2,6 +2,30 @@ defmodule System.HeaderSeal do
   alias System.State.EntropyPool
   alias Block.Header
 
+  @callback do_validate_header_seals(
+    header :: any(),
+    posterior_curr_validators :: any(),
+    posterior_epoch_slot_sealers :: any(),
+    entropy_pool :: %EntropyPool{}
+  ) :: {:ok, %{vrf_signature_output: binary(), block_seal_output: binary()}} | {:error, any()}
+
+
+  def validate_header_seals(
+        header,
+        posterior_curr_validators,
+        posterior_epoch_slot_sealers,
+        %EntropyPool{} = entropy_pool
+      ) do
+    module = Application.get_env(:jamixir, :header_seal, __MODULE__)
+
+    module.do_validate_header_seals(
+      header,
+      posterior_curr_validators,
+      posterior_epoch_slot_sealers,
+      entropy_pool
+    )
+  end
+
   # Formula (60) v0.3.4
   # Formula (61)  v0.3.4
   def seal_header(
@@ -35,7 +59,7 @@ defmodule System.HeaderSeal do
 
   # Formula (60) v0.3.4
   # Formula (61)  v0.3.4
-  def validate_header_seals(
+  def do_validate_header_seals(
         header,
         posterior_curr_validators,
         posterior_epoch_slot_sealers,

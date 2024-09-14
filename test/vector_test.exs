@@ -3,11 +3,24 @@ defmodule VectorTest do
   alias Block.Header
   alias HTTPoison.Response
   alias GitHubRepoReader
+  import Mox
+  setup :verify_on_exit!
+
 
   @owner "w3f"
   @repo "jamtestvectors"
 
   describe "test vectors" do
+    setup do
+      Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      end)
+
+      :ok
+    end
+
     for file <- GitHubRepoReader.fetch_repo_files(@owner, @repo) do
       if String.ends_with?(file, ".json") do
         @tag file_name: file
@@ -15,6 +28,12 @@ defmodule VectorTest do
 
         test "verify test vector for #{file}", %{file_name: file_name} do
           {:ok, json_data} = fetch_and_parse_json(file_name, "master")
+
+          HeaderSealMock
+          |> expect(:do_validate_header_seals, fn _, _, _, _ ->
+            {:ok, %{vrf_signature_output: json_data["input"]["entropy"]}}
+          end)
+
           assert_expected_results(json_data)
         end
       end
