@@ -28,13 +28,10 @@ defmodule System.State.JudgementsTest do
         judgements: build(:judgements)
     }
 
-    work_report_hash = :crypto.strong_rand_bytes(32)
-    header = build(:header)
-
     {:ok,
-     work_report_hash: work_report_hash,
+     work_report_hash: :crypto.strong_rand_bytes(32),
      state: state,
-     header: header,
+     header: build(:header),
      current_key: {current_pub, current_priv},
      prev_key: {prev_pub, prev_priv}}
   end

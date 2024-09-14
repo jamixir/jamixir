@@ -19,4 +19,9 @@ defmodule Block.Extrinsic.Disputes.Verdict do
         }
 
   defstruct work_report_hash: <<>>, epoch_index: 0, judgements: []
+
+  # Formula (108) v0.3.4
+  def sum_judgements(%__MODULE__{judgements: j}) do
+    Enum.reduce(j, 0, &if(&1.decision, do: &2 + 1, else: &2))
+  end
 end

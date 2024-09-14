@@ -318,6 +318,26 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def fault_factory(attrs) do
+    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
+    {pub, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+    decision = Map.get(attrs, :decision, true)
+
+    signature_base =
+      if decision do
+        SigningContexts.jam_valid()
+      else
+        SigningContexts.jam_invalid()
+      end
+
+    %Block.Extrinsic.Disputes.Fault{
+      work_report_hash: work_report_hash,
+      decision: decision,
+      validator_key: pub,
+      signature: Util.Crypto.sign(signature_base <> work_report_hash, priv)
+    }
+  end
+
   # Judgements Factory
   def judgements_factory do
     %System.State.Judgements{

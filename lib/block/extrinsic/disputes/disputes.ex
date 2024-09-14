@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Disputes do
   """
 
   alias System.State.Validator
-  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault}
+  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
   alias Block.Extrinsic.Disputes
   alias System.State.Judgements
   alias Util.{Time, Crypto, Collections}
@@ -75,8 +75,7 @@ defmodule Block.Extrinsic.Disputes do
 
       # Formula (105) v0.3.4
       !MapSet.disjoint?(
-        MapSet.union(judgements.good, judgements.bad)
-        |> MapSet.union(judgements.wonky),
+        Judgements.union_all(judgements),
         MapSet.new(verdicts, & &1.work_report_hash)
       ) ->
         {:error, "Work report hashes already exist in current judgments"}
@@ -90,11 +89,8 @@ defmodule Block.Extrinsic.Disputes do
         {:error, "Invalid signatures in verdicts"}
 
       # Formula (106) v0.3.4
-      !Enum.all?(verdicts, fn %Verdict{judgements: judgements} ->
-        match?(
-          :ok,
-          Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
-        )
+      !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
+        Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
       end) ->
         {:error, "Judgements not ordered by validator index or contain duplicates"}
 
@@ -111,7 +107,7 @@ defmodule Block.Extrinsic.Disputes do
               )
             )
 
-        sum_judgements(verdict) not in [
+        Verdict.sum_judgements(verdict) not in [
           0,
           div(validator_count, 3),
           div(2 * validator_count, 3) + 1
@@ -124,7 +120,8 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # implied in Formulas 101 and 102
+  # Formula (101) v0.3.4
+  # Formula (102) v0.3.4
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
     MapSet.union(
       MapSet.new(curr_validators, & &1.ed25519),
@@ -134,10 +131,9 @@ defmodule Block.Extrinsic.Disputes do
   end
 
   # Formula 112
-  # needed for validation of culprits and faults in Formulas 101 and 102
   defp compute_bad_set(verdicts, judgements) do
     verdicts
-    |> Enum.filter(&(sum_judgements(&1) == 0))
+    |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
     |> Enum.map(& &1.work_report_hash)
     |> MapSet.new()
     |> MapSet.union(judgements.bad)
@@ -201,23 +197,14 @@ defmodule Block.Extrinsic.Disputes do
 
   defp valid_signatures?(validator_set, %Verdict{judgements: judgements, work_report_hash: wrh}) do
     Enum.all?(judgements, fn judgement ->
-      validator = Enum.at(validator_set, judgement.validator_index)
-
-      signature_base =
-        if judgement.decision,
-          do: SigningContexts.jam_valid(),
-          else: SigningContexts.jam_invalid()
-
-      Crypto.verify_signature(judgement.signature, signature_base <> wrh, validator.ed25519)
+      Crypto.verify_signature(
+        judgement.signature,
+        Judgement.signature_base(judgement) <> wrh,
+        Enum.at(validator_set, judgement.validator_index).ed25519
+      )
     end)
   end
 
-  # Formula (108) v0.3.4
-  def sum_judgements(verdict) do
-    verdict.judgements
-    |> Enum.map(fn judgement -> if judgement.decision, do: 1, else: 0 end)
-    |> Enum.sum()
-  end
 
   defimpl Encodable do
     def encode(%Disputes{}) do

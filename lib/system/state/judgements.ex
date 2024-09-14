@@ -2,6 +2,7 @@ defmodule System.State.Judgements do
   @moduledoc """
   Represents the state and operations related to judgements in the disputes system.
   """
+  alias Block.Extrinsic.Disputes.Verdict
   alias Block.Header
   alias System.State.Judgements
   alias Block.Extrinsic.Disputes
@@ -51,8 +52,7 @@ defmodule System.State.Judgements do
           | punish: new_punish_set
         }
 
-      {:error, reason} ->
-        IO.puts("Invalid Disputed Extrinsic: #{reason}")
+      {:error, _reason} ->
         state.judgements
     end
   end
@@ -74,7 +74,7 @@ defmodule System.State.Judgements do
             )
           )
 
-        sum_judgements = Disputes.sum_judgements(verdict)
+        sum_judgements = Verdict.sum_judgements(verdict)
 
         cond do
           # Formula (112) v0.3.4
@@ -94,6 +94,10 @@ defmodule System.State.Judgements do
         end
       end
     )
+  end
+
+  def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
+    MapSet.union(g, b) |> MapSet.union(w)
   end
 
   defimpl Encodable do

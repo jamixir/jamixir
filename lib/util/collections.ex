@@ -56,12 +56,8 @@ defmodule Util.Collections do
 
   @spec validate_unique_and_ordered(list(), (any() -> any()), (any(), any() -> boolean())) ::
           :ok | {:error, :duplicates | :not_in_order}
-  def validate_unique_and_ordered(list, key_fn \\ & &1, comparator \\ &<=/2)
 
-  def validate_unique_and_ordered([], _key_fn, _comparator), do: :ok
-  def validate_unique_and_ordered([_], _key_fn, _comparator), do: :ok
-
-  def validate_unique_and_ordered(list, key_fn, comparator) do
+  def validate_unique_and_ordered(list, key_fn \\ & &1, comparator \\ &<=/2) do
     list
     |> Enum.reduce_while({:ok, nil, MapSet.new()}, fn item, {_, last, seen} ->
       current = key_fn.(item)
@@ -81,5 +77,11 @@ defmodule Util.Collections do
       {:ok, _, _} -> :ok
       error -> error
     end
+  end
+
+  def all_ok?(collection, fun) do
+    Enum.all?(collection, fn item ->
+      fun.(item) == :ok
+    end)
   end
 end

@@ -10,4 +10,9 @@ defmodule Block.Extrinsic.Disputes.Judgement do
         }
 
   defstruct validator_index: 0, decision: true, signature: <<>>
+
+  #Formula (100) v0.3.4
+  def signature_base(%__MODULE__{decision: decision}) do
+    if decision, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
+  end
 end
