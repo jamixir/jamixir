@@ -12,7 +12,7 @@ defmodule Utils do
   end
 
   def hex_to_binary(value) when is_binary(value) do
-    case Base.decode16(String.replace_prefix(value, "0x", ""), case: :mixed) do
+    case Base.decode16(String.replace_prefix(value, "0x", ""), case: :lower) do
       {:ok, binary} ->
         binary
 
