@@ -76,12 +76,6 @@ defmodule Codec.Encoder do
   end
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
-  defp do_encode(value) when is_list(value), do: encode_list(value)
-
-  defp do_encode(%_{} = struct) do
-    # Delegate to Encodable protocol for structs
-    Encodable.encode(struct)
-  end
 
   defp encodable?(data) do
     not is_nil(Encodable.impl_for(data))

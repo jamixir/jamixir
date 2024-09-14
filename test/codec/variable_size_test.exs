@@ -4,6 +4,7 @@ defmodule Codec.VariableSizeTest do
   alias Codec.{Encoder, VariableSize}
 
   test "encode variable size" do
+    assert Encoder.encode(VariableSize.new(nil)) == <<0>>
     assert Encoder.encode(VariableSize.new([])) == <<0>>
     assert Encoder.encode(VariableSize.new(<<>>)) == <<0>>
     assert Encoder.encode(VariableSize.new({})) == <<0>>

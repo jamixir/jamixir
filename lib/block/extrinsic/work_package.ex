@@ -45,7 +45,6 @@ defmodule Block.Extrinsic.WorkPackage do
   # Formula (180) v0.3.4
   # 12 * 2 ** 20
   @maximum_size 12_582_912
-  def maximum_size, do: @maximum_size
 
   def valid?(wp) do
     valid_data_segments?(wp) && valid_size?(wp)

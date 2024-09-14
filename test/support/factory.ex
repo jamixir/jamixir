@@ -171,15 +171,6 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def indexed_validator_factory(index) do
-    %System.State.Validator{
-      bandersnatch: <<index::256>>,
-      ed25519: <<index::256>>,
-      bls: <<index::1152>>,
-      metadata: <<index::1024>>
-    }
-  end
-
   # Ticket Factories
   def single_seal_key_ticket_factory do
     %System.State.SealKeyTicket{

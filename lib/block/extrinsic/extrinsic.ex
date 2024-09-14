@@ -15,21 +15,6 @@ defmodule Block.Extrinsic do
         }
 
   @doc """
-  Represents the block extrinsic as described.
-  E ≡ (ET, ED, EP, EA, EG)
-  """
-  def new(tickets, disputes, preimages, assurances, guarantees) do
-    %Block.Extrinsic{
-      tickets: tickets,
-      disputes: disputes,
-      # Formula (156) v0.3.4
-      preimages: Util.Collections.uniq_sorted(preimages, & &1.service_index),
-      assurances: assurances,
-      guarantees: guarantees
-    }
-  end
-
-  @doc """
   Returns the list of guarantees ordered by work_report.core_index.
   Within each guarantee, the credentials are ordered by validator_index.
   Ensures that the core_index in guarantees and validator_index in credentials are unique.
