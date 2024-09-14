@@ -2,6 +2,7 @@ defmodule LocalVectorTest do
   use ExUnit.Case
   alias Block.Header
   import Mox
+  import TestHelper
   setup :verify_on_exit!
 
   @vector_dir "test/test_vectors"
@@ -9,9 +10,11 @@ defmodule LocalVectorTest do
   describe "test vectors" do
     setup do
       Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+      Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
       end)
 
       :ok
@@ -26,6 +29,9 @@ defmodule LocalVectorTest do
       |> expect(:do_validate_header_seals, fn _, _, _, _ ->
         {:ok, %{vrf_signature_output: vrf_output}}
       end)
+
+      ValidatorStatisticsMock
+      |> expect(:posterior_validator_statistics, 1, fn _, _, _, _, _ -> "mockvalue" end)
 
       assert_expected_results(json_data)
     end
@@ -50,10 +56,9 @@ defmodule LocalVectorTest do
     pre_state = System.State.from_json(json_data["pre_state"])
     header = %Header{timeslot: json_data["input"]["slot"]}
 
-    new_state =
+    same_state?(
+      System.State.from_json(json_data["post_state"]),
       System.State.add_block(pre_state, %Block{header: header, extrinsic: %Block.Extrinsic{}})
-
-    expected_state = System.State.from_json(json_data["post_state"])
-    assert new_state == expected_state
+    )
   end
 end
