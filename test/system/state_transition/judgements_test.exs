@@ -1,9 +1,9 @@
 defmodule System.State.JudgementsTest do
   use ExUnit.Case
-  alias System.State.Judgements
-  alias Block.Extrinsic.Disputes
-  alias Util.Time
   import Jamixir.Factory
+  alias Block.Extrinsic.Disputes
+  alias System.State.Judgements
+  alias Util.Time
 
   defp assert_updated_set(result, state, set_key, new_item) do
     assert MapSet.member?(Map.get(result, set_key), new_item)

@@ -4,12 +4,12 @@ defmodule System.StateTransition.SafroleStateTest do
   alias System.State.RotateKeys
   alias System.State.EntropyPool
   alias System.State
-  alias Block.{Header}
+  alias Block.Header
   alias Block
   alias System.State.{Safrole, Judgements, Safrole}
   alias TestHelper, as: TH
 
-  def genesis_state() do
+  def genesis_state do
     case Process.get(:memoized_genesis_state) do
       nil ->
         state = build(:genesis_state_with_safrole)

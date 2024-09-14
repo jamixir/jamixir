@@ -1,10 +1,10 @@
 defmodule System.State.RotateKeysTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.{RotateKeys, Safrole, Judgements}
-  alias Types
   alias Block.Header
+  alias System.State.{Judgements, RotateKeys, Safrole}
   alias TestHelper, as: TH
+  alias Types
 
   setup do
     next_validators = Enum.map(1..3, &TH.create_validator/1)

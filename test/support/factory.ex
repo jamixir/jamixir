@@ -1,14 +1,13 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias Block.Extrinsic.{Guarantee, Disputes}
+  alias Block.Extrinsic.{Disputes, Guarantee}
   alias Block.Extrinsic.Preimage
-  alias Block.{Header, Extrinsic}
+  alias Block.{Extrinsic, Header}
   alias System.State.CoreReports
-  use ExMachina
-
-  alias Util.Time
   alias System.State.SealKeyTicket
+  alias Util.Time
+  use ExMachina
 
   @cores 2
   @validator_count 6

@@ -1,12 +1,12 @@
 defmodule System.StateTest do
-  alias System.State
-  alias System.State.ValidatorStatistics
-  alias Codec.VariableSize
-  alias Codec.NilDiscriminator
   use ExUnit.Case
   import Jamixir.Factory
   import System.State
   import Mox
+  alias Codec.NilDiscriminator
+  alias Codec.VariableSize
+  alias System.State
+  alias System.State.ValidatorStatistics
   setup :verify_on_exit!
 
   setup_all do

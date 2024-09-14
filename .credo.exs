@@ -4,7 +4,7 @@
       name: "default",
       files: %{
         included: ["lib/", "src/", "web/", "apps/"],
-        excluded: []
+        excluded: ["mix.lock"]
       },
       plugins: [],
       requires: [],
@@ -21,5 +21,3 @@
     }
   ]
 }
-
-

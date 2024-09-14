@@ -64,7 +64,7 @@ defmodule Block.Header do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end
 
-  def valid_header?(_, h = %Block.Header{parent_hash: nil}) do
+  def valid_header?(_, %Block.Header{parent_hash: nil} = h) do
     Util.Time.valid_block_timeslot?(h.timeslot)
   end
 

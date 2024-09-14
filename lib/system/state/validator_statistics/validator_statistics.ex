@@ -16,9 +16,9 @@ defmodule System.State.ValidatorStatistics do
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
-  alias System.State.{Validator, ValidatorStatistic, ValidatorStatistics}
   alias Block.Extrinsic.Guarantee
-  alias Block.{Header, Extrinsic}
+  alias Block.{Extrinsic, Header}
+  alias System.State.{Validator, ValidatorStatistic, ValidatorStatistics}
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -105,7 +105,7 @@ defmodule System.State.ValidatorStatistics do
   end
 
   defimpl Encodable do
-    alias System.State.{ValidatorStatistics, ValidatorStatistic}
+    alias System.State.{ValidatorStatistic, ValidatorStatistics}
 
     def encode(%ValidatorStatistics{} = v) do
       Codec.Encoder.encode({

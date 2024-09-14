@@ -4,11 +4,10 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
-  alias System.State.Validator
-  alias Block.Extrinsic.Disputes.{Verdict, Culprit, Fault, Judgement}
   alias Block.Extrinsic.Disputes
-  alias System.State.Judgements
-  alias Util.{Time, Crypto, Collections}
+  alias Block.Extrinsic.Disputes.{Culprit, Fault, Judgement, Verdict}
+  alias System.State.{Judgements, Validator}
+  alias Util.{Collections, Crypto, Time}
 
   @type t :: %__MODULE__{
           # v
@@ -44,6 +43,8 @@ defmodule Block.Extrinsic.Disputes do
          :ok <- validate_offenses(culprits, allowed_validator_keys, bad_set, :culprits),
          :ok <- validate_offenses(faults, allowed_validator_keys, bad_set, :faults) do
       :ok
+    else
+      error -> error
     end
   end
 
@@ -204,7 +205,6 @@ defmodule Block.Extrinsic.Disputes do
       )
     end)
   end
-
 
   defimpl Encodable do
     def encode(%Disputes{}) do

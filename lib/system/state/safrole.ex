@@ -2,10 +2,10 @@ defmodule System.State.Safrole do
   @moduledoc """
   Safrole  state, as specified in section 6.1 of the GP.
   """
-  alias System.State.{SealKeyTicket, Validator, EntropyPool, Safrole}
   alias Block.Header
+  alias Codec.{Decoder, Encoder}
+  alias System.State.{EntropyPool, Safrole, SealKeyTicket, Validator}
   alias Util.{Hash, Time}
-  alias Codec.{Encoder, Decoder}
 
   @type t :: %__MODULE__{
           # Formula (52) v0.3.4

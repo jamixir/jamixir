@@ -4,8 +4,8 @@ defmodule System.State.EntropyPool do
   section 6.4 - Sealing and Entropy Accumulation
   """
 
-  alias Util.{Hash, Time}
   alias System.State.EntropyPool
+  alias Util.{Hash, Time}
 
   @type t :: %__MODULE__{
           n0: Types.hash(),

@@ -2,10 +2,10 @@ defmodule System.State.Judgements do
   @moduledoc """
   Represents the state and operations related to judgements in the disputes system.
   """
+  alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.Verdict
   alias Block.Header
   alias System.State.Judgements
-  alias Block.Extrinsic.Disputes
 
   @type t :: %__MODULE__{
           good: MapSet.t(Types.hash()),

@@ -1,8 +1,8 @@
 defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
   alias Block.Extrinsic.Disputes
-  alias System.State.{Judgements}
-  alias Util.{Time}
+  alias System.State.Judgements
+  alias Util.Time
   import Jamixir.Factory
 
   setup_all do
