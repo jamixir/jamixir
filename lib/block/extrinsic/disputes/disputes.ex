@@ -130,7 +130,7 @@ defmodule Block.Extrinsic.Disputes do
     |> MapSet.difference(judgements.punish)
   end
 
-  # Formula 112
+  # Formula (112) v0.3.4
   defp compute_bad_set(verdicts, judgements) do
     verdicts
     |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
