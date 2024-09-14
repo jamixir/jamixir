@@ -1,0 +1,8 @@
+{
+  "skip_files": [
+    "lib/cli.ex",
+    "lib/mix/tasks/mix.jam.ex",
+    "lib/tcp_server.ex",
+    "test/support/github_repo_reader.ex"
+  ]
+}
