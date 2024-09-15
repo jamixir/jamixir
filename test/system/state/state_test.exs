@@ -62,12 +62,11 @@ defmodule System.StateTest do
     end
 
     test "core reports serialization - C(10)", %{state: state} do
-      s = %{state | core_reports: build(:core_reports)}
+      s = %{state | core_reports: build_list(1, :core_report) ++ [nil]}
 
-      expected_to_encode = s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)
+      expected_to_encode = s.core_reports |> Enum.map(&NilDiscriminator.new/1)
 
-      assert state_keys(s)[10] ==
-               Codec.Encoder.encode(expected_to_encode)
+      assert state_keys(s)[10] == Codec.Encoder.encode(expected_to_encode)
     end
 
     test "timeslot serialization - C(11)", %{state: state} do
