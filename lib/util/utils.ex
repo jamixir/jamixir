@@ -12,11 +12,22 @@ defmodule Utils do
   end
 
   def hex_to_binary(value) when is_binary(value) do
-    case Base.decode16(value, case: :lower) do
-      {:ok, binary} -> binary
-      :error -> value
+    case Base.decode16(String.replace_prefix(value, "0x", ""), case: :lower) do
+      {:ok, binary} ->
+        binary
+
+      :error ->
+        value
     end
   end
 
   def hex_to_binary(value), do: value
+
+  def atomize_keys(map) when is_map(map) do
+    for {key, val} <- map, into: %{} do
+      {String.to_existing_atom(to_string(key)), atomize_keys(val)}
+    end
+  end
+
+  def atomize_keys(value), do: value
 end

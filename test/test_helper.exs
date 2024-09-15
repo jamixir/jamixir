@@ -4,6 +4,7 @@ ExUnit.start()
 ExUnit.configure(exclude: :test_vectors)
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
+Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
 
 defmodule TestHelper do
   alias Util.Time, as: Time
