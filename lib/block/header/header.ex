@@ -1,5 +1,6 @@
 defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
+  alias Util.Time
 
   @type t :: %__MODULE__{
           # Formula (38) v0.3.4
@@ -59,13 +60,23 @@ defmodule Block.Header do
     block_seal: <<>>
   ]
 
+  @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
+  def validate(%__MODULE__{timeslot: current_timeslot}, %System.State{timeslot: previous_timeslot}) do
+    with :ok <- Time.validate_timeslot_order(previous_timeslot, current_timeslot),
+         :ok <- Time.valid_block_timeslot(current_timeslot) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # Formula (40) v0.3.4
   def valid_extrinsic_hash?(header, extrinsic) do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end
 
   def valid_header?(_, %Block.Header{parent_hash: nil} = h) do
-    Util.Time.valid_block_timeslot?(h.timeslot)
+   Time.valid_block_timeslot(h.timeslot)
   end
 
   def valid_header?(storage, header) do
@@ -75,7 +86,7 @@ defmodule Block.Header do
 
       parent_header ->
         parent_header.timeslot < header.timeslot and
-          Util.Time.valid_block_timeslot?(header.timeslot)
+          Time.valid_block_timeslot?(header.timeslot)
     end
   end
 
