@@ -197,6 +197,15 @@ defmodule System.State do
         current_epoch_slot_sealers: posterior_epoch_slot_sealers
     }
 
+    posterior_validator_statistics =
+      ValidatorStatistics.posterior_validator_statistics(
+        e,
+        state.timeslot,
+        state.validator_statistics,
+        new_curr_validators,
+        h
+      )
+
     %System.State{
       # α'
       authorizer_pool: new_authorizer_pool,
@@ -230,14 +239,7 @@ defmodule System.State do
       judgements: new_judgements,
       # π' Formula (30) v0.3.4
       # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
-      validator_statistics:
-        Application.get_env(:jamixir, :validator_statistics, ValidatorStatistics).posterior_validator_statistics(
-          e,
-          state.timeslot,
-          state.validator_statistics,
-          new_curr_validators,
-          h
-        )
+      validator_statistics: posterior_validator_statistics
     }
   end
 
