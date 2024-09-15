@@ -211,18 +211,16 @@ defmodule System.State.ValidatorStatisticsTest do
              end)
     end
 
-    test "raise exception when there is no author statistics" do
+    test "return same stats when there is no author statistics" do
       validator_statistics = build(:validator_statistics)
 
-      assert_raise ArgumentError, "Author statistics not found", fn ->
-        ValidatorStatistics.posterior_validator_statistics(
-          build(:extrinsic),
-          0,
-          validator_statistics,
-          [],
-          build(:header, block_author_key_index: 1000)
-        )
-      end
+      assert ValidatorStatistics.posterior_validator_statistics(
+               build(:extrinsic),
+               0,
+               validator_statistics,
+               [],
+               build(:header, block_author_key_index: 1000)
+             ) == validator_statistics
     end
   end
 end
