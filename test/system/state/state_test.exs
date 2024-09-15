@@ -193,6 +193,23 @@ defmodule System.StateTest do
 
       assert new_state.validator_statistics == "mockvalue"
     end
+
+    test "don't updates statistics when error", %{state: state, key_pairs: key_pairs} do
+      Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+
+      on_exit(fn ->
+        # Reset to the actual implementation after the test
+        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+      end)
+
+      ValidatorStatisticsMock
+      |> expect(:do_posterior_validator_statistics, 1, fn _, _, _, _, _ -> {:error, "message"} end)
+
+      new_state =
+        State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
+
+      assert new_state.validator_statistics == state.validator_statistics
+    end
   end
 
   describe "from_json/1" do
