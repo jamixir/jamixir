@@ -30,9 +30,17 @@ defmodule System.State.CoreReport do
   @doc """
   Updates core reports with guarantees and current validators.
   """
-  def posterior_core_reports(core_reports, _guarantees, _curr_validators, _new_timeslot) do
-    # TODO: Implement the logic to update core reports with guarantees
-    core_reports
+  def posterior_core_reports(core_reports, guarantees, _curr_validators, _new_timeslot) do
+    # Formula (120) v0.3.4
+    # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
+    cond do
+      !Enum.all?(guarantees, &WorkReport.valid_size?(&1.work_report)) ->
+        {:error, :invalid_work_report_size}
+
+      # Add other checks here
+      true ->
+        {:ok, core_reports}
+    end
   end
 
   defimpl Encodable do
