@@ -1,24 +1,11 @@
 defmodule System.State do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.NilDiscriminator
-  alias Codec.VariableSize
+  alias Codec.{NilDiscriminator, VariableSize}
   alias Constants
-
   alias System.State
-
-  alias System.State.{
-    Validator,
-    Judgements,
-    Safrole,
-    RecentHistory,
-    EntropyPool,
-    RotateKeys,
-    ServiceAccount,
-    CoreReports,
-    PrivilegedServices,
-    ValidatorStatistics
-  }
+  alias System.State.{CoreReport, EntropyPool, Judgements, RecentHistory, RotateKeys, Validator}
+  alias System.State.{PrivilegedServices, Safrole, ServiceAccount, ValidatorStatistics}
 
   @type t :: %__MODULE__{
           # Formula (85) v0.3.4
@@ -33,7 +20,7 @@ defmodule System.State do
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
-          core_reports: CoreReports.t(),
+          core_reports: list(CoreReport.t() | nil),
           timeslot: integer(),
           # Formula (85) v0.3.4
           authorizer_queue: list(list(Types.hash())),
@@ -61,7 +48,7 @@ defmodule System.State do
     # λ: Previous Validators
     prev_validators: [],
     # ρ: Each core's currently assigned report
-    core_reports: %CoreReports{},
+    core_reports: [],
     # τ: Details of the most recent timeslot
     timeslot: 0,
     # φ: Queue which fills the authorization requirement
@@ -92,12 +79,12 @@ defmodule System.State do
     # ρ† Formula (25) v0.3.4
     # post-judgement, pre-assurances-extrinsic intermediate state
     core_reports_intermediate_1 =
-      State.CoreReports.process_disputes(state.core_reports, Map.get(e, :disputes))
+      State.CoreReport.process_disputes(state.core_reports, Map.get(e, :disputes))
 
     # ρ‡ Formula (26) v0.3.4
     # The post-assurances-extrinsic, pre-guarantees-extrinsic, intermediate state
     core_reports_intermediate_2 =
-      State.CoreReports.process_availability(
+      State.CoreReport.process_availability(
         core_reports_intermediate_1,
         Map.get(e, :availability)
       )
@@ -107,7 +94,7 @@ defmodule System.State do
 
     # ρ' Formula (27) v0.3.4
     new_core_reports =
-      State.CoreReports.posterior_core_reports(
+      State.CoreReport.posterior_core_reports(
         core_reports_intermediate_2,
         sorted_guarantees,
         state.curr_validators,
@@ -313,7 +300,7 @@ defmodule System.State do
       # C(9) ↦ E(λ)
       9 => e(s.prev_validators),
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
-      10 => e(s.core_reports.reports |> Enum.map(&NilDiscriminator.new/1)),
+      10 => e(s.core_reports |> Enum.map(&NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
       11 => Codec.Encoder.encode_le(s.timeslot, 4),
       # C(12) ↦ E4(χ)

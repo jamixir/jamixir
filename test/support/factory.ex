@@ -4,7 +4,6 @@ defmodule Jamixir.Factory do
   alias Block.Extrinsic.{Disputes, Guarantee}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
-  alias System.State.CoreReports
   alias System.State.SealKeyTicket
   alias Util.Time
   use ExMachina
@@ -250,10 +249,6 @@ defmodule Jamixir.Factory do
   end
 
   # Core Reports Factory
-  def core_reports_factory do
-    %CoreReports{reports: [build(:core_report), nil]}
-  end
-
   def core_report_factory do
     %System.State.CoreReport{
       work_report: build(:work_report),
