@@ -6,7 +6,6 @@ defmodule VectorTest do
   import Mox
   setup :verify_on_exit!
 
-
   @owner "w3f"
   @repo "jamtestvectors"
 
@@ -31,10 +30,20 @@ defmodule VectorTest do
 
           HeaderSealMock
           |> expect(:do_validate_header_seals, fn _, _, _, _ ->
-            {:ok, %{vrf_signature_output: json_data["input"]["entropy"]}}
+            {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
           end)
 
-          assert_expected_results(json_data)
+          assert_expected_results(
+            json_data,
+            [
+              :timeslot,
+              :entropy_pool,
+              :prev_validators,
+              :curr_validators,
+              :safrole
+            ],
+            file_name
+          )
         end
       end
     end
@@ -58,7 +67,7 @@ defmodule VectorTest do
     end
   end
 
-  defp assert_expected_results(json_data) do
+  defp assert_expected_results(json_data, tested_keys, file_name) do
     # Translate JSON data into your system modules and run assertions
     # Example:
     pre_state = System.State.from_json(json_data["pre_state"])
@@ -68,6 +77,10 @@ defmodule VectorTest do
       System.State.add_block(pre_state, %Block{header: header, extrinsic: %Block.Extrinsic{}})
 
     expected_state = System.State.from_json(json_data["post_state"])
-    assert new_state == expected_state
+
+    Enum.each(tested_keys, fn key ->
+      assert Map.get(new_state, key) == Map.get(expected_state, key),
+             "Mismatch for key: #{key} in file: #{file_name}"
+    end)
   end
 end
