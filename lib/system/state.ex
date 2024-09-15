@@ -94,12 +94,15 @@ defmodule System.State do
 
     # ρ' Formula (27) v0.3.4
     new_core_reports =
-      State.CoreReport.posterior_core_reports(
-        core_reports_intermediate_2,
-        sorted_guarantees,
-        state.curr_validators,
-        new_timeslot
-      )
+      case State.CoreReport.posterior_core_reports(
+             core_reports_intermediate_2,
+             sorted_guarantees,
+             state.curr_validators,
+             new_timeslot
+           ) do
+        {:ok, new_core_reports} -> new_core_reports
+        {:error, _} -> state.core_reports
+      end
 
     # Formula (28) v0.3.4
     {_new_services, _privileged_services, _new_next_validators, new_authorizer_queue,
