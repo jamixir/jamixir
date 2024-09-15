@@ -198,13 +198,16 @@ defmodule System.State do
     }
 
     posterior_validator_statistics =
-      ValidatorStatistics.posterior_validator_statistics(
-        e,
-        state.timeslot,
-        state.validator_statistics,
-        new_curr_validators,
-        h
-      )
+      case ValidatorStatistics.posterior_validator_statistics(
+             e,
+             state.timeslot,
+             state.validator_statistics,
+             new_curr_validators,
+             h
+           ) do
+        {:ok, posterior_validator_statistics} -> posterior_validator_statistics
+        {:error, _} -> state.validator_statistics
+      end
 
     %System.State{
       # α'

@@ -186,7 +186,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_posterior_validator_statistics, 1, fn _, _, _, _, _ -> "mockvalue" end)
+      |> expect(:do_posterior_validator_statistics, 1, fn _, _, _, _, _ -> {:ok, "mockvalue"} end)
 
       new_state =
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))

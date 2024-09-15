@@ -39,7 +39,7 @@ defmodule System.State.ValidatorStatistics do
               ValidatorStatistics.t(),
               list(Validator.t()),
               Header.t()
-            ) :: ValidatorStatistics.t()
+            ) :: {:ok | :error, ValidatorStatistics.t()}
 
   def posterior_validator_statistics(
         %Extrinsic{} = extrinsic,
@@ -78,48 +78,50 @@ defmodule System.State.ValidatorStatistics do
            validator_statistics.previous_epoch_statistics}
       end
 
-    with {:ok, author_stats} <-
-           get_author_stats(new_current_epoc_stats, header.block_author_key_index) do
-      # Formula (174) v0.3.4
-      new_author_stats = %{
-        author_stats
-        | blocks_produced: author_stats.blocks_produced + 1,
-          tickets_introduced: author_stats.tickets_introduced + length(extrinsic.tickets),
-          preimages_introduced: author_stats.preimages_introduced + length(extrinsic.preimages),
-          data_size:
-            author_stats.data_size +
-              (extrinsic.preimages
-               |> Enum.map(&byte_size(&1.data))
-               |> Enum.sum())
-      }
+    case get_author_stats(new_current_epoc_stats, header.block_author_key_index) do
+      {:ok, author_stats} ->
+        # Formula (174) v0.3.4
+        new_author_stats = %{
+          author_stats
+          | blocks_produced: author_stats.blocks_produced + 1,
+            tickets_introduced: author_stats.tickets_introduced + length(extrinsic.tickets),
+            preimages_introduced: author_stats.preimages_introduced + length(extrinsic.preimages),
+            data_size:
+              author_stats.data_size +
+                (extrinsic.preimages
+                 |> Enum.map(&byte_size(&1.data))
+                 |> Enum.sum())
+        }
 
-      new_current_epoc_stats =
-        new_current_epoc_stats
-        |> List.replace_at(header.block_author_key_index, new_author_stats)
-        |> Enum.with_index()
-        |> Enum.map(fn {stats, index} ->
-          %{
-            stats
-            | availability_assurances:
-                stats.availability_assurances +
-                  (extrinsic.assurances
-                   |> Enum.any?(&(&1.validator_index == index))
-                   |> if(do: 1, else: 0)),
-              # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
-              reports_guaranteed:
-                author_stats.reports_guaranteed +
-                  (Guarantee.reporters_set(extrinsic.guarantees)
-                   |> Enum.any?(&(&1 == Enum.at(index, new_curr_validators)))
-                   |> if(do: 1, else: 0))
-          }
-        end)
+        new_current_epoc_stats =
+          new_current_epoc_stats
+          |> List.replace_at(header.block_author_key_index, new_author_stats)
+          |> Enum.with_index()
+          |> Enum.map(fn {stats, index} ->
+            %{
+              stats
+              | availability_assurances:
+                  stats.availability_assurances +
+                    (extrinsic.assurances
+                     |> Enum.any?(&(&1.validator_index == index))
+                     |> if(do: 1, else: 0)),
+                # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
+                reports_guaranteed:
+                  author_stats.reports_guaranteed +
+                    (Guarantee.reporters_set(extrinsic.guarantees)
+                     |> Enum.any?(&(&1 == Enum.at(index, new_curr_validators)))
+                     |> if(do: 1, else: 0))
+            }
+          end)
 
-      %ValidatorStatistics{
-        current_epoch_statistics: new_current_epoc_stats,
-        previous_epoch_statistics: new_previous_epoc_stats
-      }
-    else
-      _ -> validator_statistics
+        {:ok,
+         %ValidatorStatistics{
+           current_epoch_statistics: new_current_epoc_stats,
+           previous_epoch_statistics: new_previous_epoc_stats
+         }}
+
+      {:error, e} ->
+        {:error, e}
     end
   end
 
