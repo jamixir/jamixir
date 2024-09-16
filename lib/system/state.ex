@@ -82,21 +82,20 @@ defmodule System.State do
 
     with :ok <- Block.validate(block, state),
          # β† Formula (17) v0.3.4
-         initial_recent_history <-
+         initial_recent_history =
            RecentHistory.update_latest_posterior_state_root(state.recent_history, h),
          # δ† Formula (24) v0.3.4
-         services_intermediate <-
+         services_intermediate =
            State.Services.process_preimages(state.services, Map.get(e, :preimages), new_timeslot),
          # ρ† Formula (25) v0.3.4
-         core_reports_intermediate_1 <-
+         core_reports_intermediate_1 =
            State.CoreReport.process_disputes(state.core_reports, Map.get(e, :disputes)),
          # ρ‡ Formula (26) v0.3.4
-         core_reports_intermediate_2 <-
+         core_reports_intermediate_2 =
            State.CoreReport.process_availability(
              core_reports_intermediate_1,
              Map.get(e, :availability)
            ),
-
          # ρ' Formula (27) v0.3.4
          {:ok, new_core_reports} <-
            State.CoreReport.posterior_core_reports(
@@ -107,7 +106,7 @@ defmodule System.State do
            ),
          # Formula (28) v0.3.4
          {_new_services, _privileged_services, _new_next_validators, new_authorizer_queue,
-          beefy_commitment_map} <-
+          beefy_commitment_map} =
            State.Accumulation.accumulate(
              Map.get(e, :availability),
              new_core_reports,
@@ -117,7 +116,7 @@ defmodule System.State do
              state.authorizer_queue
            ),
          # α' Formula (29) v0.3.4
-         new_authorizer_pool <-
+         new_authorizer_pool =
            posterior_authorizer_pool(
              Map.get(e, :guarantees),
              new_authorizer_queue,
@@ -125,7 +124,7 @@ defmodule System.State do
              h.timeslot
            ),
          # β' Formula (18) v0.3.4
-         new_recent_history <-
+         new_recent_history =
            RecentHistory.posterior_recent_history(
              h,
              Map.get(e, :guarantees),
@@ -133,14 +132,11 @@ defmodule System.State do
              beefy_commitment_map
            ),
          # ψ' Formula (23) v0.3.4
-         new_judgements <-
-           Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
+         new_judgements = Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
          # κ' Formula (21) v0.3.4
          # λ' Formula (22) v0.3.4
          # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
-
-         {:ok,
-          {new_safrole_pending, new_curr_validators, new_prev_validators, new_safrole_epoch_root}} <-
+         {new_safrole_pending, new_curr_validators, new_prev_validators, new_safrole_epoch_root} =
            RotateKeys.rotate_keys(
              h,
              state.timeslot,
@@ -151,10 +147,10 @@ defmodule System.State do
              new_judgements
            ),
          # η' Formula (20) v0.3.4
-         {:ok, rotated_history_entropy_pool} <-
+         rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
          # Formula (86) v0.3.4
-         posterior_epoch_slot_sealers <-
+         posterior_epoch_slot_sealers =
            Safrole.get_posterior_epoch_slot_sealers(
              h,
              state.timeslot,
@@ -169,14 +165,22 @@ defmodule System.State do
              posterior_epoch_slot_sealers,
              state.entropy_pool
            ),
-         posterior_entropy_pool <-
+         posterior_entropy_pool =
            EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool),
          new_safrole = %{
            state.safrole
            | pending: new_safrole_pending,
              epoch_root: new_safrole_epoch_root,
              current_epoch_slot_sealers: posterior_epoch_slot_sealers
-         } do
+         },
+         {:ok, posterior_validator_statistics} <-
+           ValidatorStatistics.posterior_validator_statistics(
+             e,
+             state.timeslot,
+             state.validator_statistics,
+             new_curr_validators,
+             h
+           ) do
       {:ok,
        %System.State{
          # α'
@@ -211,14 +215,7 @@ defmodule System.State do
          judgements: new_judgements,
          # π' Formula (30) v0.3.4
          # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
-         validator_statistics:
-           Application.get_env(:jamixir, :validator_statistics, ValidatorStatistics).posterior_validator_statistics(
-             e,
-             state.timeslot,
-             state.validator_statistics,
-             new_curr_validators,
-             h
-           )
+         validator_statistics: posterior_validator_statistics
        }}
     else
       {:error, reason} -> {:error, state, reason}
