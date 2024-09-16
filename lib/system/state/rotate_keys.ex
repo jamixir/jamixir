@@ -1,11 +1,11 @@
 defmodule System.State.RotateKeys do
-  alias Util.Time
   alias Block.Header
+  alias Util.Time
 
   alias System.State.{
-    Validator,
     Judgements,
-    Safrole
+    Safrole,
+    Validator
   }
 
   @doc """

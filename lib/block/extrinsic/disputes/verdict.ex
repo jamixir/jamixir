@@ -6,8 +6,8 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   A verdict consists of a work-report hash, an epoch index, and a list of judgements from validators.
   """
 
-  alias Types
   alias Block.Extrinsic.Disputes.Judgement
+  alias Types
 
   @type t :: %__MODULE__{
           # r

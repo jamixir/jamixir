@@ -15,7 +15,6 @@ defmodule Block.Extrinsic do
           guarantees: list(Guarantee.t())
         }
 
-
         # Formula (138) v0.3.4
         # Formula (139) v0.3.4
         # Formula (140) v0.3.4
