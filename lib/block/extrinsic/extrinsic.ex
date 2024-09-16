@@ -24,7 +24,7 @@ defmodule Block.Extrinsic do
   def validate_guarantees(guarantees) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          true <-
-           Collections.all_ok?(guarantees, fn %Guarantee{credential: cred} ->
+           Enum.all?(guarantees, fn %Guarantee{credential: cred} ->
              length(cred) in [2, 3]
            end),
          true <-
