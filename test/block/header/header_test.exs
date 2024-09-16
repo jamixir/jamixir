@@ -4,6 +4,7 @@ defmodule Block.HeaderTest do
   import Jamixir.Factory
 
   alias Block.Header
+  alias System.State
   alias Codec.{NilDiscriminator, VariableSize}
 
   describe "valid_header?/1" do
@@ -54,6 +55,30 @@ defmodule Block.HeaderTest do
     test "encode header", %{header: header} do
       assert Encodable.encode(header) ==
                Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)
+    end
+  end
+
+  describe "validate/2" do
+    setup do
+      {:ok, header: %Header{timeslot: 100}, state: %State{timeslot: 99}}
+    end
+
+    test "returns :ok when all conditions are met", %{header: header, state: state} do
+      assert Header.validate(header, state) == :ok
+    end
+
+    test "returns error when header timeslot is not greater than state timeslot", %{state: state} do
+      header = %Header{timeslot: 99}
+      assert {:error, _reason} = Header.validate(header, state)
+    end
+
+    test "returns error when block time is in the future" do
+      future_timeslot = Util.Time.current_time() + 10  / Util.Time.block_duration()
+      header = %Header{timeslot: future_timeslot}
+      state = %State{timeslot: future_timeslot - 1}
+
+      assert {:error, message} = Header.validate(header, state)
+      assert String.starts_with?(message, "Invalid block time: block_time")
     end
   end
 
