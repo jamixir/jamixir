@@ -72,7 +72,9 @@ defmodule System.StateTransition.EntropyPoolTest do
           SigningContexts.jam_entropy() <> RingVrf.ietf_vrf_output(secret, seal_context)
         )
 
-      assert System.State.add_block(state, block).entropy_pool.n0 ==
+      {:ok, new_state} = System.State.add_block(state, block)
+
+      assert new_state.entropy_pool.n0 ==
                Util.Hash.blake2b_256(state.entropy_pool.n0 <> vrf_output)
     end
   end

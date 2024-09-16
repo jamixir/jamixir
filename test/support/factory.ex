@@ -391,7 +391,11 @@ defmodule Jamixir.Factory do
       disputes: %Disputes{},
       preimages: build_list(2, :preimage),
       assurances: [%Assurance{}],
-      guarantees: [build(:guarantee)]
+      guarantees:
+        1..3
+        |> Enum.map(fn i ->
+          build(:guarantee, work_report: build(:work_report, core_index: i))
+        end)
     }
   end
 
@@ -420,8 +424,16 @@ defmodule Jamixir.Factory do
     %Guarantee{
       work_report: build(:work_report),
       timeslot: 5,
-      credential: [{1, random_hash()}]
+      credential: credential_list()
     }
+  end
+
+  defp credential_list do
+    num_credentials = Enum.random(2..3)
+
+    1..num_credentials
+    |> Enum.map(fn i -> {i, random_hash()} end)
+    |> Enum.sort_by(&elem(&1, 0))
   end
 
   def preimage_factory do
