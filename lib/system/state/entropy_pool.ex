@@ -19,17 +19,14 @@ defmodule System.State.EntropyPool do
 
   # Formula (68) v0.3.4
   @spec rotate_history(Block.Header.t(), non_neg_integer(), t()) ::
-          {:ok, t()} | {:error, String.t()}
+          t()
   def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
     case Time.new_epoch?(timeslot, header.timeslot) do
       {:ok, true} ->
-        {:ok, %EntropyPool{pool | n1: n0, n2: n1, n3: n2}}
+        %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
 
       {:ok, false} ->
-        {:ok, pool}
-
-      {:error, reason} ->
-        {:error, "Error determining new epoch: #{reason}"}
+        pool
     end
   end
 
