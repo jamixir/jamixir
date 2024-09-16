@@ -73,4 +73,6 @@ defmodule Constants do
   # WR - The maximum size of an encoded work-report in octets.
   @max_work_report_size 96 * 2 ** 10
   def max_work_report_size, do: @max_work_report_size
+  @rotation_period 10
+  def rotation_period, do: @rotation_period
 end

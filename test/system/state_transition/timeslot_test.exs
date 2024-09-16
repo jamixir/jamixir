@@ -1,8 +1,8 @@
 defmodule System.StateTransition.TimeslotTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State
   alias Block
+  alias System.State
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)

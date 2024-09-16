@@ -1,12 +1,7 @@
 defmodule System.State.RotateKeys do
   alias Block.Header
+  alias System.State.{Judgements, Safrole, Validator}
   alias Util.Time
-
-  alias System.State.{
-    Judgements,
-    Safrole,
-    Validator
-  }
 
   @doc """
   Formula (58) v0.3.4
@@ -74,12 +69,7 @@ defmodule System.State.RotateKeys do
       ) do
     Enum.map(next_validators, fn %Validator{} = validator ->
       if MapSet.member?(offenders, validator.ed25519) do
-        %Validator{
-          bandersnatch: <<0::size(bit_size(validator.bandersnatch))>>,
-          ed25519: <<0::size(bit_size(validator.ed25519))>>,
-          bls: <<0::size(bit_size(validator.bls))>>,
-          metadata: <<0::size(bit_size(validator.metadata))>>
-        }
+        Validator.nullified(validator)
       else
         validator
       end

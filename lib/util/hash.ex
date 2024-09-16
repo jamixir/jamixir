@@ -20,5 +20,6 @@ defmodule Util.Hash do
 
   def default(data), do: blake2b_256(data)
 
-  def zero(), do: <<0::256>>
+  def zero, do: <<0::256>>
+  def random, do: :crypto.strong_rand_bytes(32)
 end

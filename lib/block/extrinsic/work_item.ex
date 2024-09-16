@@ -41,7 +41,7 @@ defmodule Block.Extrinsic.WorkItem do
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
-    alias Codec.{VariableSize, Encoder}
+    alias Codec.{Encoder, VariableSize}
     # Formula (288) v0.3.4
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
