@@ -53,6 +53,8 @@ defmodule Util.Time do
     end
   end
 
+  def valid_block_timeslot?(block_timeslot), do: valid_block_timeslot(block_timeslot) == :ok
+
   def validate_timeslot_order(previous_timeslot, current_timeslot) do
     if previous_timeslot >= current_timeslot do
       {:error,

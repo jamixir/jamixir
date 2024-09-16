@@ -76,7 +76,7 @@ defmodule Block.Header do
   end
 
   def valid_header?(_, %Block.Header{parent_hash: nil} = h) do
-   Time.valid_block_timeslot(h.timeslot)
+   Time.valid_block_timeslot?(h.timeslot)
   end
 
   def valid_header?(storage, header) do
