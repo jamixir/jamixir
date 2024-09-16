@@ -7,8 +7,8 @@ Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
 
 defmodule TestHelper do
-  alias Util.Time, as: Time
   alias System.State.Validator
+  alias Util.Time, as: Time
 
   def past_timeslot do
     div(Time.current_time() - 10, Time.block_duration())

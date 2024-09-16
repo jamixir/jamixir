@@ -27,10 +27,19 @@ defmodule System.State.Validator do
     end
   end
 
+  def nullified(validator) do
+    %__MODULE__{
+      bandersnatch: <<0::size(bit_size(validator.bandersnatch))>>,
+      ed25519: <<0::size(bit_size(validator.ed25519))>>,
+      bls: <<0::size(bit_size(validator.bls))>>,
+      metadata: <<0::size(bit_size(validator.metadata))>>
+    }
+  end
+
   def from_json(json) do
-      json
-      |> Utils.hex_to_binary()
-      |> Utils.atomize_keys()
-      |> then(&struct(__MODULE__, &1))
+    json
+    |> Utils.hex_to_binary()
+    |> Utils.atomize_keys()
+    |> then(&struct(__MODULE__, &1))
   end
 end
