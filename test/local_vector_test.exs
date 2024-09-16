@@ -73,7 +73,7 @@ defmodule LocalVectorTest do
         # Error was expected but not received
         flunk("Expected an error, but got a successful state transition")
 
-      {{:error, returned_state, _reason}, nil} ->
+      {{:error, _returned_state, _reason}, nil} ->
         # Error was not expected but received
         flunk("Unexpected error occurred during state transition")
 
