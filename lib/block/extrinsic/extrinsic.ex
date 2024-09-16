@@ -15,12 +15,10 @@ defmodule Block.Extrinsic do
           guarantees: list(Guarantee.t())
         }
 
-  @doc """
-  Validates that the guarantees are unique and ordered by work_report.core_index.
-  Within each guarantee, validates that the credentials are:
-  1. A list of length 2 or 3
-  2. Unique and ordered by validator_index
-  """
+
+        # Formula (138) v0.3.4
+        # Formula (139) v0.3.4
+        # Formula (140) v0.3.4
   def validate_guarantees(guarantees) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          true <-
