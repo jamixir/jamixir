@@ -69,4 +69,8 @@ defmodule Constants do
 
   # 4104
   def wswc, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+
+  # WR - The maximum size of an encoded work-report in octets.
+  @max_work_report_size 96 * 2 ** 10
+  def max_work_report_size, do: @max_work_report_size
 end

@@ -1,5 +1,4 @@
 defmodule System.State.CoreReportTest do
-  alias Block.Extrinsic.Guarantee.WorkReport
   alias System.State.CoreReport
   use ExUnit.Case
   import Jamixir.Factory
@@ -11,6 +10,13 @@ defmodule System.State.CoreReportTest do
       assert Codec.Encoder.encode(core_report) ==
                Codec.Encoder.encode(core_report.work_report) <>
                  Codec.Encoder.encode_le(core_report.timeslot, 4)
+    end
+  end
+
+  describe "initial_core_reports/0" do
+    test "initial_core_reports smoke test" do
+      assert length(CoreReport.initial_core_reports()) == Constants.core_count()
+      assert CoreReport.initial_core_reports() |> Enum.all?(&is_nil/1)
     end
   end
 
@@ -29,7 +35,9 @@ defmodule System.State.CoreReportTest do
       guarantee =
         build(:guarantee,
           work_report:
-            build(:work_report, output: "a" <> String.duplicate("b", WorkReport.max_size()))
+            build(:work_report,
+              output: "a" <> String.duplicate("b", Constants.max_work_report_size())
+            )
         )
 
       assert {:error, :invalid_work_report_size} ==
