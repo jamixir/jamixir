@@ -3,12 +3,13 @@ defmodule System.HeaderSeal do
   alias Block.Header
 
   @callback do_validate_header_seals(
-    header :: any(),
-    posterior_curr_validators :: any(),
-    posterior_epoch_slot_sealers :: any(),
-    entropy_pool :: %EntropyPool{}
-  ) :: {:ok, %{vrf_signature_output: binary(), block_seal_output: binary()}} | {:error, any()}
-
+              header :: any(),
+              posterior_curr_validators :: any(),
+              posterior_epoch_slot_sealers :: any(),
+              entropy_pool :: %EntropyPool{}
+            ) ::
+              {:ok, %{vrf_signature_output: binary(), block_seal_output: binary()}}
+              | {:error, any()}
 
   def validate_header_seals(
         header,
@@ -28,6 +29,7 @@ defmodule System.HeaderSeal do
 
   # Formula (60) v0.3.4
   # Formula (61)  v0.3.4
+  # Formula (62) v0.3.4
   def seal_header(
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
@@ -40,6 +42,7 @@ defmodule System.HeaderSeal do
     seal_context = construct_seal_context(expected_slot_sealer, entropy_pool)
     block_seal_output = RingVrf.ietf_vrf_output(secret, seal_context)
 
+    # Formula (62) v0.3.4
     {vrf_signature, _} =
       RingVrf.ietf_vrf_sign(secret, SigningContexts.jam_entropy() <> block_seal_output, <<>>)
 
@@ -89,6 +92,7 @@ defmodule System.HeaderSeal do
              posterior_curr_validators
            ),
          # verify that the vrf signature is a valid signature
+         # Formula (62) v0.3.4
          {:ok, vrf_signature_output} <-
            RingVrf.ietf_vrf_verify(
              bandersnatch_public_keys,
