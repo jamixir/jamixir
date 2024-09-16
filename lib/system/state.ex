@@ -48,7 +48,7 @@ defmodule System.State do
     # λ: Previous Validators
     prev_validators: [],
     # ρ: Each core's currently assigned report
-    core_reports: [],
+    core_reports: CoreReport.initial_core_reports(),
     # τ: Details of the most recent timeslot
     timeslot: 0,
     # φ: Queue which fills the authorization requirement

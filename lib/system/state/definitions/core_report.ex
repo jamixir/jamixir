@@ -12,6 +12,7 @@ defmodule System.State.CoreReport do
         }
 
   defstruct work_report: %WorkReport{}, timeslot: 0
+  def initial_core_reports, do: 1..Constants.core_count() |> Enum.map(fn _ -> nil end)
 
   @doc """
   Processes disputes and updates the core reports accordingly.

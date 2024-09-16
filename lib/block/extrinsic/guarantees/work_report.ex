@@ -6,9 +6,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.Availability
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
 
-  # WR - The maximum size of an encoded work-report in octets.
-  @max_size 96 * 2 ** 10
-  def max_size, do: @max_size
   # Formula (119) v0.3.4
   @type t :: %__MODULE__{
           # s
@@ -37,7 +34,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    byte_size(Codec.Encoder.encode(wr)) <= @max_size
+    byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
   end
 
   defimpl Encodable do
