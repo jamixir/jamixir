@@ -42,10 +42,9 @@ defmodule Block.Extrinsic.TicketProof do
              safrole.epoch_root
            ),
          # Formula (77) v0.3.4
-         :ok <- Collections.validate_unique_and_ordered(n, &elem(&1, 0)),
-         # Formula (78) v0.3.4
-         :ok <- Safrole.validate_new_tickets(safrole, MapSet.new(n, &elem(&1, 0))) do
-      :ok
+         :ok <- Collections.validate_unique_and_ordered(n, &elem(&1, 0)) do
+      # Formula (78) v0.3.4
+      Safrole.validate_new_tickets(safrole, MapSet.new(n, &elem(&1, 0)))
     end
   end
 
