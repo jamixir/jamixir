@@ -15,9 +15,9 @@ defmodule Block.Extrinsic do
           guarantees: list(Guarantee.t())
         }
 
-        # Formula (138) v0.3.4
-        # Formula (139) v0.3.4
-        # Formula (140) v0.3.4
+  # Formula (138) v0.3.4
+  # Formula (139) v0.3.4
+  # Formula (140) v0.3.4
   def validate_guarantees(guarantees) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          true <-

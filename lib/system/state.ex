@@ -18,7 +18,6 @@ defmodule System.State do
     ValidatorStatistics
   }
 
-
   @type t :: %__MODULE__{
           # Formula (85) v0.3.4
           authorizer_pool: list(list(Types.hash())),

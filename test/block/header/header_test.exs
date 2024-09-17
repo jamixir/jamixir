@@ -73,7 +73,7 @@ defmodule Block.HeaderTest do
     end
 
     test "returns error when block time is in the future" do
-      future_timeslot = Util.Time.current_time() + 10  / Util.Time.block_duration()
+      future_timeslot = Util.Time.current_time() + 10 / Util.Time.block_duration()
       header = %Header{timeslot: future_timeslot}
       state = %State{timeslot: future_timeslot - 1}
 

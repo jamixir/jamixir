@@ -150,6 +150,5 @@ defmodule System.State.RotateKeysTest do
 
       assert result == {safrole.pending, [v2], [], safrole.epoch_root}
     end
-
   end
 end

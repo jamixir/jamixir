@@ -41,7 +41,6 @@ defmodule System.State.JudgementsTest do
       assert Judgements.posterior_judgements(header, %Disputes{}, state) == state.judgements
     end
 
-
     test "updates good set correctly", %{
       state: state,
       header: header,

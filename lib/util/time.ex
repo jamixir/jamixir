@@ -46,6 +46,7 @@ defmodule Util.Time do
 
   def valid_block_timeslot(block_timeslot) do
     block_time = block_timeslot * @block_duration
+
     if valid_block_time?(block_time) do
       :ok
     else
