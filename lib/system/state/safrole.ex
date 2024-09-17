@@ -144,6 +144,17 @@ defmodule System.State.Safrole do
     end
   end
 
+  @spec validate_new_tickets(t(), MapSet.t()) :: :ok | {:error, String.t()}
+  def validate_new_tickets(%__MODULE__{ticket_accumulator: ticket_accumulator}, new_ticket_hashes) do
+    accumulator_set = MapSet.new(ticket_accumulator, & &1.id)
+
+    if MapSet.disjoint?(accumulator_set, new_ticket_hashes) do
+      :ok
+    else
+      {:error, "Ticket hash overlap with existing tickets"}
+    end
+  end
+
   def from_json(json) do
     %__MODULE__{
       pending: json.pending |> Enum.map(&Validator.from_json/1),
