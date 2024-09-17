@@ -1,5 +1,6 @@
 defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
+  alias System.State.SealKeyTicket
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -17,9 +18,9 @@ defmodule Block.Header do
           timeslot: integer(),
           # Formula (44) v0.3.4
           # He
-          epoch: integer() | nil,
+          epoch: {Types.hash(), list(Types.bandersnatch_key())} | nil,
           # Hw
-          winning_tickets_marker: list(binary()) | nil,
+          winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Formula (45) v0.3.4
           # Hj
           judgements_marker: list(Types.hash()),
@@ -45,9 +46,9 @@ defmodule Block.Header do
     # Ht
     timeslot: 0,
     # He
-    epoch: 0,
+    epoch: nil,
     # Hw
-    winning_tickets_marker: [],
+    winning_tickets_marker: nil,
     # Hj
     judgements_marker: [],
     # Ho
