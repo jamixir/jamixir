@@ -18,20 +18,6 @@ defmodule System.State do
     ValidatorStatistics
   }
 
-
-  alias System.State.{
-    CoreReport,
-    EntropyPool,
-    Judgements,
-    PrivilegedServices,
-    RecentHistory,
-    RotateKeys,
-    Safrole,
-    ServiceAccount,
-    Validator,
-    ValidatorStatistics
-  }
-
   @type t :: %__MODULE__{
           # Formula (85) v0.3.4
           authorizer_pool: list(list(Types.hash())),
