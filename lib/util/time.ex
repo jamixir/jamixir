@@ -44,9 +44,25 @@ defmodule Util.Time do
   Checks if the given block timeslot index is valid by multiplying it by the block duration and comparing to the current time.
   """
 
-  def valid_block_timeslot?(block_timeslot) do
+  def valid_block_timeslot(block_timeslot) do
     block_time = block_timeslot * @block_duration
-    valid_block_time?(block_time)
+
+    if valid_block_time?(block_time) do
+      :ok
+    else
+      {:error, "Invalid block time: block_time (#{block_time}) is in the future"}
+    end
+  end
+
+  def valid_block_timeslot?(block_timeslot), do: valid_block_timeslot(block_timeslot) == :ok
+
+  def validate_timeslot_order(previous_timeslot, current_timeslot) do
+    if previous_timeslot >= current_timeslot do
+      {:error,
+       "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
+    else
+      :ok
+    end
   end
 
   @doc """

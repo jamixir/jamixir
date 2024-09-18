@@ -18,12 +18,12 @@ defmodule LocalVectorTest do
     end
 
     @tag :test_vectors_local
-    test "verify test vector for enact-epoch-change-with-no-tickets-1.json" do
+    test "verify test vector for local file" do
       file_name = "enact-epoch-change-with-no-tickets-1.json"
       {:ok, json_data} = read_local_json(file_name)
 
       HeaderSealMock
-      |> expect(:do_validate_header_seals, fn _, _, _, _ ->
+      |> stub(:do_validate_header_seals, fn _, _, _, _ ->
         {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
       end)
 
@@ -56,14 +56,34 @@ defmodule LocalVectorTest do
     pre_state = System.State.from_json(json_data["pre_state"])
     header = %Header{timeslot: json_data["input"]["slot"]}
 
-    new_state =
+    result =
       System.State.add_block(pre_state, %Block{header: header, extrinsic: %Block.Extrinsic{}})
 
     expected_state = System.State.from_json(json_data["post_state"])
 
-    Enum.each(tested_keys, fn key ->
-      assert Map.get(new_state, key) == Map.get(expected_state, key),
-             "Mismatch for key: #{key}"
-    end)
+    case {result, Map.get(json_data["output"], "err")} do
+      {{:ok, new_state}, nil} ->
+        # No error expected, assert on the tested keys
+        Enum.each(tested_keys, fn key ->
+          assert Map.get(new_state, key) == Map.get(expected_state, key),
+                 "Mismatch for key: #{key}"
+        end)
+
+      {{:ok, _}, _error_expected} ->
+        # Error was expected but not received
+        flunk("Expected an error, but got a successful state transition")
+
+      {{:error, _returned_state, _reason}, nil} ->
+        # Error was not expected but received
+        flunk("Unexpected error occurred during state transition")
+
+      {{:error, returned_state, _reason}, _error_expected} ->
+        # Error was expected and received
+        # Assert that the state remained unchanged
+        Enum.each(tested_keys, fn key ->
+          assert Map.get(returned_state, key) == Map.get(pre_state, key),
+                 "State changed unexpectedly for key: #{key}"
+        end)
+    end
   end
 end

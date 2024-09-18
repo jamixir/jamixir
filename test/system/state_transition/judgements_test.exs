@@ -41,30 +41,6 @@ defmodule System.State.JudgementsTest do
       assert Judgements.posterior_judgements(header, %Disputes{}, state) == state.judgements
     end
 
-    test "returns unchanged judgements for invalid epoch index", %{
-      state: state,
-      header: header,
-      work_report_hash: wrh,
-      current_key: key_pair
-    } do
-      result =
-        Judgements.posterior_judgements(
-          header,
-          %Disputes{
-            verdicts: [
-              build(:verdict,
-                work_report_hash: wrh,
-                judgements: [build(:judgement, work_report_hash: wrh, key_pair: key_pair)],
-                epoch_index: Time.epoch_index(header.timeslot) + 2
-              )
-            ]
-          },
-          state
-        )
-
-      assert result == state.judgements
-    end
-
     test "updates good set correctly", %{
       state: state,
       header: header,

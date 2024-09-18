@@ -1,11 +1,11 @@
 defmodule System.State.RotateKeys do
-  alias Util.Time
   alias Block.Header
+  alias Util.Time
 
   alias System.State.{
-    Validator,
     Judgements,
-    Safrole
+    Safrole,
+    Validator
   }
 
   @doc """
@@ -58,9 +58,6 @@ defmodule System.State.RotateKeys do
         # Formula (58) -  same epoch - no rotation
         # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}
         {pending, curr_validators, prev_validators, epoch_root}
-
-      {:error, reason} ->
-        raise "Error determining new epoch: #{reason}"
     end
   end
 

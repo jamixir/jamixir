@@ -30,8 +30,10 @@ defmodule System.State.ValidatorStatistics do
     Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
   end
 
-  defstruct current_epoch_statistics: [],
-            previous_epoch_statistics: []
+  @empty_epoch_stats Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
+
+  defstruct current_epoch_statistics: @empty_epoch_stats,
+            previous_epoch_statistics: @empty_epoch_stats
 
   @callback do_posterior_validator_statistics(
               Extrinsic.t(),

@@ -23,38 +23,23 @@ defmodule System.State.Judgements do
   @type verdict :: :good | :bad | :wonky
 
   def posterior_judgements(%Header{timeslot: ts}, disputes, state) do
-    case Disputes.validate_disputes(
-           disputes,
-           state.curr_validators,
-           state.prev_validators,
-           state.judgements,
-           ts
-         ) do
-      :ok ->
-        new_judgements =
-          posterior_judgement_sets(
-            Map.get(disputes, :verdicts),
-            state.curr_validators,
-            state.prev_validators,
-            state.judgements,
-            ts
-          )
+    # Formula (115) v0.3.4
+    new_punish_set =
+      MapSet.union(
+        state.judgements.punish,
+        MapSet.new(disputes.culprits ++ disputes.faults, & &1.validator_key)
+      )
 
-        # Formula (115) v0.3.4
-        new_punish_set =
-          MapSet.union(
-            state.judgements.punish,
-            MapSet.new(disputes.culprits ++ disputes.faults, & &1.validator_key)
-          )
-
-        %Judgements{
-          new_judgements
-          | punish: new_punish_set
-        }
-
-      {:error, _reason} ->
-        state.judgements
-    end
+    %Judgements{
+      posterior_judgement_sets(
+        Map.get(disputes, :verdicts),
+        state.curr_validators,
+        state.prev_validators,
+        state.judgements,
+        ts
+      )
+      | punish: new_punish_set
+    }
   end
 
   defp posterior_judgement_sets(verdicts, curr_validators, prev_validators, judgements, timeslot) do

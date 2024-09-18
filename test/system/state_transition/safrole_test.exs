@@ -57,7 +57,7 @@ defmodule System.StateTransition.SafroleStateTest do
     } do
       block = %Block{header: header, extrinsic: %Block.Extrinsic{}}
 
-      new_state = State.add_block(state, block)
+      {:ok, new_state} = State.add_block(state, block)
 
       # first and third validators are nullified
       assert TH.nullified?(Enum.at(new_state.safrole.pending, 0))
@@ -101,7 +101,7 @@ defmodule System.StateTransition.SafroleStateTest do
       state: state,
       block: block
     } do
-      new_state = State.add_block(state, block)
+      {:ok, new_state} = State.add_block(state, block)
 
       assert new_state.safrole.current_epoch_slot_sealers ==
                state.safrole.current_epoch_slot_sealers
@@ -137,7 +137,7 @@ defmodule System.StateTransition.SafroleStateTest do
       block = %{block | header: header}
 
       # Call add_block
-      new_state = State.add_block(state, block)
+      {:ok, new_state} = State.add_block(state, block)
 
       # Assertions
       assert new_state.safrole.current_epoch_slot_sealers == expected_sealers
@@ -201,7 +201,7 @@ defmodule System.StateTransition.SafroleStateTest do
         Safrole.fallback_key_sequence(new_entropy_pool.n2, expected_current_validators)
 
       block = build(:block, header: header)
-      new_state = State.add_block(state, block)
+      {:ok, new_state} = State.add_block(state, block)
       assert new_state.safrole.current_epoch_slot_sealers == expected_sealers
       assert new_state.curr_validators == expected_current_validators
     end

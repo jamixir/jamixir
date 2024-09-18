@@ -1,4 +1,8 @@
 defmodule Block do
+  alias Block.Extrinsic
+  alias Block.Extrinsic.Disputes
+  alias Block.Header
+
   @type t :: %__MODULE__{
           header: Block.Header.t(),
           extrinsic: Block.Extrinsic.t()
@@ -11,6 +15,24 @@ defmodule Block do
     # Hr
     extrinsic: nil
   ]
+
+  @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
+  def validate(%__MODULE__{header: header, extrinsic: extrinsic}, state) do
+    with :ok <- Header.validate(header, state),
+         :ok <- Extrinsic.validate_guarantees(extrinsic.guarantees),
+         :ok <-
+           Disputes.validate_disputes(
+             extrinsic.disputes,
+             state.curr_validators,
+             state.prev_validators,
+             state.judgements,
+             header.timeslot
+           ) do
+      :ok
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
   defimpl Encodable do
     def encode(%Block{extrinsic: e, header: h}) do

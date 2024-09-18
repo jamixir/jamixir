@@ -1,6 +1,7 @@
 defmodule Block.Extrinsic do
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
+  alias Util.Collections
   # Formula (14) v0.3.4
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
@@ -14,35 +15,25 @@ defmodule Block.Extrinsic do
           guarantees: list(Guarantee.t())
         }
 
-  @doc """
-  Returns the list of guarantees ordered by work_report.core_index.
-  Within each guarantee, the credentials are ordered by validator_index.
-  Ensures that the core_index in guarantees and validator_index in credentials are unique.
-  """
-  def unique_sorted_guarantees(%Block.Extrinsic{guarantees: guarantees}) do
-    # Check for duplicate core_index before sorting
-    if Util.Collections.has_duplicates?(guarantees, & &1.work_report.core_index) do
-      raise ArgumentError, "Duplicate core_index found in guarantees"
+  # Formula (138) v0.3.4
+  # Formula (139) v0.3.4
+  # Formula (140) v0.3.4
+  def validate_guarantees(guarantees) do
+    with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+         true <-
+           Enum.all?(guarantees, fn %Guarantee{credential: cred} ->
+             length(cred) in [2, 3]
+           end),
+         true <-
+           Collections.all_ok?(guarantees, fn %Guarantee{credential: cred} ->
+             Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
+           end) do
+      :ok
+    else
+      {:error, :duplicates} -> {:error, "Duplicate core_index found in guarantees"}
+      {:error, :not_in_order} -> {:error, "Guarantees not ordered by core_index"}
+      false -> {:error, "Invalid credentials in one or more guarantees"}
     end
-
-    sorted_guarantees =
-      guarantees
-      |> Enum.map(fn guarantee ->
-        # Check for duplicate validator_index before sorting credentials
-        if Util.Collections.has_duplicates?(guarantee.credential, &elem(&1, 0)) do
-          raise ArgumentError, "Duplicate validator_index found in credentials"
-        end
-
-        sorted_credentials = Enum.sort_by(guarantee.credential, &elem(&1, 0))
-
-        %Guarantee{
-          guarantee
-          | credential: sorted_credentials
-        }
-      end)
-      |> Enum.sort_by(& &1.work_report.core_index)
-
-    sorted_guarantees
   end
 
   defimpl Encodable do

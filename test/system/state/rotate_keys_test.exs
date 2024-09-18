@@ -150,19 +150,5 @@ defmodule System.State.RotateKeysTest do
 
       assert result == {safrole.pending, [v2], [], safrole.epoch_root}
     end
-
-    test "Error during epoch determination raises exception", %{validator2: v2, safrole: safrole} do
-      assert_raise RuntimeError, fn ->
-        RotateKeys.rotate_keys(
-          %Header{timeslot: 10},
-          20,
-          [],
-          [v2],
-          [],
-          safrole,
-          %Judgements{punish: MapSet.new()}
-        )
-      end
-    end
   end
 end
