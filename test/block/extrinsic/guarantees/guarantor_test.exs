@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.GuarantorTest do
-  alias System.State.Validator
   alias Block.Extrinsic.Guarantor
+  alias System.State.Validator
   alias Util.Hash
   import Jamixir.Factory
   use ExUnit.Case
@@ -22,8 +22,8 @@ defmodule Block.Extrinsic.GuarantorTest do
       p2 = Guarantor.permute(1..1100 |> Enum.to_list(), 700)
       assert p1 !== p2
 
-      assert p1 |> Enum.take(10) == [0, 1, 2, 2, 3, 4, 4, 5, 6, 6]
-      assert p2 |> Enum.take(10) == [10, 11, 12, 12, 13, 14, 14, 15, 16, 16]
+      assert p1 |> Enum.take(10) == [0, 1, 1, 2, 3, 3, 4, 5, 5, 6]
+      assert p2 |> Enum.take(10) == [10, 11, 11, 12, 13, 13, 14, 15, 15, 16]
 
       assert {length(p1), length(p2)} ==
                {Constants.validator_count(), Constants.validator_count()}

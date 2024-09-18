@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Guarantor do
   The core index assigned to each of the validators, as well as the validators’ Ed25519 keys
   are denoted by G:
   """
-  alias System.State.RotateKeys
+  alias System.State.Validator
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.Guarantor do
 
   # Formula (135) v0.3.4
   def permute(e, t) when is_list(e) or is_binary(e) do
-    1..Constants.validator_count()
+    0..(Constants.validator_count() - 1)
     |> Enum.map(&div(Constants.core_count() * &1, Constants.validator_count()))
     |> Shuffle.shuffle(e)
     |> rotate(div(Time.epoch_phase(t), Constants.rotation_period()))
@@ -35,25 +35,26 @@ defmodule Block.Extrinsic.Guarantor do
   def guarantor_assignements(
         post_n2,
         post_timestamp,
-        post_kurrent_validators,
+        post_current_validators,
         offenders
       ) do
     {permute(post_n2, post_timestamp),
-     RotateKeys.nullify_offenders(post_kurrent_validators, offenders)}
+     Validator.nullify_offenders(post_current_validators, offenders)}
   end
 
+  # Formula (137) v0.3.4
   def previous_guarantor_assignements(
         post_n2,
         post_n3,
         post_timestamp,
-        post_kurrent_validators,
+        post_current_validators,
         post_previous_validators,
         offenders
       ) do
     {e, k} =
       if div(post_timestamp - Constants.rotation_period(), Time.epoch_duration()) ==
            div(post_timestamp, Time.epoch_duration()) do
-        {post_n2, post_kurrent_validators}
+        {post_n2, post_current_validators}
       else
         {post_n3, post_previous_validators}
       end
