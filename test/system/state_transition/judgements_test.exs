@@ -119,10 +119,6 @@ defmodule System.State.JudgementsTest do
       :ok
     end
 
-    # test "returns unchanged judgements on validation error", %{state: state, header: header} do
-    #   assert Judgements.posterior_judgements(header, %Disputes{}, state) == state.judgements
-    # end
-
     test "updates good set correctly", %{
       state: state,
       header: header,
