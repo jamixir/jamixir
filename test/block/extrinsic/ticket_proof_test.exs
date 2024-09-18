@@ -33,6 +33,23 @@ defmodule Block.Extrinsic.TicketProofTest do
     )
   end
 
+  defp create_and_sort_tickets(count, state, key_pairs) do
+    create_valid_tickets(count, state, key_pairs)
+    |> Enum.map(fn %TicketProof{entry_index: r, ticket_validity_proof: proof} ->
+      {:ok, output_hash} =
+        RingVrf.ring_vrf_verify(
+          state.safrole.epoch_root,
+          SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<r>>,
+          <<>>,
+          proof
+        )
+
+      {output_hash, %TicketProof{entry_index: r, ticket_validity_proof: proof}}
+    end)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(&elem(&1, 1))
+  end
+
   setup_all do
     build(:genesis_state_with_safrole)
   end
@@ -58,7 +75,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       state: state,
       key_pairs: key_pairs
     } do
-      tickets = create_valid_tickets(2, state, key_pairs)
+      tickets = create_and_sort_tickets(2, state, key_pairs)
 
       assert :ok ==
                TicketProof.validate_tickets(
