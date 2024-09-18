@@ -4,6 +4,8 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias System.State.EntropyPool
   alias Block.{Header}
   alias Util.Hash
+  import Mox
+  
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
@@ -54,6 +56,19 @@ defmodule System.StateTransition.EntropyPoolTest do
   end
 
   describe "randmoness accumaltor" do
+    setup do
+      MockJudgements
+      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
+
+      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :judgements_module)
+      end)
+
+      :ok
+    end
+
     test "correct entropy accumelations", %{state: state, key_pairs: key_pairs} do
       block = build(:safrole_block, state: state, key_pairs: key_pairs)
 

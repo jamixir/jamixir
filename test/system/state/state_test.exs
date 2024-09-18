@@ -172,6 +172,20 @@ defmodule System.StateTest do
   end
 
   describe "add_block/2" do
+    setup do
+      MockJudgements
+      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
+
+      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+      
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :judgements_module)
+      end)
+
+      :ok
+    end
+
     test "add block smoke test", %{state: state, key_pairs: key_pairs} do
       State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end

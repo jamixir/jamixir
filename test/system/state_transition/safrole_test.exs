@@ -8,6 +8,9 @@ defmodule System.StateTransition.SafroleStateTest do
   alias Block
   alias System.State.{Safrole, Judgements, Safrole}
   alias TestHelper, as: TH
+  import Mox
+  setup :verify_on_exit!
+
 
   def genesis_state do
     case Process.get(:memoized_genesis_state) do
@@ -70,8 +73,21 @@ defmodule System.StateTransition.SafroleStateTest do
     end
   end
 
+  setup do
+    :ok
+  end
+
   describe "updates state.safrole.current_epoch_slot_sealers" do
     setup do
+      MockJudgements
+      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
+
+      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :judgements_module)
+      end)
+
       %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 
       state = %{

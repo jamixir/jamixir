@@ -3,11 +3,26 @@ defmodule System.StateTransition.TimeslotTest do
   import Jamixir.Factory
   alias Block
   alias System.State
+  import Mox
+  setup :verify_on_exit!
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
     {:ok, %{state: state, key_pairs: key_pairs}}
+  end
+
+  setup do
+    MockJudgements
+    |> stub(:valid_header_markers?, fn _, _, _ -> true end)
+
+    Application.put_env(:jamixir, :judgements_module, MockJudgements)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :judgements_module)
+    end)
+
+    :ok
   end
 
   test "add_block/2 correctly sets timeslot", %{state: state, key_pairs: key_pairs} do
