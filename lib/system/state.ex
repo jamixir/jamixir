@@ -131,7 +131,8 @@ defmodule System.State do
              beefy_commitment_map
            ),
          # ψ' Formula (23) v0.3.4
-         {:ok, new_judgements} <- Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
+         {:ok, new_judgements} <-
+           Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
          # κ' Formula (21) v0.3.4
          # λ' Formula (22) v0.3.4
          # γ'(gamma_k, gamma_z) Formula (19) v0.3.4

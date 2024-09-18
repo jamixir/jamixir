@@ -5,7 +5,6 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias Block.{Header}
   alias Util.Hash
   import Mox
-  
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)

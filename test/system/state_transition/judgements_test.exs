@@ -2,7 +2,6 @@ defmodule System.State.JudgementsTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block.Extrinsic.Disputes
-  alias Block.Header
   alias System.State.Judgements
   alias Util.Time
   import Mox
@@ -72,7 +71,6 @@ defmodule System.State.JudgementsTest do
 
     test "fails because of offenders mismatch", %{
       state: state,
-      work_report_hash: wrh,
       current_key: {pub, _},
       header: header
     } do

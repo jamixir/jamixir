@@ -11,7 +11,6 @@ defmodule System.StateTransition.SafroleStateTest do
   import Mox
   setup :verify_on_exit!
 
-
   def genesis_state do
     case Process.get(:memoized_genesis_state) do
       nil ->

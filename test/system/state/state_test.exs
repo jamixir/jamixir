@@ -177,7 +177,6 @@ defmodule System.StateTest do
       |> stub(:valid_header_markers?, fn _, _, _ -> true end)
 
       Application.put_env(:jamixir, :judgements_module, MockJudgements)
-      
 
       on_exit(fn ->
         Application.delete_env(:jamixir, :judgements_module)
