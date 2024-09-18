@@ -2,6 +2,7 @@ defmodule System.State.Validator do
   @moduledoc """
   represent a validator, as specified in section 6.3 of the GP.
   """
+  alias System.State.Validator
 
   # Formula (53) v0.3.4
   @type t :: %__MODULE__{
@@ -25,6 +26,26 @@ defmodule System.State.Validator do
     def encode(%Validator{} = v) do
       Validator.key(v)
     end
+  end
+
+  # Formula (59) v0.3.4
+  @spec nullify_offenders(
+          list(Validator.t()),
+          MapSet.t(Types.ed25519_key())
+        ) :: list(Validator.t())
+  def nullify_offenders([], _), do: []
+
+  def nullify_offenders(
+        [%__MODULE__{} | _] = next_validators,
+        offenders
+      ) do
+    Enum.map(next_validators, fn %__MODULE__{} = validator ->
+      if MapSet.member?(offenders, validator.ed25519) do
+        nullified(validator)
+      else
+        validator
+      end
+    end)
   end
 
   def nullified(validator) do

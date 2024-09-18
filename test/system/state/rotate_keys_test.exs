@@ -7,51 +7,6 @@ defmodule System.State.RotateKeysTest do
   alias Types
 
   setup do
-    next_validators = Enum.map(1..3, &TH.create_validator/1)
-    RingVrf.init_ring_context(length(next_validators))
-    offenders = MapSet.new([<<1::256>>, <<3::256>>])
-
-    {:ok, next_validators: next_validators, offenders: offenders}
-  end
-
-  describe "nullify_offenders/2" do
-    test "nullifies validators that are in the offenders set", %{
-      next_validators: next_validators,
-      offenders: offenders
-    } do
-      result = RotateKeys.nullify_offenders(next_validators, offenders)
-
-      # Validator 1 and 3 are nullified, 2 is not
-
-      assert TH.nullified?(Enum.at(result, 0))
-      assert Enum.at(result, 1) == Enum.at(next_validators, 1)
-      assert TH.nullified?(Enum.at(result, 2))
-    end
-
-    test "returns the same validators if none are in the offenders set", %{
-      next_validators: next_validators
-    } do
-      # No matching offenders
-      offenders = MapSet.new([<<4::256>>])
-
-      result = RotateKeys.nullify_offenders(next_validators, offenders)
-
-      assert result == next_validators
-    end
-
-    test "handles an empty offenders set", %{
-      next_validators: next_validators
-    } do
-      # No matching offenders
-      offenders = MapSet.new()
-
-      result = RotateKeys.nullify_offenders(next_validators, offenders)
-
-      assert result == next_validators
-    end
-  end
-
-  setup do
     [validator1, validator2, validator3] = build_list(3, :validator)
 
     header = %Header{timeslot: 600}

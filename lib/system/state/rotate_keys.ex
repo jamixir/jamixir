@@ -36,7 +36,7 @@ defmodule System.State.RotateKeys do
         # {γ_k', κ', λ', γ_z'} = {Φ(ι), γ_k, κ, z}
 
         # γ_k' = Φ(ι) (next -> pending)
-        new_pending = nullify_offenders(next_validators, offenders)
+        new_pending = Validator.nullify_offenders(next_validators, offenders)
 
         # κ' = γ_k (pending -> current)
         new_current = pending
@@ -54,25 +54,5 @@ defmodule System.State.RotateKeys do
         # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}
         {pending, curr_validators, prev_validators, epoch_root}
     end
-  end
-
-  # Formula (59) v0.3.4
-  @spec nullify_offenders(
-          list(Validator.t()),
-          MapSet.t(Types.ed25519_key())
-        ) :: list(Validator.t())
-  def nullify_offenders([], _), do: []
-
-  def nullify_offenders(
-        [%System.State.Validator{} | _] = next_validators,
-        offenders
-      ) do
-    Enum.map(next_validators, fn %Validator{} = validator ->
-      if MapSet.member?(offenders, validator.ed25519) do
-        Validator.nullified(validator)
-      else
-        validator
-      end
-    end)
   end
 end
