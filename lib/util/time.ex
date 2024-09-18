@@ -1,18 +1,10 @@
 defmodule Util.Time do
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
-  # seconds
-  @block_duration 6
-  @doc """
-  Returns the block duration in seconds.
-  """
-  def block_duration, do: @block_duration
-
-  @epoch_duration 600
   # blocks
   @doc """
   Returns the epoch duration in blocks.
   """
-  def epoch_duration, do: @epoch_duration
+  def epoch_duration, do: 600
 
   @doc """
   Returns the base epoch time in Gregorian seconds.
@@ -39,9 +31,10 @@ defmodule Util.Time do
   Checks if the given block timeslot index is valid by multiplying it by the block duration and comparing to the current time.
   """
 
-  def valid_block_timeslot(block_timeslot) do
-    block_time = block_timeslot * @block_duration
+  def validate_block_timeslot(block_timeslot) do
+    block_time = block_timeslot * Constants.slot_period()
 
+    # Formula (41) v0.3.4
     if valid_block_time?(block_time) do
       :ok
     else
@@ -49,7 +42,7 @@ defmodule Util.Time do
     end
   end
 
-  def valid_block_timeslot?(block_timeslot), do: valid_block_timeslot(block_timeslot) == :ok
+  def valid_block_timeslot?(block_timeslot), do: validate_block_timeslot(block_timeslot) == :ok
 
   def validate_timeslot_order(previous_timeslot, current_timeslot) do
     if previous_timeslot >= current_timeslot do
@@ -68,8 +61,8 @@ defmodule Util.Time do
       {:error,
        "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
     else
-      previous_epoch = div(previous_timeslot, @epoch_duration)
-      current_epoch = div(current_timeslot, @epoch_duration)
+      previous_epoch = div(previous_timeslot, epoch_duration())
+      current_epoch = div(current_timeslot, epoch_duration())
       {:ok, current_epoch > previous_epoch}
     end
   end
@@ -78,11 +71,11 @@ defmodule Util.Time do
   Determines the epoch index of a given timeslot.
   Formula (47) v0.3.4
   """
-  def epoch_index(timeslot), do: div(timeslot, @epoch_duration)
+  def epoch_index(timeslot), do: div(timeslot, epoch_duration())
 
   @doc """
   Determines the phase of a given timeslot within an epoch.
   Formula (47) v0.3.4
   """
-  def epoch_phase(timeslot), do: rem(timeslot, @epoch_duration)
+  def epoch_phase(timeslot), do: rem(timeslot, epoch_duration())
 end

@@ -63,7 +63,8 @@ defmodule Block.Header do
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
   def validate(%__MODULE__{timeslot: current_timeslot}, %System.State{timeslot: previous_timeslot}) do
     with :ok <- Time.validate_timeslot_order(previous_timeslot, current_timeslot),
-         :ok <- Time.valid_block_timeslot(current_timeslot) do
+         # Formula (41)
+         :ok <- Time.validate_block_timeslot(current_timeslot) do
       :ok
     else
       {:error, reason} -> {:error, reason}

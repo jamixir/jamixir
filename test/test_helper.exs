@@ -11,11 +11,11 @@ defmodule TestHelper do
   alias Util.Time, as: Time
 
   def past_timeslot do
-    div(Time.current_time() - 10, Time.block_duration())
+    div(Time.current_time() - 10, Constants.slot_period())
   end
 
   def future_timeslot do
-    div(Time.current_time() + 10, Time.block_duration())
+    div(Time.current_time() + 10, Constants.slot_period())
   end
 
   def nullified?(%Validator{} = validator) do
