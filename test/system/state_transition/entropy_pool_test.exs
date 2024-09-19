@@ -4,9 +4,16 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias System.State.EntropyPool
   alias Block.{Header}
   alias Util.Hash
+  import Mox
+  setup :verify_on_exit!
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+    Application.put_env(:jamixir, :original_modules, [System.State.EntropyPool])
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :original_modules)
+    end)
 
     {:ok, %{state: state, key_pairs: key_pairs}}
   end

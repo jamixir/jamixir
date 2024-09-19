@@ -172,6 +172,16 @@ defmodule System.StateTest do
   end
 
   describe "add_block/2" do
+    setup do
+      Application.put_env(:jamixir, :original_modules, [])
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :original_modules)
+      end)
+
+      :ok
+    end
+
     test "add block smoke test", %{state: state, key_pairs: key_pairs} do
       State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end

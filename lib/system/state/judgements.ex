@@ -6,6 +6,7 @@ defmodule System.State.Judgements do
   alias Block.Extrinsic.Disputes.Verdict
   alias Block.Header
   alias System.State.Judgements
+  use SelectiveMock
 
   @type t :: %__MODULE__{
           good: MapSet.t(Types.hash()),
@@ -20,70 +21,87 @@ defmodule System.State.Judgements do
             wonky: MapSet.new(),
             punish: MapSet.new()
 
-  @type verdict :: :good | :bad | :wonky
+  mockable posterior_judgements(%Header{timeslot: ts} = header, disputes, state) do
+    # Formula (107) v0.3.4
+    # Formula (108) v0.3.4
+    v = calculate_v(disputes.verdicts, state, ts)
 
-  def posterior_judgements(%Header{timeslot: ts}, disputes, state) do
     # Formula (115) v0.3.4
-    new_punish_set =
-      MapSet.union(
-        state.judgements.punish,
-        MapSet.new(disputes.culprits ++ disputes.faults, & &1.validator_key)
-      )
+    new_offenders =
+      (disputes.culprits ++ disputes.faults)
+      |> Enum.map(& &1.validator_key)
 
-    %Judgements{
-      posterior_judgement_sets(
-        Map.get(disputes, :verdicts),
-        state.curr_validators,
-        state.prev_validators,
-        state.judgements,
-        ts
-      )
-      | punish: new_punish_set
-    }
+    if valid_header_markers?(
+         header,
+         v,
+         new_offenders
+       ) do
+      {:ok,
+       %Judgements{
+         posterior_judgement_sets(v, state.judgements)
+         | punish: MapSet.union(state.judgements.punish, MapSet.new(new_offenders))
+       }}
+    else
+      {:error, "Header validation failed"}
+    end
   end
 
-  defp posterior_judgement_sets(verdicts, curr_validators, prev_validators, judgements, timeslot) do
+  defp calculate_v(verdicts, state, timeslot) do
     current_epoch = Util.Time.epoch_index(timeslot)
 
-    Enum.reduce(
-      verdicts,
-      judgements,
-      fn verdict, acc ->
-        validator_count =
-          length(
-            Disputes.get_validator_set(
-              curr_validators,
-              prev_validators,
-              current_epoch,
-              verdict.epoch_index
-            )
-          )
+    Enum.map(verdicts, fn verdict ->
+      validator_set =
+        Disputes.get_validator_set(
+          state.curr_validators,
+          state.prev_validators,
+          current_epoch,
+          verdict.epoch_index
+        )
 
-        sum_judgements = Verdict.sum_judgements(verdict)
+      {verdict.work_report_hash, Verdict.sum_judgements(verdict), length(validator_set)}
+    end)
+  end
 
-        cond do
-          # Formula (112) v0.3.4
-          sum_judgements == div(2 * validator_count, 3) + 1 ->
-            %{acc | good: MapSet.put(acc.good, verdict.work_report_hash)}
+  # Formula (116) v0.3.4
+  # Formula (117) v0.3.4
+  mockable valid_header_markers?(
+             %Header{judgements_marker: jm, offenders_marker: of},
+             v,
+             new_offenders
+           ) do
+    bad_wonky_verdicts =
+      Enum.filter(v, fn {_, sum, validator_count} ->
+        sum != div(2 * validator_count, 3) + 1
+      end)
+      |> Enum.map(fn {hash, _, _} -> hash end)
 
-          # Formula (113) v0.3.4
-          sum_judgements == 0 ->
-            %{acc | bad: MapSet.put(acc.bad, verdict.work_report_hash)}
+    jm == bad_wonky_verdicts && of == new_offenders
+  end
 
-          # Formula (114) v0.3.4
-          sum_judgements == div(validator_count, 3) ->
-            %{acc | wonky: MapSet.put(acc.wonky, verdict.work_report_hash)}
+  defp posterior_judgement_sets(v, judgements) do
+    Enum.reduce(v, judgements, fn {hash, sum, validator_count}, acc ->
+      cond do
+        # Formula (112) v0.3.4
+        sum == div(2 * validator_count, 3) + 1 ->
+          %{acc | good: MapSet.put(acc.good, hash)}
 
-          true ->
-            acc
-        end
+        # Formula (113) v0.3.4
+        sum == 0 ->
+          %{acc | bad: MapSet.put(acc.bad, hash)}
+
+        # Formula (114) v0.3.4
+        sum == div(validator_count, 3) ->
+          %{acc | wonky: MapSet.put(acc.wonky, hash)}
       end
-    )
+    end)
   end
 
   def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
     MapSet.union(g, b) |> MapSet.union(w)
   end
+
+  def mock(:posterior_judgements, context), do: {:ok, Keyword.get(context, :state).judgements}
+  def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do
     alias Codec.VariableSize

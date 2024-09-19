@@ -3,9 +3,17 @@ defmodule System.StateTransition.TimeslotTest do
   import Jamixir.Factory
   alias Block
   alias System.State
+  import Mox
+  setup :verify_on_exit!
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+    # All `mockable` defs will be stubbed
+    Application.put_env(:jamixir, :original_modules, [])
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :original_modules)
+    end)
 
     {:ok, %{state: state, key_pairs: key_pairs}}
   end
