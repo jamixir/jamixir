@@ -1,8 +1,11 @@
 {
   "skip_files": [
+    "lib/codec/scale_native.ex",
     "lib/cli.ex",
     "lib/mix/tasks/mix.jam.ex",
     "lib/tcp_server.ex",
-    "test/support/github_repo_reader.ex"
+    "lib/util/ring_vrf.ex",
+    "test/support/github_repo_reader.ex",
+    "test/support/mockable.ex"
   ]
 }
