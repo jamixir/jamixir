@@ -1,3 +1,7 @@
+defmodule ConstantsMock do
+  def epoch_length, do: 12
+end
+
 defmodule LocalVectorTest do
   use ExUnit.Case
   alias Block.Header
@@ -9,17 +13,23 @@ defmodule LocalVectorTest do
   describe "test vectors" do
     setup do
       Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+      Application.put_env(:jamixir, Constants, ConstantsMock)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+        Application.delete_env(:jamixir, Constants)
       end)
 
       :ok
     end
 
+    test "verify epoch length" do
+      assert Constants.epoch_length() == 12
+    end
+
     @tag :test_vectors_local
     test "verify test vector for local file" do
-      file_name = "enact-epoch-change-with-no-tickets-1.json"
+      file_name = "enact-epoch-change-with-no-tickets-4.json"
       {:ok, json_data} = read_local_json(file_name)
 
       HeaderSealMock
