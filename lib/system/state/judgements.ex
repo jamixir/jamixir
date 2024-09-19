@@ -46,14 +46,6 @@ defmodule System.State.Judgements do
     end
   end
 
-  def mock(:posterior_judgements, context) do
-    {:ok, Keyword.get(context, :state).judgements}
-  end
-
-  def mock(:valid_header_markers?, _context) do
-    true
-  end
-
   defp calculate_v(verdicts, state, timeslot) do
     current_epoch = Util.Time.epoch_index(timeslot)
 
@@ -107,6 +99,9 @@ defmodule System.State.Judgements do
   def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
     MapSet.union(g, b) |> MapSet.union(w)
   end
+
+  def mock(:posterior_judgements, context), do: {:ok, Keyword.get(context, :state).judgements}
+  def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do
     alias Codec.VariableSize
