@@ -107,13 +107,11 @@ defmodule System.State.JudgementsTest do
 
   describe "posterior_judgements/3" do
     setup do
-      MockJudgements
-      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
-
-      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+      # Exclude posterior_judgements from being mocked
+      Application.put_env(:jamixir, :original_modules, [:posterior_judgements])
 
       on_exit(fn ->
-        Application.delete_env(:jamixir, :judgements_module)
+        Application.delete_env(:jamixir, :original_modules)
       end)
 
       :ok

@@ -78,14 +78,14 @@ defmodule System.StateTransition.SafroleStateTest do
 
   describe "updates state.safrole.current_epoch_slot_sealers" do
     setup do
-      MockJudgements
-      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
-
-      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+      # Exclude Safrole module from being mocked
+      Application.put_env(:jamixir, :original_modules, [System.State.Safrole])
 
       on_exit(fn ->
-        Application.delete_env(:jamixir, :judgements_module)
+        Application.delete_env(:jamixir, :original_modules)
       end)
+
+      :ok
 
       %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 

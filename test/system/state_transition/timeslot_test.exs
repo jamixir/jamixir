@@ -8,21 +8,14 @@ defmodule System.StateTransition.TimeslotTest do
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-
-    {:ok, %{state: state, key_pairs: key_pairs}}
-  end
-
-  setup do
-    MockJudgements
-    |> stub(:valid_header_markers?, fn _, _, _ -> true end)
-
-    Application.put_env(:jamixir, :judgements_module, MockJudgements)
+    # All `mockable` defs will be stubbed
+    Application.put_env(:jamixir, :original_modules, [])
 
     on_exit(fn ->
-      Application.delete_env(:jamixir, :judgements_module)
+      Application.delete_env(:jamixir, :original_modules)
     end)
 
-    :ok
+    {:ok, %{state: state, key_pairs: key_pairs}}
   end
 
   test "add_block/2 correctly sets timeslot", %{state: state, key_pairs: key_pairs} do

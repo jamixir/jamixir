@@ -6,8 +6,7 @@ defmodule System.State.Judgements do
   alias Block.Extrinsic.Disputes.Verdict
   alias Block.Header
   alias System.State.Judgements
-
-  @callback valid_header_markers?(Header.t(), list(), list()) :: boolean()
+  use SelectiveMock
 
   @type t :: %__MODULE__{
           good: MapSet.t(Types.hash()),
@@ -22,7 +21,7 @@ defmodule System.State.Judgements do
             wonky: MapSet.new(),
             punish: MapSet.new()
 
-  def posterior_judgements(%Header{timeslot: ts} = header, disputes, state) do
+  mockable posterior_judgements(%Header{timeslot: ts} = header, disputes, state) do
     # Formula (107) v0.3.4
     # Formula (108) v0.3.4
     v = calculate_v(disputes.verdicts, state, ts)
@@ -32,7 +31,7 @@ defmodule System.State.Judgements do
       (disputes.culprits ++ disputes.faults)
       |> Enum.map(& &1.validator_key)
 
-    if Application.get_env(:jamixir, :judgements_module, __MODULE__).valid_header_markers?(
+    if valid_header_markers?(
          header,
          v,
          new_offenders
@@ -45,6 +44,14 @@ defmodule System.State.Judgements do
     else
       {:error, "Header validation failed"}
     end
+  end
+
+  def mock(:posterior_judgements, context) do
+    {:ok, Keyword.get(context, :state).judgements}
+  end
+
+  def mock(:valid_header_markers?, _context) do
+    true
   end
 
   defp calculate_v(verdicts, state, timeslot) do
@@ -65,11 +72,11 @@ defmodule System.State.Judgements do
 
   # Formula (116) v0.3.4
   # Formula (117) v0.3.4
-  def valid_header_markers?(
-        %Header{judgements_marker: jm, offenders_marker: of},
-        v,
-        new_offenders
-      ) do
+  mockable valid_header_markers?(
+             %Header{judgements_marker: jm, offenders_marker: of},
+             v,
+             new_offenders
+           ) do
     bad_wonky_verdicts =
       Enum.filter(v, fn {_, sum, validator_count} ->
         sum != div(2 * validator_count, 3) + 1

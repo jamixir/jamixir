@@ -173,13 +173,10 @@ defmodule System.StateTest do
 
   describe "add_block/2" do
     setup do
-      MockJudgements
-      |> stub(:valid_header_markers?, fn _, _, _ -> true end)
-
-      Application.put_env(:jamixir, :judgements_module, MockJudgements)
+      Application.put_env(:jamixir, :original_modules, [])
 
       on_exit(fn ->
-        Application.delete_env(:jamixir, :judgements_module)
+        Application.delete_env(:jamixir, :original_modules)
       end)
 
       :ok
