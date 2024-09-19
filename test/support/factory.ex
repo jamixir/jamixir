@@ -46,7 +46,7 @@ defmodule Jamixir.Factory do
   end
 
   def seal_key_ticket_factory(key_pairs, entropy_pool) do
-    Enum.map(0..(Time.epoch_duration() - 1), fn i ->
+    Enum.map(0..(Constants.epoch_length() - 1), fn i ->
       single_seal_key_ticket_factory(key_pairs, entropy_pool, i)
     end)
   end
@@ -190,8 +190,8 @@ defmodule Jamixir.Factory do
       pending: build_list(@validator_count, :validator),
       # Placeholder for epoch root
       epoch_root: :crypto.strong_rand_bytes(144),
-      current_epoch_slot_sealers: build_list(Time.epoch_duration(), :seal_key_ticket),
-      ticket_accumulator: build_list(Time.epoch_duration(), :seal_key_ticket)
+      current_epoch_slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
+      ticket_accumulator: build_list(Constants.epoch_length(), :seal_key_ticket)
     }
   end
 

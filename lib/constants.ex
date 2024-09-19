@@ -1,4 +1,6 @@
 defmodule Constants do
+  use Mockable
+
   @moduledoc """
   A module to hold constants used throughout the system.
   see Appendix I.3 of the GP for more information.
@@ -29,7 +31,7 @@ defmodule Constants do
   E
   The length of an epoch in timeslots.
   """
-  def epoch_length, do: 600
+  defmockable(:epoch_length, do: 600)
 
   @doc """
   Y
