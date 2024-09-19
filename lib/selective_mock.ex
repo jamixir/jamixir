@@ -10,19 +10,22 @@ defmodule SelectiveMock do
     quote do
       @mockable {unquote(name), unquote(Macro.escape(args)), unquote(Macro.escape(block))}
       def unquote(func) do
-        # Fetch the list of functions/modules to NOT mock from :original_modules, default to nil
+        # List of functions/modules to NOT mock 
         mock_exclusion_list = Application.get_env(:jamixir, :original_modules, nil)
 
-        # If the list is nil, nothing gets mocked
-        if mock_exclusion_list == nil or
-             (is_list(mock_exclusion_list) and Enum.member?(mock_exclusion_list, unquote(name))) or
-             Enum.member?(mock_exclusion_list, __MODULE__) do
-          # If the function/module is on the list or no list exists, use the original function
-          unquote(block)
-        else
-          # Otherwise, use the mock implementation
-          context = binding()
-          mock(unquote(name), context)
+        cond do
+          # If the exclusion list is nil, nothing is mocked
+          mock_exclusion_list == nil ->
+            unquote(block)
+
+          # If the function or module is on the list, use the original function
+          Enum.member?(mock_exclusion_list, unquote(name)) or
+              Enum.member?(mock_exclusion_list, __MODULE__) ->
+            unquote(block)
+
+          # Otherwise, mock the function
+          true ->
+            mock(unquote(name), binding())
         end
       end
     end
