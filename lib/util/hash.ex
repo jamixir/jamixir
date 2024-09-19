@@ -6,7 +6,9 @@ defmodule Util.Hash do
   @doc """
   Hashes the given data using the Blake2b algorithm with the given number of bytes.
   """
-  def blake2b_n(data, n), do: Blake2.hash2b(data, n)
+  def blake2b_n(data, n) do
+    binary_part(blake2b_256(data), 0, n)
+  end
 
   @doc """
   256 bits Blake2b hash function.

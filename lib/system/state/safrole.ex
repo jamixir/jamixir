@@ -115,13 +115,10 @@ defmodule System.State.Safrole do
 
   @spec generate_index_using_entropy(binary(), integer(), integer()) :: integer()
   def generate_index_using_entropy(entropy, i, validator_set_size) do
-    encoded_i = Encoder.encode_le(i, 4)
-    concat = entropy <> encoded_i
-    hashed = Hash.blake2b_n(concat, 4)
-    decdoded = Decoder.decode_integer(hashed)
-
-    rem = decdoded |> rem(validator_set_size)
-    rem
+    (entropy <> Encoder.encode_le(i, 4))
+    |> Hash.blake2b_n(4)
+    |> Decoder.decode_le(4)
+    |> rem(validator_set_size)
   end
 
   defimpl Encodable do
