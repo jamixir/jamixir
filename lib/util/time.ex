@@ -14,13 +14,6 @@ defmodule Util.Time do
   end
 
   @doc """
-  Returns the block duration in seconds.
-  """
-  def block_duration do
-    @block_duration
-  end
-
-  @doc """
   Returns seconds passed since epoch time.
   """
   def current_time do

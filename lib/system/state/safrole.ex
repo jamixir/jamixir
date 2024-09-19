@@ -101,7 +101,6 @@ defmodule System.State.Safrole do
     0..(Constants.epoch_length() - 1)
     |> Enum.map(fn i ->
       validator_index = generate_index_using_entropy(n2, i, validator_set_size)
-      IO.inspect(validator_index)
       Enum.at(current_validators, validator_index).bandersnatch
     end)
   end
