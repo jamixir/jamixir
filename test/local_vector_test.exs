@@ -8,7 +8,10 @@ defmodule LocalVectorTest do
   import Mox
   setup :verify_on_exit!
 
-  @vector_dir "test/test_vectors"
+  @owner "w3f"
+  @repo "jamtestvectors"
+  @branch "master"
+  @path "safrole/tiny"
 
   describe "test vectors" do
     setup do
@@ -27,42 +30,54 @@ defmodule LocalVectorTest do
       assert Constants.epoch_length() == 12
     end
 
-    @tag :test_vectors_local
-    test "verify test vector for local file" do
-      file_name = "enact-epoch-change-with-no-tickets-4.json"
-      {:ok, json_data} = read_local_json(file_name)
+    @tag :test_vectors_github
+    test "verify test vectors from GitHub" do
+      files_to_test = ["enact-epoch-change-with-no-tickets-1"]
+
+      Enum.each(files_to_test, fn file_name ->
+        {:ok, json_data} = fetch_and_parse_json(file_name)
 
       HeaderSealMock
       |> stub(:do_validate_header_seals, fn _, _, _, _ ->
         {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
       end)
 
-      assert_expected_results(json_data, [
-        :timeslot,
-        :entropy_pool,
-        :prev_validators,
-        :curr_validators,
-        :safrole
-      ])
+        assert_expected_results(
+          json_data,
+          [
+            :timeslot,
+            :entropy_pool,
+            :prev_validators,
+            :curr_validators,
+            :safrole
+          ],
+          file_name
+        )
+      end)
     end
   end
 
-  defp read_local_json(file_name) do
-    file_path = Path.join(@vector_dir, file_name)
+  defp fetch_and_parse_json(file_name) do
+    url =
+      "https://raw.githubusercontent.com/#{@owner}/#{@repo}/#{@branch}/#{@path}/#{file_name}.json"
 
-    case File.read(file_path) do
-      {:ok, contents} ->
-        {:ok, Jason.decode!(contents)}
+    headers = [{"User-Agent", "Elixir"}]
 
-      {:error, reason} ->
-        IO.puts("Failed to read file: #{reason}")
-        {:error, :failed_to_read}
+    case HTTPoison.get(url, headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        {:ok, Jason.decode!(body)}
+
+      {:ok, %HTTPoison.Response{status_code: status_code}} ->
+        IO.puts("Failed to fetch file #{file_name}: HTTP #{status_code}")
+        {:error, :failed_to_fetch}
+
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        IO.puts("Failed to fetch file #{file_name}: #{reason}")
+        {:error, :failed_to_fetch}
     end
   end
 
-  defp assert_expected_results(json_data, tested_keys) do
-    # Translate JSON data into your system modules and run assertions
-    # Example:
+  defp assert_expected_results(json_data, tested_keys, file_name) do
     pre_state = System.State.from_json(json_data["pre_state"])
     header = %Header{timeslot: json_data["input"]["slot"]}
 
