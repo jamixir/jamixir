@@ -13,6 +13,11 @@ defmodule LocalVectorTest do
   @branch "master"
   @path "safrole/tiny"
 
+  setup_all do
+    RingVrf.init_ring_context(6)
+    :ok
+  end
+
   describe "test vectors" do
     setup do
       Application.put_env(:jamixir, :header_seal, HeaderSealMock)
@@ -32,15 +37,21 @@ defmodule LocalVectorTest do
 
     @tag :test_vectors_github
     test "verify test vectors from GitHub" do
-      files_to_test = ["enact-epoch-change-with-no-tickets-1"]
+      files_to_test = [
+        # "enact-epoch-change-with-no-tickets-1",
+        # "enact-epoch-change-with-no-tickets-2",
+        # "enact-epoch-change-with-no-tickets-3",
+        "enact-epoch-change-with-no-tickets-4",
+        # "publish-tickets-no-mark-1"
+      ]
 
       Enum.each(files_to_test, fn file_name ->
         {:ok, json_data} = fetch_and_parse_json(file_name)
 
-      HeaderSealMock
-      |> stub(:do_validate_header_seals, fn _, _, _, _ ->
-        {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
-      end)
+        HeaderSealMock
+        |> stub(:do_validate_header_seals, fn _, _, _, _ ->
+          {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
+        end)
 
         assert_expected_results(
           json_data,
@@ -77,7 +88,7 @@ defmodule LocalVectorTest do
     end
   end
 
-  defp assert_expected_results(json_data, tested_keys, file_name) do
+  defp assert_expected_results(json_data, tested_keys, _file_name) do
     pre_state = System.State.from_json(json_data["pre_state"])
     header = %Header{timeslot: json_data["input"]["slot"]}
 

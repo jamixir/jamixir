@@ -101,6 +101,7 @@ defmodule System.State.Safrole do
     0..(Constants.epoch_length() - 1)
     |> Enum.map(fn i ->
       validator_index = generate_index_using_entropy(n2, i, validator_set_size)
+      IO.inspect(validator_index)
       Enum.at(current_validators, validator_index).bandersnatch
     end)
   end
@@ -115,11 +116,13 @@ defmodule System.State.Safrole do
 
   @spec generate_index_using_entropy(binary(), integer(), integer()) :: integer()
   def generate_index_using_entropy(entropy, i, validator_set_size) do
-    entropy
-    |> Kernel.<>(Encoder.encode_le(i, 4))
-    |> Hash.blake2b_n(4)
-    |> Decoder.decode_le(4)
-    |> rem(validator_set_size)
+    encoded_i = Encoder.encode_le(i, 4)
+    concat = entropy <> encoded_i
+    hashed = Hash.blake2b_n(concat, 4)
+    decdoded = Decoder.decode_integer(hashed)
+
+    rem = decdoded |> rem(validator_set_size)
+    rem
   end
 
   defimpl Encodable do
