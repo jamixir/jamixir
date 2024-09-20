@@ -66,4 +66,5 @@ defmodule Constants do
   def rotation_period, do: 10
 
   def slot_period, do: 6
+  def max_tickets, do: 16
 end

@@ -78,4 +78,9 @@ defmodule Util.Time do
   Formula (47) v0.3.4
   """
   def epoch_phase(timeslot), do: rem(timeslot, epoch_duration())
+
+  @doc """
+  Returns a tuple containing the epoch index and phase for a given timeslot.
+  """
+  def epoch_index_and_phase(timeslot), do: {epoch_index(timeslot), epoch_phase(timeslot)}
 end
