@@ -52,8 +52,8 @@ defmodule Block.Extrinsic.Guarantor do
         offenders
       ) do
     {e, k} =
-      if div(post_timestamp - Constants.rotation_period(), Time.epoch_duration()) ==
-           div(post_timestamp, Time.epoch_duration()) do
+      if div(post_timestamp - Constants.rotation_period(), Constants.epoch_length()) ==
+           div(post_timestamp, Constants.epoch_length()) do
         {post_n2, post_current_validators}
       else
         {post_n3, post_previous_validators}

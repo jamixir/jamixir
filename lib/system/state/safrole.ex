@@ -115,8 +115,7 @@ defmodule System.State.Safrole do
 
   @spec generate_index_using_entropy(binary(), integer(), integer()) :: integer()
   def generate_index_using_entropy(entropy, i, validator_set_size) do
-    entropy
-    |> Kernel.<>(Encoder.encode_le(i, 4))
+    (entropy <> Encoder.encode_le(i, 4))
     |> Hash.blake2b_n(4)
     |> Decoder.decode_le(4)
     |> rem(validator_set_size)

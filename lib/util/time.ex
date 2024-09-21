@@ -1,10 +1,5 @@
 defmodule Util.Time do
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
-  # blocks
-  @doc """
-  Returns the epoch duration in blocks.
-  """
-  def epoch_duration, do: 600
 
   @doc """
   Returns the base epoch time in Gregorian seconds.
@@ -61,8 +56,8 @@ defmodule Util.Time do
       {:error,
        "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
     else
-      previous_epoch = div(previous_timeslot, epoch_duration())
-      current_epoch = div(current_timeslot, epoch_duration())
+      previous_epoch = div(previous_timeslot, Constants.epoch_length())
+      current_epoch = div(current_timeslot, Constants.epoch_length())
       {:ok, current_epoch > previous_epoch}
     end
   end
@@ -71,13 +66,13 @@ defmodule Util.Time do
   Determines the epoch index of a given timeslot.
   Formula (47) v0.3.4
   """
-  def epoch_index(timeslot), do: div(timeslot, epoch_duration())
+  def epoch_index(timeslot), do: div(timeslot, Constants.epoch_length())
 
   @doc """
   Determines the phase of a given timeslot within an epoch.
   Formula (47) v0.3.4
   """
-  def epoch_phase(timeslot), do: rem(timeslot, epoch_duration())
+  def epoch_phase(timeslot), do: rem(timeslot, Constants.epoch_length())
 
   @doc """
   Returns a tuple containing the epoch index and phase for a given timeslot.
