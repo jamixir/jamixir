@@ -23,6 +23,17 @@ defmodule System.StateTransition.SafroleStateTest do
     end
   end
 
+  setup_all do
+    # Exclude Safrole module from being mocked
+    Application.put_env(:jamixir, :original_modules, [System.State.Safrole])
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :original_modules)
+    end)
+
+    :ok
+  end
+
   describe "safrole state update on new epoch with some validators nullified" do
     setup do
       %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
@@ -78,15 +89,6 @@ defmodule System.StateTransition.SafroleStateTest do
 
   describe "updates state.safrole.current_epoch_slot_sealers" do
     setup do
-      # Exclude Safrole module from being mocked
-      Application.put_env(:jamixir, :original_modules, [System.State.Safrole])
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, :original_modules)
-      end)
-
-      :ok
-
       %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 
       state = %{
