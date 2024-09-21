@@ -1,18 +1,19 @@
 defmodule System.Validators.Safrole do
+  use SelectiveMock
   alias Block.Header
-  alias System.State.{EntropyPool, Safrole}
+  alias System.State.{Safrole}
   alias Util.Time
 
   # Formula (72) v0.3.4
-  def valid_epoch_marker(
-        %Header{
-          timeslot: header_timeslot,
-          epoch: epoch_marker
-        },
-        state_timeslot,
-        %EntropyPool{n1: posterior_n1},
-        %Safrole{pending: posterior_pending}
-      ) do
+  mockable valid_epoch_marker(
+             %Header{
+               timeslot: header_timeslot,
+               epoch: epoch_marker
+             },
+             state_timeslot,
+             posterior_n1,
+             posterior_pending
+           ) do
     {:ok, is_new_epoch} = Time.new_epoch?(state_timeslot, header_timeslot)
 
     cond do
@@ -27,6 +28,8 @@ defmodule System.Validators.Safrole do
         {:error, "Invalid epoch marker"}
     end
   end
+
+  def mock(:valid_epoch_marker, _), do: :ok
 
   # Formula (73) v0.3.4
   def valid_winning_tickets_marker(

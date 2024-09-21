@@ -137,7 +137,8 @@ defmodule System.State do
          # κ' Formula (21) v0.3.4
          # λ' Formula (22) v0.3.4
          # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
-         {new_safrole_pending, new_curr_validators, new_prev_validators, new_safrole_epoch_root} =
+         {posterior_pending, posterior_curr_validators, posterior_prev_validators,
+          posterior_epoch_root} =
            RotateKeys.rotate_keys(
              h,
              state.timeslot,
@@ -151,22 +152,30 @@ defmodule System.State do
            Assurance.validate_assurances(
              e.assurances,
              h.parent_hash,
-             new_curr_validators,
+             posterior_curr_validators,
              core_reports_intermediate_1
            ),
 
          # η' Formula (20) v0.3.4
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
-         new_epoch_slot_sealers =
+         :ok <-
+           System.Validators.Safrole.valid_epoch_marker(
+             h,
+             state.timeslot,
+             rotated_history_entropy_pool.n1,
+             posterior_pending
+           ),
+         # Formula (86) v0.3.4
+         posterior_epoch_slot_sealers =
            Safrole.get_posterior_epoch_slot_sealers(
              h,
              state.timeslot,
              state.safrole,
              rotated_history_entropy_pool,
-             new_curr_validators
+             posterior_curr_validators
            ),
-         {:ok, new_ticket_accumulator} <-
+         {:ok, posterior_ticket_accumulator} <-
            Safrole.get_posterior_ticket_accumulator(
              h.timeslot,
              state.timeslot,
@@ -175,26 +184,32 @@ defmodule System.State do
              rotated_history_entropy_pool
            ),
          posterior_safrole = %Safrole{
-           pending: new_safrole_pending,
-           epoch_root: new_safrole_epoch_root,
-           current_epoch_slot_sealers: new_epoch_slot_sealers,
-           ticket_accumulator: new_ticket_accumulator
+           pending: posterior_pending,
+           epoch_root: posterior_epoch_root,
+           current_epoch_slot_sealers: posterior_epoch_slot_sealers,
+           ticket_accumulator: posterior_ticket_accumulator
          },
          {:ok, %{vrf_signature_output: vrf_output}} <-
            System.HeaderSeal.validate_header_seals(
              h,
-             new_curr_validators,
-             new_epoch_slot_sealers,
+             posterior_curr_validators,
+             posterior_epoch_slot_sealers,
              state.entropy_pool
            ),
          posterior_entropy_pool =
            EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool),
+         new_safrole = %{
+           state.safrole
+           | pending: posterior_curr_validators,
+             epoch_root: posterior_epoch_root,
+             current_epoch_slot_sealers: posterior_epoch_slot_sealers
+         },
          {:ok, posterior_validator_statistics} <-
            ValidatorStatistics.posterior_validator_statistics(
              e,
              state.timeslot,
              state.validator_statistics,
-             new_curr_validators,
+             posterior_curr_validators,
              h
            ) do
       {:ok,
@@ -214,9 +229,9 @@ defmodule System.State do
          # TODO
          next_validators: nil,
          # κ'
-         curr_validators: new_curr_validators,
+         curr_validators: posterior_curr_validators,
          # λ'
-         prev_validators: new_prev_validators,
+         prev_validators: posterior_prev_validators,
          # ρ'
          # TODO
          core_reports: nil,
