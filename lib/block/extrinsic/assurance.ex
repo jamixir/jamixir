@@ -6,10 +6,8 @@ defmodule Block.Extrinsic.Assurance do
   Each assurance is a sequence of binary values (i.e., a bitstring), one per core,
   together with a signature and the index of the validator who is assuring.
   """
-  alias Util.Hash
   alias System.State.Validator
-  alias Util.Crypto
-  alias Util.Collections
+  alias Util.{Collections, Crypto, Hash}
 
   # Formula (125) v0.3.4
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
@@ -35,6 +33,7 @@ defmodule Block.Extrinsic.Assurance do
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
          # Formula (127) v0.3.4
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
+         # Formula (128) v0.3.4
          :ok <-
            if(
              Enum.all?(assurances, fn a ->

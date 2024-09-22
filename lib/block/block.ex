@@ -2,11 +2,9 @@ defmodule Block do
   alias Block.Extrinsic
   alias Block.Extrinsic.{Assurance, Disputes}
   alias Block.Header
+  alias System.State
 
-  @type t :: %__MODULE__{
-          header: Block.Header.t(),
-          extrinsic: Block.Extrinsic.t()
-        }
+  @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
 
   # Formula (13) v0.3.4
   defstruct [
@@ -17,22 +15,17 @@ defmodule Block do
   ]
 
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
-  def validate(%__MODULE__{header: header, extrinsic: extrinsic}, state) do
-    with :ok <- Header.validate(header, state),
-         :ok <- Extrinsic.validate_guarantees(extrinsic.guarantees),
-         :ok <-
-           Assurance.validate_assurances(
-             extrinsic.assurances,
-             header.parent_hash,
-             state.curr_validators
-           ),
+  def validate(%__MODULE__{header: h, extrinsic: e}, %State{} = s) do
+    with :ok <- Header.validate(h, s),
+         :ok <- Extrinsic.validate_guarantees(e.guarantees),
+         :ok <- Assurance.validate_assurances(e.assurances, h.parent_hash, s.curr_validators),
          :ok <-
            Disputes.validate_disputes(
-             extrinsic.disputes,
-             state.curr_validators,
-             state.prev_validators,
-             state.judgements,
-             header.timeslot
+             e.disputes,
+             s.curr_validators,
+             s.prev_validators,
+             s.judgements,
+             h.timeslot
            ) do
       :ok
     else
@@ -43,10 +36,7 @@ defmodule Block do
   defimpl Encodable do
     def encode(%Block{extrinsic: e, header: h}) do
       # Formula (280) v0.3.4
-      Codec.Encoder.encode({
-        h,
-        e
-      })
+      Codec.Encoder.encode({h, e})
     end
   end
 end
