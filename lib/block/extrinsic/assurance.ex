@@ -1,4 +1,4 @@
-defmodule Assurance do
+defmodule Block.Extrinsic.Assurance do
   @moduledoc """
   A module representing an assurance with various attributes.
 
@@ -23,7 +23,7 @@ defmodule Assurance do
         }
 
   defimpl Encodable do
-    def encode(%Assurance{} = assurance) do
+    def encode(%Block.Extrinsic.Assurance{} = assurance) do
       Codec.Encoder.encode(assurance.hash) <>
         Codec.Encoder.encode(assurance.assurance_values) <>
         Codec.Encoder.encode_le(assurance.validator_index, 2) <>

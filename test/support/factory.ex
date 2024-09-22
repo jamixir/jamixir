@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.{Disputes, Guarantee}
   alias Block.Extrinsic.Preimage
@@ -390,7 +391,7 @@ defmodule Jamixir.Factory do
       tickets: [%SealKeyTicket{}],
       disputes: %Disputes{},
       preimages: build_list(2, :preimage),
-      assurances: [%Assurance{}],
+      assurances: build_list(2, :assurance),
       guarantees:
         1..3
         |> Enum.map(fn i ->
