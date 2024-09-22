@@ -149,7 +149,6 @@ defmodule System.State do
          # η' Formula (20) v0.3.4
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
-         # Formula (86) v0.3.4
          posterior_epoch_slot_sealers =
            Safrole.get_posterior_epoch_slot_sealers(
              h,

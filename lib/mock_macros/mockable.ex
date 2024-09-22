@@ -12,7 +12,7 @@ defmodule Mockable do
         Application.get_env(:jamixir, __MODULE__, __MODULE__)
       end
 
-      defoverridable [get_mock_module: 0]
+      defoverridable get_mock_module: 0
     end
   end
 
@@ -30,7 +30,7 @@ defmodule Mockable do
   defmacro defmockable(name, do: body) do
     quote do
       def unquote(:"#{name}_impl")(), do: unquote(body)
-      defmockable unquote(name)
+      defmockable(unquote(name))
     end
   end
 end

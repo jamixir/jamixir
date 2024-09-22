@@ -41,7 +41,7 @@ defmodule LocalVectorTest do
         # "enact-epoch-change-with-no-tickets-1",
         # "enact-epoch-change-with-no-tickets-2",
         # "enact-epoch-change-with-no-tickets-3",
-        "enact-epoch-change-with-no-tickets-4",
+        "enact-epoch-change-with-no-tickets-4"
         # "publish-tickets-no-mark-1"
       ]
 
