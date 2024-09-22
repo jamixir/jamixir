@@ -53,10 +53,13 @@ defmodule Block.Extrinsic.TicketProof do
     epoch_phase = Time.epoch_phase(header_timeslot)
 
     cond do
+      # m' < Y
       epoch_phase < Constants.ticket_submission_end() and
           length(tickets) <= Constants.max_tickets() ->
+        # |ET| <= K
         :ok
 
+      # |ET| == 0
       epoch_phase >= Constants.ticket_submission_end() and Enum.empty?(tickets) ->
         :ok
 
@@ -65,7 +68,7 @@ defmodule Block.Extrinsic.TicketProof do
     end
   end
 
-  # Formula (74) v0.3.4
+  # Formula (74) v0.3.4 - r ∈ NN
   @spec validate_entry_indices(list(t())) :: :ok | {:error, String.t()}
   defp validate_entry_indices(ticket_proofs) do
     if Enum.all?(ticket_proofs, &(&1.entry_index in [0, 1])) do

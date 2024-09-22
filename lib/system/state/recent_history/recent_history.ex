@@ -63,27 +63,22 @@ defmodule System.State.RecentHistory do
   Gets the initial block history, modifying the last block to include the given state root.
   Formula (82) v0.3.4
   """
-  def update_latest_posterior_state_root(nil, %Header{
-        prior_state_root: _s
-      }) do
+  def update_latest_posterior_state_root(nil, %Header{}) do
     __MODULE__.new()
   end
 
   @spec update_latest_posterior_state_root(t(), Header.t()) :: t()
-  def update_latest_posterior_state_root(%__MODULE__{blocks: blocks} = self, %Header{
-        prior_state_root: _s
-      })
-      when blocks == [] do
+  def update_latest_posterior_state_root(%__MODULE__{blocks: []} = self, %Header{}) do
     self
   end
 
+  # β† ≡ β except β † [∣β∣ − 1]s = Hr
   def update_latest_posterior_state_root(%__MODULE__{blocks: blocks} = self, %Header{
         prior_state_root: s
       }) do
     case Enum.split(blocks, length(blocks) - 1) do
       {init, [last_block]} ->
-        modified_last_block = %RecentBlock{last_block | state_root: s}
-        %__MODULE__{self | blocks: init ++ [modified_last_block]}
+        %__MODULE__{self | blocks: init ++ [%RecentBlock{last_block | state_root: s}]}
     end
   end
 
