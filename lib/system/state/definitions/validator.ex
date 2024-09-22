@@ -6,13 +6,13 @@ defmodule System.State.Validator do
 
   # Formula (53) v0.3.4
   @type t :: %__MODULE__{
-          # Formula (54) v0.3.4
+          # Formula (54) v0.3.4 - b
           bandersnatch: Types.bandersnatch_key(),
-          # Formula (55) v0.3.4
+          # Formula (55) v0.3.4 - e
           ed25519: Types.ed25519_key(),
-          # Formula (56) v0.3.4
+          # Formula (56) v0.3.4 - BLS
           bls: Types.bls_key(),
-          # Formula (57) v0.3.4
+          # Formula (57) v0.3.4 - m
           metadata: <<_::1024>>
         }
 

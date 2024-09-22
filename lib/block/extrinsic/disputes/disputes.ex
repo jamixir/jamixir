@@ -174,7 +174,7 @@ defmodule Block.Extrinsic.Disputes do
                     else: SigningContexts.jam_invalid()
               end
 
-          Crypto.verify_signature(
+          Crypto.valid_signature?(
             offense.signature,
             msg_base <> offense.work_report_hash,
             offense.validator_key
@@ -198,7 +198,7 @@ defmodule Block.Extrinsic.Disputes do
 
   defp valid_signatures?(validator_set, %Verdict{judgements: judgements, work_report_hash: wrh}) do
     Enum.all?(judgements, fn judgement ->
-      Crypto.verify_signature(
+      Crypto.valid_signature?(
         judgement.signature,
         Judgement.signature_base(judgement) <> wrh,
         Enum.at(validator_set, judgement.validator_index).ed25519
