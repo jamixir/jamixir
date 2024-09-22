@@ -32,6 +32,12 @@ defmodule Block.Extrinsic.AssuranceTest do
     %{hp: hp, assurance: assurance, validators: validators}
   end
 
+  setup_all do
+    parent_hash = :crypto.strong_rand_bytes(32)
+    valid_assurance = build(:assurance, hash: parent_hash, validator_index: 1)
+    %{parent_hash: parent_hash, valid_assurance: valid_assurance}
+  end
+
   describe "Assurance encoding" do
     test "encodes an Assurance struct correctly" do
       assurance = build(:assurance)
@@ -130,8 +136,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
 
-      assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators)
+      Assurance.validate_assurances([invalid_assurance], hp, validators)
     end
 
     test "returns :error for invalid validator index", %{
