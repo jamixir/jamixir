@@ -34,8 +34,35 @@ defmodule Block.Extrinsic.AssuranceTest do
 
   setup_all do
     parent_hash = :crypto.strong_rand_bytes(32)
-    valid_assurance = build(:assurance, hash: parent_hash, validator_index: 1)
-    %{parent_hash: parent_hash, valid_assurance: valid_assurance}
+    keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
+
+    validators =
+      build_list(3, :validator)
+      |> Enum.with_index()
+      |> Enum.map(fn {v, i} ->
+        %Validator{v | ed25519: elem(Enum.at(keys, i), 0)}
+      end)
+
+    [_, {_, s2}, _] = keys
+    payload = SigningContexts.jam_available() <> Hash.default(parent_hash <> "av")
+    signature = Crypto.sign(payload, s2)
+
+    valid_assurance =
+      build(:assurance,
+        hash: parent_hash,
+        validator_index: 1,
+        assurance_values: "av",
+        signature: signature
+      )
+
+    %{
+      parent_hash: parent_hash,
+      valid_assurance: valid_assurance,
+      validators: validators
+      # v1: v1,
+      # v2: v2,
+      # key1: key1
+    }
   end
 
   describe "Assurance encoding" do
@@ -72,7 +99,8 @@ defmodule Block.Extrinsic.AssuranceTest do
     test "returns error when assurance hash doesn't match parent hash", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       d_assurance = %{assurance | hash: :crypto.strong_rand_bytes(32)}
       assurances = [assurance, d_assurance]
