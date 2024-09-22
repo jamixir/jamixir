@@ -391,7 +391,7 @@ defmodule Jamixir.Factory do
       tickets: [%SealKeyTicket{}],
       disputes: %Disputes{},
       preimages: build_list(2, :preimage),
-      assurances: build_list(2, :assurance),
+      assurances: [],
       guarantees:
         1..3
         |> Enum.map(fn i ->
