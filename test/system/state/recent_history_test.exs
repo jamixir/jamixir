@@ -1,11 +1,12 @@
-defmodule System.State.RecentHistoryTest do
+defmodule RecentHistoryTest do
   use ExUnit.Case
 
-  alias System.State.{RecentHistory, BeefyCommitmentMap}
-  alias System.State.RecentHistory.RecentBlock
-  alias Block.Header
+  alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee
-  alias Util.{Hash, MMR, MerkleTree}
+  alias Block.Header
+  alias System.State.RecentHistory.RecentBlock
+  alias System.State.{BeefyCommitmentMap, RecentHistory}
+  alias Util.{Hash, MerkleTree, MMR}
 
   describe "update_latest_posterior_state_root/2" do
     test "returns empty list when given nil" do
@@ -43,7 +44,7 @@ defmodule System.State.RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, <<1::256>>}]}
 
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [],
           recent_history,
@@ -57,7 +58,7 @@ defmodule System.State.RecentHistoryTest do
     test "handles nil beefy_commitment_map" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
@@ -65,7 +66,7 @@ defmodule System.State.RecentHistoryTest do
       beefy_commitment_map = nil
 
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee],
           recent_history,
@@ -79,7 +80,7 @@ defmodule System.State.RecentHistoryTest do
     test "handles empty recent_history.blocks" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
@@ -87,7 +88,7 @@ defmodule System.State.RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, <<1::256>>}]}
 
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee],
           recent_history,
@@ -110,14 +111,14 @@ defmodule System.State.RecentHistoryTest do
 
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<4::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<4::256>>}
         }
       }
 
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{2, <<5::256>>}]}
 
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee],
           recent_history,
@@ -131,13 +132,13 @@ defmodule System.State.RecentHistoryTest do
     test "verifies work_package_hashes are extracted correctly" do
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<2::256>>}
         }
       }
 
@@ -145,7 +146,7 @@ defmodule System.State.RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{3, <<3::256>>}]}
 
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee1, guarantee2],
           recent_history,
@@ -173,7 +174,7 @@ defmodule System.State.RecentHistoryTest do
       # Create a new guarantee with a unique work_package_hash
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<9::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<9::256>>}
         }
       }
 
@@ -181,7 +182,7 @@ defmodule System.State.RecentHistoryTest do
 
       # Call the function to add a new block
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee],
           recent_history,
@@ -210,13 +211,13 @@ defmodule System.State.RecentHistoryTest do
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<2::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<2::256>>}
         }
       }
 
@@ -225,7 +226,7 @@ defmodule System.State.RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee1, guarantee2],
           recent_history,
@@ -259,7 +260,7 @@ defmodule System.State.RecentHistoryTest do
       # Create a guarantee with specific work_package_hashes
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %Guarantee.AvailabilitySpecification{work_package_hash: <<1::256>>}
+          specification: %AvailabilitySpecification{work_package_hash: <<1::256>>}
         }
       }
 
@@ -268,7 +269,7 @@ defmodule System.State.RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           %Header{},
           [guarantee],
           recent_history,
@@ -287,7 +288,7 @@ defmodule System.State.RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        System.State.RecentHistory.posterior_recent_history(
+        RecentHistory.posterior_recent_history(
           header,
           [],
           recent_history,

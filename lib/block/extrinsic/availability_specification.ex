@@ -1,12 +1,12 @@
-defmodule Block.Extrinsic.Availability do
+defmodule Block.Extrinsic.AvailabilitySpecification do
   @type t :: %__MODULE__{
-          # h
+          # h: hash of the work-package
           work_package_hash: Types.hash(),
-          # l
+          # l: auditable work bundle length
           work_bundle_length: Types.max_age_timeslot_lookup_anchor(),
-          # u
+          # u: erasure-root
           erasure_root: Types.hash(),
-          # e
+          # e: segment-root
           segment_root: Types.hash()
         }
 
@@ -22,7 +22,7 @@ defmodule Block.Extrinsic.Availability do
 
   defimpl Encodable do
     # Formula (284) v0.3.4
-    def encode(%Block.Extrinsic.Availability{} = availability) do
+    def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       Codec.Encoder.encode(availability.work_package_hash) <>
         Codec.Encoder.encode_le(availability.work_bundle_length, 4) <>
         Codec.Encoder.encode({availability.erasure_root, availability.segment_root})

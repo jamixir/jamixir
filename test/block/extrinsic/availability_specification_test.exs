@@ -1,9 +1,9 @@
-defmodule Block.Extrinsic.AvailabilityTest do
+defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   use ExUnit.Case
   import Jamixir.Factory
 
   setup do
-    {:ok, availability: build(:availability)}
+    {:ok, availability: build(:availability_specification)}
   end
 
   test "encode/1", %{availability: availability} do

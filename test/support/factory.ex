@@ -96,7 +96,7 @@ defmodule Jamixir.Factory do
 
   def work_report_factory do
     %WorkReport{
-      specification: build(:availability),
+      specification: build(:availability_specification),
       refinement_context: build(:refinement_context),
       core_index: 1,
       authorizer_hash: <<2::256>>,
@@ -105,8 +105,8 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def availability_factory do
-    %Block.Extrinsic.Availability{
+  def availability_specification_factory do
+    %Block.Extrinsic.AvailabilitySpecification{
       work_package_hash: <<1::256>>,
       work_bundle_length: 2,
       erasure_root: <<3::256>>,

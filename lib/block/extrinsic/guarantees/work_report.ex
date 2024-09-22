@@ -3,13 +3,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   Work report
   section 11.1
   """
-  alias Block.Extrinsic.Availability
+  alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
 
   # Formula (119) v0.3.4
   @type t :: %__MODULE__{
           # s
-          specification: Availability.t(),
+          specification: AvailabilitySpecification.t(),
           # x
           refinement_context: RefinementContext.t(),
           # c
