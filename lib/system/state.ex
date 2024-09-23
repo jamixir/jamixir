@@ -198,12 +198,6 @@ defmodule System.State do
            ),
          posterior_entropy_pool =
            EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool),
-         new_safrole = %{
-           state.safrole
-           | pending: posterior_curr_validators,
-             epoch_root: posterior_epoch_root,
-             current_epoch_slot_sealers: posterior_epoch_slot_sealers
-         },
          {:ok, posterior_validator_statistics} <-
            ValidatorStatistics.posterior_validator_statistics(
              e,

@@ -51,8 +51,6 @@ defmodule Block.Extrinsic.TicketProof do
     end
   end
 
-  def mock(:validate_tickets, _), do: :ok
-
   # Formula (75) v0.3.4
   defp validate_ticket_count(tickets, header_timeslot) do
     epoch_phase = Time.epoch_phase(header_timeslot)
@@ -104,6 +102,9 @@ defmodule Block.Extrinsic.TicketProof do
       end
     end)
   end
+
+  def mock(:validate_tickets, _), do: :ok
+  def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
 
   def from_json(json_data) do
     %__MODULE__{
