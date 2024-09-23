@@ -13,6 +13,7 @@ defmodule Block.Extrinsic.TicketProof do
   alias Block.Extrinsic.TicketProof
   alias System.State.{EntropyPool, Safrole, SealKeyTicket}
   alias Util.{Collections, Time}
+  use SelectiveMock
 
   @type t :: %__MODULE__{
           # r
@@ -33,7 +34,7 @@ defmodule Block.Extrinsic.TicketProof do
         ) ::
           :ok | {:error, String.t()}
 
-  def validate_tickets(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
+  mockable validate_tickets(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
     with {:ok, is_new_epoch} <- Time.new_epoch?(state_timeslot, header_timeslot),
          :ok <- validate_ticket_count(ticket_proofs, header_timeslot),
          :ok <- validate_entry_indices(ticket_proofs),
@@ -49,6 +50,8 @@ defmodule Block.Extrinsic.TicketProof do
       Safrole.validate_new_tickets(safrole, MapSet.new(n, & &1.id))
     end
   end
+
+  def mock(:validate_tickets, _), do: :ok
 
   # Formula (75) v0.3.4
   defp validate_ticket_count(tickets, header_timeslot) do
@@ -102,7 +105,12 @@ defmodule Block.Extrinsic.TicketProof do
     end)
   end
 
-  def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
+  def from_json(json_data) do
+    %__MODULE__{
+      entry_index: json_data["attempt"],
+      ticket_validity_proof: Utils.hex_to_binary(json_data["signature"])
+    }
+  end
 
   defimpl Encodable do
     def encode(%Block.Extrinsic.TicketProof{} = tp) do

@@ -19,6 +19,19 @@ defmodule Block do
     with :ok <- Header.validate(h, s),
          :ok <- Extrinsic.validate_guarantees(e.guarantees),
          :ok <-
+           System.Validators.Safrole.valid_winning_tickets_marker(
+             header,
+             state.timeslot,
+             state.safrole
+           ),
+           :ok <- Extrinsic.TicketProof.validate_tickets(
+             extrinsic.tickets,
+             header.timeslot,
+             state.timeslot,
+             state.entropy_pool,
+             state.safrole
+           ),
+         :ok <-
            Disputes.validate_disputes(
              e.disputes,
              s.curr_validators,
@@ -37,5 +50,12 @@ defmodule Block do
       # Formula (280) v0.3.4
       Codec.Encoder.encode({h, e})
     end
+  end
+
+  def from_json(json_data) do
+    %__MODULE__{
+      header: Header.from_json(json_data),
+      extrinsic: Extrinsic.from_json(json_data["input"])
+    }
   end
 end

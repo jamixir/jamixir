@@ -30,9 +30,10 @@ defmodule System.Validators.Safrole do
   end
 
   def mock(:valid_epoch_marker, _), do: :ok
+  def mock(:valid_winning_tickets_marker, _), do: :ok
 
   # Formula (73) v0.3.4
-  def valid_winning_tickets_marker(
+  mockable valid_winning_tickets_marker(
         %Header{
           timeslot: header_timeslot,
           winning_tickets_marker: winning_tickets_marker
