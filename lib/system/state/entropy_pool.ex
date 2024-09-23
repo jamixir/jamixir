@@ -21,12 +21,10 @@ defmodule System.State.EntropyPool do
   @spec rotate_history(Block.Header.t(), non_neg_integer(), t()) ::
           t()
   def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
-    case Time.new_epoch?(timeslot, header.timeslot) do
-      {:ok, true} ->
-        %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
-
-      {:ok, false} ->
-        pool
+    if Time.new_epoch?(timeslot, header.timeslot) do
+      %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
+    else
+      pool
     end
   end
 

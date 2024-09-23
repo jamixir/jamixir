@@ -71,13 +71,11 @@ defmodule System.State.ValidatorStatistics do
     # Formula (172) v0.3.4
     # Formula (173) v0.3.4
     {new_current_epoc_stats, new_previous_epoc_stats} =
-      case Time.new_epoch?(timeslot, header.timeslot) do
-        {:ok, true} ->
-          {new_epoc_stats(), validator_statistics.current_epoch_statistics}
-
-        {:ok, false} ->
-          {validator_statistics.current_epoch_statistics,
-           validator_statistics.previous_epoch_statistics}
+      if Time.new_epoch?(timeslot, header.timeslot) do
+        {new_epoc_stats(), validator_statistics.current_epoch_statistics}
+      else
+        {validator_statistics.current_epoch_statistics,
+         validator_statistics.previous_epoch_statistics}
       end
 
     case get_author_stats(new_current_epoc_stats, header.block_author_key_index) do

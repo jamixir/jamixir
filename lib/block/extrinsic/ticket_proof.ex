@@ -33,7 +33,7 @@ defmodule Block.Extrinsic.TicketProof do
           :ok | {:error, String.t()}
 
   mockable validate_tickets(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
-    with {:ok, is_new_epoch} <- Time.new_epoch?(state_timeslot, header_timeslot),
+    with is_new_epoch <- Time.new_epoch?(state_timeslot, header_timeslot),
          :ok <- validate_ticket_count(ticket_proofs, header_timeslot),
          :ok <- validate_entry_indices(ticket_proofs),
          {:ok, n} <-
