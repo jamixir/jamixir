@@ -4,7 +4,6 @@ end
 
 defmodule LocalVectorTest do
   use ExUnit.Case
-  alias Block.Header
   import Mox
   setup :verify_on_exit!
 
@@ -15,34 +14,38 @@ defmodule LocalVectorTest do
 
   setup_all do
     RingVrf.init_ring_context(6)
+    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, Constants, ConstantsMock)
+
+    Application.put_env(:jamixir, :original_modules, [
+      System.State.Safrole,
+      System.Validators.Safrole,
+      Block.Extrinsic.TicketProof
+    ])
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.delete_env(:jamixir, Constants)
+      Application.delete_env(:jamixir, :original_modules)
+    end)
+
     :ok
   end
 
   describe "test vectors" do
-    setup do
-      Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-      Application.put_env(:jamixir, Constants, ConstantsMock)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-        Application.delete_env(:jamixir, Constants)
-      end)
-
-      :ok
-    end
-
     test "verify epoch length" do
       assert Constants.epoch_length() == 12
     end
 
-    @tag :test_vectors_github
+    @tag :tiny_test_vectors
     test "verify test vectors from GitHub" do
       files_to_test = [
-        # "enact-epoch-change-with-no-tickets-1",
-        # "enact-epoch-change-with-no-tickets-2",
-        # "enact-epoch-change-with-no-tickets-3",
-        "enact-epoch-change-with-no-tickets-4"
-        # "publish-tickets-no-mark-1"
+        "enact-epoch-change-with-no-tickets-1",
+        "enact-epoch-change-with-no-tickets-2",
+        "enact-epoch-change-with-no-tickets-3",
+        "enact-epoch-change-with-no-tickets-4",
+        "publish-tickets-no-mark-1",
+        # "publish-tickets-no-mark-2"
       ]
 
       Enum.each(files_to_test, fn file_name ->
@@ -90,12 +93,13 @@ defmodule LocalVectorTest do
 
   defp assert_expected_results(json_data, tested_keys, _file_name) do
     pre_state = System.State.from_json(json_data["pre_state"])
-    header = %Header{timeslot: json_data["input"]["slot"]}
+    block = Block.from_json(json_data)
+    expected_state = System.State.from_json(json_data["post_state"])
+
 
     result =
-      System.State.add_block(pre_state, %Block{header: header, extrinsic: %Block.Extrinsic{}})
+      System.State.add_block(pre_state, block)
 
-    expected_state = System.State.from_json(json_data["post_state"])
 
     case {result, Map.get(json_data["output"], "err")} do
       {{:ok, new_state}, nil} ->
