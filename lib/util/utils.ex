@@ -1,4 +1,6 @@
 defmodule Utils do
+  import Bitwise
+
   def hex_to_binary(map) when is_map(map) do
     map
     |> Enum.map(fn {key, value} ->
@@ -30,4 +32,11 @@ defmodule Utils do
   end
 
   def atomize_keys(value), do: value
+
+  def invert_bits(binary) when is_binary(binary) do
+    binary
+    |> :binary.bin_to_list()
+    |> Enum.map(&(bnot(&1) &&& 0xFF))
+    |> :binary.list_to_bin()
+  end
 end

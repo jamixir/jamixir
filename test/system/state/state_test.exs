@@ -100,7 +100,7 @@ defmodule System.StateTest do
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
           <<_::binary-size(4), rest::binary>> = h
-          key = Codec.Encoder.encode_le(l, 4) <> rest
+          key = Codec.Encoder.encode_le(l, 4) <> Utils.invert_bits(rest)
 
           value =
             Codec.Encoder.encode(VariableSize.new(t |> Enum.map(&Codec.Encoder.encode_le(&1, 4))))
