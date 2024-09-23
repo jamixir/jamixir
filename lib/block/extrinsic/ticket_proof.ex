@@ -8,8 +8,10 @@ defmodule Block.Extrinsic.TicketProof do
   message - empty list
   context - $jam_ticket_seal ^ η2'(posterior_entropy_pool.n2) ^ [r (the ticket entry index)]
   """
-
-  alias System.State.{EntropyPool, Safrole}
+  use SelectiveMock
+  alias System.State.SealKeyTicket
+  alias Block.Extrinsic.TicketProof
+  alias System.State.{EntropyPool, Safrole, SealKeyTicket}
   alias Util.{Collections, Time}
 
   @type t :: %__MODULE__{
@@ -42,9 +44,9 @@ defmodule Block.Extrinsic.TicketProof do
              safrole.epoch_root
            ),
          # Formula (77) v0.3.4
-         :ok <- Collections.validate_unique_and_ordered(n, &elem(&1, 0)) do
+         :ok <- Collections.validate_unique_and_ordered(n, & &1.id) do
       # Formula (78) v0.3.4
-      Safrole.validate_new_tickets(safrole, MapSet.new(n, &elem(&1, 0)))
+      Safrole.validate_new_tickets(safrole, MapSet.new(n, & &1.id))
     end
   end
 
@@ -81,9 +83,9 @@ defmodule Block.Extrinsic.TicketProof do
   # Formula (74) v0.3.4
   # Formula (76) v0.3.4
   @spec construct_n(list(t()), binary(), Types.bandersnatch_ring_root()) ::
-          {:ok, list({binary(), 0 | 1})} | {:error, String.t()}
-  defp construct_n(ticket_proofs, eta2, epoch_root) do
-    Enum.reduce_while(ticket_proofs, {:ok, []}, fn %__MODULE__{
+          {:ok, list(%SealKeyTicket{})} | {:error, String.t()}
+  mockable construct_n(ticket_proofs, eta2, epoch_root) do
+    Enum.reduce_while(ticket_proofs, {:ok, []}, fn %TicketProof{
                                                      entry_index: r,
                                                      ticket_validity_proof: proof
                                                    },
@@ -91,9 +93,23 @@ defmodule Block.Extrinsic.TicketProof do
       context = SigningContexts.jam_ticket_seal() <> eta2 <> <<r>>
 
       case RingVrf.ring_vrf_verify(epoch_root, context, <<>>, proof) do
-        {:ok, output_hash} -> {:cont, {:ok, acc ++ [{output_hash, r}]}}
-        _ -> {:halt, {:error, "Invalid ticket validity proof"}}
+        {:ok, output_hash} ->
+          {:cont, {:ok, acc ++ [%SealKeyTicket{id: output_hash, entry_index: r}]}}
+
+        _ ->
+          {:halt, {:error, "Invalid ticket validity proof"}}
       end
     end)
+  end
+
+  def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
+
+  defimpl Encodable do
+    def encode(%Block.Extrinsic.TicketProof{} = tp) do
+      Codec.Encoder.encode({
+        tp.entry_index,
+        tp.ticket_validity_proof
+      })
+    end
   end
 end
