@@ -2,7 +2,7 @@
 defmodule Jamixir.Factory do
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias Block.Extrinsic.{Disputes, Guarantee}
+  alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
   alias System.State.SealKeyTicket
@@ -388,7 +388,7 @@ defmodule Jamixir.Factory do
 
   def extrinsic_factory do
     %Extrinsic{
-      tickets: [%SealKeyTicket{}],
+      tickets: [%TicketProof{}],
       disputes: %Disputes{},
       preimages: build_list(2, :preimage),
       assurances: [],
