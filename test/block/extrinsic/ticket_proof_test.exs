@@ -100,11 +100,6 @@ defmodule Block.Extrinsic.TicketProofTest do
   end
 
   describe "validate_tickets/5 - failing cases" do
-    test "fails with invalid timeslots", %{state: state} do
-      assert {:error, _} =
-               TicketProof.validate_tickets([], 1, 101, state.entropy_pool, state.safrole)
-    end
-
     test "fails with too many tickets", %{state: state} do
       assert {:error, "Invalid number of tickets for the current epoch phase"} =
                TicketProof.validate_tickets(

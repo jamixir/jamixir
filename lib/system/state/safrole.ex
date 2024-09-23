@@ -68,9 +68,10 @@ defmodule System.State.Safrole do
     {:ok, n} = TicketProof.construct_n(tickets, n2, cmtmnt)
 
     new_accumulator =
-      case Time.new_epoch?(state_timeslot, header_timeslot) do
-        {:ok, true} -> n
-        {:ok, false} -> n ++ ta
+      if Time.new_epoch?(state_timeslot, header_timeslot) do
+        n
+      else
+        n ++ ta
       end
       |> Enum.sort_by(& &1.id)
       |> Enum.take(Constants.epoch_length())

@@ -14,7 +14,7 @@ defmodule System.Validators.Safrole do
              posterior_n1,
              posterior_pending
            ) do
-    {:ok, is_new_epoch} = Time.new_epoch?(state_timeslot, header_timeslot)
+    is_new_epoch = Time.new_epoch?(state_timeslot, header_timeslot)
 
     cond do
       is_new_epoch and
