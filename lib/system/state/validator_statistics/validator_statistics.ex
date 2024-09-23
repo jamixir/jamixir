@@ -18,7 +18,7 @@ defmodule System.State.ValidatorStatistics do
   """
   alias Block.Extrinsic.Guarantee
   alias Block.{Extrinsic, Header}
-  alias System.State.{Validator, ValidatorStatistic, ValidatorStatistics}
+  alias System.State.{Validator, ValidatorStatistic}
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -38,15 +38,15 @@ defmodule System.State.ValidatorStatistics do
   @callback do_posterior_validator_statistics(
               Extrinsic.t(),
               integer(),
-              ValidatorStatistics.t(),
+              __MODULE__.t(),
               list(Validator.t()),
               Header.t()
-            ) :: {:ok | :error, ValidatorStatistics.t()}
+            ) :: {:ok | :error, __MODULE__.t()}
 
   def posterior_validator_statistics(
         %Extrinsic{} = extrinsic,
         timeslot,
-        %ValidatorStatistics{} = validator_statistics,
+        %__MODULE__{} = validator_statistics,
         new_curr_validators,
         %Header{} = header
       ) do
@@ -64,7 +64,7 @@ defmodule System.State.ValidatorStatistics do
   def do_posterior_validator_statistics(
         %Extrinsic{} = extrinsic,
         timeslot,
-        %ValidatorStatistics{} = validator_statistics,
+        %__MODULE__{} = validator_statistics,
         new_curr_validators,
         %Header{} = header
       ) do
@@ -117,7 +117,7 @@ defmodule System.State.ValidatorStatistics do
           end)
 
         {:ok,
-         %ValidatorStatistics{
+         %__MODULE__{
            current_epoch_statistics: new_current_epoc_stats,
            previous_epoch_statistics: new_previous_epoc_stats
          }}

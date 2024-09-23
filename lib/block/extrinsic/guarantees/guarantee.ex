@@ -32,6 +32,7 @@ defmodule Block.Extrinsic.Guarantee do
 
     def encode(%Guarantee{}) do
       # TODO
+      <<0>>
     end
   end
 end

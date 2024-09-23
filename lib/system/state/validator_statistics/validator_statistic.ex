@@ -25,7 +25,7 @@ defmodule System.State.ValidatorStatistic do
         v.reports_guaranteed,
         v.availability_assurances
       ]
-      |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+      |> Enum.map_join(&Codec.Encoder.encode_le(&1, 4))
     end
   end
 end

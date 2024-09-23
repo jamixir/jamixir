@@ -209,6 +209,7 @@ defmodule Block.Extrinsic.Disputes do
   defimpl Encodable do
     def encode(%Disputes{}) do
       # TODO
+      <<0>>
     end
   end
 end

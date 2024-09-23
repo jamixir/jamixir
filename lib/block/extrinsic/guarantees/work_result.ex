@@ -17,11 +17,14 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           service_index: non_neg_integer(),
           # c: hash of the code of the service at the time of being reported
           code_hash: Types.hash(),
-          # l: the hash of the payload (l) within the work item which was executed in the refine stage to give this result
+          # l: the hash of the payload (l) within the work item which was executed in the
+          # refine stage to give this result
           payload_hash: Types.hash(),
-          # g: the gas prioritization ratio used when determining how much gas should be allocated to execute this item’s accumulate
+          # g: the gas prioritization ratio used when determining how much
+          # gas should be allocated to execute this item’s accumulate
           gas_prioritization_ratio: non_neg_integer(),
-          # o: the output or error of the execution of the code, which may be either an octet sequence in case it was successful, or a member of the set J if not
+          # o: the output or error of the execution of the code, which may be either an
+          # octet sequence in case it was successful, or a member of the set J if not
           output_or_error: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
@@ -48,7 +51,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   end
 
   defimpl Encodable do
-    alias Block.Extrinsic.Guarantee.{WorkResult, WorkExecutionError}
+    alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
     alias Codec.{Encoder, VariableSize}
 
     # Formula (285) v0.3.4

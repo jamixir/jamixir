@@ -1,7 +1,5 @@
 defmodule Block.Extrinsic do
-  alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Preimage
-  alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
+  alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
   alias Util.Collections
   # Formula (14) v0.3.4
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
