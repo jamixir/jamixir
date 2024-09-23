@@ -8,6 +8,7 @@ defmodule Block.Extrinsic.AssuranceTest do
 
   setup_all do
     hp = :crypto.strong_rand_bytes(32)
+<<<<<<< HEAD
     keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
 
     validators =
@@ -34,6 +35,8 @@ defmodule Block.Extrinsic.AssuranceTest do
 
   setup_all do
     parent_hash = :crypto.strong_rand_bytes(32)
+=======
+>>>>>>> 3ea19ff (add more tests and modify validator to use new_curr_validators)
     keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
 
     validators =
@@ -44,25 +47,18 @@ defmodule Block.Extrinsic.AssuranceTest do
       end)
 
     [_, {_, s2}, _] = keys
-    payload = SigningContexts.jam_available() <> Hash.default(parent_hash <> "av")
+    payload = SigningContexts.jam_available() <> Hash.default(hp <> "av")
     signature = Crypto.sign(payload, s2)
 
-    valid_assurance =
+    assurance =
       build(:assurance,
-        hash: parent_hash,
+        hash: hp,
         validator_index: 1,
         assurance_values: "av",
         signature: signature
       )
 
-    %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
-      validators: validators
-      # v1: v1,
-      # v2: v2,
-      # key1: key1
-    }
+    %{hp: hp, assurance: assurance, validators: validators}
   end
 
   describe "Assurance encoding" do
@@ -163,6 +159,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       validators: validators
     } do
       invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
+<<<<<<< HEAD
 
       Assurance.validate_assurances([invalid_assurance], hp, validators)
     end
@@ -176,6 +173,22 @@ defmodule Block.Extrinsic.AssuranceTest do
 
       assert {:error, :invalid_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators)
+=======
+
+      assert {:error, :invalid_signature} ==
+               Assurance.validate_assurances([invalid_assurance], hp, validators)
+    end
+
+    test "returns :error for invalid validator index", %{
+      hp: hp,
+      assurance: assurance,
+      validators: validators
+    } do
+      invalid_assurance = %{assurance | validator_index: 2}
+
+      assert {:error, :invalid_signature} ==
+               Assurance.validate_assurances([invalid_assurance], hp, validators)
+>>>>>>> 3ea19ff (add more tests and modify validator to use new_curr_validators)
     end
 
     test "returns :error for invalid assurance_values", %{

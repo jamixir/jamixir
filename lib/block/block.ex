@@ -1,6 +1,6 @@
 defmodule Block do
   alias Block.Extrinsic
-  alias Block.Extrinsic.{Assurance, Disputes}
+  alias Block.Extrinsic.Disputes
   alias Block.Header
   alias System.State
 
