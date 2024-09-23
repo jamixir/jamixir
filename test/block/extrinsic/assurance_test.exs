@@ -18,18 +18,18 @@ defmodule Block.Extrinsic.AssuranceTest do
       end)
 
     [_, {_, s2}, _] = keys
-    payload = SigningContexts.jam_available() <> Hash.default(hp <> "av")
+    payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::344>>)
     signature = Crypto.sign(payload, s2)
 
     assurance =
       build(:assurance,
         hash: hp,
         validator_index: 1,
-        assurance_values: "av",
+        assurance_values: <<0::344>>,
         signature: signature
       )
 
-    %{hp: hp, assurance: assurance, validators: validators}
+    %{hp: hp, assurance: assurance, validators: validators, core_reports: [], s2: s2}
   end
 
   describe "Assurance encoding" do
@@ -57,103 +57,127 @@ defmodule Block.Extrinsic.AssuranceTest do
     test "returns :ok for valid assurances", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       assurances = [assurance]
-      assert :ok == Assurance.validate_assurances(assurances, hp, validators)
+      assert :ok == Assurance.validate_assurances(assurances, hp, validators, cr)
     end
 
     test "returns error when assurance hash doesn't match parent hash", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       d_assurance = %{assurance | hash: :crypto.strong_rand_bytes(32)}
       assurances = [assurance, d_assurance]
 
       assert {:error, "Invalid assurance"} ==
-               Assurance.validate_assurances(assurances, hp, validators)
+               Assurance.validate_assurances(assurances, hp, validators, cr)
     end
 
     test "returns error when validator index is out of bounds", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       d_assurance = %{assurance | validator_index: 5_000}
       assurances = [d_assurance]
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances(assurances, hp, validators)
+               Assurance.validate_assurances(assurances, hp, validators, cr)
     end
 
     test "returns :ok for empty list of assurances", %{hp: hp, validators: validators} do
-      assert :ok == Assurance.validate_assurances([], hp, validators)
+      assert :ok == Assurance.validate_assurances([], hp, validators, [])
     end
 
     test "returns :ok for single valid assurance", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
-      assert :ok == Assurance.validate_assurances([assurance], hp, validators)
+      assert :ok == Assurance.validate_assurances([assurance], hp, validators, cr)
     end
 
     # Uncomment this test if you implement the validator_index uniqueness check
     test "returns error for duplicate validator indices", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       duplicate_assurance = %{assurance | validator_index: assurance.validator_index}
       assurances = [assurance, duplicate_assurance]
 
       assert {:error, :duplicates} =
-               Assurance.validate_assurances(assurances, hp, validators)
+               Assurance.validate_assurances(assurances, hp, validators, cr)
     end
 
     test "error when validator_index is not ordered", %{
       assurance: assurance,
       hp: hp,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       higher_index = %{assurance | validator_index: assurance.validator_index + 1}
 
       assert {:error, :not_in_order} ==
-               Assurance.validate_assurances([higher_index, assurance], hp, validators)
+               Assurance.validate_assurances([higher_index, assurance], hp, validators, cr)
     end
 
     test "returns :error for invalid signature assurances", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators)
+               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
     test "returns :error for invalid validator index", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       invalid_assurance = %{assurance | validator_index: 2}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators)
+               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
     test "returns :error for invalid assurance_values", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       invalid_assurance = %{assurance | assurance_values: "other"}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators)
+               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
+    end
+
+    # Formula (130) v0.3.4
+    test "returns :error when assurance bit is set but core report is null", %{
+      hp: hp,
+      assurance: assurance,
+      validators: validators,
+      s2: s2
+    } do
+      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
+      signature = Crypto.sign(payload, s2)
+      invalid_assurance = %{assurance | signature: signature, assurance_values: <<1::1, 0::7>>}
+
+      assert {:error, "Invalid core reports bits"} ==
+               Assurance.validate_assurances([invalid_assurance], hp, validators, [nil])
     end
   end
 end
