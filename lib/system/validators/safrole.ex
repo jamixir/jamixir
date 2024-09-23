@@ -34,13 +34,13 @@ defmodule System.Validators.Safrole do
 
   # Formula (73) v0.3.4
   mockable valid_winning_tickets_marker(
-        %Header{
-          timeslot: header_timeslot,
-          winning_tickets_marker: winning_tickets_marker
-        },
-        state_timeslot,
-        %Safrole{ticket_accumulator: gamma_a}
-      ) do
+             %Header{
+               timeslot: header_timeslot,
+               winning_tickets_marker: winning_tickets_marker
+             },
+             state_timeslot,
+             %Safrole{ticket_accumulator: gamma_a}
+           ) do
     {new_epoch_index, new_epoch_phase} = Time.epoch_index_and_phase(header_timeslot)
     {prev_epoch_index, prev_epoch_phase} = Time.epoch_index_and_phase(state_timeslot)
 

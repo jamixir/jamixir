@@ -44,7 +44,7 @@ defmodule LocalVectorTest do
         "enact-epoch-change-with-no-tickets-2",
         "enact-epoch-change-with-no-tickets-3",
         "enact-epoch-change-with-no-tickets-4",
-        "publish-tickets-no-mark-1",
+        "publish-tickets-no-mark-1"
         # "publish-tickets-no-mark-2"
       ]
 
@@ -96,10 +96,8 @@ defmodule LocalVectorTest do
     block = Block.from_json(json_data)
     expected_state = System.State.from_json(json_data["post_state"])
 
-
     result =
       System.State.add_block(pre_state, block)
-
 
     case {result, Map.get(json_data["output"], "err")} do
       {{:ok, new_state}, nil} ->

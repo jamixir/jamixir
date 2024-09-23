@@ -410,8 +410,7 @@ defmodule Jamixir.Factory do
       # Ho
       offenders_marker: [random_hash()],
       # Hi
-      block_author_key_index: 0,
-
+      block_author_key_index: 0
     }
   end
 

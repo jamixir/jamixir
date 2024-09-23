@@ -24,7 +24,8 @@ defmodule Block do
              state.timeslot,
              state.safrole
            ),
-           :ok <- Extrinsic.TicketProof.validate_tickets(
+         :ok <-
+           Extrinsic.TicketProof.validate_tickets(
              extrinsic.tickets,
              header.timeslot,
              state.timeslot,

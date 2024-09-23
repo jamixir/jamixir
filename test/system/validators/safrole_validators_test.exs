@@ -17,12 +17,16 @@ defmodule System.Validators.SafroleValidatorTest do
   describe "valid_epoch_marker/4" do
     test "returns :ok when it's a new epoch and epoch_marker is valid", ctx do
       header = %Header{timeslot: 600, epoch: {ctx.entropy_pool.n1, ctx.bandersnatch_keys}}
-      assert :ok == Safrole.valid_epoch_marker(header, 599, ctx.entropy_pool.n1, ctx.safrole.pending)
+
+      assert :ok ==
+               Safrole.valid_epoch_marker(header, 599, ctx.entropy_pool.n1, ctx.safrole.pending)
     end
 
     test "returns :ok when it's not a new epoch and epoch_marker is nil", ctx do
       header = %Header{timeslot: 44, epoch: nil}
-      assert :ok == Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
+
+      assert :ok ==
+               Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
     end
 
     test "returns error when it's a new epoch but epoch_marker is invalid", ctx do
