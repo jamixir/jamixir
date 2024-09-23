@@ -27,41 +27,6 @@ defmodule System.State.Safrole do
   # Formula (48) v0.3.4
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
-  def posterior_safrole(
-        %Header{} = header,
-        timeslot,
-        tickets,
-        %Safrole{} = safrole,
-        %EntropyPool{} = entropy_pool,
-        curr_validators
-      ) do
-    get_posterior_ticket_accumulator(
-      header.timeslot,
-      timeslot,
-      tickets,
-      safrole,
-      entropy_pool
-    )
-    |> case do
-      {:ok, new_ticket_accumulator} ->
-        {:ok,
-         %{
-           current_epoch_slot_sealers:
-             get_posterior_epoch_slot_sealers(
-               header,
-               timeslot,
-               safrole,
-               entropy_pool,
-               curr_validators
-             ),
-           ticket_accumulator: new_ticket_accumulator
-         }}
-
-      error ->
-        error
-    end
-  end
-
   # Formula (69) v0.3.4
   def get_posterior_epoch_slot_sealers(
         %Header{timeslot: new_timeslot},
