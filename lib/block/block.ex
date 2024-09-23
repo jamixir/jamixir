@@ -20,17 +20,17 @@ defmodule Block do
          :ok <- Extrinsic.validate_guarantees(e.guarantees),
          :ok <-
            System.Validators.Safrole.valid_winning_tickets_marker(
-             header,
-             state.timeslot,
-             state.safrole
+             h,
+             s.timeslot,
+             s.safrole
            ),
          :ok <-
            Extrinsic.TicketProof.validate_tickets(
-             extrinsic.tickets,
-             header.timeslot,
-             state.timeslot,
-             state.entropy_pool,
-             state.safrole
+             e.tickets,
+             h.timeslot,
+             s.timeslot,
+             s.entropy_pool,
+             s.safrole
            ),
          :ok <-
            Disputes.validate_disputes(
