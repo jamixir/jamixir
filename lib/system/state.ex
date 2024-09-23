@@ -361,7 +361,7 @@ defmodule System.State do
           |> Codec.Encoder.encode()
 
         <<_::binary-size(4), rest::binary>> = h
-        key = Codec.Encoder.encode_le(l, 4) <> rest
+        key = Codec.Encoder.encode_le(l, 4) <> Utils.invert_bits(rest)
         Map.put(ac, {s, key}, value)
       end)
     end)
