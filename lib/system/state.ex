@@ -147,7 +147,13 @@ defmodule System.State do
              state.safrole,
              new_judgements
            ),
-         :ok <- Assurance.validate_assurances(e.assurances, h.parent_hash, new_curr_validators),
+         :ok <-
+           Assurance.validate_assurances(
+             e.assurances,
+             h.parent_hash,
+             new_curr_validators,
+             core_reports_intermediate_1
+           ),
 
          # η' Formula (20) v0.3.4
          rotated_history_entropy_pool =

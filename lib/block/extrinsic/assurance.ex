@@ -28,20 +28,20 @@ defmodule Block.Extrinsic.Assurance do
           signature: Types.ed25519_signature()
         }
 
-  def validate_assurances(assurances, parent_hash, new_curr_validators) do
+  def validate_assurances(
+        assurances,
+        parent_hash,
+        new_curr_validators,
+        core_reports_intermediate_1
+      ) do
     # Formula (126) v0.3.4
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
          # Formula (127) v0.3.4
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
          # Formula (128) v0.3.4
-         :ok <-
-           if(
-             Enum.all?(assurances, fn a ->
-               valid_signature?(a, parent_hash, Enum.at(new_curr_validators, a.validator_index))
-             end),
-             do: :ok,
-             else: {:error, :invalid_signature}
-           ) do
+         :ok <- validate_signatures(assurances, parent_hash, new_curr_validators),
+         # Formula (130) v0.3.4
+         :ok <- validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
     else
       false -> {:error, "Invalid assurance"}
@@ -49,13 +49,36 @@ defmodule Block.Extrinsic.Assurance do
     end
   end
 
-  def valid_signature?(_, _, nil), do: false
+  # Formula (130) v0.3.4
+  defp validate_core_reports_bits(assurances, core_reports_intermediate) do
+    all_ok =
+      Enum.all?(assurances, fn assurance ->
+        Stream.with_index(for <<bit::1 <- assurance.assurance_values>>, do: bit)
+        |> Enum.all?(fn {bit, index} ->
+          bit == 0 or Enum.at(core_reports_intermediate, index) != nil
+        end)
+      end)
 
-  def valid_signature?(
-        %__MODULE__{signature: s, assurance_values: f},
-        parent_hash,
-        %Validator{ed25519: e}
-      ) do
+    if all_ok, do: :ok, else: {:error, "Invalid core reports bits"}
+  end
+
+  defp validate_signatures(assurances, parent_hash, new_curr_validators) do
+    if(
+      Enum.all?(assurances, fn a ->
+        valid_signature?(a, parent_hash, Enum.at(new_curr_validators, a.validator_index))
+      end),
+      do: :ok,
+      else: {:error, :invalid_signature}
+    )
+  end
+
+  defp valid_signature?(_, _, nil), do: false
+
+  defp valid_signature?(
+         %__MODULE__{signature: s, assurance_values: f},
+         parent_hash,
+         %Validator{ed25519: e}
+       ) do
     message = SigningContexts.jam_available() <> Hash.default(parent_hash <> f)
     Crypto.valid_signature?(s, message, e)
   end
