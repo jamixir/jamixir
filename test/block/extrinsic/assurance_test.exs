@@ -18,32 +18,6 @@ defmodule Block.Extrinsic.AssuranceTest do
       end)
 
     [_, {_, s2}, _] = keys
-    payload = SigningContexts.jam_available() <> Hash.default(hp <> "av")
-    signature = Crypto.sign(payload, s2)
-
-    assurance =
-      build(:assurance,
-        hash: hp,
-        validator_index: 1,
-        assurance_values: "av",
-        signature: signature
-      )
-
-    %{hp: hp, assurance: assurance, validators: validators}
-  end
-
-  setup_all do
-    parent_hash = :crypto.strong_rand_bytes(32)
-    keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
-
-    validators =
-      build_list(3, :validator)
-      |> Enum.with_index()
-      |> Enum.map(fn {v, i} ->
-        %Validator{v | ed25519: elem(Enum.at(keys, i), 0)}
-      end)
-
-    [_, {_, s2}, _] = keys
     payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::344>>)
     signature = Crypto.sign(payload, s2)
 
@@ -163,18 +137,20 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
 
-      Assurance.validate_assurances([invalid_assurance], hp, validators)
+      assert {:error, :invalid_signature} ==
+               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
     test "returns :error for invalid validator index", %{
       hp: hp,
       assurance: assurance,
-      validators: validators
+      validators: validators,
+      core_reports: cr
     } do
       invalid_assurance = %{assurance | validator_index: 2}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators)
+               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
     test "returns :error for invalid assurance_values", %{
