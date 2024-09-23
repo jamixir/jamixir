@@ -179,7 +179,7 @@ defmodule System.State.Safrole do
       epoch_root: Utils.hex_to_binary(json.epoch_root),
       current_epoch_slot_sealers:
         json.current_epoch_slot_sealers |> Enum.map(&Utils.hex_to_binary/1),
-      ticket_accumulator: json.ticket_accumulator
+      ticket_accumulator: json.ticket_accumulator |> MapSet.new(&SealKeyTicket.from_json/1)
     }
   end
 end
