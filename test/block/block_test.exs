@@ -42,13 +42,6 @@ defmodule BlockTest do
       assert {:error, _} = Block.validate(invalid_block, state)
     end
 
-    test "returns error when assurance validation fails", %{state: state} do
-      # Invalid assurance hash
-      invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
-      invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
-      assert {:error, _} = Block.validate(invalid_block, state)
-    end
-
     test "returns error when disputes validation fails", %{state: state} do
       # Invalid epoch_index
       invalid_extrinsic =

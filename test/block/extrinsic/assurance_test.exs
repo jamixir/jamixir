@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.AssuranceTest do
   alias Util.{Crypto, Hash}
 
   setup_all do
-    parent_hash = :crypto.strong_rand_bytes(32)
+    hp = :crypto.strong_rand_bytes(32)
     keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
 
     validators =
@@ -18,25 +18,18 @@ defmodule Block.Extrinsic.AssuranceTest do
       end)
 
     [_, {_, s2}, _] = keys
-    payload = SigningContexts.jam_available() <> Hash.default(parent_hash <> "av")
+    payload = SigningContexts.jam_available() <> Hash.default(hp <> "av")
     signature = Crypto.sign(payload, s2)
 
-    valid_assurance =
+    assurance =
       build(:assurance,
-        hash: parent_hash,
+        hash: hp,
         validator_index: 1,
         assurance_values: "av",
         signature: signature
       )
 
-    %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
-      validators: validators
-      # v1: v1,
-      # v2: v2,
-      # key1: key1
-    }
+    %{hp: hp, assurance: assurance, validators: validators}
   end
 
   describe "Assurance encoding" do
@@ -62,97 +55,105 @@ defmodule Block.Extrinsic.AssuranceTest do
 
   describe "validate_assurances/2" do
     test "returns :ok for valid assurances", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      assurances = [valid_assurance]
-      assert :ok == Assurance.validate_assurances(assurances, parent_hash, validators)
+      assurances = [assurance]
+      assert :ok == Assurance.validate_assurances(assurances, hp, validators)
     end
 
-    test "returns error when assurance hash doesn't match parent_hash", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+    test "returns error when assurance hash doesn't match parent hash", %{
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      invalid_assurance = %{valid_assurance | hash: :crypto.strong_rand_bytes(32)}
-      assurances = [valid_assurance, invalid_assurance]
+      d_assurance = %{assurance | hash: :crypto.strong_rand_bytes(32)}
+      assurances = [assurance, d_assurance]
 
       assert {:error, "Invalid assurance"} ==
-               Assurance.validate_assurances(assurances, parent_hash, validators)
+               Assurance.validate_assurances(assurances, hp, validators)
     end
 
-    test "returns :ok for empty list of assurances", %{
-      parent_hash: parent_hash,
+    test "returns error when validator index is out of bounds", %{
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      assert :ok == Assurance.validate_assurances([], parent_hash, validators)
+      d_assurance = %{assurance | validator_index: 5_000}
+      assurances = [d_assurance]
+
+      assert {:error, :invalid_signature} ==
+               Assurance.validate_assurances(assurances, hp, validators)
+    end
+
+    test "returns :ok for empty list of assurances", %{hp: hp, validators: validators} do
+      assert :ok == Assurance.validate_assurances([], hp, validators)
     end
 
     test "returns :ok for single valid assurance", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      assert :ok == Assurance.validate_assurances([valid_assurance], parent_hash, validators)
+      assert :ok == Assurance.validate_assurances([assurance], hp, validators)
     end
 
     # Uncomment this test if you implement the validator_index uniqueness check
     test "returns error for duplicate validator indices", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      duplicate_assurance = %{valid_assurance | validator_index: valid_assurance.validator_index}
-      assurances = [valid_assurance, duplicate_assurance]
+      duplicate_assurance = %{assurance | validator_index: assurance.validator_index}
+      assurances = [assurance, duplicate_assurance]
 
       assert {:error, :duplicates} =
-               Assurance.validate_assurances(assurances, parent_hash, validators)
+               Assurance.validate_assurances(assurances, hp, validators)
     end
 
     test "error when validator_index is not ordered", %{
-      valid_assurance: valid_assurance,
-      parent_hash: parent_hash,
+      assurance: assurance,
+      hp: hp,
       validators: validators
     } do
-      higher_index = %{valid_assurance | validator_index: valid_assurance.validator_index + 1}
+      higher_index = %{assurance | validator_index: assurance.validator_index + 1}
 
       assert {:error, :not_in_order} ==
-               Assurance.validate_assurances(
-                 [higher_index, valid_assurance],
-                 parent_hash,
-                 validators
-               )
+               Assurance.validate_assurances([higher_index, assurance], hp, validators)
     end
 
     test "returns :error for invalid signature assurances", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      invalid_signature_assurance = %{valid_assurance | signature: :crypto.strong_rand_bytes(64)}
+      invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances(
-                 [invalid_signature_assurance],
-                 parent_hash,
-                 validators
-               )
+               Assurance.validate_assurances([invalid_assurance], hp, validators)
+    end
+
+    test "returns :error for invalid validator index", %{
+      hp: hp,
+      assurance: assurance,
+      validators: validators
+    } do
+      invalid_assurance = %{assurance | validator_index: 2}
+
+      assert {:error, :invalid_signature} ==
+               Assurance.validate_assurances([invalid_assurance], hp, validators)
     end
 
     test "returns :error for invalid assurance_values", %{
-      parent_hash: parent_hash,
-      valid_assurance: valid_assurance,
+      hp: hp,
+      assurance: assurance,
       validators: validators
     } do
-      invalid_signature_assurance = %{valid_assurance | assurance_values: "other"}
+      invalid_assurance = %{assurance | assurance_values: "other"}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances(
-                 [invalid_signature_assurance],
-                 parent_hash,
-                 validators
-               )
+               Assurance.validate_assurances([invalid_assurance], hp, validators)
     end
   end
 end

@@ -1,4 +1,5 @@
 defmodule System.State do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.{NilDiscriminator, VariableSize}
@@ -146,6 +147,8 @@ defmodule System.State do
              state.safrole,
              new_judgements
            ),
+         :ok <- Assurance.validate_assurances(e.assurances, h.parent_hash, new_curr_validators),
+
          # η' Formula (20) v0.3.4
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),

@@ -1,6 +1,6 @@
 defmodule Block do
   alias Block.Extrinsic
-  alias Block.Extrinsic.{Assurance, Disputes}
+  alias Block.Extrinsic.Disputes
   alias Block.Header
   alias System.State
 
@@ -18,7 +18,6 @@ defmodule Block do
   def validate(%__MODULE__{header: h, extrinsic: e}, %State{} = s) do
     with :ok <- Header.validate(h, s),
          :ok <- Extrinsic.validate_guarantees(e.guarantees),
-         :ok <- Assurance.validate_assurances(e.assurances, h.parent_hash, s.curr_validators),
          :ok <-
            Disputes.validate_disputes(
              e.disputes,

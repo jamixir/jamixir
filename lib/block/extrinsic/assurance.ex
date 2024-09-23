@@ -28,7 +28,7 @@ defmodule Block.Extrinsic.Assurance do
           signature: Types.ed25519_signature()
         }
 
-  def validate_assurances(assurances, parent_hash, current_validators) do
+  def validate_assurances(assurances, parent_hash, new_curr_validators) do
     # Formula (126) v0.3.4
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
          # Formula (127) v0.3.4
@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.Assurance do
          :ok <-
            if(
              Enum.all?(assurances, fn a ->
-               valid_signature?(a, parent_hash, Enum.at(current_validators, a.validator_index))
+               valid_signature?(a, parent_hash, Enum.at(new_curr_validators, a.validator_index))
              end),
              do: :ok,
              else: {:error, :invalid_signature}
@@ -48,6 +48,8 @@ defmodule Block.Extrinsic.Assurance do
       {:error, e} -> {:error, e}
     end
   end
+
+  def valid_signature?(_, _, nil), do: false
 
   def valid_signature?(
         %__MODULE__{signature: s, assurance_values: f},
