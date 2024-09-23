@@ -15,7 +15,7 @@ defmodule Util.Crypto do
   - `true` if the signature is valid.
   - `false` otherwise.
   """
-  def verify_signature(signature, payload, public_key) do
+  def valid_signature?(signature, payload, public_key) do
     :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
   end
 

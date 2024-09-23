@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   alias Util.Collections
