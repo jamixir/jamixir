@@ -153,7 +153,7 @@ defmodule System.State do
            Safrole.get_posterior_epoch_slot_sealers(
              h,
              state.timeslot,
-             %{state.safrole | pending: new_safrole_pending},
+             state.safrole,
              rotated_history_entropy_pool,
              new_curr_validators
            ),
@@ -175,7 +175,7 @@ defmodule System.State do
            System.HeaderSeal.validate_header_seals(
              h,
              new_curr_validators,
-             posterior_safrole.current_epoch_slot_sealers,
+             new_epoch_slot_sealers,
              state.entropy_pool
            ),
          posterior_entropy_pool =
