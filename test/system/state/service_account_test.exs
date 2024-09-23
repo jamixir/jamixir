@@ -103,6 +103,14 @@ defmodule System.State.ServiceAccountTest do
       assert ServiceAccount.historical_lookup(sa, 15, expected_hash) == preimage
       # case t >= x and t >= y
       assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
+
+      # case in_storage?([], _)
+      sa = sa |> Map.put(:preimage_storage_l, %{{expected_hash, byte_size(preimage)} => []})
+      assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
+
+      # case in_storage?(nil, _)
+      sa = sa |> Map.put(:preimage_storage_l, %{})
+      assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
     end
 
     test "marked as available again", %{sa: sa, preimage: preimage} do

@@ -67,5 +67,9 @@ defmodule System.State.ValidatorTest do
 
       assert result == next_validators
     end
+
+    test "return empty when next_validators is empty", %{} do
+      assert Validator.nullify_offenders([], MapSet.new()) == []
+    end
   end
 end

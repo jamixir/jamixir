@@ -3,6 +3,7 @@
     "lib/codec/scale_native.ex",
     "lib/cli.ex",
     "lib/mix/tasks/mix.jam.ex",
+    "lib/mock_macros/mockable.ex",
     "lib/tcp_server.ex",
     "lib/util/ring_vrf.ex",
     "test/support/github_repo_reader.ex",

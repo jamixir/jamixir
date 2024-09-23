@@ -27,18 +27,6 @@ defmodule Util.Collections do
     |> Kernel.==(true)
   end
 
-  def uniq_sorted(collection) do
-    collection
-    |> Enum.sort()
-    |> Enum.uniq()
-  end
-
-  def uniq_sorted(collection, key_func) when is_function(key_func, 1) do
-    collection
-    |> Enum.sort_by(key_func)
-    |> Enum.uniq_by(key_func)
-  end
-
   @doc """
   Checks if the given list has no duplicates and is in order according to the provided key function and comparator.
 

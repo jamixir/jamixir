@@ -53,9 +53,6 @@ defmodule Codec.Decoder do
 
       byte0 >= 128 ->
         {1, 128}
-
-      true ->
-        raise "Invalid integer encoding"
     end
   end
 end
