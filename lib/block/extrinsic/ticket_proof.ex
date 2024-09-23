@@ -83,7 +83,7 @@ defmodule Block.Extrinsic.TicketProof do
   # Formula (74) v0.3.4
   # Formula (76) v0.3.4
   @spec construct_n(list(t()), binary(), Types.bandersnatch_ring_root()) ::
-          {:ok, list(%SealKeyTicket{})} | {:error, String.t()}
+          {:ok, list(SealKeyTicket.t())} | {:error, String.t()}
   mockable construct_n(ticket_proofs, eta2, epoch_root) do
     Enum.reduce_while(ticket_proofs, {:ok, []}, fn %TicketProof{
                                                      entry_index: r,

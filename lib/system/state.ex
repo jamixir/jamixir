@@ -149,29 +149,37 @@ defmodule System.State do
          # η' Formula (20) v0.3.4
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
-         posterior_epoch_slot_sealers =
+         new_epoch_slot_sealers =
            Safrole.get_posterior_epoch_slot_sealers(
              h,
              state.timeslot,
-             state.safrole,
+             %{state.safrole | pending: new_safrole_pending},
              rotated_history_entropy_pool,
              new_curr_validators
            ),
+         {:ok, new_ticket_accumulator} <-
+           Safrole.get_posterior_ticket_accumulator(
+             h.timeslot,
+             state.timeslot,
+             e.tickets,
+             state.safrole,
+             rotated_history_entropy_pool
+           ),
+         posterior_safrole = %Safrole{
+           pending: new_safrole_pending,
+           epoch_root: new_safrole_epoch_root,
+           current_epoch_slot_sealers: new_epoch_slot_sealers,
+           ticket_accumulator: new_ticket_accumulator
+         },
          {:ok, %{vrf_signature_output: vrf_output}} <-
            System.HeaderSeal.validate_header_seals(
              h,
              new_curr_validators,
-             posterior_epoch_slot_sealers,
+             posterior_safrole.current_epoch_slot_sealers,
              state.entropy_pool
            ),
          posterior_entropy_pool =
            EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool),
-         new_safrole = %{
-           state.safrole
-           | pending: new_safrole_pending,
-             epoch_root: new_safrole_epoch_root,
-             current_epoch_slot_sealers: posterior_epoch_slot_sealers
-         },
          {:ok, posterior_validator_statistics} <-
            ValidatorStatistics.posterior_validator_statistics(
              e,
@@ -187,7 +195,7 @@ defmodule System.State do
          # β'
          recent_history: new_recent_history,
          # γ'
-         safrole: new_safrole,
+         safrole: posterior_safrole,
          # δ'
          # TODO
          services: nil,

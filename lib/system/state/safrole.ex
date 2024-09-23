@@ -3,8 +3,10 @@ defmodule System.State.Safrole do
   Safrole  state, as specified in section 6.1 of the GP.
   """
   alias Block.Header
+  alias Block.Extrinsic.TicketProof
   alias Codec.{Decoder, Encoder}
   alias System.State.{EntropyPool, Safrole, SealKeyTicket, Validator}
+  use SelectiveMock
   alias Util.{Hash, Time}
 
   @type t :: %__MODULE__{
@@ -28,46 +30,98 @@ defmodule System.State.Safrole do
   def posterior_safrole(
         %Header{} = header,
         timeslot,
-        _tickets,
-        safrole,
-        entropy_pool,
+        tickets,
+        %Safrole{} = safrole,
+        %EntropyPool{} = entropy_pool,
         curr_validators
       ) do
-    %Safrole{
-      safrole
-      | current_epoch_slot_sealers:
-          get_posterior_epoch_slot_sealers(
-            header,
-            timeslot,
-            safrole,
-            entropy_pool,
-            curr_validators
-          )
-    }
+    get_posterior_ticket_accumulator(
+      header.timeslot,
+      timeslot,
+      tickets,
+      safrole,
+      entropy_pool
+    )
+    |> case do
+      {:ok, new_ticket_accumulator} ->
+        {:ok,
+         %{
+           current_epoch_slot_sealers:
+             get_posterior_epoch_slot_sealers(
+               header,
+               timeslot,
+               safrole,
+               entropy_pool,
+               curr_validators
+             ),
+           ticket_accumulator: new_ticket_accumulator
+         }}
+
+      error ->
+        error
+    end
   end
 
   # Formula (69) v0.3.4
   def get_posterior_epoch_slot_sealers(
         %Header{timeslot: new_timeslot},
         timeslot,
-        safrole,
+        %Safrole{
+          ticket_accumulator: ta,
+          current_epoch_slot_sealers: slot_sealers
+        },
         %EntropyPool{n2: n2},
         curr_validators
       ) do
     # Formula (69) v0.3.4 - second arm
     if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) do
-      safrole.current_epoch_slot_sealers
+      slot_sealers
     else
       # Formula (69) v0.3.4 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
       if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) + 1 and
-           length(safrole.ticket_accumulator) == Constants.epoch_length() and
+           length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
-        outside_in_sequencer(safrole.current_epoch_slot_sealers)
+        outside_in_sequencer(slot_sealers)
       else
         fallback_key_sequence(n2, curr_validators)
       end
     end
   end
+
+  # Formula (79) v0.3.4
+  # Formula (80) v0.3.4
+  def get_posterior_ticket_accumulator(
+        header_timeslot,
+        state_timeslot,
+        tickets,
+        %Safrole{
+          epoch_root: cmtmnt,
+          ticket_accumulator: ta
+        },
+        %EntropyPool{n2: n2}
+      ) do
+    {:ok, n} = TicketProof.construct_n(tickets, n2, cmtmnt)
+
+    new_accumulator =
+      case Time.new_epoch?(state_timeslot, header_timeslot) do
+        {:ok, true} -> n
+        {:ok, false} -> n ++ ta
+      end
+      |> Enum.sort_by(& &1.id)
+      |> Enum.take(Constants.epoch_length())
+
+    if all_tickets_used?(n, new_accumulator) do
+      {:ok, new_accumulator}
+    else
+      {:error, "Not all submitted tickets are in the new accumulator"}
+    end
+  end
+
+  mockable all_tickets_used?(tickets, tickets_accumulator) do
+    MapSet.subset?(MapSet.new(tickets), MapSet.new(tickets_accumulator))
+  end
+
+  def mock(:all_tickets_used?, _), do: true
 
   @doc """
   Z function: Outside-in sequencer function.
