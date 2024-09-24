@@ -187,14 +187,6 @@ defmodule System.StateTest do
       State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end
 
-    test "returns error when assurance validation fails", %{state: state} do
-      # Invalid assurance hash
-      invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
-      invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
-
-      assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
-    end
-
     test "updates statistics", %{state: state, key_pairs: key_pairs} do
       Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
@@ -232,11 +224,17 @@ defmodule System.StateTest do
 
   describe "validations fails" do
     test "returns error when assurance validation fails", %{state: state} do
-      # Invalid assurance hash
-      invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
-      invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
+      with_original_modules([:validate_assurances]) do
+        # Invalid assurance hash
+        invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
 
-      assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
+        invalid_block = %Block{
+          header: build(:header, timeslot: 100),
+          extrinsic: invalid_extrinsic
+        }
+
+        assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
+      end
     end
 
     test "returns error when epoch marker validation fails", %{state: state} do
