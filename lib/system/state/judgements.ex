@@ -101,7 +101,7 @@ defmodule System.State.Judgements do
     MapSet.union(g, b) |> MapSet.union(w)
   end
 
-  def mock(:posterior_judgements, context), do: {:ok, Keyword.get(context, :state).judgements}
+  def mock(:posterior_judgements, context), do: {:ok, Keyword.get(context, :state).judgements, []}
   def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do

@@ -88,11 +88,11 @@ defmodule System.State do
          services_intermediate =
            State.Services.process_preimages(state.services, Map.get(e, :preimages), new_timeslot),
          # ψ' Formula (23) v0.3.4
-         {:ok, new_judgements} <-
+         {:ok, new_judgements, bad_wonky_verdicts} <-
            Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
          # ρ† Formula (25) v0.3.4
          core_reports_intermediate_1 =
-           State.CoreReport.process_disputes(state.core_reports, []),
+           State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
          # ρ‡ Formula (26) v0.3.4
          core_reports_intermediate_2 =
            State.CoreReport.process_availability(
