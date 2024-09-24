@@ -125,5 +125,10 @@ defmodule Block.Header do
   end
 
   defp parse_epoch_mark(_), do: nil
+
+  defp parse_tickets_mark(tickets) when is_list(tickets) do
+    Enum.map(tickets, &SealKeyTicket.from_json/1)
+  end
+
   defp parse_tickets_mark(_), do: nil
 end
