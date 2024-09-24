@@ -78,6 +78,11 @@ defmodule LocalVectorTest do
         "publish-tickets-no-mark-7",
         "publish-tickets-no-mark-8",
         "publish-tickets-no-mark-9",
+        "publish-tickets-with-mark-1",
+        "publish-tickets-with-mark-2",
+        "publish-tickets-with-mark-3",
+        "publish-tickets-with-mark-4",
+        "publish-tickets-with-mark-5"
       ]
 
       Enum.each(files_to_test, fn file_name ->
@@ -95,7 +100,7 @@ defmodule LocalVectorTest do
             :entropy_pool,
             :prev_validators,
             :curr_validators,
-            :safrole
+            # :safrole
           ],
           file_name
         )

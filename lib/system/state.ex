@@ -400,7 +400,7 @@ defmodule System.State do
       "iota" => next_validators,
       "gamma_k" => pending,
       "gamma_a" => ticket_accumulator,
-      "gamma_s" => %{"keys" => current_epoch_slot_sealers},
+      "gamma_s" => current_epoch_slot_sealers,
       "gamma_z" => epoch_root
     } = json
 
