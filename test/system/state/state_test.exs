@@ -221,7 +221,7 @@ defmodule System.StateTest do
       assert new_state.validator_statistics == state.validator_statistics
     end
 
-    test "basic state transition with core report update", %{state: state, key_pairs: key_pairs} do
+    test "state transition with core report update", %{state: state, key_pairs: key_pairs} do
       with_original_modules([:posterior_judgements]) do
         new_core_report = build(:core_report)
         state = %{state | core_reports: [new_core_report | tl(state.core_reports)]}
