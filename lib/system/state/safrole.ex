@@ -46,7 +46,7 @@ defmodule System.State.Safrole do
       if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) + 1 and
            length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
-        outside_in_sequencer(slot_sealers)
+        outside_in_sequencer(ta)
       else
         fallback_key_sequence(n2, curr_validators)
       end
