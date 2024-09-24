@@ -3,7 +3,7 @@ defmodule ConstantsMock do
   def ticket_submission_end, do: 10
 end
 
-defmodule LocalVectorTest do
+defmodule SafroleTinyTestVectors do
   use ExUnit.Case
   import Mox
   require Logger
