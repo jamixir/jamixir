@@ -32,6 +32,46 @@ defmodule Util.MerkleTree do
     |> pad_to_power_of_two(Hash.zero())
   end
 
+  # Formula (298) v0.3.4
+  # case |v| <= 1
+  def trace([], _i, _hash_func), do: []
+  def trace([_value], _i, _hash_func), do: []
+  # case |v| > 1
+  def trace(v, i, hash_func) do
+    [node(p(false, v, i), hash_func) | trace(p(true, v, i), i - pi(v, i), hash_func)]
+  end
+
+  # Formula (301) v0.3.4
+  @spec justification([binary()], integer(), (binary() -> <<_::256>>)) :: [binary()]
+  def justification(v, i, hash_func) do
+    trace(c_preprocess(v, hash_func), i, hash_func)
+  end
+
+  # Formula (302) v0.3.4
+  # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
+  @spec justification([binary()], integer(), (binary() -> <<_::256>>), number()) :: list()
+  def justification(v, i, hash_func, x) do
+    size = max(0, ceil(:math.log2(max(1, length(v))) - x))
+    justification(v, i, hash_func) |> Enum.take(size)
+  end
+
+  @spec pi(list(), integer()) :: integer()
+  def pi(v, i) do
+    x = ceil(length(v) / 2)
+    if i < x, do: 0, else: x
+  end
+
+  @spec p(boolean(), list(), integer()) :: list()
+  def p(s, v, i) do
+    x = ceil(length(v) / 2)
+
+    if i < x == s do
+      Enum.take(v, -x)
+    else
+      Enum.take(v, x)
+    end
+  end
+
   defp pad_to_power_of_two(list, pad_value) do
     next_power_of_two = next_power_of_two(length(list))
     padding = next_power_of_two - length(list)
