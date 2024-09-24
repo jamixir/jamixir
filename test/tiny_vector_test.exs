@@ -1,16 +1,41 @@
 defmodule ConstantsMock do
   def epoch_length, do: 12
+  def ticket_submission_end, do: 10
 end
 
 defmodule LocalVectorTest do
   use ExUnit.Case
   import Mox
+  require Logger
   setup :verify_on_exit!
+
+  Application.put_env(:elixir, :ansi_enabled, true)
 
   @owner "w3f"
   @repo "jamtestvectors"
   @branch "master"
   @path "safrole/tiny"
+
+  # ANSI color codes
+  @blue IO.ANSI.blue()
+  @green IO.ANSI.green()
+  @yellow IO.ANSI.yellow()
+  @red IO.ANSI.red()
+  @cyan IO.ANSI.cyan()
+  @bright IO.ANSI.bright()
+  @reset IO.ANSI.reset()
+
+  defp print_error(file_name, expected, received, status) do
+    status_indicator = if status == :pass, do: "#{@green}✓", else: "#{@red}✗"
+
+    IO.puts("""
+    #{@bright}#{@cyan}#{file_name}#{@reset}
+    #{@yellow}│#{@reset} #{status_indicator}#{@reset} errors: expected #{format_error(expected)} / received #{format_error(received)}
+    """)
+  end
+
+  defp format_error("none"), do: "#{@blue}'none'#{@reset}"
+  defp format_error(error), do: "#{@yellow}'#{error}'#{@reset}"
 
   setup_all do
     RingVrf.init_ring_context(6)
@@ -44,8 +69,15 @@ defmodule LocalVectorTest do
         "enact-epoch-change-with-no-tickets-2",
         "enact-epoch-change-with-no-tickets-3",
         "enact-epoch-change-with-no-tickets-4",
-        "publish-tickets-no-mark-1"
-        # "publish-tickets-no-mark-2"
+        "publish-tickets-no-mark-1",
+        "publish-tickets-no-mark-2",
+        "publish-tickets-no-mark-3",
+        "publish-tickets-no-mark-4",
+        "publish-tickets-no-mark-5",
+        "publish-tickets-no-mark-6",
+        "publish-tickets-no-mark-7",
+        "publish-tickets-no-mark-8",
+        "publish-tickets-no-mark-9",
       ]
 
       Enum.each(files_to_test, fn file_name ->
@@ -91,7 +123,7 @@ defmodule LocalVectorTest do
     end
   end
 
-  defp assert_expected_results(json_data, tested_keys, _file_name) do
+  defp assert_expected_results(json_data, tested_keys, file_name) do
     pre_state = System.State.from_json(json_data["pre_state"])
     block = Block.from_json(json_data)
     expected_state = System.State.from_json(json_data["post_state"])
@@ -107,17 +139,17 @@ defmodule LocalVectorTest do
                  "Mismatch for key: #{key}"
         end)
 
-      {{:ok, _}, _error_expected} ->
-        # Error was expected but not received
-        flunk("Expected an error, but got a successful state transition")
+      {{:ok, _}, error_expected} ->
+        print_error(file_name, error_expected, "none", :fail)
+        flunk("Expected error '#{error_expected}', but no error occurred")
 
-      {{:error, _returned_state, _reason}, nil} ->
-        # Error was not expected but received
-        flunk("Unexpected error occurred during state transition")
+      {{:error, _returned_state, reason}, nil} ->
+        print_error(file_name, "none", reason, :fail)
+        flunk("Expected no error, but received error: '#{reason}'")
 
-      {{:error, returned_state, _reason}, _error_expected} ->
-        # Error was expected and received
-        # Assert that the state remained unchanged
+      {{:error, returned_state, reason}, error_expected} ->
+        print_error(file_name, error_expected, reason, :pass)
+
         Enum.each(tested_keys, fn key ->
           assert Map.get(returned_state, key) == Map.get(pre_state, key),
                  "State changed unexpectedly for key: #{key}"

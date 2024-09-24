@@ -37,7 +37,7 @@ defmodule Constants do
   Y
   The number of slots into an epoch at which ticket-submission ends.
   """
-  def ticket_submission_end, do: 500
+  defmockable(:ticket_submission_end, do: 500)
 
   @doc """
   C
