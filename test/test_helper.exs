@@ -1,7 +1,7 @@
 {:ok, _} = Application.ensure_all_started(:ex_machina)
 
 ExUnit.start()
-ExUnit.configure(exclude: [:test_vectors])
+ExUnit.configure(exclude: [:full_vectors])
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
