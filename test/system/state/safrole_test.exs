@@ -106,7 +106,7 @@ defmodule System.State.SafroleTest do
       result =
         Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
 
-      expected_result = Safrole.outside_in_sequencer(safrole.current_epoch_slot_sealers)
+      expected_result = Safrole.outside_in_sequencer(safrole.ticket_accumulator)
       assert result == expected_result
     end
 
