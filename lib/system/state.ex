@@ -87,9 +87,12 @@ defmodule System.State do
          # δ† Formula (24) v0.3.4
          services_intermediate =
            State.Services.process_preimages(state.services, Map.get(e, :preimages), new_timeslot),
+         # ψ' Formula (23) v0.3.4
+         {:ok, new_judgements} <-
+           Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
          # ρ† Formula (25) v0.3.4
          core_reports_intermediate_1 =
-           State.CoreReport.process_disputes(state.core_reports, Map.get(e, :disputes)),
+           State.CoreReport.process_disputes(state.core_reports, []),
          # ρ‡ Formula (26) v0.3.4
          core_reports_intermediate_2 =
            State.CoreReport.process_availability(
@@ -131,9 +134,7 @@ defmodule System.State do
              initial_recent_history,
              beefy_commitment_map
            ),
-         # ψ' Formula (23) v0.3.4
-         {:ok, new_judgements} <-
-           Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
+
          # κ' Formula (21) v0.3.4
          # λ' Formula (22) v0.3.4
          # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
@@ -229,7 +230,7 @@ defmodule System.State do
          prev_validators: posterior_prev_validators,
          # ρ'
          # TODO
-         core_reports: nil,
+         core_reports: new_core_reports,
          # τ'
          timeslot: new_timeslot,
          # φ'
