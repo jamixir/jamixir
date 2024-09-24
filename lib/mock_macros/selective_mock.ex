@@ -10,7 +10,7 @@ defmodule SelectiveMock do
     quote do
       @mockable {unquote(name), unquote(Macro.escape(args)), unquote(Macro.escape(block))}
       def unquote(func) do
-        # List of functions/modules to NOT mock 
+        # List of functions/modules to NOT mock
         mock_exclusion_list = Application.get_env(:jamixir, :original_modules, nil)
 
         cond do

@@ -1,7 +1,7 @@
 defmodule System.Validators.Safrole do
   use SelectiveMock
   alias Block.Header
-  alias System.State.{Safrole}
+  alias System.State.Safrole
   alias Util.Time
 
   # Formula (72) v0.3.4

@@ -8,8 +8,6 @@ defmodule Block.Extrinsic.TicketProof do
   message - empty list
   context - $jam_ticket_seal ^ η2'(posterior_entropy_pool.n2) ^ [r (the ticket entry index)]
   """
-  use SelectiveMock
-  alias System.State.SealKeyTicket
   alias Block.Extrinsic.TicketProof
   alias System.State.{EntropyPool, Safrole, SealKeyTicket}
   alias Util.{Collections, Time}

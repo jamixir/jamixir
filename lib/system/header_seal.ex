@@ -1,6 +1,6 @@
 defmodule System.HeaderSeal do
-  alias System.State.EntropyPool
   alias Block.Header
+  alias System.State.EntropyPool
 
   @callback do_validate_header_seals(
               header :: any(),
