@@ -51,15 +51,14 @@ defmodule TestVectorUtil do
     block = Block.from_json(json_data)
     expected_state = System.State.from_json(json_data["post_state"])
 
-    result =
-      System.State.add_block(pre_state, block)
+    result = System.State.add_block(pre_state, block)
 
     case {result, Map.get(json_data["output"], "err")} do
       {{:ok, new_state}, nil} ->
         # No error expected, assert on the tested keys
         Enum.each(tested_keys, fn key ->
           assert Map.get(new_state, key) == Map.get(expected_state, key),
-                 "Mismatch for key: #{key}"
+                 "Mismatch for key: #{key} in test vector #{file_name}"
         end)
 
       {{:ok, _}, error_expected} ->
@@ -70,13 +69,15 @@ defmodule TestVectorUtil do
         print_error(file_name, "none", reason, :fail)
         flunk("Expected no error, but received error: '#{reason}'")
 
-      {{:error, returned_state, reason}, error_expected} ->
-        print_error(file_name, error_expected, reason, :pass)
+      {{:error, returned_state, _reason}, _error_expected} ->
+        # print_error(file_name, error_expected, reason, :pass)
 
         Enum.each(tested_keys, fn key ->
           assert Map.get(returned_state, key) == Map.get(pre_state, key),
                  "State changed unexpectedly for key: #{key}"
         end)
     end
+
+    :ok
   end
 end
