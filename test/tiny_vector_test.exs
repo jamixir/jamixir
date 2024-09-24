@@ -102,7 +102,7 @@ defmodule LocalVectorTest do
             :entropy_pool,
             :prev_validators,
             :curr_validators,
-            # :safrole
+            :safrole
           ],
           file_name
         )
