@@ -166,7 +166,7 @@ defmodule System.State do
              rotated_history_entropy_pool.n1,
              posterior_pending
            ),
-         # Formula (86) v0.3.4
+         # Formula (69) v0.3.4
          posterior_epoch_slot_sealers =
            Safrole.get_posterior_epoch_slot_sealers(
              h,
@@ -175,6 +175,7 @@ defmodule System.State do
              rotated_history_entropy_pool,
              posterior_curr_validators
            ),
+         # Formula (79) v0.3.4
          {:ok, posterior_ticket_accumulator} <-
            Safrole.get_posterior_ticket_accumulator(
              h.timeslot,
