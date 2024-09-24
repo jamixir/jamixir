@@ -5,6 +5,8 @@ defmodule System.State.CoreReport do
   """
 
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Codec.Encoder
+  alias Util.Hash
 
   @type t :: %__MODULE__{
           work_report: WorkReport.t(),
@@ -17,15 +19,24 @@ defmodule System.State.CoreReport do
   @doc """
   Processes disputes and updates the core reports accordingly.
   """
-  def process_disputes(_core_reports, _disputes) do
-    # TODO: Implement the logic to process disputes
+  def process_disputes(core_reports, bad_wonky_verdicts) do
+    bad_wonky_set = MapSet.new(bad_wonky_verdicts)
+    Enum.map(core_reports, &process_report(&1, bad_wonky_set))
+  end
+
+  defp process_report(nil, _bad_wonky_set), do: nil
+
+  defp process_report(core_report, bad_wonky_set) do
+    work_results_hash = Hash.default(Encoder.encode(core_report.work_report))
+    if MapSet.member?(bad_wonky_set, work_results_hash), do: nil, else: core_report
   end
 
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  def process_availability(_core_reports, _availability) do
+  def process_availability(core_reports, _availability) do
     # TODO: Implement the logic to process availability
+    core_reports
   end
 
   @doc """

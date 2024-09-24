@@ -26,6 +26,12 @@ defmodule System.State.Judgements do
     # Formula (108) v0.3.4
     v = calculate_v(disputes.verdicts, state, ts)
 
+    bad_wonky_verdicts =
+      Enum.filter(v, fn {_, sum, validator_count} ->
+        sum != div(2 * validator_count, 3) + 1
+      end)
+      |> Enum.map(fn {hash, _, _} -> hash end)
+
     # Formula (115) v0.3.4
     new_offenders =
       (disputes.culprits ++ disputes.faults)
@@ -33,14 +39,14 @@ defmodule System.State.Judgements do
 
     if valid_header_markers?(
          header,
-         v,
+         bad_wonky_verdicts,
          new_offenders
        ) do
       {:ok,
        %Judgements{
          posterior_judgement_sets(v, state.judgements)
          | punish: MapSet.union(state.judgements.punish, MapSet.new(new_offenders))
-       }}
+       }, bad_wonky_verdicts}
     else
       {:error, "Header validation failed"}
     end
@@ -64,19 +70,14 @@ defmodule System.State.Judgements do
 
   # Formula (116) v0.3.4
   # Formula (117) v0.3.4
-  mockable valid_header_markers?(
-             %Header{judgements_marker: jm, offenders_marker: of},
-             v,
-             new_offenders
-           ) do
-    bad_wonky_verdicts =
-      Enum.filter(v, fn {_, sum, validator_count} ->
-        sum != div(2 * validator_count, 3) + 1
-      end)
-      |> Enum.map(fn {hash, _, _} -> hash end)
-
-    jm == bad_wonky_verdicts && of == new_offenders
-  end
+  mockable(
+    valid_header_markers?(
+      %Header{judgements_marker: jm, offenders_marker: of},
+      bad_wonky_verdicts,
+      new_offenders
+    ),
+    do: jm == bad_wonky_verdicts && of == new_offenders
+  )
 
   defp posterior_judgement_sets(v, judgements) do
     Enum.reduce(v, judgements, fn {hash, sum, validator_count}, acc ->

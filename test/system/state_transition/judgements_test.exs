@@ -40,7 +40,7 @@ defmodule System.State.JudgementsTest do
 
   describe "header validation" do
     test "passes when validation succeeds", %{state: state, work_report_hash: wrh, header: header} do
-      assert {:ok, _} =
+      assert {:ok, _, _} =
                Judgements.posterior_judgements(
                  %{header | judgements_marker: [wrh], offenders_marker: []},
                  %Disputes{
@@ -133,7 +133,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
       assert_updated_set(result, state, :good, wrh)
     end
 
@@ -155,7 +155,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
       assert_updated_set(result, state, :bad, wrh)
     end
 
@@ -197,7 +197,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
       assert_updated_set(result, state, :wonky, wrh)
     end
 
@@ -224,7 +224,7 @@ defmodule System.State.JudgementsTest do
         culprits: [build(:culprit, work_report_hash: wrh, key_pair: key_pair)]
       }
 
-      {:ok, result} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
       {pub, _} = key_pair
       assert MapSet.member?(result.bad, wrh)
       assert MapSet.member?(result.punish, pub)
