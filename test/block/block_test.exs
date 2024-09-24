@@ -4,6 +4,8 @@ defmodule BlockTest do
   alias Block
   alias Block.Extrinsic.Disputes
   alias System.State
+  import Mox
+  setup :verify_on_exit!
 
   setup_all do
     state = %State{
@@ -12,6 +14,17 @@ defmodule BlockTest do
       prev_validators: build_list(3, :validator),
       judgements: build(:judgements)
     }
+
+    Application.put_env(:jamixir, :original_modules, [
+      Block.Header,
+      Block.Extrinsic,
+      System.Validators.Safrole,
+      Disputes
+    ])
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :original_modules)
+    end)
 
     {:ok, state: state}
   end

@@ -37,7 +37,7 @@ defmodule RingVrf do
   end
 
   # Generate a secret using randomness
-  def generate_secret_from_rand() do
+  def generate_secret_from_rand do
     :erlang.nif_error(:nif_not_loaded)
   end
 

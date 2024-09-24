@@ -405,19 +405,12 @@ defmodule Jamixir.Factory do
       timeslot: 5,
       parent_hash: random_hash(),
       prior_state_root: random_hash(),
-      epoch: 0,
-      # Hw
-      winning_tickets_marker: [],
       # Hj
       judgements_marker: [random_hash()],
       # Ho
       offenders_marker: [random_hash()],
       # Hi
-      block_author_key_index: 0,
-      # Hv
-      vrf_signature: <<>>,
-      # Hs
-      block_seal: <<>>
+      block_author_key_index: 0
     }
   end
 

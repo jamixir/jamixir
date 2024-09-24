@@ -2,6 +2,7 @@ defmodule System.StateTest do
   use ExUnit.Case
   import Jamixir.Factory
   import System.State
+  import OriginalModules
   import Mox
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
@@ -186,14 +187,6 @@ defmodule System.StateTest do
       State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
     end
 
-    test "returns error when assurance validation fails", %{state: state} do
-      # Invalid assurance hash
-      invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
-      invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
-
-      assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
-    end
-
     test "updates statistics", %{state: state, key_pairs: key_pairs} do
       Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
@@ -226,6 +219,34 @@ defmodule System.StateTest do
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
 
       assert new_state.validator_statistics == state.validator_statistics
+    end
+  end
+
+  describe "validations fails" do
+    test "returns error when assurance validation fails", %{state: state} do
+      with_original_modules([:validate_assurances]) do
+        # Invalid assurance hash
+        invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
+
+        invalid_block = %Block{
+          header: build(:header, timeslot: 100),
+          extrinsic: invalid_extrinsic
+        }
+
+        assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
+      end
+    end
+
+    test "returns error when epoch marker validation fails", %{state: state} do
+      with_original_modules([:valid_epoch_marker]) do
+        # Invalid epoch marker, on a new epoch epoch marker should be nil
+        invalid_block = %Block{
+          header: build(:header, timeslot: 600, epoch: {<<1::256>>, [<<2::256>>]}),
+          extrinsic: build(:extrinsic)
+        }
+
+        assert {:error, _, "Invalid epoch marker"} = State.add_block(state, invalid_block)
+      end
     end
   end
 

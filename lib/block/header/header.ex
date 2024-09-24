@@ -109,4 +109,21 @@ defmodule Block.Header do
       Block.Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)
     end
   end
+
+  def from_json(json_data) do
+    ok_output = json_data["output"]["ok"]
+
+    %__MODULE__{
+      timeslot: json_data["input"]["slot"],
+      epoch: parse_epoch_mark(ok_output["epoch_mark"]),
+      winning_tickets_marker: parse_tickets_mark(ok_output["tickets_mark"])
+    }
+  end
+
+  defp parse_epoch_mark(%{"entropy" => entropy, "validators" => validators}) do
+    {Utils.hex_to_binary(entropy), Enum.map(validators, &Utils.hex_to_binary/1)}
+  end
+
+  defp parse_epoch_mark(_), do: nil
+  defp parse_tickets_mark(_), do: nil
 end
