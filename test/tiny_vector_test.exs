@@ -82,7 +82,9 @@ defmodule LocalVectorTest do
         "publish-tickets-with-mark-2",
         "publish-tickets-with-mark-3",
         "publish-tickets-with-mark-4",
-        "publish-tickets-with-mark-5"
+        "publish-tickets-with-mark-5",
+        "skip-epoch-tail-1",
+        "skip-epochs-1"
       ]
 
       Enum.each(files_to_test, fn file_name ->
