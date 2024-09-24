@@ -16,9 +16,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: 1..Constants.core_count() |> Enum.map(fn _ -> nil end)
 
-  @doc """
-  Processes disputes and updates the core reports accordingly.
-  """
+  # Formula (111) v0.3.4
   def process_disputes(core_reports, bad_wonky_verdicts) do
     bad_wonky_set = MapSet.new(bad_wonky_verdicts)
     Enum.map(core_reports, &process_report(&1, bad_wonky_set))
