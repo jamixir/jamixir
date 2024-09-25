@@ -1,6 +1,43 @@
 defmodule Util.MerkleTreeTest do
   use ExUnit.Case
-  alias Util.{MerkleTree, Hash}
+  alias Util.{Hash, MerkleTree}
+
+  describe "node/2" do
+    # Helper function to simulate the hash function
+    defp mock_hash(input), do: "hash(#{input})"
+
+    test "returns zero hash for empty list" do
+      assert MerkleTree.node([], &mock_hash/1) == <<0::256>>
+    end
+
+    test "returns single blob for list with one element" do
+      assert MerkleTree.node(["single"], &mock_hash/1) == "single"
+    end
+
+    test "correctly hashes two elements" do
+      result = MerkleTree.node(["a", "b"], &mock_hash/1)
+      expected = "hash(nodeab)"
+      assert result == expected
+    end
+
+    test "correctly hashes four elements" do
+      result = MerkleTree.node(["a", "b", "c", "d"], &mock_hash/1)
+      expected = "hash(nodehash(nodeab)hash(nodecd))"
+      assert result == expected
+    end
+
+    test "correctly hashes three elements" do
+      result = MerkleTree.node(["a", "b", "c"], &mock_hash/1)
+      expected = "hash(nodeahash(nodebc))"
+      assert result == expected
+    end
+
+    test "correctly hashes five elements" do
+      result = MerkleTree.node(["a", "b", "c", "d", "e"], &mock_hash/1)
+      expected = "hash(nodehash(nodeab)hash(nodechash(nodede)))"
+      assert result == expected
+    end
+  end
 
   describe "well_balanced_merkle_root/1" do
     test "returns hash of single element" do
