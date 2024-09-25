@@ -24,22 +24,22 @@ defmodule Util.MerkleTree do
 
   # Formula (303) v0.3.4
   @spec c_preprocess(list(binary()), (binary() -> Types.hash())) :: list(Types.hash())
-  def c_preprocess([], _), do: []
+  def c_preprocess([], _), do: [Hash.zero()]
 
   def c_preprocess(list, hash_func) do
     list
-    |> Enum.map(&hash_func.("$leaf" <> &1))
+    |> Enum.map(&hash_func.("leaf" <> &1))
     |> pad_to_power_of_two(Hash.zero())
   end
 
   # Formula (298) v0.3.4
   # case |v| <= 1
-  def trace([], _i, _hash_func), do: []
-  def trace([_value], _i, _hash_func), do: []
   # case |v| > 1
-  def trace(v, i, hash_func) do
+  def trace(v, i, hash_func) when length(v) > 1 do
     [node(p(false, v, i), hash_func) | trace(p(true, v, i), i - pi(v, i), hash_func)]
   end
+
+  def trace(_, _i, _hash_func), do: []
 
   # Formula (301) v0.3.4
   @spec justification([binary()], integer(), (binary() -> <<_::256>>)) :: [binary()]
@@ -50,7 +50,9 @@ defmodule Util.MerkleTree do
   # Formula (302) v0.3.4
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
   @spec justification([binary()], integer(), (binary() -> <<_::256>>), number()) :: list()
-  def justification(v, i, hash_func, x) do
+  def justification([], _, _, _), do: []
+
+  def justification(v, i, hash_func, x) when x >= 0 do
     size = max(0, ceil(:math.log2(max(1, length(v))) - x))
     justification(v, i, hash_func) |> Enum.take(size)
   end
@@ -93,6 +95,6 @@ defmodule Util.MerkleTree do
     {left, right} = Enum.split(list_of_blobs, mid)
     left_hash = node(left, hash_func)
     right_hash = node(right, hash_func)
-    hash_func.("$node" <> left_hash <> right_hash)
+    hash_func.("node" <> left_hash <> right_hash)
   end
 end
