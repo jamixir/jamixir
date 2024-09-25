@@ -21,7 +21,7 @@ defmodule System.State.Judgements do
             wonky: MapSet.new(),
             punish: MapSet.new()
 
-  mockable posterior_judgements(%Header{timeslot: ts} = header, disputes, state) do
+  mockable calculate_judgements_(%Header{timeslot: ts} = header, disputes, state) do
     # Formula (107) v0.3.4
     # Formula (108) v0.3.4
     v = calculate_v(disputes.verdicts, state, ts)
@@ -101,7 +101,9 @@ defmodule System.State.Judgements do
     MapSet.union(g, b) |> MapSet.union(w)
   end
 
-  def mock(:posterior_judgements, context), do: {:ok, Keyword.get(context, :state).judgements, []}
+  def mock(:calculate_judgements_, context),
+    do: {:ok, Keyword.get(context, :state).judgements, []}
+
   def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do

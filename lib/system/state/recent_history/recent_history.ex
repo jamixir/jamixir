@@ -35,13 +35,7 @@ defmodule System.State.RecentHistory do
   @doc """
   Creates a new RecentBlock and adds it to the list, ensuring the max length is maintained.
   """
-  @spec add(
-          t(),
-          Types.hash(),
-          Types.hash(),
-          list(Types.hash()),
-          list(Types.hash())
-        ) :: t()
+  @spec add(t(), Types.hash(), Types.hash(), list(Types.hash()), list(Types.hash())) :: t()
   def add(
         %__MODULE__{} = self,
         header_hash,
@@ -49,31 +43,29 @@ defmodule System.State.RecentHistory do
         accumulated_result_mmr,
         work_report_hashes
       ) do
-    new_block = %RecentBlock{
+    add(self, %RecentBlock{
       header_hash: header_hash,
       accumulated_result_mmr: accumulated_result_mmr,
       state_root: state_root,
       work_report_hashes: work_report_hashes
-    }
-
-    add(self, new_block)
+    })
   end
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
   Formula (82) v0.3.4
   """
-  def update_latest_posterior_state_root(nil, %Header{}) do
+  def update_latest_state_root_(nil, %Header{}) do
     __MODULE__.new()
   end
 
-  @spec update_latest_posterior_state_root(t(), Header.t()) :: t()
-  def update_latest_posterior_state_root(%__MODULE__{blocks: []} = self, %Header{}) do
+  @spec update_latest_state_root_(t(), Header.t()) :: t()
+  def update_latest_state_root_(%__MODULE__{blocks: []} = self, %Header{}) do
     self
   end
 
   # β† ≡ β except β † [∣β∣ − 1]s = Hr
-  def update_latest_posterior_state_root(%__MODULE__{blocks: blocks} = self, %Header{
+  def update_latest_state_root_(%__MODULE__{blocks: blocks} = self, %Header{
         prior_state_root: s
       }) do
     case Enum.split(blocks, length(blocks) - 1) do
@@ -86,14 +78,14 @@ defmodule System.State.RecentHistory do
   Adds a new block to the recent history.
   Formula (83) v0.3.4
   """
-  def posterior_recent_history(
+  def calculate_recent_history_(
         %Header{} = header,
         guarantees,
         %RecentHistory{} = recent_history,
         beefy_commitment_map
       ) do
     # 32 bytes of zeros
-    posterior_state_root = <<0::256>>
+    state_root_ = <<0::256>>
     header_hash = Hash.default(Codec.Encoder.encode(header))
 
     # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
@@ -144,7 +136,7 @@ defmodule System.State.RecentHistory do
     RecentHistory.add(
       recent_history,
       header_hash,
-      posterior_state_root,
+      state_root_,
       mmr_roots,
       work_package_hashes
     )

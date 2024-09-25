@@ -54,10 +54,10 @@ defmodule TestVectorUtil do
     result = System.State.add_block(pre_state, block)
 
     case {result, Map.get(json_data["output"], "err")} do
-      {{:ok, new_state}, nil} ->
+      {{:ok, state_}, nil} ->
         # No error expected, assert on the tested keys
         Enum.each(tested_keys, fn key ->
-          assert Map.get(new_state, key) == Map.get(expected_state, key),
+          assert Map.get(state_, key) == Map.get(expected_state, key),
                  "Mismatch for key: #{key} in test vector #{file_name}"
         end)
 

@@ -28,8 +28,8 @@ defmodule System.State.Safrole do
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   # Formula (69) v0.3.4
-  def get_posterior_epoch_slot_sealers(
-        %Header{timeslot: new_timeslot},
+  def get_epoch_slot_sealers_(
+        %Header{timeslot: timeslot_},
         timeslot,
         %Safrole{
           ticket_accumulator: ta,
@@ -39,11 +39,11 @@ defmodule System.State.Safrole do
         curr_validators
       ) do
     # Formula (69) v0.3.4 - second arm
-    if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) do
+    if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) do
       slot_sealers
     else
       # Formula (69) v0.3.4 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
-      if Time.epoch_index(new_timeslot) == Time.epoch_index(timeslot) + 1 and
+      if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) + 1 and
            length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
         outside_in_sequencer(ta)
@@ -55,7 +55,7 @@ defmodule System.State.Safrole do
 
   # Formula (79) v0.3.4
   # Formula (80) v0.3.4
-  def get_posterior_ticket_accumulator(
+  def calculate_ticket_accumulator_(
         header_timeslot,
         state_timeslot,
         tickets,
@@ -67,7 +67,7 @@ defmodule System.State.Safrole do
       ) do
     {:ok, n} = TicketProof.construct_n(tickets, n2, cmtmnt)
 
-    new_accumulator =
+    accumulator_ =
       if Time.new_epoch?(state_timeslot, header_timeslot) do
         n
       else
@@ -76,8 +76,8 @@ defmodule System.State.Safrole do
       |> Enum.sort_by(& &1.id)
       |> Enum.take(Constants.epoch_length())
 
-    if all_tickets_used?(n, new_accumulator) do
-      {:ok, new_accumulator}
+    if all_tickets_used?(n, accumulator_) do
+      {:ok, accumulator_}
     else
       {:error, "Not all submitted tickets are in the new accumulator"}
     end

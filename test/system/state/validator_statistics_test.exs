@@ -10,7 +10,7 @@ defmodule System.State.ValidatorStatisticsTest do
     end
   end
 
-  describe "posterior_validator_statistics/5" do
+  describe "calculate_validator_statistics_/5" do
     setup do
       {:ok,
        %{
@@ -46,8 +46,8 @@ defmodule System.State.ValidatorStatisticsTest do
         previous_epoch_statistics: previous_stats
       }
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           build(:extrinsic),
           500,
           validator_statistics,
@@ -55,7 +55,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, timeslot: 1000)
         )
 
-      assert new_stats.previous_epoch_statistics == current_stats
+      assert validator_stats_.previous_epoch_statistics == current_stats
     end
 
     test "previous epoch statistics remains the same when same epoc", %{
@@ -67,8 +67,8 @@ defmodule System.State.ValidatorStatisticsTest do
         previous_epoch_statistics: previous_stats
       }
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           build(:extrinsic),
           1,
           validator_statistics,
@@ -76,7 +76,7 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, timeslot: 2)
         )
 
-      assert new_stats.previous_epoch_statistics == previous_stats
+      assert validator_stats_.previous_epoch_statistics == previous_stats
     end
 
     test "updates author blocks produced statistics" do
@@ -86,8 +86,8 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_blocks_produced =
         Enum.map(validator_statistics.current_epoch_statistics, & &1.blocks_produced)
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           build(:extrinsic),
           1,
           validator_statistics,
@@ -96,7 +96,7 @@ defmodule System.State.ValidatorStatisticsTest do
         )
 
       updated_blocks_produced =
-        Enum.map(new_stats.current_epoch_statistics, & &1.blocks_produced)
+        Enum.map(validator_stats_.current_epoch_statistics, & &1.blocks_produced)
 
       assert Enum.with_index(updated_blocks_produced) ==
                Enum.with_index(initial_blocks_produced)
@@ -114,8 +114,8 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_tickets_introduced =
         Enum.map(validator_statistics.current_epoch_statistics, & &1.tickets_introduced)
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -123,12 +123,14 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{tickets_introduced: tickets},
-                                                                    idx ->
-               if idx == author_key_index,
-                 do: tickets == Enum.at(initial_tickets_introduced, idx) + 3,
-                 else: tickets == Enum.at(initial_tickets_introduced, idx)
-             end)
+      assert Enum.with_index(
+               validator_stats_.current_epoch_statistics,
+               fn %{tickets_introduced: tickets}, idx ->
+                 if idx == author_key_index,
+                   do: tickets == Enum.at(initial_tickets_introduced, idx) + 3,
+                   else: tickets == Enum.at(initial_tickets_introduced, idx)
+               end
+             )
     end
 
     test "updates author preimages introduced statistics" do
@@ -139,8 +141,8 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_preimages_introduced =
         Enum.map(validator_statistics.current_epoch_statistics, & &1.preimages_introduced)
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -148,15 +150,14 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{
-                                                                      preimages_introduced:
-                                                                        preimages
-                                                                    },
-                                                                    idx ->
-               if idx == author_key_index,
-                 do: preimages == Enum.at(initial_preimages_introduced, idx) + 4,
-                 else: preimages == Enum.at(initial_preimages_introduced, idx)
-             end)
+      assert Enum.with_index(
+               validator_stats_.current_epoch_statistics,
+               fn %{preimages_introduced: preimages}, idx ->
+                 if idx == author_key_index,
+                   do: preimages == Enum.at(initial_preimages_introduced, idx) + 4,
+                   else: preimages == Enum.at(initial_preimages_introduced, idx)
+               end
+             )
     end
 
     test "updates author data size statistics" do
@@ -167,8 +168,8 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_data_size =
         Enum.map(validator_statistics.current_epoch_statistics, & &1.data_size)
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -176,11 +177,14 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{data_size: size}, idx ->
-               if idx == author_key_index,
-                 do: size == Enum.at(initial_data_size, idx) + 20,
-                 else: size == Enum.at(initial_data_size, idx)
-             end)
+      assert Enum.with_index(
+               validator_stats_.current_epoch_statistics,
+               fn %{data_size: size}, idx ->
+                 if idx == author_key_index,
+                   do: size == Enum.at(initial_data_size, idx) + 20,
+                   else: size == Enum.at(initial_data_size, idx)
+               end
+             )
     end
 
     test "updates author assurances statistics" do
@@ -191,8 +195,8 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_availability_assurances =
         Enum.map(validator_statistics.current_epoch_statistics, & &1.availability_assurances)
 
-      {:ok, new_stats} =
-        ValidatorStatistics.posterior_validator_statistics(
+      {:ok, validator_stats_} =
+        ValidatorStatistics.calculate_validator_statistics_(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -200,22 +204,21 @@ defmodule System.State.ValidatorStatisticsTest do
           build(:header, block_author_key_index: author_key_index, timeslot: 2)
         )
 
-      assert Enum.with_index(new_stats.current_epoch_statistics, fn %{
-                                                                      availability_assurances:
-                                                                        assurances
-                                                                    },
-                                                                    idx ->
-               if idx == author_key_index,
-                 do: assurances == Enum.at(initial_availability_assurances, idx) + 1,
-                 else: assurances == Enum.at(initial_availability_assurances, idx)
-             end)
+      assert Enum.with_index(
+               validator_stats_.current_epoch_statistics,
+               fn %{availability_assurances: assurances}, idx ->
+                 if idx == author_key_index,
+                   do: assurances == Enum.at(initial_availability_assurances, idx) + 1,
+                   else: assurances == Enum.at(initial_availability_assurances, idx)
+               end
+             )
     end
 
     test "return same stats when there is no author statistics" do
       validator_statistics = build(:validator_statistics)
 
       {:error, msg} =
-        ValidatorStatistics.posterior_validator_statistics(
+        ValidatorStatistics.calculate_validator_statistics_(
           build(:extrinsic),
           0,
           validator_statistics,

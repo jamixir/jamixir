@@ -3,9 +3,9 @@ defmodule RefinementContext do
           # a - anchor header hash
           anchor: Types.hash(),
           # s
-          posterior_state_root: Types.hash(),
+          state_root_: Types.hash(),
           # b
-          posterior_beefy_root: Types.hash(),
+          beefy_root_: Types.hash(),
           # l - lookup anchor header hash
           lookup_anchor: Types.hash(),
           # t
@@ -17,10 +17,10 @@ defmodule RefinementContext do
   # Formula (121) v0.3.4
   # a - anchor header hash
   defstruct anchor: <<0::256>>,
-            # s
-            posterior_state_root: <<0::256>>,
-            # b
-            posterior_beefy_root: <<0::256>>,
+            # s - posterior state root
+            state_root_: <<0::256>>,
+            # b - posterior beefy root
+            beefy_root_: <<0::256>>,
             # l - lookup anchor header hash
             lookup_anchor: <<0::256>>,
             # t
@@ -33,8 +33,8 @@ defmodule RefinementContext do
     # Formula (283) v0.3.4
     def encode(%RefinementContext{
           anchor: a,
-          posterior_state_root: s,
-          posterior_beefy_root: b,
+          state_root_: s,
+          beefy_root_: b,
           lookup_anchor: l,
           timeslot: t,
           prerequisite: p

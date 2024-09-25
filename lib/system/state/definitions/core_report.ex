@@ -8,10 +8,7 @@ defmodule System.State.CoreReport do
   alias Codec.Encoder
   alias Util.Hash
 
-  @type t :: %__MODULE__{
-          work_report: WorkReport.t(),
-          timeslot: Types.timeslot()
-        }
+  @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
 
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: 1..Constants.core_count() |> Enum.map(fn _ -> nil end)
@@ -40,7 +37,7 @@ defmodule System.State.CoreReport do
   @doc """
   Updates core reports with guarantees and current validators.
   """
-  def posterior_core_reports(core_reports, guarantees, _curr_validators, _new_timeslot) do
+  def calculate_core_reports_(core_reports, guarantees, _curr_validators, _new_timeslot) do
     # Formula (120) v0.3.4
     # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
     cond do

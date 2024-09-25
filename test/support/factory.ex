@@ -118,8 +118,8 @@ defmodule Jamixir.Factory do
   def refinement_context_factory do
     %RefinementContext{
       anchor: <<1::256>>,
-      posterior_state_root: <<2::256>>,
-      posterior_beefy_root: <<3::256>>,
+      state_root_: <<2::256>>,
+      beefy_root_: <<3::256>>,
       lookup_anchor: <<4::256>>,
       timeslot: 5,
       prerequisite: <<6::256>>

@@ -28,18 +28,13 @@ defmodule Block.Extrinsic.Assurance do
           signature: Types.ed25519_signature()
         }
 
-  def validate_assurances(
-        assurances,
-        parent_hash,
-        new_curr_validators,
-        core_reports_intermediate_1
-      ) do
+  def validate_assurances(assurances, parent_hash, curr_validators_, core_reports_intermediate_1) do
     # Formula (126) v0.3.4
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
          # Formula (127) v0.3.4
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
          # Formula (128) v0.3.4
-         :ok <- validate_signatures(assurances, parent_hash, new_curr_validators),
+         :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
          # Formula (130) v0.3.4
          :ok <- validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
@@ -62,10 +57,10 @@ defmodule Block.Extrinsic.Assurance do
     if all_ok, do: :ok, else: {:error, "Invalid core reports bits"}
   end
 
-  defp validate_signatures(assurances, parent_hash, new_curr_validators) do
+  defp validate_signatures(assurances, parent_hash, curr_validators_) do
     if(
       Enum.all?(assurances, fn a ->
-        valid_signature?(a, parent_hash, Enum.at(new_curr_validators, a.validator_index))
+        valid_signature?(a, parent_hash, Enum.at(curr_validators_, a.validator_index))
       end),
       do: :ok,
       else: {:error, :invalid_signature}

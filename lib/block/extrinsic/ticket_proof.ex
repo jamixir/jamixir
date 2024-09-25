@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.TicketProof do
   the ticket_validity_proof is construct out of 3 parts:
   ring root - gamma_z, the current epoch root
   message - empty list
-  context - $jam_ticket_seal ^ η2'(posterior_entropy_pool.n2) ^ [r (the ticket entry index)]
+  context - $jam_ticket_seal ^ η2'(entropy_pool_.n2) ^ [r (the ticket entry index)]
   """
   alias Block.Extrinsic.TicketProof
   alias System.State.{EntropyPool, Safrole, SealKeyTicket}

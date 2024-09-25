@@ -34,15 +34,15 @@ defmodule System.State.RotateKeysTest do
          } do
       offenders = MapSet.new([v1.ed25519, v2.ed25519, v3.ed25519])
 
-      {new_pending, new_current, new_prev, new_epoch_root} =
+      {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
 
-      assert Enum.all?(new_pending, &TH.nullified?/1)
-      assert new_current == safrole.pending
-      assert new_prev == [v2]
-      assert byte_size(new_epoch_root) == 144
+      assert Enum.all?(pending_, &TH.nullified?/1)
+      assert current_ == safrole.pending
+      assert prev_ == [v2]
+      assert byte_size(epoch_root_) == 144
     end
 
     test "New epoch, no validators nullified", %{
@@ -55,15 +55,15 @@ defmodule System.State.RotateKeysTest do
     } do
       offenders = MapSet.new()
 
-      {new_pending, new_current, new_prev, new_epoch_root} =
+      {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
 
-      assert new_pending == [v1, v2, v3]
-      assert new_current == safrole.pending
-      assert new_prev == [v2]
-      assert byte_size(new_epoch_root) == 144
+      assert pending_ == [v1, v2, v3]
+      assert current_ == safrole.pending
+      assert prev_ == [v2]
+      assert byte_size(epoch_root_) == 144
     end
 
     test "New epoch, some validators nullified", %{
@@ -76,16 +76,16 @@ defmodule System.State.RotateKeysTest do
     } do
       offenders = MapSet.new([v1.ed25519, v3.ed25519])
 
-      {new_pending, new_current, new_prev, new_epoch_root} =
+      {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
           punish: offenders
         })
 
-      assert Enum.count(new_pending, &TH.nullified?/1) == 2
-      assert Enum.at(new_pending, 1) == v2
-      assert new_current == safrole.pending
-      assert new_prev == [v2]
-      assert byte_size(new_epoch_root) == 144
+      assert Enum.count(pending_, &TH.nullified?/1) == 2
+      assert Enum.at(pending_, 1) == v2
+      assert current_ == safrole.pending
+      assert prev_ == [v2]
+      assert byte_size(epoch_root_) == 144
     end
 
     test "No new epoch, state unchanged", %{

@@ -48,13 +48,13 @@ defmodule System.State.CoreReportTest do
     end
   end
 
-  describe "posterior_core_reports/4" do
-    test "posterior_core_report smoke test" do
+  describe "calculate_core_reports_/4" do
+    test "calculate_core_reports_ smoke test" do
       core_reports = [build(:core_report)]
       guarantees = [build(:guarantee)]
 
       assert {:ok, core_reports} ==
-               CoreReport.posterior_core_reports(core_reports, guarantees, [], 0)
+               CoreReport.calculate_core_reports_(core_reports, guarantees, [], 0)
     end
 
     test "return error when report sizes are invalid" do
@@ -69,7 +69,7 @@ defmodule System.State.CoreReportTest do
         )
 
       assert {:error, :invalid_work_report_size} ==
-               CoreReport.posterior_core_reports(core_reports, [guarantee], [], 0)
+               CoreReport.calculate_core_reports_(core_reports, [guarantee], [], 0)
     end
   end
 end

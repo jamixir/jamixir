@@ -4,8 +4,8 @@ defmodule System.HeaderSeal do
 
   @callback do_validate_header_seals(
               header :: any(),
-              posterior_curr_validators :: any(),
-              posterior_epoch_slot_sealers :: any(),
+              curr_validators_ :: any(),
+              epoch_slot_sealers_ :: any(),
               entropy_pool :: %EntropyPool{}
             ) ::
               {:ok, %{vrf_signature_output: binary(), block_seal_output: binary()}}
@@ -13,18 +13,13 @@ defmodule System.HeaderSeal do
 
   def validate_header_seals(
         header,
-        posterior_curr_validators,
-        posterior_epoch_slot_sealers,
+        curr_validators_,
+        epoch_slot_sealers_,
         %EntropyPool{} = entropy_pool
       ) do
     module = Application.get_env(:jamixir, :header_seal, __MODULE__)
 
-    module.do_validate_header_seals(
-      header,
-      posterior_curr_validators,
-      posterior_epoch_slot_sealers,
-      entropy_pool
-    )
+    module.do_validate_header_seals(header, curr_validators_, epoch_slot_sealers_, entropy_pool)
   end
 
   # Formula (60) v0.3.4
@@ -46,33 +41,26 @@ defmodule System.HeaderSeal do
     {vrf_signature, _} =
       RingVrf.ietf_vrf_sign(secret, SigningContexts.jam_entropy() <> block_seal_output, <<>>)
 
-    updated_header = %Header{
-      header
-      | vrf_signature: vrf_signature
-    }
+    updated_header = %Header{header | vrf_signature: vrf_signature}
 
     {block_seal, _} =
       RingVrf.ietf_vrf_sign(secret, seal_context, Header.unsigned_serialize(updated_header))
 
-    %Header{
-      updated_header
-      | block_seal: block_seal
-    }
+    %Header{updated_header | block_seal: block_seal}
   end
 
   # Formula (60) v0.3.4
   # Formula (61)  v0.3.4
   def do_validate_header_seals(
         header,
-        posterior_curr_validators,
-        posterior_epoch_slot_sealers,
+        curr_validators_,
+        epoch_slot_sealers_,
         %EntropyPool{} = entropy_pool
       ) do
-    bandersnatch_public_keys = Enum.map(posterior_curr_validators, & &1.bandersnatch)
+    bandersnatch_public_keys = Enum.map(curr_validators_, & &1.bandersnatch)
     # let i = γs′ [Ht ]↺
     expected_slot_sealer =
-      posterior_epoch_slot_sealers
-      |> Enum.at(rem(header.timeslot, length(posterior_epoch_slot_sealers)))
+      epoch_slot_sealers_ |> Enum.at(rem(header.timeslot, length(epoch_slot_sealers_)))
 
     # verify that the block seal is a valid signature
     with {:ok, block_seal_output} <-
@@ -89,7 +77,7 @@ defmodule System.HeaderSeal do
              expected_slot_sealer,
              block_seal_output,
              header.block_author_key_index,
-             posterior_curr_validators
+             curr_validators_
            ),
          # verify that the vrf signature is a valid signature
          # Formula (62) v0.3.4
@@ -112,9 +100,9 @@ defmodule System.HeaderSeal do
          <<_::binary>> = correct_slot_sealer,
          _block_seal_output,
          block_author_key_index,
-         posterior_curr_validators
+         curr_validators_
        ) do
-    case Enum.at(posterior_curr_validators, block_author_key_index) do
+    case Enum.at(curr_validators_, block_author_key_index) do
       %{bandersnatch: ^correct_slot_sealer} -> :ok
       _ -> {:error, :ticket_id_mismatch}
     end

@@ -8,16 +8,16 @@ defmodule RecentHistoryTest do
   alias System.State.{BeefyCommitmentMap, RecentHistory}
   alias Util.{Hash, MerkleTree, MMR}
 
-  describe "update_latest_posterior_state_root/2" do
+  describe "update_latest_state_root_/2" do
     test "returns empty list when given nil" do
       header = %Header{prior_state_root: "s"}
-      assert RecentHistory.update_latest_posterior_state_root(nil, header).blocks === []
+      assert RecentHistory.update_latest_state_root_(nil, header).blocks === []
     end
 
     test "returns empty list when given empty list" do
       header = %Header{prior_state_root: "s"}
 
-      assert RecentHistory.update_latest_posterior_state_root(RecentHistory.new(), header).blocks ===
+      assert RecentHistory.update_latest_state_root_(RecentHistory.new(), header).blocks ===
                []
     end
 
@@ -33,18 +33,18 @@ defmodule RecentHistoryTest do
 
       expected = [most_recent_block1, %RecentBlock{state_root: "s"}]
 
-      assert RecentHistory.update_latest_posterior_state_root(block_history, header).blocks ===
+      assert RecentHistory.update_latest_state_root_(block_history, header).blocks ===
                expected
     end
   end
 
-  describe "posterior_recent_history" do
+  describe "calculate_recent_history_" do
     test "handles empty guarantees list" do
       recent_history = %RecentHistory{}
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, <<1::256>>}]}
 
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [],
           recent_history,
@@ -66,7 +66,7 @@ defmodule RecentHistoryTest do
       beefy_commitment_map = nil
 
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
           recent_history,
@@ -88,7 +88,7 @@ defmodule RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, <<1::256>>}]}
 
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
           recent_history,
@@ -118,7 +118,7 @@ defmodule RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{2, <<5::256>>}]}
 
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
           recent_history,
@@ -146,7 +146,7 @@ defmodule RecentHistoryTest do
       beefy_commitment_map = %BeefyCommitmentMap{commitments: [{3, <<3::256>>}]}
 
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee1, guarantee2],
           recent_history,
@@ -182,7 +182,7 @@ defmodule RecentHistoryTest do
 
       # Call the function to add a new block
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
           recent_history,
@@ -226,7 +226,7 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee1, guarantee2],
           recent_history,
@@ -269,7 +269,7 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
           recent_history,
@@ -288,7 +288,7 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.posterior_recent_history(
+        RecentHistory.calculate_recent_history_(
           header,
           [],
           recent_history,

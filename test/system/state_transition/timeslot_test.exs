@@ -32,8 +32,8 @@ defmodule System.StateTransition.TimeslotTest do
         block_author_key_index: 1
       )
 
-    {:ok, new_state} = State.add_block(state, block)
+    {:ok, state_} = State.add_block(state, block)
 
-    assert new_state.timeslot === 7
+    assert state_.timeslot === 7
   end
 end

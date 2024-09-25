@@ -41,7 +41,7 @@ defmodule System.State.JudgementsTest do
   describe "header validation" do
     test "passes when validation succeeds", %{state: state, work_report_hash: wrh, header: header} do
       assert {:ok, _, _} =
-               Judgements.posterior_judgements(
+               Judgements.calculate_judgements_(
                  %{header | judgements_marker: [wrh], offenders_marker: []},
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
@@ -58,7 +58,7 @@ defmodule System.State.JudgementsTest do
       header: header
     } do
       assert {:error, "Header validation failed"} =
-               Judgements.posterior_judgements(
+               Judgements.calculate_judgements_(
                  %{header | judgements_marker: [], offenders_marker: []},
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
@@ -75,7 +75,7 @@ defmodule System.State.JudgementsTest do
       header: header
     } do
       assert {:error, "Header validation failed"} =
-               Judgements.posterior_judgements(
+               Judgements.calculate_judgements_(
                  %{header | judgements_marker: [], offenders_marker: []},
                  %Disputes{
                    verdicts: [],
@@ -90,7 +90,7 @@ defmodule System.State.JudgementsTest do
       wrh2 = :crypto.strong_rand_bytes(32)
 
       assert {:error, "Header validation failed"} =
-               Judgements.posterior_judgements(
+               Judgements.calculate_judgements_(
                  %{header | judgements_marker: [wrh2, wrh], offenders_marker: []},
                  %Disputes{
                    verdicts: [
@@ -105,10 +105,10 @@ defmodule System.State.JudgementsTest do
     end
   end
 
-  describe "posterior_judgements/3" do
+  describe "calculate_judgements_/3" do
     setup do
-      # Exclude posterior_judgements from being mocked
-      Application.put_env(:jamixir, :original_modules, [:posterior_judgements])
+      # Exclude calculate_judgements_ from being mocked
+      Application.put_env(:jamixir, :original_modules, [:calculate_judgements_])
 
       on_exit(fn ->
         Application.delete_env(:jamixir, :original_modules)
@@ -133,7 +133,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       assert_updated_set(result, state, :good, wrh)
     end
 
@@ -155,7 +155,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       assert_updated_set(result, state, :bad, wrh)
     end
 
@@ -197,7 +197,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       assert_updated_set(result, state, :wonky, wrh)
     end
 
@@ -224,7 +224,7 @@ defmodule System.State.JudgementsTest do
         culprits: [build(:culprit, work_report_hash: wrh, key_pair: key_pair)]
       }
 
-      {:ok, result, _} = Judgements.posterior_judgements(header, disputes, state)
+      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       {pub, _} = key_pair
       assert MapSet.member?(result.bad, wrh)
       assert MapSet.member?(result.punish, pub)

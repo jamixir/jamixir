@@ -78,18 +78,18 @@ defmodule System.State do
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
     # Formula (16) v0.3.4
     # Formula (46) v0.3.4
-    new_timeslot = h.timeslot
+    timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
          # β† Formula (17) v0.3.4
          initial_recent_history =
-           RecentHistory.update_latest_posterior_state_root(state.recent_history, h),
+           RecentHistory.update_latest_state_root_(state.recent_history, h),
          # δ† Formula (24) v0.3.4
          services_intermediate =
-           State.Services.process_preimages(state.services, Map.get(e, :preimages), new_timeslot),
+           State.Services.process_preimages(state.services, Map.get(e, :preimages), timeslot_),
          # ψ' Formula (23) v0.3.4
-         {:ok, new_judgements, bad_wonky_verdicts} <-
-           Judgements.posterior_judgements(h, Map.get(e, :disputes), state),
+         {:ok, judgements_, bad_wonky_verdicts} <-
+           Judgements.calculate_judgements_(h, Map.get(e, :disputes), state),
          # ρ† Formula (25) v0.3.4
          core_reports_intermediate_1 =
            State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
@@ -100,46 +100,44 @@ defmodule System.State do
              Map.get(e, :availability)
            ),
          # ρ' Formula (27) v0.3.4
-         {:ok, new_core_reports} <-
-           State.CoreReport.posterior_core_reports(
+         {:ok, core_reports_} <-
+           State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
              Map.get(e, :guarantees),
              state.curr_validators,
-             new_timeslot
+             timeslot_
            ),
          # Formula (28) v0.3.4
-         {_new_services, _privileged_services, _new_next_validators, new_authorizer_queue,
+         {_services_, _privileged_services, _next_validators_, authorizer_queue_,
           beefy_commitment_map} =
            State.Accumulation.accumulate(
              Map.get(e, :availability),
-             new_core_reports,
+             core_reports_,
              services_intermediate,
              state.privileged_services,
              state.next_validators,
              state.authorizer_queue
            ),
          # α' Formula (29) v0.3.4
-         new_authorizer_pool =
-           posterior_authorizer_pool(
+         authorizer_pool_ =
+           calculate_authorizer_pool_(
              Map.get(e, :guarantees),
-             new_authorizer_queue,
+             authorizer_queue_,
              state.authorizer_pool,
              h.timeslot
            ),
          # β' Formula (18) v0.3.4
-         new_recent_history =
-           RecentHistory.posterior_recent_history(
+         recent_history_ =
+           RecentHistory.calculate_recent_history_(
              h,
              Map.get(e, :guarantees),
              initial_recent_history,
              beefy_commitment_map
            ),
-
          # κ' Formula (21) v0.3.4
          # λ' Formula (22) v0.3.4
          # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
-         {posterior_pending, posterior_curr_validators, posterior_prev_validators,
-          posterior_epoch_root} =
+         {pending_, curr_validators_, prev_validators_, epoch_root_} =
            RotateKeys.rotate_keys(
              h,
              state.timeslot,
@@ -147,13 +145,13 @@ defmodule System.State do
              state.curr_validators,
              state.next_validators,
              state.safrole,
-             new_judgements
+             judgements_
            ),
          :ok <-
            Assurance.validate_assurances(
              e.assurances,
              h.parent_hash,
-             posterior_curr_validators,
+             curr_validators_,
              core_reports_intermediate_1
            ),
 
@@ -165,84 +163,84 @@ defmodule System.State do
              h,
              state.timeslot,
              rotated_history_entropy_pool.n1,
-             posterior_pending
+             pending_
            ),
          # Formula (69) v0.3.4
-         posterior_epoch_slot_sealers =
-           Safrole.get_posterior_epoch_slot_sealers(
+         epoch_slot_sealers_ =
+           Safrole.get_epoch_slot_sealers_(
              h,
              state.timeslot,
              state.safrole,
              rotated_history_entropy_pool,
-             posterior_curr_validators
+             curr_validators_
            ),
          # Formula (79) v0.3.4
-         {:ok, posterior_ticket_accumulator} <-
-           Safrole.get_posterior_ticket_accumulator(
+         {:ok, ticket_accumulator_} <-
+           Safrole.calculate_ticket_accumulator_(
              h.timeslot,
              state.timeslot,
              e.tickets,
              state.safrole,
              rotated_history_entropy_pool
            ),
-         posterior_safrole = %Safrole{
-           pending: posterior_pending,
-           epoch_root: posterior_epoch_root,
-           current_epoch_slot_sealers: posterior_epoch_slot_sealers,
-           ticket_accumulator: posterior_ticket_accumulator
+         safrole_ = %Safrole{
+           pending: pending_,
+           epoch_root: epoch_root_,
+           current_epoch_slot_sealers: epoch_slot_sealers_,
+           ticket_accumulator: ticket_accumulator_
          },
          {:ok, %{vrf_signature_output: vrf_output}} <-
            System.HeaderSeal.validate_header_seals(
              h,
-             posterior_curr_validators,
-             posterior_epoch_slot_sealers,
+             curr_validators_,
+             epoch_slot_sealers_,
              state.entropy_pool
            ),
-         posterior_entropy_pool =
-           EntropyPool.update_current_history(vrf_output, rotated_history_entropy_pool),
-         {:ok, posterior_validator_statistics} <-
-           ValidatorStatistics.posterior_validator_statistics(
+         entropy_pool_ =
+           EntropyPool.calculate_entropy_pool_(vrf_output, rotated_history_entropy_pool),
+         {:ok, validator_statistics_} <-
+           ValidatorStatistics.calculate_validator_statistics_(
              e,
              state.timeslot,
              state.validator_statistics,
-             posterior_curr_validators,
+             curr_validators_,
              h
            ) do
       {:ok,
        %System.State{
          # α'
-         authorizer_pool: new_authorizer_pool,
+         authorizer_pool: authorizer_pool_,
          # β'
-         recent_history: new_recent_history,
+         recent_history: recent_history_,
          # γ'
-         safrole: posterior_safrole,
+         safrole: safrole_,
          # δ'
          # TODO
          services: nil,
          # η'
-         entropy_pool: posterior_entropy_pool,
+         entropy_pool: entropy_pool_,
          # ι'
          # TODO
          next_validators: nil,
          # κ'
-         curr_validators: posterior_curr_validators,
+         curr_validators: curr_validators_,
          # λ'
-         prev_validators: posterior_prev_validators,
+         prev_validators: prev_validators_,
          # ρ'
          # TODO
-         core_reports: new_core_reports,
+         core_reports: core_reports_,
          # τ'
-         timeslot: new_timeslot,
+         timeslot: timeslot_,
          # φ'
-         authorizer_queue: new_authorizer_queue,
+         authorizer_queue: authorizer_queue_,
          # χ'
          # TODO
          privileged_services: nil,
          # ψ'
-         judgements: new_judgements,
+         judgements: judgements_,
          # π' Formula (30) v0.3.4
          # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
-         validator_statistics: posterior_validator_statistics
+         validator_statistics: validator_statistics_
        }}
     else
       {:error, reason} -> {:error, state, reason}
@@ -250,15 +248,15 @@ defmodule System.State do
   end
 
   # Formula (86) v0.3.4
-  def posterior_authorizer_pool(
+  def calculate_authorizer_pool_(
         guarantees,
-        posterior_authorizer_queue,
+        authorizer_queue_,
         authorizer_pools,
         timeslot
       ) do
     # Zip the authorizer pools with the posterior authorizer queue
     # and use the index to keep track of the core index
-    Enum.zip(authorizer_pools, posterior_authorizer_queue)
+    Enum.zip(authorizer_pools, authorizer_queue_)
     |> Enum.with_index()
     |> Enum.map(fn {{current_pool, queue}, core_index} ->
       # Adjust the current pool by removing the oldest used authorizer
@@ -271,11 +269,11 @@ defmodule System.State do
       selected_queue_element = Enum.at(queue, timeslot_index)
 
       # Add the selected queue element to the adjusted pool
-      new_authorizer_pool = adjusted_pool ++ [selected_queue_element]
+      authorizer_pool_ = adjusted_pool ++ [selected_queue_element]
 
       # Take only the rightmost elements to ensure the pool size is within the limit
       # Adjust to take only if the pool exceeds the max size
-      Enum.take(new_authorizer_pool, -Constants.max_authorizations_items())
+      Enum.take(authorizer_pool_, -Constants.max_authorizations_items())
     end)
   end
 

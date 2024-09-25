@@ -29,7 +29,7 @@ defmodule System.State.EntropyPool do
   end
 
   # Formula (67) v0.3.4
-  def update_current_history(vrf_output, %EntropyPool{n0: n0} = pool) do
+  def calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
     %EntropyPool{pool | n0: Hash.blake2b_256(n0 <> vrf_output)}
   end
 

@@ -196,12 +196,12 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_posterior_validator_statistics, 1, fn _, _, _, _, _ -> {:ok, "mockvalue"} end)
+      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _ -> {:ok, "mockvalue"} end)
 
-      {:ok, new_state} =
+      {:ok, state_} =
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
 
-      assert new_state.validator_statistics == "mockvalue"
+      assert state_.validator_statistics == "mockvalue"
     end
 
     test "don't updates statistics when error", %{state: state, key_pairs: key_pairs} do
@@ -213,16 +213,18 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_posterior_validator_statistics, 1, fn _, _, _, _, _ -> {:error, "message"} end)
+      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _ ->
+        {:error, "message"}
+      end)
 
-      {:error, new_state, _} =
+      {:error, state_, _} =
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
 
-      assert new_state.validator_statistics == state.validator_statistics
+      assert state_.validator_statistics == state.validator_statistics
     end
 
     test "state transition with core report update", %{state: state, key_pairs: key_pairs} do
-      with_original_modules([:posterior_judgements]) do
+      with_original_modules([:calculate_judgements_]) do
         new_core_report = build(:core_report)
         state = %{state | core_reports: [new_core_report | tl(state.core_reports)]}
 

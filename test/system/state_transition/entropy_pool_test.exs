@@ -1,8 +1,8 @@
 defmodule System.StateTransition.EntropyPoolTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Block.Header
   alias System.State.EntropyPool
-  alias Block.{Header}
   alias Util.Hash
   import Mox
   setup :verify_on_exit!
@@ -21,7 +21,7 @@ defmodule System.StateTransition.EntropyPoolTest do
   test "updates entropy with new VRF output" do
     initial_state = %EntropyPool{n0: "initial_entropy", n1: "eta1", n2: "eta2", n3: "eta3"}
 
-    updated_state = EntropyPool.update_current_history("vrf_output", initial_state)
+    updated_state = EntropyPool.calculate_entropy_pool_("vrf_output", initial_state)
 
     assert updated_state.n0 == Hash.blake2b_256("initial_entropy" <> "vrf_output")
     assert updated_state.n1 == initial_state.n1
@@ -79,10 +79,9 @@ defmodule System.StateTransition.EntropyPoolTest do
           SigningContexts.jam_entropy() <> RingVrf.ietf_vrf_output(secret, seal_context)
         )
 
-      {:ok, new_state} = System.State.add_block(state, block)
+      {:ok, state_} = System.State.add_block(state, block)
 
-      assert new_state.entropy_pool.n0 ==
-               Util.Hash.blake2b_256(state.entropy_pool.n0 <> vrf_output)
+      assert state_.entropy_pool.n0 == Util.Hash.blake2b_256(state.entropy_pool.n0 <> vrf_output)
     end
   end
 end

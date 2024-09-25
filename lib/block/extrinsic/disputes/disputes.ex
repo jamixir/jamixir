@@ -142,17 +142,14 @@ defmodule Block.Extrinsic.Disputes do
 
   defp validate_offenses([], _, _, _), do: :ok
 
-  defp validate_offenses(offenses, allowed_validator_keys, posterior_bad_set, offense_type) do
+  defp validate_offenses(offenses, allowed_validator_keys, bad_set_, offense_type) do
     cond do
       # Formula 104
-      !match?(
-        :ok,
-        Collections.validate_unique_and_ordered(offenses, & &1.validator_key)
-      ) ->
+      !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.validator_key)) ->
         {:error, "Invalid order or duplicates in #{offense_type} Ed25519 keys"}
 
       # Formula 101 and 102 -Check: Ensure all offense work report hashes are in the posterior bad set
-      !Enum.all?(offenses, &MapSet.member?(posterior_bad_set, &1.work_report_hash)) ->
+      !Enum.all?(offenses, &MapSet.member?(bad_set_, &1.work_report_hash)) ->
         {:error, "Work report hash in #{offense_type} not in the posterior bad set"}
 
       # Formula 101 and 102 - Check if all offense validator keys are valid

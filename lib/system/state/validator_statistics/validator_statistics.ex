@@ -26,7 +26,7 @@ defmodule System.State.ValidatorStatistics do
           previous_epoch_statistics: list(ValidatorStatistic.t())
         }
 
-  def new_epoc_stats do
+  def empty_epoc_stats do
     Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
   end
 
@@ -35,7 +35,7 @@ defmodule System.State.ValidatorStatistics do
   defstruct current_epoch_statistics: @empty_epoch_stats,
             previous_epoch_statistics: @empty_epoch_stats
 
-  @callback do_posterior_validator_statistics(
+  @callback do_calculate_validator_statistics_(
               Extrinsic.t(),
               integer(),
               __MODULE__.t(),
@@ -43,45 +43,45 @@ defmodule System.State.ValidatorStatistics do
               Header.t()
             ) :: {:ok | :error, __MODULE__.t()}
 
-  def posterior_validator_statistics(
+  def calculate_validator_statistics_(
         %Extrinsic{} = extrinsic,
         timeslot,
         %__MODULE__{} = validator_statistics,
-        new_curr_validators,
+        curr_validators_,
         %Header{} = header
       ) do
     module = Application.get_env(:jamixir, :validator_statistics, __MODULE__)
 
-    module.do_posterior_validator_statistics(
+    module.do_calculate_validator_statistics_(
       extrinsic,
       timeslot,
       validator_statistics,
-      new_curr_validators,
+      curr_validators_,
       header
     )
   end
 
-  def do_posterior_validator_statistics(
+  def do_calculate_validator_statistics_(
         %Extrinsic{} = extrinsic,
         timeslot,
         %__MODULE__{} = validator_statistics,
-        new_curr_validators,
+        curr_validators_,
         %Header{} = header
       ) do
     # Formula (172) v0.3.4
     # Formula (173) v0.3.4
-    {new_current_epoc_stats, new_previous_epoc_stats} =
+    {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
-        {new_epoc_stats(), validator_statistics.current_epoch_statistics}
+        {empty_epoc_stats(), validator_statistics.current_epoch_statistics}
       else
         {validator_statistics.current_epoch_statistics,
          validator_statistics.previous_epoch_statistics}
       end
 
-    case get_author_stats(new_current_epoc_stats, header.block_author_key_index) do
+    case get_author_stats(current_epoc_stats_, header.block_author_key_index) do
       {:ok, author_stats} ->
         # Formula (174) v0.3.4
-        new_author_stats = %{
+        author_stats_ = %{
           author_stats
           | blocks_produced: author_stats.blocks_produced + 1,
             tickets_introduced: author_stats.tickets_introduced + length(extrinsic.tickets),
@@ -93,9 +93,9 @@ defmodule System.State.ValidatorStatistics do
                  |> Enum.sum())
         }
 
-        new_current_epoc_stats =
-          new_current_epoc_stats
-          |> List.replace_at(header.block_author_key_index, new_author_stats)
+        current_epoc_stats_ =
+          current_epoc_stats_
+          |> List.replace_at(header.block_author_key_index, author_stats_)
           |> Enum.with_index()
           |> Enum.map(fn {stats, index} ->
             %{
@@ -109,15 +109,15 @@ defmodule System.State.ValidatorStatistics do
                 reports_guaranteed:
                   author_stats.reports_guaranteed +
                     (Guarantee.reporters_set(extrinsic.guarantees)
-                     |> Enum.any?(&(&1 == Enum.at(index, new_curr_validators)))
+                     |> Enum.any?(&(&1 == Enum.at(index, curr_validators_)))
                      |> if(do: 1, else: 0))
             }
           end)
 
         {:ok,
          %__MODULE__{
-           current_epoch_statistics: new_current_epoc_stats,
-           previous_epoch_statistics: new_previous_epoc_stats
+           current_epoch_statistics: current_epoc_stats_,
+           previous_epoch_statistics: previous_epoc_stats_
          }}
 
       {:error, e} ->

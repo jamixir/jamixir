@@ -72,7 +72,7 @@ defmodule System.State.SafroleTest do
     end
   end
 
-  describe "get_posterior_epoch_slot_sealers/5" do
+  describe "get_epoch_slot_sealers_/5" do
     setup do
       safrole = build(:safrole)
       entropy_pool = build(:entropy_pool)
@@ -86,7 +86,7 @@ defmodule System.State.SafroleTest do
       timeslot = 1
 
       result =
-        Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
+        Safrole.get_epoch_slot_sealers_(header, timeslot, safrole, %EntropyPool{}, nil)
 
       assert result == safrole.current_epoch_slot_sealers
     end
@@ -104,7 +104,7 @@ defmodule System.State.SafroleTest do
       timeslot = 599
 
       result =
-        Safrole.get_posterior_epoch_slot_sealers(header, timeslot, safrole, %EntropyPool{}, nil)
+        Safrole.get_epoch_slot_sealers_(header, timeslot, safrole, %EntropyPool{}, nil)
 
       expected_result = Safrole.outside_in_sequencer(safrole.ticket_accumulator)
       assert result == expected_result
@@ -124,7 +124,7 @@ defmodule System.State.SafroleTest do
       timeslot = 400
 
       result =
-        Safrole.get_posterior_epoch_slot_sealers(
+        Safrole.get_epoch_slot_sealers_(
           header,
           timeslot,
           safrole,
@@ -147,7 +147,7 @@ defmodule System.State.SafroleTest do
       timeslot = 400
 
       result =
-        Safrole.get_posterior_epoch_slot_sealers(
+        Safrole.get_epoch_slot_sealers_(
           header,
           timeslot,
           safrole,

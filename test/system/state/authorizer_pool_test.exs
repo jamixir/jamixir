@@ -3,11 +3,11 @@ defmodule System.StateTransition.AuthorizerPoolTest do
 
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias System.State
   alias Constants
+  alias System.State
 
   setup do
-    posterior_authorizer_queue =
+    authorizer_queue_ =
       Enum.map(1..Constants.core_count(), fn i ->
         Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
       end)
@@ -21,23 +21,23 @@ defmodule System.StateTransition.AuthorizerPoolTest do
 
     {:ok,
      %{
-       posterior_authorizer_queue: posterior_authorizer_queue,
+       authorizer_queue_: authorizer_queue_,
        authorizer_pools: authorizer_pools,
        timeslot: timeslot
      }}
   end
 
   test "removing no authorizer from pool works", %{
-    posterior_authorizer_queue: posterior_authorizer_queue,
+    authorizer_queue_: authorizer_queue_,
     authorizer_pools: authorizer_pools,
     timeslot: timeslot
   } do
     guarantees = []
 
     result =
-      State.posterior_authorizer_pool(
+      State.calculate_authorizer_pool_(
         guarantees,
-        posterior_authorizer_queue,
+        authorizer_queue_,
         authorizer_pools,
         timeslot
       )
@@ -60,7 +60,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   end
 
   test "removing third authorizer from each core works", %{
-    posterior_authorizer_queue: posterior_authorizer_queue,
+    authorizer_queue_: authorizer_queue_,
     authorizer_pools: authorizer_pools,
     timeslot: timeslot
   } do
@@ -70,12 +70,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end)
 
     result =
-      State.posterior_authorizer_pool(
-        guarantees,
-        posterior_authorizer_queue,
-        authorizer_pools,
-        timeslot
-      )
+      State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       Enum.map(1..Constants.core_count(), fn i ->
@@ -95,7 +90,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   end
 
   test "partially filled authorizer pools work", %{
-    posterior_authorizer_queue: posterior_authorizer_queue,
+    authorizer_queue_: authorizer_queue_,
     timeslot: timeslot
   } do
     guarantees = []
@@ -106,12 +101,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end)
 
     result =
-      State.posterior_authorizer_pool(
-        guarantees,
-        posterior_authorizer_queue,
-        authorizer_pools,
-        timeslot
-      )
+      State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       Enum.map(1..Constants.core_count(), fn i ->

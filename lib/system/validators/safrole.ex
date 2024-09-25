@@ -6,22 +6,19 @@ defmodule System.Validators.Safrole do
 
   # Formula (72) v0.3.4
   mockable valid_epoch_marker(
-             %Header{
-               timeslot: header_timeslot,
-               epoch: epoch_marker
-             },
+             %Header{timeslot: timeslot, epoch: epoch_marker},
              state_timeslot,
-             posterior_n1,
-             posterior_pending
+             n1_,
+             pending_
            ) do
-    is_new_epoch = Time.new_epoch?(state_timeslot, header_timeslot)
+    new_epoch? = Time.new_epoch?(state_timeslot, timeslot)
 
     cond do
-      is_new_epoch and
-          epoch_marker == {posterior_n1, Enum.map(posterior_pending, & &1.bandersnatch)} ->
+      new_epoch? and
+          epoch_marker == {n1_, Enum.map(pending_, & &1.bandersnatch)} ->
         :ok
 
-      not is_new_epoch and is_nil(epoch_marker) ->
+      not new_epoch? and is_nil(epoch_marker) ->
         :ok
 
       true ->
@@ -34,14 +31,11 @@ defmodule System.Validators.Safrole do
 
   # Formula (73) v0.3.4
   mockable valid_winning_tickets_marker(
-             %Header{
-               timeslot: header_timeslot,
-               winning_tickets_marker: winning_tickets_marker
-             },
+             %Header{timeslot: timeslot, winning_tickets_marker: winning_tickets_marker},
              state_timeslot,
              %Safrole{ticket_accumulator: gamma_a}
            ) do
-    {new_epoch_index, new_epoch_phase} = Time.epoch_index_and_phase(header_timeslot)
+    {new_epoch_index, new_epoch_phase} = Time.epoch_index_and_phase(timeslot)
     {prev_epoch_index, prev_epoch_phase} = Time.epoch_index_and_phase(state_timeslot)
 
     if new_epoch_index == prev_epoch_index and

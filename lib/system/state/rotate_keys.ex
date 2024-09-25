@@ -6,7 +6,7 @@ defmodule System.State.RotateKeys do
   @doc """
   Formula (58) v0.3.4
   Rotate keys according to the GP specification.
-  returns tuple :{new_pending, new_current, new_prev, new_epoch_root}
+  returns tuple :{pending_, current_, prev_, epoch_root_}
   """
 
   @spec rotate_keys(
@@ -22,7 +22,7 @@ defmodule System.State.RotateKeys do
            Types.bandersnatch_ring_root()}
 
   def rotate_keys(
-        %Header{timeslot: new_timeslot},
+        %Header{timeslot: timeslot_},
         timeslot,
         prev_validators,
         curr_validators,
@@ -30,23 +30,23 @@ defmodule System.State.RotateKeys do
         %Safrole{pending: pending, epoch_root: epoch_root},
         %Judgements{punish: offenders}
       ) do
-    if Time.new_epoch?(timeslot, new_timeslot) do
+    if Time.new_epoch?(timeslot, timeslot_) do
       # Formula (58) -  new epoch - rotate keys
       # {γ_k', κ', λ', γ_z'} = {Φ(ι), γ_k, κ, z}
 
       # γ_k' = Φ(ι) (next -> pending)
-      new_pending = Validator.nullify_offenders(next_validators, offenders)
+      pending_ = Validator.nullify_offenders(next_validators, offenders)
 
       # κ' = γ_k (pending -> current)
-      new_current = pending
+      current_ = pending
 
       # λ' = κ (current -> prev)
-      new_prev = curr_validators
+      prev_ = curr_validators
 
       # γ_z' = z, z = O([kb ∣ k <- γk ])
-      new_epoch_root = RingVrf.create_commitment(Enum.map(new_pending, & &1.bandersnatch))
+      epoch_root_ = RingVrf.create_commitment(Enum.map(pending_, & &1.bandersnatch))
 
-      {new_pending, new_current, new_prev, new_epoch_root}
+      {pending_, current_, prev_, epoch_root_}
     else
       # Formula (58) -  same epoch - no rotation
       # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}

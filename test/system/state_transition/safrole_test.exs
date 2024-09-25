@@ -1,12 +1,10 @@
 defmodule System.StateTransition.SafroleStateTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.RotateKeys
-  alias System.State.EntropyPool
   alias System.State
   alias Block.Header
   alias Block
-  alias System.State.{Safrole, Judgements, Safrole}
+  alias System.State.{EntropyPool, Judgements, RotateKeys, Safrole}
   alias TestHelper, as: TH
   import Mox
   setup :verify_on_exit!
@@ -70,16 +68,16 @@ defmodule System.StateTransition.SafroleStateTest do
     } do
       block = %Block{header: header, extrinsic: %Block.Extrinsic{}}
 
-      {:ok, new_state} = State.add_block(state, block)
+      {:ok, state_} = State.add_block(state, block)
 
       # first and third validators are nullified
-      assert TH.nullified?(Enum.at(new_state.safrole.pending, 0))
-      assert TH.nullified?(Enum.at(new_state.safrole.pending, 2))
+      assert TH.nullified?(Enum.at(state_.safrole.pending, 0))
+      assert TH.nullified?(Enum.at(state_.safrole.pending, 2))
       # second validator is not nullified
-      assert Enum.at(new_state.safrole.pending, 1) == validator2
+      assert Enum.at(state_.safrole.pending, 1) == validator2
 
       # nothing better to test until vrf is implemented
-      assert new_state.safrole.epoch_root != state.safrole.epoch_root
+      assert state_.safrole.epoch_root != state.safrole.epoch_root
     end
   end
 
@@ -118,9 +116,9 @@ defmodule System.StateTransition.SafroleStateTest do
       state: state,
       block: block
     } do
-      {:ok, new_state} = State.add_block(state, block)
+      {:ok, state_} = State.add_block(state, block)
 
-      assert new_state.safrole.current_epoch_slot_sealers ==
+      assert state_.safrole.current_epoch_slot_sealers ==
                state.safrole.current_epoch_slot_sealers
     end
 
@@ -131,10 +129,10 @@ defmodule System.StateTransition.SafroleStateTest do
       header: header,
       key_pairs: key_pairs
     } do
-      # Simulate the expected outcome of rotate_keys (new_current = pending)
+      # Simulate the expected outcome of rotate_keys (current_ = pending)
       expected_current_validators = state.safrole.pending
 
-      # Simulate the expected outcome of get_posterior_epoch_slot_sealers
+      # Simulate the expected outcome of get_epoch_slot_sealers_
       expected_sealers = Safrole.outside_in_sequencer(state.safrole.current_epoch_slot_sealers)
 
       # because of the outside in sequencer
@@ -154,11 +152,11 @@ defmodule System.StateTransition.SafroleStateTest do
       block = %{block | header: header}
 
       # Call add_block
-      {:ok, new_state} = State.add_block(state, block)
+      {:ok, state_} = State.add_block(state, block)
 
       # Assertions
-      assert new_state.safrole.current_epoch_slot_sealers == expected_sealers
-      assert new_state.curr_validators == expected_current_validators
+      assert state_.safrole.current_epoch_slot_sealers == expected_sealers
+      assert state_.curr_validators == expected_current_validators
     end
 
     @tag :slow
@@ -168,14 +166,14 @@ defmodule System.StateTransition.SafroleStateTest do
       state = %{state | timeslot: 499}
       header = build(:header, timeslot: 600)
 
-      new_entropy_pool =
+      entropy_pool_ =
         EntropyPool.rotate_history(
           header,
           state.timeslot,
           state.entropy_pool
         )
 
-      {_, new_curr_validators, _, _} =
+      {_, curr_validators_, _, _} =
         RotateKeys.rotate_keys(
           header,
           state.timeslot,
@@ -186,41 +184,41 @@ defmodule System.StateTransition.SafroleStateTest do
           state.judgements
         )
 
-      posterior_epoch_slot_sealers =
-        Safrole.get_posterior_epoch_slot_sealers(
+      epoch_slot_sealers_ =
+        Safrole.get_epoch_slot_sealers_(
           header,
           state.timeslot,
           state.safrole,
-          new_entropy_pool,
-          new_curr_validators
+          entropy_pool_,
+          curr_validators_
         )
 
-      # find the index in new_curr_validators
-      # such that new_curr_validators[index].bandersnatch = posterior_epoch_slot_sealers[0]
+      # find the index in curr_validators_
+      # such that curr_validators_[index].bandersnatch = epoch_slot_sealers_[0]
       block_auth_index =
         Enum.find_index(
-          new_curr_validators,
-          &(&1.bandersnatch == Enum.at(posterior_epoch_slot_sealers, 0))
+          curr_validators_,
+          &(&1.bandersnatch == Enum.at(epoch_slot_sealers_, 0))
         )
 
       header =
         System.HeaderSeal.seal_header(
           %{header | block_author_key_index: block_auth_index},
-          posterior_epoch_slot_sealers,
+          epoch_slot_sealers_,
           state.entropy_pool,
           Enum.at(key_pairs, block_auth_index)
         )
 
       expected_current_validators = state.safrole.pending
 
-      # Simulate the expected outcome of get_posterior_epoch_slot_sealers
+      # Simulate the expected outcome of get_epoch_slot_sealers_
       expected_sealers =
-        Safrole.fallback_key_sequence(new_entropy_pool.n2, expected_current_validators)
+        Safrole.fallback_key_sequence(entropy_pool_.n2, expected_current_validators)
 
       block = build(:block, header: header)
-      {:ok, new_state} = State.add_block(state, block)
-      assert new_state.safrole.current_epoch_slot_sealers == expected_sealers
-      assert new_state.curr_validators == expected_current_validators
+      {:ok, state_} = State.add_block(state, block)
+      assert state_.safrole.current_epoch_slot_sealers == expected_sealers
+      assert state_.curr_validators == expected_current_validators
     end
   end
 
