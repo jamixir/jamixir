@@ -87,10 +87,10 @@ defmodule Util.MerkleTree do
   # Node function N for the Merkle tree.
   # Formula (297) v0.3.4
   @spec node(list(binary()), (binary() -> Types.hash())) :: binary() | Types.hash()
-  defp node([], _), do: <<0::256>>
-  defp node([single_blob], _), do: single_blob
+  def node([], _), do: <<0::256>>
+  def node([single_blob], _), do: single_blob
 
-  defp node(list_of_blobs, hash_func) do
+  def node(list_of_blobs, hash_func) do
     mid = div(length(list_of_blobs), 2)
     {left, right} = Enum.split(list_of_blobs, mid)
     left_hash = node(left, hash_func)
