@@ -25,7 +25,7 @@ defmodule Constants do
   V
   The total number of validators.
   """
-  def validator_count, do: 1023
+  defmockable(:validator_count, do: 1023)
 
   @doc """
   E
@@ -43,7 +43,7 @@ defmodule Constants do
   C
   number of cores
   """
-  def core_count, do: 341
+  defmockable(:core_count, do: 341)
 
   @doc """
   O

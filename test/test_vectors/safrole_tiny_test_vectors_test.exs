@@ -1,6 +1,8 @@
 defmodule ConstantsMock do
   def epoch_length, do: 12
   def ticket_submission_end, do: 10
+  def validator_count, do: 1023
+  def core_count, do: 341
 end
 
 defmodule SafroleTinyTestVectors do

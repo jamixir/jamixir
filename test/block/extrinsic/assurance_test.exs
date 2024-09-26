@@ -1,3 +1,8 @@
+defmodule AssuranceConstantsMock do
+  def validator_count, do: 6
+  def core_count, do: 2
+end
+
 defmodule Block.Extrinsic.AssuranceTest do
   use ExUnit.Case
   import Jamixir.Factory
@@ -178,6 +183,74 @@ defmodule Block.Extrinsic.AssuranceTest do
 
       assert {:error, "Invalid core reports bits"} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators, [nil])
+    end
+  end
+
+  describe "available_work_reports/2" do
+    setup do
+      # Create mock assurances using factory
+      # 6 validators / 2 cores
+      assurances = [
+        build(:assurance, assurance_values: <<0b10::2>>),
+        build(:assurance, assurance_values: <<0b10::2>>),
+        build(:assurance, assurance_values: <<0b10::2>>),
+        build(:assurance, assurance_values: <<0b11::2>>),
+        build(:assurance, assurance_values: <<0b11::2>>),
+        build(:assurance, assurance_values: <<0b00::2>>)
+      ]
+
+      # Create mock core reports using factory
+      core_reports = [
+        build(:core_report, work_report: build(:work_report, core_index: 0)),
+        build(:core_report, work_report: build(:work_report, core_index: 1))
+      ]
+
+      Application.put_env(:jamixir, Constants, AssuranceConstantsMock)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, Constants)
+      end)
+
+      %{assurances: assurances, core_reports: core_reports}
+    end
+
+    test "returns work reports for cores with sufficient assurances", %{
+      assurances: assurances,
+      core_reports: core_reports
+    } do
+      result = Assurance.available_work_reports(assurances, core_reports)
+
+      assert length(result) == 1
+      assert Enum.map(result, & &1.core_index) == [0]
+    end
+
+    test "returns empty list when no cores have sufficient assurances" do
+      assurances =
+        Enum.map(1..6, fn _ ->
+          build(:assurance, assurance_values: <<0b00::2>>)
+        end)
+
+      result = Assurance.available_work_reports(assurances, [])
+
+      assert result == []
+    end
+
+    test "handles case when all cores have sufficient assurances", %{core_reports: core_reports} do
+      assurances =
+        Enum.map(1..6, fn _ ->
+          build(:assurance, assurance_values: <<0b11::2>>)
+        end)
+
+      result = Assurance.available_work_reports(assurances, core_reports)
+
+      assert length(result) == 2
+      assert Enum.map(result, & &1.core_index) == [0, 1]
+    end
+
+    test "handles empty assurances list" do
+      result = Assurance.available_work_reports([], [])
+
+      assert result == []
     end
   end
 end
