@@ -68,9 +68,9 @@ defmodule Util.MerkleTree do
     x = ceil(length(v) / 2)
 
     if i < x == s do
-      Enum.take(v, -x)
-    else
       Enum.take(v, x)
+    else
+      Enum.take(v, -x)
     end
   end
 
