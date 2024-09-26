@@ -148,7 +148,7 @@ defmodule Util.MerkleTreeTest do
       index = 2
       result = MerkleTree.justification(list, index, &identity_hash/1)
 
-      assert result == ["nodeleafcleafd", "leafa"]
+      assert result == ["nodeleafaleafb", "leafd"]
     end
 
     test "returns correct justification for a list of 3 elements" do
@@ -157,8 +157,8 @@ defmodule Util.MerkleTreeTest do
       result = MerkleTree.justification(list, index, &identity_hash/1)
 
       assert result == [
-               "nodeleafaleafb",
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+               "nodeleafc\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
+               "leafa"
              ]
     end
 
@@ -179,8 +179,8 @@ defmodule Util.MerkleTreeTest do
       result = MerkleTree.justification(list, index, &identity_hash/1, x)
 
       assert result == [
-               "nodenodeleafaleafbnodeleafcleafd",
-               "nodeleafgleafh"
+               "nodenodeleafeleaffnodeleafgleafh",
+               "nodeleafaleafb"
              ]
     end
 
@@ -199,7 +199,7 @@ defmodule Util.MerkleTreeTest do
       full_result = MerkleTree.justification(list, index, &identity_hash/1)
 
       assert result == full_result
-      assert result == ["nodeleafcleafd", "leafa"]
+      assert result == ["nodeleafaleafb", "leafd"]
     end
 
     test "raises ArgumentError for empty list" do
@@ -212,10 +212,9 @@ defmodule Util.MerkleTreeTest do
       result = MerkleTree.justification(list, index, &identity_hash/1)
 
       assert result == [
-               "nodenodeleafaleafbnodeleafcleafd",
-               "node\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-               <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                 0, 0, 0, 0, 0>>
+               "nodenodeleafe\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0node\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
+               "nodeleafaleafb",
+               "leafc"
              ]
     end
   end

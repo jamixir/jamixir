@@ -42,14 +42,14 @@ defmodule Util.MerkleTree do
   def trace(_, _i, _hash_func), do: []
 
   # Formula (301) v0.3.4
-  @spec justification([binary()], integer(), (binary() -> <<_::256>>)) :: [binary()]
+  @spec justification([binary()], integer(), (binary() -> Types.hash())) :: [binary()]
   def justification(v, i, hash_func) do
     trace(c_preprocess(v, hash_func), i, hash_func)
   end
 
   # Formula (302) v0.3.4
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
-  @spec justification([binary()], integer(), (binary() -> <<_::256>>), number()) :: list()
+  @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification([], _, _, _), do: []
 
   def justification(v, i, hash_func, x) when x >= 0 do
