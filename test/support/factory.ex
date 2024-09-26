@@ -380,8 +380,11 @@ defmodule Jamixir.Factory do
         block_author_key_pair
       )
 
+    extrinsic =
+      if(Map.get(attrs, :extrinsic) != nil, do: attrs.extrinsic, else: build(:extrinsic))
+
     %Block{
-      extrinsic: build(:extrinsic),
+      extrinsic: extrinsic,
       header: header
     }
   end

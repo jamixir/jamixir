@@ -4,6 +4,7 @@ defmodule System.State.CoreReportTest do
   alias Util.Hash
   use ExUnit.Case
   import Jamixir.Factory
+  import OriginalModules
 
   describe "encode/1" do
     test "encode core report smoke test" do
@@ -70,6 +71,20 @@ defmodule System.State.CoreReportTest do
 
       assert {:error, :invalid_work_report_size} ==
                CoreReport.calculate_core_reports_(core_reports, [guarantee], [], 0)
+    end
+  end
+
+  describe "process_availability/3" do
+    test "use core reports intermediate when no core reports is member of W" do
+      # random core reports
+      core_reports = build_list(3, :core_report)
+      # random core reports intermediate
+      i_core_reports = build_list(3, :core_report)
+
+      with_original_modules([:process_availability]) do
+        assert CoreReport.process_availability(core_reports, i_core_reports, [])
+               |> Enum.take(3) == i_core_reports
+      end
     end
   end
 end

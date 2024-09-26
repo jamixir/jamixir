@@ -86,24 +86,25 @@ defmodule System.State do
            RecentHistory.update_latest_state_root_(state.recent_history, h),
          # δ† Formula (24) v0.3.4
          services_intermediate =
-           State.Services.process_preimages(state.services, Map.get(e, :preimages), timeslot_),
+           State.Services.process_preimages(state.services, e.preimages, timeslot_),
          # ψ' Formula (23) v0.3.4
          {:ok, judgements_, bad_wonky_verdicts} <-
-           Judgements.calculate_judgements_(h, Map.get(e, :disputes), state),
+           Judgements.calculate_judgements_(h, e.disputes, state),
          # ρ† Formula (25) v0.3.4
          core_reports_intermediate_1 =
            State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
          # ρ‡ Formula (26) v0.3.4
          core_reports_intermediate_2 =
            State.CoreReport.process_availability(
+             state.core_reports,
              core_reports_intermediate_1,
-             Map.get(e, :availability)
+             e.assurances
            ),
          # ρ' Formula (27) v0.3.4
          {:ok, core_reports_} <-
            State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
-             Map.get(e, :guarantees),
+             e.guarantees,
              state.curr_validators,
              timeslot_
            ),
@@ -111,7 +112,7 @@ defmodule System.State do
          {_services_, _privileged_services, _next_validators_, authorizer_queue_,
           beefy_commitment_map} =
            State.Accumulation.accumulate(
-             Map.get(e, :availability),
+             e.assurances,
              core_reports_,
              services_intermediate,
              state.privileged_services,
@@ -121,7 +122,7 @@ defmodule System.State do
          # α' Formula (29) v0.3.4
          authorizer_pool_ =
            calculate_authorizer_pool_(
-             Map.get(e, :guarantees),
+             e.guarantees,
              authorizer_queue_,
              state.authorizer_pool,
              h.timeslot
@@ -130,7 +131,7 @@ defmodule System.State do
          recent_history_ =
            RecentHistory.calculate_recent_history_(
              h,
-             Map.get(e, :guarantees),
+             e.guarantees,
              initial_recent_history,
              beefy_commitment_map
            ),
