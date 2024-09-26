@@ -10,6 +10,7 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.CoreReport
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
+  use SelectiveMock
 
   # Formula (125) v0.3.4
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
@@ -30,7 +31,12 @@ defmodule Block.Extrinsic.Assurance do
           signature: Types.ed25519_signature()
         }
 
-  def validate_assurances(assurances, parent_hash, curr_validators_, core_reports_intermediate_1) do
+  mockable validate_assurances(
+             assurances,
+             parent_hash,
+             curr_validators_,
+             core_reports_intermediate_1
+           ) do
     # Formula (126) v0.3.4
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
          # Formula (127) v0.3.4
@@ -46,9 +52,16 @@ defmodule Block.Extrinsic.Assurance do
     end
   end
 
+  def mock(:validate_assurances, _), do: :ok
+
+  def mock(:available_work_reports, _) do
+    0..(Constants.core_count() - 1)
+    |> Enum.map(fn i -> %WorkReport{core_index: i} end)
+  end
+
   # Formula (131) W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
-  def available_work_reports(assurances, core_reports_intermediate_1) do
+  mockable available_work_reports(assurances, core_reports_intermediate_1) do
     0..(Constants.core_count() - 1)
     |> Enum.filter(fn c ->
       Enum.sum(for a <- assurances, do: Utils.get_bit(a.assurance_values, c)) >

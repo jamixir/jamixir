@@ -4,6 +4,7 @@ defmodule System.StateTest do
   import System.State
   import OriginalModules
   import Mox
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias System.State
@@ -239,6 +240,31 @@ defmodule System.StateTest do
 
         assert hd(new_state.core_reports) == new_core_report
         assert tl(new_state.core_reports) == tl(state.core_reports)
+      end
+    end
+
+    test "state transition filter out available reports", %{state: state, key_pairs: key_pairs} do
+      core_report = build(:core_report, work_report: %WorkReport{core_index: 0})
+      state = %{state | core_reports: [core_report]}
+
+      extrinsic =
+        build(
+          :extrinsic,
+          assurances: [build(:assurance, validator_index: 0, assurance_values: <<0b1111::4>>)]
+        )
+
+      with_original_modules([:process_availability]) do
+        {:ok, new_state} =
+          State.add_block(
+            state,
+            build(:safrole_block,
+              state: state,
+              key_pairs: key_pairs,
+              extrinsic: extrinsic
+            )
+          )
+
+        assert Enum.all?(new_state.core_reports, &(&1 == nil))
       end
     end
   end

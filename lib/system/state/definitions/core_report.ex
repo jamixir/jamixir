@@ -4,9 +4,11 @@ defmodule System.State.CoreReport do
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
   alias Util.Hash
+  use SelectiveMock
 
   @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
 
@@ -29,9 +31,25 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  def process_availability(core_reports, _availability) do
-    # TODO: Implement the logic to process availability
-    core_reports
+  # ρ‡ Formula (26) v0.3.4
+  mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
+    w =
+      Assurance.available_work_reports(assurances, core_reports_intermediate_1)
+      |> MapSet.new()
+
+    # Formula (132) v0.3.4
+    0..(Constants.core_count() - 1)
+    |> Enum.map(fn core_id ->
+      cr = Enum.at(core_reports, core_id)
+
+      if cr != nil and MapSet.member?(w, cr.work_report),
+        do: nil,
+        else: Enum.at(core_reports_intermediate_1, core_id)
+    end)
+  end
+
+  def mock(:process_availability, context) do
+    Keyword.get(context, :core_reports)
   end
 
   @doc """
