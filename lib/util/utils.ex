@@ -39,4 +39,16 @@ defmodule Utils do
     |> Enum.map(&(bnot(&1) &&& 0xFF))
     |> :binary.list_to_bin()
   end
+
+  def get_bit(bitstring, index)
+      when is_bitstring(bitstring) and is_integer(index) and index >= 0 do
+    bit_size = bit_size(bitstring)
+
+    if index >= bit_size do
+      0
+    else
+      <<_::size(index), bit::1, _::bitstring>> = bitstring
+      bit
+    end
+  end
 end

@@ -46,4 +46,48 @@ defmodule UtilsTest do
       assert Utils.hex_to_binary(:atom) == :atom
     end
   end
+
+  describe "get_bit/2" do
+    test "returns correct bit for a single byte" do
+      byte = <<0b10101010>>
+      assert Utils.get_bit(byte, 0) == 1
+      assert Utils.get_bit(byte, 1) == 0
+      assert Utils.get_bit(byte, 2) == 1
+      assert Utils.get_bit(byte, 3) == 0
+      assert Utils.get_bit(byte, 4) == 1
+      assert Utils.get_bit(byte, 5) == 0
+      assert Utils.get_bit(byte, 6) == 1
+      assert Utils.get_bit(byte, 7) == 0
+    end
+
+    test "returns correct bit for multiple bytes" do
+      bytes = <<0b10101010, 0b11110000>>
+      assert Utils.get_bit(bytes, 7) == 0
+      assert Utils.get_bit(bytes, 8) == 1
+      assert Utils.get_bit(bytes, 9) == 1
+      assert Utils.get_bit(bytes, 15) == 0
+    end
+
+    test "works with larger bitstrings" do
+      large_bitstring = :crypto.strong_rand_bytes(100)
+      # 100 bytes * 8 bits - 1
+      bit_index = :rand.uniform(799)
+      result = Utils.get_bit(large_bitstring, bit_index)
+      assert result in [0, 1]
+    end
+
+    test "returns 0 for bits beyond the bitstring length" do
+      byte = <<0b11111111>>
+      assert Utils.get_bit(byte, 8) == 0
+      assert Utils.get_bit(byte, 100) == 0
+    end
+
+    test "works with non-byte-aligned bitstrings" do
+      bitstring = <<0b1010::4>>
+      assert Utils.get_bit(bitstring, 0) == 1
+      assert Utils.get_bit(bitstring, 1) == 0
+      assert Utils.get_bit(bitstring, 2) == 1
+      assert Utils.get_bit(bitstring, 3) == 0
+    end
+  end
 end

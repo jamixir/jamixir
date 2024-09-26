@@ -6,6 +6,8 @@ defmodule Block.Extrinsic.Assurance do
   Each assurance is a sequence of binary values (i.e., a bitstring), one per core,
   together with a signature and the index of the validator who is assuring.
   """
+  alias Block.Extrinsic.Guarantee.WorkReport
+  alias System.State.CoreReport
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
 
@@ -42,6 +44,17 @@ defmodule Block.Extrinsic.Assurance do
       false -> {:error, "Invalid assurance"}
       {:error, e} -> {:error, e}
     end
+  end
+
+  # Formula (131) W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
+  def available_work_reports(assurances, core_reports_intermediate_1) do
+    0..(Constants.core_count() - 1)
+    |> Enum.filter(fn c ->
+      Enum.sum(for a <- assurances, do: Utils.get_bit(a.assurance_values, c)) >
+        2 * Constants.validator_count() / 3
+    end)
+    |> Enum.map(fn c -> Enum.at(core_reports_intermediate_1, c).work_report end)
   end
 
   # Formula (130) v0.3.4
