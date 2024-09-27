@@ -19,9 +19,12 @@ defmodule Mockable do
   defmacro defmockable(name) when is_atom(name) do
     quote bind_quoted: [name: name] do
       def unquote(name)() do
-        case get_mock_module() do
-          __MODULE__ -> apply(__MODULE__, :"#{unquote(name)}_impl", [])
-          mock_module -> apply(mock_module, unquote(name), [])
+        mock_module = get_mock_module()
+
+        if mock_module != __MODULE__ and function_exported?(mock_module, unquote(name), 0) do
+          apply(mock_module, unquote(name), [])
+        else
+          apply(__MODULE__, :"#{unquote(name)}_impl", [])
         end
       end
     end

@@ -62,12 +62,15 @@ defmodule Block.Extrinsic.Assurance do
   # Formula (131) W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
+    threshold = 2 * Constants.validator_count() / 3
+
     0..(Constants.core_count() - 1)
-    |> Enum.filter(fn c ->
-      Enum.sum(for a <- assurances, do: Utils.get_bit(a.assurance_values, c)) >
-        2 * Constants.validator_count() / 3
+    |> Stream.filter(fn c ->
+      Stream.map(assurances, &Utils.get_bit(&1.assurance_values, c))
+      |> Enum.sum() > threshold
     end)
-    |> Enum.map(fn c -> Enum.at(core_reports_intermediate_1, c).work_report end)
+    |> Stream.map(&Enum.at(core_reports_intermediate_1, &1).work_report)
+    |> Enum.to_list()
   end
 
   # Formula (130) v0.3.4
