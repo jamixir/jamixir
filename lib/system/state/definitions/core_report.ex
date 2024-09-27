@@ -38,13 +38,12 @@ defmodule System.State.CoreReport do
       |> MapSet.new()
 
     # Formula (132) v0.3.4
-    0..(Constants.core_count() - 1)
-    |> Enum.map(fn core_id ->
-      cr = Enum.at(core_reports, core_id)
-
-      if cr != nil and MapSet.member?(w, cr.work_report),
-        do: nil,
-        else: Enum.at(core_reports_intermediate_1, core_id)
+    Enum.zip(core_reports, core_reports_intermediate_1)
+    |> Enum.map(fn
+      {cr, intermediate} ->
+        if MapSet.member?(w, cr.work_report),
+         do: nil,
+         else: intermediate
     end)
   end
 
