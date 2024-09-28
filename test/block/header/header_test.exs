@@ -1,46 +1,12 @@
 defmodule Block.HeaderTest do
   use ExUnit.Case
-  import TestHelper
   import Jamixir.Factory
 
   alias Block.Header
   alias System.State
   alias Codec.{NilDiscriminator, VariableSize}
-
-  describe "valid_header?/1" do
-    test "valid_header?/1 returns true when parent_hash is nil" do
-      header = %Header{parent_hash: nil, timeslot: past_timeslot()}
-      assert Header.valid_header?(Storage.new(), header)
-    end
-
-    test "valid_header?/1 returns false when parent header is not found" do
-      header = %Header{parent_hash: "parent_hash", timeslot: past_timeslot()}
-
-      assert !Header.valid_header?(Storage.new(), header)
-    end
-
-    test "valid_header?/1 returns false when timeslot is not greater than parent header's timeslot" do
-      header = %Header{parent_hash: :parent, timeslot: 2}
-      s1 = Storage.put(Storage.new(), :parent, %Header{timeslot: 1})
-      s2 = Storage.put(s1, :header, header)
-
-      assert Header.valid_header?(s2, header)
-    end
-
-    test "valid_header?/1 returns false when timeslot is in the future" do
-      header = %Header{parent_hash: :parent, timeslot: 2}
-      s1 = Storage.put(Storage.new(), :parent, %Header{timeslot: 3})
-      s2 = Storage.put(s1, :header, header)
-
-      assert !Header.valid_header?(s2, header)
-    end
-
-    test "valid_header?/1 returns false if timeslot is bigger now" do
-      header = %Header{parent_hash: nil, timeslot: future_timeslot()}
-
-      assert !Header.valid_header?(Storage.new(), header)
-    end
-  end
+  import Mox
+  setup :verify_on_exit!
 
   setup do
     {:ok, header: %Header{block_seal: <<123::256>>}}
@@ -60,6 +26,15 @@ defmodule Block.HeaderTest do
 
   describe "validate/2" do
     setup do
+      Application.put_env(:jamixir, :original_modules, [
+        Block.Header,
+        Util.Time
+      ])
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :original_modules)
+      end)
+
       {:ok, header: %Header{timeslot: 100}, state: %State{timeslot: 99}}
     end
 
@@ -79,6 +54,34 @@ defmodule Block.HeaderTest do
 
       assert {:error, message} = Header.validate(header, state)
       assert String.starts_with?(message, "Invalid block time: block_time")
+    end
+  end
+
+  describe "validate/2 with actual Storage" do
+    setup do
+      header = %Header{timeslot: 100}
+      state = %State{timeslot: 99}
+      {:ok, header: header, state: state}
+    end
+
+    test "returns :ok when parent hash exists in storage", %{
+      header: header,
+      state: state
+    } do
+      {:ok, parent_hash} = Storage.put(%Header{timeslot: 99})
+      header = %{header | parent_hash: parent_hash}
+
+      # Ensure the parent hash exists in storage
+      assert Storage.exists?(parent_hash)
+
+      assert :ok = Header.validate(header, state)
+    end
+
+    test "returns error when parent hash is not found in storage", %{header: header, state: state} do
+      # Use a non-existent parent hash
+      header = %{header | parent_hash: <<2::256>>}
+
+      assert {:error, "Parent hash not found in storage"} = Header.validate(header, state)
     end
   end
 

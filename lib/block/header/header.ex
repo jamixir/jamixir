@@ -63,18 +63,22 @@ defmodule Block.Header do
   ]
 
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
-  def validate(%__MODULE__{timeslot: current_timeslot} = header, %System.State{} = state) do
-    with :ok <- Time.validate_timeslot_order(state.timeslot, current_timeslot),
-         :ok <- Time.validate_block_timeslot(current_timeslot),
+  def validate(%__MODULE__{} = h, %System.State{} = s) do
+    with :ok <- Time.validate_timeslot_order(s.timeslot, h.timeslot),
+         :ok <- Time.validate_block_timeslot(h.timeslot),
          :ok <-
            Validators.Safrole.valid_winning_tickets_marker(
-             header,
-             state.timeslot,
-             state.safrole
-           ) do
+             h,
+             s.timeslot,
+             s.safrole
+           ),
+           true <- Storage.exists?(h.parent_hash) do
       :ok
     else
-      {:error, reason} -> {:error, reason}
+      false ->
+      {:error, "Parent hash not found in storage"}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
