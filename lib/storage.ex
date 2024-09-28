@@ -3,7 +3,6 @@ defmodule Storage do
   alias Codec.Encoder
   alias Util.Hash
 
-  require Logger
   use SelectiveMock
 
   @table_name :header_store
@@ -41,15 +40,9 @@ defmodule Storage do
 
   def get_latest do
     case :mnesia.transaction(fn -> :mnesia.last(@table_name) end) do
-      {:atomic, :"$end_of_table"} ->
-        nil
-
-      {:atomic, key} ->
-        key
-
-      {:aborted, reason} ->
-        Logger.error("Failed to get latest finalized block header: #{inspect(reason)}")
-        nil
+      {:atomic, :"$end_of_table"} -> nil
+      {:atomic, key} -> key
+      {:aborted, _reason} -> nil
     end
   end
 
@@ -64,15 +57,9 @@ defmodule Storage do
            record_name: @table_name,
            type: :ordered_set
          ) do
-      {:atomic, :ok} ->
-        :ok
-
-      {:aborted, {:already_exists, @table_name}} ->
-        :ok
-
-      error ->
-        Logger.error("Failed to create Mnesia table: #{inspect(error)}")
-        {:error, error}
+      {:atomic, :ok} -> :ok
+      {:aborted, {:already_exists, @table_name}} -> :ok
+      error -> {:error, error}
     end
   end
 
@@ -81,11 +68,8 @@ defmodule Storage do
 
     if count >= Constants.max_age() do
       case :mnesia.first(@table_name) do
-        :"$end_of_table" ->
-          Logger.warning("No blocks found to delete")
-
-        key ->
-          :mnesia.delete({@table_name, key})
+        :"$end_of_table" -> :ok
+        key -> :mnesia.delete({@table_name, key})
       end
     end
   end
@@ -94,15 +78,9 @@ defmodule Storage do
     case :mnesia.transaction(fn ->
            :mnesia.match_object({@table_name, {:"$1", hash}, :"$2"})
          end) do
-      {:atomic, [{@table_name, {_, ^hash}, _}]} ->
-        true
-
-      {:atomic, []} ->
-        false
-
-      {:aborted, reason} ->
-        Logger.error("Failed to check hash existence: #{inspect(reason)}")
-        false
+      {:atomic, [{@table_name, {_, ^hash}, _}]} -> true
+      {:atomic, []} -> false
+      {:aborted, _reason} -> false
     end
   end
 
