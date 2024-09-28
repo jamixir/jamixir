@@ -199,13 +199,23 @@ defmodule System.State do
            ),
          entropy_pool_ =
            EntropyPool.calculate_entropy_pool_(vrf_output, rotated_history_entropy_pool),
+         {:ok, reporters_set} <-
+           Guarantee.reporters_set(
+             e.guarantees,
+             entropy_pool_,
+             timeslot_,
+             curr_validators_,
+             prev_validators_,
+             Judgements.union_all(judgements_)
+           ),
          {:ok, validator_statistics_} <-
            ValidatorStatistics.calculate_validator_statistics_(
              e,
              state.timeslot,
              state.validator_statistics,
              curr_validators_,
-             h
+             h,
+             reporters_set
            ) do
       {:ok,
        %System.State{

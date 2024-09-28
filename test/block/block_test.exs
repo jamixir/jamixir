@@ -49,7 +49,7 @@ defmodule BlockTest do
     test "returns error when guarantee validation fails", %{state: state} do
       # Invalid credential length
       invalid_extrinsic =
-        build(:extrinsic, guarantees: [build(:guarantee, credential: [{1, <<1::512>>}])])
+        build(:extrinsic, guarantees: [build(:guarantee, credentials: [{1, <<1::512>>}])])
 
       invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
       assert {:error, _} = Block.validate(invalid_block, state)

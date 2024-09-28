@@ -39,12 +39,12 @@ defmodule Block.Extrinsic.GuarantorTest do
     end
   end
 
-  describe "guarantor_assignements/4" do
-    test "guarantor_assignements smoke test" do
+  describe "guarantors/4" do
+    test "guarantors smoke test" do
       validators = build_list(Constants.validator_count(), :validator)
 
-      {indexes, keys} =
-        Guarantor.guarantor_assignements(Hash.random(), 2, validators, MapSet.new())
+      %Guarantor{assigned_cores: indexes, validators: keys} =
+        Guarantor.guarantors(Hash.random(), 2, validators, MapSet.new())
 
       assert length(indexes) == Constants.validator_count()
       assert MapSet.difference(MapSet.new(validators), MapSet.new(keys)) == MapSet.new([])
@@ -53,11 +53,11 @@ defmodule Block.Extrinsic.GuarantorTest do
                0..(Constants.core_count() - 1) |> Enum.flat_map(&[&1, &1, &1])
     end
 
-    test "guarantor_assignements nullify offender" do
+    test "guarantors nullify offender" do
       [v1 | other] = build_list(3, :validator)
 
-      {_, [key1 | _]} =
-        Guarantor.guarantor_assignements(
+      %Guarantor{validators: [key1 | _]} =
+        Guarantor.guarantors(
           Hash.random(),
           2,
           [v1 | other],
@@ -68,25 +68,25 @@ defmodule Block.Extrinsic.GuarantorTest do
     end
   end
 
-  describe "previous_guarantor_assignements/6" do
-    test "previous_guarantor_assignements previous rotation false" do
+  describe "prev_guarantors/6" do
+    test "prev_guarantors previous rotation false" do
       {n2, n3} = {Hash.random(), Hash.random()}
       k = build_list(2, :validator)
       p = build_list(2, :validator)
       o = MapSet.new()
 
-      assert Guarantor.previous_guarantor_assignements(n2, n3, 100, k, p, o) ==
-               Guarantor.guarantor_assignements(n2, 100 - Constants.rotation_period(), k, o)
+      assert Guarantor.prev_guarantors(n2, n3, 100, k, p, o) ==
+               Guarantor.guarantors(n2, 100 - Constants.rotation_period(), k, o)
     end
 
-    test "previous_guarantor_assignements previous rotation true" do
+    test "prev_guarantors previous rotation true" do
       {n2, n3} = {Hash.random(), Hash.random()}
       k = build_list(2, :validator)
       p = build_list(2, :validator)
       o = MapSet.new()
 
-      assert Guarantor.previous_guarantor_assignements(n2, n3, 605, k, p, o) ==
-               Guarantor.guarantor_assignements(n3, 605 - Constants.rotation_period(), p, o)
+      assert Guarantor.prev_guarantors(n2, n3, 605, k, p, o) ==
+               Guarantor.guarantors(n3, 605 - Constants.rotation_period(), p, o)
     end
   end
 end
