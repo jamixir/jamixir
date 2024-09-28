@@ -52,7 +52,8 @@ defmodule System.State.ValidatorStatisticsTest do
           500,
           validator_statistics,
           [],
-          build(:header, timeslot: 1000)
+          build(:header, timeslot: 1000),
+          MapSet.new()
         )
 
       assert validator_stats_.previous_epoch_statistics == current_stats
@@ -73,7 +74,8 @@ defmodule System.State.ValidatorStatisticsTest do
           1,
           validator_statistics,
           [],
-          build(:header, timeslot: 2)
+          build(:header, timeslot: 2),
+          MapSet.new()
         )
 
       assert validator_stats_.previous_epoch_statistics == previous_stats
@@ -92,7 +94,8 @@ defmodule System.State.ValidatorStatisticsTest do
           1,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1, timeslot: 2)
+          build(:header, block_author_key_index: 1, timeslot: 2),
+          MapSet.new()
         )
 
       updated_blocks_produced =
@@ -120,7 +123,8 @@ defmodule System.State.ValidatorStatisticsTest do
           author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: author_key_index, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2),
+          MapSet.new()
         )
 
       assert Enum.with_index(
@@ -147,7 +151,8 @@ defmodule System.State.ValidatorStatisticsTest do
           author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: author_key_index, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2),
+          MapSet.new()
         )
 
       assert Enum.with_index(
@@ -174,7 +179,8 @@ defmodule System.State.ValidatorStatisticsTest do
           author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: author_key_index, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2),
+          MapSet.new()
         )
 
       assert Enum.with_index(
@@ -201,7 +207,8 @@ defmodule System.State.ValidatorStatisticsTest do
           author_key_index,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: author_key_index, timeslot: 2)
+          build(:header, block_author_key_index: author_key_index, timeslot: 2),
+          MapSet.new()
         )
 
       assert Enum.with_index(
@@ -223,7 +230,8 @@ defmodule System.State.ValidatorStatisticsTest do
           0,
           validator_statistics,
           [],
-          build(:header, block_author_key_index: 1000)
+          build(:header, block_author_key_index: 1000),
+          MapSet.new()
         )
 
       assert msg == :author_stats_not_found

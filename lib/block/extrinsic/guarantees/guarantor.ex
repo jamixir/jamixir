@@ -11,12 +11,12 @@ defmodule Block.Extrinsic.Guarantor do
 
   @type t :: %__MODULE__{
           assigned_cores: list(non_neg_integer()),
-          validator_keys: list(Types.ed25519_key())
+          validators: list(Types.ed25519_key())
         }
 
   defstruct assigned_cores: [],
             # d
-            validator_keys: []
+            validators: []
 
   # Formula (134) v0.3.4
   def rotate(list, n) do
@@ -32,33 +32,23 @@ defmodule Block.Extrinsic.Guarantor do
   end
 
   # Formula (136) v0.3.4
-  def guarantor_assignements(
-        post_n2,
-        post_timestamp,
-        post_current_validators,
-        offenders
-      ) do
-    {permute(post_n2, post_timestamp),
-     Validator.nullify_offenders(post_current_validators, offenders)}
+  def guarantors(n2_, time_stamp_, curr_validators_, offenders) do
+    %__MODULE__{
+      assigned_cores: permute(n2_, time_stamp_),
+      validators: Validator.nullify_offenders(curr_validators_, offenders)
+    }
   end
 
   # Formula (137) v0.3.4
-  def previous_guarantor_assignements(
-        post_n2,
-        post_n3,
-        post_timestamp,
-        post_current_validators,
-        post_previous_validators,
-        offenders
-      ) do
+  def prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders) do
     {e, k} =
-      if div(post_timestamp - Constants.rotation_period(), Constants.epoch_length()) ==
-           div(post_timestamp, Constants.epoch_length()) do
-        {post_n2, post_current_validators}
+      if div(t_ - Constants.rotation_period(), Constants.epoch_length()) ==
+           div(t_, Constants.epoch_length()) do
+        {n2_, curr_validators_}
       else
-        {post_n3, post_previous_validators}
+        {n3_, prev_validators_}
       end
 
-    guarantor_assignements(e, post_timestamp - Constants.rotation_period(), k, offenders)
+    guarantors(e, t_ - Constants.rotation_period(), k, offenders)
   end
 end

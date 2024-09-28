@@ -1,20 +1,20 @@
-defmodule Block.ExtrinsicTest do
+defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
 
   alias Block.Extrinsic.{Guarantee, Guarantee.WorkReport}
 
-  describe "guarantees/1" do
+  describe "validate/1" do
     test "returns :ok for valid guarantees" do
       assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
                },
                %Guarantee{
                  work_report: %WorkReport{core_index: 2},
                  timeslot: 100,
-                 credential: [{1, <<3::512>>}, {2, <<4::512>>}, {3, <<5::512>>}]
+                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}, {3, <<5::512>>}]
                }
              ]) == :ok
     end
@@ -24,12 +24,12 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 2},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
                },
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<3::512>>}, {2, <<4::512>>}]
+                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
                }
              ]) ==
                {:error, "Guarantees not ordered by core_index"}
@@ -40,12 +40,12 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
                },
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<3::512>>}, {2, <<4::512>>}]
+                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
                }
              ]) ==
                {:error, "Duplicate core_index found in guarantees"}
@@ -56,7 +56,7 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}]
+                 credentials: [{1, <<1::512>>}]
                }
              ]) ==
                {:error, "Invalid credentials in one or more guarantees"}
@@ -67,7 +67,7 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{2, <<1::512>>}, {1, <<2::512>>}]
+                 credentials: [{2, <<1::512>>}, {1, <<2::512>>}]
                }
              ]) ==
                {:error, "Invalid credentials in one or more guarantees"}
@@ -78,7 +78,7 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}, {1, <<2::512>>}]
+                 credentials: [{1, <<1::512>>}, {1, <<2::512>>}]
                }
              ]) ==
                {:error, "Invalid credentials in one or more guarantees"}
@@ -93,7 +93,7 @@ defmodule Block.ExtrinsicTest do
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
-                 credential: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
                }
              ]) == :ok
     end

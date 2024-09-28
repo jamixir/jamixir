@@ -1,4 +1,5 @@
 defmodule Block do
+  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic
   alias Block.Header
   alias System.State

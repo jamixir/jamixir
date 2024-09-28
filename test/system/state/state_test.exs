@@ -197,7 +197,9 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _ -> {:ok, "mockvalue"} end)
+      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _, _ ->
+        {:ok, "mockvalue"}
+      end)
 
       {:ok, state_} =
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))
@@ -214,7 +216,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _ ->
+      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _, _ ->
         {:error, "message"}
       end)
 

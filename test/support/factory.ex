@@ -421,11 +421,11 @@ defmodule Jamixir.Factory do
     %Guarantee{
       work_report: build(:work_report),
       timeslot: 5,
-      credential: credential_list()
+      credentials: credentials_list()
     }
   end
 
-  defp credential_list do
+  defp credentials_list do
     num_credentials = Enum.random(2..3)
 
     1..num_credentials

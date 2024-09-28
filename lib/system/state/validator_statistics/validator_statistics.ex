@@ -16,7 +16,6 @@ defmodule System.State.ValidatorStatistics do
   - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
   - `availability_assurances` (`a`): The number of availability assurances made by the validator.
   """
-  alias Block.Extrinsic.Guarantee
   alias Block.{Extrinsic, Header}
   alias System.State.{Validator, ValidatorStatistic}
   alias Util.Time
@@ -40,7 +39,8 @@ defmodule System.State.ValidatorStatistics do
               integer(),
               __MODULE__.t(),
               list(Validator.t()),
-              Header.t()
+              Header.t(),
+              list(Types.ed25519_key())
             ) :: {:ok | :error, __MODULE__.t()}
 
   def calculate_validator_statistics_(
@@ -48,7 +48,8 @@ defmodule System.State.ValidatorStatistics do
         timeslot,
         %__MODULE__{} = validator_statistics,
         curr_validators_,
-        %Header{} = header
+        %Header{} = header,
+        reporters_set
       ) do
     module = Application.get_env(:jamixir, :validator_statistics, __MODULE__)
 
@@ -57,7 +58,8 @@ defmodule System.State.ValidatorStatistics do
       timeslot,
       validator_statistics,
       curr_validators_,
-      header
+      header,
+      reporters_set
     )
   end
 
@@ -66,7 +68,8 @@ defmodule System.State.ValidatorStatistics do
         timeslot,
         %__MODULE__{} = validator_statistics,
         curr_validators_,
-        %Header{} = header
+        %Header{} = header,
+        reporters_set
       ) do
     # Formula (172) v0.3.4
     # Formula (173) v0.3.4
@@ -108,7 +111,7 @@ defmodule System.State.ValidatorStatistics do
                 # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
                 reports_guaranteed:
                   author_stats.reports_guaranteed +
-                    (Guarantee.reporters_set(extrinsic.guarantees)
+                    (reporters_set
                      |> Enum.any?(&(&1 == Enum.at(index, curr_validators_)))
                      |> if(do: 1, else: 0))
             }
