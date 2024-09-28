@@ -35,10 +35,13 @@ defmodule StorageTest do
   end
 
   test "get_parent returns parent or error" do
-    {:ok, hash1} = Storage.put( %Header{timeslot: 1, parent_hash: <<0::256>>})
+    {:ok, hash1} = Storage.put(%Header{timeslot: 1, parent_hash: <<0::256>>})
 
-    assert {:ok, %Header{timeslot: 1}} = Storage.get_parent(%Header{timeslot: 2, parent_hash: hash1})
-    assert {:error, "Parent header not found"} = Storage.get_parent(%Header{timeslot: 3, parent_hash: "non_existing"})
+    assert {:ok, %Header{timeslot: 1}} =
+             Storage.get_parent(%Header{timeslot: 2, parent_hash: hash1})
+
+    assert {:error, "Parent header not found"} =
+             Storage.get_parent(%Header{timeslot: 3, parent_hash: "non_existing"})
   end
 
   test "get_latest returns latest key or nil" do
@@ -59,7 +62,11 @@ defmodule StorageTest do
       {:ok, _} = Storage.put(header)
     end)
 
-    extra_header = %Header{timeslot: Constants.max_age() + 1, parent_hash: <<(Constants.max_age() + 1)::256>>}
+    extra_header = %Header{
+      timeslot: Constants.max_age() + 1,
+      parent_hash: <<Constants.max_age() + 1::256>>
+    }
+
     {:ok, extra_hash} = Storage.put(extra_header)
 
     assert :mnesia.table_info(Storage.table_name(), :size) == Constants.max_age()

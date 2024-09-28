@@ -92,10 +92,14 @@ defmodule Storage do
 
   mockable exists?(hash) do
     case :mnesia.transaction(fn ->
-           :mnesia.match_object({@table_name, {:'$1', hash}, :'$2'})
+           :mnesia.match_object({@table_name, {:"$1", hash}, :"$2"})
          end) do
-      {:atomic, [{@table_name, {_, ^hash}, _}]} -> true
-      {:atomic, []} -> false
+      {:atomic, [{@table_name, {_, ^hash}, _}]} ->
+        true
+
+      {:atomic, []} ->
+        false
+
       {:aborted, reason} ->
         Logger.error("Failed to check hash existence: #{inspect(reason)}")
         false

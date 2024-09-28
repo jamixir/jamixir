@@ -76,7 +76,8 @@ defmodule Block.Header do
       :ok
     else
       false ->
-      {:error, "Parent hash not found in storage"}
+        {:error, "Parent hash not found in storage"}
+
       {:error, reason} ->
         {:error, reason}
     end
