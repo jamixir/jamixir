@@ -37,7 +37,8 @@ defmodule Jamixir.MixProject do
       {:httpoison, "~> 2.2.1", only: :test},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
-      {:rustler, "~> 0.34.0"}
+      {:rustler, "~> 0.34.0"},
+      {:dotenv, "~> 3.1.0"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
