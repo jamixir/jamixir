@@ -21,6 +21,11 @@ mix test
 mix test --only test_vectors
 ```
 
+## How to generate a bandersnatch key-pair
+```
+mix generate_keypair
+```
+
 ## Tested Elixir / OTP version
  - Elixir 1.17-otp-26
  - Erlang 26.2.5

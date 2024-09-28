@@ -30,3 +30,6 @@ priv/
 native/**/target/
 native/**/Cargo.lock
 .elixir_ls/
+
+*.enc
+.env
