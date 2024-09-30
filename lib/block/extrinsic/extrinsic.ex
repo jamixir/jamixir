@@ -1,6 +1,5 @@
 defmodule Block.Extrinsic do
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
-  alias Util.Collections
   # Formula (14) v0.3.4
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
@@ -14,24 +13,28 @@ defmodule Block.Extrinsic do
           guarantees: list(Guarantee.t())
         }
 
-  # Formula (138) v0.3.4
-  # Formula (139) v0.3.4
-  # Formula (140) v0.3.4
-  def validate_guarantees(guarantees) do
-    with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
-         true <-
-           Enum.all?(guarantees, fn %Guarantee{credential: cred} ->
-             length(cred) in [2, 3]
-           end),
-         true <-
-           Collections.all_ok?(guarantees, fn %Guarantee{credential: cred} ->
-             Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
-           end) do
+  @spec validate(t(), Block.Header.t(), System.State.t()) :: :ok | {:error, String.t()}
+  def validate(%__MODULE__{} = extrinsic, header, %System.State{} = state) do
+    with :ok <- Guarantee.validate(extrinsic.guarantees),
+         :ok <-
+           TicketProof.validate(
+             extrinsic.tickets,
+             header.timeslot,
+             state.timeslot,
+             state.entropy_pool,
+             state.safrole
+           ),
+         :ok <-
+           Disputes.validate(
+             extrinsic.disputes,
+             state.curr_validators,
+             state.prev_validators,
+             state.judgements,
+             header.timeslot
+           ) do
       :ok
     else
-      {:error, :duplicates} -> {:error, "Duplicate core_index found in guarantees"}
-      {:error, :not_in_order} -> {:error, "Guarantees not ordered by core_index"}
-      false -> {:error, "Invalid credentials in one or more guarantees"}
+      {:error, reason} -> {:error, reason}
     end
   end
 

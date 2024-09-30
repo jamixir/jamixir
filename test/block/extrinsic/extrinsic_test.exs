@@ -1,12 +1,11 @@
 defmodule Block.ExtrinsicTest do
   use ExUnit.Case
 
-  alias Block.Extrinsic
   alias Block.Extrinsic.{Guarantee, Guarantee.WorkReport}
 
   describe "guarantees/1" do
     test "returns :ok for valid guarantees" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([\
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
@@ -21,7 +20,7 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "returns error for guarantees not ordered by core_index" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 2},
                  timeslot: 100,
@@ -37,7 +36,7 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "returns error for duplicate core_index in guarantees" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
@@ -53,7 +52,7 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "returns error for invalid credential length" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
@@ -64,7 +63,7 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "returns error for credentials not ordered by validator_index" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
@@ -75,7 +74,7 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "returns error for duplicate validator_index in credentials" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,
@@ -86,11 +85,11 @@ defmodule Block.ExtrinsicTest do
     end
 
     test "handles empty list of guarantees" do
-      assert Extrinsic.validate_guarantees([]) == :ok
+      assert Guarantee.validate([]) == :ok
     end
 
     test "validates a single guarantee correctly" do
-      assert Extrinsic.validate_guarantees([
+      assert Guarantee.validate([
                %Guarantee{
                  work_report: %WorkReport{core_index: 1},
                  timeslot: 100,

@@ -19,8 +19,8 @@ defmodule Block.Extrinsic.Disputes.Test do
     {:ok, work_report_hash: :crypto.strong_rand_bytes(32), state: state, header: build(:header)}
   end
 
-  defp validate_disputes(disputes, state, header) do
-    Disputes.validate_disputes(
+  defp validate(disputes, state, header) do
+    Disputes.validate(
       disputes,
       state.curr_validators,
       state.prev_validators,
@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.Disputes.Test do
     )
   end
 
-  describe "validate_disputes/3 error cases" do
+  describe "validate/3 error cases" do
     test "returns errors for invalid verdicts", %{
       state: state,
       header: header,
@@ -86,10 +86,10 @@ defmodule Block.Extrinsic.Disputes.Test do
       Enum.each(error_cases, fn
         {expected_error, disputes, state_modifier} when is_function(state_modifier) ->
           modified_state = state_modifier.(state)
-          assert {:error, ^expected_error} = validate_disputes(disputes, modified_state, header)
+          assert {:error, ^expected_error} = validate(disputes, modified_state, header)
 
         {expected_error, disputes} ->
-          assert {:error, ^expected_error} = validate_disputes(disputes, state, header)
+          assert {:error, ^expected_error} = validate(disputes, state, header)
       end)
     end
 
@@ -137,7 +137,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert {:error, "Judgements not ordered by validator index or contain duplicates"} =
-               validate_disputes(
+               validate(
                  disputes,
                  state,
                  header
@@ -184,7 +184,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       ]
 
       assert {:error, "Invalid sum of judgements in verdicts"} =
-               validate_disputes(
+               validate(
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: judgements)]
                  },
@@ -194,7 +194,7 @@ defmodule Block.Extrinsic.Disputes.Test do
     end
   end
 
-  describe "validate_disputes/3 error cases for culprits and faults" do
+  describe "validate/3 error cases for culprits and faults" do
     test "returns errors for invalid culprits and faults", %{
       state: state,
       header: header,
@@ -280,7 +280,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       ]
 
       Enum.each(error_cases, fn {expected_error, disputes} ->
-        assert {:error, ^expected_error} = validate_disputes(disputes, state, header)
+        assert {:error, ^expected_error} = validate(disputes, state, header)
       end)
     end
 
@@ -321,11 +321,11 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert {:error, "culprits reported for a validator not in the allowed validator keys"} =
-               validate_disputes(disputes, state, header)
+               validate(disputes, state, header)
     end
   end
 
-  describe "validate_disputes/3 valid cases" do
+  describe "validate/3 valid cases" do
     test "returns :ok for valid disputes with bad set from state judgements", %{
       state: state,
       header: header,
@@ -346,7 +346,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         )
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  %Disputes{culprits: [culprit]},
                  state,
                  header
@@ -388,7 +388,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  disputes,
                  state,
                  header
@@ -436,7 +436,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         )
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  %Disputes{verdicts: [verdict]},
                  state,
                  header
@@ -457,7 +457,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  %Disputes{
                    culprits: [
                      build(:culprit,
@@ -508,7 +508,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  disputes,
                  state,
                  header
@@ -552,7 +552,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  disputes,
                  state,
                  header
@@ -591,7 +591,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert :ok ==
-               validate_disputes(
+               validate(
                  disputes,
                  state,
                  header
