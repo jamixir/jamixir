@@ -79,6 +79,12 @@ defmodule Util.MerklizationTest do
 
       assert leaf_type == 0
     end
+
+#  Test examples by Daniel
+#     byte_size(value) < 32
+# byte_size(value) == 32
+# byte_size(value) > 32
+
   end
 
   # describe "merklization/1" do

@@ -42,74 +42,62 @@ defmodule Util.Merklization do
   In the case of a regular leaf, the remaining 6 bits of the first byte are zeroed. The following 31 bytes store the first 31 bytes of the key. The last 32 bytes store the hash of the value.
   Formally, we define the encoding functions B and L:
   """
-def encode_leaf(key, value) do
-  key_bytes = binary_part(key, 0, min(byte_size(key), 31))
-  key_padded = String.pad_trailing(key_bytes, 31, <<0>>)
 
-  bits_value = bits(value)
-  bits_key = bits(key_padded)
+  def encode_leaf(key, value) do
+    if byte_size(value) <= 32 do
+      result =
+        [1, 0] ++
+          (bits(Codec.Encoder.encode_le(byte_size(value), 1)) |> Enum.take(6)) ++
+          (bits(key) |> Enum.take(248)) ++
+          bits(value)
 
-  cond do
-    byte_size(value) <= 32 ->
-      # Embedded-value leaf
-      value_size = byte_size(value)
-
-      # Convertir las listas de bits a bitstrings
-      key_bitstring = :erlang.list_to_bitstring(bits_key)
-      value_bitstring = :erlang.list_to_bitstring(bits_value)
-
-      # Codificar la hoja con el valor embebido en formato de bits
-      <<1::1, 1::1, value_size::6, key_bitstring::bitstring-size(31 * 8), value_bitstring::bitstring-size(32 * 8)>>
-
-    true ->
-      # Regular leaf
-      hashed_value = Hash.blake2b_256(value)
-      bits_hashed_value = bits(hashed_value)
-      value_bitstring = :erlang.list_to_bitstring( bits_hashed_value)
-      <<1::1, 0::1, 0::6, key_padded::binary-size(31), value_bitstring::binary-size(32)>>
+      result ++ List.duplicate(0, 512 - length(result))
+    else
+      [1, 1, 0, 0, 0, 0, 0, 0] ++ (bits(key) |> Enum.take(248)) ++ bits(Hash.default(value))
+    end
   end
-end
 
   @doc """
-    General Merklization Function
+    Merklization State Function
 
    Formula (295) v0.3.4
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
+
+  """
+  def merkelize_state(dict) do
+    dict |> Enum.map(fn {k, v} -> {bits(k), {k, v}} end) |> Enum.into(%{}) |> merkelize
+  end
+
+  @doc """
+    General Merklization Function
 
    Formula (296) v0.3.4
                        { H°                       if |d| = 0
     M(d:D(B → (H,Y))) ={ H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
                        { H(bits-1 (B(M(l), M(r)))) otherwise, where Vb,p: (b → p) ed → (b1.. → p) E { l   if bo = 0
-                                                                                                  { r   if bo = 1
+                                                                                                    { r   if bo = 1
   """
-  def merklize(value) do
-    if bit_size(value) == 0 do
-      result = Hash.default(value)
-      result
-    else
-      <<type_node::1, _::bitstring>> = value
 
-      case type_node do
-        # Leaf Node
-        1 ->
-          <<_::8, key::bitstring-size(248), _rest::bitstring-size(256)>> = value
+  def merkelize(dict) do
+    case map_size(dict) do
+      0 ->
+        Hash.zero()
 
-          result = encode_leaf(key, value)
-          result
+      1 ->
+        [{k, v}] = Map.to_list(dict)
+        Hash.default(bits_to_bytes(encode_leaf(k, v)))
 
-        # Branch node
-        0 ->
-          <<left_hash::bitstring-size(256), right_hash::bitstring-size(256)>> = value
-          result = encode_branch(left_hash, right_hash)
-          result
-      end
+      _ ->
+        {l, r} = dict |> Enum.split_with(fn {[b0 | _], _} -> b0 == 0 end)
+        Hash.default(bits_to_bytes(encode_branch(merkelize_state(l), merkelize_state(r))))
     end
   end
 
   @doc """
   section 3.7.3
   Bits function, convers Bytes into octets.
-  We use the function bits(Y) ∈ B to denote the sequence of bits, ordered with the least signif- icant first, which represent the octet sequence Y, thus bits([5,0]) = [1,0,1,0,0,...].
+  We use the function bits(Y) ∈ B to denote the sequence of bits, ordered with the least significant first,
+  which represent the octet sequence Y, thus bits([5,0]) = [1,0,1,0,0,...].
   """
   def bits(binary) when is_binary(binary) do
     binary
@@ -118,5 +106,24 @@ end
       bits = for <<(bit::1 <- <<byte>>)>>, do: bit
       Enum.reverse(bits)
     end)
+  end
+
+  @doc """
+
+  """
+
+  def bits_to_bytes(bits) do
+    bits
+    |> Enum.chunk_every(8)
+    |> Enum.map(fn chunk ->
+      chunk
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.reduce(0, fn {bit, index}, acc ->
+        acc + bit * :math.pow(2, index)
+      end)
+      |> round()
+    end)
+    |> :binary.list_to_bin()
   end
 end
