@@ -54,7 +54,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     build(:genesis_state_with_safrole)
   end
 
-  describe "validate_tickets/5 - passing cases" do
+  describe "validate/5 - passing cases" do
     test "succeeds with single ticket before submission end", %{
       state: state,
       key_pairs: key_pairs
@@ -62,7 +62,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       {proof, _} = create_valid_proof(state, List.first(key_pairs), 0, 0)
 
       assert :ok ==
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [%TicketProof{entry_index: 0, ticket_validity_proof: proof}],
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
@@ -78,7 +78,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       tickets = create_and_sort_tickets(2, state, key_pairs)
 
       assert :ok ==
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  tickets,
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
@@ -89,7 +89,7 @@ defmodule Block.Extrinsic.TicketProofTest do
 
     test "succeeds with empty tickets after submission end", %{state: state} do
       assert :ok ==
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [],
                  Constants.ticket_submission_end(),
                  Constants.ticket_submission_end() - 1,
@@ -99,10 +99,10 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
   end
 
-  describe "validate_tickets/5 - failing cases" do
+  describe "validate/5 - failing cases" do
     test "fails with too many tickets", %{state: state} do
       assert {:error, "Invalid number of tickets for the current epoch phase"} =
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  List.duplicate(%TicketProof{}, Constants.max_tickets() + 1),
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
@@ -113,7 +113,7 @@ defmodule Block.Extrinsic.TicketProofTest do
 
     test "fails with invalid entry index", %{state: state} do
       assert {:error, "Invalid entry index"} =
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [%TicketProof{entry_index: 2, ticket_validity_proof: <<1, 2, 3>>}],
                  499,
                  400,
@@ -128,7 +128,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       invalid_proof = <<first_byte + 1>> <> rest
 
       assert {:error, "Invalid ticket validity proof"} =
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [%TicketProof{entry_index: 0, ticket_validity_proof: invalid_proof}],
                  1,
                  0,
@@ -141,7 +141,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       ticket = create_valid_tickets(1, state, key_pairs) |> List.first()
 
       assert {:error, :duplicates} ==
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [ticket, ticket],
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
@@ -173,7 +173,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       }
 
       assert {:error, "Ticket hash overlap with existing tickets"} ==
-               TicketProof.validate_tickets(
+               TicketProof.validate(
                  [ticket],
                  header_timeslot,
                  header_timeslot - 1,

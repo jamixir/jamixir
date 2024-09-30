@@ -1,6 +1,5 @@
 defmodule Block do
   alias Block.Extrinsic
-  alias Block.Extrinsic.Disputes
   alias Block.Header
   alias System.State
 
@@ -17,29 +16,7 @@ defmodule Block do
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
   def validate(%__MODULE__{header: h, extrinsic: e}, %State{} = s) do
     with :ok <- Header.validate(h, s),
-         :ok <- Extrinsic.validate_guarantees(e.guarantees),
-         :ok <-
-           System.Validators.Safrole.valid_winning_tickets_marker(
-             h,
-             s.timeslot,
-             s.safrole
-           ),
-         :ok <-
-           Extrinsic.TicketProof.validate_tickets(
-             e.tickets,
-             h.timeslot,
-             s.timeslot,
-             s.entropy_pool,
-             s.safrole
-           ),
-         :ok <-
-           Disputes.validate_disputes(
-             e.disputes,
-             s.curr_validators,
-             s.prev_validators,
-             s.judgements,
-             h.timeslot
-           ) do
+         :ok <- Extrinsic.validate(e, h, s) do
       :ok
     else
       {:error, reason} -> {:error, reason}

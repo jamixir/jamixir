@@ -1,6 +1,7 @@
 defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
   alias System.State.SealKeyTicket
+  alias System.Validators
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -62,10 +63,15 @@ defmodule Block.Header do
   ]
 
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
-  def validate(%__MODULE__{timeslot: current_timeslot}, %System.State{timeslot: previous_timeslot}) do
-    with :ok <- Time.validate_timeslot_order(previous_timeslot, current_timeslot),
-         # Formula (41)
-         :ok <- Time.validate_block_timeslot(current_timeslot) do
+  def validate(%__MODULE__{timeslot: current_timeslot} = header, %System.State{} = state) do
+    with :ok <- Time.validate_timeslot_order(state.timeslot, current_timeslot),
+         :ok <- Time.validate_block_timeslot(current_timeslot),
+         :ok <-
+           Validators.Safrole.valid_winning_tickets_marker(
+             header,
+             state.timeslot,
+             state.safrole
+           ) do
       :ok
     else
       {:error, reason} -> {:error, reason}
