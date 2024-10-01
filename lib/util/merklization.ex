@@ -33,13 +33,14 @@ defmodule Util.Merklization do
     Formula (294) v0.3.4
     Encodes the leaf nodes distinguin between regular and embedded leafs.
       { (H, Y) → B512
-    L:{ （k,v）→{ [1,0] ~  bits(E1(|v|)...6 ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
-               { [1,1,0,0,0,0,0,0] ~ bits(k)...248 ~ bits(H(v))                    otherwise
+    L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)...6 ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
+              { [1,1,0,0,0,0,0,0] ~ bits(k)...248 ~ bits(H(v))                    otherwise
 
-      Leaf nodes are further subdivided into embedded-value leaves and regular leaves. The second bit of the node discriminates between these.
+  Leaf nodes are further subdivided into embedded-value leaves and regular leaves. The second bit of the node discriminates between these.
   In the case of an embedded-value leaf, the remaining 6 bits of the first byte are used to store the embedded value size. The following 31 bytes
   are dedicated to the first 31 bytes of the key. The last 32 bytes are defined as the value, filling with zeroes if its length is less than 32 bytes.
-  In the case of a regular leaf, the remaining 6 bits of the first byte are zeroed. The following 31 bytes store the first 31 bytes of the key. The last 32 bytes store the hash of the value.
+  In the case of a regular leaf, the remaining 6 bits of the first byte are zeroed. The following 31 bytes store the first 31 bytes of the key. The last
+  32 bytes store the hash of the value.
   Formally, we define the encoding functions B and L:
   """
 

@@ -3,127 +3,142 @@ defmodule Util.MerklizationTest do
   alias Util.Hash
   alias Util.Merklization
 
-  describe "encode_branch/2" do
-    test "encoding branch returns correct length for 512 bits" do
-      data_left = "test data left"
-      hash_left = Hash.blake2b_n(data_left, 32)
+  # Formula (293) v0.3.4: TESTS
 
-      data_right = "test data right"
-      hash_right = Hash.blake2b_n(data_right, 32)
+  describe "encode_branch/2 (l,r)" do
+    test "encode_branch with simple values" do
+      # 256-bit value with only the first bit set
+      l = <<1::256>>
+      # 256-bit value with only the second bit set
+      r = <<2::256>>
 
-      merk = Merklization.encode_branch(hash_left, hash_right)
+      result = Merklization.encode_branch(l, r)
 
-      assert bit_size(merk) == 512
+      assert is_list(result)
+      assert length(result) == 512
+      assert Enum.at(result, 0) == 0
     end
 
-    test "encoding branch returns correct a bitstring that starts with a 0 as first bit" do
-      data_left = "test data left"
-      hash_left = Hash.blake2b_n(data_left, 32)
+    test "encode_branch with random inputs" do
+      for _ <- 1..100 do
+        l = :crypto.strong_rand_bytes(32)
+        r = :crypto.strong_rand_bytes(32)
 
-      data_right = "test data right"
-      hash_right = Hash.blake2b_n(data_right, 32)
+        result = Merklization.encode_branch(l, r)
 
-      merk = Merklization.encode_branch(hash_left, hash_right)
-
-      <<merk_first_bit::1, _rest_bits::bitstring-size(511)>> = merk
-      assert merk_first_bit == 0
-    end
-
-    test "encoding branch returns correct a bitstring that starts with a 1 as separator between hashes" do
-      data_left = "test data left"
-      hash_left = Hash.blake2b_n(data_left, 32)
-
-      data_right = "test data right"
-      hash_right = Hash.blake2b_n(data_right, 32)
-
-      merk = Merklization.encode_branch(hash_left, hash_right)
-
-      <<_first_bits::bitstring-size(256), merk_separator_bit::1, _rest_bits::bitstring-size(255)>> =
-        merk
-
-      assert merk_separator_bit == 1
+        assert is_list(result)
+        assert length(result) == 512
+        assert Enum.at(result, 0) == 0
+      end
     end
   end
+
+  # Formula (294) v0.3.4: TESTS
 
   describe "encode_leaf/2" do
-    test "encodes an embedded value leaf correctly" do
-      key =
-        <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-          25, 26, 27, 28, 29, 30, 31>>
+    test "encode_leaf when byte_size(value) < 32 (Embebed)" do
 
-      value =
-        <<100, 200, 50, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-          21, 22, 23, 24, 25, 26, 27, 28>>
+      key = :crypto.strong_rand_bytes(31)
 
-      encode_Test = Merklization.encode_leaf(key, value)
+      value = :crypto.strong_rand_bytes(16)
 
-      <<1::1, leaf_type::1, _byte_size::6, _key::binary-size(31), _value::binary-size(32)>> =
-        encode_Test
+      result = Merklization.encode_leaf(key, value)
 
-      assert leaf_type == 1
+      assert length(result) == 512
+
+      assert Enum.slice(result, 0, 2) == [1, 0]
+
+      assert Enum.slice(result, 2, 6) == [0, 0, 0, 0, 1, 0]
+
     end
 
-    test "encodes a regular leaf correctly" do
-      key =
-        <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-          25, 26, 27, 28, 29, 30, 31>>
+    test "encode_leaf when byte_size(value) == 32" do
 
-      value =
-        <<100, 200, 50, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-          21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40>>
+      key = :crypto.strong_rand_bytes(31)
 
-      encode_Test = Merklization.encode_leaf(key, value)
+      value = :crypto.strong_rand_bytes(32)
 
-      <<1::1, leaf_type::1, _byte_size::6, _key::binary-size(31), _value::binary-size(32)>> =
-        encode_Test
+      result = Merklization.encode_leaf(key, value)
 
-      assert leaf_type == 0
+      assert length(result) == 512
+
+      assert Enum.slice(result, 0, 2) == [1, 0]
+
     end
 
-#  Test examples by Daniel
-#     byte_size(value) < 32
-# byte_size(value) == 32
-# byte_size(value) > 32
+    test "encode_leaf when byte_size(value) > 32" do
+      key = :crypto.strong_rand_bytes(31)
+      value = :crypto.strong_rand_bytes(33)
 
+      result = Merklization.encode_leaf(key, value)
+
+      assert length(result) == 512
+
+      assert Enum.slice(result, 0, 8) == [1, 1, 0, 0, 0, 0, 0, 0]
+
+    end
   end
 
-  # describe "merklization/1" do
-  #   test "testing merkelization total size of 64 bytes" do
-  #     value_test = "Hello Jamixir"
-  #     hash_value = Hash.blake2b_n(value_test, 64)
-  #     leaf = Merklization.merklize(hash_value)
-  #     assert bit_size(leaf) == 512
-  #   end
+  # Formula (295) v0.3.4: TESTS
 
-  #   test "testing merkelization call branch" do
-  #     value_test = "Hello Jamixir"
-  #     hash_value = Hash.blake2b_n(value_test, 64)
+  # Formula (296) v0.3.4: TESTS
 
-  #     branch = Merklization.merklize(hash_value)
-
-  #     << branch_bit::1, _rest_bits::bitstring-size(511)>> = branch
-  #     assert branch_bit == 1
-  #   end
-
-  #   test "testing merkelization call leaf" do
-  #     value_test = "Hello Jamixir"
-  #     hash_value = Hash.blake2b_n(value_test, 64)
-
-  #     leaf = Merklization.merklize(hash_value)
-
-  #     <<_::1, rest_bits::bitstring-size(511)>> = hash_value
-
-  #     <<leaf_first_bit::1, _rest_bits::bitstring-size(511)>> = leaf
-  #     assert leaf_first_bit == 0
-  #   end
-
-  # end
+  ### 3.7.3
 
   describe "bits" do
-    test "bits for multiple octets" do
+    test "bits function with single byte" do
+      # Binary representation: 00101010
+      input = <<42>>
+      expected = [0, 1, 0, 1, 0, 1, 0, 0]
+      assert Merklization.bits(input) == expected
+    end
+
+    test "bits for multiple octets(bytes)" do
       octets = <<5, 0, 5>>
-      expected_bits = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]
+      # 5 in binary
+      expected_bits = [
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        # 0 in binary
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        # 5 in binary
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+
       assert Merklization.bits(octets) == expected_bits
+    end
+
+    test "bits function with empty binary" do
+      input = <<>>
+      expected = []
+      assert Merklization.bits(input) == expected
+    end
+
+    test "bits function with all bits set" do
+      # Binary: 11111111 11111111
+      input = <<255, 255>>
+      expected_bits = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      assert Merklization.bits(input) == expected_bits
     end
   end
 end
