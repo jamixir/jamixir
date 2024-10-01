@@ -50,4 +50,16 @@ defmodule Constants do
   def slot_period, do: 6
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
   def max_tickets, do: 16
+
+  @doc "U - The period in timeslots after which reported but unavailable work may be replaced."
+  def unavailability_period, do: 5
+
+  @doc "GA - The total gas allocated to a core for Accumulation."
+  defmockable(:gas_accumulation, do: 1000)
+
+  @doc "GI : The gas allocated to invoke a work-package’s Is-Authorized logic."
+  defmockable(:gas_is_authorized, do: 1000)
+
+  @doc "GR: The total gas allocated for a work-package’s Refine logic."
+  defmockable(:gas_refine, do: 1000)
 end

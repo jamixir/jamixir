@@ -2,6 +2,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
   import Jamixir.Factory
 
+  alias System.State
   alias Block.Extrinsic.Guarantor
   alias Block.Extrinsic.{Guarantee, Guarantee.WorkReport}
   alias Util.{Crypto, Hash}
@@ -14,97 +15,144 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
   describe "validate/1" do
     test "returns :ok for valid guarantees" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
-               },
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 2},
-                 timeslot: 100,
-                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}, {3, <<5::512>>}]
-               }
-             ]) == :ok
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 },
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 2},
+                   timeslot: 100,
+                   credentials: [{1, <<3::512>>}, {2, <<4::512>>}, {3, <<5::512>>}]
+                 }
+               ],
+               %State{}
+             ) == :ok
     end
 
     test "returns error for guarantees not ordered by core_index" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 2},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
-               },
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
-               }
-             ]) ==
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 2},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 },
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
+                 }
+               ],
+               %State{}
+             ) ==
                {:error, "Guarantees not ordered by core_index"}
     end
 
     test "returns error for duplicate core_index in guarantees" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
-               },
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
-               }
-             ]) ==
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 },
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
+                 }
+               ],
+               %State{}
+             ) ==
                {:error, "Duplicate core_index found in guarantees"}
     end
 
     test "returns error for invalid credential length" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}]
-               }
-             ]) ==
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}]
+                 }
+               ],
+               %State{}
+             ) ==
                {:error, "Invalid credentials in one or more guarantees"}
     end
 
     test "returns error for credentials not ordered by validator_index" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{2, <<1::512>>}, {1, <<2::512>>}]
-               }
-             ]) ==
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{2, <<1::512>>}, {1, <<2::512>>}]
+                 }
+               ],
+               %State{}
+             ) ==
                {:error, "Invalid credentials in one or more guarantees"}
     end
 
     test "returns error for duplicate validator_index in credentials" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}, {1, <<2::512>>}]
-               }
-             ]) ==
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}, {1, <<2::512>>}]
+                 }
+               ],
+               %State{}
+             ) ==
                {:error, "Invalid credentials in one or more guarantees"}
     end
 
     test "handles empty list of guarantees" do
-      assert Guarantee.validate([]) == :ok
+      assert Guarantee.validate(
+               [],
+               %State{}
+             ) == :ok
     end
 
     test "validates a single guarantee correctly" do
-      assert Guarantee.validate([
-               %Guarantee{
-                 work_report: %WorkReport{core_index: 1},
-                 timeslot: 100,
-                 credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
-               }
-             ]) == :ok
+      assert Guarantee.validate(
+               [
+                 %Guarantee{
+                   work_report: %WorkReport{core_index: 1},
+                   timeslot: 100,
+                   credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
+                 }
+               ],
+               %State{}
+             ) == :ok
+    end
+
+    test "returns error when gas accumulation exceeds limit" do
+      work_results = [
+        build(:work_result, service_index: 0),
+        build(:work_result, service_index: 1)
+      ]
+
+      guarantees = [
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 0, work_results: work_results)
+        ),
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 1, work_results: work_results)
+        )
+      ]
+
+      # sum of 4 work results can't be bigger than 1_000
+      state = %State{services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 249}}}
+      assert Guarantee.validate(guarantees, state) == :ok
+
+      state = %State{services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 251}}}
+      assert Guarantee.validate(guarantees, state) == {:error, "Invalid Gas Accumulation"}
     end
   end
 

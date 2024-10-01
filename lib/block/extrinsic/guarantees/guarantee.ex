@@ -4,12 +4,12 @@ defmodule Block.Extrinsic.Guarantee do
   11.4
   Formula (138) v0.3.4
   """
-  alias Util.Hash
-  alias Block.Extrinsic.Guarantor
-  alias System.State.EntropyPool
-  alias Util.Crypto
+  alias Block.Extrinsic.Guarantee.WorkResult
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Util.Collections
+  alias Block.Extrinsic.Guarantor
+  alias System.State
+  alias System.State.EntropyPool
+  alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
 
   # {validator_index, ed25519 signature}
@@ -31,26 +31,46 @@ defmodule Block.Extrinsic.Guarantee do
   # Formula (138) v0.3.4
   # Formula (139) v0.3.4
   # Formula (140) v0.3.4
-  @spec validate(list(t())) :: :ok | {:error, String.t()}
-  def validate(guarantees) do
+  @spec validate(list(t()), State.t()) :: :ok | {:error, String.t()}
+  def validate(guarantees, state) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+         :ok <- validate_gas(guarantees, state.services),
          true <-
-           Enum.all?(guarantees, fn %__MODULE__{credentials: cred} ->
-             length(cred) in [2, 3]
-           end),
+           Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
+         # Formula (139) v0.3.4
          true <-
            Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
-             # Formula (139) v0.3.4
              Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
            end) do
       :ok
     else
       {:error, :duplicates} -> {:error, "Duplicate core_index found in guarantees"}
       {:error, :not_in_order} -> {:error, "Guarantees not ordered by core_index"}
+      {:error, :invalid_gas_accumulation} -> {:error, "Invalid Gas Accumulation"}
       false -> {:error, "Invalid credentials in one or more guarantees"}
-      {:error, reason} -> {:error, reason}
     end
   end
+
+  # Formula (143) v0.3.4 - w
+  def work_reports(guarantees) do
+    Enum.map(guarantees, & &1.work_report)
+  end
+
+  # Formula (145) v0.3.4
+  mockable validate_gas(guarantees, services) do
+    if work_reports(guarantees)
+       |> Enum.flat_map(& &1.work_results)
+       |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
+         acum + Map.get(services, s).gas_limit_g
+       end) <=
+         Constants.gas_accumulation() do
+      :ok
+    else
+      {:error, :invalid_gas_accumulation}
+    end
+  end
+
+  def mock(:validate_gas, _), do: :ok
 
   # Formula (141) v0.3.4
   mockable reporters_set(
