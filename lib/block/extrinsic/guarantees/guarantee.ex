@@ -75,22 +75,29 @@ defmodule Block.Extrinsic.Guarantee do
         %Guarantor{assigned_cores: c, validators: validators} = choose_g(t, t_, g, prev_g)
 
         # ∀(v, s) ∈ a
-        case Enum.reduce_while(a, {:ok, reporters_set}, fn {v, s}, {:ok, acum2} ->
+        case Enum.reduce_while(a, reporters_set, fn {v, s}, {:ok, acum2} ->
                # (kv)e
                validator_key = Enum.at(validators, v).ed25519
                # XG ⌢ H(E(w))
                payload = SigningContexts.jam_guarantee() <> Hash.default(Codec.Encoder.encode(w))
 
-               # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
-               # cv = wc ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
-               if Crypto.valid_signature?(s, payload, validator_key) and
-                    Enum.at(c, v) == wc and
-                    t <= t_ and
-                    t >= Constants.rotation_period() * (div(t_, Constants.rotation_period()) - 1) do
-                 # k ∈ R ⇔ ∃(w, t, a) ∈ EG, ∃(v, s) ∈ a ∶ k = (kv)e
-                 {:cont, {:ok, MapSet.put(acum2, validator_key)}}
-               else
-                 {:halt, {:error, "Invalid guarantee"}}
+               cond do
+                 # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
+                 !Crypto.valid_signature?(s, payload, validator_key) ->
+                   {:halt, {:error, "Invalid signature in guarantee"}}
+
+                 # cv = wc
+                 Enum.at(c, v) != wc ->
+                   {:halt, {:error, "Invalid core_index in guarantee"}}
+
+                 # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
+                 t > t_ or
+                     t < Constants.rotation_period() * (div(t_, Constants.rotation_period()) - 1) ->
+                   {:halt, {:error, "Invalid timeslot in guarantee"}}
+
+                 true ->
+                   # k ∈ R ⇔ ∃(w, t, a) ∈ EG, ∃(v, s) ∈ a ∶ k = (kv)e
+                   {:cont, {:ok, MapSet.put(acum2, validator_key)}}
                end
              end) do
           {:ok, updated_keys} ->

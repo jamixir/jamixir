@@ -15,12 +15,24 @@ defmodule Jamixir.Factory do
   @max_authorize_queue_items 4
 
   # Validator Key Pairs Factory
-  def validator_and_key_pairs_factory(count \\ @validator_count) do
+  def validators_and_bandersnatch_keys(count \\ @validator_count) do
     {validators, key_pairs} =
       Enum.map(1..count, fn _ ->
         keypair = RingVrf.generate_secret_from_rand()
 
         {build(:validator, bandersnatch: elem(keypair, 1)), keypair}
+      end)
+      |> Enum.unzip()
+
+    %{validators: validators, key_pairs: key_pairs}
+  end
+
+  def validators_and_ed25519_keys(count \\ @validator_count) do
+    {validators, key_pairs} =
+      Enum.map(1..count, fn _ ->
+        keypair = :crypto.generate_key(:eddsa, :ed25519)
+
+        {build(:validator, ed25519: elem(keypair, 0)), keypair}
       end)
       |> Enum.unzip()
 
@@ -63,7 +75,7 @@ defmodule Jamixir.Factory do
     validator_count = Map.get(attrs, :validator_count, @validator_count)
 
     %{validators: validators, key_pairs: key_pairs} =
-      validator_and_key_pairs_factory(validator_count)
+      validators_and_bandersnatch_keys(validator_count)
 
     public_keys = Enum.map(key_pairs, &(&1 |> elem(1)))
     RingVrf.init_ring_context(length(validators))
