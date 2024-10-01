@@ -180,6 +180,8 @@ defmodule System.StateTest do
       on_exit(fn ->
         Application.delete_env(:jamixir, :original_modules)
       end)
+      Storage.start_link()
+      :mnesia.clear_table(Storage.table_name())
 
       :ok
     end

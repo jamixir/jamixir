@@ -59,8 +59,11 @@ defmodule Block.HeaderTest do
 
   describe "validate/2 with actual Storage" do
     setup do
+
       header = %Header{timeslot: 100}
       state = %State{timeslot: 99}
+      Storage.start_link()
+      :mnesia.clear_table(Storage.table_name())
       {:ok, header: header, state: state}
     end
 
