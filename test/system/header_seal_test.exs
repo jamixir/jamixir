@@ -6,7 +6,7 @@ defmodule System.HeaderSealTest do
   alias Block.Header
 
   setup do
-    %{validators: validators, key_pairs: key_pairs} = validator_and_key_pairs_factory()
+    %{validators: validators, key_pairs: key_pairs} = validators_and_bandersnatch_keys()
     entropy_pool = build(:entropy_pool)
     epoch_slot_sealers = seal_key_ticket_factory(key_pairs, entropy_pool)
 

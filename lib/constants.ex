@@ -45,7 +45,7 @@ defmodule Constants do
   @doc "WR - The maximum size of an encoded work-report in octets."
   def max_work_report_size, do: 96 * 2 ** 10
   @doc "R - The rotation period of validator-core assignments, in timeslots."
-  def rotation_period, do: 10
+  defmockable(:rotation_period, do: 10)
   @doc "P - The slot period, in seconds."
   def slot_period, do: 6
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
