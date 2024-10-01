@@ -2,17 +2,18 @@ defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block
-  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.{Disputes, Preimage}
   alias System.State
   import Mox
   setup :verify_on_exit!
 
-  setup_all do
+  setup do
     state = %State{
       timeslot: 99,
       curr_validators: build_list(3, :validator),
       prev_validators: build_list(3, :validator),
-      judgements: build(:judgements)
+      judgements: build(:judgements),
+      services: %{1 => build(:service_account)}
     }
 
     Application.put_env(:jamixir, :original_modules, [
@@ -62,6 +63,32 @@ defmodule BlockTest do
 
       invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
       assert {:error, _} = Block.validate(invalid_block, state)
+    end
+  end
+
+  describe "preimage validation" do
+    setup do
+      Application.put_env(:jamixir, :original_modules, [
+        Block.Extrinsic.Preimage
+      ])
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :original_modules)
+      end)
+    end
+
+    test "returns error when preimage validation fails", %{state: state} do
+      # Create two preimages with non-ascending service indices
+
+      invalid_extrinsic =
+        build(:extrinsic,
+          preimages: [build(:preimage, service_index: 2), build(:preimage, service_index: 1)]
+        )
+
+      invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
+
+      assert {:error, reason} = Block.validate(invalid_block, state)
+      assert reason == :not_in_order
     end
   end
 end
