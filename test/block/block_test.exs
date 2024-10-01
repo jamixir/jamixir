@@ -2,7 +2,7 @@ defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block
-  alias Block.Extrinsic.{Disputes, Preimage}
+  alias Block.Extrinsic.Disputes
   alias System.State
   import Mox
   setup :verify_on_exit!
