@@ -1,5 +1,6 @@
 defmodule Block.Extrinsic.Preimage do
   alias Util.{Collections, Hash}
+  import SelectiveMock
   # Formula (155) v0.3.4
   @type t :: %__MODULE__{
           # i
@@ -17,52 +18,45 @@ defmodule Block.Extrinsic.Preimage do
   # Formula (157) v0.3.4
   @spec validate(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
-  def validate(preimages, services) do
+  mockable validate(preimages, services) do
     # Formula (156) v0.3.4
     with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service_index),
          # Formula (157) v0.3.4
-         :ok <- validate_all_preimages(preimages, services) do
+         :ok <- check_all_preimages(preimages, services) do
       :ok
     else
       {:error, reason} -> {:error, reason}
     end
   end
 
+  def mock(:validate, _), do: :ok
+
   # Formula (157) v0.3.4
-  @spec validate_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
+  @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
-  defp validate_all_preimages(preimages, services) do
+  defp check_all_preimages(preimages, services) do
     Enum.reduce_while(preimages, :ok, fn preimage, _acc ->
-      case validate_preimage(preimage, services) do
-        :ok -> {:cont, :ok}
-        {:error, reason} -> {:halt, {:error, reason}}
+      if not_provided?(preimage, services) do
+        {:cont, :ok}
+      else
+        {:halt, {:error, "Preimage already provided for service index #{preimage.service_index}"}}
       end
     end)
   end
 
   # Formula (157) v0.3.4
-  @spec validate_preimage(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
-          :ok | {:error, String.t()}
-  defp validate_preimage(preimage, services) do
+  @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
+  defp not_provided?(preimage, services) do
     case Map.get(services, preimage.service_index) do
       nil ->
-        {:error, "Service account not found for index #{preimage.service_index}"}
+        false
 
       service_account ->
         preimage_hash = Hash.default(preimage.data)
         preimage_size = byte_size(preimage.data)
 
-        cond do
-          Map.has_key?(service_account.preimage_storage_p, preimage_hash) ->
-            {:error, "Preimage hash already exists in service account #{preimage.service_index}"}
-
-          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}, []) != [] ->
-            {:error,
-             "Preimage storage_l is not empty for hash and size in service account #{preimage.service_index}"}
-
-          true ->
-            :ok
-        end
+        not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
+          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}, []) == []
     end
   end
 
