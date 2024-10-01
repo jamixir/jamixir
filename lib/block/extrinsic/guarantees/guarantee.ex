@@ -31,13 +31,15 @@ defmodule Block.Extrinsic.Guarantee do
   # Formula (138) v0.3.4
   # Formula (139) v0.3.4
   # Formula (140) v0.3.4
-  @spec validate(list(t()), State.t()) :: :ok | {:error, String.t()}
-  def validate(guarantees, state) do
+  @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
+  def validate(guarantees, state, timeslot) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          # Formula (145) v0.3.4
          :ok <- validate_gas(guarantees, state.services),
          # Formula (147) v0.3.4
          :ok <- validate_unique_wp_hash(guarantees),
+         # Formula (149) v0.3.4
+         :ok <- validate_refine_context_timeslot(guarantees, timeslot),
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (139) v0.3.4
@@ -47,10 +49,7 @@ defmodule Block.Extrinsic.Guarantee do
            end) do
       :ok
     else
-      {:error, :duplicates} -> {:error, "Duplicate core_index found in guarantees"}
-      {:error, :not_in_order} -> {:error, "Guarantees not ordered by core_index"}
-      {:error, :invalid_gas_accumulation} -> {:error, "Invalid Gas Accumulation"}
-      {:error, :duplicated_wp_hash} -> {:error, "Duplicated work package hash"}
+      {:error, error} -> {:error, error}
       false -> {:error, "Invalid credentials in one or more guarantees"}
     end
   end
@@ -60,8 +59,13 @@ defmodule Block.Extrinsic.Guarantee do
     Enum.map(guarantees, & &1.work_report)
   end
 
+  # Formula (146) v0.3.4 - x
+  def refinement_contexts(guarantees) do
+    work_reports(guarantees) |> Enum.map(& &1.refinement_context)
+  end
+
   # Formula (145) v0.3.4
-  mockable validate_gas(guarantees, services) do
+  def validate_gas(guarantees, services) do
     if work_reports(guarantees)
        |> Enum.flat_map(& &1.work_results)
        |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
@@ -80,8 +84,10 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  mockable validate_unique_wp_hash(guarantees) do
+  # Formula (147) v0.3.4
+  def validate_unique_wp_hash(guarantees) do
     wr = work_reports(guarantees)
+    # Formula (146) v0.3.4
     p = MapSet.new(wr |> Enum.map(& &1.specification.work_package_hash))
 
     if length(wr) == MapSet.size(p) do
@@ -91,8 +97,18 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  def mock(:validate_unique_wp_hash, _), do: :ok
-  def mock(:validate_gas, _), do: :ok
+  def validate_refine_context_timeslot(guarantees, t) do
+    # Formula
+    if Enum.all?(
+         refinement_contexts(guarantees),
+         &(&1.timeslot >= t - Constants.max_age_lookup_anchor())
+       ) do
+      :ok
+    else
+      {:error, :refine_context_timeslot}
+    end
+  end
+
   def mock(:reporters_set, _), do: {:ok, MapSet.new()}
 
   # Formula (141) v0.3.4

@@ -51,6 +51,9 @@ defmodule Constants do
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
   def max_tickets, do: 16
 
+  @doc "L = 14, 400: The maximum age in timeslots of the lookup anchor."
+  def max_age_lookup_anchor, do: 14_400
+
   @doc "U - The period in timeslots after which reported but unavailable work may be replaced."
   def unavailability_period, do: 5
 

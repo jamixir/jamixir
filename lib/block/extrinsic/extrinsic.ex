@@ -15,7 +15,7 @@ defmodule Block.Extrinsic do
 
   @spec validate(t(), Block.Header.t(), System.State.t()) :: :ok | {:error, String.t()}
   def validate(%__MODULE__{} = extrinsic, header, %System.State{} = state) do
-    with :ok <- Guarantee.validate(extrinsic.guarantees, state),
+    with :ok <- Guarantee.validate(extrinsic.guarantees, state, header.timeslot),
          :ok <-
            TicketProof.validate(
              extrinsic.tickets,
