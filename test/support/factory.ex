@@ -120,7 +120,7 @@ defmodule Jamixir.Factory do
 
   def availability_specification_factory do
     %Block.Extrinsic.AvailabilitySpecification{
-      work_package_hash: <<1::256>>,
+      work_package_hash: sequence(:work_package_hash, fn n -> <<n::256>> end),
       work_bundle_length: 2,
       erasure_root: <<3::256>>,
       segment_root: <<4::256>>

@@ -34,7 +34,10 @@ defmodule Block.Extrinsic.Guarantee do
   @spec validate(list(t()), State.t()) :: :ok | {:error, String.t()}
   def validate(guarantees, state) do
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+         # Formula (145) v0.3.4
          :ok <- validate_gas(guarantees, state.services),
+         # Formula (147) v0.3.4
+         :ok <- validate_unique_wp_hash(guarantees),
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (139) v0.3.4
@@ -47,6 +50,7 @@ defmodule Block.Extrinsic.Guarantee do
       {:error, :duplicates} -> {:error, "Duplicate core_index found in guarantees"}
       {:error, :not_in_order} -> {:error, "Guarantees not ordered by core_index"}
       {:error, :invalid_gas_accumulation} -> {:error, "Invalid Gas Accumulation"}
+      {:error, :duplicated_wp_hash} -> {:error, "Duplicated work package hash"}
       false -> {:error, "Invalid credentials in one or more guarantees"}
     end
   end
@@ -61,7 +65,13 @@ defmodule Block.Extrinsic.Guarantee do
     if work_reports(guarantees)
        |> Enum.flat_map(& &1.work_results)
        |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
-         acum + Map.get(services, s).gas_limit_g
+         service = Map.get(services, s)
+         # For now, when service is not in state, assume gas_limit_g is 0
+         if service == nil do
+           acum
+         else
+           acum + service.gas_limit_g
+         end
        end) <=
          Constants.gas_accumulation() do
       :ok
@@ -70,7 +80,20 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  mockable validate_unique_wp_hash(guarantees) do
+    wr = work_reports(guarantees)
+    p = MapSet.new(wr |> Enum.map(& &1.specification.work_package_hash))
+
+    if length(wr) == MapSet.size(p) do
+      :ok
+    else
+      {:error, :duplicated_wp_hash}
+    end
+  end
+
+  def mock(:validate_unique_wp_hash, _), do: :ok
   def mock(:validate_gas, _), do: :ok
+  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
 
   # Formula (141) v0.3.4
   mockable reporters_set(
@@ -129,8 +152,6 @@ defmodule Block.Extrinsic.Guarantee do
       end
     )
   end
-
-  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
 
   def choose_g(t, t_, g, prev_g) do
     if div(t_, Constants.rotation_period()) == div(t, Constants.rotation_period()) do
