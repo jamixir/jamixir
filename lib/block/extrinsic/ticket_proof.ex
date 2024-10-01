@@ -23,7 +23,7 @@ defmodule Block.Extrinsic.TicketProof do
 
   defstruct entry_index: 0, ticket_validity_proof: <<>>
 
-  @spec validate_tickets(
+  @spec validate(
           list(t()),
           non_neg_integer(),
           non_neg_integer(),
@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.TicketProof do
         ) ::
           :ok | {:error, String.t()}
 
-  mockable validate_tickets(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
+  mockable validate(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
     with is_new_epoch <- Time.new_epoch?(state_timeslot, header_timeslot),
          :ok <- validate_ticket_count(ticket_proofs, header_timeslot),
          :ok <- validate_entry_indices(ticket_proofs),
@@ -101,7 +101,7 @@ defmodule Block.Extrinsic.TicketProof do
     end)
   end
 
-  def mock(:validate_tickets, _), do: :ok
+  def mock(:validate, _), do: :ok
   def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
 
   def from_json(json_data) do

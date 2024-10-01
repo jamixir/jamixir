@@ -20,7 +20,7 @@ defmodule Block.Extrinsic.Disputes do
 
   defstruct verdicts: [], culprits: [], faults: []
 
-  @spec validate_disputes(
+  @spec validate(
           Disputes.t(),
           list(Validator.t()),
           list(Validator.t()),
@@ -28,7 +28,7 @@ defmodule Block.Extrinsic.Disputes do
           integer()
         ) ::
           :ok | {:error, String.t()}
-  def validate_disputes(
+  def validate(
         %Disputes{verdicts: verdicts, culprits: culprits, faults: faults},
         curr_validators,
         prev_validators,
