@@ -3,7 +3,11 @@ defmodule WorkReportTest do
   import Jamixir.Factory
 
   setup do
-    {:ok, wr: build(:work_report)}
+    {:ok,
+     wr:
+       build(:work_report,
+         specification: build(:availability_specification, work_package_hash: <<1::256>>)
+       )}
   end
 
   test "encode/1 smoke test", %{wr: wr} do
