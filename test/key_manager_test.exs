@@ -1,18 +1,18 @@
 defmodule KeyManagerTest do
   use ExUnit.Case
 
-  @test_private_key_file "test_private_key.enc"
   setup_all do
+    {:ok, private_key_file} = Temp.path(%{suffix: ".enc"})
+
     System.put_env("PUBLIC_KEY", Base.encode64("test_public_key"))
     System.put_env("KEYSTORE_PASSWORD", "test_password")
-    System.put_env("PRIVATE_KEY_FILE", @test_private_key_file)
+    System.put_env("PRIVATE_KEY_FILE", private_key_file)
 
     iv = :crypto.strong_rand_bytes(16)
     ciphertext = :crypto.strong_rand_bytes(32)
-    File.write!(@test_private_key_file, iv <> ciphertext)
+    File.write!(private_key_file, iv <> ciphertext)
 
     on_exit(fn ->
-      File.rm(@test_private_key_file)
       System.delete_env("PUBLIC_KEY")
       System.delete_env("KEYSTORE_PASSWORD")
       System.delete_env("PRIVATE_KEY_FILE")
