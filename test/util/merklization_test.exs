@@ -1,6 +1,5 @@
 defmodule Util.MerklizationTest do
   use ExUnit.Case
-  alias Util.Hash
   alias Util.Merklization
 
   # Formula (293) v0.3.4: TESTS
