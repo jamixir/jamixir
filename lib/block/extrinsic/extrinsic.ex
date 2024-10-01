@@ -31,7 +31,8 @@ defmodule Block.Extrinsic do
              state.prev_validators,
              state.judgements,
              header.timeslot
-           ) do
+           ),
+         :ok <- Preimage.validate(extrinsic.preimages, state.services) do
       :ok
     else
       {:error, reason} -> {:error, reason}
