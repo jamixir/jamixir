@@ -32,24 +32,25 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns :ok for valid guarantees", context do
-      assert Guarantee.validate([context.valid_guarantee1, context.valid_guarantee2], %State{}) ==
+      assert Guarantee.validate([context.valid_guarantee1, context.valid_guarantee2], %State{}, 1) ==
                :ok
     end
 
     test "returns error for guarantees not ordered by core_index", context do
-      assert Guarantee.validate([context.valid_guarantee2, context.valid_guarantee1], %State{}) ==
-               {:error, "Guarantees not ordered by core_index"}
+      assert Guarantee.validate([context.valid_guarantee2, context.valid_guarantee1], %State{}, 1) ==
+               {:error, :not_in_order}
     end
 
     test "returns error for duplicate core_index in guarantees", context do
-      assert Guarantee.validate([context.valid_guarantee1, context.valid_guarantee1], %State{}) ==
-               {:error, "Duplicate core_index found in guarantees"}
+      assert Guarantee.validate([context.valid_guarantee1, context.valid_guarantee1], %State{}, 1) ==
+               {:error, :duplicates}
     end
 
     test "returns error for invalid credential length", context do
       assert Guarantee.validate(
                [%Guarantee{context.valid_guarantee1 | credentials: [{1, <<1::512>>}]}],
-               %State{}
+               %State{},
+               1
              ) == {:error, "Invalid credentials in one or more guarantees"}
     end
 
@@ -61,7 +62,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
                    | credentials: [{2, <<1::512>>}, {1, <<2::512>>}]
                  }
                ],
-               %State{}
+               %State{},
+               1
              ) ==
                {:error, "Invalid credentials in one or more guarantees"}
     end
@@ -74,17 +76,18 @@ defmodule Block.Extrinsic.GuaranteeTest do
                    | credentials: [{1, <<1::512>>}, {1, <<2::512>>}]
                  }
                ],
-               %State{}
+               %State{},
+               1
              ) ==
                {:error, "Invalid credentials in one or more guarantees"}
     end
 
     test "handles empty list of guarantees" do
-      assert Guarantee.validate([], %State{}) == :ok
+      assert Guarantee.validate([], %State{}, 1) == :ok
     end
 
     test "validates a single guarantee correctly", context do
-      assert Guarantee.validate([context.valid_guarantee1], %State{}) == :ok
+      assert Guarantee.validate([context.valid_guarantee1], %State{}, 1) == :ok
     end
 
     test "returns error when gas accumulation exceeds limit" do
@@ -104,10 +107,10 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       # sum of 4 work results can't be bigger than 1_000
       state = %State{services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 249}}}
-      assert Guarantee.validate(guarantees, state) == :ok
+      assert Guarantee.validate(guarantees, state, 1) == :ok
 
       state = %State{services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 251}}}
-      assert Guarantee.validate(guarantees, state) == {:error, "Invalid Gas Accumulation"}
+      assert Guarantee.validate(guarantees, state, 1) == {:error, :invalid_gas_accumulation}
     end
 
     test "returns error when duplicated work package hash", %{
@@ -121,8 +124,27 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       guarantees = [g1, %{g2 | work_report: %{g2.work_report | specification: new_spec}}]
 
-      assert Guarantee.validate(guarantees, %State{}) ==
-               {:error, "Duplicated work package hash"}
+      assert Guarantee.validate(guarantees, %State{}, 1) ==
+               {:error, :duplicated_wp_hash}
+    end
+
+    test "returns error when refinement context timeslot is too old", context do
+      current_timeslot = 1000
+      old_timeslot = current_timeslot - Constants.max_age_lookup_anchor() - 1
+
+      guarantee_with_old_context = %{
+        context.valid_guarantee1
+        | work_report: %{
+            context.valid_guarantee1.work_report
+            | refinement_context: %{
+                context.valid_guarantee1.work_report.refinement_context
+                | timeslot: old_timeslot
+              }
+          }
+      }
+
+      assert Guarantee.validate([guarantee_with_old_context], %State{}, current_timeslot) ==
+               {:error, :refine_context_timeslot}
     end
   end
 
