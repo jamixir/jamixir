@@ -109,6 +109,21 @@ defmodule Block.Extrinsic.GuaranteeTest do
       state = %State{services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 251}}}
       assert Guarantee.validate(guarantees, state) == {:error, "Invalid Gas Accumulation"}
     end
+
+    test "returns error when duplicated work package hash", %{
+      valid_guarantee1: g1,
+      valid_guarantee2: g2
+    } do
+      new_spec = %{
+        g2.work_report.specification
+        | work_package_hash: g1.work_report.specification.work_package_hash
+      }
+
+      guarantees = [g1, %{g2 | work_report: %{g2.work_report | specification: new_spec}}]
+
+      assert Guarantee.validate(guarantees, %State{}) ==
+               {:error, "Duplicated work package hash"}
+    end
   end
 
   describe "reporters_set/6" do
