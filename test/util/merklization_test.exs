@@ -37,7 +37,6 @@ defmodule Util.MerklizationTest do
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do
-
       key = :crypto.strong_rand_bytes(31)
 
       value = :crypto.strong_rand_bytes(16)
@@ -49,11 +48,9 @@ defmodule Util.MerklizationTest do
       assert Enum.slice(result, 0, 2) == [1, 0]
 
       assert Enum.slice(result, 2, 6) == [0, 0, 0, 0, 1, 0]
-
     end
 
     test "encode_leaf when byte_size(value) == 32" do
-
       key = :crypto.strong_rand_bytes(31)
 
       value = :crypto.strong_rand_bytes(32)
@@ -63,7 +60,6 @@ defmodule Util.MerklizationTest do
       assert length(result) == 512
 
       assert Enum.slice(result, 0, 2) == [1, 0]
-
     end
 
     test "encode_leaf when byte_size(value) > 32" do
@@ -75,7 +71,6 @@ defmodule Util.MerklizationTest do
       assert length(result) == 512
 
       assert Enum.slice(result, 0, 8) == [1, 1, 0, 0, 0, 0, 0, 0]
-
     end
   end
 
