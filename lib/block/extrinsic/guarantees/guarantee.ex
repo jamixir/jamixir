@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Guarantee do
   11.4
   Formula (138) v0.3.4
   """
+  alias System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.WorkResult
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.Guarantor
@@ -46,7 +47,9 @@ defmodule Block.Extrinsic.Guarantee do
          true <-
            Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
              Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
-           end) do
+           end),
+         # Formula (148) v0.3.4
+         :ok <- validate_anchor_block(guarantees, state.recent_history) do
       :ok
     else
       {:error, error} -> {:error, error}
@@ -88,7 +91,7 @@ defmodule Block.Extrinsic.Guarantee do
 
   def mock(:validate_availability, _), do: :ok
   def mock(:reporters_set, _), do: {:ok, MapSet.new()}
-
+  def mock(:validate_anchor_block, _), do: :ok
   # Formula (145) v0.3.4
   def validate_gas(guarantees, services) do
     total_gas =
@@ -122,8 +125,24 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  # Formula (148) v0.3.4
+  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
+  mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
+    if Enum.all?(refinement_contexts(guarantees), fn x ->
+         Enum.any?(blocks, fn y ->
+           x.anchor == y.header_hash and
+             x.state_root_ == y.state_root and
+             x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+         end)
+       end) do
+      :ok
+    else
+      {:error, :invalid_anchor_block}
+    end
+  end
+
+  # Formula (149) v0.3.4
   def validate_refine_context_timeslot(guarantees, t) do
-    # Formula
     if Enum.all?(
          refinement_contexts(guarantees),
          &(&1.timeslot >= t - Constants.max_age_lookup_anchor())
