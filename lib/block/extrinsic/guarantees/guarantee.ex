@@ -64,6 +64,31 @@ defmodule Block.Extrinsic.Guarantee do
     work_reports(guarantees) |> Enum.map(& &1.refinement_context)
   end
 
+  # Formula (144) v0.3.4
+  mockable validate_availability(
+             guarantees,
+             core_reports_intermediate_2,
+             timeslot,
+             authorizer_pool
+           ) do
+    Enum.reduce_while(work_reports(guarantees), :ok, fn wr, _ ->
+      cond do
+        !Enum.member?(Enum.at(authorizer_pool, wr.core_index), wr.authorizer_hash) ->
+          {:halt, {:error, :missing_authorizer}}
+
+        Enum.at(core_reports_intermediate_2, wr.core_index)
+        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
+          {:halt, {:error, :pending_work}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
+  end
+
+  def mock(:validate_availability, _), do: :ok
+  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
+
   # Formula (145) v0.3.4
   def validate_gas(guarantees, services) do
     total_gas =
@@ -108,8 +133,6 @@ defmodule Block.Extrinsic.Guarantee do
       {:error, :refine_context_timeslot}
     end
   end
-
-  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
 
   # Formula (141) v0.3.4
   mockable reporters_set(
