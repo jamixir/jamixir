@@ -85,12 +85,20 @@ defmodule Util.Merklization do
         Hash.zero()
 
       1 ->
-        [{k, v}] = Map.to_list(dict)
+        [{_, {k, v}}] = Map.to_list(dict)
         Hash.default(bits_to_bytes(encode_leaf(k, v)))
 
       _ ->
-        {l, r} = dict |> Enum.split_with(fn {[b0 | _], _} -> b0 == 0 end)
-        Hash.default(bits_to_bytes(encode_branch(merkelize_state(l), merkelize_state(r))))
+        {l, r} =
+          dict
+          |> Enum.split_with(fn {[b0 | _], _} -> b0 == 0 end)
+          |> (fn {left, right} ->
+                left = Enum.map(left, fn {[_ | rest], value} -> {rest, value} end)
+                right = Enum.map(right, fn {[_ | rest], value} -> {rest, value} end)
+                {Enum.into(left, %{}), Enum.into(right, %{})}
+              end).()
+
+        Hash.default(bits_to_bytes(encode_branch(merkelize(l), merkelize(r))))
     end
   end
 
@@ -118,7 +126,6 @@ defmodule Util.Merklization do
     |> Enum.chunk_every(8)
     |> Enum.map(fn chunk ->
       chunk
-      |> Enum.reverse()
       |> Enum.with_index()
       |> Enum.reduce(0, fn {bit, index}, acc ->
         acc + bit * :math.pow(2, index)

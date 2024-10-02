@@ -1,5 +1,7 @@
 defmodule Util.MerklizationTest do
   use ExUnit.Case
+  import Jamixir.Factory
+  alias System.State
   alias Util.Merklization
 
   # Formula (293) v0.3.4: TESTS
@@ -15,7 +17,8 @@ defmodule Util.MerklizationTest do
 
       assert is_list(result)
       assert length(result) == 512
-      assert Enum.at(result, 0) == 0
+      [b | _] = result
+      assert b == 0
     end
 
     test "encode_branch with random inputs" do
@@ -27,7 +30,8 @@ defmodule Util.MerklizationTest do
 
         assert is_list(result)
         assert length(result) == 512
-        assert Enum.at(result, 0) == 0
+        [b | _] = result
+        assert b == 0
       end
     end
   end
@@ -89,35 +93,8 @@ defmodule Util.MerklizationTest do
 
     test "bits for multiple octets(bytes)" do
       octets = <<5, 0, 5>>
-      # 5 in binary
-      expected_bits = [
-        1,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        # 0 in binary
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        # 5 in binary
-        1,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0
-      ]
+      # 505 in binary
+      expected_bits = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]
 
       assert Merklization.bits(octets) == expected_bits
     end
@@ -133,6 +110,66 @@ defmodule Util.MerklizationTest do
       input = <<255, 255>>
       expected_bits = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
       assert Merklization.bits(input) == expected_bits
+    end
+  end
+
+  describe "bits_to_bytes/1" do
+    test "bits_to_bytes with empty list" do
+      assert Merklization.bits_to_bytes([]) == <<>>
+    end
+
+    test "bits_to_bytes with single byte" do
+      bits = [1, 0, 1, 0, 1, 0, 1, 0]
+      assert Merklization.bits_to_bytes(bits) == <<85>>
+    end
+
+    test "bits_to_bytes with multiple bytes" do
+      bits = [1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1]
+      assert Merklization.bits_to_bytes(bits) == <<85, 170>>
+    end
+
+    test "bits_to_bytes with partial byte" do
+      bits = [1, 0, 1, 0, 1]
+      assert Merklization.bits_to_bytes(bits) == <<21>>
+    end
+
+    test "bits_to_bytes reversibility" do
+      original = :crypto.strong_rand_bytes(10)
+      bits = Merklization.bits(original)
+      result = Merklization.bits_to_bytes(bits)
+      assert result == original
+    end
+  end
+
+  describe "meklelize_state/1" do
+    test "smoke test fake state" do
+      dict = %{<<1>> => "a", <<2>> => "b"}
+
+      transformed_dict = %{
+        [1, 0, 0, 0, 0, 0, 0, 0] => {<<1>>, "a"},
+        [0, 1, 0, 0, 0, 0, 0, 0] => {<<2>>, "b"}
+      }
+
+      assert Merklization.merkelize_state(dict) == Merklization.merkelize(transformed_dict)
+    end
+
+    test "test big fake state" do
+      dict =
+        Enum.reduce(1..100, %{}, fn _, acc ->
+          key = :crypto.strong_rand_bytes(32)
+          value = :crypto.strong_rand_bytes(32)
+          Map.put(acc, key, value)
+        end)
+
+      hash = Merklization.merkelize_state(dict)
+      assert is_binary(hash)
+      assert byte_size(hash) == 32
+    end
+
+    test "smoke test real state" do
+      hash = build(:genesis_state) |> State.serialize() |> Merklization.merkelize_state()
+      assert is_binary(hash)
+      assert byte_size(hash) == 32
     end
   end
 end
