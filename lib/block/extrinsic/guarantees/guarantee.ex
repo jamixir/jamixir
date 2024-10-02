@@ -66,18 +66,18 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (145) v0.3.4
   def validate_gas(guarantees, services) do
-    if work_reports(guarantees)
-       |> Enum.flat_map(& &1.work_results)
-       |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
-         service = Map.get(services, s)
-         # For now, when service is not in state, assume gas_limit_g is 0
-         if service == nil do
-           acum
-         else
-           acum + service.gas_limit_g
-         end
-       end) <=
-         Constants.gas_accumulation() do
+    total_gas =
+      work_reports(guarantees)
+      |> Enum.flat_map(& &1.work_results)
+      |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
+        case Map.get(services, s) do
+        # For now, when service is not in state, assume gas_limit_g is 0
+          nil -> acum
+          service -> acum + service.gas_limit_g
+        end
+      end)
+
+    if total_gas <= Constants.gas_accumulation() do
       :ok
     else
       {:error, :invalid_gas_accumulation}
