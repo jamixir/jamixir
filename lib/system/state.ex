@@ -100,6 +100,13 @@ defmodule System.State do
              core_reports_intermediate_1,
              e.assurances
            ),
+         :ok <-
+           Guarantee.validate_availability(
+             e.guarantees,
+             core_reports_intermediate_2,
+             h.timeslot,
+             state.authorizer_pool
+           ),
          # ρ' Formula (27) v0.3.4
          {:ok, core_reports_} <-
            State.CoreReport.calculate_core_reports_(

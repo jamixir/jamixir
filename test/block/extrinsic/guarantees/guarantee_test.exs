@@ -291,6 +291,50 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
   end
 
+  # Formula (144) v0.3.4
+  describe "validate_availability/4" do
+    setup do
+      guarantees = [
+        build(:guarantee, work_report: build(:work_report, core_index: 0, authorizer_hash: <<1>>)),
+        build(:guarantee, work_report: build(:work_report, core_index: 1, authorizer_hash: <<2>>))
+      ]
+
+      {:ok, guarantees: guarantees}
+    end
+
+    test "returns :missing_authorizer when authorizer is not in the pool", %{
+      guarantees: guarantees
+    } do
+      core_reports = [nil, nil]
+      authorizer_pool = [MapSet.new([<<3>>]), MapSet.new([<<2>>])]
+
+      result =
+        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+
+      assert result == {:error, :missing_authorizer}
+    end
+
+    test "returns :pending_work when there's pending work", %{guarantees: guarantees} do
+      core_reports = [%{timeslot: 94}, %{timeslot: 80}]
+      authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
+
+      result =
+        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+
+      assert result == {:error, :pending_work}
+    end
+
+    test "returns :ok when all conditions are met", %{guarantees: guarantees} do
+      core_reports = [%{timeslot: 95}, %{timeslot: 105}]
+      authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
+
+      result =
+        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+
+      assert result == :ok
+    end
+  end
+
   defp create_valid_guarantees(context) do
     Enum.map(0..1, fn core_index ->
       work_report = build(:work_report, core_index: core_index)
