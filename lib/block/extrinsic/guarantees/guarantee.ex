@@ -71,7 +71,7 @@ defmodule Block.Extrinsic.Guarantee do
       |> Enum.flat_map(& &1.work_results)
       |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
         case Map.get(services, s) do
-        # For now, when service is not in state, assume gas_limit_g is 0
+          # For now, when service is not in state, assume gas_limit_g is 0
           nil -> acum
           service -> acum + service.gas_limit_g
         end

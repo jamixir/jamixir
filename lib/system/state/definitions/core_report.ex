@@ -42,8 +42,8 @@ defmodule System.State.CoreReport do
     |> Enum.map(fn
       {cr, intermediate} ->
         if MapSet.member?(w, cr.work_report),
-         do: nil,
-         else: intermediate
+          do: nil,
+          else: intermediate
     end)
   end
 
