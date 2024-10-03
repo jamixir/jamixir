@@ -4,20 +4,16 @@ defmodule System.State.ServicesTest do
   alias Block.Extrinsic.{Assurance, Preimage}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
 
-  # Mock module for constants
   defmodule ConstantsMock do
-    # Set to a small number for testing
     def validator_count, do: 3
     def core_count, do: 3
     def gas_accumulation, do: 1000
   end
 
   setup do
-    # Apply the mock before each test
     Application.put_env(:jamixir, Constants, ConstantsMock)
 
     on_exit(fn ->
-      # Clean up after each test
       Application.delete_env(:jamixir, Constants)
     end)
 
