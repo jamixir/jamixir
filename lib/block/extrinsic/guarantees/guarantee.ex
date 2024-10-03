@@ -112,32 +112,46 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  # Formula (146) v0.3.4
+  defp p_set(work_reports) do
+    work_reports
+    |> Enum.map(& &1.specification.work_package_hash)
+    |> MapSet.new()
+  end
+
   # Formula (147) v0.3.4
+  @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicated_wp_hash}
   def validate_unique_wp_hash(guarantees) do
     wr = work_reports(guarantees)
-    # Formula (146) v0.3.4
-    p = MapSet.new(wr |> Enum.map(& &1.specification.work_package_hash))
 
-    if length(wr) == MapSet.size(p) do
+    if length(wr) == MapSet.size(p_set(wr)) do
       :ok
     else
       {:error, :duplicated_wp_hash}
     end
   end
 
-  # Formula (148) v0.3.4
-  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
-    if Enum.all?(refinement_contexts(guarantees), fn x ->
-         Enum.any?(blocks, fn y ->
-           x.anchor == y.header_hash and
-             x.state_root_ == y.state_root and
-             x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-         end)
-       end) do
-      :ok
-    else
-      {:error, :invalid_anchor_block}
+    cond do
+      # Formula (148) v0.3.4
+      # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
+      !Enum.all?(refinement_contexts(guarantees), fn x ->
+        Enum.any?(blocks, fn y ->
+          x.anchor == y.header_hash and
+            x.state_root_ == y.state_root and
+              x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+        end)
+      end) ->
+        {:error, :invalid_anchor_block}
+
+      # Formula (151) v0.3.4
+      Enum.any?(p_set(work_reports(guarantees)), fn p ->
+        Enum.member?(blocks |> Enum.flat_map(fn b -> b.work_report_hashes end), p)
+      end) ->
+        {:error, :work_package_in_recent_history}
+
+      true ->
+        :ok
     end
   end
 
