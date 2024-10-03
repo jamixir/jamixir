@@ -23,14 +23,14 @@ defmodule Block.Extrinsic.GuaranteeTest do
           beefy_root_: Hash.keccak_256(Codec.Encoder.encode_mmr([<<1>>, <<2>>]))
         )
 
-      valid_guarantee1 =
+      g1 =
         build(:guarantee,
           work_report: build(:work_report, core_index: 1, refinement_context: refinement_context),
           timeslot: 100,
           credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
         )
 
-      valid_guarantee2 =
+      g2 =
         build(:guarantee,
           work_report: build(:work_report, core_index: 2, refinement_context: refinement_context),
           timeslot: 100,
@@ -49,74 +49,40 @@ defmodule Block.Extrinsic.GuaranteeTest do
         }
       }
 
-      {:ok,
-       valid_guarantee1: valid_guarantee1,
-       valid_guarantee2: valid_guarantee2,
-       state: state,
-       refinement_context: refinement_context}
+      {:ok, g1: g1, g2: g2, state: state, refinement_context: refinement_context}
     end
 
-    test "returns :ok for valid guarantees", context do
-      assert Guarantee.validate(
-               [context.valid_guarantee1, context.valid_guarantee2],
-               context.state,
-               1
-             ) ==
-               :ok
+    test "returns :ok for valid guarantees", %{state: state, g1: g1, g2: g2} do
+      assert Guarantee.validate([g1, g2], state, 1) == :ok
     end
 
-    test "returns error for guarantees not ordered by core_index", context do
-      assert Guarantee.validate(
-               [context.valid_guarantee2, context.valid_guarantee1],
-               context.state,
-               1
-             ) ==
-               {:error, :not_in_order}
+    test "returns error for guarantees not ordered by core_index", %{state: state, g1: g1, g2: g2} do
+      assert Guarantee.validate([g2, g1], state, 1) == {:error, :not_in_order}
     end
 
-    test "returns error for duplicate core_index in guarantees", context do
-      assert Guarantee.validate(
-               [context.valid_guarantee1, context.valid_guarantee1],
-               context.state,
-               1
-             ) ==
-               {:error, :duplicates}
+    test "returns error for duplicate core_index in guarantees", %{state: state, g1: g1} do
+      assert Guarantee.validate([g1, g1], state, 1) == {:error, :duplicates}
     end
 
-    test "returns error for invalid credential length", context do
-      assert Guarantee.validate(
-               [%Guarantee{context.valid_guarantee1 | credentials: [{1, <<1::512>>}]}],
-               context.state,
-               1
-             ) == {:error, "Invalid credentials in one or more guarantees"}
+    test "returns error for invalid credential length", %{g1: g1, state: state} do
+      invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}])
+
+      assert Guarantee.validate([invalid_g1], state, 1) ==
+               {:error, "Invalid credentials in guarantees"}
     end
 
-    test "returns error for credentials not ordered by validator_index", context do
-      assert Guarantee.validate(
-               [
-                 %Guarantee{
-                   context.valid_guarantee1
-                   | credentials: [{2, <<1::512>>}, {1, <<2::512>>}]
-                 }
-               ],
-               context.state,
-               1
-             ) ==
-               {:error, "Invalid credentials in one or more guarantees"}
+    test "returns error for credentials not ordered by validator_index", %{g1: g1, state: state} do
+      invalid_g1 = put_in(g1.credentials, [{2, <<1::512>>}, {1, <<2::512>>}])
+
+      assert Guarantee.validate([invalid_g1], state, 1) ==
+               {:error, "Invalid credentials in guarantees"}
     end
 
-    test "returns error for duplicate validator_index in credentials", context do
-      assert Guarantee.validate(
-               [
-                 %Guarantee{
-                   context.valid_guarantee1
-                   | credentials: [{1, <<1::512>>}, {1, <<2::512>>}]
-                 }
-               ],
-               context.state,
-               1
-             ) ==
-               {:error, "Invalid credentials in one or more guarantees"}
+    test "returns error for duplicate validator_index in credentials", %{g1: g1, state: state} do
+      invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}, {1, <<2::512>>}])
+
+      assert Guarantee.validate([invalid_g1], state, 1) ==
+               {:error, "Invalid credentials in guarantees"}
     end
 
     test "handles empty list of guarantees", context do
@@ -124,117 +90,90 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "validates a single guarantee correctly", context do
-      assert Guarantee.validate([context.valid_guarantee1], context.state, 1) == :ok
+      assert Guarantee.validate([context.g1], context.state, 1) == :ok
     end
 
-    test "returns error when gas accumulation exceeds limit", context do
-      work_results = [
-        build(:work_result, service_index: 0),
-        build(:work_result, service_index: 1)
-      ]
+    test "returns error when gas accumulation exceeds limit", %{state: state, g1: g1, g2: g2} do
+      work_results = 1..2 |> Enum.map(&build(:work_result, service_index: &1))
 
       guarantees = [
-        build(:guarantee,
-          work_report:
-            build(:work_report,
-              core_index: 0,
-              work_results: work_results,
-              refinement_context: context.refinement_context
-            )
-        ),
-        build(:guarantee,
-          work_report:
-            build(:work_report,
-              core_index: 1,
-              work_results: work_results,
-              refinement_context: context.refinement_context
-            )
-        )
+        put_in(g1.work_report.work_results, work_results),
+        put_in(g2.work_report.work_results, work_results)
       ]
 
       # sum of 4 work results can't be bigger than 1_000
-      s = %State{context.state | services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 249}}}
+      s = %State{state | services: %{1 => %{gas_limit_g: 250}, 2 => %{gas_limit_g: 249}}}
       assert Guarantee.validate(guarantees, s, 1) == :ok
 
-      s = %State{context.state | services: %{0 => %{gas_limit_g: 250}, 1 => %{gas_limit_g: 251}}}
+      s = %State{state | services: %{1 => %{gas_limit_g: 250}, 2 => %{gas_limit_g: 251}}}
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
     end
 
-    test "returns error when duplicated work package hash", %{
-      valid_guarantee1: g1,
-      valid_guarantee2: g2,
-      state: state
-    } do
-      new_spec = %{
-        g2.work_report.specification
-        | work_package_hash: g1.work_report.specification.work_package_hash
-      }
+    test "returns error when duplicated work package hash", %{g1: g1, g2: g2, state: state} do
+      updated_g2 =
+        put_in(
+          g2.work_report.specification.work_package_hash,
+          g1.work_report.specification.work_package_hash
+        )
 
-      guarantees = [g1, %{g2 | work_report: %{g2.work_report | specification: new_spec}}]
-
-      assert Guarantee.validate(guarantees, state, 1) ==
+      assert Guarantee.validate([g1, updated_g2], state, 1) ==
                {:error, :duplicated_wp_hash}
     end
 
-    test "returns error when refinement context timeslot is too old", context do
+    test "returns error when refinement context timeslot is too old", %{g1: g1, state: state} do
       current_timeslot = 1000
       old_timeslot = current_timeslot - Constants.max_age_lookup_anchor() - 1
+      invalid_g = put_in(g1.work_report.refinement_context.timeslot, old_timeslot)
 
-      guarantee_with_old_context = %{
-        context.valid_guarantee1
-        | work_report: %{
-            context.valid_guarantee1.work_report
-            | refinement_context: %{
-                context.valid_guarantee1.work_report.refinement_context
-                | timeslot: old_timeslot
-              }
-          }
-      }
-
-      assert Guarantee.validate([guarantee_with_old_context], context.state, current_timeslot) ==
+      assert Guarantee.validate([invalid_g], state, current_timeslot) ==
                {:error, :refine_context_timeslot}
     end
 
-    test "error when recent history does not have header_hash", context do
-      valid_rh = context.state.recent_history
+    test "error when recent history does not have header_hash", %{g1: g1, state: state} do
+      valid_rh = state.recent_history
       valid_rb = Enum.at(valid_rh.blocks, 0)
       invalid_rb = %RecentBlock{valid_rb | header_hash: nil}
       invalid_state = %State{recent_history: %RecentHistory{valid_rh | blocks: [invalid_rb]}}
 
-      assert Guarantee.validate([context.valid_guarantee1], invalid_state, 1) ==
-               {:error, :invalid_anchor_block}
+      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :invalid_anchor_block}
     end
 
-    test "error when recent history does not have state_root", context do
-      valid_rh = context.state.recent_history
-      valid_rb = Enum.at(valid_rh.blocks, 0)
-      invalid_rb = %RecentBlock{valid_rb | state_root: nil}
-      invalid_state = %State{recent_history: %RecentHistory{valid_rh | blocks: [invalid_rb]}}
+    test "error when recent history does not have state_root", %{g1: g1, state: state} do
+      invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).state_root, nil)
+      invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([context.valid_guarantee1], invalid_state, 1) ==
-               {:error, :invalid_anchor_block}
+      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :invalid_anchor_block}
     end
 
-    test "error when recent history does not have accumulated_result_mmr", context do
-      valid_rh = context.state.recent_history
-      valid_rb = Enum.at(valid_rh.blocks, 0)
-      invalid_rb = %RecentBlock{valid_rb | accumulated_result_mmr: []}
-      invalid_state = %State{recent_history: %RecentHistory{valid_rh | blocks: [invalid_rb]}}
+    test "error when recent history does not have accumulated_result_mmr", %{g1: g1, state: state} do
+      invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
+      invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([context.valid_guarantee1], invalid_state, 1) ==
-               {:error, :invalid_anchor_block}
+      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :invalid_anchor_block}
     end
 
-    test "returns error when work package is in recent history", %{
-      valid_guarantee1: g1,
-      state: state
-    } do
+    test "returns error when work package is in recent history", %{g1: g1, state: state} do
       wp_hash = g1.work_report.specification.work_package_hash
       # Add the new work package hash to the recent history
       recent_blocks = [%{hd(state.recent_history.blocks) | work_report_hashes: [wp_hash]}]
       new_state = %{state | recent_history: %RecentHistory{blocks: recent_blocks}}
 
       assert Guarantee.validate([g1], new_state, 1) == {:error, :work_package_in_recent_history}
+    end
+
+    test "validates prerequisite", %{g1: g1, g2: g2, state: state} do
+      # (wx)p ≠ ∅
+      updated_g1 = put_in(g1.work_report.refinement_context.prerequisite, "hash")
+      assert Guarantee.validate([updated_g1, g2], state, 1) == {:error, :invalid_prerequisite}
+
+      # (wx)p ∈ p
+      valid_g1 = put_in(g1.work_report.specification.work_package_hash, "hash")
+      assert Guarantee.validate([valid_g1, g2], state, 1) == :ok
+
+      # (wx)p ∈ bp, b ∈ β
+      valid_rb = put_in(Enum.at(state.recent_history.blocks, 0).work_report_hashes, ["hash"])
+      valid_state = put_in(state.recent_history.blocks, [valid_rb])
+      assert Guarantee.validate([updated_g1, g2], valid_state, 1) == :ok
     end
   end
 

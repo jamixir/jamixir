@@ -53,7 +53,7 @@ defmodule Block.Extrinsic.Guarantee do
       :ok
     else
       {:error, error} -> {:error, error}
-      false -> {:error, "Invalid credentials in one or more guarantees"}
+      false -> {:error, "Invalid credentials in guarantees"}
     end
   end
 
@@ -132,6 +132,9 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
+    w = work_reports(guarantees)
+    all_work_report_hashes = Enum.flat_map(blocks, & &1.work_report_hashes) |> MapSet.new()
+
     cond do
       # Formula (148) v0.3.4
       # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
@@ -145,10 +148,17 @@ defmodule Block.Extrinsic.Guarantee do
         {:error, :invalid_anchor_block}
 
       # Formula (151) v0.3.4
-      Enum.any?(p_set(work_reports(guarantees)), fn p ->
-        Enum.member?(blocks |> Enum.flat_map(fn b -> b.work_report_hashes end), p)
-      end) ->
+      # ∀p ∈ p,∀x ∈ β ∶ p ∈/ xp
+      Enum.any?(p_set(w), fn p -> Enum.member?(all_work_report_hashes, p) end) ->
         {:error, :work_package_in_recent_history}
+
+      # Formula (152) v0.3.4
+      # ∀w ∈ w, (wx)p ≠ ∅ ∶ (wx)p ∈ p ∪ {x ∣ x ∈ bp, b ∈ β}
+      refinement_contexts(guarantees)
+      |> Enum.map(& &1.prerequisite)
+      |> Enum.filter(&(&1 != nil))
+      |> Enum.any?(&(!Enum.member?(MapSet.union(p_set(w), all_work_report_hashes), &1))) ->
+        {:error, :invalid_prerequisite}
 
       true ->
         :ok
