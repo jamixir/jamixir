@@ -224,6 +224,18 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate([context.valid_guarantee1], invalid_state, 1) ==
                {:error, :invalid_anchor_block}
     end
+
+    test "returns error when work package is in recent history", %{
+      valid_guarantee1: g1,
+      state: state
+    } do
+      wp_hash = g1.work_report.specification.work_package_hash
+      # Add the new work package hash to the recent history
+      recent_blocks = [%{hd(state.recent_history.blocks) | work_report_hashes: [wp_hash]}]
+      new_state = %{state | recent_history: %RecentHistory{blocks: recent_blocks}}
+
+      assert Guarantee.validate([g1], new_state, 1) == {:error, :work_package_in_recent_history}
+    end
   end
 
   describe "reporters_set/6" do
