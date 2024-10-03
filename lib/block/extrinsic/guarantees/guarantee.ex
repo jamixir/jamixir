@@ -4,12 +4,9 @@ defmodule Block.Extrinsic.Guarantee do
   11.4
   Formula (138) v0.3.4
   """
-  alias System.State.RecentHistory
-  alias Block.Extrinsic.Guarantee.WorkResult
-  alias Block.Extrinsic.Guarantee.WorkReport
-  alias Block.Extrinsic.Guarantor
-  alias System.State
-  alias System.State.EntropyPool
+  alias System.State.ServiceAccount
+  alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
+  alias System.{State, State.EntropyPool, State.RecentHistory}
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
 
@@ -34,9 +31,11 @@ defmodule Block.Extrinsic.Guarantee do
   # Formula (140) v0.3.4
   @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
   def validate(guarantees, state, timeslot) do
+    w = work_reports(guarantees)
+
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          # Formula (145) v0.3.4
-         :ok <- validate_gas(guarantees, state.services),
+         :ok <- validate_services(w, state.services),
          # Formula (147) v0.3.4
          :ok <- validate_unique_wp_hash(guarantees),
          # Formula (149) v0.3.4
@@ -93,23 +92,27 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:reporters_set, _), do: {:ok, MapSet.new()}
   def mock(:validate_anchor_block, _), do: :ok
   # Formula (145) v0.3.4
-  def validate_gas(guarantees, services) do
-    total_gas =
-      work_reports(guarantees)
-      |> Enum.flat_map(& &1.work_results)
-      |> Enum.reduce(0, fn %WorkResult{service_index: s}, acum ->
-        case Map.get(services, s) do
-          # For now, when service is not in state, assume gas_limit_g is 0
-          nil -> acum
-          service -> acum + service.gas_limit_g
-        end
-      end)
+  def validate_services(w, services) do
+    cond do
+      total_gas(w, services) > Constants.gas_accumulation() ->
+        {:error, :invalid_gas_accumulation}
 
-    if total_gas <= Constants.gas_accumulation() do
-      :ok
-    else
-      {:error, :invalid_gas_accumulation}
+      Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
+        r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
+      end) ->
+        {:error, :invalid_work_result_core_index}
+
+      true ->
+        :ok
     end
+  end
+
+  defp total_gas(work_reports, services) do
+    Stream.flat_map(work_reports, & &1.work_results)
+    |> Stream.map(&Map.get(services, &1.service_index))
+    |> Stream.filter(&(&1 != nil))
+    |> Stream.map(& &1.gas_limit_g)
+    |> Enum.sum()
   end
 
   # Formula (146) v0.3.4
