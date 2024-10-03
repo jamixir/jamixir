@@ -40,42 +40,43 @@ defmodule System.State.Services do
   end
 
   # Formula (160) v0.3.4
-  def compute_gas_attributable_all(
+  def gas_attributable_for_service(
+        service_index,
         assurances,
         core_reports_intermediate_1,
         services_intermediate
       ) do
     # w∈W
     Assurance.available_work_reports(assurances, core_reports_intermediate_1)
-    |> Enum.map(fn %{work_results: wr, service_index: s} ->
-      gas_for_work_report(wr, services_intermediate, s)
+    |> Enum.map(fn %WorkReport{work_results: wr} ->
+      gas_for_work_report(wr, services_intermediate, service_index)
     end)
     |> Enum.sum()
   end
 
-  defp gas_for_work_report(wr, services_intermediate, s) do
+  defp gas_for_work_report(r, services_intermediate, s) do
     # r∈wr ,rs =s
     service_gas_limit =
-      Enum.filter(wr, fn %{service_index: s_index} -> s_index == s end)
+      Enum.filter(r, fn %{service_index: s_index} -> s_index == s end)
       |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
       |> Enum.sum()
 
     # r∈wr
     total_gas_limit =
-      wr
+      r
       |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
       |> Enum.sum()
 
     # ∑ [rg]
     total_prioritization =
-      wr
+      r
       |> Enum.map(fn %{gas_prioritization_ratio: rg} -> rg end)
       |> Enum.sum()
 
     ga = Constants.gas_accumulation()
 
     gas_share =
-      wr
+      r
       |> Enum.map(fn %{gas_prioritization_ratio: rg} ->
         div(rg * (ga - total_gas_limit), total_prioritization)
       end)
