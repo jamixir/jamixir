@@ -2,6 +2,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
   import Jamixir.Factory
 
+  alias System.State.ServiceAccount
   alias System.State.RecentHistory
   alias System.State.RecentHistory.RecentBlock
   alias Block.Extrinsic.{Guarantee, Guarantor}
@@ -38,6 +39,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         )
 
       state = %State{
+        services: %{0 => %ServiceAccount{code_hash: <<1::256>>}},
         recent_history: %RecentHistory{
           blocks: [
             %RecentBlock{
@@ -94,19 +96,30 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error when gas accumulation exceeds limit", %{state: state, g1: g1, g2: g2} do
-      work_results = 1..2 |> Enum.map(&build(:work_result, service_index: &1))
+      wr = 1..2 |> Enum.map(&build(:work_result, service_index: &1))
 
       guarantees = [
-        put_in(g1.work_report.work_results, work_results),
-        put_in(g2.work_report.work_results, work_results)
+        put_in(g1.work_report.work_results, wr),
+        put_in(g2.work_report.work_results, wr)
       ]
 
       # sum of 4 work results can't be bigger than 1_000
-      s = %State{state | services: %{1 => %{gas_limit_g: 250}, 2 => %{gas_limit_g: 249}}}
-      assert Guarantee.validate(guarantees, s, 1) == :ok
+      s =
+        put_in(state.services, %{
+          1 => %{gas_limit_g: 250, code_hash: <<1::256>>},
+          2 => %{gas_limit_g: 249, code_hash: <<1::256>>}
+        })
 
-      s = %State{state | services: %{1 => %{gas_limit_g: 250}, 2 => %{gas_limit_g: 251}}}
-      assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
+      assert Guarantee.validate(guarantees, s, 1) == :ok
+      # change value to exceed the limit
+      s2 = put_in(s.services[2].gas_limit_g, 251)
+
+      assert Guarantee.validate(guarantees, s2, 1) == {:error, :invalid_gas_accumulation}
+    end
+
+    test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
+      s = put_in(state.services[0].code_hash, <<2::256>>)
+      assert Guarantee.validate([g1, g2], s, 1) == {:error, :invalid_work_result_core_index}
     end
 
     test "returns error when duplicated work package hash", %{g1: g1, g2: g2, state: state} do
@@ -116,8 +129,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           g1.work_report.specification.work_package_hash
         )
 
-      assert Guarantee.validate([g1, updated_g2], state, 1) ==
-               {:error, :duplicated_wp_hash}
+      assert Guarantee.validate([g1, updated_g2], state, 1) == {:error, :duplicated_wp_hash}
     end
 
     test "returns error when refinement context timeslot is too old", %{g1: g1, state: state} do
@@ -133,9 +145,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
       valid_rh = state.recent_history
       valid_rb = Enum.at(valid_rh.blocks, 0)
       invalid_rb = %RecentBlock{valid_rb | header_hash: nil}
-      invalid_state = %State{recent_history: %RecentHistory{valid_rh | blocks: [invalid_rb]}}
+      s = put_in(state.recent_history, %RecentHistory{valid_rh | blocks: [invalid_rb]})
 
-      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :invalid_anchor_block}
+      assert Guarantee.validate([g1], s, 1) == {:error, :invalid_anchor_block}
     end
 
     test "error when recent history does not have state_root", %{g1: g1, state: state} do
