@@ -24,8 +24,8 @@ defmodule System.State.Services do
   def service_index_set(assurances, core_reports_intermediate_1, privileged_services) do
     work_report_indices =
       Assurance.available_work_reports(assurances, core_reports_intermediate_1)
-      |> Enum.flat_map(fn %WorkReport{work_results: results} ->
-        Enum.map(results, & &1.service_index)
+      |> Enum.flat_map(fn %WorkReport{work_results: r} ->
+        Enum.map(r, & &1.service_index)
       end)
 
     privileged_indices = [
@@ -45,6 +45,7 @@ defmodule System.State.Services do
         core_reports_intermediate_1,
         services_intermediate
       ) do
+    # w∈W
     Assurance.available_work_reports(assurances, core_reports_intermediate_1)
     |> Enum.map(fn %{work_results: wr, service_index: s} ->
       gas_for_work_report(wr, services_intermediate, s)
@@ -52,29 +53,32 @@ defmodule System.State.Services do
     |> Enum.sum()
   end
 
-  defp gas_for_work_report(work_results, services_intermediate, s) do
+  defp gas_for_work_report(wr, services_intermediate, s) do
+    # r∈wr ,rs =s
+    service_gas_limit =
+      Enum.filter(wr, fn %{service_index: s_index} -> s_index == s end)
+      |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
+      |> Enum.sum()
+
+    # r∈wr
+    total_gas_limit =
+      wr
+      |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
+      |> Enum.sum()
+
+    # ∑ [rg]
+    total_prioritization =
+      wr
+      |> Enum.map(fn %{gas_prioritization_ratio: rg} -> rg end)
+      |> Enum.sum()
+
     ga = Constants.gas_accumulation()
 
-    total_gas_limit =
-      work_results
-      |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
-      |> Enum.sum()
-
-    gas_prioritization_ratios = work_results |> Enum.map(& &1.gas_prioritization_ratio)
-    # ∑ [rg]
-    total_prioritization = gas_prioritization_ratios |> Enum.sum()
-
     gas_share =
-      gas_prioritization_ratios
-      |> Enum.map(fn rg ->
+      wr
+      |> Enum.map(fn %{gas_prioritization_ratio: rg} ->
         div(rg * (ga - total_gas_limit), total_prioritization)
       end)
-      |> Enum.sum()
-
-    # ∑ δ†[rₛ]₉
-    service_gas_limit =
-      Enum.filter(work_results, fn %{service_index: s_index} -> s_index == s end)
-      |> Enum.map(fn %{service_index: s} -> services_intermediate[s].gas_limit_g end)
       |> Enum.sum()
 
     service_gas_limit + gas_share
