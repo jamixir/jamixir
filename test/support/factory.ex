@@ -134,7 +134,7 @@ defmodule Jamixir.Factory do
       beefy_root_: <<3::256>>,
       lookup_anchor: <<4::256>>,
       timeslot: 5,
-      prerequisite: <<6::256>>
+      prerequisite: nil
     }
   end
 
