@@ -238,7 +238,6 @@ defmodule System.State do
          # λ'
          prev_validators: prev_validators_,
          # ρ'
-         # TODO
          core_reports: core_reports_,
          # τ'
          timeslot: timeslot_,

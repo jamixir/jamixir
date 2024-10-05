@@ -6,12 +6,15 @@ defmodule Constants do
   see Appendix I.3 of the GP for more information.
   """
 
+  @spec service_minimum_balance() :: Types.balance()
   @doc "BS = The basic minimum balance which all services require."
   def service_minimum_balance, do: 100
 
+  @spec additional_minimum_balance_per_item() :: Types.balance()
   @doc "BI = The additional minimum balance required per item of elective service state."
   def additional_minimum_balance_per_item, do: 10
 
+  @spec additional_minimum_balance_per_octet() :: Types.balance()
   @doc "BL = The additional minimum balance required per octet of elective service state."
   def additional_minimum_balance_per_octet, do: 1
 

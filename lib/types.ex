@@ -12,6 +12,8 @@ defmodule Types do
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
   @type timeslot :: non_neg_integer()
+  # Formula (31) v0.3.4 - should be guarded as <= 2^64
+  @type balance :: non_neg_integer()
   @type decision :: boolean()
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>

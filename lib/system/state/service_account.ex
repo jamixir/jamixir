@@ -23,7 +23,7 @@ defmodule System.State.ServiceAccount do
           # c
           code_hash: Types.hash(),
           # b
-          balance: non_neg_integer(),
+          balance: Types.balance(),
           # g
           gas_limit_g: non_neg_integer(),
           # m
@@ -61,7 +61,7 @@ defmodule System.State.ServiceAccount do
   end
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
-  @spec threshold_balance(System.State.ServiceAccount.t()) :: number()
+  @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
   def threshold_balance(%__MODULE__{} = sa) do
     Constants.service_minimum_balance() +
       Constants.additional_minimum_balance_per_item() * items_in_storage(sa) +
@@ -114,6 +114,7 @@ defmodule System.State.ServiceAccount do
     alias System.State.ServiceAccount
     # Formula (292)
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
+    @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
       s.code_hash <>
         Encoder.encode_le(s.balance, 8) <>
