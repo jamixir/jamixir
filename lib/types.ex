@@ -14,6 +14,13 @@ defmodule Types do
   @type timeslot :: non_neg_integer()
   # Formula (31) v0.3.4 - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
+  # Formula (33) v0.3.4 - NG - shoud be a 32-bit integer <= 2^32
+  @type gas :: non_neg_integer()
+  # Formula (33) v0.3.4 - ZG - shoud be a 64-bit signed (-2^63..2^63)
+  @type gas_result :: integer()
+  # Formula (33) v0.3.4 - NR - shoud be a 32-bit integer <= 2^32
+  @type register_value :: non_neg_integer()
+  @type memory_access :: :write | :read | nil
   @type decision :: boolean()
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>
