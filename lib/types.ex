@@ -11,6 +11,7 @@ defmodule Types do
   @type ed25519_signature :: <<_::512>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
+  # Formula (36) v0.3.4 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
   # Formula (31) v0.3.4 - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
