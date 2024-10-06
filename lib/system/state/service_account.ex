@@ -74,16 +74,12 @@ defmodule System.State.ServiceAccount do
   end
 
   # Formula (92) v0.3.4
-  def store_preimage(
-        %__MODULE__{preimage_storage_l: l, preimage_storage_p: p} = a,
-        preimage,
-        timeslot
-      ) do
+  # Formula (93) v0.3.4
+  def store_preimage(%__MODULE__{} = a, preimage, timeslot) do
     hash = Util.Hash.default(preimage)
 
-    a
-    |> Map.put(:preimage_storage_p, Map.put(p, hash, preimage))
-    |> Map.put(:preimage_storage_l, Map.put(l, {hash, byte_size(preimage)}, [timeslot]))
+    p2 = put_in(a.preimage_storage_p[hash], preimage)
+    put_in(p2.preimage_storage_l[{hash, byte_size(preimage)}], [timeslot])
   end
 
   # Formula (94) v0.3.4
