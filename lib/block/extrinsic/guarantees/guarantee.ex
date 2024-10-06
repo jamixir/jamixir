@@ -35,11 +35,13 @@ defmodule Block.Extrinsic.Guarantee do
 
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
          # Formula (145) v0.3.4
-         :ok <- validate_services(w, state.services),
+         :ok <- validate_gas_accumulation(w, state.services),
          # Formula (147) v0.3.4
          :ok <- validate_unique_wp_hash(guarantees),
          # Formula (149) v0.3.4
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
+         # Formula (153) v0.3.4
+         :ok <- validate_work_result_cores(w, state.services),
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (139) v0.3.4
@@ -91,19 +93,24 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:validate_availability, _), do: :ok
   def mock(:reporters_set, _), do: {:ok, MapSet.new()}
   def mock(:validate_anchor_block, _), do: :ok
+  def mock(:validate_gas_accumulation, _), do: :ok
+  def mock(:validate_work_result_cores, _), do: :ok
   # Formula (145) v0.3.4
-  def validate_services(w, services) do
-    cond do
-      total_gas(w, services) > Constants.gas_accumulation() ->
-        {:error, :invalid_gas_accumulation}
+  mockable validate_gas_accumulation(w, services) do
+    if total_gas(w, services) > Constants.gas_accumulation() do
+      {:error, :invalid_gas_accumulation}
+    else
+      :ok
+    end
+  end
 
-      Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
-        r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
-      end) ->
-        {:error, :invalid_work_result_core_index}
-
-      true ->
-        :ok
+  mockable validate_work_result_cores(w, services) do
+    if Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
+         r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
+       end) do
+      {:error, :invalid_work_result_core_index}
+    else
+      :ok
     end
   end
 
