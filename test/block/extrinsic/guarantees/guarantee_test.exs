@@ -70,21 +70,21 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "Invalid number of credentials in guarantees"}
     end
 
     test "returns error for credentials not ordered by validator_index", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{2, <<1::512>>}, {1, <<2::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "credential not unique and ordered"}
     end
 
     test "returns error for duplicate validator_index in credentials", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}, {1, <<2::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "credential not unique and ordered"}
     end
 
     test "handles empty list of guarantees", context do
@@ -119,7 +119,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
       s = put_in(state.services[0].code_hash, <<2::256>>)
-      assert Guarantee.validate([g1, g2], s, 1) == {:error, :invalid_work_result_core_index}
+      assert Guarantee.validate([g1, g2], s, 1) == {:error, :invalid_work_result_code_hash}
     end
 
     test "returns error when duplicated work package hash", %{g1: g1, g2: g2, state: state} do

@@ -26,158 +26,53 @@ defmodule Block.Extrinsic.Guarantee do
             timeslot: 0,
             credentials: [{0, <<0::512>>}]
 
-  # Formula (138) v0.3.4
-  # Formula (139) v0.3.4
-  # Formula (140) v0.3.4
   @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
   def validate(guarantees, state, timeslot) do
     w = work_reports(guarantees)
-
-    with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+    # Formula (138) v0.3.4
+    with :ok <- validate_credential_count(guarantees),
+         # Formula (139) v0.3.4
+         :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+         # Formula (140) v0.3.4
+         :ok <- validate_unique_and_ordered_credentials(guarantees),
          # Formula (145) v0.3.4
-         :ok <- validate_services(w, state.services),
+         :ok <- validate_gas_accumulation(w, state.services),
          # Formula (147) v0.3.4
          :ok <- validate_unique_wp_hash(guarantees),
+         # Formula (148) v0.3.4
+         :ok <- validate_anchor_block(guarantees, state.recent_history),
          # Formula (149) v0.3.4
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
-         true <-
-           Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
-         # Formula (139) v0.3.4
-         true <-
-           Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
-             Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
-           end),
-         # Formula (148) v0.3.4
-         :ok <- validate_anchor_block(guarantees, state.recent_history) do
+         # Formula (151) v0.3.4
+         :ok <- validate_work_package_not_in_history(w, state.recent_history),
+         # Formula (152) v0.3.4
+         :ok <- validate_prerequisites(guarantees, w, state.recent_history),
+
+         # Formula (153) v0.3.4
+         :ok <- validate_work_result_code_hash(w, state.services) do
       :ok
     else
       {:error, error} -> {:error, error}
-      false -> {:error, "Invalid credentials in guarantees"}
     end
   end
 
-  # Formula (143) v0.3.4 - w
-  def work_reports(guarantees) do
-    Enum.map(guarantees, & &1.work_report)
-  end
-
-  # Formula (146) v0.3.4 - x
-  def refinement_contexts(guarantees) do
-    work_reports(guarantees) |> Enum.map(& &1.refinement_context)
-  end
-
-  # Formula (144) v0.3.4
-  mockable validate_availability(
-             guarantees,
-             core_reports_intermediate_2,
-             timeslot,
-             authorizer_pool
-           ) do
-    Enum.reduce_while(work_reports(guarantees), :ok, fn wr, _ ->
-      cond do
-        !Enum.member?(Enum.at(authorizer_pool, wr.core_index), wr.authorizer_hash) ->
-          {:halt, {:error, :missing_authorizer}}
-
-        Enum.at(core_reports_intermediate_2, wr.core_index)
-        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
-          {:halt, {:error, :pending_work}}
-
-        true ->
-          {:cont, :ok}
-      end
-    end)
-  end
-
-  def mock(:validate_availability, _), do: :ok
-  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
-  def mock(:validate_anchor_block, _), do: :ok
-  # Formula (145) v0.3.4
-  def validate_services(w, services) do
-    cond do
-      total_gas(w, services) > Constants.gas_accumulation() ->
-        {:error, :invalid_gas_accumulation}
-
-      Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
-        r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
-      end) ->
-        {:error, :invalid_work_result_core_index}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp total_gas(work_reports, services) do
-    Stream.flat_map(work_reports, & &1.work_results)
-    |> Stream.map(&Map.get(services, &1.service_index))
-    |> Stream.filter(&(&1 != nil))
-    |> Stream.map(& &1.gas_limit_g)
-    |> Enum.sum()
-  end
-
-  # Formula (146) v0.3.4
-  defp p_set(work_reports) do
-    work_reports
-    |> Enum.map(& &1.specification.work_package_hash)
-    |> MapSet.new()
-  end
-
-  # Formula (147) v0.3.4
-  @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicated_wp_hash}
-  def validate_unique_wp_hash(guarantees) do
-    wr = work_reports(guarantees)
-
-    if length(wr) == MapSet.size(p_set(wr)) do
+  # Formula (139) v0.3.4
+  defp validate_credential_count(guarantees) do
+    if Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end) do
       :ok
     else
-      {:error, :duplicated_wp_hash}
+      {:error, "Invalid number of credentials in guarantees"}
     end
   end
 
-  mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
-    w = work_reports(guarantees)
-    all_work_report_hashes = Enum.flat_map(blocks, & &1.work_report_hashes) |> MapSet.new()
+  # Formula (140) v0.3.4
+  defp validate_unique_and_ordered_credentials(guarantees) do
+    result =
+      Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
+        Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
+      end)
 
-    cond do
-      # Formula (148) v0.3.4
-      # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
-      !Enum.all?(refinement_contexts(guarantees), fn x ->
-        Enum.any?(blocks, fn y ->
-          x.anchor == y.header_hash and
-            x.state_root_ == y.state_root and
-              x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-        end)
-      end) ->
-        {:error, :invalid_anchor_block}
-
-      # Formula (151) v0.3.4
-      # ∀p ∈ p,∀x ∈ β ∶ p ∈/ xp
-      Enum.any?(p_set(w), fn p -> Enum.member?(all_work_report_hashes, p) end) ->
-        {:error, :work_package_in_recent_history}
-
-      # Formula (152) v0.3.4
-      # ∀w ∈ w, (wx)p ≠ ∅ ∶ (wx)p ∈ p ∪ {x ∣ x ∈ bp, b ∈ β}
-      refinement_contexts(guarantees)
-      |> Enum.map(& &1.prerequisite)
-      |> Enum.filter(&(&1 != nil))
-      |> Enum.any?(&(!Enum.member?(MapSet.union(p_set(w), all_work_report_hashes), &1))) ->
-        {:error, :invalid_prerequisite}
-
-      true ->
-        :ok
-    end
-  end
-
-  # Formula (149) v0.3.4
-  def validate_refine_context_timeslot(guarantees, t) do
-    if Enum.all?(
-         refinement_contexts(guarantees),
-         &(&1.timeslot >= t - Constants.max_age_lookup_anchor())
-       ) do
-      :ok
-    else
-      {:error, :refine_context_timeslot}
-    end
+    if result, do: :ok, else: {:error, "credential not unique and ordered"}
   end
 
   # Formula (141) v0.3.4
@@ -236,6 +131,154 @@ defmodule Block.Extrinsic.Guarantee do
         end
       end
     )
+  end
+
+  # Formula (143) v0.3.4 - w
+  def work_reports(guarantees) do
+    Enum.map(guarantees, & &1.work_report)
+  end
+
+  # Formula (144) v0.3.4
+  mockable validate_availability(
+             guarantees,
+             core_reports_intermediate_2,
+             timeslot,
+             authorizer_pool
+           ) do
+    Enum.reduce_while(work_reports(guarantees), :ok, fn wr, _ ->
+      cond do
+        !Enum.member?(Enum.at(authorizer_pool, wr.core_index), wr.authorizer_hash) ->
+          {:halt, {:error, :missing_authorizer}}
+
+        Enum.at(core_reports_intermediate_2, wr.core_index)
+        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
+          {:halt, {:error, :pending_work}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
+  end
+
+  # Formula (145) v0.3.4
+  def validate_gas_accumulation(w, services) do
+    if total_gas(w, services) <= Constants.gas_accumulation() do
+      :ok
+    else
+      {:error, :invalid_gas_accumulation}
+    end
+  end
+
+  # Formula (146) v0.3.4 - x
+  def refinement_contexts(guarantees) do
+    guarantees
+    |> work_reports()
+    |> Enum.map(& &1.refinement_context)
+    |> MapSet.new()
+  end
+
+  # Formula (146) v0.3.4
+  defp p_set(work_reports) do
+    work_reports
+    |> Enum.map(& &1.specification.work_package_hash)
+    |> MapSet.new()
+  end
+
+  # Formula (147) v0.3.4
+  @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicated_wp_hash}
+  def validate_unique_wp_hash(guarantees) do
+    wr = work_reports(guarantees)
+
+    if length(wr) == MapSet.size(p_set(wr)) do
+      :ok
+    else
+      {:error, :duplicated_wp_hash}
+    end
+  end
+
+  # Formula (148) v0.3.4
+  mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
+    if Enum.all?(refinement_contexts(guarantees), fn x ->
+         Enum.any?(blocks, fn y ->
+           x.anchor == y.header_hash and
+             x.state_root_ == y.state_root and
+             x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+         end)
+       end) do
+      :ok
+    else
+      {:error, :invalid_anchor_block}
+    end
+  end
+
+  # Formula (149) v0.3.4
+  def validate_refine_context_timeslot(guarantees, t) do
+    if Enum.all?(
+         refinement_contexts(guarantees),
+         &(&1.timeslot >= t - Constants.max_age_lookup_anchor())
+       ) do
+      :ok
+    else
+      {:error, :refine_context_timeslot}
+    end
+  end
+
+  # Formula (151) v0.3.4
+  mockable validate_work_package_not_in_history(w, %RecentHistory{blocks: blocks}) do
+    recent_history_work_report_hashes =
+      Enum.flat_map(blocks, & &1.work_report_hashes) |> MapSet.new()
+
+    if MapSet.disjoint?(recent_history_work_report_hashes, p_set(w)) do
+      :ok
+    else
+      {:error, :work_package_in_recent_history}
+    end
+  end
+
+  # Formula (152) v0.3.4
+  mockable validate_prerequisites(guarantees, w, %RecentHistory{blocks: blocks}) do
+    recent_history_work_report_hashes =
+      Enum.flat_map(blocks, & &1.work_report_hashes) |> MapSet.new()
+
+    valid_hashes = MapSet.union(p_set(w), recent_history_work_report_hashes)
+
+    prerequisites =
+      refinement_contexts(guarantees)
+      |> Enum.map(& &1.prerequisite)
+      |> Enum.filter(&(&1 != nil))
+      |> MapSet.new()
+
+    if MapSet.subset?(prerequisites, valid_hashes) do
+      :ok
+    else
+      {:error, :invalid_prerequisite}
+    end
+  end
+
+  # Formula (153) v0.3.4
+  mockable validate_work_result_code_hash(w, services) do
+    if Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
+         r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
+       end) do
+      {:error, :invalid_work_result_code_hash}
+    else
+      :ok
+    end
+  end
+
+  def mock(:validate_availability, _), do: :ok
+  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
+  def mock(:validate_anchor_block, _), do: :ok
+  def mock(:validate_work_package_not_in_history, _), do: :ok
+  def mock(:validate_prerequisites, _), do: :ok
+  def mock(:validate_work_result_code_hash, _), do: :ok
+
+  defp total_gas(work_reports, services) do
+    Stream.flat_map(work_reports, & &1.work_results)
+    |> Stream.map(&Map.get(services, &1.service_index))
+    |> Stream.filter(&(&1 != nil))
+    |> Stream.map(& &1.gas_limit_g)
+    |> Enum.sum()
   end
 
   def choose_g(t, t_, g, prev_g) do
