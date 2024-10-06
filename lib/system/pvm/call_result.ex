@@ -13,6 +13,6 @@ defmodule System.PVM.CallResult do
   defstruct exit_reason: :halt,
             register: 0,
             gas_result: 0,
-            registers: [],
+            registers: List.duplicate(0, 13),
             memory: %Memory{}
 end

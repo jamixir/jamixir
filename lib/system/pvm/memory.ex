@@ -13,7 +13,7 @@ defmodule System.PVM.Memory do
   # Formula (35) v0.3.4
   @spec readable_indexes(t()) :: MapSet.t(integer())
   def readable_indexes(%__MODULE__{access: access}) do
-    Enum.with_index(access)
+    Stream.with_index(access)
     |> Enum.reduce([], fn {access, index}, acc ->
       if access != nil do
         [index | acc]
@@ -26,7 +26,7 @@ defmodule System.PVM.Memory do
 
   @spec writable_indexes(t()) :: MapSet.t(integer())
   def writable_indexes(%__MODULE__{access: access}) do
-    Enum.with_index(access)
+    Stream.with_index(access)
     |> Enum.reduce([], fn {access, index}, acc ->
       if access == :write do
         [index | acc]

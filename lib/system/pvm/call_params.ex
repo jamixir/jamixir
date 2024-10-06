@@ -21,6 +21,6 @@ defmodule System.PVM.CallParams do
   defstruct program: <<>>,
             register: 0,
             gas: 0,
-            registers: [],
+            registers: List.duplicate(0, 13),
             memory: %Memory{}
 end
