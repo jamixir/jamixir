@@ -4,6 +4,7 @@ defmodule System.StateTest do
   import System.State
   import OriginalModules
   import Mox
+  alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
@@ -234,10 +235,7 @@ defmodule System.StateTest do
         {:ok, new_state} =
           State.add_block(
             state,
-            build(:safrole_block,
-              state: state,
-              key_pairs: key_pairs
-            )
+            build(:safrole_block, state: state, key_pairs: key_pairs, extrinsic: %Extrinsic{})
           )
 
         assert hd(new_state.core_reports) == new_core_report

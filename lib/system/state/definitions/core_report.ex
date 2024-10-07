@@ -4,6 +4,7 @@ defmodule System.State.CoreReport do
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
+  alias System.State.CoreReport
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
@@ -54,16 +55,20 @@ defmodule System.State.CoreReport do
   @doc """
   Updates core reports with guarantees and current validators.
   """
-  def calculate_core_reports_(core_reports, guarantees, _curr_validators, _new_timeslot) do
+  def calculate_core_reports_(core_reports_2, guarantees, timeslot_) do
     # Formula (120) v0.3.4
     # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
-    cond do
-      !Enum.all?(guarantees, &WorkReport.valid_size?(&1.work_report)) ->
-        {:error, :invalid_work_report_size}
-
-      # Add other checks here
-      true ->
-        {:ok, core_reports}
+    if Enum.any?(guarantees, &(!WorkReport.valid_size?(&1.work_report))) do
+      {:error, :invalid_work_report_size}
+    else
+      # Formula (154) v0.3.4
+      {:ok,
+       Enum.with_index(core_reports_2, fn cr, index ->
+         case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
+           nil -> cr
+           w -> %CoreReport{work_report: w.work_report, timeslot: timeslot_}
+         end
+       end)}
     end
   end
 
