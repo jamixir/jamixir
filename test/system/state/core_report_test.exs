@@ -55,7 +55,28 @@ defmodule System.State.CoreReportTest do
       guarantees = [build(:guarantee)]
 
       assert {:ok, core_reports} ==
-               CoreReport.calculate_core_reports_(core_reports, guarantees, [], 0)
+               CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
+    end
+
+    test "add new work report in guarantees to core reports" do
+      core_reports = [nil, nil]
+      w = build(:work_report, core_index: 0)
+      guarantees = [build(:guarantee, work_report: w)]
+
+      assert {:ok, [c0, c1]} =
+               CoreReport.calculate_core_reports_(core_reports, guarantees, 7)
+
+      assert c0.work_report == w
+      assert c0.timeslot == 7
+      assert is_nil(c1)
+    end
+
+    test "core reports remain unchanged when no guarantees" do
+      core_reports = [nil, nil]
+      guarantees = []
+
+      assert {:ok, core_reports} ==
+               CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
     end
 
     test "return error when report sizes are invalid" do
@@ -70,7 +91,7 @@ defmodule System.State.CoreReportTest do
         )
 
       assert {:error, :invalid_work_report_size} ==
-               CoreReport.calculate_core_reports_(core_reports, [guarantee], [], 0)
+               CoreReport.calculate_core_reports_(core_reports, [guarantee], 0)
     end
   end
 

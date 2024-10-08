@@ -112,7 +112,6 @@ defmodule System.State do
            State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
              e.guarantees,
-             state.curr_validators,
              timeslot_
            ),
          # Formula (28) v0.3.4
