@@ -77,12 +77,12 @@ defmodule System.State.Judgements do
       end)
 
     if Enum.any?(v_set, fn {r, sum, v_count} ->
-         # Formula (109) v0.3.4
+         # Formula (110) v0.3.4
          culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
 
-         # Formula (110) v0.3.4
+         # Formula (109) v0.3.4
          faults_check =
-           sum == v_count > 1 && div(2 * v_count, 3) &&
+           v_count > 1 && sum == div(2 * v_count, 3) &&
              Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
 
          culprits_check or faults_check
