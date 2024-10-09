@@ -13,15 +13,15 @@ defmodule Block.Extrinsic.WorkItem do
           payload_blob: binary(),
           # g
           gas_limit: non_neg_integer(),
+          # e
+          exported_data_segments_count: non_neg_integer(),
           # i
           imported_data_segments: list({Types.hash(), non_neg_integer()}),
           # x
-          blob_hashes_and_lengths: list({Types.hash(), non_neg_integer()}),
-          # e
-          exported_data_segments_count: non_neg_integer()
+          blob_hashes_and_lengths: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (177) v0.3.4
+  # Formula (189) v0.4.1
   defstruct [
     # s: The identifier of the service to which it relates
     service_id: 0,
@@ -31,18 +31,18 @@ defmodule Block.Extrinsic.WorkItem do
     payload_blob: <<>>,
     # g: A gas limit
     gas_limit: 0,
+    # e: The number of data segments exported by this work item
+    exported_data_segments_count: 0,
     # i: A sequence of imported data segments identified by the root of the segments tree
     imported_data_segments: [],
     # x: A sequence of hashed blob hashes and lengths to be introduced in this block
-    blob_hashes_and_lengths: [],
-    # e: The number of data segments exported by this work item
-    exported_data_segments_count: 0
+    blob_hashes_and_lengths: []
   ]
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     alias Codec.{Encoder, VariableSize}
-    # Formula (288) v0.3.4
+    # Formula (309) v0.4.1
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
         Encoder.encode_le(wi.service_id, 4),

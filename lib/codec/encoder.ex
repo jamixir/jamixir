@@ -13,7 +13,7 @@ defmodule Codec.Encoder do
     do_encode(value)
   end
 
-  # Formula (273) v0.3.4
+  # Formula (294) v0.4.1
   @spec encode_little_endian(integer(), integer()) :: binary()
   def encode_little_endian(_, 0), do: <<>>
 
@@ -24,7 +24,7 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (305) v0.3.4
+  # Formula (327) v0.4.1
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
@@ -38,16 +38,16 @@ defmodule Codec.Encoder do
   defp bit_list?([1 | rest]), do: bit_list?(rest)
   defp bit_list?(_), do: false
 
-  # Formula (269) v0.3.4
+  # Formula (290) v0.4.1
   defp do_encode(nil), do: <<>>
-  # Formula (270) v0.3.4
+  # Formula (291) v0.4.1
   defp do_encode(value) when is_binary(value) or is_bitstring(value), do: value
-  # Formula (271) v0.3.4
+  # Formula (292) v0.4.1
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
-  # Formula (272) is not implementable in Elixir,
+  # Formula (293) v0.4.1 is not implementable in Elixir,
   # as it does not have a built-in arbitrary number of arguments in functions
 
-  # Formula (276) v0.3.4
+  # Formula (296) v0.4.1
   defp do_encode(value) when is_list(value) do
     if bit_list?(value) do
       encode_bits(value)
@@ -66,15 +66,6 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (278) - no longer part of GP in v0.3.4
-  defp do_encode(value) when is_map(value) do
-    value
-    |> Enum.sort_by(fn {key, _} -> key end)
-    |> Enum.map(fn {key, value} -> {do_encode(key), do_encode(value)} end)
-    |> VariableSize.new()
-    |> do_encode
-  end
-
   defp do_encode(value) when is_integer(value), do: encode_integer(value)
 
   defp encodable?(data) do
@@ -88,7 +79,7 @@ defmodule Codec.Encoder do
   # l = 2 => 2^14 <= x < 2^21
   # ...
   # l = 7 => 2^49 <= x < 2^56
-  # Formula (275) v0.3.4
+  # Formula (295) v0.4.1
   defp exists_l_in_n8(x) do
     l = trunc(:math.log2(x) / 7)
 
@@ -99,10 +90,10 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (275) v0.3.4
+  # Formula (295) v0.4.1
   defp encode_integer(0), do: <<0>>
 
-  # Formula (275) v0.3.4
+  # Formula (295) v0.4.1
   defp encode_integer(x) do
     if x >= 2 ** 64, do: raise(ArgumentError, "Integer value is too large to encode")
 
@@ -116,7 +107,7 @@ defmodule Codec.Encoder do
     value |> Enum.map_join(&do_encode/1)
   end
 
-  # Formula (279) v0.3.4
+  # Formula (299) v0.4.1
   defp encode_bits([]), do: <<>>
 
   defp encode_bits(bits) do

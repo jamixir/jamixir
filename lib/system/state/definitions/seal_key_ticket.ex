@@ -1,7 +1,7 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
   represent a ticket, as specified in section 6.2 of the GP.
-  Formula (51) v0.4.0
+  Formula (51) v0.4.1
   """
 
   @type t :: %__MODULE__{
@@ -12,7 +12,7 @@ defmodule System.State.SealKeyTicket do
   defstruct id: <<>>, entry_index: 0
 
   defimpl Encodable do
-    # Formula (289) v0.3.4
+    # Formula (332) v0.4.1
     def encode(%System.State.SealKeyTicket{} = e) do
       Codec.Encoder.encode({
         e.id,

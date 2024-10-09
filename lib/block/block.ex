@@ -5,7 +5,7 @@ defmodule Block do
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
 
-  # Formula (13) v0.3.4
+  # Formula (13) v0.4.1
   defstruct [
     # Hp
     header: nil,
@@ -25,7 +25,7 @@ defmodule Block do
 
   defimpl Encodable do
     def encode(%Block{extrinsic: e, header: h}) do
-      # Formula (280) v0.3.4
+      # Formula (300) v0.4.1
       Codec.Encoder.encode({h, e})
     end
   end

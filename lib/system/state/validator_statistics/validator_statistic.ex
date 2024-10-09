@@ -7,11 +7,17 @@ defmodule System.State.ValidatorStatistic do
             availability_assurances: 0
 
   @type t :: %__MODULE__{
+          # b
           blocks_produced: non_neg_integer(),
+          # t
           tickets_introduced: non_neg_integer(),
+          # p
           preimages_introduced: non_neg_integer(),
+          # d
           data_size: non_neg_integer(),
+          # g
           reports_guaranteed: non_neg_integer(),
+          # a
           availability_assurances: non_neg_integer()
         }
 

@@ -332,7 +332,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
   end
 
-  # Formula (144) v0.3.4
+  # Formula (143) v0.4.1
   describe "validate_availability/4" do
     setup do
       guarantees = [

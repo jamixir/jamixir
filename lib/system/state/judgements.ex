@@ -19,15 +19,15 @@ defmodule System.State.Judgements do
           punish: MapSet.t(Types.ed25519_key())
         }
 
-  # Formula (97) v0.3.4
+  # Formula (97) v0.4.1
   defstruct good: MapSet.new(),
             bad: MapSet.new(),
             wonky: MapSet.new(),
             punish: MapSet.new()
 
   mockable calculate_judgements_(%Header{timeslot: ts} = header, disputes, state) do
-    # Formula (107) v0.3.4
-    # Formula (108) v0.3.4
+    # Formula (107) v0.4.1
+    # Formula (108) v0.4.1
     case calculate_v(disputes, state, ts) do
       {:ok, v} ->
         bad_wonky_verdicts =
@@ -36,7 +36,7 @@ defmodule System.State.Judgements do
           end)
           |> Enum.map(fn {hash, _, _} -> hash end)
 
-        # Formula (115) v0.3.4
+        # Formula (115) v0.4.1
         new_offenders =
           (disputes.culprits ++ disputes.faults)
           |> Enum.map(& &1.validator_key)
@@ -77,10 +77,10 @@ defmodule System.State.Judgements do
       end)
 
     if Enum.any?(v_set, fn {r, sum, v_count} ->
-         # Formula (110) v0.3.4
+         # Formula (110) v0.4.1
          culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
 
-         # Formula (109) v0.3.4
+         # Formula (109) v0.4.1
          faults_check =
            sum == div(2 * v_count, 3) + 1 &&
              Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
@@ -93,8 +93,7 @@ defmodule System.State.Judgements do
     end
   end
 
-  # Formula (116) v0.3.4
-  # Formula (117) v0.3.4
+  # Formula (116) v0.4.1
   mockable(
     valid_header_markers?(
       %Header{offenders_marker: of},
@@ -107,15 +106,15 @@ defmodule System.State.Judgements do
   defp posterior_judgement_sets(v, judgements) do
     Enum.reduce(v, judgements, fn {hash, sum, validator_count}, acc ->
       cond do
-        # Formula (112) v0.3.4
+        # Formula (112) v0.4.1
         sum == div(2 * validator_count, 3) + 1 ->
           %{acc | good: MapSet.put(acc.good, hash)}
 
-        # Formula (113) v0.3.4
+        # Formula (113) v0.4.1
         sum == 0 ->
           %{acc | bad: MapSet.put(acc.bad, hash)}
 
-        # Formula (114) v0.3.4
+        # Formula (114) v0.4.1
         sum == div(validator_count, 3) ->
           %{acc | wonky: MapSet.put(acc.wonky, hash)}
       end

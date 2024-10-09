@@ -74,7 +74,7 @@ defmodule WorkPackageTest do
     end
   end
 
-  # Formula (182) v0.3.4
+  # Formula (194) v0.4.1
   describe "authorization_code/2" do
     test "returns authorization_code when it is available in history", %{state: state} do
       h = :crypto.strong_rand_bytes(32)

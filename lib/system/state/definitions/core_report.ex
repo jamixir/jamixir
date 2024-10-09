@@ -1,6 +1,6 @@
 defmodule System.State.CoreReport do
   @moduledoc """
-  Formula (118) v0.3.4
+  Formula (117) v0.4.1
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
@@ -16,7 +16,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: 1..Constants.core_count() |> Enum.map(fn _ -> nil end)
 
-  # Formula (111) v0.3.4
+  # Formula (111) v0.4.1
   def process_disputes(core_reports, bad_wonky_verdicts) do
     bad_wonky_set = MapSet.new(bad_wonky_verdicts)
     Enum.map(core_reports, &process_report(&1, bad_wonky_set))
@@ -32,13 +32,13 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (26) v0.3.4
+  # ρ‡ Formula (26) v0.4.1
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
     w =
       Assurance.available_work_reports(assurances, core_reports_intermediate_1)
       |> MapSet.new()
 
-    # Formula (132) v0.3.4
+    # Formula (131) v0.4.1
     Enum.zip(core_reports, core_reports_intermediate_1)
     |> Enum.map(fn
       {cr, intermediate} ->
@@ -56,12 +56,12 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def calculate_core_reports_(core_reports_2, guarantees, timeslot_) do
-    # Formula (120) v0.3.4
+    # Formula (119) v0.4.1
     # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
     if Enum.any?(guarantees, &(!WorkReport.valid_size?(&1.work_report))) do
       {:error, :invalid_work_report_size}
     else
-      # Formula (154) v0.3.4
+      # Formula (153) v0.4.1
       {:ok,
        Enum.with_index(core_reports_2, fn cr, index ->
          case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
@@ -74,7 +74,7 @@ defmodule System.State.CoreReport do
 
   defimpl Encodable do
     alias System.State.CoreReport
-    # Formula (292) v0.3.4
+    # Formula (314) v0.4.1
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     def encode(%CoreReport{} = c) do
       Codec.Encoder.encode({

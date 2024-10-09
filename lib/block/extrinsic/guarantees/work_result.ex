@@ -4,8 +4,8 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   may be altered through the computation done within a
   work-package
 
-  section 11.1
-  Formula (123) v0.3.4
+  section 11.1.4
+  Formula (122) v0.4.1
   """
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkItem
@@ -54,7 +54,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
     alias Codec.{Encoder, VariableSize}
 
-    # Formula (285) v0.3.4
+    # Formula (306) v0.4.1
     def encode(%WorkResult{} = wr) do
       Encoder.encode_le(wr.service_index, 4) <>
         Encoder.encode({wr.code_hash, wr.payload_hash}) <>
@@ -62,12 +62,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
         do_encode(wr.output_or_error)
     end
 
-    # Formula (290) v0.3.4
+    # Formula (311) v0.4.1
     defp do_encode({:ok, b}) do
       Encoder.encode({0, VariableSize.new(b)})
     end
 
-    # Formula (290) v0.3.4
+    # Formula (311) v0.4.1
     defp do_encode({:error, e}) do
       Encoder.encode(WorkExecutionError.code(e))
     end

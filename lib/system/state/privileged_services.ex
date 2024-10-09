@@ -1,6 +1,6 @@
 defmodule System.State.PrivilegedServices do
   @moduledoc """
-  Formula (96) v0.3.4
+  Formula (96) v0.4.1
 
   Up to three services may be recognized as privileged, each with a specific role:
 

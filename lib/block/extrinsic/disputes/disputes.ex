@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes do
   @moduledoc """
-  Formula (98) v0.3.4
+  Formula (98) v0.4.1
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
@@ -54,11 +54,11 @@ defmodule Block.Extrinsic.Disputes do
     current_epoch = Time.epoch_index(timeslot)
 
     cond do
-      # Formula (99) v0.3.4 - epoch index
+      # Formula (99) v0.4.1 - epoch index
       !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
         {:error, "Invalid epoch index in verdicts"}
 
-      # Formula (98) v0.3.4 - required length ⌊2/3V⌋+1
+      # Formula (98) v0.4.1 - required length ⌊2/3V⌋+1
       !Enum.all?(verdicts, fn %Verdict{judgements: judgements, epoch_index: epoch_index} ->
         validator_set =
             get_validator_set(curr_validators, prev_validators, current_epoch, epoch_index)
@@ -67,21 +67,21 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, "Invalid number of judgements in verdicts"}
 
-      # Formula (103) v0.3.4
+      # Formula (103) v0.4.1
       !match?(
         :ok,
         Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
       ) ->
         {:error, "Invalid order or duplicates in verdict work report hashes"}
 
-      # Formula (105) v0.3.4
+      # Formula (105) v0.4.1
       !MapSet.disjoint?(
         Judgements.union_all(judgements),
         MapSet.new(verdicts, & &1.work_report_hash)
       ) ->
         {:error, "Work report hashes already exist in current judgments"}
 
-      #  Formula (99) v0.3.4 - signatures
+      #  Formula (99) v0.4.1 - signatures
       !Enum.all?(verdicts, fn verdict ->
         curr_validators
         |> get_validator_set(prev_validators, current_epoch, verdict.epoch_index)
@@ -89,14 +89,14 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, "Invalid signatures in verdicts"}
 
-      # Formula (106) v0.3.4
+      # Formula (106) v0.4.1
       !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
         Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
       end) ->
         {:error, "Judgements not ordered by validator index or contain duplicates"}
 
-      # Formula (107) v0.3.4
-      # Formula (108) v0.3.4
+      # Formula (107) v0.4.1
+      # Formula (108) v0.4.1
       Enum.any?(verdicts, fn verdict ->
         validator_count =
             length(
@@ -121,8 +121,8 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (101) v0.3.4
-  # Formula (102) v0.3.4
+  # Formula (101) v0.4.1
+  # Formula (102) v0.4.1
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
     MapSet.union(
       MapSet.new(curr_validators, & &1.ed25519),
@@ -131,7 +131,7 @@ defmodule Block.Extrinsic.Disputes do
     |> MapSet.difference(judgements.punish)
   end
 
-  # Formula (112) v0.3.4
+  # Formula (112) v0.4.1
   defp compute_bad_set(verdicts, judgements) do
     verdicts
     |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
@@ -144,12 +144,12 @@ defmodule Block.Extrinsic.Disputes do
 
   defp validate_offenses(offenses, allowed_validator_keys, bad_set_, offense_type) do
     cond do
-      # Formula (104) v0.3.4
+      # Formula (104) v0.4.1
       !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.validator_key)) ->
         {:error, "Invalid order or duplicates in #{offense_type} Ed25519 keys"}
 
-      # Formula (101) v0.3.4
-      # Formula (102) v0.3.4 - Check: Ensure all offense work report hashes are in the posterior bad set
+      # Formula (101) v0.4.1
+      # Formula (102) v0.4.1 - Check: Ensure all offense work report hashes are in the posterior bad set
       !Enum.all?(offenses, &MapSet.member?(bad_set_, &1.work_report_hash)) ->
         {:error, "Work report hash in #{offense_type} not in the posterior bad set"}
 
@@ -186,7 +186,7 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (99) v0.3.4
+  # Formula (99) v0.4.1
   def get_validator_set(curr_validators, _prev_validators, current_epoch, current_epoch),
     do: curr_validators
 

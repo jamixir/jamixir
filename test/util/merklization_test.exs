@@ -4,7 +4,7 @@ defmodule Util.MerklizationTest do
   alias System.State
   alias Util.Merklization
 
-  # Formula (293) v0.3.4: TESTS
+  # Formula (315) v0.4.1: TESTS
 
   describe "encode_branch/2 (l,r)" do
     test "encode_branch with simple values" do
@@ -36,7 +36,7 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (294) v0.3.4: TESTS
+  # Formula (316) v0.4.1: TESTS
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do
@@ -77,9 +77,8 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (295) v0.3.4: TESTS
-
-  # Formula (296) v0.3.4: TESTS
+  # Formula (317) v0.4.1: TESTS
+  # Formula (318) v0.4.1: TESTS
 
   ### 3.7.3
 
