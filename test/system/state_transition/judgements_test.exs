@@ -11,7 +11,7 @@ defmodule System.State.JudgementsTest do
     assert MapSet.member?(Map.get(result, set_key), new_item)
     assert MapSet.subset?(Map.get(state.judgements, set_key), Map.get(result, set_key))
 
-    for key <- [:good, :bad, :wonky, :punish] -- [set_key] do
+    for key <- [:good, :bad, :wonky] -- [set_key] do
       assert Map.get(result, key) == Map.get(state.judgements, key)
     end
   end
@@ -39,12 +39,12 @@ defmodule System.State.JudgementsTest do
   end
 
   describe "header validation" do
-    test "passes when validation succeeds", %{state: state, work_report_hash: wrh, header: header} do
+    test "passes when validation succeeds", %{state: state, header: header} do
       assert {:ok, _, _} =
                Judgements.calculate_judgements_(
-                 %{header | judgements_marker: [wrh], offenders_marker: []},
+                 %{header | judgements_marker: [], offenders_marker: []},
                  %Disputes{
-                   verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
+                   verdicts: [],
                    culprits: [],
                    faults: []
                  },
@@ -62,7 +62,7 @@ defmodule System.State.JudgementsTest do
                  %{header | judgements_marker: [], offenders_marker: []},
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
-                   culprits: [],
+                   culprits: build_list(2, :culprit, %{work_report_hash: wrh}),
                    faults: []
                  },
                  state
@@ -97,7 +97,9 @@ defmodule System.State.JudgementsTest do
                      build(:verdict, work_report_hash: wrh, judgements: []),
                      build(:verdict, work_report_hash: wrh2, judgements: [])
                    ],
-                   culprits: [],
+                   culprits:
+                     build_list(2, :culprit, %{work_report_hash: wrh}) ++
+                       build_list(2, :culprit, %{work_report_hash: wrh2}),
                    faults: []
                  },
                  state
@@ -130,7 +132,8 @@ defmodule System.State.JudgementsTest do
             judgements: [build(:judgement, work_report_hash: wrh, key_pair: key_pair)],
             epoch_index: Time.epoch_index(header.timeslot)
           )
-        ]
+        ],
+        faults: [build(:fault, %{work_report_hash: wrh})]
       }
 
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
@@ -152,11 +155,52 @@ defmodule System.State.JudgementsTest do
             ],
             epoch_index: Time.epoch_index(header.timeslot)
           )
-        ]
+        ],
+        culprits: build_list(2, :culprit, %{work_report_hash: wrh, key_pair: key_pair})
       }
 
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       assert_updated_set(result, state, :bad, wrh)
+    end
+
+    test "invalid v_set - not enough culprits", %{
+      state: state,
+      header: header,
+      work_report_hash: wrh,
+      current_key: key_pair
+    } do
+      disputes = %Disputes{
+        verdicts: [
+          build(:verdict,
+            work_report_hash: wrh,
+            judgements: [
+              build(:judgement, decision: false, work_report_hash: wrh, key_pair: key_pair)
+            ],
+            epoch_index: Time.epoch_index(header.timeslot)
+          )
+        ]
+      }
+
+      {:error, :invalid_v_set} = Judgements.calculate_judgements_(header, disputes, state)
+    end
+
+    test "invalid v_set - not enough faults", %{
+      state: state,
+      header: header,
+      work_report_hash: wrh,
+      current_key: key_pair
+    } do
+      disputes = %Disputes{
+        verdicts: [
+          build(:verdict,
+            work_report_hash: wrh,
+            judgements: [build(:judgement, work_report_hash: wrh, key_pair: key_pair)],
+            epoch_index: Time.epoch_index(header.timeslot)
+          )
+        ]
+      }
+
+      {:error, :invalid_v_set} = Judgements.calculate_judgements_(header, disputes, state)
     end
 
     test "updates wonky set correctly", %{
@@ -221,7 +265,7 @@ defmodule System.State.JudgementsTest do
             epoch_index: Time.epoch_index(header.timeslot)
           )
         ],
-        culprits: [build(:culprit, work_report_hash: wrh, key_pair: key_pair)]
+        culprits: build_list(2, :culprit, %{work_report_hash: wrh, key_pair: key_pair})
       }
 
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
