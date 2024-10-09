@@ -41,7 +41,7 @@ defmodule System.State do
           validator_statistics: ValidatorStatistics.t()
         }
 
-  # Formula (15) v0.3.4 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
+  # Formula (15) v0.4.0 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
     authorizer_pool: [[]],
@@ -73,27 +73,27 @@ defmodule System.State do
     validator_statistics: %ValidatorStatistics{}
   ]
 
-  # Formula (12) v0.3.4
+  # Formula (12) v0.4.0
   @spec add_block(System.State.t(), Block.t()) :: {:error, System.State.t(), <<_::64, _::_*8>>}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
-    # Formula (16) v0.3.4
-    # Formula (46) v0.3.4
+    # Formula (16) v0.4.0
+    # Formula (46) v0.4.0
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
-         # β† Formula (17) v0.3.4
+         # β† Formula (17) v0.4.0
          initial_recent_history =
            RecentHistory.update_latest_state_root_(state.recent_history, h),
-         # δ† Formula (24) v0.3.4
+         # δ† Formula (24) v0.4.0
          services_intermediate =
            State.Services.process_preimages(state.services, e.preimages, timeslot_),
-         # ψ' Formula (23) v0.3.4
+         # ψ' Formula (23) v0.4.0
          {:ok, judgements_, bad_wonky_verdicts} <-
            Judgements.calculate_judgements_(h, e.disputes, state),
-         # ρ† Formula (25) v0.3.4
+         # ρ† Formula (25) v0.4.0
          core_reports_intermediate_1 =
            State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
-         # ρ‡ Formula (26) v0.3.4
+         # ρ‡ Formula (26) v0.4.0
          core_reports_intermediate_2 =
            State.CoreReport.process_availability(
              state.core_reports,
@@ -107,14 +107,15 @@ defmodule System.State do
              h.timeslot,
              state.authorizer_pool
            ),
-         # ρ' Formula (27) v0.3.4
+         # ρ' Formula (27) v0.4.0
          {:ok, core_reports_} <-
            State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
              e.guarantees,
              timeslot_
            ),
-         # Formula (28) v0.3.4
+         # Formula (28) v0.4.0
+         # Formula (29) v0.4.0
          {_services_, _privileged_services, _next_validators_, authorizer_queue_,
           beefy_commitment_map} =
            State.Accumulation.accumulate(
@@ -125,7 +126,7 @@ defmodule System.State do
              state.next_validators,
              state.authorizer_queue
            ),
-         # α' Formula (29) v0.3.4
+         # α' Formula (30) v0.4.0
          authorizer_pool_ =
            calculate_authorizer_pool_(
              e.guarantees,
@@ -133,7 +134,7 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # β' Formula (18) v0.3.4
+         # β' Formula (18) v0.4.0
          recent_history_ =
            RecentHistory.calculate_recent_history_(
              h,
@@ -141,9 +142,9 @@ defmodule System.State do
              initial_recent_history,
              beefy_commitment_map
            ),
-         # κ' Formula (21) v0.3.4
-         # λ' Formula (22) v0.3.4
-         # γ'(gamma_k, gamma_z) Formula (19) v0.3.4
+         # κ' Formula (21) v0.4.0
+         # λ' Formula (22) v0.4.0
+         # γ'(gamma_k, gamma_z) Formula (19) v0.4.0
          {pending_, curr_validators_, prev_validators_, epoch_root_} =
            RotateKeys.rotate_keys(
              h,
@@ -162,7 +163,7 @@ defmodule System.State do
              core_reports_intermediate_1
            ),
 
-         # η' Formula (20) v0.3.4
+         # η' Formula (20) v0.4.0
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
          :ok <-
@@ -214,6 +215,8 @@ defmodule System.State do
              prev_validators_,
              Judgements.union_all(judgements_)
            ),
+         # π' Formula (31) v0.4.0
+         # π' ≺ (EG,EP,EA, ET,τ,κ',π,H)
          {:ok, validator_statistics_} <-
            ValidatorStatistics.calculate_validator_statistics_(
              e,
@@ -254,8 +257,7 @@ defmodule System.State do
          privileged_services: nil,
          # ψ'
          judgements: judgements_,
-         # π' Formula (30) v0.3.4
-         # π' ≺ (EG,EP,EA, ET,τ,κ',H) # https://github.com/gavofyork/graypaper/pull/69
+         # π'
          validator_statistics: validator_statistics_
        }}
     else

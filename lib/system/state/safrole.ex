@@ -13,18 +13,18 @@ defmodule System.State.Safrole do
           # Formula (52) v0.3.4
           # gamma_k
           pending: list(Validator.t()),
-          # Formula (49) v0.3.4
+          # Formula (49) v0.4.0
           # gamma_z
           epoch_root: Types.bandersnatch_ring_root(),
-          # Formula (50) v0.3.4
+          # Formula (50) v0.4.0
           # gamma_s
           current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
-          # Formula (50) v0.3.4
+          # Formula (50) v0.4.0
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
 
-  # Formula (48) v0.3.4
+  # Formula (48) v0.4.0
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
   # Formula (69) v0.3.4

@@ -11,15 +11,15 @@ defmodule Types do
   @type ed25519_signature :: <<_::512>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
-  # Formula (36) v0.3.4 - should be guarded as <= 2^32
+  # Formula (37) v0.4.0 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
-  # Formula (31) v0.3.4 - should be guarded as <= 2^64
+  # Formula (32) v0.4.0 - NB - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
-  # Formula (33) v0.3.4 - NG - shoud be a 64-bit integer <= 2^64
+  # Formula (34) v0.4.0 - NG - shoud be a 64-bit integer <= 2^64
   @type gas :: non_neg_integer()
-  # Formula (33) v0.3.4 - ZG - shoud be a 64-bit signed (-2^63..2^63)
+  # Formula (34) v0.4.0 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (33) v0.3.4 - NR - shoud be a 32-bit integer <= 2^32
+  # Formula (34) v0.4.0 - NR - shoud be a 32-bit integer <= 2^32
   @type register_value :: non_neg_integer()
   @type memory_access :: :write | :read | nil
   @type decision :: boolean()

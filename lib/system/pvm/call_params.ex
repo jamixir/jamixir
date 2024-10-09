@@ -4,7 +4,7 @@ defmodule System.PVM.CallParams do
   """
   alias System.PVM.Memory
 
-  # Formula (32) v0.3.4
+  # Formula (33) v0.4.0
   @type t :: %__MODULE__{
           # p
           program: binary(),

@@ -1,7 +1,7 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
   represent a ticket, as specified in section 6.2 of the GP.
-  Formula (51) v0.3.4
+  Formula (51) v0.4.0
   """
 
   @type t :: %__MODULE__{

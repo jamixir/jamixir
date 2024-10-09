@@ -420,8 +420,6 @@ defmodule Jamixir.Factory do
       timeslot: 5,
       parent_hash: random_hash(),
       prior_state_root: random_hash(),
-      # Hj
-      judgements_marker: [random_hash()],
       # Ho
       offenders_marker: [random_hash()],
       # Hi

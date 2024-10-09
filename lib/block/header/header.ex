@@ -5,29 +5,26 @@ defmodule Block.Header do
   alias Util.Time
 
   @type t :: %__MODULE__{
-          # Formula (38) v0.3.4
+          # Formula (39) v0.4.0
           # Hp
           parent_hash: Types.hash(),
-          # Formula (42) v0.3.4
+          # Formula (43) v0.4.0
           # Hr
           prior_state_root: Types.hash(),
-          # Formula (40) v0.3.4
+          # Formula (41) v0.4.0
           # Hx
           extrinsic_hash: Types.hash(),
-          # Formula (41) v0.3.4
+          # Formula (42) v0.4.0
           # Ht
           timeslot: integer(),
-          # Formula (44) v0.3.4
+          # Formula (45) v0.4.0
           # He
           epoch: {Types.hash(), list(Types.bandersnatch_key())} | nil,
           # Hw
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
-          # Formula (45) v0.3.4
-          # Hj
-          judgements_marker: list(Types.hash()),
           # Ho
           offenders_marker: list(Types.hash()),
-          # Formula (43) v0.3.4
+          # Formula (44) v0.4.0
           # Hi
           block_author_key_index: Types.validator_index(),
           # Hv
@@ -36,7 +33,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Formula (37) v0.3.4
+  # Formula (38) v0.4.0
   defstruct [
     # Hp
     parent_hash: <<0::256>>,
@@ -50,8 +47,6 @@ defmodule Block.Header do
     epoch: nil,
     # Hw
     winning_tickets_marker: nil,
-    # Hj
-    judgements_marker: [],
     # Ho
     offenders_marker: [],
     # Hi
@@ -78,7 +73,7 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (40) v0.3.4
+  # Formula (41) v0.4.0
   def valid_extrinsic_hash?(header, extrinsic) do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end
@@ -104,7 +99,7 @@ defmodule Block.Header do
       Codec.Encoder.encode_le(header.timeslot, 4) <>
       Codec.Encoder.encode(
         {NilDiscriminator.new(header.epoch), NilDiscriminator.new(header.winning_tickets_marker),
-         VariableSize.new(header.judgements_marker), VariableSize.new(header.offenders_marker),
+         VariableSize.new(header.offenders_marker),
          Codec.Encoder.encode_le(header.block_author_key_index, 2), header.vrf_signature}
       )
   end

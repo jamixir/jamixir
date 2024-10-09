@@ -39,10 +39,10 @@ defmodule System.State.JudgementsTest do
   end
 
   describe "header validation" do
-    test "passes when validation succeeds", %{state: state, header: header} do
+    test "passes when validation succeeds", %{state: state, work_report_hash: wrh, header: h} do
       assert {:ok, _, _} =
                Judgements.calculate_judgements_(
-                 %{header | judgements_marker: [], offenders_marker: []},
+                 %{h | offenders_marker: []},
                  %Disputes{
                    verdicts: [],
                    culprits: [],
@@ -52,14 +52,10 @@ defmodule System.State.JudgementsTest do
                )
     end
 
-    test "fails because of verdicts mismatch", %{
-      state: state,
-      work_report_hash: wrh,
-      header: header
-    } do
+    test "fails because of verdicts mismatch", %{state: state, work_report_hash: wrh, header: h} do
       assert {:error, "Header validation failed"} =
                Judgements.calculate_judgements_(
-                 %{header | judgements_marker: [], offenders_marker: []},
+                 %{h | offenders_marker: [wrh]},
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
                    culprits: build_list(2, :culprit, %{work_report_hash: wrh}),
@@ -76,7 +72,7 @@ defmodule System.State.JudgementsTest do
     } do
       assert {:error, "Header validation failed"} =
                Judgements.calculate_judgements_(
-                 %{header | judgements_marker: [], offenders_marker: []},
+                 %{header | offenders_marker: []},
                  %Disputes{
                    verdicts: [],
                    culprits: [build(:culprit, validator_key: pub)],
@@ -91,7 +87,7 @@ defmodule System.State.JudgementsTest do
 
       assert {:error, "Header validation failed"} =
                Judgements.calculate_judgements_(
-                 %{header | judgements_marker: [wrh2, wrh], offenders_marker: []},
+                 %{header | offenders_marker: [wrh2, wrh]},
                  %Disputes{
                    verdicts: [
                      build(:verdict, work_report_hash: wrh, judgements: []),
