@@ -39,7 +39,7 @@ defmodule System.State.JudgementsTest do
   end
 
   describe "header validation" do
-    test "passes when validation succeeds", %{state: state, work_report_hash: wrh, header: h} do
+    test "passes when validation succeeds", %{state: state, header: h} do
       assert {:ok, _, _} =
                Judgements.calculate_judgements_(
                  %{h | offenders_marker: []},
