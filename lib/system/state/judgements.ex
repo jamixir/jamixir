@@ -97,11 +97,11 @@ defmodule System.State.Judgements do
   # Formula (117) v0.3.4
   mockable(
     valid_header_markers?(
-      %Header{judgements_marker: jm, offenders_marker: of},
+      %Header{offenders_marker: of},
       bad_wonky_verdicts,
       new_offenders
     ),
-    do: jm == bad_wonky_verdicts && of == new_offenders
+    do: of == new_offenders
   )
 
   defp posterior_judgement_sets(v, judgements) do
