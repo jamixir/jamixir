@@ -82,7 +82,7 @@ defmodule System.State.Judgements do
 
          # Formula (109) v0.3.4
          faults_check =
-           v_count > 1 && sum == div(2 * v_count, 3) &&
+           sum == div(2 * v_count, 3) + 1 &&
              Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
 
          culprits_check or faults_check

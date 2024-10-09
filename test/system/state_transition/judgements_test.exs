@@ -132,7 +132,8 @@ defmodule System.State.JudgementsTest do
             judgements: [build(:judgement, work_report_hash: wrh, key_pair: key_pair)],
             epoch_index: Time.epoch_index(header.timeslot)
           )
-        ]
+        ],
+        faults: [build(:fault, %{work_report_hash: wrh})]
       }
 
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
@@ -175,6 +176,25 @@ defmodule System.State.JudgementsTest do
             judgements: [
               build(:judgement, decision: false, work_report_hash: wrh, key_pair: key_pair)
             ],
+            epoch_index: Time.epoch_index(header.timeslot)
+          )
+        ]
+      }
+
+      {:error, :invalid_v_set} = Judgements.calculate_judgements_(header, disputes, state)
+    end
+
+    test "invalid v_set - not enough faults", %{
+      state: state,
+      header: header,
+      work_report_hash: wrh,
+      current_key: key_pair
+    } do
+      disputes = %Disputes{
+        verdicts: [
+          build(:verdict,
+            work_report_hash: wrh,
+            judgements: [build(:judgement, work_report_hash: wrh, key_pair: key_pair)],
             epoch_index: Time.epoch_index(header.timeslot)
           )
         ]
