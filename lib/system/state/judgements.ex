@@ -77,16 +77,16 @@ defmodule System.State.Judgements do
       end)
 
     case Enum.any?(v_set, fn {r, sum, v_count} ->
-         # Formula (110) v0.4.1
-         culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
+           # Formula (110) v0.4.1
+           culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
 
-         # Formula (109) v0.4.1
-         faults_check =
-           sum == div(2 * v_count, 3) + 1 &&
-             Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
+           # Formula (109) v0.4.1
+           faults_check =
+             sum == div(2 * v_count, 3) + 1 &&
+               Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
 
-         culprits_check or faults_check
-       end) do
+           culprits_check or faults_check
+         end) do
       true ->
         {:error, :invalid_v_set}
 
