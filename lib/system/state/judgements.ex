@@ -76,7 +76,7 @@ defmodule System.State.Judgements do
         {verdict.work_report_hash, Verdict.sum_judgements(verdict), length(validator_set)}
       end)
 
-    if Enum.any?(v_set, fn {r, sum, v_count} ->
+    case Enum.any?(v_set, fn {r, sum, v_count} ->
          # Formula (110) v0.4.1
          culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
 
@@ -87,9 +87,11 @@ defmodule System.State.Judgements do
 
          culprits_check or faults_check
        end) do
-      {:error, :invalid_v_set}
-    else
-      {:ok, v_set}
+      true ->
+        {:error, :invalid_v_set}
+
+      false ->
+        {:ok, v_set}
     end
   end
 
@@ -133,7 +135,7 @@ defmodule System.State.Judgements do
   defimpl Encodable do
     alias Codec.VariableSize
     # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
-    # TODO : convert each mapset into sorted array 
+    # TODO : convert each mapset into sorted array
     def encode(%Judgements{} = j) do
       Codec.Encoder.encode({
         VariableSize.new(j.good),

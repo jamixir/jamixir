@@ -77,7 +77,7 @@ defmodule System.State.CoreReport do
     alias System.State.CoreReport
     # Formula (314) v0.4.1
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
-    #TODO: fix missing NilDiscriminator
+    # TODO: fix missing NilDiscriminator
     def encode(%CoreReport{} = c) do
       Codec.Encoder.encode({
         c.work_report,
