@@ -133,6 +133,7 @@ defmodule System.State.Judgements do
   defimpl Encodable do
     alias Codec.VariableSize
     # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
+    # TODO : convert each mapset into sorted array 
     def encode(%Judgements{} = j) do
       Codec.Encoder.encode({
         VariableSize.new(j.good),

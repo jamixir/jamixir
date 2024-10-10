@@ -55,6 +55,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     alias Codec.{Encoder, VariableSize}
 
     # Formula (306) v0.4.1
+    # TODO: fix it to sync with v0.4.1
     def encode(%WorkResult{} = wr) do
       Encoder.encode_le(wr.service_index, 4) <>
         Encoder.encode({wr.code_hash, wr.payload_hash}) <>

@@ -32,6 +32,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (119) v0.4.1
   # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
+  # TODO ∀w ∈ W ∶ ∣wl ∣ ≤ 8
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
     byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
@@ -40,6 +41,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   defimpl Encodable do
     alias Codec.VariableSize
     # Formula (307) v0.4.1
+    # TODO - fix it, the encoding below is not as it should be v0.4.1
     def encode(%WorkReport{} = wr) do
       Codec.Encoder.encode({
         wr.authorizer_hash,

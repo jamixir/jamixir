@@ -58,6 +58,7 @@ defmodule System.State.CoreReport do
   def calculate_core_reports_(core_reports_2, guarantees, timeslot_) do
     # Formula (119) v0.4.1
     # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
+    # TODO: add ∣wl ∣ ≤ 8
     if Enum.any?(guarantees, &(!WorkReport.valid_size?(&1.work_report))) do
       {:error, :invalid_work_report_size}
     else
@@ -76,6 +77,7 @@ defmodule System.State.CoreReport do
     alias System.State.CoreReport
     # Formula (314) v0.4.1
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
+    
     def encode(%CoreReport{} = c) do
       Codec.Encoder.encode({
         c.work_report,

@@ -16,6 +16,7 @@ defmodule Block.Extrinsic.WorkItem do
           # e
           exported_data_segments_count: non_neg_integer(),
           # i
+          # TODO: update the type to be H ∪ (H⊞)
           imported_data_segments: list({Types.hash(), non_neg_integer()}),
           # x
           blob_hashes_and_lengths: list({Types.hash(), non_neg_integer()})
@@ -55,6 +56,7 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
+    # TODO: align encoding with 0.4.1
     defp encode_imported_data_segments(work_item) do
       Enum.map(work_item.imported_data_segments, fn {h, i} ->
         {h, Encoder.encode_le(i, 2)}
