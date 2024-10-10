@@ -58,6 +58,16 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate([g1, g2], state, 1) == :ok
     end
 
+    test "returns error when work report size is invalid", %{state: state, g1: g1} do
+      invalid_g1 =
+        update_in(g1.work_report.output, fn _ ->
+          String.duplicate("a", Constants.max_work_report_size() + 1)
+        end)
+
+      assert Guarantee.validate([invalid_g1], state, 1) ==
+               {:error, "Invalid work report size"}
+    end
+
     test "returns error for guarantees not ordered by core_index", %{state: state, g1: g1, g2: g2} do
       assert Guarantee.validate([g2, g1], state, 1) == {:error, :not_in_order}
     end

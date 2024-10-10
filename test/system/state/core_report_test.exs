@@ -54,7 +54,7 @@ defmodule System.State.CoreReportTest do
       core_reports = [build(:core_report)]
       guarantees = [build(:guarantee)]
 
-      assert {:ok, core_reports} ==
+      assert core_reports ==
                CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
     end
 
@@ -63,7 +63,7 @@ defmodule System.State.CoreReportTest do
       w = build(:work_report, core_index: 0)
       guarantees = [build(:guarantee, work_report: w)]
 
-      assert {:ok, [c0, c1]} =
+      assert [c0, c1] =
                CoreReport.calculate_core_reports_(core_reports, guarantees, 7)
 
       assert c0.work_report == w
@@ -75,23 +75,8 @@ defmodule System.State.CoreReportTest do
       core_reports = [nil, nil]
       guarantees = []
 
-      assert {:ok, core_reports} ==
+      assert core_reports ==
                CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
-    end
-
-    test "return error when report sizes are invalid" do
-      core_reports = [build(:core_report)]
-
-      guarantee =
-        build(:guarantee,
-          work_report:
-            build(:work_report,
-              output: "a" <> String.duplicate("b", Constants.max_work_report_size())
-            )
-        )
-
-      assert {:error, :invalid_work_report_size} ==
-               CoreReport.calculate_core_reports_(core_reports, [guarantee], 0)
     end
   end
 

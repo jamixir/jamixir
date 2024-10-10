@@ -108,7 +108,7 @@ defmodule System.State do
              state.authorizer_pool
            ),
          # ρ' Formula (27) v0.4.1
-         {:ok, core_reports_} <-
+         core_reports_ =
            State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
              e.guarantees,
