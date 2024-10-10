@@ -32,6 +32,8 @@ defmodule Block.Extrinsic.Guarantee do
 
     # Formula (138) v0.4.1
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
+         # Formula (119) v0.4.1 (moved from CoreReport)
+         :ok <- validate_work_report_sizes(w),
          # Formula (144) v0.4.1
          :ok <- validate_gas_accumulation(w, state.services),
          # Formula (146) v0.4.1
@@ -54,6 +56,15 @@ defmodule Block.Extrinsic.Guarantee do
     else
       {:error, error} -> {:error, error}
       false -> {:error, "Invalid credentials in guarantees"}
+    end
+  end
+
+  @spec validate_work_report_sizes(list(WorkReport.t())) :: :ok | {:error, String.t()}
+  defp validate_work_report_sizes(work_reports) do
+    if Enum.all?(work_reports, &WorkReport.valid_size?/1) do
+      :ok
+    else
+      {:error, "Invalid work report size"}
     end
   end
 

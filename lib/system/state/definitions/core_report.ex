@@ -56,21 +56,13 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def calculate_core_reports_(core_reports_2, guarantees, timeslot_) do
-    # Formula (119) v0.4.1
-    # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
-    # TODO: add ∣wl ∣ ≤ 8
-    if Enum.any?(guarantees, &(!WorkReport.valid_size?(&1.work_report))) do
-      {:error, :invalid_work_report_size}
-    else
-      # Formula (153) v0.4.1
-      {:ok,
-       Enum.with_index(core_reports_2, fn cr, index ->
-         case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
-           nil -> cr
-           w -> %CoreReport{work_report: w.work_report, timeslot: timeslot_}
-         end
-       end)}
-    end
+    # Formula (153) v0.4.1
+    Enum.with_index(core_reports_2, fn cr, index ->
+      case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
+        nil -> cr
+        w -> %CoreReport{work_report: w.work_report, timeslot: timeslot_}
+      end
+    end)
   end
 
   defimpl Encodable do
