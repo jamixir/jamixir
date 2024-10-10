@@ -106,14 +106,30 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:validate_gas_accumulation, _), do: :ok
   def mock(:validate_work_result_cores, _), do: :ok
   # Formula (144) v0.4.1
-  # ∀w∈w∶ ∑(rg)≤GA
-  # TODO missing part => ∧ ∀r∈wr ∶ rg ≥δ[rs]g
+  # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
-    if total_gas(w, services) > Constants.gas_accumulation() do
-      {:error, :invalid_gas_accumulation}
-    else
-      :ok
-    end
+    Enum.reduce_while(w, :ok, fn work_report, _acc ->
+      total_gas = Enum.reduce(work_report.work_results, 0, & &1.gas_prioritization_ratio + &2)
+
+      cond do
+        total_gas > Constants.gas_accumulation() ->
+          {:halt, {:error, :invalid_gas_accumulation}}
+
+        Enum.any?(work_report.work_results, fn result ->
+          Map.get(services, result.service_index) == nil
+        end) ->
+          {:halt, {:error, :non_existent_service}}
+
+        Enum.any?(work_report.work_results, fn result ->
+          service = Map.get(services, result.service_index)
+          result.gas_prioritization_ratio < service.gas_limit_g
+        end) ->
+          {:halt, {:error, :insufficient_gas_prioritization_ratio}}
+
+        true ->
+          {:cont, :ok}
+      end
+    end)
   end
 
   # Formula (152) v0.4.1
@@ -125,14 +141,6 @@ defmodule Block.Extrinsic.Guarantee do
     else
       :ok
     end
-  end
-
-  defp total_gas(work_reports, services) do
-    Stream.flat_map(work_reports, & &1.work_results)
-    |> Stream.map(&Map.get(services, &1.service_index))
-    |> Stream.filter(&(&1 != nil))
-    |> Stream.map(& &1.gas_limit_g)
-    |> Enum.sum()
   end
 
   # Formula (145) v0.4.1
