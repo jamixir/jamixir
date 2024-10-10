@@ -18,6 +18,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           authorizer_hash: Types.hash(),
           # o
           output: binary(),
+          # l
+          segment_root_lookup: %{Types.hash() => Types.hash()},
           # r
           work_results: list(WorkResult.t())
         }
@@ -28,14 +30,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             core_index: 0,
             authorizer_hash: <<0::256>>,
             output: "",
+            segment_root_lookup: %{},
             work_results: []
 
   # Formula (119) v0.4.1
-  # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
-  # TODO ∀w ∈ W ∶ ∣wl ∣ ≤ 8
+
+  # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
+    map_size(wr.segment_root_lookup) <= 8 and
+      byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
   end
 
   defimpl Encodable do
