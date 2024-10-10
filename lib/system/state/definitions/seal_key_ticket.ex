@@ -12,7 +12,7 @@ defmodule System.State.SealKeyTicket do
   defstruct id: <<>>, entry_index: 0
 
   defimpl Encodable do
-    # Formula (332) v0.4.1
+    # Formula (310) v0.4.1
     def encode(%System.State.SealKeyTicket{} = e) do
       Codec.Encoder.encode({
         e.id,

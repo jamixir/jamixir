@@ -54,7 +54,7 @@ defmodule Block.Extrinsic.Disputes do
     current_epoch = Time.epoch_index(timeslot)
 
     cond do
-      # Formula (99) v0.4.1 - epoch index
+      # Formula (98) v0.4.1 - epoch index
       !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
         {:error, "Invalid epoch index in verdicts"}
 
@@ -131,7 +131,7 @@ defmodule Block.Extrinsic.Disputes do
     |> MapSet.difference(judgements.punish)
   end
 
-  # Formula (112) v0.4.1
+  # Formula (113) v0.4.1
   defp compute_bad_set(verdicts, judgements) do
     verdicts
     |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))

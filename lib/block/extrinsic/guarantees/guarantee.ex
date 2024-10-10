@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Guarantee do
 
     # Formula (138) v0.4.1
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
-         # Formula (145) v0.4.1
+         # Formula (144) v0.4.1
          :ok <- validate_gas_accumulation(w, state.services),
          # Formula (146) v0.4.1
          :ok <- validate_unique_wp_hash(guarantees),
@@ -40,6 +40,7 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
          # Formula (152) v0.4.1
          :ok <- validate_work_result_cores(w, state.services),
+         # Formula (137) v0.4.1
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (139) v0.4.1
