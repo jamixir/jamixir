@@ -1,5 +1,5 @@
 defmodule Shuffle do
-  # Formula (306) v0.3.4
+  # Formula (328) v0.4.1
   @spec shuffle(list(any()), list(integer()) | Types.hash()) :: list(any())
   def shuffle([], _), do: []
 
@@ -10,12 +10,12 @@ defmodule Shuffle do
     [element | shuffle(new_list, Enum.drop(numeric_sequence, 1))]
   end
 
-  # Formula (308) v0.3.4
+  # Formula (330) v0.4.1
   def shuffle(list, hash) when is_binary(hash) and bit_size(hash) == 256 do
     shuffle(list, transform_hash_into_sequence(hash, length(list)))
   end
 
-  # Formula (307) v0.3.4
+  # Formula (329) v0.4.1
   defp transform_hash_into_sequence(hash, sequence_length) do
     numeric_sequence =
       Enum.reduce(0..(sequence_length - 1), [], fn i, acc ->

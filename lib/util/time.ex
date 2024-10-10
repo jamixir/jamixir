@@ -29,7 +29,7 @@ defmodule Util.Time do
   def validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
-    # Formula (42) v0.4.0
+    # Formula (42) v0.4.1
     if valid_block_time?(block_time) do
       :ok
     else
@@ -58,13 +58,13 @@ defmodule Util.Time do
 
   @doc """
   Determines the epoch index of a given timeslot.
-  Formula (47) v0.4.0
+  Formula (47) v0.4.1
   """
   def epoch_index(timeslot), do: div(timeslot, Constants.epoch_length())
 
   @doc """
   Determines the phase of a given timeslot within an epoch.
-  Formula (47) v0.4.0
+  Formula (47) v0.4.1
   """
   def epoch_phase(timeslot), do: rem(timeslot, Constants.epoch_length())
 

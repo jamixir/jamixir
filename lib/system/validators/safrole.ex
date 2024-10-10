@@ -4,7 +4,7 @@ defmodule System.Validators.Safrole do
   alias System.State.Safrole
   alias Util.Time
 
-  # Formula (72) v0.3.4
+  # Formula (72) v0.4.1
   mockable valid_epoch_marker(
              %Header{timeslot: timeslot, epoch: epoch_marker},
              state_timeslot,
@@ -29,7 +29,7 @@ defmodule System.Validators.Safrole do
   def mock(:valid_epoch_marker, _), do: :ok
   def mock(:valid_winning_tickets_marker, _), do: :ok
 
-  # Formula (73) v0.3.4
+  # Formula (73) v0.4.1
   mockable valid_winning_tickets_marker(
              %Header{timeslot: timeslot, winning_tickets_marker: winning_tickets_marker},
              state_timeslot,

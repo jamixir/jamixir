@@ -81,18 +81,9 @@ defmodule CodecEncoderTest do
       # longer than 8 bits and a multiple of 8
       assert Encoder.encode([0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]) == <<84, 85>>
     end
-
-    # could have tests, but since this function is not in the GP anymore, will leave it for now
-    test "encode disctionary" do
-      map = Map.put(Map.put(%{}, 1, 1), 2, 2)
-      assert Encoder.encode(map) == <<2, 1, 1, 2, 2>>
-
-      map2 = Map.put(map, 3, 128)
-      assert Encoder.encode(map2) == <<3, 1, 1, 2, 2, 3, 0x80, 0x80>>
-    end
   end
 
-  # Equation (271)
+  # Formula (294) v0.4.1
   describe "encode_le/2" do
     test "base case when l = 0" do
       assert Encoder.encode_le(0, 0) == <<>>

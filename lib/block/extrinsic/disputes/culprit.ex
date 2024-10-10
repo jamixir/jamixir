@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Culprit do
   @moduledoc """
-  Fomrula 98 v0.3.4
+  Formula (98) v0.4.1
   Culprits represent validators who have guaranteed incorrect reports.
   """
 

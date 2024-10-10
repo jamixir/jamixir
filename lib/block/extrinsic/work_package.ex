@@ -12,29 +12,29 @@ defmodule Block.Extrinsic.WorkPackage do
           authorization_token: binary(),
           # h
           service_index: integer(),
-          # c
+          # u
           authorization_code_hash: binary(),
           # p
           parameterization_blob: binary(),
           # x
           context: RefinementContext.t(),
-          # i
+          # w
           work_items: list(WorkItem.t())
         }
 
-  # Formula (176) v0.3.4
+  # Formula (188) v0.4.1
   defstruct [
     # j
     authorization_token: <<>>,
     # h
     service_index: 0,
-    # c
+    # u
     authorization_code_hash: <<>>,
     # p
     parameterization_blob: <<>>,
     # x
     context: %RefinementContext{},
-    # i
+    # w
     work_items: []
   ]
 
@@ -42,7 +42,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_exported_items 2048
   def maximum_exported_items, do: @maximum_exported_items
 
-  # Formula (180) v0.3.4
+  # Formula (192) v0.4.1
   # 12 * 2 ** 20
   @maximum_size 12_582_912
 
@@ -50,20 +50,20 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp)
   end
 
-  # Formula (182) v0.3.4
+  # Formula (194) v0.4.1
   # pc
   def authorization_code(%__MODULE__{} = wp, %State{services: s}) do
     Map.get(s, wp.service_index)
     |> ServiceAccount.historical_lookup(wp.context.timeslot, wp.authorization_code_hash)
   end
 
-  # Formula (182) v0.3.4
+  # Formula (194) v0.4.1
   # pa
   def implied_authorizer(%__MODULE__{} = wp, %State{} = state) do
     Hash.default(authorization_code(wp, state) <> wp.parameterization_blob)
   end
 
-  # Formula (179) v0.3.4
+  # Formula (191) v0.4.1
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
       part1 = length(i.imported_data_segments) * Constants.wswc()
@@ -72,7 +72,7 @@ defmodule Block.Extrinsic.WorkPackage do
     end) <= @maximum_size
   end
 
-  # Formula (178) v0.3.4
+  # Formula (190) v0.4.1
   defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
     {exported_sum, imported_sum} =
       Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
@@ -85,8 +85,8 @@ defmodule Block.Extrinsic.WorkPackage do
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
-    alias Codec.{VariableSize, Encoder}
-    # Formula (287) v0.3.4
+    alias Codec.{Encoder, VariableSize}
+    # Formula (308) v0.4.1
     def encode(%WorkPackage{} = wp) do
       Encoder.encode({
         VariableSize.new(wp.authorization_token),

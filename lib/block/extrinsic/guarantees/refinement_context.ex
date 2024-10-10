@@ -14,7 +14,7 @@ defmodule RefinementContext do
           prerequisite: Types.hash() | nil
         }
 
-  # Formula (121) v0.3.4
+  # Formula (120) v0.4.1
   # a - anchor header hash
   defstruct anchor: <<0::256>>,
             # s - posterior state root
@@ -25,12 +25,13 @@ defmodule RefinementContext do
             lookup_anchor: <<0::256>>,
             # t
             timeslot: 0,
+            # p
             prerequisite: <<0::256>>
 
   defimpl Encodable do
     alias Codec.{Encoder, NilDiscriminator}
 
-    # Formula (283) v0.3.4
+    # Formula (304) v0.4.1
     def encode(%RefinementContext{
           anchor: a,
           state_root_: s,

@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
 
-  # Formula (119) v0.3.4
+  # Formula (118) v0.4.1
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -22,7 +22,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           work_results: list(WorkResult.t())
         }
 
-  # Formula (119) v0.3.4
+  # Formula (118) v0.4.1
   defstruct specification: {},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -30,8 +30,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             output: "",
             work_results: []
 
-  # Formula (120) v0.3.4
+  # Formula (119) v0.4.1
   # ∀w ∈ W ∶ ∣E(w)∣ ≤ WR
+  # TODO ∀w ∈ W ∶ ∣wl ∣ ≤ 8
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
     byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
@@ -39,7 +40,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     alias Codec.VariableSize
-    # Formula (286) v0.3.4
+    # Formula (307) v0.4.1
+    # TODO - fix it, the encoding below is not as it should be v0.4.1
     def encode(%WorkReport{} = wr) do
       Codec.Encoder.encode({
         wr.authorizer_hash,

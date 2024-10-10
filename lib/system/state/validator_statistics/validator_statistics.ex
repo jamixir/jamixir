@@ -1,6 +1,6 @@
 defmodule System.State.ValidatorStatistics do
   @moduledoc """
-  Formula (171) v0.3.4
+  Formula (183) v0.4.1
   Tracks validator statistics on a per-epoch basis.
 
   The validator statistics are made on a per-epoch basis and are retained as a
@@ -71,8 +71,8 @@ defmodule System.State.ValidatorStatistics do
         %Header{} = header,
         reporters_set
       ) do
-    # Formula (172) v0.3.4
-    # Formula (173) v0.3.4
+    # Formula (184) v0.4.1
+    # Formula (185) v0.4.1
     {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
         {empty_epoc_stats(), validator_statistics.current_epoch_statistics}
@@ -83,7 +83,7 @@ defmodule System.State.ValidatorStatistics do
 
     case get_author_stats(current_epoc_stats_, header.block_author_key_index) do
       {:ok, author_stats} ->
-        # Formula (174) v0.3.4
+        # Formula (186) v0.4.1
         author_stats_ = %{
           author_stats
           | blocks_produced: author_stats.blocks_produced + 1,

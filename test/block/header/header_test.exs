@@ -46,7 +46,7 @@ defmodule Block.HeaderTest do
     {:ok, header: %Header{block_seal: <<123::256>>}}
   end
 
-  # Formula (281) v0.3.4
+  # Formula (302) v0.4.1
   describe "encode/1" do
     test "encode header smoke test" do
       assert Encodable.encode(build(:header))
@@ -82,10 +82,9 @@ defmodule Block.HeaderTest do
     end
   end
 
-  # Formula (282) v0.3.4
+  # Formula (303) v0.4.1
   describe "unsigned_serialize/1" do
     test "unsigned_serialize header", %{header: h} do
-      # Formula (282) as is v0.3.4
       assert Header.unsigned_serialize(h) ==
                Codec.Encoder.encode({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
                  Codec.Encoder.encode_le(h.timeslot, 4) <>

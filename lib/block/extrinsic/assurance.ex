@@ -12,7 +12,7 @@ defmodule Block.Extrinsic.Assurance do
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
 
-  # Formula (125) v0.3.4
+  # Formula (124) v0.4.1
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: <<0::256>>,
             # round 341 to fit byte size
@@ -37,13 +37,13 @@ defmodule Block.Extrinsic.Assurance do
              curr_validators_,
              core_reports_intermediate_1
            ) do
-    # Formula (126) v0.3.4
+    # Formula (125) v0.4.1
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
-         # Formula (127) v0.3.4
+         # Formula (126) v0.4.1
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
-         # Formula (128) v0.3.4
+         # Formula (127) v0.4.1
          :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
-         # Formula (130) v0.3.4
+         # Formula (129) v0.4.1
          :ok <- validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
     else
@@ -59,7 +59,7 @@ defmodule Block.Extrinsic.Assurance do
     |> Enum.map(fn i -> %WorkReport{core_index: i} end)
   end
 
-  # Formula (131) W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     threshold = 2 * Constants.validator_count() / 3
@@ -73,7 +73,7 @@ defmodule Block.Extrinsic.Assurance do
     |> Enum.to_list()
   end
 
-  # Formula (130) v0.3.4
+  # Formula (129) v0.4.1
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->

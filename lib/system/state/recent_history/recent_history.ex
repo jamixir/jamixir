@@ -53,7 +53,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
-  Formula (82) v0.3.4
+  Formula (82) v0.4.1
   """
   def update_latest_state_root_(nil, %Header{}) do
     __MODULE__.new()
@@ -76,7 +76,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  Formula (83) v0.3.4
+  Formula (83) v0.4.1
   """
   def calculate_recent_history_(
         %Header{} = header,
@@ -110,7 +110,7 @@ defmodule System.State.RecentHistory do
       end
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # Formula (83) v0.3.4
+    # Formula (83) v0.4.1
     mmr_roots =
       case recent_history.blocks do
         [] ->
@@ -132,7 +132,7 @@ defmodule System.State.RecentHistory do
       guarantees
       |> Enum.map(& &1.work_report.specification.work_package_hash)
 
-    # Formula (84) v0.3.4
+    # Formula (84) v0.4.1
     RecentHistory.add(
       recent_history,
       header_hash,
@@ -144,7 +144,7 @@ defmodule System.State.RecentHistory do
 
   defimpl Encodable do
     alias Codec.VariableSize
-    # Formula 292 v0.3.4
+    # Formula (314) v0.4.1
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
       Codec.Encoder.encode(

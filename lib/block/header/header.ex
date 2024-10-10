@@ -5,26 +5,26 @@ defmodule Block.Header do
   alias Util.Time
 
   @type t :: %__MODULE__{
-          # Formula (39) v0.4.0
+          # Formula (39) v0.4.1
           # Hp
           parent_hash: Types.hash(),
-          # Formula (43) v0.4.0
+          # Formula (43) v0.4.1
           # Hr
           prior_state_root: Types.hash(),
-          # Formula (41) v0.4.0
+          # Formula (41) v0.4.1
           # Hx
           extrinsic_hash: Types.hash(),
-          # Formula (42) v0.4.0
+          # Formula (42) v0.4.1
           # Ht
           timeslot: integer(),
-          # Formula (45) v0.4.0
+          # Formula (45) v0.4.1
           # He
           epoch: {Types.hash(), list(Types.bandersnatch_key())} | nil,
           # Hw
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Ho
           offenders_marker: list(Types.hash()),
-          # Formula (44) v0.4.0
+          # Formula (44) v0.4.1
           # Hi
           block_author_key_index: Types.validator_index(),
           # Hv
@@ -33,7 +33,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Formula (38) v0.4.0
+  # Formula (38) v0.4.1
   defstruct [
     # Hp
     parent_hash: <<0::256>>,
@@ -73,7 +73,7 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (41) v0.4.0
+  # Formula (41) v0.4.1
   def valid_extrinsic_hash?(header, extrinsic) do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end
@@ -93,7 +93,7 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (282) v0.3.4
+  # Formula (303) v0.4.1
   def unsigned_serialize(%Block.Header{} = header) do
     Codec.Encoder.encode({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       Codec.Encoder.encode_le(header.timeslot, 4) <>
@@ -105,7 +105,7 @@ defmodule Block.Header do
   end
 
   defimpl Encodable do
-    # Formula (281) v0.3.4
+    # Formula (302) v0.4.1
     def encode(%Block.Header{} = header) do
       Block.Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)
     end
