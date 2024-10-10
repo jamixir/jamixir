@@ -43,7 +43,6 @@ defmodule System.State.Judgements do
 
         if valid_header_markers?(
              header,
-             bad_wonky_verdicts,
              new_offenders
            ) do
           {:ok,
@@ -99,7 +98,6 @@ defmodule System.State.Judgements do
   mockable(
     valid_header_markers?(
       %Header{offenders_marker: of},
-      bad_wonky_verdicts,
       new_offenders
     ),
     do: of == new_offenders
