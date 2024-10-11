@@ -25,11 +25,15 @@ defmodule Utils do
 
   def hex_to_binary(value), do: value
 
+  def atomize_keys(list) when is_list(list) do
+    list |> Enum.map(&atomize_keys/1)
+  end
+
   def atomize_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {key, value} ->
       if is_atom(key) do
-        {key, value}
+        {key, atomize_keys(value)}
       else
         atom_key =
           try do
@@ -38,7 +42,7 @@ defmodule Utils do
             ArgumentError -> String.to_atom(key)
           end
 
-        {atom_key, value}
+        {atom_key, atomize_keys(value)}
       end
     end)
     |> Enum.into(%{})

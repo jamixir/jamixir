@@ -51,7 +51,7 @@ defmodule Block.Extrinsic do
 
   def from_json(json_data) do
     %__MODULE__{
-      tickets: Enum.map(json_data["extrinsic"], &TicketProof.from_json/1)
+      tickets: Enum.map(json_data[:extrinsic], &TicketProof.from_json/1)
     }
   end
 end

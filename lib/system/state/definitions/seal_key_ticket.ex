@@ -21,7 +21,7 @@ defmodule System.State.SealKeyTicket do
     end
   end
 
-  def from_json(%{"id" => id, "attempt" => entry_index}) do
+  def from_json(%{id: id, attempt: entry_index}) do
     %System.State.SealKeyTicket{
       id: id |> Utils.hex_to_binary(),
       entry_index: entry_index

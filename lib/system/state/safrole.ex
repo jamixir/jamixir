@@ -183,11 +183,11 @@ defmodule System.State.Safrole do
     }
   end
 
-  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{"keys" => keys}}) do
+  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{keys: keys}}) do
     keys |> Enum.map(&Utils.hex_to_binary/1)
   end
 
-  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{"tickets" => tickets}}) do
+  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{tickets: tickets}}) do
     tickets |> Enum.map(&SealKeyTicket.from_json/1)
   end
 end

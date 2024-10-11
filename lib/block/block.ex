@@ -32,8 +32,8 @@ defmodule Block do
 
   def from_json(json_data) do
     %__MODULE__{
-      header: Header.from_json(json_data),
-      extrinsic: Extrinsic.from_json(json_data["input"])
+      header: Header.from_json(json_data[:header]),
+      extrinsic: Extrinsic.from_json(json_data[:extrinsic])
     }
   end
 end

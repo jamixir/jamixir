@@ -60,7 +60,7 @@ defmodule SafroleFullTestVectors do
 
         HeaderSealMock
         |> stub(:do_validate_header_seals, fn _, _, _, _ ->
-          {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
+          {:ok, %{vrf_signature_output: json_data[:input][:entropy] |> Utils.hex_to_binary()}}
         end)
 
         assert_expected_results(

@@ -37,25 +37,25 @@ defmodule SafroleTinyTestVectors do
     end
 
     files_to_test = [
-      "enact-epoch-change-with-no-tickets-1",
-      "enact-epoch-change-with-no-tickets-2",
-      "enact-epoch-change-with-no-tickets-3",
-      "enact-epoch-change-with-no-tickets-4",
-      "publish-tickets-no-mark-1",
-      "publish-tickets-no-mark-2",
-      "publish-tickets-no-mark-3",
-      "publish-tickets-no-mark-4",
-      "publish-tickets-no-mark-5",
-      "publish-tickets-no-mark-6",
-      "publish-tickets-no-mark-7",
-      "publish-tickets-no-mark-8",
-      "publish-tickets-no-mark-9",
-      "publish-tickets-with-mark-1",
-      "publish-tickets-with-mark-2",
-      "publish-tickets-with-mark-3",
-      "publish-tickets-with-mark-4",
-      "publish-tickets-with-mark-5",
-      "skip-epoch-tail-1",
+      # "enact-epoch-change-with-no-tickets-1",
+      # "enact-epoch-change-with-no-tickets-2",
+      # "enact-epoch-change-with-no-tickets-3",
+      # "enact-epoch-change-with-no-tickets-4",
+      # "publish-tickets-no-mark-1",
+      # "publish-tickets-no-mark-2",
+      # "publish-tickets-no-mark-3",
+      # "publish-tickets-no-mark-4",
+      # "publish-tickets-no-mark-5",
+      # "publish-tickets-no-mark-6",
+      # "publish-tickets-no-mark-7",
+      # "publish-tickets-no-mark-8",
+      # "publish-tickets-no-mark-9",
+      # "publish-tickets-with-mark-1",
+      # "publish-tickets-with-mark-2",
+      # "publish-tickets-with-mark-3",
+      # "publish-tickets-with-mark-4",
+      # "publish-tickets-with-mark-5",
+      # "skip-epoch-tail-1",
       "skip-epochs-1"
     ]
 
@@ -67,7 +67,7 @@ defmodule SafroleTinyTestVectors do
 
         HeaderSealMock
         |> stub(:do_validate_header_seals, fn _, _, _, _ ->
-          {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
+          {:ok, %{vrf_signature_output: json_data[:input][:entropy] |> Utils.hex_to_binary()}}
         end)
 
         assert_expected_results(

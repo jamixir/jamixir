@@ -15,7 +15,7 @@ defmodule CodecVectorsTest do
     end
 
     test "header" do
-      # assert_correctly_encoded("header_0", Header)
+      assert_correctly_encoded("header_0", Header)
       # assert_correctly_encoded("header_1", Header)
     end
   end

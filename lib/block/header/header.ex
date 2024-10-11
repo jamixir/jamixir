@@ -112,16 +112,22 @@ defmodule Block.Header do
   end
 
   def from_json(json_data) do
-    ok_output = json_data["output"]["ok"]
+    author_index = json_data[:author_index] || 0
 
     %__MODULE__{
-      timeslot: json_data["input"]["slot"],
-      epoch: parse_epoch_mark(ok_output["epoch_mark"]),
-      winning_tickets_marker: parse_tickets_mark(ok_output["tickets_mark"])
+      parent_hash: Utils.hex_to_binary(json_data[:parent]),
+      prior_state_root: Utils.hex_to_binary(json_data[:prior_state_root]),
+      extrinsic_hash: Utils.hex_to_binary(json_data[:extrinsic_hash]),
+      timeslot: json_data[:slot],
+      epoch: parse_epoch_mark(json_data[:epoch_mark]),
+      winning_tickets_marker: parse_tickets_mark(json_data[:tickets_mark]),
+      block_author_key_index: author_index,
+      vrf_signature: Utils.hex_to_binary(json_data[:entropy_source]),
+      block_seal: Utils.hex_to_binary(json_data[:seal])
     }
   end
 
-  defp parse_epoch_mark(%{"entropy" => entropy, "validators" => validators}) do
+  defp parse_epoch_mark(%{entropy: entropy, validators: validators}) do
     {Utils.hex_to_binary(entropy), Enum.map(validators, &Utils.hex_to_binary/1)}
   end
 

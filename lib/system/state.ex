@@ -410,15 +410,15 @@ defmodule System.State do
 
   def from_json(json) do
     %{
-      "tau" => timeslot,
-      "eta" => entropy_pool,
-      "lambda" => prev_validators,
-      "kappa" => curr_validators,
-      "iota" => next_validators,
-      "gamma_k" => pending,
-      "gamma_a" => ticket_accumulator,
-      "gamma_s" => current_epoch_slot_sealers,
-      "gamma_z" => epoch_root
+      tau: timeslot,
+      eta: entropy_pool,
+      lambda: prev_validators,
+      kappa: curr_validators,
+      iota: next_validators,
+      gamma_k: pending,
+      gamma_a: ticket_accumulator,
+      gamma_s: current_epoch_slot_sealers,
+      gamma_z: epoch_root
     } = json
 
     %System.State{
