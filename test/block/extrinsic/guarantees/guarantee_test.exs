@@ -13,6 +13,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     def validator_count, do: 6
     def core_count, do: 2
     def rotation_period, do: 10
+    def gas_accumulation, do: 1000
   end
 
   describe "validate/1" do
@@ -105,26 +106,82 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate([context.g1], context.state, 1) == :ok
     end
 
-    test "returns error when gas accumulation exceeds limit", %{state: state, g1: g1, g2: g2} do
-      wr = 1..2 |> Enum.map(&build(:work_result, service_index: &1))
+    test "passes when gas accumulation is within limits", %{state: state, g1: g1, g2: g2} do
+      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 400)
+      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.work_results, wr),
-        put_in(g2.work_report.work_results, wr)
+        put_in(g1.work_report.work_results, [wr1]),
+        put_in(g2.work_report.work_results, [wr2])
       ]
 
-      # sum of 4 work results can't be bigger than 1_000
       s =
         put_in(state.services, %{
-          1 => %{gas_limit_g: 250, code_hash: <<1::256>>},
-          2 => %{gas_limit_g: 249, code_hash: <<1::256>>}
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == :ok
-      # change value to exceed the limit
-      s2 = put_in(s.services[2].gas_limit_g, 251)
+    end
 
-      assert Guarantee.validate(guarantees, s2, 1) == {:error, :invalid_gas_accumulation}
+    test "fails when a work result references a non-existent service",
+         %{state: state, g1: g1, g2: g2} do
+      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 400)
+      # Non-existent service
+      wr2 = build(:work_result, service_index: 3, gas_prioritization_ratio: 300)
+
+      guarantees = [
+        put_in(g1.work_report.work_results, [wr1]),
+        put_in(g2.work_report.work_results, [wr2])
+      ]
+
+      s =
+        put_in(state.services, %{
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+        })
+
+      assert Guarantee.validate(guarantees, s, 1) == {:error, :non_existent_service}
+    end
+
+    test "fails when total gas exceeds Constants.gas_accumulation()",
+         %{state: state, g1: g1, g2: g2} do
+      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 999)
+      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 600)
+      wr3 = build(:work_result, service_index: 1, gas_prioritization_ratio: 401)
+
+      guarantees = [
+        put_in(g1.work_report.work_results, [wr1]),
+        put_in(g2.work_report.work_results, [wr2, wr3])
+      ]
+
+      s =
+        put_in(state.services, %{
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+        })
+
+      assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
+    end
+
+    test "fails when gas_prioritization_ratio is less than service's gas_limit_g",
+         %{state: state, g1: g1, g2: g2} do
+      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 299)
+      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
+
+      guarantees = [
+        put_in(g1.work_report.work_results, [wr1]),
+        put_in(g2.work_report.work_results, [wr2])
+      ]
+
+      s =
+        put_in(state.services, %{
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+        })
+
+      assert Guarantee.validate(guarantees, s, 1) ==
+               {:error, :insufficient_gas_prioritization_ratio}
     end
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
