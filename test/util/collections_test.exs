@@ -112,7 +112,6 @@ defmodule Util.CollectionsTest do
     end
 
     test "union with empty dictionaries" do
-      dict1 = %{a: 1}
       assert Collections.union([%{a: 1}, %{}, %{b: 2}]) == %{a: 1, b: 2}
     end
   end
