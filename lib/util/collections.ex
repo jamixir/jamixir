@@ -67,6 +67,13 @@ defmodule Util.Collections do
     end
   end
 
+  # Formula (11) v0.4.1
+  def union(dictionaries) when is_list(dictionaries) do
+    Enum.reduce(dictionaries, %{}, fn dict, acc ->
+      Map.merge(acc, dict, fn _k, _v1, v2 -> v2 end)
+    end)
+  end
+
   def all_ok?(collection, fun) do
     Enum.all?(collection, fn item ->
       fun.(item) == :ok
