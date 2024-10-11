@@ -144,7 +144,7 @@ defmodule Jamixir.Factory do
       code_hash: <<1::256>>,
       payload_hash: <<2::256>>,
       gas_prioritization_ratio: 3,
-      output_or_error: {:ok, <<4>>}
+      result: {:ok, <<4>>}
     }
   end
 

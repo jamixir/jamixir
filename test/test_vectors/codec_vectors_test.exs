@@ -1,4 +1,5 @@
 defmodule CodecVectorsTest do
+  alias Block.Extrinsic.Guarantee.WorkResult
   alias Block.Extrinsic.Preimage
   alias Block.Header
   alias Block.Extrinsic.Assurance
@@ -25,6 +26,11 @@ defmodule CodecVectorsTest do
 
     test "header with tickets mark" do
       assert_correctly_encoded("header_1", Header)
+    end
+
+    test "work results" do
+      assert_correctly_encoded("work_result_0", WorkResult)
+      assert_correctly_encoded("work_result_1", WorkResult)
     end
   end
 

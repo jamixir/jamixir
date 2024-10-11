@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           gas_prioritization_ratio: non_neg_integer(),
           # o: the output or error of the execution of the code, which may be either an
           # octet sequence in case it was successful, or a member of the set J if not
-          output_or_error: {:ok, binary()} | {:error, WorkExecutionError.t()}
+          result: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
   # s
@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             # g
             gas_prioritization_ratio: 0,
             # o
-            output_or_error: {:ok, <<>>}
+            result: {:ok, <<>>}
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
   def new(%WorkItem{} = wi, output) do
@@ -46,7 +46,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       code_hash: wi.code_hash,
       payload_hash: Util.Hash.default(wi.payload_blob),
       gas_prioritization_ratio: wi.gas_limit,
-      output_or_error: output
+      result: output
     }
   end
 
@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       Encoder.encode_le(wr.service_index, 4) <>
         Encoder.encode({wr.code_hash, wr.payload_hash}) <>
         Encoder.encode_le(wr.gas_prioritization_ratio, 8) <>
-        do_encode(wr.output_or_error)
+        do_encode(wr.result)
     end
 
     # Formula (311) v0.4.1
@@ -73,4 +73,17 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       Encoder.encode(WorkExecutionError.code(e))
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      service_index: :service,
+      gas_prioritization_ratio: :gas_ratio,
+      result: &parse_result/1
+    }
+  end
+
+  def parse_result(%{ok: ok}), do: {:ok, JsonDecoder.from_json(ok)}
+  def parse_result(%{panic: _}), do: {:error, :halt}
 end
