@@ -47,7 +47,7 @@ defmodule Block.Extrinsic.Preimage do
   # Formula (156) v0.4.1
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   defp not_provided?(preimage, services) do
-    case Map.get(services, preimage.service_index) do
+    case services[preimage.service_index] do
       nil ->
         false
 

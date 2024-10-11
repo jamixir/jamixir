@@ -9,7 +9,7 @@ defmodule GitHubRepoReader do
   def fetch_repo_files(owner, repo) do
     case read_cache() do
       {:ok, cache} ->
-        case Map.get(cache, {owner, repo}) do
+        case cache[{owner, repo}] do
           nil -> fetch_and_cache_files(owner, repo)
           files -> files
         end

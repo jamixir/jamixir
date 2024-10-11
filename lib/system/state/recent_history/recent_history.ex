@@ -114,17 +114,14 @@ defmodule System.State.RecentHistory do
     mmr_roots =
       case recent_history.blocks do
         [] ->
-          MMR.new()
-          |> MMR.append(well_balanced_merkle_root)
-          |> Map.get(:roots)
+          MMR.append(MMR.new(), well_balanced_merkle_root).roots
 
         _ ->
-          recent_history.blocks
-          |> Enum.map(& &1.accumulated_result_mmr)
-          |> Enum.at(-1)
-          |> MMR.from()
-          |> MMR.append(well_balanced_merkle_root)
-          |> Map.get(:roots)
+          (recent_history.blocks
+           |> Enum.map(& &1.accumulated_result_mmr)
+           |> Enum.at(-1)
+           |> MMR.from()
+           |> MMR.append(well_balanced_merkle_root)).roots
       end
 
     # Work report hashes

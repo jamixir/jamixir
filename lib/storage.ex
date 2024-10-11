@@ -8,7 +8,7 @@ defmodule Storage do
   end
 
   def get(storage, key) do
-    Map.get(storage, key)
+    storage[key]
   end
 
   def delete(storage, key) do

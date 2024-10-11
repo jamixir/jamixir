@@ -109,7 +109,7 @@ defmodule Block.Extrinsic.Guarantee do
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
-      total_gas = Enum.reduce(work_report.work_results, 0, & &1.gas_prioritization_ratio + &2)
+      total_gas = Enum.reduce(work_report.work_results, 0, &(&1.gas_prioritization_ratio + &2))
 
       cond do
         total_gas > Constants.gas_accumulation() ->

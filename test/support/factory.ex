@@ -72,7 +72,7 @@ defmodule Jamixir.Factory do
   end
 
   def genesis_state_with_safrole_factory(attrs) do
-    validator_count = Map.get(attrs, :validator_count, @validator_count)
+    validator_count = attrs[:validator_count] || @validator_count
 
     %{validators: validators, key_pairs: key_pairs} =
       validators_and_bandersnatch_keys(validator_count)
@@ -286,8 +286,8 @@ defmodule Jamixir.Factory do
   end
 
   def judgement_factory(attrs) do
-    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
-    {_, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    {_, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
 
     decision = Map.get(attrs, :decision, true)
 
@@ -299,15 +299,15 @@ defmodule Jamixir.Factory do
       end
 
     %Block.Extrinsic.Disputes.Judgement{
-      validator_index: Map.get(attrs, :validator_index, 0),
+      validator_index: attrs[:validator_index] || 0,
       decision: decision,
       signature: signature
     }
   end
 
   def culprit_factory(attrs) do
-    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
-    {pub, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    {pub, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
 
     %Block.Extrinsic.Disputes.Culprit{
       work_report_hash: work_report_hash,
@@ -317,8 +317,8 @@ defmodule Jamixir.Factory do
   end
 
   def fault_factory(attrs) do
-    work_report_hash = Map.get(attrs, :work_report_hash, :crypto.strong_rand_bytes(32))
-    {pub, priv} = Map.get(attrs, :key_pair, :crypto.generate_key(:eddsa, :ed25519))
+    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    {pub, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
     decision = Map.get(attrs, :decision, true)
 
     signature_base =
@@ -348,7 +348,7 @@ defmodule Jamixir.Factory do
 
   # Validator Statistics Factory
   def validator_statistics_factory(attrs) do
-    count = Map.get(attrs, :count, @validator_count)
+    count = attrs[:count] || @validator_count
 
     %System.State.ValidatorStatistics{
       current_epoch_statistics: build_list(count, :statistics),
@@ -370,18 +370,13 @@ defmodule Jamixir.Factory do
   end
 
   def safrole_block_factory(attrs) do
-    state = Map.get(attrs, :state)
-    key_pairs = Map.get(attrs, :key_pairs)
-    timeslot = Map.get(attrs, :timeslot, 1)
+    state = attrs[:state]
+    timeslot = attrs[:timeslot] || 1
 
     block_author_key_index =
-      Map.get(
-        attrs,
-        :block_author_key_index,
-        rem(timeslot, length(state.curr_validators))
-      )
+      attrs[:block_author_key_index] || rem(timeslot, length(state.curr_validators))
 
-    block_author_key_pair = Enum.at(key_pairs, block_author_key_index)
+    block_author_key_pair = Enum.at(attrs[:key_pairs], block_author_key_index)
 
     # Build and seal the header dynamically with the correct timeslot
     header =
@@ -392,11 +387,8 @@ defmodule Jamixir.Factory do
         block_author_key_pair
       )
 
-    extrinsic =
-      if(Map.get(attrs, :extrinsic) != nil, do: attrs.extrinsic, else: build(:extrinsic))
-
     %Block{
-      extrinsic: extrinsic,
+      extrinsic: attrs[:extrinsic] || build(:extrinsic),
       header: header
     }
   end

@@ -60,10 +60,8 @@ defmodule System.State.ServiceAccountTest do
 
       sa = ServiceAccount.store_preimage(sa, preimage, 1)
 
-      assert sa |> Map.get(:preimage_storage_p) |> Map.get(expected_hash) == preimage
-
-      assert sa |> Map.get(:preimage_storage_l) |> Map.get({expected_hash, byte_size(preimage)}) ==
-               [1]
+      assert sa.preimage_storage_p[expected_hash] == preimage
+      assert sa.preimage_storage_l[{expected_hash, byte_size(preimage)}] == [1]
 
       assert Map.keys(sa.preimage_storage_p) |> length() == p_key_count + 1
       assert Map.keys(sa.preimage_storage_l) |> length() == l_key_count + 1

@@ -248,10 +248,7 @@ defmodule RecentHistoryTest do
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
 
       # Verify that the accumulated_result_mmr is based on the well-balanced Merkle root
-      expected_mmr_roots =
-        MMR.new()
-        |> MMR.append(expected_merkle_root)
-        |> Map.get(:roots)
+      expected_mmr_roots = MMR.append(MMR.new(), expected_merkle_root).roots
 
       assert Enum.at(result.blocks, -1).accumulated_result_mmr == expected_mmr_roots
     end

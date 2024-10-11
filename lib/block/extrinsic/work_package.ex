@@ -53,8 +53,11 @@ defmodule Block.Extrinsic.WorkPackage do
   # Formula (194) v0.4.1
   # pc
   def authorization_code(%__MODULE__{} = wp, %State{services: s}) do
-    Map.get(s, wp.service_index)
-    |> ServiceAccount.historical_lookup(wp.context.timeslot, wp.authorization_code_hash)
+    ServiceAccount.historical_lookup(
+      s[wp.service_index],
+      wp.context.timeslot,
+      wp.authorization_code_hash
+    )
   end
 
   # Formula (194) v0.4.1
