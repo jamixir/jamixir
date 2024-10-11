@@ -124,11 +124,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate(guarantees, s, 1) == :ok
     end
 
-    test "fails when a work result references a non-existent service", %{
-      state: state,
-      g1: g1,
-      g2: g2
-    } do
+    test "fails when a work result references a non-existent service",
+         %{state: state, g1: g1, g2: g2} do
       wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 400)
       # Non-existent service
       wr2 = build(:work_result, service_index: 3, gas_prioritization_ratio: 300)
@@ -147,11 +144,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate(guarantees, s, 1) == {:error, :non_existent_service}
     end
 
-    test "fails when total gas exceeds Constants.gas_accumulation()", %{
-      state: state,
-      g1: g1,
-      g2: g2
-    } do
+    test "fails when total gas exceeds Constants.gas_accumulation()",
+         %{state: state, g1: g1, g2: g2} do
       wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 999)
       wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 600)
       wr3 = build(:work_result, service_index: 1, gas_prioritization_ratio: 401)
@@ -170,11 +164,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
     end
 
-    test "fails when gas_prioritization_ratio is less than service's gas_limit_g", %{
-      state: state,
-      g1: g1,
-      g2: g2
-    } do
+    test "fails when gas_prioritization_ratio is less than service's gas_limit_g",
+         %{state: state, g1: g1, g2: g2} do
       wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 299)
       wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
 
