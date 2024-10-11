@@ -14,9 +14,12 @@ defmodule CodecVectorsTest do
       assert_correctly_encoded("assurances_extrinsic", Assurance)
     end
 
-    test "header" do
+    test "header no tickets mark" do
       assert_correctly_encoded("header_0", Header)
-      # assert_correctly_encoded("header_1", Header)
+    end
+
+    test "header with tickets mark" do
+      assert_correctly_encoded("header_1", Header)
     end
   end
 
@@ -28,6 +31,11 @@ defmodule CodecVectorsTest do
       %{} ->
         object = module.from_json(Utils.atomize_keys(json_data))
         encoded = Codec.Encoder.encode(object)
+
+        if encoded != expected do
+          IO.inspect(object)
+        end
+
         assert encoded == expected
 
       l when is_list(l) ->
