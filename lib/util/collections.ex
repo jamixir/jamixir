@@ -68,6 +68,7 @@ defmodule Util.Collections do
   end
 
   # Formula (11) v0.4.1
+  @spec union([map()]) :: map()
   def union(dictionaries) when is_list(dictionaries) do
     Enum.reduce(dictionaries, %{}, fn dict, acc ->
       Map.merge(acc, dict, fn _k, _v1, v2 -> v2 end)
