@@ -26,7 +26,12 @@ defmodule JsonDecoder do
   def from_json(value), do: value
 
   def to_struct(module, json_data) do
-    mapping = module.json_mapping()
+    mapping =
+      if function_exported?(module, :json_mapping, 0) do
+        module.json_mapping()
+      else
+        %{}
+      end
 
     values =
       Enum.map(Utils.list_struct_fields(module), fn field ->
@@ -34,6 +39,24 @@ defmodule JsonDecoder do
          case mapping[field] do
            nil ->
              JsonDecoder.from_json(json_data[field])
+
+           [module] ->
+             Enum.map(json_data[field], &module.from_json/1)
+
+           [[module], f] ->
+             case json_data[f] do
+               nil -> nil
+               v -> Enum.map(v, &module.from_json/1)
+             end
+
+           [f, field] when is_function(f, 1) ->
+             f.(json_data[field])
+
+           f when is_function(f, 1) ->
+             f.(json_data[field])
+
+           [value, default] when is_atom(value) ->
+             JsonDecoder.from_json(json_data[value]) || default
 
            value when is_atom(value) ->
              if Code.ensure_loaded?(value) and function_exported?(value, :from_json, 1) do

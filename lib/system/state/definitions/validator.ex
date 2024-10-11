@@ -57,9 +57,5 @@ defmodule System.State.Validator do
     }
   end
 
-  def from_json(json) do
-    json
-    |> JsonDecoder.from_json()
-    |> then(&struct(__MODULE__, &1))
-  end
+  use JsonDecoder
 end

@@ -22,7 +22,11 @@ defmodule WorkReportTest do
     end
 
     test "returns false when segment_root_lookup has more than 8 entries" do
-      invalid_wr = build(:work_report, segment_root_lookup: for(i <- 1..9, into: %{}, do: {<<i::256>>, <<i::256>>}))
+      invalid_wr =
+        build(:work_report,
+          segment_root_lookup: for(i <- 1..9, into: %{}, do: {<<i::256>>, <<i::256>>})
+        )
+
       refute WorkReport.valid_size?(invalid_wr)
     end
 

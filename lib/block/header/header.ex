@@ -111,30 +111,17 @@ defmodule Block.Header do
     end
   end
 
-  def from_json(json_data) do
-    %__MODULE__{
-      parent_hash: JsonDecoder.from_json(json_data[:parent]),
-      prior_state_root: JsonDecoder.from_json(json_data[:parent_state_root]),
-      extrinsic_hash: JsonDecoder.from_json(json_data[:extrinsic_hash]),
-      timeslot: JsonDecoder.from_json(json_data[:slot]),
-      epoch: parse_epoch_mark(json_data[:epoch_mark]),
-      winning_tickets_marker: parse_tickets_mark(json_data[:tickets_mark]),
-      offenders_marker: JsonDecoder.from_json(json_data[:offenders_mark]) || [],
-      block_author_key_index: JsonDecoder.from_json(json_data[:author_index]) || 0,
-      vrf_signature: JsonDecoder.from_json(json_data[:entropy_source]),
-      block_seal: JsonDecoder.from_json(json_data[:seal])
-    }
-  end
+  use JsonDecoder
 
   def json_mapping do
     %{
       parent_hash: :parent,
       prior_state_root: :parent_state_root,
       timeslot: :slot,
-      epoch: :epoch_mark,
-      winning_tickets_marker: :tickets_mark,
-      offenders_marker: :offenders_mark,
-      block_author_key_index: :author_index,
+      epoch: [&parse_epoch_mark/1, :epoch_mark],
+      winning_tickets_marker: [[SealKeyTicket], :tickets_mark],
+      offenders_marker: [:offenders_mark, []],
+      block_author_key_index: [:author_index, 0],
       vrf_signature: :entropy_source,
       block_seal: :seal
     }
@@ -145,10 +132,4 @@ defmodule Block.Header do
   end
 
   defp parse_epoch_mark(_), do: nil
-
-  defp parse_tickets_mark(tickets) when is_list(tickets) do
-    Enum.map(tickets, &SealKeyTicket.from_json/1)
-  end
-
-  defp parse_tickets_mark(_), do: nil
 end

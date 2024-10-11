@@ -174,20 +174,21 @@ defmodule System.State.Safrole do
     end
   end
 
-  def from_json(json) do
-    %__MODULE__{
-      pending: json.pending |> Enum.map(&Validator.from_json/1),
-      epoch_root: JsonDecoder.from_json(json.epoch_root),
-      current_epoch_slot_sealers: parse_current_epoch_slot_sealers(json),
-      ticket_accumulator: json.ticket_accumulator |> Enum.map(&SealKeyTicket.from_json/1)
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      pending: [Validator],
+      current_epoch_slot_sealers: &parse_current_epoch_slot_sealers/1,
+      ticket_accumulator: [SealKeyTicket]
     }
   end
 
-  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{keys: keys}}) do
+  defp parse_current_epoch_slot_sealers(%{keys: keys}) do
     keys |> Enum.map(&JsonDecoder.from_json/1)
   end
 
-  defp parse_current_epoch_slot_sealers(%{current_epoch_slot_sealers: %{tickets: tickets}}) do
+  defp parse_current_epoch_slot_sealers(%{tickets: tickets}) do
     tickets |> Enum.map(&SealKeyTicket.from_json/1)
   end
 end

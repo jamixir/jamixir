@@ -104,12 +104,9 @@ defmodule Block.Extrinsic.TicketProof do
   def mock(:validate, _), do: :ok
   def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
 
-  def from_json(json_data) do
-    %__MODULE__{
-      entry_index: json_data[:attempt],
-      ticket_validity_proof: JsonDecoder.from_json(json_data[:signature])
-    }
-  end
+  use JsonDecoder
+
+  def json_mapping, do: %{entry_index: :attempt, ticket_validity_proof: :signature}
 
   defimpl Encodable do
     def encode(%Block.Extrinsic.TicketProof{} = tp) do
