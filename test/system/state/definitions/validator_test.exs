@@ -28,7 +28,8 @@ defmodule System.State.ValidatorTest do
   describe "from_json/1" do
     test "from_json smoke test" do
       v = build(:validator)
-      assert Validator.from_json(Codec.JsonEncoder.to_json(v)) == v
+      json = Codec.JsonEncoder.to_json(v)
+      assert Validator.from_json(json) == v
     end
   end
 

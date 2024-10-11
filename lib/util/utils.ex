@@ -28,14 +28,18 @@ defmodule Utils do
   def atomize_keys(map) when is_map(map) do
     map
     |> Enum.map(fn {key, value} ->
-      atom_key =
-        try do
-          String.to_existing_atom(key)
-        rescue
-          ArgumentError -> String.to_atom(key)
-        end
+      if is_atom(key) do
+        {key, value}
+      else
+        atom_key =
+          try do
+            String.to_existing_atom(key)
+          rescue
+            ArgumentError -> String.to_atom(key)
+          end
 
-      {atom_key, value}
+        {atom_key, value}
+      end
     end)
     |> Enum.into(%{})
   end

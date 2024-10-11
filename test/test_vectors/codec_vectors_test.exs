@@ -1,6 +1,7 @@
 defmodule CodecVectorsTest do
-  alias Codec.VariableSize
+  alias Block.Header
   alias Block.Extrinsic.Assurance
+  alias Codec.VariableSize
   use ExUnit.Case
   import TestVectorUtil
 
@@ -12,10 +13,15 @@ defmodule CodecVectorsTest do
     test "assurances extrinsic" do
       assert_correctly_encoded("assurances_extrinsic", Assurance)
     end
+
+    test "header" do
+      # assert_correctly_encoded("header_0", Header)
+      # assert_correctly_encoded("header_1", Header)
+    end
   end
 
   def assert_correctly_encoded(file_name, module) do
-    json_data = fetch_and_parse_json(file_name <> ".json", "codec/data")
+    {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", "codec/data")
     expected = fetch_binary(file_name <> ".bin", "codec/data")
 
     case json_data do

@@ -63,7 +63,7 @@ defmodule SafroleTinyTestVectors do
       @tag file_name: file_name
       @tag :tiny_test_vectors
       test "verify tiny test vectors #{file_name}", %{file_name: file_name} do
-        {:ok, json_data} = fetch_and_parse_json(file_name, @path)
+        {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", @path)
 
         HeaderSealMock
         |> stub(:do_validate_header_seals, fn _, _, _, _ ->

@@ -28,15 +28,15 @@ defmodule TestVectorUtil do
 
   def fetch_and_parse_json(file_name, path) do
     case fetch_file(file_name, path) do
-      {:ok, body} -> Jason.decode!(body)
-      {:error, e} -> raise e
+      {:ok, body} -> {:ok, Jason.decode!(body)}
+      e -> e
     end
   end
 
   def fetch_binary(file_name, path) do
     case fetch_file(file_name, path) do
       {:ok, body} -> body
-      {:error, e} -> raise e
+      e -> e
     end
   end
 

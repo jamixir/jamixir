@@ -12,7 +12,7 @@ defmodule Codec.JsonEncoder do
   end
 
   defp encode_field({key, value}) when is_binary(value) do
-    {key, Base.encode16(value, case: :lower)}
+    {key, "0x" <> Base.encode16(value, case: :lower)}
   end
 
   defp encode_field({key, value}) when is_map(value) do
