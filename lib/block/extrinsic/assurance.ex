@@ -115,4 +115,13 @@ defmodule Block.Extrinsic.Assurance do
         Codec.Encoder.encode(assurance.signature)
     end
   end
+
+  def from_json(json) do
+    %__MODULE__{
+      hash: Utils.hex_to_binary(json.anchor),
+      assurance_values: Utils.hex_to_binary(json.bitfield),
+      validator_index: json.validator_index,
+      signature: Utils.hex_to_binary(json.signature)
+    }
+  end
 end

@@ -26,9 +26,18 @@ defmodule Utils do
   def hex_to_binary(value), do: value
 
   def atomize_keys(map) when is_map(map) do
-    for {key, val} <- map, into: %{} do
-      {String.to_existing_atom(to_string(key)), atomize_keys(val)}
-    end
+    map
+    |> Enum.map(fn {key, value} ->
+      atom_key =
+        try do
+          String.to_existing_atom(key)
+        rescue
+          ArgumentError -> String.to_atom(key)
+        end
+
+      {atom_key, value}
+    end)
+    |> Enum.into(%{})
   end
 
   def atomize_keys(value), do: value

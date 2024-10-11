@@ -44,4 +44,17 @@ defmodule RefinementContext do
         Encoder.encode_le(t, 4) <> Encoder.encode(NilDiscriminator.new(p))
     end
   end
+
+  def from_json(json_data) do
+    json = json_data |> Utils.hex_to_binary()
+
+    %__MODULE__{
+      anchor: json.anchor,
+      state_root_: json.state_root,
+      beefy_root_: json.beefy_root,
+      lookup_anchor: json.lookup_anchor,
+      timeslot: json.lookup_anchor_slot,
+      prerequisite: json.prerequisite
+    }
+  end
 end

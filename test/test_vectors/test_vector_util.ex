@@ -27,14 +27,27 @@ defmodule TestVectorUtil do
   def format_error(error), do: "#{@yellow}'#{error}'#{@reset}"
 
   def fetch_and_parse_json(file_name, path) do
-    url =
-      "https://raw.githubusercontent.com/#{@owner}/#{@repo}/#{@branch}/#{path}/#{file_name}.json"
+    case fetch_file(file_name, path) do
+      {:ok, body} -> Jason.decode!(body)
+      {:error, e} -> raise e
+    end
+  end
+
+  def fetch_binary(file_name, path) do
+    case fetch_file(file_name, path) do
+      {:ok, body} -> body
+      {:error, e} -> raise e
+    end
+  end
+
+  def fetch_file(file_name, path) do
+    url = "https://raw.githubusercontent.com/#{@owner}/#{@repo}/#{@branch}/#{path}/#{file_name}"
 
     headers = [{"User-Agent", "Elixir"}]
 
     case HTTPoison.get(url, headers) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        {:ok, Jason.decode!(body)}
+        {:ok, body}
 
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
         IO.puts("Failed to fetch file #{file_name}: HTTP #{status_code}")
