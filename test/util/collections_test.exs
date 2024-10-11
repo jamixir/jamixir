@@ -91,4 +91,29 @@ defmodule Util.CollectionsTest do
              ) == {:error, :not_in_order}
     end
   end
+
+  describe "union/1" do
+    test "union of empty list returns empty map" do
+      assert Collections.union([]) == %{}
+    end
+
+    test "union of single dictionary returns the same dictionary" do
+      assert Collections.union([%{a: 1, b: 2}]) == %{a: 1, b: 2}
+    end
+
+    test "union of multiple dictionaries" do
+      assert Collections.union([%{a: 1, b: 2}, %{b: 3, c: 4}, %{d: 5}]) ==
+               %{a: 1, b: 3, c: 4, d: 5}
+    end
+
+    test "union with overlapping keys takes the last value" do
+      assert Collections.union([%{a: 1, b: 2, c: 3}, %{a: 4, b: 5, c: 6}, %{b: 8, c: 9}]) ==
+               %{a: 4, b: 8, c: 9}
+    end
+
+    test "union with empty dictionaries" do
+      dict1 = %{a: 1}
+      assert Collections.union([%{a: 1}, %{}, %{b: 2}]) == %{a: 1, b: 2}
+    end
+  end
 end
