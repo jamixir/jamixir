@@ -116,12 +116,9 @@ defmodule Block.Extrinsic.Assurance do
     end
   end
 
-  def from_json(json) do
-    %__MODULE__{
-      hash: Utils.hex_to_binary(json.anchor),
-      assurance_values: Utils.hex_to_binary(json.bitfield),
-      validator_index: json.validator_index,
-      signature: Utils.hex_to_binary(json.signature)
-    }
+  use JsonDecoder
+
+  def json_mapping do
+    %{hash: :anchor, assurance_values: :bitfield, validator_index: :validator_index}
   end
 end

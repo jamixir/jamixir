@@ -45,16 +45,9 @@ defmodule RefinementContext do
     end
   end
 
-  def from_json(json_data) do
-    json = json_data |> Utils.hex_to_binary()
+  use JsonDecoder
 
-    %__MODULE__{
-      anchor: json.anchor,
-      state_root_: json.state_root,
-      beefy_root_: json.beefy_root,
-      lookup_anchor: json.lookup_anchor,
-      timeslot: json.lookup_anchor_slot,
-      prerequisite: json.prerequisite
-    }
+  def json_mapping do
+    %{state_root_: :state_root, beefy_root_: :beefy_root, timeslot: :lookup_anchor_slot}
   end
 end

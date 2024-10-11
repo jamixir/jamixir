@@ -107,7 +107,7 @@ defmodule Block.Extrinsic.TicketProof do
   def from_json(json_data) do
     %__MODULE__{
       entry_index: json_data[:attempt],
-      ticket_validity_proof: Utils.hex_to_binary(json_data[:signature])
+      ticket_validity_proof: JsonDecoder.from_json(json_data[:signature])
     }
   end
 

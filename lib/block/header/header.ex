@@ -113,21 +113,35 @@ defmodule Block.Header do
 
   def from_json(json_data) do
     %__MODULE__{
-      parent_hash: Utils.hex_to_binary(json_data[:parent]),
-      prior_state_root: Utils.hex_to_binary(json_data[:parent_state_root]),
-      extrinsic_hash: Utils.hex_to_binary(json_data[:extrinsic_hash]),
-      timeslot: json_data[:slot],
+      parent_hash: JsonDecoder.from_json(json_data[:parent]),
+      prior_state_root: JsonDecoder.from_json(json_data[:parent_state_root]),
+      extrinsic_hash: JsonDecoder.from_json(json_data[:extrinsic_hash]),
+      timeslot: JsonDecoder.from_json(json_data[:slot]),
       epoch: parse_epoch_mark(json_data[:epoch_mark]),
       winning_tickets_marker: parse_tickets_mark(json_data[:tickets_mark]),
-      offenders_marker: Enum.map(json_data[:offenders_mark] || [], &Utils.hex_to_binary/1),
-      block_author_key_index: json_data[:author_index] || 0,
-      vrf_signature: Utils.hex_to_binary(json_data[:entropy_source]),
-      block_seal: Utils.hex_to_binary(json_data[:seal])
+      offenders_marker: JsonDecoder.from_json(json_data[:offenders_mark]) || [],
+      block_author_key_index: JsonDecoder.from_json(json_data[:author_index]) || 0,
+      vrf_signature: JsonDecoder.from_json(json_data[:entropy_source]),
+      block_seal: JsonDecoder.from_json(json_data[:seal])
+    }
+  end
+
+  def json_mapping do
+    %{
+      parent_hash: :parent,
+      prior_state_root: :parent_state_root,
+      timeslot: :slot,
+      epoch: :epoch_mark,
+      winning_tickets_marker: :tickets_mark,
+      offenders_marker: :offenders_mark,
+      block_author_key_index: :author_index,
+      vrf_signature: :entropy_source,
+      block_seal: :seal
     }
   end
 
   defp parse_epoch_mark(%{entropy: entropy, validators: validators}) do
-    {Utils.hex_to_binary(entropy), Enum.map(validators, &Utils.hex_to_binary/1)}
+    {JsonDecoder.from_json(entropy), JsonDecoder.from_json(validators)}
   end
 
   defp parse_epoch_mark(_), do: nil

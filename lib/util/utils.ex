@@ -1,29 +1,11 @@
 defmodule Utils do
   import Bitwise
 
-  def hex_to_binary(map) when is_map(map) do
-    map
-    |> Enum.map(fn {key, value} ->
-      {key, hex_to_binary(value)}
-    end)
-    |> Enum.into(%{})
+  def list_struct_fields(module) do
+    module.__struct__()
+    |> Map.keys()
+    |> Enum.reject(&(&1 == :__struct__))
   end
-
-  def hex_to_binary(list) when is_list(list) do
-    list |> Enum.map(&hex_to_binary/1)
-  end
-
-  def hex_to_binary(value) when is_binary(value) do
-    case Base.decode16(String.replace_prefix(value, "0x", ""), case: :lower) do
-      {:ok, binary} ->
-        binary
-
-      :error ->
-        value
-    end
-  end
-
-  def hex_to_binary(value), do: value
 
   def atomize_keys(list) when is_list(list) do
     list |> Enum.map(&atomize_keys/1)

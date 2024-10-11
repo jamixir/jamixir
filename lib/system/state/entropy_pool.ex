@@ -40,7 +40,7 @@ defmodule System.State.EntropyPool do
   end
 
   def from_json(json) do
-    [n0, n1, n2, n3] = Utils.hex_to_binary(json)
+    [n0, n1, n2, n3] = JsonDecoder.from_json(json)
     %__MODULE__{n0: n0, n1: n1, n2: n2, n3: n3}
   end
 end

@@ -1,4 +1,5 @@
 defmodule CodecVectorsTest do
+  alias Block.Extrinsic.Preimage
   alias Block.Header
   alias Block.Extrinsic.Assurance
   alias Codec.VariableSize
@@ -12,6 +13,10 @@ defmodule CodecVectorsTest do
 
     test "assurances extrinsic" do
       assert_correctly_encoded("assurances_extrinsic", Assurance)
+    end
+
+    test "pre-images extrinsic" do
+      assert_correctly_encoded("preimages_extrinsic", Preimage)
     end
 
     test "header no tickets mark" do
@@ -29,19 +34,14 @@ defmodule CodecVectorsTest do
 
     case json_data do
       %{} ->
-        object = module.from_json(Utils.atomize_keys(json_data))
+        object = module.from_json(json_data)
         encoded = Codec.Encoder.encode(object)
-
-        if encoded != expected do
-          IO.inspect(object)
-        end
-
         assert encoded == expected
 
       l when is_list(l) ->
         encoded =
           Codec.Encoder.encode(
-            Enum.map(l, &module.from_json(Utils.atomize_keys(&1)))
+            Enum.map(l, &module.from_json(&1))
             |> VariableSize.new()
           )
 

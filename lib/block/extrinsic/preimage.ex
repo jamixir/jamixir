@@ -61,11 +61,17 @@ defmodule Block.Extrinsic.Preimage do
   end
 
   defimpl Encodable do
-    def encode(%Block.Extrinsic.Preimage{service_index: i, data: d}) do
-      Codec.Encoder.encode({
-        i,
-        d
-      })
+    alias Codec.VariableSize
+
+    def encode(%Block.Extrinsic.Preimage{service_index: s, data: p}) do
+      Codec.Encoder.encode_le(s, 4) <>
+        Codec.Encoder.encode(VariableSize.new(p))
     end
+  end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{service_index: :requester, data: :blob}
   end
 end

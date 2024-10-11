@@ -4,10 +4,13 @@ defmodule Block.Extrinsic do
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
   @type t :: %__MODULE__{
+          # ET
           tickets: list(TicketProof.t()),
+          # ED
           disputes: Disputes.t(),
-          # Formula (154) v0.4.1
+          # EP
           preimages: list(Preimage.t()),
+          # EA
           assurances: list(Assurance.t()),
           # Eg
           guarantees: list(Guarantee.t())

@@ -30,10 +30,6 @@ defmodule Block do
     end
   end
 
-  def from_json(json_data) do
-    %__MODULE__{
-      header: Header.from_json(json_data[:header]),
-      extrinsic: Extrinsic.from_json(json_data[:extrinsic])
-    }
-  end
+  use JsonDecoder
+  def json_mapping, do: %{header: Header, extrinsic: Extrinsic}
 end

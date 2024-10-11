@@ -8,23 +8,23 @@ defmodule UtilsTest do
     end
   end
 
-  describe "hex_to_binary/1" do
+  describe "from_json/1" do
     test "converts hex string to binary" do
-      assert Utils.hex_to_binary("0x48656c6c6f") == "Hello"
+      assert JsonDecoder.from_json("0x48656c6c6f") == "Hello"
     end
 
     test "returns original value if not a valid hex string" do
-      assert Utils.hex_to_binary("Hello") == "Hello"
+      assert JsonDecoder.from_json("Hello") == "Hello"
     end
 
     test "converts hex strings in a list to binaries" do
-      assert Utils.hex_to_binary(["0x48656c6c6f", "0x776f726c64"]) == ["Hello", "world"]
+      assert JsonDecoder.from_json(["0x48656c6c6f", "0x776f726c64"]) == ["Hello", "world"]
     end
 
     test "converts hex strings in a map to binaries" do
       input = %{"greeting" => "0x48656c6c6f", "target" => "0x776f726c64"}
       expected = %{"greeting" => "Hello", "target" => "world"}
-      assert Utils.hex_to_binary(input) == expected
+      assert JsonDecoder.from_json(input) == expected
     end
 
     test "handles nested lists and maps" do
@@ -38,12 +38,12 @@ defmodule UtilsTest do
         "nested" => %{"key" => "test"}
       }
 
-      assert Utils.hex_to_binary(input) == expected
+      assert JsonDecoder.from_json(input) == expected
     end
 
     test "returns original value if not a map, list, or hex string" do
-      assert Utils.hex_to_binary(123) == 123
-      assert Utils.hex_to_binary(:atom) == :atom
+      assert JsonDecoder.from_json(123) == 123
+      assert JsonDecoder.from_json(:atom) == :atom
     end
   end
 
