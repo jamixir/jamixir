@@ -1,4 +1,6 @@
 defmodule TestVectorUtil do
+  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic
   use ExUnit.Case
   Application.put_env(:elixir, :ansi_enabled, true)
 
@@ -63,9 +65,14 @@ defmodule TestVectorUtil do
     pre_state = System.State.from_json(json_data[:pre_state])
     ok_output = json_data[:output][:ok]
 
+    extrinsic =
+      Map.from_struct(%Extrinsic{})
+      |> Map.put(:tickets, json_data[:input][:extrinsic])
+      |> Map.put(:disputes, Map.from_struct(%Disputes{}))
+
     block =
       Block.from_json(%{
-        extrinsic: json_data[:input],
+        extrinsic: extrinsic,
         header: Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
       })
 

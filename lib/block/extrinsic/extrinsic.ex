@@ -52,9 +52,14 @@ defmodule Block.Extrinsic do
     end
   end
 
-  def from_json(json_data) do
-    %__MODULE__{
-      tickets: Enum.map(json_data[:extrinsic], &TicketProof.from_json/1)
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{
+      tickets: [TicketProof],
+      disputes: Disputes,
+      preimages: [Preimage],
+      assurances: [Assurance],
+      guarantees: [Guarantee]
     }
-  end
 end
