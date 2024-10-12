@@ -114,7 +114,7 @@ defmodule Jamixir.Factory do
       core_index: 1,
       authorizer_hash: <<2::256>>,
       output: <<3>>,
-      work_results: build_list(2, :work_result)
+      results: build_list(2, :work_result)
     }
   end
 

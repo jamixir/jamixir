@@ -28,4 +28,9 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
         Codec.Encoder.encode({availability.erasure_root, availability.segment_root})
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{work_package_hash: :hash, work_bundle_length: :len, segment_root: :exports_root}
 end

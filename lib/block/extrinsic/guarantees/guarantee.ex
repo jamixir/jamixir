@@ -109,18 +109,18 @@ defmodule Block.Extrinsic.Guarantee do
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
-      total_gas = Enum.reduce(work_report.work_results, 0, &(&1.gas_prioritization_ratio + &2))
+      total_gas = Enum.reduce(work_report.results, 0, &(&1.gas_prioritization_ratio + &2))
 
       cond do
         total_gas > Constants.gas_accumulation() ->
           {:halt, {:error, :invalid_gas_accumulation}}
 
-        Enum.any?(work_report.work_results, fn result ->
+        Enum.any?(work_report.results, fn result ->
           Map.get(services, result.service_index) == nil
         end) ->
           {:halt, {:error, :non_existent_service}}
 
-        Enum.any?(work_report.work_results, fn result ->
+        Enum.any?(work_report.results, fn result ->
           service = Map.get(services, result.service_index)
           result.gas_prioritization_ratio < service.gas_limit_g
         end) ->
@@ -134,7 +134,7 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (152) v0.4.1
   mockable validate_work_result_cores(w, services) do
-    if Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
+    if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
          r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
        end) do
       {:error, :invalid_work_result_core_index}

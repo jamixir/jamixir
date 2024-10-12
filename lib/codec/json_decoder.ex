@@ -49,6 +49,9 @@ defmodule JsonDecoder do
                v -> Enum.map(v, &module.from_json/1)
              end
 
+           %{m: module, f: f} ->
+             module.from_json(json_data[f])
+
            [f, field] when is_function(f, 1) ->
              f.(json_data[field])
 

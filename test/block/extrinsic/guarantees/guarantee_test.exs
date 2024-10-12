@@ -111,8 +111,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.work_results, [wr1]),
-        put_in(g2.work_report.work_results, [wr2])
+        put_in(g1.work_report.results, [wr1]),
+        put_in(g2.work_report.results, [wr2])
       ]
 
       s =
@@ -131,8 +131,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       wr2 = build(:work_result, service_index: 3, gas_prioritization_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.work_results, [wr1]),
-        put_in(g2.work_report.work_results, [wr2])
+        put_in(g1.work_report.results, [wr1]),
+        put_in(g2.work_report.results, [wr2])
       ]
 
       s =
@@ -151,8 +151,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       wr3 = build(:work_result, service_index: 1, gas_prioritization_ratio: 401)
 
       guarantees = [
-        put_in(g1.work_report.work_results, [wr1]),
-        put_in(g2.work_report.work_results, [wr2, wr3])
+        put_in(g1.work_report.results, [wr1]),
+        put_in(g2.work_report.results, [wr2, wr3])
       ]
 
       s =
@@ -170,8 +170,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.work_results, [wr1]),
-        put_in(g2.work_report.work_results, [wr2])
+        put_in(g1.work_report.results, [wr1]),
+        put_in(g2.work_report.results, [wr2])
       ]
 
       s =

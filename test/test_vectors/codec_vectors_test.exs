@@ -1,37 +1,33 @@
 defmodule CodecVectorsTest do
-  alias Block.Extrinsic.Guarantee.WorkResult
-  alias Block.Extrinsic.Preimage
+  alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
   alias Block.Header
-  alias Block.Extrinsic.Assurance
   alias Codec.VariableSize
   use ExUnit.Case
   import TestVectorUtil
 
   describe "encode vectors" do
-    test "refine context" do
-      assert_correctly_encoded("refine_context", RefinementContext)
-    end
+    tests = [
+      {"refine_context", RefinementContext},
+      {"assurances_extrinsic", Assurance},
+      {"preimages_extrinsic", Preimage},
+      {"header_0", Header},
+      {"header_1", Header},
+      {"work_result_0", WorkResult},
+      {"work_result_1", WorkResult},
+      {"work_report", WorkReport}
+    ]
 
-    test "assurances extrinsic" do
-      assert_correctly_encoded("assurances_extrinsic", Assurance)
-    end
-
-    test "pre-images extrinsic" do
-      assert_correctly_encoded("preimages_extrinsic", Preimage)
-    end
-
-    test "header no tickets mark" do
-      assert_correctly_encoded("header_0", Header)
-    end
-
-    test "header with tickets mark" do
-      assert_correctly_encoded("header_1", Header)
-    end
-
-    test "work results" do
-      assert_correctly_encoded("work_result_0", WorkResult)
-      assert_correctly_encoded("work_result_1", WorkResult)
-    end
+    Enum.each(tests, fn {file_name, module_name} ->
+      @tag file_name: file_name
+      @tag module_name: module_name
+      test "vector #{file_name} for #{module_name}", %{
+        file_name: file_name,
+        module_name: module_name
+      } do
+        assert_correctly_encoded(file_name, module_name)
+      end
+    end)
   end
 
   def assert_correctly_encoded(file_name, module) do
