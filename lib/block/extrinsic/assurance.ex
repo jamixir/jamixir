@@ -118,7 +118,5 @@ defmodule Block.Extrinsic.Assurance do
 
   use JsonDecoder
 
-  def json_mapping do
-    %{hash: :anchor, assurance_values: :bitfield, validator_index: :validator_index}
-  end
+  def json_mapping, do: %{hash: :anchor, assurance_values: :bitfield}
 end

@@ -107,8 +107,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "passes when gas accumulation is within limits", %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 400)
-      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
+      wr1 = build(:work_result, service: 1, gas_ratio: 400)
+      wr2 = build(:work_result, service: 2, gas_ratio: 300)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -126,9 +126,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when a work result references a non-existent service",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 400)
+      wr1 = build(:work_result, service: 1, gas_ratio: 400)
       # Non-existent service
-      wr2 = build(:work_result, service_index: 3, gas_prioritization_ratio: 300)
+      wr2 = build(:work_result, service: 3, gas_ratio: 300)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -146,9 +146,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 999)
-      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 600)
-      wr3 = build(:work_result, service_index: 1, gas_prioritization_ratio: 401)
+      wr1 = build(:work_result, service: 1, gas_ratio: 999)
+      wr2 = build(:work_result, service: 2, gas_ratio: 600)
+      wr3 = build(:work_result, service: 1, gas_ratio: 401)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -164,10 +164,10 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
     end
 
-    test "fails when gas_prioritization_ratio is less than service's gas_limit_g",
+    test "fails when gas_ratio is less than service's gas_limit_g",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service_index: 1, gas_prioritization_ratio: 299)
-      wr2 = build(:work_result, service_index: 2, gas_prioritization_ratio: 300)
+      wr1 = build(:work_result, service: 1, gas_ratio: 299)
+      wr2 = build(:work_result, service: 2, gas_ratio: 300)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -181,7 +181,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         })
 
       assert Guarantee.validate(guarantees, s, 1) ==
-               {:error, :insufficient_gas_prioritization_ratio}
+               {:error, :insufficient_gas_ratio}
     end
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do

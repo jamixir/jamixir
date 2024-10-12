@@ -22,7 +22,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
 
   # Formula (108) v0.4.1
   def sum_judgements(%__MODULE__{judgements: j}) do
-    Enum.reduce(j, 0, &if(&1.decision, do: &2 + 1, else: &2))
+    Enum.reduce(j, 0, &if(&1.vote, do: &2 + 1, else: &2))
   end
 
   defimpl Encodable do

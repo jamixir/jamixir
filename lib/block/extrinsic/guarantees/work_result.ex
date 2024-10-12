@@ -14,7 +14,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
 
   @type t :: %__MODULE__{
           # s: the index of the service whose state is to be altered and thus whose refine code was already executed
-          service_index: non_neg_integer(),
+          service: non_neg_integer(),
           # c: hash of the code of the service at the time of being reported
           code_hash: Types.hash(),
           # l: the hash of the payload (l) within the work item which was executed in the
@@ -22,30 +22,30 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           payload_hash: Types.hash(),
           # g: the gas prioritization ratio used when determining how much
           # gas should be allocated to execute this item’s accumulate
-          gas_prioritization_ratio: non_neg_integer(),
+          gas_ratio: non_neg_integer(),
           # o: the output or error of the execution of the code, which may be either an
           # octet sequence in case it was successful, or a member of the set J if not
           result: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
   # s
-  defstruct service_index: 0,
+  defstruct service: 0,
             # c
             code_hash: <<0::256>>,
             # l
             payload_hash: <<0::256>>,
             # g
-            gas_prioritization_ratio: 0,
+            gas_ratio: 0,
             # o
             result: {:ok, <<>>}
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
   def new(%WorkItem{} = wi, output) do
     %__MODULE__{
-      service_index: wi.service_id,
+      service: wi.service,
       code_hash: wi.code_hash,
-      payload_hash: Util.Hash.default(wi.payload_blob),
-      gas_prioritization_ratio: wi.gas_limit,
+      payload_hash: Util.Hash.default(wi.payload),
+      gas_ratio: wi.gas_limit,
       result: output
     }
   end
@@ -57,9 +57,9 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     # Formula (306) v0.4.1
     # TODO: fix it to sync with v0.4.1
     def encode(%WorkResult{} = wr) do
-      Encoder.encode_le(wr.service_index, 4) <>
+      Encoder.encode_le(wr.service, 4) <>
         Encoder.encode({wr.code_hash, wr.payload_hash}) <>
-        Encoder.encode_le(wr.gas_prioritization_ratio, 8) <>
+        Encoder.encode_le(wr.gas_ratio, 8) <>
         do_encode(wr.result)
     end
 
@@ -76,13 +76,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
 
   use JsonDecoder
 
-  def json_mapping do
-    %{
-      service_index: :service,
-      gas_prioritization_ratio: :gas_ratio,
-      result: &parse_result/1
-    }
-  end
+  def json_mapping, do: %{result: &parse_result/1}
 
   def parse_result(%{ok: ok}), do: {:ok, JsonDecoder.from_json(ok)}
   def parse_result(%{panic: _}), do: {:error, :halt}

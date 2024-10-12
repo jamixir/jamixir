@@ -75,7 +75,7 @@ defmodule System.State.JudgementsTest do
                  %{header | offenders_marker: []},
                  %Disputes{
                    verdicts: [],
-                   culprits: [build(:culprit, validator_key: pub)],
+                   culprits: [build(:culprit, key: pub)],
                    faults: []
                  },
                  state
@@ -147,7 +147,7 @@ defmodule System.State.JudgementsTest do
           build(:verdict,
             work_report_hash: wrh,
             judgements: [
-              build(:judgement, decision: false, work_report_hash: wrh, key_pair: key_pair)
+              build(:judgement, vote: false, work_report_hash: wrh, key_pair: key_pair)
             ],
             epoch_index: Time.epoch_index(header.timeslot)
           )
@@ -170,7 +170,7 @@ defmodule System.State.JudgementsTest do
           build(:verdict,
             work_report_hash: wrh,
             judgements: [
-              build(:judgement, decision: false, work_report_hash: wrh, key_pair: key_pair)
+              build(:judgement, vote: false, work_report_hash: wrh, key_pair: key_pair)
             ],
             epoch_index: Time.epoch_index(header.timeslot)
           )
@@ -224,11 +224,11 @@ defmodule System.State.JudgementsTest do
                 | validator_index: 0
               },
               %{
-                build(:judgement, work_report_hash: wrh, decision: false, key_pair: {pub1, priv1})
+                build(:judgement, work_report_hash: wrh, vote: false, key_pair: {pub1, priv1})
                 | validator_index: 1
               },
               %{
-                build(:judgement, work_report_hash: wrh, decision: false, key_pair: {pub2, priv2})
+                build(:judgement, work_report_hash: wrh, vote: false, key_pair: {pub2, priv2})
                 | validator_index: 2
               }
             ],
@@ -253,7 +253,7 @@ defmodule System.State.JudgementsTest do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 work_report_hash: wrh,
                 key_pair: key_pair
               )

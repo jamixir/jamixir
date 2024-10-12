@@ -22,7 +22,7 @@ defmodule Types do
   # Formula (34) v0.4.1 - NR - shoud be a 32-bit integer <= 2^32
   @type register_value :: non_neg_integer()
   @type memory_access :: :write | :read | nil
-  @type decision :: boolean()
+  @type vote :: boolean()
   # 144 bytes YR ⊂ Y144
   @type bandersnatch_ring_root :: <<_::1152>>
   # L

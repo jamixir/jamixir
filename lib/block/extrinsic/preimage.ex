@@ -4,15 +4,15 @@ defmodule Block.Extrinsic.Preimage do
   # Formula (154) v0.4.1
   @type t :: %__MODULE__{
           # i
-          service_index: non_neg_integer(),
+          service: non_neg_integer(),
           # d
-          data: binary()
+          blob: binary()
         }
 
   # i
-  defstruct service_index: 0,
+  defstruct service: 0,
             # d
-            data: <<>>
+            blob: <<>>
 
   # Formula (155) v0.4.1
   # Formula (156) v0.4.1
@@ -20,7 +20,7 @@ defmodule Block.Extrinsic.Preimage do
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
     # Formula (155) v0.4.1
-    with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service_index),
+    with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service),
          # Formula (156) v0.4.1
          :ok <- check_all_preimages(preimages, services) do
       :ok
@@ -39,7 +39,7 @@ defmodule Block.Extrinsic.Preimage do
       if not_provided?(preimage, services) do
         {:cont, :ok}
       else
-        {:halt, {:error, "Preimage already provided for service index #{preimage.service_index}"}}
+        {:halt, {:error, "Preimage already provided for service index #{preimage.service}"}}
       end
     end)
   end
@@ -47,13 +47,13 @@ defmodule Block.Extrinsic.Preimage do
   # Formula (156) v0.4.1
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   defp not_provided?(preimage, services) do
-    case services[preimage.service_index] do
+    case services[preimage.service] do
       nil ->
         false
 
       service_account ->
-        preimage_hash = Hash.default(preimage.data)
-        preimage_size = byte_size(preimage.data)
+        preimage_hash = Hash.default(preimage.blob)
+        preimage_size = byte_size(preimage.blob)
 
         not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
           Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}, []) == []
@@ -63,7 +63,7 @@ defmodule Block.Extrinsic.Preimage do
   defimpl Encodable do
     alias Codec.VariableSize
 
-    def encode(%Block.Extrinsic.Preimage{service_index: s, data: p}) do
+    def encode(%Block.Extrinsic.Preimage{service: s, blob: p}) do
       Codec.Encoder.encode_le(s, 4) <>
         Codec.Encoder.encode(VariableSize.new(p))
     end
@@ -72,6 +72,6 @@ defmodule Block.Extrinsic.Preimage do
   use JsonDecoder
 
   def json_mapping do
-    %{service_index: :requester, data: :blob}
+    %{service: :requester}
   end
 end

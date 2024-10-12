@@ -241,8 +241,8 @@ defmodule RecentHistoryTest do
       expected_merkle_root =
         beefy_commitment_map.commitments
         |> Enum.sort_by(&elem(&1, 0))
-        |> Enum.map(fn {service_index, hash} ->
-          encoded_index = Codec.Encoder.encode_little_endian(service_index, 4)
+        |> Enum.map(fn {service, hash} ->
+          encoded_index = Codec.Encoder.encode_little_endian(service, 4)
           <<encoded_index::binary, hash::binary>>
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)

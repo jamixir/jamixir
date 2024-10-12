@@ -88,7 +88,7 @@ defmodule System.State.RecentHistory do
     state_root_ = <<0::256>>
     header_hash = Hash.default(Codec.Encoder.encode(header))
 
-    # r - the merkle tree root of (service_index, commitment_hash) pairs derived from the beefy commitments map
+    # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
     # Formula (83)
     well_balanced_merkle_root =
       case beefy_commitment_map do
@@ -102,8 +102,8 @@ defmodule System.State.RecentHistory do
           # The well-balanced merkle root of the beefy commitment map
           beefy_commitment_map.commitments
           |> (Enum.sort_by(&elem(&1, 0))
-              |> Enum.map(fn {service_index, hash} ->
-                encoded_index = Codec.Encoder.encode_little_endian(service_index, 4)
+              |> Enum.map(fn {service, hash} ->
+                encoded_index = Codec.Encoder.encode_little_endian(service, 4)
                 <<encoded_index::binary, hash::binary>>
               end)
               |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1))

@@ -158,25 +158,25 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       judgements = [
         build(:judgement,
-          decision: true,
+          vote: true,
           key_pair: Enum.at(key_pairs, 0),
           work_report_hash: wrh,
           validator_index: 0
         ),
         build(:judgement,
-          decision: true,
+          vote: true,
           key_pair: Enum.at(key_pairs, 1),
           work_report_hash: wrh,
           validator_index: 1
         ),
         build(:judgement,
-          decision: false,
+          vote: false,
           key_pair: Enum.at(key_pairs, 2),
           work_report_hash: wrh,
           validator_index: 2
         ),
         build(:judgement,
-          decision: false,
+          vote: false,
           key_pair: Enum.at(key_pairs, 3),
           work_report_hash: wrh,
           validator_index: 3
@@ -208,8 +208,8 @@ defmodule Block.Extrinsic.Disputes.Test do
           "Invalid order or duplicates in culprits Ed25519 keys",
           %Disputes{
             culprits: [
-              %{build(:culprit) | work_report_hash: wrh, validator_key: <<2::256>>},
-              %{build(:culprit) | work_report_hash: wrh, validator_key: <<2::256>>}
+              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>},
+              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>}
             ]
           }
         },
@@ -217,8 +217,8 @@ defmodule Block.Extrinsic.Disputes.Test do
           "Invalid order or duplicates in culprits Ed25519 keys",
           %Disputes{
             culprits: [
-              %{build(:culprit) | work_report_hash: wrh, validator_key: <<2::256>>},
-              %{build(:culprit) | work_report_hash: wrh, validator_key: <<1::256>>}
+              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>},
+              %{build(:culprit) | work_report_hash: wrh, key: <<1::256>>}
             ]
           }
         },
@@ -229,7 +229,7 @@ defmodule Block.Extrinsic.Disputes.Test do
               build(:verdict,
                 work_report_hash: wrh,
                 judgements: [
-                  build(:judgement, decision: true, key_pair: {pub, priv}, work_report_hash: wrh)
+                  build(:judgement, vote: true, key_pair: {pub, priv}, work_report_hash: wrh)
                 ]
               )
             ],
@@ -243,7 +243,7 @@ defmodule Block.Extrinsic.Disputes.Test do
               build(:verdict,
                 work_report_hash: wrh,
                 judgements: [
-                  build(:judgement, decision: false, key_pair: {pub, priv}, work_report_hash: wrh)
+                  build(:judgement, vote: false, key_pair: {pub, priv}, work_report_hash: wrh)
                 ]
               )
             ],
@@ -262,7 +262,7 @@ defmodule Block.Extrinsic.Disputes.Test do
               build(:verdict,
                 work_report_hash: wrh,
                 judgements: [
-                  build(:judgement, decision: false, key_pair: {pub, priv}, work_report_hash: wrh)
+                  build(:judgement, vote: false, key_pair: {pub, priv}, work_report_hash: wrh)
                 ]
               )
             ],
@@ -305,7 +305,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 key_pair: {punished_pub, punished_priv},
                 work_report_hash: wrh
               )
@@ -371,7 +371,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 key_pair: {pub, priv},
                 work_report_hash: wrh
               )
@@ -409,19 +409,19 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       judgements = [
         build(:judgement,
-          decision: false,
+          vote: false,
           key_pair: Enum.at(key_pairs, 0),
           work_report_hash: wrh,
           validator_index: 0
         ),
         build(:judgement,
-          decision: false,
+          vote: false,
           key_pair: Enum.at(key_pairs, 1),
           work_report_hash: wrh,
           validator_index: 1
         ),
         build(:judgement,
-          decision: true,
+          vote: true,
           key_pair: Enum.at(key_pairs, 2),
           work_report_hash: wrh,
           validator_index: 2
@@ -489,7 +489,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 key_pair: {pub, priv},
                 work_report_hash: wrh
               )
@@ -502,7 +502,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             key_pair: {pub, priv},
             # This should use SigningContexts.jam_valid()
-            decision: true
+            vote: true
           )
         ]
       }
@@ -533,7 +533,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 key_pair: {pub, priv},
                 work_report_hash: wrh
               )
@@ -546,7 +546,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             key_pair: {pub, priv},
             # This should use SigningContexts.jam_invalid()
-            decision: false
+            vote: false
           )
         ]
       }
@@ -579,7 +579,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             work_report_hash: wrh,
             judgements: [
               build(:judgement,
-                decision: false,
+                vote: false,
                 key_pair: {prev_pub, prev_priv},
                 work_report_hash: wrh,
                 validator_index: 0

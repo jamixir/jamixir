@@ -115,7 +115,7 @@ defmodule System.HeaderSeal do
     SigningContexts.jam_fallback_seal() <> n3
   end
 
-  def construct_seal_context(%{entry_index: i}, %EntropyPool{n3: n3}) do
+  def construct_seal_context(%{attempt: i}, %EntropyPool{n3: n3}) do
     SigningContexts.jam_ticket_seal() <> n3 <> <<i::8>>
   end
 end

@@ -45,16 +45,16 @@ defmodule Jamixir.Factory do
   def single_seal_key_ticket_factory(key_pairs, entropy_pool, i) do
     {secret, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
 
-    entry_index = Enum.random([0, 1])
+    attempt = Enum.random([0, 1])
 
     context =
       SigningContexts.jam_ticket_seal() <>
         entropy_pool.n3 <>
-        <<entry_index::8>>
+        <<attempt::8>>
 
     %SealKeyTicket{
       id: RingVrf.ietf_vrf_output(secret, context),
-      entry_index: entry_index
+      attempt: attempt
     }
   end
 
@@ -121,9 +121,9 @@ defmodule Jamixir.Factory do
   def availability_specification_factory do
     %Block.Extrinsic.AvailabilitySpecification{
       work_package_hash: sequence(:work_package_hash, fn n -> <<n::256>> end),
-      work_bundle_length: 2,
+      len: 2,
       erasure_root: <<3::256>>,
-      segment_root: <<4::256>>
+      exports_root: <<4::256>>
     }
   end
 
@@ -140,30 +140,30 @@ defmodule Jamixir.Factory do
 
   def work_result_factory do
     %WorkResult{
-      service_index: 0,
+      service: 0,
       code_hash: <<1::256>>,
       payload_hash: <<2::256>>,
-      gas_prioritization_ratio: 3,
+      gas_ratio: 3,
       result: {:ok, <<4>>}
     }
   end
 
   def work_item_factory do
     %Block.Extrinsic.WorkItem{
-      service_id: 1,
+      service: 1,
       code_hash: <<1::256>>,
-      payload_blob: <<2>>,
+      payload: <<2>>,
       gas_limit: 3,
-      imported_data_segments: [{<<4::256>>, 5}],
-      blob_hashes_and_lengths: [{<<6::256>>, 7}],
-      exported_data_segments_count: 8
+      import_segments: [{<<4::256>>, 5}],
+      extrinsic: [{<<6::256>>, 7}],
+      export_count: 8
     }
   end
 
   def work_package_factory do
     %Block.Extrinsic.WorkPackage{
       authorization_token: <<1>>,
-      service_index: 2,
+      service: 2,
       authorization_code_hash: <<3>>,
       parameterization_blob: <<4>>,
       context: %RefinementContext{},
@@ -186,14 +186,14 @@ defmodule Jamixir.Factory do
   def single_seal_key_ticket_factory do
     %System.State.SealKeyTicket{
       id: <<1::256>>,
-      entry_index: 0
+      attempt: 0
     }
   end
 
   def seal_key_ticket_factory do
     %System.State.SealKeyTicket{
       id: random_hash(),
-      entry_index: sequence(:entry_index, fn n -> rem(n, 2) end)
+      attempt: sequence(:attempt, fn n -> rem(n, 2) end)
     }
   end
 
@@ -289,10 +289,10 @@ defmodule Jamixir.Factory do
     work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
     {_, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
 
-    decision = Map.get(attrs, :decision, true)
+    vote = Map.get(attrs, :vote, true)
 
     signature =
-      if decision do
+      if vote do
         Util.Crypto.sign(SigningContexts.jam_valid() <> work_report_hash, priv)
       else
         Util.Crypto.sign(SigningContexts.jam_invalid() <> work_report_hash, priv)
@@ -300,7 +300,7 @@ defmodule Jamixir.Factory do
 
     %Block.Extrinsic.Disputes.Judgement{
       validator_index: attrs[:validator_index] || 0,
-      decision: decision,
+      vote: vote,
       signature: signature
     }
   end
@@ -311,7 +311,7 @@ defmodule Jamixir.Factory do
 
     %Block.Extrinsic.Disputes.Culprit{
       work_report_hash: work_report_hash,
-      validator_key: pub,
+      key: pub,
       signature: Util.Crypto.sign(SigningContexts.jam_guarantee() <> work_report_hash, priv)
     }
   end
@@ -319,10 +319,10 @@ defmodule Jamixir.Factory do
   def fault_factory(attrs) do
     work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
     {pub, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
-    decision = Map.get(attrs, :decision, true)
+    vote = Map.get(attrs, :vote, true)
 
     signature_base =
-      if decision do
+      if vote do
         SigningContexts.jam_valid()
       else
         SigningContexts.jam_invalid()
@@ -330,8 +330,8 @@ defmodule Jamixir.Factory do
 
     %Block.Extrinsic.Disputes.Fault{
       work_report_hash: work_report_hash,
-      decision: decision,
-      validator_key: pub,
+      vote: vote,
+      key: pub,
       signature: Util.Crypto.sign(signature_base <> work_report_hash, priv)
     }
   end
@@ -437,7 +437,7 @@ defmodule Jamixir.Factory do
 
   def preimage_factory do
     id = sequence(:preimage, & &1)
-    %Preimage{service_index: id, data: <<1, 2, 3, 4, id>>}
+    %Preimage{service: id, blob: <<1, 2, 3, 4, id>>}
   end
 
   def assurance_factory do

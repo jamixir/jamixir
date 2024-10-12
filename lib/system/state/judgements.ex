@@ -37,9 +37,7 @@ defmodule System.State.Judgements do
           |> Enum.map(fn {hash, _, _} -> hash end)
 
         # Formula (115) v0.4.1
-        new_offenders =
-          (disputes.culprits ++ disputes.faults)
-          |> Enum.map(& &1.validator_key)
+        new_offenders = (disputes.culprits ++ disputes.faults) |> Enum.map(& &1.key)
 
         if valid_header_markers?(
              header,

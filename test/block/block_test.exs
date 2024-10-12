@@ -82,7 +82,7 @@ defmodule BlockTest do
 
       invalid_extrinsic =
         build(:extrinsic,
-          preimages: [build(:preimage, service_index: 2), build(:preimage, service_index: 1)]
+          preimages: [build(:preimage, service: 2), build(:preimage, service: 1)]
         )
 
       invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}

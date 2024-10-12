@@ -145,7 +145,7 @@ defmodule Block.Extrinsic.Disputes do
   defp validate_offenses(offenses, allowed_validator_keys, bad_set_, offense_type) do
     cond do
       # Formula (104) v0.4.1
-      !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.validator_key)) ->
+      !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.key)) ->
         {:error, "Invalid order or duplicates in #{offense_type} Ed25519 keys"}
 
       # Formula (101) v0.4.1
@@ -154,7 +154,7 @@ defmodule Block.Extrinsic.Disputes do
         {:error, "Work report hash in #{offense_type} not in the posterior bad set"}
 
       # Formula 101 and 102 - Check if all offense validator keys are valid
-      !Enum.all?(offenses, &MapSet.member?(allowed_validator_keys, &1.validator_key)) ->
+      !Enum.all?(offenses, &MapSet.member?(allowed_validator_keys, &1.key)) ->
         {:error, "#{offense_type} reported for a validator not in the allowed validator keys"}
 
       # Formula 101 and 102 - Check signatures
@@ -167,7 +167,7 @@ defmodule Block.Extrinsic.Disputes do
                   SigningContexts.jam_guarantee()
 
                 :faults ->
-                  if offense.decision,
+                  if offense.vote,
                     do: SigningContexts.jam_valid(),
                     else: SigningContexts.jam_invalid()
               end
@@ -175,7 +175,7 @@ defmodule Block.Extrinsic.Disputes do
           Crypto.valid_signature?(
             offense.signature,
             msg_base <> offense.work_report_hash,
-            offense.validator_key
+            offense.key
           )
         end
       ) ->

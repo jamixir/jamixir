@@ -6,7 +6,7 @@ defmodule WorkPackageTest do
   import Jamixir.Factory
 
   setup_all do
-    {:ok, wp: build(:work_package, service_index: 0), state: build(:genesis_state)}
+    {:ok, wp: build(:work_package, service: 0), state: build(:genesis_state)}
   end
 
   describe "valid?/1" do
@@ -14,38 +14,38 @@ defmodule WorkPackageTest do
       assert WorkPackage.valid?(wp)
     end
 
-    test "invalid when the sum of exported_data_segments_count exceeds the maximum", %{wp: wp} do
+    test "invalid when the sum of export_count exceeds the maximum", %{wp: wp} do
       refute WorkPackage.valid?(%{
                wp
                | work_items: [
                    build(:work_item,
-                     exported_data_segments_count: WorkPackage.maximum_exported_items() + 1
+                     export_count: WorkPackage.maximum_exported_items() + 1
                    )
                  ]
              })
     end
 
-    test "invalid when the sum of imported_data_segments exceeds the maximum", %{wp: wp} do
+    test "invalid when the sum of import_segments exceeds the maximum", %{wp: wp} do
       data_segments = Enum.map(1..1500, fn _ -> {<<0::256>>, 1} end)
-      medium_work_item = build(:work_item, imported_data_segments: data_segments)
-      big_work_item = build(:work_item, imported_data_segments: data_segments ++ data_segments)
+      medium_work_item = build(:work_item, import_segments: data_segments)
+      big_work_item = build(:work_item, import_segments: data_segments ++ data_segments)
 
       assert WorkPackage.valid?(%{wp | work_items: [medium_work_item]})
       refute WorkPackage.valid?(%{wp | work_items: [medium_work_item, medium_work_item]})
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end
 
-    test "validates different work_item imported_data_segments content size", %{wp: wp} do
+    test "validates different work_item import_segments content size", %{wp: wp} do
       medium_work_item =
         build(:work_item,
-          imported_data_segments: [{<<0::256>>, 10_000_000}],
-          blob_hashes_and_lengths: [{<<0::256>>, 10_000_000}]
+          import_segments: [{<<0::256>>, 10_000_000}],
+          extrinsic: [{<<0::256>>, 10_000_000}]
         )
 
       big_work_item =
         build(:work_item,
-          imported_data_segments: [{<<0::256>>, 20_000_000}],
-          blob_hashes_and_lengths: [{<<0::256>>, 20_000_000}]
+          import_segments: [{<<0::256>>, 20_000_000}],
+          extrinsic: [{<<0::256>>, 20_000_000}]
         )
 
       assert WorkPackage.valid?(%{wp | work_items: [medium_work_item]})
@@ -53,16 +53,16 @@ defmodule WorkPackageTest do
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end
 
-    test "validates different work_item imported_data_segments length", %{wp: wp} do
+    test "validates different work_item import_segments length", %{wp: wp} do
       [ds1 | rest] = Enum.map(1..500, fn _ -> {<<0::256>>, 21_062} end)
 
       in_limit_work_item =
-        build(:work_item, imported_data_segments: rest, blob_hashes_and_lengths: rest)
+        build(:work_item, import_segments: rest, extrinsic: rest)
 
       big_work_item =
         build(:work_item,
-          imported_data_segments: [ds1 | rest],
-          blob_hashes_and_lengths: [ds1 | rest]
+          import_segments: [ds1 | rest],
+          extrinsic: [ds1 | rest]
         )
 
       # WS*WC = 4104
@@ -92,7 +92,7 @@ defmodule WorkPackageTest do
           context: build(:refinement_context, timeslot: 3)
         )
 
-      state = %State{state | services: %{wp.service_index => service_account}}
+      state = %State{state | services: %{wp.service => service_account}}
 
       assert WorkPackage.authorization_code(wp, state) == <<7, 7, 7>>
 
