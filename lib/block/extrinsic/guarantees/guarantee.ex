@@ -275,11 +275,30 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   defimpl Encodable do
+    alias Codec.VariableSize
     alias Block.Extrinsic.Guarantee
 
-    def encode(%Guarantee{}) do
-      # TODO
-      <<0>>
+    def encode(g = %Guarantee{}) do
+      Codec.Encoder.encode({
+        g.work_report,
+        Codec.Encoder.encode_le(g.timeslot, 4),
+        VariableSize.new(
+          g.credentials
+          |> Enum.map(&{Codec.Encoder.encode_le(elem(&1, 0), 2), elem(&1, 1)})
+        )
+      })
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{
+      work_report: %{m: WorkReport, f: :report},
+      timeslot: :slot,
+      credentials: [&json_credentials/1, :signatures]
+    }
+
+  def json_credentials(json),
+    do: Enum.map(json, &{&1.validator_index, JsonDecoder.from_json(&1.signature)})
 end

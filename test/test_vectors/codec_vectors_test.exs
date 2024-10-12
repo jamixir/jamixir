@@ -1,6 +1,5 @@
 defmodule CodecVectorsTest do
-  alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
   alias Block.Header
@@ -13,9 +12,10 @@ defmodule CodecVectorsTest do
       {"refine_context", RefinementContext},
       {"assurances_extrinsic", Assurance},
       {"disputes_extrinsic", Disputes},
-      {"preimages_extrinsic", Preimage},
+      {"guarantees_extrinsic", Guarantee},
       {"header_0", Header},
       {"header_1", Header},
+      {"preimages_extrinsic", Preimage},
       # {"work_item", WorkItem},
       {"work_report", WorkReport},
       {"work_result_0", WorkResult},

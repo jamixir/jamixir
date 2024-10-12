@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             core_index: 0,
             authorizer_hash: <<0::256>>,
             output: "",
-            segment_root_lookup: %{},
+            segment_root_lookup: MapSet.new(),
             results: []
 
   # Formula (119) v0.4.1

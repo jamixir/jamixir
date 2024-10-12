@@ -57,6 +57,7 @@ defmodule Codec.Encoder do
   end
 
   defp do_encode(%MapSet{} = m), do: MapSet.to_list(m) |> do_encode()
+  # defp do_encode(%{}), do: <<>>
 
   defp do_encode(value) when is_struct(value) do
     if encodable?(value) do
