@@ -1,4 +1,6 @@
 defmodule CodecVectorsTest do
+  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
   alias Block.Header
@@ -10,12 +12,15 @@ defmodule CodecVectorsTest do
     tests = [
       {"refine_context", RefinementContext},
       {"assurances_extrinsic", Assurance},
+      {"disputes_extrinsic", Disputes},
       {"preimages_extrinsic", Preimage},
       {"header_0", Header},
       {"header_1", Header},
+      # {"work_item", WorkItem},
+      {"work_report", WorkReport},
       {"work_result_0", WorkResult},
       {"work_result_1", WorkResult},
-      {"work_report", WorkReport}
+      {"tickets_extrinsic", TicketProof}
     ]
 
     Enum.each(tests, fn {file_name, module_name} ->

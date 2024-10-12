@@ -18,4 +18,16 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   def signature_base(%__MODULE__{decision: decision}) do
     if decision, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
   end
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Disputes.Judgement
+
+    def encode(j = %Judgement{}) do
+      dec = if j.decision, do: 1, else: 0
+      Codec.Encoder.encode({dec, Codec.Encoder.encode_le(j.validator_index, 2), j.signature})
+    end
+  end
+
+  use JsonDecoder
+  def json_mapping, do: %{validator_index: :index, decision: :vote}
 end

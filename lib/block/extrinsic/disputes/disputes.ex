@@ -205,9 +205,17 @@ defmodule Block.Extrinsic.Disputes do
   end
 
   defimpl Encodable do
-    def encode(%Disputes{}) do
-      # TODO
-      <<0>>
+    alias Codec.VariableSize
+
+    def encode(d = %Disputes{}) do
+      Codec.Encoder.encode({
+        VariableSize.new(d.verdicts),
+        VariableSize.new(d.culprits),
+        VariableSize.new(d.faults)
+      })
     end
   end
+
+  use JsonDecoder
+  def json_mapping, do: %{verdicts: [Verdict], culprits: [Culprit], faults: [Fault]}
 end

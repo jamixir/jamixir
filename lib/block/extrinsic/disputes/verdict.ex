@@ -24,4 +24,21 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   def sum_judgements(%__MODULE__{judgements: j}) do
     Enum.reduce(j, 0, &if(&1.decision, do: &2 + 1, else: &2))
   end
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Disputes.Verdict
+
+    def encode(v = %Verdict{}) do
+      Codec.Encoder.encode({
+        v.work_report_hash,
+        Codec.Encoder.encode_le(v.epoch_index, 4),
+        v.judgements
+      })
+    end
+  end
+
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{work_report_hash: :target, epoch_index: :age, judgements: [[Judgement], :votes]}
 end

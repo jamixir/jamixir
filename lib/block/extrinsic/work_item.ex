@@ -69,4 +69,15 @@ defmodule Block.Extrinsic.WorkItem do
       end)
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{
+      service_id: :service,
+      payload_blob: :payload,
+      exported_data_segments_count: :export_count,
+      imported_data_segments: :import_segments,
+      blob_hashes_and_lengths: :extrinsic
+    }
 end

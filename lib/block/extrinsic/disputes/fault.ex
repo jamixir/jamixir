@@ -18,4 +18,16 @@ defmodule Block.Extrinsic.Disputes.Fault do
         }
 
   defstruct work_report_hash: <<>>, decision: true, validator_key: <<>>, signature: <<>>
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Disputes.Fault
+
+    def encode(f = %Fault{}) do
+      dec = if f.decision, do: 1, else: 0
+      Codec.Encoder.encode({f.work_report_hash, dec, f.validator_key, f.signature})
+    end
+  end
+
+  use JsonDecoder
+  def json_mapping, do: %{work_report_hash: :target, decision: :vote, validator_key: :key}
 end
