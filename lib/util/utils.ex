@@ -17,14 +17,7 @@ defmodule Utils do
       if is_atom(key) do
         {key, atomize_keys(value)}
       else
-        atom_key =
-          try do
-            String.to_existing_atom(key)
-          rescue
-            ArgumentError -> String.to_atom(key)
-          end
-
-        {atom_key, atomize_keys(value)}
+        {String.to_existing_atom(key), atomize_keys(value)}
       end
     end)
     |> Enum.into(%{})
