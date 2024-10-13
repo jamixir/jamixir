@@ -3,6 +3,7 @@ defmodule Block.HeaderTest do
   import TestHelper
   import Jamixir.Factory
 
+  alias Util.Merklization
   alias Block.Header
   alias System.State
   alias Codec.{NilDiscriminator, VariableSize}
@@ -42,6 +43,20 @@ defmodule Block.HeaderTest do
     end
   end
 
+  describe "valid_extrinsic_hash?/2" do
+    test "valid_extrinsic_hash?/2 wrong hash" do
+      extrinsic = build(:extrinsic)
+      header = %Header{extrinsic_hash: "other"}
+      assert !Header.valid_extrinsic_hash?(header, extrinsic)
+    end
+
+    test "valid_extrinsic_hash?/2 correct" do
+      extrinsic = build(:extrinsic)
+      header = %Header{extrinsic_hash: Util.Hash.default(Codec.Encoder.encode(extrinsic))}
+      assert Header.valid_extrinsic_hash?(header, extrinsic)
+    end
+  end
+
   setup do
     {:ok, header: %Header{block_seal: <<123::256>>}}
   end
@@ -60,7 +75,10 @@ defmodule Block.HeaderTest do
 
   describe "validate/2" do
     setup do
-      {:ok, header: %Header{timeslot: 100}, state: %State{timeslot: 99}}
+      state = %State{timeslot: 99}
+      state_root = Merklization.merkelize_state(State.serialize(state))
+
+      {:ok, header: %Header{timeslot: 100, prior_state_root: state_root}, state: state}
     end
 
     test "returns :ok when all conditions are met", %{header: header, state: state} do
@@ -79,6 +97,11 @@ defmodule Block.HeaderTest do
 
       assert {:error, message} = Header.validate(header, state)
       assert String.starts_with?(message, "Invalid block time: block_time")
+    end
+
+    test "returns error when state root is invalid", %{state: state} do
+      header = %Header{timeslot: 100, prior_state_root: "invalid"}
+      assert {:error, "Invalid state root"} = Header.validate(header, state)
     end
   end
 

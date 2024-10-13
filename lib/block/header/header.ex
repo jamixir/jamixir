@@ -1,8 +1,11 @@
 defmodule Block.Header do
+  alias System.State
+  alias Util.Merklization
   alias Codec.{NilDiscriminator, VariableSize}
   alias System.State.SealKeyTicket
   alias System.Validators
   alias Util.Time
+  use SelectiveMock
 
   @type t :: %__MODULE__{
           # Formula (39) v0.4.1
@@ -61,6 +64,7 @@ defmodule Block.Header do
   def validate(%__MODULE__{timeslot: current_timeslot} = header, %System.State{} = state) do
     with :ok <- Time.validate_timeslot_order(state.timeslot, current_timeslot),
          :ok <- Time.validate_block_timeslot(current_timeslot),
+         :ok <- validate_state_root(header, state),
          :ok <-
            Validators.Safrole.valid_winning_tickets_marker(
              header,
@@ -77,6 +81,15 @@ defmodule Block.Header do
   def valid_extrinsic_hash?(header, extrinsic) do
     header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
   end
+
+  # Formula (43) v0.4.1
+  mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
+    if Merklization.merkelize_state(State.serialize(state)) == r,
+      do: :ok,
+      else: {:error, "Invalid state root"}
+  end
+
+  def mock(:validate_state_root, _), do: :ok
 
   def valid_header?(_, %Block.Header{parent_hash: nil} = h) do
     Time.valid_block_timeslot?(h.timeslot)
