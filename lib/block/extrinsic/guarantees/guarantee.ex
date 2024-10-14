@@ -24,7 +24,7 @@ defmodule Block.Extrinsic.Guarantee do
 
   defstruct work_report: %WorkReport{},
             timeslot: 0,
-            credentials: [{0, <<0::512>>}]
+            credentials: [{0, Crypto.zero_sign()}]
 
   @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
   def validate(guarantees, state, timeslot) do

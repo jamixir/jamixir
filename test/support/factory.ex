@@ -441,11 +441,15 @@ defmodule Jamixir.Factory do
   end
 
   def assurance_factory do
+    hash = String.duplicate("a", Constants.hash_size())
+    assurance_values = String.duplicate("x", Constants.assurance_values_size())
+    signature = String.duplicate("y", Constants.signature_size())
+
     %Assurance{
-      hash: random_hash(),
-      assurance_values: <<1, 0, 1>>,
+      hash: hash,
+      assurance_values: assurance_values,
       validator_index: 1,
-      signature: <<123, 45, 67>>
+      signature: signature
     }
   end
 

@@ -26,6 +26,12 @@ defmodule Block.Extrinsic.AssuranceTest do
     payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::344>>)
     signature = Crypto.sign(payload, s2)
 
+    Application.put_env(:jamixir, Constants, AssuranceConstantsMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, Constants)
+    end)
+
     assurance =
       build(:assurance,
         hash: hp,
@@ -43,18 +49,15 @@ defmodule Block.Extrinsic.AssuranceTest do
 
       encoded = Encoder.encode(assurance)
 
-      expected = <<
-        # hash (32 bytes)
-        assurance.hash::binary,
-        # assurance_values (43 bytes, 344 bits)
-        assurance.assurance_values::bitstring,
-        # validator_index (2 bytes)
-        assurance.validator_index::little-16,
-        # signature (64 bytes)
-        assurance.signature::binary
-      >>
+      assert encoded ==
+               assurance.hash <> assurance.assurance_values <> "\x01\0" <> assurance.signature
+    end
 
-      assert encoded == expected
+    test "decodes an Assurance struct correctly" do
+      assurance = build(:assurance)
+
+      {decoded, _} = Assurance.decode(Encoder.encode(assurance))
+      assert decoded == assurance
     end
   end
 
