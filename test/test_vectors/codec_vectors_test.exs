@@ -8,24 +8,37 @@ defmodule CodecVectorsTest do
   use ExUnit.Case
   import TestVectorUtil
 
-  describe "encode vectors" do
-    tests = [
-      {"assurances_extrinsic", Assurance},
-      {"block", Block},
-      {"disputes_extrinsic", Disputes},
-      {"extrinsic", Extrinsic},
-      {"guarantees_extrinsic", Guarantee},
-      {"header_0", Header},
-      {"header_1", Header},
-      {"preimages_extrinsic", Preimage},
-      {"refine_context", RefinementContext},
-      {"tickets_extrinsic", TicketProof},
-      # {"work_item", WorkItem},
-      {"work_report", WorkReport},
-      {"work_result_0", WorkResult},
-      {"work_result_1", WorkResult}
-    ]
+  defmodule ConstantsMock do
+    def core_count, do: 2
+    def validator_count, do: 6
+  end
 
+  tests = [
+    {"assurances_extrinsic", Assurance},
+    {"block", Block},
+    {"disputes_extrinsic", Disputes},
+    {"extrinsic", Extrinsic},
+    {"guarantees_extrinsic", Guarantee},
+    {"header_0", Header},
+    {"header_1", Header},
+    {"preimages_extrinsic", Preimage},
+    {"refine_context", RefinementContext},
+    {"tickets_extrinsic", TicketProof},
+    # {"work_item", WorkItem},
+    {"work_report", WorkReport},
+    {"work_result_0", WorkResult},
+    {"work_result_1", WorkResult}
+  ]
+
+  setup_all do
+    Application.put_env(:jamixir, Constants, ConstantsMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, Constants)
+    end)
+  end
+
+  describe "encode vectors" do
     Enum.each(tests, fn {file_name, module_name} ->
       @tag file_name: file_name
       @tag module_name: module_name
@@ -47,6 +60,9 @@ defmodule CodecVectorsTest do
         object = module.from_json(json_data)
         encoded = Codec.Encoder.encode(object)
         assert encoded == expected
+
+      # decoded = module.decode(expected)
+      # assert object == decoded
 
       l when is_list(l) ->
         encoded =

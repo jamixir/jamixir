@@ -71,4 +71,8 @@ defmodule Constants do
 
   # 4104
   def wswc, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+
+  def hash_size, do: 32
+  def signature_size, do: 64
+  def assurance_values_size, do: div(Constants.core_count() + 7, 8)
 end

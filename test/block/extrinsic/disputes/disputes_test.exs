@@ -272,7 +272,7 @@ defmodule Block.Extrinsic.Disputes.Test do
                   work_report_hash: wrh,
                   key_pair: {pub, priv}
                 )
-                | signature: <<1::512>>
+                | signature: <<1::size(Constants.signature_size() * 8)>>
               }
             ]
           }

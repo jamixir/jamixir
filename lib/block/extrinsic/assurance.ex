@@ -14,11 +14,10 @@ defmodule Block.Extrinsic.Assurance do
 
   # Formula (124) v0.4.1
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
-  defstruct hash: <<0::256>>,
-            # round 341 to fit byte size
-            assurance_values: <<0::344>>,
+  defstruct hash: Hash.zero(),
+            assurance_values: Utils.zero_bitstring(Constants.assurance_values_size()),
             validator_index: 0,
-            signature: <<0::512>>
+            signature: Crypto.zero_sign()
 
   @type t :: %__MODULE__{
           # a
@@ -108,13 +107,42 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   defimpl Encodable do
-    def encode(%Block.Extrinsic.Assurance{} = assurance) do
+    alias Block.Extrinsic.Assurance
+
+    def pad(value, size) do
+      Utils.pad_binary(value, size)
+    end
+
+    def encode(%Assurance{} = assurance) do
       Codec.Encoder.encode(assurance.hash) <>
-        Codec.Encoder.encode(assurance.assurance_values) <>
+        Codec.Encoder.encode(pad(assurance.assurance_values, Constants.assurance_values_size())) <>
         Codec.Encoder.encode_le(assurance.validator_index, 2) <>
-        Codec.Encoder.encode(assurance.signature)
+        Codec.Encoder.encode(pad(assurance.signature, Constants.signature_size()))
     end
   end
+
+  # defimpl Decodable do
+  def decode(bin) do
+    hash_size = Constants.hash_size()
+    assurance_values_size = Constants.assurance_values_size()
+    signature_size = Constants.signature_size()
+
+    <<hash::binary-size(hash_size), assurance_values::binary-size(assurance_values_size),
+      validator_index::binary-size(2), signature::binary-size(signature_size),
+      rest::binary>> = bin
+
+    {
+      %Block.Extrinsic.Assurance{
+        hash: hash,
+        assurance_values: assurance_values,
+        validator_index: Codec.Decoder.decode_le(validator_index, 2),
+        signature: signature
+      },
+      rest
+    }
+  end
+
+  # end
 
   use JsonDecoder
 
