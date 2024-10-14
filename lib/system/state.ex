@@ -16,7 +16,8 @@ defmodule System.State do
     Safrole,
     ServiceAccount,
     Validator,
-    ValidatorStatistics
+    ValidatorStatistics,
+    Ready
   }
 
   @type t :: %__MODULE__{
@@ -38,7 +39,9 @@ defmodule System.State do
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
-          validator_statistics: ValidatorStatistics.t()
+          validator_statistics: ValidatorStatistics.t(),
+          accumulation_history: list(%{Types.hash() => Types.hash()}),
+          ready_to_accumelate: list(Ready.t())
         }
 
   # Formula (15) v0.4.1 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
@@ -70,7 +73,11 @@ defmodule System.State do
     # ψ: Judgements tracked
     judgements: %Judgements{},
     # π: Validator statistics
-    validator_statistics: %ValidatorStatistics{}
+    validator_statistics: %ValidatorStatistics{},
+    # ξ
+    accumulation_history: [],
+    # ϑ
+    ready_to_accumelate: []
   ]
 
   # Formula (12) v0.4.1
@@ -258,7 +265,13 @@ defmodule System.State do
          # ψ'
          judgements: judgements_,
          # π'
-         validator_statistics: validator_statistics_
+         validator_statistics: validator_statistics_,
+         #  ξ'
+         # TODO
+         accumulation_history: nil,
+         #  ϑ'
+         # TODO
+         ready_to_accumelate: nil
        }}
     else
       {:error, reason} -> {:error, state, reason}
