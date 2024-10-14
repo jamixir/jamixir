@@ -7,8 +7,8 @@ defmodule Block.Extrinsic.PreimageTest do
   describe "validate/2 - fail cases" do
     test "fails when service indices are not unique" do
       preimages = [
-        build(:preimage, service_index: 1),
-        build(:preimage, service_index: 1)
+        build(:preimage, service: 1),
+        build(:preimage, service: 1)
       ]
 
       services = %{1 => build(:service_account)}
@@ -16,32 +16,29 @@ defmodule Block.Extrinsic.PreimageTest do
     end
 
     test "fails when service indices are not in ascending order" do
-      preimages = [
-        build(:preimage, service_index: 2),
-        build(:preimage, service_index: 1)
-      ]
+      preimages = [build(:preimage, service: 2), build(:preimage, service: 1)]
 
       services = %{1 => build(:service_account), 2 => build(:service_account)}
       assert {:error, _} = Preimage.validate(preimages, services)
     end
 
     test "fails when preimage hash is in service_account.preimage_storage_p" do
-      preimage = build(:preimage, service_index: 1)
+      preimage = build(:preimage, service: 1)
 
       service_account =
-        build(:service_account, preimage_storage_p: %{Hash.default(preimage.data) => true})
+        build(:service_account, preimage_storage_p: %{Hash.default(preimage.blob) => true})
 
       services = %{1 => service_account}
       assert {:error, _} = Preimage.validate([preimage], services)
     end
 
     test "fails when preimage is already in preimage_storage_l" do
-      preimage = build(:preimage, service_index: 1)
+      preimage = build(:preimage, service: 1)
 
       service_account =
         build(:service_account,
           preimage_storage_l: %{
-            {Hash.default(preimage.data), byte_size(preimage.data)} => [:some_existing_data]
+            {Hash.default(preimage.blob), byte_size(preimage.blob)} => [:some_existing_data]
           }
         )
 
@@ -52,7 +49,7 @@ defmodule Block.Extrinsic.PreimageTest do
 
   describe "validate/2 - pass cases" do
     test "passes with valid preimages and services" do
-      preimages = [build(:preimage, service_index: 1), build(:preimage, service_index: 2)]
+      preimages = [build(:preimage, service: 1), build(:preimage, service: 2)]
 
       services = %{
         1 => build(:service_account),

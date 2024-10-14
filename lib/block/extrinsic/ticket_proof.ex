@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.TicketProof do
   represent a ticket proof.
   Formula (74) v0.4.1
 
-  the ticket_validity_proof is construct out of 3 parts:
+  the signature is construct out of 3 parts:
   ring root - gamma_z, the current epoch root
   message - empty list
   context - $jam_ticket_seal ^ η2'(entropy_pool_.n2) ^ [r (the ticket entry index)]
@@ -15,13 +15,13 @@ defmodule Block.Extrinsic.TicketProof do
 
   @type t :: %__MODULE__{
           # r
-          entry_index: 0 | 1,
+          attempt: 0 | 1,
           # as N = 2
           # p
-          ticket_validity_proof: Types.bandersnatch_ringVRF_proof_of_knowledge()
+          signature: Types.bandersnatch_ringVRF_proof_of_knowledge()
         }
 
-  defstruct entry_index: 0, ticket_validity_proof: <<>>
+  defstruct attempt: 0, signature: <<>>
 
   @spec validate(
           list(t()),
@@ -72,7 +72,7 @@ defmodule Block.Extrinsic.TicketProof do
   # Formula (74) v0.4.1 - r ∈ NN
   @spec validate_entry_indices(list(t())) :: :ok | {:error, String.t()}
   defp validate_entry_indices(ticket_proofs) do
-    if Enum.all?(ticket_proofs, &(&1.entry_index in [0, 1])) do
+    if Enum.all?(ticket_proofs, &(&1.attempt in [0, 1])) do
       :ok
     else
       {:error, "Invalid entry index"}
@@ -85,15 +85,15 @@ defmodule Block.Extrinsic.TicketProof do
           {:ok, list(SealKeyTicket.t())} | {:error, String.t()}
   mockable construct_n(ticket_proofs, eta2, epoch_root) do
     Enum.reduce_while(ticket_proofs, {:ok, []}, fn %TicketProof{
-                                                     entry_index: r,
-                                                     ticket_validity_proof: proof
+                                                     attempt: r,
+                                                     signature: proof
                                                    },
                                                    {:ok, acc} ->
       context = SigningContexts.jam_ticket_seal() <> eta2 <> <<r>>
 
       case RingVrf.ring_vrf_verify(epoch_root, context, <<>>, proof) do
         {:ok, output_hash} ->
-          {:cont, {:ok, acc ++ [%SealKeyTicket{id: output_hash, entry_index: r}]}}
+          {:cont, {:ok, acc ++ [%SealKeyTicket{id: output_hash, attempt: r}]}}
 
         _ ->
           {:halt, {:error, "Invalid ticket validity proof"}}
@@ -102,20 +102,15 @@ defmodule Block.Extrinsic.TicketProof do
   end
 
   def mock(:validate, _), do: :ok
-  def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{entry_index: 0, id: <<>>}]}
+  def mock(:construct_n, _), do: {:ok, [%SealKeyTicket{attempt: 0, id: <<>>}]}
 
-  def from_json(json_data) do
-    %__MODULE__{
-      entry_index: json_data["attempt"],
-      ticket_validity_proof: Utils.hex_to_binary(json_data["signature"])
-    }
-  end
+  use JsonDecoder
 
   defimpl Encodable do
     def encode(%Block.Extrinsic.TicketProof{} = tp) do
       Codec.Encoder.encode({
-        tp.entry_index,
-        tp.ticket_validity_proof
+        tp.attempt,
+        tp.signature
       })
     end
   end

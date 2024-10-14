@@ -44,4 +44,10 @@ defmodule RefinementContext do
         Encoder.encode_le(t, 4) <> Encoder.encode(NilDiscriminator.new(p))
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{state_root_: :state_root, beefy_root_: :beefy_root, timeslot: :lookup_anchor_slot}
+  end
 end

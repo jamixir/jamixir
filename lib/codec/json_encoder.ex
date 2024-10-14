@@ -6,20 +6,7 @@ defmodule Codec.JsonEncoder do
     |> Enum.into(%{})
   end
 
-  def to_json(%_{} = struct) do
-    # Delegate to Encodable protocol for structs
-    JsonEncodable.to_json(struct)
-  end
-
   defp encode_field({key, value}) when is_binary(value) do
-    {key, Base.encode16(value, case: :lower)}
-  end
-
-  defp encode_field({key, value}) when is_map(value) do
-    {key, to_json(value)}
-  end
-
-  defp encode_field({key, value}) do
-    {key, value}
+    {key, "0x" <> Base.encode16(value, case: :lower)}
   end
 end

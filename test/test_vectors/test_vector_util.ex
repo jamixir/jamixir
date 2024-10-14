@@ -1,4 +1,6 @@
 defmodule TestVectorUtil do
+  alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic
   use ExUnit.Case
   Application.put_env(:elixir, :ansi_enabled, true)
 
@@ -27,14 +29,27 @@ defmodule TestVectorUtil do
   def format_error(error), do: "#{@yellow}'#{error}'#{@reset}"
 
   def fetch_and_parse_json(file_name, path) do
-    url =
-      "https://raw.githubusercontent.com/#{@owner}/#{@repo}/#{@branch}/#{path}/#{file_name}.json"
+    case fetch_file(file_name, path) do
+      {:ok, body} -> {:ok, Jason.decode!(body) |> Utils.atomize_keys()}
+      e -> e
+    end
+  end
+
+  def fetch_binary(file_name, path) do
+    case fetch_file(file_name, path) do
+      {:ok, body} -> body
+      e -> e
+    end
+  end
+
+  def fetch_file(file_name, path) do
+    url = "https://raw.githubusercontent.com/#{@owner}/#{@repo}/#{@branch}/#{path}/#{file_name}"
 
     headers = [{"User-Agent", "Elixir"}]
 
     case HTTPoison.get(url, headers) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        {:ok, Jason.decode!(body)}
+        {:ok, body}
 
       {:ok, %HTTPoison.Response{status_code: status_code}} ->
         IO.puts("Failed to fetch file #{file_name}: HTTP #{status_code}")
@@ -47,13 +62,25 @@ defmodule TestVectorUtil do
   end
 
   def assert_expected_results(json_data, tested_keys, file_name) do
-    pre_state = System.State.from_json(json_data["pre_state"])
-    block = Block.from_json(json_data)
-    expected_state = System.State.from_json(json_data["post_state"])
+    pre_state = System.State.from_json(json_data[:pre_state])
+    ok_output = json_data[:output][:ok]
+
+    extrinsic =
+      Map.from_struct(%Extrinsic{})
+      |> Map.put(:tickets, json_data[:input][:extrinsic])
+      |> Map.put(:disputes, Map.from_struct(%Disputes{}))
+
+    block =
+      Block.from_json(%{
+        extrinsic: extrinsic,
+        header: Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
+      })
+
+    expected_state = System.State.from_json(json_data[:post_state])
 
     result = System.State.add_block(pre_state, block)
 
-    case {result, Map.get(json_data["output"], "err")} do
+    case {result, json_data[:output][:err]} do
       {{:ok, state_}, nil} ->
         # No error expected, assert on the tested keys
         Enum.each(tested_keys, fn key ->

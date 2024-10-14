@@ -109,22 +109,22 @@ defmodule Block.Extrinsic.Guarantee do
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
-      total_gas = Enum.reduce(work_report.work_results, 0, & &1.gas_prioritization_ratio + &2)
+      total_gas = Enum.reduce(work_report.results, 0, &(&1.gas_ratio + &2))
 
       cond do
         total_gas > Constants.gas_accumulation() ->
           {:halt, {:error, :invalid_gas_accumulation}}
 
-        Enum.any?(work_report.work_results, fn result ->
-          Map.get(services, result.service_index) == nil
+        Enum.any?(work_report.results, fn result ->
+          Map.get(services, result.service) == nil
         end) ->
           {:halt, {:error, :non_existent_service}}
 
-        Enum.any?(work_report.work_results, fn result ->
-          service = Map.get(services, result.service_index)
-          result.gas_prioritization_ratio < service.gas_limit_g
+        Enum.any?(work_report.results, fn result ->
+          service = Map.get(services, result.service)
+          result.gas_ratio < service.gas_limit_g
         end) ->
-          {:halt, {:error, :insufficient_gas_prioritization_ratio}}
+          {:halt, {:error, :insufficient_gas_ratio}}
 
         true ->
           {:cont, :ok}
@@ -134,8 +134,8 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (152) v0.4.1
   mockable validate_work_result_cores(w, services) do
-    if Enum.any?(Enum.flat_map(w, & &1.work_results), fn r ->
-         r.code_hash != Map.get(services, r.service_index, %ServiceAccount{}).code_hash
+    if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
+         r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
        end) do
       {:error, :invalid_work_result_core_index}
     else
@@ -275,11 +275,30 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   defimpl Encodable do
+    alias Codec.VariableSize
     alias Block.Extrinsic.Guarantee
 
-    def encode(%Guarantee{}) do
-      # TODO
-      <<0>>
+    def encode(g = %Guarantee{}) do
+      Codec.Encoder.encode({
+        g.work_report,
+        Codec.Encoder.encode_le(g.timeslot, 4),
+        VariableSize.new(
+          g.credentials
+          |> Enum.map(&{Codec.Encoder.encode_le(elem(&1, 0), 2), elem(&1, 1)})
+        )
+      })
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{
+      work_report: %{m: WorkReport, f: :report},
+      timeslot: :slot,
+      credentials: [&json_credentials/1, :signatures]
+    }
+
+  def json_credentials(json),
+    do: Enum.map(json, &{&1.validator_index, JsonDecoder.from_json(&1.signature)})
 end

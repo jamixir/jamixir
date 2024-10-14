@@ -70,7 +70,7 @@ defmodule System.State.ServiceAccount do
 
   # Formula (91) v0.4.1
   def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
-    Map.get(p, hash)
+    p[hash]
   end
 
   # Formula (92) v0.4.1
@@ -89,11 +89,10 @@ defmodule System.State.ServiceAccount do
         timeslot,
         hash
       ) do
-    case Map.get(ap, hash) do
-      value ->
-        if value != nil and in_storage?(Map.get(al, {hash, byte_size(value)}), timeslot),
-          do: value,
-          else: nil
+    with value <- ap[hash] do
+      if value != nil and in_storage?(al[{hash, byte_size(value)}], timeslot),
+        do: value,
+        else: nil
     end
   end
 

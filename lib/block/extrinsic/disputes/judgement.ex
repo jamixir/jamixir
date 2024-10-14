@@ -7,15 +7,27 @@ defmodule Block.Extrinsic.Disputes.Judgement do
           # i
           validator_index: Types.validator_index(),
           # v
-          decision: Types.decision(),
+          vote: Types.vote(),
           # s
           signature: Types.ed25519_signature()
         }
 
-  defstruct validator_index: 0, decision: true, signature: <<>>
+  defstruct validator_index: 0, vote: true, signature: <<>>
 
   # Formula (100) v0.4.1
-  def signature_base(%__MODULE__{decision: decision}) do
-    if decision, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
+  def signature_base(%__MODULE__{vote: vote}) do
+    if vote, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
   end
+
+  defimpl Encodable do
+    alias Block.Extrinsic.Disputes.Judgement
+
+    def encode(j = %Judgement{}) do
+      dec = if j.vote, do: 1, else: 0
+      Codec.Encoder.encode({dec, Codec.Encoder.encode_le(j.validator_index, 2), j.signature})
+    end
+  end
+
+  use JsonDecoder
+  def json_mapping, do: %{validator_index: :index}
 end

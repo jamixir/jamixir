@@ -124,25 +124,25 @@ defmodule Block.Header do
     end
   end
 
-  def from_json(json_data) do
-    ok_output = json_data["output"]["ok"]
+  use JsonDecoder
 
-    %__MODULE__{
-      timeslot: json_data["input"]["slot"],
-      epoch: parse_epoch_mark(ok_output["epoch_mark"]),
-      winning_tickets_marker: parse_tickets_mark(ok_output["tickets_mark"])
+  def json_mapping do
+    %{
+      parent_hash: :parent,
+      prior_state_root: :parent_state_root,
+      timeslot: :slot,
+      epoch: [&parse_epoch_mark/1, :epoch_mark],
+      winning_tickets_marker: [[SealKeyTicket], :tickets_mark],
+      offenders_marker: [:offenders_mark, []],
+      block_author_key_index: [:author_index, 0],
+      vrf_signature: :entropy_source,
+      block_seal: :seal
     }
   end
 
-  defp parse_epoch_mark(%{"entropy" => entropy, "validators" => validators}) do
-    {Utils.hex_to_binary(entropy), Enum.map(validators, &Utils.hex_to_binary/1)}
+  defp parse_epoch_mark(%{entropy: entropy, validators: validators}) do
+    {JsonDecoder.from_json(entropy), JsonDecoder.from_json(validators)}
   end
 
   defp parse_epoch_mark(_), do: nil
-
-  defp parse_tickets_mark(tickets) when is_list(tickets) do
-    Enum.map(tickets, &SealKeyTicket.from_json/1)
-  end
-
-  defp parse_tickets_mark(_), do: nil
 end

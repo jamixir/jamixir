@@ -92,7 +92,7 @@ defmodule System.State.ValidatorStatistics do
             data_size:
               author_stats.data_size +
                 (extrinsic.preimages
-                 |> Enum.map(&byte_size(&1.data))
+                 |> Enum.map(&byte_size(&1.blob))
                  |> Enum.sum())
         }
 

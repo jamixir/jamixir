@@ -57,10 +57,5 @@ defmodule System.State.Validator do
     }
   end
 
-  def from_json(json) do
-    json
-    |> Utils.hex_to_binary()
-    |> Utils.atomize_keys()
-    |> then(&struct(__MODULE__, &1))
-  end
+  use JsonDecoder
 end

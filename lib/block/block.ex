@@ -25,15 +25,11 @@ defmodule Block do
 
   defimpl Encodable do
     def encode(%Block{extrinsic: e, header: h}) do
-      # Formula (300) v0.4.1
+      # Formula (301) v0.4.1
       Codec.Encoder.encode({h, e})
     end
   end
 
-  def from_json(json_data) do
-    %__MODULE__{
-      header: Header.from_json(json_data),
-      extrinsic: Extrinsic.from_json(json_data["input"])
-    }
-  end
+  use JsonDecoder
+  def json_mapping, do: %{header: Header, extrinsic: Extrinsic}
 end

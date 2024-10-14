@@ -4,10 +4,13 @@ defmodule Block.Extrinsic do
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
   @type t :: %__MODULE__{
+          # ET
           tickets: list(TicketProof.t()),
+          # ED
           disputes: Disputes.t(),
-          # Formula (154) v0.4.1
+          # EP
           preimages: list(Preimage.t()),
+          # EA
           assurances: list(Assurance.t()),
           # Eg
           guarantees: list(Guarantee.t())
@@ -49,9 +52,14 @@ defmodule Block.Extrinsic do
     end
   end
 
-  def from_json(json_data) do
-    %__MODULE__{
-      tickets: Enum.map(json_data["extrinsic"], &TicketProof.from_json/1)
+  use JsonDecoder
+
+  def json_mapping,
+    do: %{
+      tickets: [TicketProof],
+      disputes: Disputes,
+      preimages: [Preimage],
+      assurances: [Assurance],
+      guarantees: [Guarantee]
     }
-  end
 end

@@ -21,7 +21,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # l
           segment_root_lookup: %{Types.hash() => Types.hash()},
           # r
-          work_results: list(WorkResult.t())
+          results: list(WorkResult.t())
         }
 
   # Formula (118) v0.4.1
@@ -30,8 +30,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             core_index: 0,
             authorizer_hash: <<0::256>>,
             output: "",
-            segment_root_lookup: %{},
-            work_results: []
+            segment_root_lookup: MapSet.new(),
+            results: []
 
   # Formula (119) v0.4.1
 
@@ -42,18 +42,30 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
   end
 
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      specification: %{m: AvailabilitySpecification, f: :package_spec},
+      refinement_context: %{m: RefinementContext, f: :context},
+      output: :auth_output,
+      results: [WorkResult]
+    }
+  end
+
   defimpl Encodable do
     alias Codec.VariableSize
     # Formula (307) v0.4.1
-    # TODO - fix it, the encoding below is not as it should be v0.4.1
+    # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       Codec.Encoder.encode({
-        wr.authorizer_hash,
-        wr.core_index,
-        VariableSize.new(wr.output),
-        wr.refinement_context,
         wr.specification,
-        VariableSize.new(wr.work_results)
+        wr.refinement_context,
+        wr.core_index,
+        VariableSize.new(wr.segment_root_lookup),
+        wr.authorizer_hash,
+        VariableSize.new(wr.output),
+        VariableSize.new(wr.results)
       })
     end
   end

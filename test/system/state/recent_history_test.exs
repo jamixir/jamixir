@@ -241,17 +241,14 @@ defmodule RecentHistoryTest do
       expected_merkle_root =
         beefy_commitment_map.commitments
         |> Enum.sort_by(&elem(&1, 0))
-        |> Enum.map(fn {service_index, hash} ->
-          encoded_index = Codec.Encoder.encode_little_endian(service_index, 4)
+        |> Enum.map(fn {service, hash} ->
+          encoded_index = Codec.Encoder.encode_little_endian(service, 4)
           <<encoded_index::binary, hash::binary>>
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
 
       # Verify that the accumulated_result_mmr is based on the well-balanced Merkle root
-      expected_mmr_roots =
-        MMR.new()
-        |> MMR.append(expected_merkle_root)
-        |> Map.get(:roots)
+      expected_mmr_roots = MMR.append(MMR.new(), expected_merkle_root).roots
 
       assert Enum.at(result.blocks, -1).accumulated_result_mmr == expected_mmr_roots
     end

@@ -71,7 +71,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
       seal_context =
         SigningContexts.jam_ticket_seal() <>
-          state.entropy_pool.n3 <> <<expected_slot_sealer.entry_index::8>>
+          state.entropy_pool.n3 <> <<expected_slot_sealer.attempt::8>>
 
       vrf_output =
         RingVrf.ietf_vrf_output(

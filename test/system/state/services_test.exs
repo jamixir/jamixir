@@ -34,8 +34,8 @@ defmodule System.State.ServicesTest do
       init_services = %{1 => %ServiceAccount{}, 2 => %ServiceAccount{}}
 
       preimages = [
-        %Preimage{service_index: 1, data: <<1, 2, 3>>},
-        %Preimage{service_index: 3, data: <<4, 5, 6>>}
+        %Preimage{service: 1, blob: <<1, 2, 3>>},
+        %Preimage{service: 3, blob: <<4, 5, 6>>}
       ]
 
       ts = 100

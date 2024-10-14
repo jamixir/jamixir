@@ -56,11 +56,11 @@ defmodule SafroleFullTestVectors do
     Enum.each(files_to_test, fn file_name ->
       @tag file_name: file_name
       test "verify full test vectors #{file_name}", %{file_name: file_name} do
-        {:ok, json_data} = fetch_and_parse_json(file_name, @path)
+        {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", @path)
 
         HeaderSealMock
         |> stub(:do_validate_header_seals, fn _, _, _, _ ->
-          {:ok, %{vrf_signature_output: json_data["input"]["entropy"] |> Utils.hex_to_binary()}}
+          {:ok, %{vrf_signature_output: json_data[:input][:entropy] |> JsonDecoder.from_json()}}
         end)
 
         assert_expected_results(

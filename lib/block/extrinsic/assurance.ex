@@ -115,4 +115,8 @@ defmodule Block.Extrinsic.Assurance do
         Codec.Encoder.encode(assurance.signature)
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping, do: %{hash: :anchor, assurance_values: :bitfield}
 end
