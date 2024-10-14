@@ -1,6 +1,7 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Util.Merklization
   alias Block
   alias Block.Extrinsic.Disputes
   alias System.State
@@ -16,6 +17,13 @@ defmodule BlockTest do
       services: %{1 => build(:service_account)}
     }
 
+    state_root = Merklization.merkelize_state(State.serialize(state))
+
+    valid_block = %Block{
+      header: build(:header, timeslot: 100, prior_state_root: state_root),
+      extrinsic: build(:extrinsic)
+    }
+
     Application.put_env(:jamixir, :original_modules, [
       Block.Header,
       Block.Extrinsic,
@@ -27,7 +35,7 @@ defmodule BlockTest do
       Application.delete_env(:jamixir, :original_modules)
     end)
 
-    {:ok, state: state}
+    {:ok, state: state, valid_block: valid_block}
   end
 
   describe "encode/1" do
@@ -37,9 +45,13 @@ defmodule BlockTest do
   end
 
   describe "validate/2" do
-    test "returns :ok for a valid block", %{state: state} do
-      valid_block = %Block{header: build(:header, timeslot: 100), extrinsic: build(:extrinsic)}
+    test "returns :ok for a valid block", %{state: state, valid_block: valid_block} do
       assert :ok = Block.validate(valid_block, state)
+    end
+
+    test "error when invalid state root", %{state: state, valid_block: valid_block} do
+      invalid_block = put_in(valid_block.header.prior_state_root, <<0::256>>)
+      assert {:error, "Invalid state root"} = Block.validate(invalid_block, state)
     end
 
     test "returns error when header validation fails", %{state: state} do
