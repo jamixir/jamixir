@@ -43,12 +43,10 @@ defmodule Block.Extrinsic do
   end
 
   defimpl Encodable do
-    def vs(arg), do: Codec.VariableSize.new(arg)
+    use Codec.Encoder
 
-    def encode(%Block.Extrinsic{} = e) do
-      Codec.Encoder.encode(
-        {vs(e.tickets), e.disputes, vs(e.preimages), vs(e.assurances), vs(e.guarantees)}
-      )
+    def encode(%Block.Extrinsic{} = ex) do
+      e({vs(ex.tickets), ex.disputes, vs(ex.preimages), vs(ex.assurances), vs(ex.guarantees)})
     end
   end
 

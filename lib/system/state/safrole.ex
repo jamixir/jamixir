@@ -142,7 +142,7 @@ defmodule System.State.Safrole do
   end
 
   defimpl Encodable do
-    alias Codec.VariableSize
+    use Codec.Encoder
     # Formula (314) v0.4.1 - C(4)
     # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
     def encode(safrole) do
@@ -153,13 +153,10 @@ defmodule System.State.Safrole do
           _ -> 1
         end
 
-      Codec.Encoder.encode({
-        safrole.pending,
-        safrole.epoch_root,
-        sealer_type,
-        safrole.current_epoch_slot_sealers,
-        VariableSize.new(safrole.ticket_accumulator)
-      })
+      e(
+        {safrole.pending, safrole.epoch_root, sealer_type, safrole.current_epoch_slot_sealers,
+         vs(safrole.ticket_accumulator)}
+      )
     end
   end
 

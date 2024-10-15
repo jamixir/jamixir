@@ -107,11 +107,10 @@ defmodule Block.Extrinsic.TicketProof do
   use JsonDecoder
 
   defimpl Encodable do
+    use Codec.Encoder
+
     def encode(%Block.Extrinsic.TicketProof{} = tp) do
-      Codec.Encoder.encode({
-        tp.attempt,
-        tp.signature
-      })
+      e({tp.attempt, tp.signature})
     end
   end
 end

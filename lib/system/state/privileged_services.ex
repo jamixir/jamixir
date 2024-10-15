@@ -20,16 +20,13 @@ defmodule System.State.PrivilegedServices do
             alter_validator_service: 0
 
   defimpl Encodable do
+    use Codec.Encoder
     alias System.State.PrivilegedServices
 
     def encode(%PrivilegedServices{} = v) do
-      Codec.Encoder.encode(
-        [
-          v.manager_service,
-          v.alter_authorizer_service,
-          v.alter_validator_service
-        ]
-        |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+      e(
+        [v.manager_service, v.alter_authorizer_service, v.alter_validator_service]
+        |> Enum.map(&e_le(&1, 4))
       )
     end
   end

@@ -20,11 +20,11 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   end
 
   defimpl Encodable do
+    use Codec.Encoder
     alias Block.Extrinsic.Disputes.Judgement
 
     def encode(j = %Judgement{}) do
-      dec = if j.vote, do: 1, else: 0
-      Codec.Encoder.encode({dec, Codec.Encoder.encode_le(j.validator_index, 2), j.signature})
+      e({if(j.vote, do: 1, else: 0), e_le(j.validator_index, 2), j.signature})
     end
   end
 

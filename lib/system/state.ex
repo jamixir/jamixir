@@ -1,4 +1,5 @@
 defmodule System.State do
+  use Codec.Encoder
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -308,8 +309,6 @@ defmodule System.State do
     end
   end
 
-  def e(v), do: Codec.Encoder.encode(v)
-
   # Formula (314) v0.4.1
   def state_keys(s) do
     %{
@@ -334,11 +333,11 @@ defmodule System.State do
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
       10 => e(s.core_reports |> Enum.map(&NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
-      11 => Codec.Encoder.encode_le(s.timeslot, 4),
+      11 => e_le(s.timeslot, 4),
       # C(12) ↦ E4(χ)
-      12 => Codec.Encoder.encode(s.privileged_services),
+      12 => e(s.privileged_services),
       # C(13) ↦ E4(π)
-      13 => Codec.Encoder.encode(s.validator_statistics)
+      13 => e(s.validator_statistics)
     }
     |> encode_accounts(s)
     |> encode_accounts_storage(s, :storage)
@@ -349,12 +348,12 @@ defmodule System.State do
   # Formula (313) v0.4.1 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, n1, n2, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
-    <<i::8>> <> Codec.Encoder.encode_le(s, 4) <> <<0::216>>
+    <<i::8>> <> e_le(s, 4) <> <<0::216>>
   end
 
   # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
   def key_to_32_octet({s, h}) do
-    <<n0, n1, n2, n3>> = Codec.Encoder.encode_le(s, 4)
+    <<n0, n1, n2, n3>> = e_le(s, 4)
     <<h_part::binary-size(28), _rest::binary>> = h
     <<h0, h1, h2, h3, rest::binary>> = h_part
     <<n0, h0, n1, h1, n2, h2, n3, h3>> <> rest
@@ -373,7 +372,7 @@ defmodule System.State do
   defp encode_accounts(%{} = state_keys, %State{} = state) do
     state.services
     |> Enum.reduce(state_keys, fn {id, service}, ac ->
-      Map.put(ac, {255, id}, Codec.Encoder.encode(service))
+      Map.put(ac, {255, id}, e(service))
     end)
   end
 
@@ -397,12 +396,12 @@ defmodule System.State do
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value =
           t
-          |> Enum.map(&Codec.Encoder.encode_le(&1, 4))
+          |> Enum.map(&e_le(&1, 4))
           |> VariableSize.new()
-          |> Codec.Encoder.encode()
+          |> e()
 
         <<_::binary-size(4), rest::binary>> = h
-        key = Codec.Encoder.encode_le(l, 4) <> Utils.invert_bits(rest)
+        key = e_le(l, 4) <> Utils.invert_bits(rest)
         Map.put(ac, {s, key}, value)
       end)
     end)

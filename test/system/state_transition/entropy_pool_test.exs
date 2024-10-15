@@ -5,6 +5,8 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias System.State.EntropyPool
   alias Util.Hash
   import Mox
+  use Codec.Encoder
+
   setup :verify_on_exit!
 
   setup_all do
@@ -56,7 +58,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
   describe "encode/1" do
     test "entropy pool encoding smoke test" do
-      assert Codec.Encoder.encode(%EntropyPool{n0: 1, n1: 2, n2: 3, n3: 4}) == <<1, 2, 3, 4>>
+      assert e(%EntropyPool{n0: 1, n1: 2, n2: 3, n3: 4}) == <<1, 2, 3, 4>>
     end
   end
 

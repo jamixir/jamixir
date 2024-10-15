@@ -22,16 +22,17 @@ defmodule System.State.ValidatorStatistic do
         }
 
   defimpl Encodable do
+    use Codec.Encoder
+
     def encode(%System.State.ValidatorStatistic{} = v) do
       [
-        v.blocks_produced,
-        v.tickets_introduced,
-        v.preimages_introduced,
-        v.data_size,
-        v.reports_guaranteed,
-        v.availability_assurances
+        e_le(v.blocks_produced, 4),
+        e_le(v.tickets_introduced, 4),
+        e_le(v.preimages_introduced, 4),
+        e_le(v.data_size, 4),
+        e_le(v.reports_guaranteed, 4),
+        e_le(v.availability_assurances, 4)
       ]
-      |> Enum.map_join(&Codec.Encoder.encode_le(&1, 4))
     end
   end
 end

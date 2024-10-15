@@ -18,10 +18,11 @@ defmodule Block.Extrinsic.Disputes.Culprit do
   defstruct work_report_hash: <<>>, key: <<>>, signature: <<>>
 
   defimpl Encodable do
+    use Codec.Encoder
     alias Block.Extrinsic.Disputes.Culprit
 
     def encode(d = %Culprit{}) do
-      Codec.Encoder.encode({d.work_report_hash, d.key, d.signature})
+      e({d.work_report_hash, d.key, d.signature})
     end
   end
 

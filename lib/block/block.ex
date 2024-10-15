@@ -24,9 +24,11 @@ defmodule Block do
   end
 
   defimpl Encodable do
+    use Codec.Encoder
+
     def encode(%Block{extrinsic: e, header: h}) do
       # Formula (301) v0.4.1
-      Codec.Encoder.encode({h, e})
+      e({h, e})
     end
   end
 

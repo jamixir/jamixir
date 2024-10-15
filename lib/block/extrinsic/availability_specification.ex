@@ -23,11 +23,12 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
             exports_root: Hash.zero()
 
   defimpl Encodable do
+    use Codec.Encoder
     # Formula (305) v0.4.1
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
-      Codec.Encoder.encode(availability.work_package_hash) <>
-        Codec.Encoder.encode_le(availability.len, 4) <>
-        Codec.Encoder.encode({availability.erasure_root, availability.exports_root})
+      e(availability.work_package_hash) <>
+        e_le(availability.len, 4) <>
+        e({availability.erasure_root, availability.exports_root})
     end
   end
 

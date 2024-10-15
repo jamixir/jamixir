@@ -6,6 +6,7 @@ defmodule Block.Header do
   alias System.Validators
   alias Util.{Hash, Time}
   use SelectiveMock
+  use Codec.Encoder
 
   @type t :: %__MODULE__{
           # Formula (39) v0.4.1
@@ -79,7 +80,7 @@ defmodule Block.Header do
 
   # Formula (41) v0.4.1
   def valid_extrinsic_hash?(header, extrinsic) do
-    header.extrinsic_hash == Util.Hash.default(Codec.Encoder.encode(extrinsic))
+    header.extrinsic_hash == Util.Hash.default(e(extrinsic))
   end
 
   # Formula (43) v0.4.1
@@ -108,19 +109,21 @@ defmodule Block.Header do
 
   # Formula (303) v0.4.1
   def unsigned_serialize(%Block.Header{} = header) do
-    Codec.Encoder.encode({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
-      Codec.Encoder.encode_le(header.timeslot, 4) <>
-      Codec.Encoder.encode(
+    e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
+      e_le(header.timeslot, 4) <>
+      e(
         {NilDiscriminator.new(header.epoch), NilDiscriminator.new(header.winning_tickets_marker),
-         VariableSize.new(header.offenders_marker),
-         Codec.Encoder.encode_le(header.block_author_key_index, 2), header.vrf_signature}
+         VariableSize.new(header.offenders_marker), e_le(header.block_author_key_index, 2),
+         header.vrf_signature}
       )
   end
 
   defimpl Encodable do
+    use Codec.Encoder
+    alias Block.Header
     # Formula (302) v0.4.1
     def encode(%Block.Header{} = header) do
-      Block.Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)
+      Header.unsigned_serialize(header) <> e(header.block_seal)
     end
   end
 

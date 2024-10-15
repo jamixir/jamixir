@@ -11,7 +11,6 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
-
   # Formula (124) v0.4.1
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
@@ -107,6 +106,7 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   defimpl Encodable do
+    use Codec.Encoder
     alias Block.Extrinsic.Assurance
 
     def pad(value, size) do
@@ -114,10 +114,10 @@ defmodule Block.Extrinsic.Assurance do
     end
 
     def encode(%Assurance{} = assurance) do
-      Codec.Encoder.encode(assurance.hash) <>
-        Codec.Encoder.encode(pad(assurance.assurance_values, Sizes.assurance_values())) <>
-        Codec.Encoder.encode_le(assurance.validator_index, 2) <>
-        Codec.Encoder.encode(pad(assurance.signature, Sizes.signature()))
+      e(assurance.hash) <>
+        e(pad(assurance.assurance_values, Sizes.assurance_values())) <>
+        e_le(assurance.validator_index, 2) <>
+        e(pad(assurance.signature, Sizes.signature()))
     end
   end
 
