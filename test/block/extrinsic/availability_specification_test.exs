@@ -1,9 +1,10 @@
 defmodule Block.Extrinsic.AvailabilitySpecificationTest do
+  alias Util.Hash
   use ExUnit.Case
   import Jamixir.Factory
 
   setup do
-    {:ok, availability: build(:availability_specification, work_package_hash: <<1::256>>)}
+    {:ok, availability: build(:availability_specification, work_package_hash: Hash.one())}
   end
 
   test "encode/1", %{availability: availability} do

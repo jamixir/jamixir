@@ -2,8 +2,9 @@ defmodule System.HeaderSealTest do
   use ExUnit.Case
   import Jamixir.Factory
 
-  alias System.HeaderSeal
   alias Block.Header
+  alias System.HeaderSeal
+  alias Util.Hash
 
   setup do
     %{validators: validators, key_pairs: key_pairs} = validators_and_bandersnatch_keys()
@@ -58,7 +59,7 @@ defmodule System.HeaderSealTest do
           build(:header, timeslot: 1_000_000),
           [single_seal_key_ticket_factory(kp, ep, 0)],
           ep,
-          {elem(Enum.at(kp, 0), 0), :crypto.strong_rand_bytes(32)}
+          {elem(Enum.at(kp, 0), 0), Hash.random()}
         )
 
       assert byte_size(sealed_header.vrf_signature) == 96
@@ -136,7 +137,7 @@ defmodule System.HeaderSealTest do
     } do
       tampered_header = %Header{
         HeaderSeal.seal_header(h, epoch_slot_sealers, ep, hd(kp))
-        | block_seal: <<0::256>>
+        | block_seal: Hash.zero()
       }
 
       assert {:error, _} =
@@ -158,7 +159,7 @@ defmodule System.HeaderSealTest do
     } do
       tampered_header = %Header{
         HeaderSeal.seal_header(h, epoch_slot_sealers, ep, hd(kp))
-        | vrf_signature: <<0::256>>
+        | vrf_signature: Hash.zero()
       }
 
       assert {:error, _} =
@@ -182,7 +183,7 @@ defmodule System.HeaderSealTest do
 
       sealed_header = HeaderSeal.seal_header(h, epoch_slot_sealers, ep, hd(kp))
 
-      tampered_sealers = [%{hd(epoch_slot_sealers) | id: <<0::256>>}]
+      tampered_sealers = [%{hd(epoch_slot_sealers) | id: Hash.zero()}]
 
       assert {:error, :ticket_id_mismatch} =
                HeaderSeal.validate_header_seals(

@@ -1,4 +1,5 @@
 defmodule KeyManagerTest do
+  alias Util.Hash
   use ExUnit.Case
 
   setup_all do
@@ -9,8 +10,7 @@ defmodule KeyManagerTest do
     System.put_env("PRIVATE_KEY_FILE", private_key_file)
 
     iv = :crypto.strong_rand_bytes(16)
-    ciphertext = :crypto.strong_rand_bytes(32)
-    File.write!(private_key_file, iv <> ciphertext)
+    File.write!(private_key_file, iv <> Hash.random())
 
     on_exit(fn ->
       System.delete_env("PUBLIC_KEY")

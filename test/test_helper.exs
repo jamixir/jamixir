@@ -8,6 +8,7 @@ Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
 
 defmodule TestHelper do
   alias System.State.Validator
+  alias Util.Hash
   alias Util.Time, as: Time
 
   def past_timeslot do
@@ -19,8 +20,8 @@ defmodule TestHelper do
   end
 
   def nullified?(%Validator{} = validator) do
-    validator.bandersnatch == <<0::256>> and
-      validator.ed25519 == <<0::256>> and
+    validator.bandersnatch == Hash.zero() and
+      validator.ed25519 == Hash.zero() and
       validator.bls == <<0::1152>> and
       validator.metadata == <<0::1024>>
   end

@@ -4,7 +4,7 @@ defmodule Block.Header do
   alias Codec.{NilDiscriminator, VariableSize}
   alias System.State.SealKeyTicket
   alias System.Validators
-  alias Util.Time
+  alias Util.{Hash, Time}
   use SelectiveMock
 
   @type t :: %__MODULE__{
@@ -39,11 +39,11 @@ defmodule Block.Header do
   # Formula (38) v0.4.1
   defstruct [
     # Hp
-    parent_hash: <<0::256>>,
+    parent_hash: Hash.zero(),
     # Hr
     prior_state_root: nil,
     # Hx
-    extrinsic_hash: <<0::256>>,
+    extrinsic_hash: Hash.zero(),
     # Ht
     timeslot: 0,
     # He

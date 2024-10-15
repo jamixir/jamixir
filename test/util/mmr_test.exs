@@ -11,7 +11,7 @@ defmodule Util.MMRTest do
   end
 
   test "create MMR from list of hashes" do
-    list_of_hashes = [<<1::256>>, <<2::256>>, <<3::256>>]
+    list_of_hashes = [Hash.one(), Hash.two(), Hash.three()]
     mmr = MMR.from(list_of_hashes)
     assert mmr.roots == list_of_hashes
 
@@ -20,7 +20,7 @@ defmodule Util.MMRTest do
   end
 
   test "convert MMR to list of hashes" do
-    list_of_hashes = [<<1::256>>, <<2::256>>, <<3::256>>]
+    list_of_hashes = [Hash.one(), Hash.two(), Hash.three()]
     mmr = MMR.from(list_of_hashes)
     assert MMR.to_list(mmr) == list_of_hashes
   end

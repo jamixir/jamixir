@@ -15,7 +15,7 @@ defmodule Block.Extrinsic.Assurance do
   # Formula (124) v0.4.1
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
-            assurance_values: Utils.zero_bitstring(Constants.assurance_values_size()),
+            assurance_values: Utils.zero_bitstring(Sizes.assurance_values()),
             validator_index: 0,
             signature: Crypto.zero_sign()
 
@@ -115,21 +115,21 @@ defmodule Block.Extrinsic.Assurance do
 
     def encode(%Assurance{} = assurance) do
       Codec.Encoder.encode(assurance.hash) <>
-        Codec.Encoder.encode(pad(assurance.assurance_values, Constants.assurance_values_size())) <>
+        Codec.Encoder.encode(pad(assurance.assurance_values, Sizes.assurance_values())) <>
         Codec.Encoder.encode_le(assurance.validator_index, 2) <>
-        Codec.Encoder.encode(pad(assurance.signature, Constants.signature_size()))
+        Codec.Encoder.encode(pad(assurance.signature, Sizes.signature()))
     end
   end
 
   # defimpl Decodable do
-  def decode(bin) do
-    hash_size = Constants.hash_size()
-    assurance_values_size = Constants.assurance_values_size()
-    signature_size = Constants.signature_size()
+  def decode(blob) do
+    hash_size = Sizes.hash()
+    assurance_values_size = Sizes.assurance_values()
+    signature_size = Sizes.signature()
 
     <<hash::binary-size(hash_size), assurance_values::binary-size(assurance_values_size),
       validator_index::binary-size(2), signature::binary-size(signature_size),
-      rest::binary>> = bin
+      rest::binary>> = blob
 
     {
       %Block.Extrinsic.Assurance{

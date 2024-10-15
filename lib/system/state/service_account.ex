@@ -13,6 +13,8 @@ defmodule System.State.ServiceAccount do
   - `b`: Balance
   - `g`, `m`: Gas limits
   """
+  alias Util.Hash
+
   @type t :: %__MODULE__{
           # s
           storage: %{Types.hash() => binary()},
@@ -33,7 +35,7 @@ defmodule System.State.ServiceAccount do
   defstruct storage: %{},
             preimage_storage_p: %{},
             preimage_storage_l: %{},
-            code_hash: <<0::256>>,
+            code_hash: Hash.zero(),
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0

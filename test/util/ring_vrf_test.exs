@@ -2,6 +2,7 @@ defmodule RingVrfTest do
   use ExUnit.Case
   alias RingVrfTest
   alias RingVrf
+  alias Util.Hash
 
   defp gen_keys(public_key_index, count) do
     # Generate a secret key from randomness
@@ -63,7 +64,7 @@ defmodule RingVrfTest do
                )
 
       assert vrf_output_hash == output
-      assert byte_size(vrf_output_hash) == 32
+      assert byte_size(vrf_output_hash) == Sizes.hash()
     end
   end
 
@@ -136,7 +137,7 @@ defmodule RingVrfTest do
 
   describe "test secret generation" do
     test "generate_secret_from_seed generates a secret from a seed" do
-      seed = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
+      seed = Hash.random() |> :binary.bin_to_list()
       _secret = RingVrf.generate_secret_from_seed(seed)
     end
 
@@ -145,7 +146,7 @@ defmodule RingVrfTest do
     end
 
     test "generate_secret_from_scalar generates a secret from a scalar" do
-      scalar = :crypto.strong_rand_bytes(32) |> :binary.bin_to_list()
+      scalar = Hash.random() |> :binary.bin_to_list()
       _secret = RingVrf.generate_secret_from_scalar(scalar)
     end
   end
@@ -156,7 +157,7 @@ defmodule RingVrfTest do
       {signature, output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
 
       assert byte_size(signature) == 96
-      assert byte_size(output) == 32
+      assert byte_size(output) == Sizes.hash()
     end
 
     test "key sign and verify - all ok" do
@@ -176,7 +177,7 @@ defmodule RingVrfTest do
         )
 
       assert {:ok, vrf_output_hash} = result
-      assert byte_size(vrf_output_hash) == 32
+      assert byte_size(vrf_output_hash) == Sizes.hash()
     end
   end
 

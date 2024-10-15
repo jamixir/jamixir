@@ -2,34 +2,34 @@ defmodule Util.MerklizationTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias System.State
-  alias Util.Merklization
+  alias Util.{Hash, Merklization}
 
   # Formula (315) v0.4.1: TESTS
 
   describe "encode_branch/2 (l,r)" do
     test "encode_branch with simple values" do
       # 256-bit value with only the first bit set
-      l = <<1::256>>
+      l = Hash.one()
       # 256-bit value with only the second bit set
-      r = <<2::256>>
+      r = Hash.two()
 
       result = Merklization.encode_branch(l, r)
 
       assert is_list(result)
-      assert length(result) == 512
+      assert length(result) == Sizes.merkle_root_bits()
       [b | _] = result
       assert b == 0
     end
 
     test "encode_branch with random inputs" do
       for _ <- 1..100 do
-        l = :crypto.strong_rand_bytes(32)
-        r = :crypto.strong_rand_bytes(32)
+        l = Hash.random()
+        r = Hash.random()
 
         result = Merklization.encode_branch(l, r)
 
         assert is_list(result)
-        assert length(result) == 512
+        assert length(result) == Sizes.merkle_root_bits()
         [b | _] = result
         assert b == 0
       end
@@ -46,7 +46,7 @@ defmodule Util.MerklizationTest do
 
       result = Merklization.encode_leaf(key, value)
 
-      assert length(result) == 512
+      assert length(result) == Sizes.merkle_root_bits()
 
       assert Enum.slice(result, 0, 2) == [1, 0]
 
@@ -56,11 +56,9 @@ defmodule Util.MerklizationTest do
     test "encode_leaf when byte_size(value) == 32" do
       key = :crypto.strong_rand_bytes(31)
 
-      value = :crypto.strong_rand_bytes(32)
+      result = Merklization.encode_leaf(key, Hash.random())
 
-      result = Merklization.encode_leaf(key, value)
-
-      assert length(result) == 512
+      assert length(result) == Sizes.merkle_root_bits()
 
       assert Enum.slice(result, 0, 2) == [1, 0]
     end
@@ -71,7 +69,7 @@ defmodule Util.MerklizationTest do
 
       result = Merklization.encode_leaf(key, value)
 
-      assert length(result) == 512
+      assert length(result) == Sizes.merkle_root_bits()
 
       assert Enum.slice(result, 0, 8) == [1, 1, 0, 0, 0, 0, 0, 0]
     end
@@ -155,20 +153,20 @@ defmodule Util.MerklizationTest do
     test "test big fake state" do
       dict =
         Enum.reduce(1..100, %{}, fn _, acc ->
-          key = :crypto.strong_rand_bytes(32)
-          value = :crypto.strong_rand_bytes(32)
+          key = Hash.random()
+          value = Hash.random()
           Map.put(acc, key, value)
         end)
 
       hash = Merklization.merkelize_state(dict)
       assert is_binary(hash)
-      assert byte_size(hash) == 32
+      assert byte_size(hash) == Sizes.hash()
     end
 
     test "smoke test real state" do
       hash = build(:genesis_state) |> State.serialize() |> Merklization.merkelize_state()
       assert is_binary(hash)
-      assert byte_size(hash) == 32
+      assert byte_size(hash) == Sizes.hash()
     end
   end
 end

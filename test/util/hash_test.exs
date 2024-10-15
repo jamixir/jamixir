@@ -6,8 +6,8 @@ defmodule Util.HashTest do
   describe "blake2b_n/2" do
     test "returns correct length for n=32" do
       data = "test data"
-      hash = Hash.blake2b_n(data, 32)
-      assert byte_size(hash) == 32
+      hash = Hash.blake2b_n(data, Sizes.hash())
+      assert byte_size(hash) == Sizes.hash()
     end
 
     test "returns correct length for n=16" do
@@ -39,7 +39,7 @@ defmodule Util.HashTest do
     test "returns correct length for 256-bit hash" do
       data = "test data"
       hash = Hash.blake2b_256(data)
-      assert byte_size(hash) == 32
+      assert byte_size(hash) == Sizes.hash()
     end
 
     test "returns correct hash for known input" do

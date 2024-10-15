@@ -1,10 +1,10 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Util.Merklization
   alias Block
   alias Block.Extrinsic.Disputes
   alias System.State
+  alias Util.{Hash, Merklization}
   import Mox
   setup :verify_on_exit!
 
@@ -50,7 +50,7 @@ defmodule BlockTest do
     end
 
     test "error when invalid state root", %{state: state, valid_block: valid_block} do
-      invalid_block = put_in(valid_block.header.prior_state_root, <<0::256>>)
+      invalid_block = put_in(valid_block.header.prior_state_root, Hash.zero())
       assert {:error, "Invalid state root"} = Block.validate(invalid_block, state)
     end
 

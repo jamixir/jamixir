@@ -6,7 +6,7 @@ defmodule Util.MMR do
 
   alias Util.{Hash, MMR}
 
-  @type t :: %MMR{roots: [<<_::256>> | nil]}
+  @type t :: %MMR{roots: [Types.hash() | nil]}
   defstruct roots: []
 
   @doc """

@@ -2,12 +2,13 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Util.Hash
 
   setup do
     {:ok,
      wr:
        build(:work_report,
-         specification: build(:availability_specification, work_package_hash: <<1::256>>)
+         specification: build(:availability_specification, work_package_hash: Hash.one())
        )}
   end
 

@@ -24,6 +24,6 @@ defmodule Util.Crypto do
   end
 
   def zero_sign do
-    Utils.zero_bitstring(Constants.signature_size())
+    Utils.zero_bitstring(Sizes.signature())
   end
 end

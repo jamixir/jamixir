@@ -3,6 +3,7 @@ defmodule System.State.BeefyCommitmentMap do
   a set of tuples, each tuple contain a service index and a an accumulation-result tree root
   see section 12.4
   """
+  alias Util.Hash
 
   @type t :: %__MODULE__{
           commitments: [{non_neg_integer(), Types.hash()}]
@@ -12,7 +13,7 @@ defmodule System.State.BeefyCommitmentMap do
 
   def stub do
     %__MODULE__{
-      commitments: [{0, <<0::256>>}]
+      commitments: [{0, Hash.zero()}]
     }
   end
 end

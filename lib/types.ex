@@ -2,10 +2,14 @@ defmodule Types do
   @moduledoc """
   A module for defining common types.
   """
+  import TypeMacro
 
-  @type hash :: <<_::256>>
-  @type ed25519_key :: <<_::256>>
-  @type bandersnatch_key :: <<_::256>>
+  # Macro to define a binary type with a given size name (defined in Sizes module)
+  def_bin_type(:hash, :hash)
+  def_bin_type(:ed25519_key, :hash)
+  def_bin_type(:bandersnatch_key, :hash)
+  # @hash_size
+
   # 144 bytes
   @type bls_key :: <<_::1152>>
   @type ed25519_signature :: <<_::512>>

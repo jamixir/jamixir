@@ -1,4 +1,6 @@
 defmodule Block.Extrinsic.AvailabilitySpecification do
+  alias Util.Hash
+
   @type t :: %__MODULE__{
           # h: hash of the work-package
           work_package_hash: Types.hash(),
@@ -12,13 +14,13 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   # Formula (121) v0.4.1
   # h
-  defstruct work_package_hash: <<0::256>>,
+  defstruct work_package_hash: Hash.zero(),
             # l
             len: 0,
             # u
-            erasure_root: <<0::256>>,
+            erasure_root: Hash.zero(),
             # e
-            exports_root: <<0::256>>
+            exports_root: Hash.zero()
 
   defimpl Encodable do
     # Formula (305) v0.4.1

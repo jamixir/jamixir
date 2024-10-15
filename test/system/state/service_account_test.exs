@@ -1,10 +1,11 @@
 defmodule System.State.ServiceAccountTest do
   alias System.State.ServiceAccount
+  alias Util.Hash
   use ExUnit.Case
   import Jamixir.Factory
 
   setup do
-    {:ok, %{sa: build(:service_account), preimage: :crypto.strong_rand_bytes(32)}}
+    {:ok, %{sa: build(:service_account), preimage: Hash.random()}}
   end
 
   describe "items in storage" do
@@ -41,7 +42,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "return code when it exists in preimage storage p", %{sa: sa} do
-      code_hash = :crypto.strong_rand_bytes(32)
+      code_hash = Hash.random()
 
       assert ServiceAccount.code(%{
                sa
@@ -71,7 +72,7 @@ defmodule System.State.ServiceAccountTest do
   # Formula (94) v0.4.1
   describe "historical_lookup/3" do
     test "return nil when historical lookup does not exist", %{sa: sa} do
-      assert ServiceAccount.historical_lookup(sa, 1, :crypto.strong_rand_bytes(32)) == nil
+      assert ServiceAccount.historical_lookup(sa, 1, Hash.random()) == nil
     end
 
     # case when x <= t

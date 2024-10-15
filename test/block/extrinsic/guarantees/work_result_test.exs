@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   describe "new/1 from work item" do
     test "creates a work result from a work item" do
       wi = build(:work_item)
-      output = {:ok, <<0::256>>}
+      output = {:ok, Hash.zero()}
       wr = WorkResult.new(wi, output)
       assert wr.service == wi.service
       assert wr.code_hash == wi.code_hash

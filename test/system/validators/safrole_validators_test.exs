@@ -1,8 +1,9 @@
 defmodule System.Validators.SafroleValidatorTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.Validators.Safrole
   alias Block.Header
+  alias System.Validators.Safrole
+  alias Util.Hash
 
   setup_all do
     safrole = build(:safrole)
@@ -30,7 +31,7 @@ defmodule System.Validators.SafroleValidatorTest do
     end
 
     test "returns error when it's a new epoch but epoch_marker is invalid", ctx do
-      header = %Header{timeslot: 900, epoch: {<<1::256>>, ctx.bandersnatch_keys}}
+      header = %Header{timeslot: 900, epoch: {Hash.one(), ctx.bandersnatch_keys}}
 
       assert {:error, "Invalid epoch marker"} ==
                Safrole.valid_epoch_marker(header, 3, ctx.entropy_pool.n1, ctx.safrole.pending)
@@ -68,7 +69,7 @@ defmodule System.Validators.SafroleValidatorTest do
     end
 
     test "returns error when conditions are not met but winning_tickets_marker is not nil", ctx do
-      header = %Header{timeslot: 50, winning_tickets_marker: [<<1::256>>]}
+      header = %Header{timeslot: 50, winning_tickets_marker: [Hash.one()]}
 
       assert {:error, "Invalid winning tickets marker"} ==
                Safrole.valid_winning_tickets_marker(header, 49, ctx.safrole)

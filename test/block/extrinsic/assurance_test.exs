@@ -12,7 +12,7 @@ defmodule Block.Extrinsic.AssuranceTest do
   alias Util.{Crypto, Hash}
 
   setup_all do
-    hp = :crypto.strong_rand_bytes(32)
+    hp = Hash.random()
     keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
 
     validators =
@@ -78,7 +78,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       validators: validators,
       core_reports: cr
     } do
-      d_assurance = %{assurance | hash: :crypto.strong_rand_bytes(32)}
+      d_assurance = %{assurance | hash: Hash.random()}
       assurances = [assurance, d_assurance]
 
       assert {:error, "Invalid assurance"} ==
