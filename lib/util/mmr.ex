@@ -50,7 +50,7 @@ defmodule Util.MMR do
       if current_root == nil do
         replace(roots, n, hash)
       else
-        combined_hash = Hash.blake2b_256(current_root <> hash)
+        combined_hash = Hash.default(current_root <> hash)
         updated_roots = replace(roots, n, nil)
         append_root(updated_roots, combined_hash, n + 1)
       end

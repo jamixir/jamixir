@@ -19,11 +19,11 @@ defmodule System.State.ServicesTest do
     # only core index 0 will be considered available (reported availble by more then 2/3 validator set)
     assurances = [
       # Assuring for all three cores
-      %Assurance{assurance_values: <<0b111::3>>, validator_index: 0},
+      %Assurance{bitfield: <<0b111::3>>, validator_index: 0},
       # Assuring for first two cores
-      %Assurance{assurance_values: <<0b110::3>>, validator_index: 1},
+      %Assurance{bitfield: <<0b110::3>>, validator_index: 1},
       # Assuring for first and third cores
-      %Assurance{assurance_values: <<0b101::3>>, validator_index: 2}
+      %Assurance{bitfield: <<0b101::3>>, validator_index: 2}
     ]
 
     {:ok, assurances: assurances}

@@ -14,7 +14,7 @@ defmodule Block.Extrinsic.Assurance do
   # Formula (124) v0.4.1
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
-            assurance_values: Utils.zero_bitstring(Sizes.assurance_values()),
+            bitfield: Utils.zero_bitstring(Sizes.bitfield()),
             validator_index: 0,
             signature: Crypto.zero_sign()
 
@@ -22,7 +22,7 @@ defmodule Block.Extrinsic.Assurance do
           # a
           hash: Types.hash(),
           # f
-          assurance_values: bitstring(),
+          bitfield: bitstring(),
           # v
           validator_index: Types.validator_index(),
           # s
@@ -64,7 +64,7 @@ defmodule Block.Extrinsic.Assurance do
 
     0..(Constants.core_count() - 1)
     |> Stream.filter(fn c ->
-      Stream.map(assurances, &Utils.get_bit(&1.assurance_values, c))
+      Stream.map(assurances, &Utils.get_bit(&1.bitfield, c))
       |> Enum.sum() > threshold
     end)
     |> Stream.map(&Enum.at(core_reports_intermediate_1, &1).work_report)
@@ -75,7 +75,7 @@ defmodule Block.Extrinsic.Assurance do
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
-        Stream.with_index(for <<bit::1 <- assurance.assurance_values>>, do: bit)
+        Stream.with_index(for <<bit::1 <- assurance.bitfield>>, do: bit)
         |> Enum.all?(fn {bit, index} ->
           bit == 0 or Enum.at(core_reports_intermediate, index) != nil
         end)
@@ -97,7 +97,7 @@ defmodule Block.Extrinsic.Assurance do
   defp valid_signature?(_, _, nil), do: false
 
   defp valid_signature?(
-         %__MODULE__{signature: s, assurance_values: f},
+         %__MODULE__{signature: s, bitfield: f},
          parent_hash,
          %Validator{ed25519: e}
        ) do
@@ -106,6 +106,7 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   defimpl Encodable do
+    use Sizes
     use Codec.Encoder
     alias Block.Extrinsic.Assurance
 
@@ -115,26 +116,26 @@ defmodule Block.Extrinsic.Assurance do
 
     def encode(%Assurance{} = assurance) do
       e(assurance.hash) <>
-        e(pad(assurance.assurance_values, Sizes.assurance_values())) <>
-        e_le(assurance.validator_index, 2) <>
-        e(pad(assurance.signature, Sizes.signature()))
+        e(pad(assurance.bitfield, Sizes.bitfield())) <>
+        e_le(assurance.validator_index, @validator_size) <>
+        e(pad(assurance.signature, @signature_size))
     end
   end
 
+  use Sizes
   # defimpl Decodable do
   def decode(blob) do
-    hash_size = Sizes.hash()
-    assurance_values_size = Sizes.assurance_values()
-    signature_size = Sizes.signature()
+    # this size needs to be defined in runtime because of mocked core count
+    bitfield_size = Sizes.bitfield()
 
-    <<hash::binary-size(hash_size), assurance_values::binary-size(assurance_values_size),
-      validator_index::binary-size(2), signature::binary-size(signature_size),
+    <<hash::binary-size(@hash_size), bitfield::binary-size(bitfield_size),
+      validator_index::binary-size(@validator_size), signature::binary-size(@signature_size),
       rest::binary>> = blob
 
     {
       %Block.Extrinsic.Assurance{
         hash: hash,
-        assurance_values: assurance_values,
+        bitfield: bitfield,
         validator_index: Codec.Decoder.decode_le(validator_index, 2),
         signature: signature
       },
@@ -146,5 +147,5 @@ defmodule Block.Extrinsic.Assurance do
 
   use JsonDecoder
 
-  def json_mapping, do: %{hash: :anchor, assurance_values: :bitfield}
+  def json_mapping, do: %{hash: :anchor}
 end

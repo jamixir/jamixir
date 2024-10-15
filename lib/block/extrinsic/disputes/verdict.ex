@@ -34,6 +34,21 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     end
   end
 
+  use Sizes
+
+  def decode(blob) do
+    <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4), rest::binary>> =
+      blob
+
+    {
+      %Block.Extrinsic.Disputes.Verdict{
+        work_report_hash: work_report_hash,
+        epoch_index: Codec.Decoder.decode_le(epoch_index, 4)
+      },
+      rest
+    }
+  end
+
   use JsonDecoder
 
   def json_mapping,

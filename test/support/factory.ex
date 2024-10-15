@@ -443,18 +443,18 @@ defmodule Jamixir.Factory do
 
   def assurance_factory do
     hash = String.duplicate("a", Sizes.hash())
-    assurance_values = String.duplicate("x", Sizes.assurance_values())
+    bitfield = String.duplicate("x", Sizes.bitfield())
     signature = String.duplicate("y", Sizes.signature())
 
     %Assurance{
       hash: hash,
-      assurance_values: assurance_values,
+      bitfield: bitfield,
       validator_index: 1,
       signature: signature
     }
   end
 
   def shuffle_hash_factory do
-    Util.Hash.blake2b_256(<<"This generates the shuffle hash for testing">>)
+    Util.Hash.default(<<"This generates the shuffle hash for testing">>)
   end
 end

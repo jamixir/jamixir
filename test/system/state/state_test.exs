@@ -251,7 +251,7 @@ defmodule System.StateTest do
       extrinsic =
         build(
           :extrinsic,
-          assurances: [build(:assurance, validator_index: 0, assurance_values: <<0b1111::4>>)]
+          assurances: [build(:assurance, validator_index: 0, bitfield: <<0b1111::4>>)]
         )
 
       with_original_modules([:process_availability]) do
