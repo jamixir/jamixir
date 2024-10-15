@@ -42,7 +42,7 @@ defmodule Util.MerkleTreeTest do
   describe "well_balanced_merkle_root/1" do
     test "returns hash of single element" do
       blob = "single_blob"
-      expected_hash = Hash.blake2b_256(blob)
+      expected_hash = Hash.default(blob)
       assert MerkleTree.well_balanced_merkle_root([blob]) == expected_hash
     end
 
@@ -56,78 +56,78 @@ defmodule Util.MerkleTreeTest do
       blobs = ["blob1", "blob2"]
       left = "blob1"
       right = "blob2"
-      expected_root = Hash.blake2b_256("node" <> left <> right)
+      expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
     test "returns correct root for three elements" do
       blobs = ["blob1", "blob2", "blob3"]
       left = "blob1"
-      right = Hash.blake2b_256("node" <> "blob2" <> "blob3")
-      expected_root = Hash.blake2b_256("node" <> left <> right)
+      right = Hash.default("node" <> "blob2" <> "blob3")
+      expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
     test "returns correct root for four elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4"]
-      left = Hash.blake2b_256("node" <> "blob1" <> "blob2")
-      right = Hash.blake2b_256("node" <> "blob3" <> "blob4")
-      expected_root = Hash.blake2b_256("node" <> left <> right)
+      left = Hash.default("node" <> "blob1" <> "blob2")
+      right = Hash.default("node" <> "blob3" <> "blob4")
+      expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
     test "handles even number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5", "blob6"]
       left_left = "blob1"
-      left_right = Hash.blake2b_256("node" <> "blob2" <> "blob3")
+      left_right = Hash.default("node" <> "blob2" <> "blob3")
       right_left = "blob4"
-      right_right = Hash.blake2b_256("node" <> "blob5" <> "blob6")
-      left = Hash.blake2b_256("node" <> left_left <> left_right)
-      right = Hash.blake2b_256("node" <> right_left <> right_right)
-      expected_root = Hash.blake2b_256("node" <> left <> right)
+      right_right = Hash.default("node" <> "blob5" <> "blob6")
+      left = Hash.default("node" <> left_left <> left_right)
+      right = Hash.default("node" <> right_left <> right_right)
+      expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
 
     test "handles odd number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5"]
-      left = Hash.blake2b_256("node" <> "blob1" <> "blob2")
+      left = Hash.default("node" <> "blob1" <> "blob2")
 
       right =
-        Hash.blake2b_256("node" <> "blob3" <> Hash.blake2b_256("node" <> "blob4" <> "blob5"))
+        Hash.default("node" <> "blob3" <> Hash.default("node" <> "blob4" <> "blob5"))
 
-      expected_root = Hash.blake2b_256("node" <> left <> right)
+      expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
   end
 
   describe "c_preprocess/2" do
     test "empty list" do
-      assert MerkleTree.c_preprocess([], &Hash.blake2b_256/1) == [Hash.zero()]
+      assert MerkleTree.c_preprocess([], &Hash.default/1) == [Hash.zero()]
     end
 
     test "one element list" do
       blobs = ["blob1"]
-      expected_hashes = [Hash.blake2b_256("leafblob1")]
-      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+      expected_hashes = [Hash.default("leafblob1")]
+      assert MerkleTree.c_preprocess(blobs, &Hash.default/1) == expected_hashes
     end
 
     test "two elements list" do
       blobs = ["blob1", "blob2"]
-      expected_hashes = [Hash.blake2b_256("leafblob1"), Hash.blake2b_256("leafblob2")]
-      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+      expected_hashes = [Hash.default("leafblob1"), Hash.default("leafblob2")]
+      assert MerkleTree.c_preprocess(blobs, &Hash.default/1) == expected_hashes
     end
 
     test "c_preprocess/2" do
       blobs = ["blob1", "blob2", "blob3"]
 
       expected_hashes = [
-        Hash.blake2b_256("leafblob1"),
-        Hash.blake2b_256("leafblob2"),
-        Hash.blake2b_256("leafblob3"),
+        Hash.default("leafblob1"),
+        Hash.default("leafblob2"),
+        Hash.default("leafblob3"),
         Hash.zero()
       ]
 
-      assert MerkleTree.c_preprocess(blobs, &Hash.blake2b_256/1) == expected_hashes
+      assert MerkleTree.c_preprocess(blobs, &Hash.default/1) == expected_hashes
     end
   end
 

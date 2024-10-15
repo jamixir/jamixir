@@ -7,12 +7,7 @@ defmodule System.State.EntropyPool do
   alias System.State.EntropyPool
   alias Util.{Hash, Time}
 
-  @type t :: %__MODULE__{
-          n0: Types.hash(),
-          n1: Types.hash(),
-          n2: Types.hash(),
-          n3: Types.hash()
-        }
+  @type t :: %__MODULE__{n0: Types.hash(), n1: Types.hash(), n2: Types.hash(), n3: Types.hash()}
 
   # Formula (66) v0.4.1
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
@@ -30,7 +25,7 @@ defmodule System.State.EntropyPool do
 
   # Formula (67) v0.4.1
   def calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
-    %EntropyPool{pool | n0: Hash.blake2b_256(n0 <> vrf_output)}
+    %EntropyPool{pool | n0: Hash.default(n0 <> vrf_output)}
   end
 
   defimpl Encodable do

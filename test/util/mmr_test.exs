@@ -3,7 +3,7 @@ defmodule Util.MMRTest do
   alias Util.MMR
   alias Util.Hash
 
-  defp hash(data), do: Hash.blake2b_256(data)
+  defp hash(data), do: Hash.default(data)
 
   test "create new MMR" do
     mmr = MMR.new()

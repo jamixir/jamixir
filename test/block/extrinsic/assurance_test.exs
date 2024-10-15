@@ -36,7 +36,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       build(:assurance,
         hash: hp,
         validator_index: 1,
-        assurance_values: <<0::344>>,
+        bitfield: <<0::344>>,
         signature: signature
       )
 
@@ -50,7 +50,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       encoded = Encoder.encode(assurance)
 
       assert encoded ==
-               assurance.hash <> assurance.assurance_values <> "\x01\0" <> assurance.signature
+               assurance.hash <> assurance.bitfield <> "\x01\0" <> assurance.signature
     end
 
     test "decodes an Assurance struct correctly" do
@@ -161,13 +161,13 @@ defmodule Block.Extrinsic.AssuranceTest do
                Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
-    test "returns :error for invalid assurance_values", %{
+    test "returns :error for invalid bitfield", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
       core_reports: cr
     } do
-      invalid_assurance = %{assurance | assurance_values: "other"}
+      invalid_assurance = %{assurance | bitfield: "other"}
 
       assert {:error, :invalid_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
@@ -182,7 +182,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
       signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, assurance_values: <<1::1, 0::7>>}
+      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
 
       assert {:error, "Invalid core reports bits"} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators, [nil])
@@ -194,12 +194,12 @@ defmodule Block.Extrinsic.AssuranceTest do
       # Create mock assurances using factory
       # 6 validators / 2 cores
       assurances = [
-        build(:assurance, assurance_values: <<0b10::2>>),
-        build(:assurance, assurance_values: <<0b10::2>>),
-        build(:assurance, assurance_values: <<0b10::2>>),
-        build(:assurance, assurance_values: <<0b11::2>>),
-        build(:assurance, assurance_values: <<0b11::2>>),
-        build(:assurance, assurance_values: <<0b00::2>>)
+        build(:assurance, bitfield: <<0b10::2>>),
+        build(:assurance, bitfield: <<0b10::2>>),
+        build(:assurance, bitfield: <<0b10::2>>),
+        build(:assurance, bitfield: <<0b11::2>>),
+        build(:assurance, bitfield: <<0b11::2>>),
+        build(:assurance, bitfield: <<0b00::2>>)
       ]
 
       # Create mock core reports using factory
@@ -230,7 +230,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     test "returns empty list when no cores have sufficient assurances" do
       assurances =
         Enum.map(1..6, fn _ ->
-          build(:assurance, assurance_values: <<0b00::2>>)
+          build(:assurance, bitfield: <<0b00::2>>)
         end)
 
       result = Assurance.available_work_reports(assurances, [])
@@ -241,7 +241,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     test "handles case when all cores have sufficient assurances", %{core_reports: core_reports} do
       assurances =
         Enum.map(1..6, fn _ ->
-          build(:assurance, assurance_values: <<0b11::2>>)
+          build(:assurance, bitfield: <<0b11::2>>)
         end)
 
       result = Assurance.available_work_reports(assurances, core_reports)

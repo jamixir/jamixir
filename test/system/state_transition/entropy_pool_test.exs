@@ -25,7 +25,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
     updated_state = EntropyPool.calculate_entropy_pool_("vrf_output", initial_state)
 
-    assert updated_state.n0 == Hash.blake2b_256("initial_entropy" <> "vrf_output")
+    assert updated_state.n0 == Hash.default("initial_entropy" <> "vrf_output")
     assert updated_state.n1 == initial_state.n1
     assert updated_state.n2 == initial_state.n2
     assert updated_state.n3 == initial_state.n3
@@ -83,7 +83,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
       {:ok, state_} = System.State.add_block(state, block)
 
-      assert state_.entropy_pool.n0 == Util.Hash.blake2b_256(state.entropy_pool.n0 <> vrf_output)
+      assert state_.entropy_pool.n0 == Util.Hash.default(state.entropy_pool.n0 <> vrf_output)
     end
   end
 end

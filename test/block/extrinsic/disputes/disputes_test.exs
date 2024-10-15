@@ -435,12 +435,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           epoch_index: Time.epoch_index(header.timeslot)
         )
 
-      assert :ok ==
-               validate(
-                 %Disputes{verdicts: [verdict]},
-                 state,
-                 header
-               )
+      assert :ok == validate(%Disputes{verdicts: [verdict]}, state, header)
     end
 
     test "returns :ok for valid disputes with only culprits", %{
@@ -507,12 +502,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      assert :ok ==
-               validate(
-                 disputes,
-                 state,
-                 header
-               )
+      assert :ok == validate(disputes, state, header)
     end
 
     test "returns :ok for valid disputes with faults (jam_invalid)", %{
@@ -551,12 +541,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      assert :ok ==
-               validate(
-                 disputes,
-                 state,
-                 header
-               )
+      assert :ok == validate(disputes, state, header)
     end
 
     test "returns :ok for valid disputes with verdict from previous epoch", %{

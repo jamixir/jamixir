@@ -38,18 +38,18 @@ defmodule Util.HashTest do
   describe "blake2b_256/1" do
     test "returns correct length for 256-bit hash" do
       data = "test data"
-      hash = Hash.blake2b_256(data)
+      hash = Hash.default(data)
       assert byte_size(hash) == Sizes.hash()
     end
 
     test "returns correct hash for known input" do
       data = "test data"
       expected_hash = <<0xEAB94977A17791D0C089FE9E393261B3AB667CF0E8456632A842D905C468CF65::256>>
-      assert Hash.blake2b_256(data) == expected_hash
+      assert Hash.default(data) == expected_hash
     end
   end
 
   describe "default/1" do
-    assert Hash.default("test data") == Hash.blake2b_256("test data")
+    assert Hash.default("test data") == Hash.default("test data")
   end
 end
