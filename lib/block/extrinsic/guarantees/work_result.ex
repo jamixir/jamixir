@@ -7,8 +7,8 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   section 11.1.4
   Formula (122) v0.4.1
   """
-  alias Block.Extrinsic.Guarantee.WorkExecutionError
-  alias Block.Extrinsic.WorkItem
+  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
+  alias Util.Hash
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
@@ -31,9 +31,9 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   # s
   defstruct service: 0,
             # c
-            code_hash: <<0::256>>,
+            code_hash: Hash.zero(),
             # l
-            payload_hash: <<0::256>>,
+            payload_hash: Hash.zero(),
             # g
             gas_ratio: 0,
             # o

@@ -22,6 +22,10 @@ defmodule Util.Hash do
 
   def default(data), do: blake2b_256(data)
 
-  def zero, do: Utils.zero_bitstring(Constants.hash_size())
+  def zero, do: Utils.zero_bitstring(Sizes.hash())
+  def one, do: Utils.zero_bitstring(Sizes.hash() - 1) <> <<1::8>>
+  def two, do: Utils.zero_bitstring(Sizes.hash() - 1) <> <<2::8>>
+  def three, do: Utils.zero_bitstring(Sizes.hash() - 1) <> <<3::8>>
+
   def random, do: :crypto.strong_rand_bytes(32)
 end

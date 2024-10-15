@@ -1,4 +1,6 @@
 defmodule RefinementContext do
+  alias Util.Hash
+
   @type t :: %__MODULE__{
           # a - anchor header hash
           anchor: Types.hash(),
@@ -16,17 +18,17 @@ defmodule RefinementContext do
 
   # Formula (120) v0.4.1
   # a - anchor header hash
-  defstruct anchor: <<0::256>>,
+  defstruct anchor: Hash.zero(),
             # s - posterior state root
-            state_root_: <<0::256>>,
+            state_root_: Hash.zero(),
             # b - posterior beefy root
-            beefy_root_: <<0::256>>,
+            beefy_root_: Hash.zero(),
             # l - lookup anchor header hash
-            lookup_anchor: <<0::256>>,
+            lookup_anchor: Hash.zero(),
             # t
             timeslot: 0,
             # p
-            prerequisite: <<0::256>>
+            prerequisite: Hash.zero()
 
   defimpl Encodable do
     alias Codec.{Encoder, NilDiscriminator}

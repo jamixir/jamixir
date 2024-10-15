@@ -7,7 +7,7 @@ defmodule Util.MerkleTreeTest do
     defp mock_hash(input), do: "hash(#{input})"
 
     test "returns zero hash for empty list" do
-      assert MerkleTree.node([], &mock_hash/1) == <<0::256>>
+      assert MerkleTree.node([], &mock_hash/1) == Hash.zero()
     end
 
     test "returns single blob for list with one element" do
@@ -102,7 +102,7 @@ defmodule Util.MerkleTreeTest do
 
   describe "c_preprocess/2" do
     test "empty list" do
-      assert MerkleTree.c_preprocess([], &Hash.blake2b_256/1) == [<<0::256>>]
+      assert MerkleTree.c_preprocess([], &Hash.blake2b_256/1) == [Hash.zero()]
     end
 
     test "one element list" do

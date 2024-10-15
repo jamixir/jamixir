@@ -3,7 +3,7 @@ defmodule System.State.JudgementsTest do
   import Jamixir.Factory
   alias Block.Extrinsic.Disputes
   alias System.State.Judgements
-  alias Util.Time
+  alias Util.{Hash, Time}
   import Mox
   setup :verify_on_exit!
 
@@ -31,7 +31,7 @@ defmodule System.State.JudgementsTest do
     }
 
     {:ok,
-     work_report_hash: :crypto.strong_rand_bytes(32),
+     work_report_hash: Hash.random(),
      state: state,
      header: build(:header),
      current_key: {current_pub, current_priv},
@@ -83,7 +83,7 @@ defmodule System.State.JudgementsTest do
     end
 
     test "fails because of order mismatch", %{state: state, work_report_hash: wrh, header: header} do
-      wrh2 = :crypto.strong_rand_bytes(32)
+      wrh2 = Hash.random()
 
       assert {:error, "Header validation failed"} =
                Judgements.calculate_judgements_(

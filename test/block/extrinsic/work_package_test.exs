@@ -26,7 +26,7 @@ defmodule WorkPackageTest do
     end
 
     test "invalid when the sum of import_segments exceeds the maximum", %{wp: wp} do
-      data_segments = Enum.map(1..1500, fn _ -> {<<0::256>>, 1} end)
+      data_segments = Enum.map(1..1500, fn _ -> {Hash.zero(), 1} end)
       medium_work_item = build(:work_item, import_segments: data_segments)
       big_work_item = build(:work_item, import_segments: data_segments ++ data_segments)
 
@@ -38,14 +38,14 @@ defmodule WorkPackageTest do
     test "validates different work_item import_segments content size", %{wp: wp} do
       medium_work_item =
         build(:work_item,
-          import_segments: [{<<0::256>>, 10_000_000}],
-          extrinsic: [{<<0::256>>, 10_000_000}]
+          import_segments: [{Hash.zero(), 10_000_000}],
+          extrinsic: [{Hash.zero(), 10_000_000}]
         )
 
       big_work_item =
         build(:work_item,
-          import_segments: [{<<0::256>>, 20_000_000}],
-          extrinsic: [{<<0::256>>, 20_000_000}]
+          import_segments: [{Hash.zero(), 20_000_000}],
+          extrinsic: [{Hash.zero(), 20_000_000}]
         )
 
       assert WorkPackage.valid?(%{wp | work_items: [medium_work_item]})
@@ -54,7 +54,7 @@ defmodule WorkPackageTest do
     end
 
     test "validates different work_item import_segments length", %{wp: wp} do
-      [ds1 | rest] = Enum.map(1..500, fn _ -> {<<0::256>>, 21_062} end)
+      [ds1 | rest] = Enum.map(1..500, fn _ -> {Hash.zero(), 21_062} end)
 
       in_limit_work_item =
         build(:work_item, import_segments: rest, extrinsic: rest)
@@ -77,7 +77,7 @@ defmodule WorkPackageTest do
   # Formula (194) v0.4.1
   describe "authorization_code/2" do
     test "returns authorization_code when it is available in history", %{state: state} do
-      h = :crypto.strong_rand_bytes(32)
+      h = Hash.random()
 
       service_account =
         build(:service_account,

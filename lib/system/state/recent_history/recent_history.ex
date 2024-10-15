@@ -85,7 +85,7 @@ defmodule System.State.RecentHistory do
         beefy_commitment_map
       ) do
     # 32 bytes of zeros
-    state_root_ = <<0::256>>
+    state_root_ = Hash.zero()
     header_hash = Hash.default(Codec.Encoder.encode(header))
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
@@ -93,10 +93,10 @@ defmodule System.State.RecentHistory do
     well_balanced_merkle_root =
       case beefy_commitment_map do
         nil ->
-          <<0::256>>
+          Hash.zero()
 
         [] ->
-          <<0::256>>
+          Hash.zero()
 
         _ ->
           # The well-balanced merkle root of the beefy commitment map

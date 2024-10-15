@@ -83,41 +83,9 @@ defmodule Util.ShuffleTest do
 
       hash = shuffle_hash_factory()
 
-      assert Shuffle.shuffle(list, hash) == [
-               10,
-               15,
-               25,
-               30,
-               13,
-               26,
-               32,
-               3,
-               16,
-               1,
-               11,
-               12,
-               5,
-               24,
-               28,
-               20,
-               8,
-               17,
-               27,
-               4,
-               2,
-               22,
-               21,
-               23,
-               6,
-               19,
-               29,
-               33,
-               14,
-               18,
-               9,
-               7,
-               31
-             ]
+      assert Shuffle.shuffle(list, hash) ==
+               [10, 15, 25, 30, 13, 26, 32, 3, 16, 1, 11, 12, 5, 24, 28, 20, 8, 17, 27, 4, 2, 22] ++
+                 [21, 23, 6, 19, 29, 33, 14, 18, 9, 7, 31]
     end
   end
 end

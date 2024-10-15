@@ -40,7 +40,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         )
 
       state = %State{
-        services: %{0 => %ServiceAccount{code_hash: <<1::256>>}},
+        services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
         recent_history: %RecentHistory{
           blocks: [
             %RecentBlock{
@@ -117,8 +117,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
-          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == :ok
@@ -137,8 +137,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
-          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :non_existent_service}
@@ -157,8 +157,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
-          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
@@ -176,8 +176,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300, code_hash: <<1::256>>},
-          2 => %ServiceAccount{gas_limit_g: 200, code_hash: <<1::256>>}
+          1 => %ServiceAccount{gas_limit_g: 300, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) ==
@@ -185,7 +185,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
-      s = put_in(state.services[0].code_hash, <<2::256>>)
+      s = put_in(state.services[0].code_hash, Hash.two())
       assert Guarantee.validate([g1, g2], s, 1) == {:error, :invalid_work_result_core_index}
     end
 

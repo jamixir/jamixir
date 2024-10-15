@@ -1,13 +1,15 @@
 defmodule System.State.ValidatorTest do
-  alias System.State.Validator
   use ExUnit.Case
   import Jamixir.Factory
+  alias System.State.Validator
   alias TestHelper, as: TH
+  alias Util.Hash
 
   setup_all do
     next_validators = Enum.map(1..3, &TH.create_validator/1)
+    # next_validators = build_list(3, :validator)
     RingVrf.init_ring_context(length(next_validators))
-    offenders = MapSet.new([<<1::256>>, <<3::256>>])
+    offenders = MapSet.new([Hash.one(), Hash.three()])
     {:ok, next_validators: next_validators, offenders: offenders}
   end
 

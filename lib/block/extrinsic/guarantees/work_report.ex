@@ -5,6 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   """
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Util.Hash
 
   # Formula (118) v0.4.1
   @type t :: %__MODULE__{
@@ -28,7 +29,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   defstruct specification: {},
             refinement_context: %RefinementContext{},
             core_index: 0,
-            authorizer_hash: <<0::256>>,
+            authorizer_hash: Hash.zero(),
             output: "",
             segment_root_lookup: MapSet.new(),
             results: []

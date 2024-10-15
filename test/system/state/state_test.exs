@@ -8,8 +8,8 @@ defmodule System.StateTest do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
-  alias System.State
-  alias System.State.ValidatorStatistics
+  alias System.{State, State.ValidatorStatistics}
+  alias Util.Hash
   setup :verify_on_exit!
 
   setup_all do
@@ -288,7 +288,7 @@ defmodule System.StateTest do
       with_original_modules([:valid_epoch_marker]) do
         # Invalid epoch marker, on a new epoch epoch marker should be nil
         invalid_block = %Block{
-          header: build(:header, timeslot: 600, epoch: {<<1::256>>, [<<2::256>>]}),
+          header: build(:header, timeslot: 600, epoch: {Hash.one(), [Hash.two()]}),
           extrinsic: build(:extrinsic)
         }
 

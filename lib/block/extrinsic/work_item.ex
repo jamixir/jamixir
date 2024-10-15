@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
+  alias Util.Hash
 
   @type t :: %__MODULE__{
           # s
@@ -27,7 +28,7 @@ defmodule Block.Extrinsic.WorkItem do
     # s: The identifier of the service to which it relates
     service: 0,
     # c: The code hash of the service at the time of reporting
-    code_hash: <<0::256>>,
+    code_hash: Hash.zero(),
     # y: A payload blob
     payload: <<>>,
     # g: A gas limit

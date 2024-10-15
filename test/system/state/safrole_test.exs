@@ -3,6 +3,7 @@ defmodule System.State.SafroleTest do
   import Jamixir.Factory
   alias System.State.EntropyPool
   alias System.State.Safrole
+  alias Util.Hash
 
   describe "outside_in_sequencer/1" do
     test "reorders an empty list" do
@@ -41,7 +42,7 @@ defmodule System.State.SafroleTest do
 
   describe "generate_index_using_entropy/3" do
     test "returns a value within the valid range for validator set size" do
-      entropy = :crypto.strong_rand_bytes(32)
+      entropy = Hash.random()
       validator_set_size = 10
 
       for i <- 0..100 do
@@ -51,7 +52,7 @@ defmodule System.State.SafroleTest do
     end
 
     test "returns consistent results for the same entropy and index" do
-      entropy = :crypto.strong_rand_bytes(32)
+      entropy = Hash.random()
       validator_set_size = 100
       index = Safrole.generate_index_using_entropy(entropy, 5, validator_set_size)
 
@@ -62,7 +63,7 @@ defmodule System.State.SafroleTest do
     end
 
     test "handles the case when validator_set_size is 1" do
-      entropy = :crypto.strong_rand_bytes(32)
+      entropy = Hash.random()
       validator_set_size = 1
 
       for i <- 0..100 do

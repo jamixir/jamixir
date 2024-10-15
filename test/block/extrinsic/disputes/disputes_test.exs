@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
   alias Block.Extrinsic.Disputes
   alias System.State.Judgements
-  alias Util.Time
+  alias Util.{Hash, Time}
   import Jamixir.Factory
 
   setup_all do
@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         judgements: %Judgements{}
     }
 
-    {:ok, work_report_hash: :crypto.strong_rand_bytes(32), state: state, header: build(:header)}
+    {:ok, work_report_hash: Hash.random(), state: state, header: build(:header)}
   end
 
   defp validate(disputes, state, header) do
@@ -208,8 +208,8 @@ defmodule Block.Extrinsic.Disputes.Test do
           "Invalid order or duplicates in culprits Ed25519 keys",
           %Disputes{
             culprits: [
-              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>},
-              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>}
+              %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
+              %{build(:culprit) | work_report_hash: wrh, key: Hash.two()}
             ]
           }
         },
@@ -217,8 +217,8 @@ defmodule Block.Extrinsic.Disputes.Test do
           "Invalid order or duplicates in culprits Ed25519 keys",
           %Disputes{
             culprits: [
-              %{build(:culprit) | work_report_hash: wrh, key: <<2::256>>},
-              %{build(:culprit) | work_report_hash: wrh, key: <<1::256>>}
+              %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
+              %{build(:culprit) | work_report_hash: wrh, key: Hash.one()}
             ]
           }
         },
@@ -272,7 +272,7 @@ defmodule Block.Extrinsic.Disputes.Test do
                   work_report_hash: wrh,
                   key_pair: {pub, priv}
                 )
-                | signature: <<1::size(Constants.signature_size() * 8)>>
+                | signature: <<1::size(Sizes.signature() * 8)>>
               }
             ]
           }

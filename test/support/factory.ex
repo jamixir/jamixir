@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Util.Hash
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
@@ -112,7 +113,7 @@ defmodule Jamixir.Factory do
       specification: build(:availability_specification),
       refinement_context: build(:refinement_context),
       core_index: 1,
-      authorizer_hash: <<2::256>>,
+      authorizer_hash: Hash.two(),
       output: <<3>>,
       results: build_list(2, :work_result)
     }
@@ -122,16 +123,16 @@ defmodule Jamixir.Factory do
     %Block.Extrinsic.AvailabilitySpecification{
       work_package_hash: sequence(:work_package_hash, fn n -> <<n::256>> end),
       len: 2,
-      erasure_root: <<3::256>>,
+      erasure_root: Hash.three(),
       exports_root: <<4::256>>
     }
   end
 
   def refinement_context_factory do
     %RefinementContext{
-      anchor: <<1::256>>,
-      state_root_: <<2::256>>,
-      beefy_root_: <<3::256>>,
+      anchor: Hash.one(),
+      state_root_: Hash.two(),
+      beefy_root_: Hash.three(),
       lookup_anchor: <<4::256>>,
       timeslot: 5,
       prerequisite: nil
@@ -141,8 +142,8 @@ defmodule Jamixir.Factory do
   def work_result_factory do
     %WorkResult{
       service: 0,
-      code_hash: <<1::256>>,
-      payload_hash: <<2::256>>,
+      code_hash: Hash.one(),
+      payload_hash: Hash.two(),
       gas_ratio: 3,
       result: {:ok, <<4>>}
     }
@@ -151,7 +152,7 @@ defmodule Jamixir.Factory do
   def work_item_factory do
     %Block.Extrinsic.WorkItem{
       service: 1,
-      code_hash: <<1::256>>,
+      code_hash: Hash.one(),
       payload: <<2>>,
       gas_limit: 3,
       import_segments: [{<<4::256>>, 5}],
@@ -175,8 +176,8 @@ defmodule Jamixir.Factory do
 
   def validator_factory do
     %System.State.Validator{
-      bandersnatch: :crypto.strong_rand_bytes(32),
-      ed25519: :crypto.strong_rand_bytes(32),
+      bandersnatch: Hash.random(),
+      ed25519: Hash.random(),
       bls: :crypto.strong_rand_bytes(144),
       metadata: :crypto.strong_rand_bytes(128)
     }
@@ -185,14 +186,14 @@ defmodule Jamixir.Factory do
   # Ticket Factories
   def single_seal_key_ticket_factory do
     %System.State.SealKeyTicket{
-      id: <<1::256>>,
+      id: Hash.one(),
       attempt: 0
     }
   end
 
   def seal_key_ticket_factory do
     %System.State.SealKeyTicket{
-      id: random_hash(),
+      id: Hash.random(),
       attempt: sequence(:attempt, fn n -> rem(n, 2) end)
     }
   end
@@ -226,7 +227,7 @@ defmodule Jamixir.Factory do
   end
 
   def unique_hash_factory do
-    random_hash()
+    Hash.random()
   end
 
   # Service Factories
@@ -237,10 +238,10 @@ defmodule Jamixir.Factory do
   end
 
   def service_account_factory do
-    rh = random_hash()
+    rh = Hash.random()
 
     %System.State.ServiceAccount{
-      storage: %{random_hash() => <<0xDEADBEEF::32>>},
+      storage: %{Hash.random() => <<0xDEADBEEF::32>>},
       preimage_storage_p: %{rh => <<0xCAFEBABE::32>>},
       preimage_storage_l: %{{rh, 4} => [1, 2, 3]},
       code_hash: rh,
@@ -254,7 +255,7 @@ defmodule Jamixir.Factory do
 
   def entropy_pool_factory do
     %System.State.EntropyPool{
-      n0: random_hash(),
+      n0: Hash.random(),
       n1: unique_hash_factory(),
       n2: unique_hash_factory(),
       n3: unique_hash_factory()
@@ -280,13 +281,13 @@ defmodule Jamixir.Factory do
   def verdict_factory do
     %Block.Extrinsic.Disputes.Verdict{
       epoch_index: Time.epoch_index(build(:header).timeslot),
-      work_report_hash: :crypto.strong_rand_bytes(32),
+      work_report_hash: Hash.random(),
       judgements: build_list(1, :judgement)
     }
   end
 
   def judgement_factory(attrs) do
-    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    work_report_hash = attrs[:work_report_hash] || Hash.random()
     {_, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
 
     vote = Map.get(attrs, :vote, true)
@@ -306,7 +307,7 @@ defmodule Jamixir.Factory do
   end
 
   def culprit_factory(attrs) do
-    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    work_report_hash = attrs[:work_report_hash] || Hash.random()
     {pub, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
 
     %Block.Extrinsic.Disputes.Culprit{
@@ -317,7 +318,7 @@ defmodule Jamixir.Factory do
   end
 
   def fault_factory(attrs) do
-    work_report_hash = attrs[:work_report_hash] || :crypto.strong_rand_bytes(32)
+    work_report_hash = attrs[:work_report_hash] || Hash.random()
     {pub, priv} = attrs[:key_pair] || :crypto.generate_key(:eddsa, :ed25519)
     vote = Map.get(attrs, :vote, true)
 
@@ -339,10 +340,10 @@ defmodule Jamixir.Factory do
   # Judgements Factory
   def judgements_factory do
     %System.State.Judgements{
-      good: MapSet.new([random_hash()]),
-      bad: MapSet.new([random_hash()]),
-      wonky: MapSet.new([random_hash()]),
-      punish: MapSet.new([random_hash()])
+      good: MapSet.new([Hash.random()]),
+      bad: MapSet.new([Hash.random()]),
+      wonky: MapSet.new([Hash.random()]),
+      punish: MapSet.new([Hash.random()])
     }
   end
 
@@ -410,10 +411,10 @@ defmodule Jamixir.Factory do
   def header_factory do
     %Header{
       timeslot: 5,
-      parent_hash: random_hash(),
-      prior_state_root: random_hash(),
+      parent_hash: Hash.random(),
+      prior_state_root: Hash.random(),
       # Ho
-      offenders_marker: [random_hash()],
+      offenders_marker: [Hash.random()],
       # Hi
       block_author_key_index: 0
     }
@@ -431,7 +432,7 @@ defmodule Jamixir.Factory do
     num_credentials = Enum.random(2..3)
 
     1..num_credentials
-    |> Enum.map(fn i -> {i, random_hash()} end)
+    |> Enum.map(fn i -> {i, Hash.random()} end)
     |> Enum.sort_by(&elem(&1, 0))
   end
 
@@ -441,9 +442,9 @@ defmodule Jamixir.Factory do
   end
 
   def assurance_factory do
-    hash = String.duplicate("a", Constants.hash_size())
-    assurance_values = String.duplicate("x", Constants.assurance_values_size())
-    signature = String.duplicate("y", Constants.signature_size())
+    hash = String.duplicate("a", Sizes.hash())
+    assurance_values = String.duplicate("x", Sizes.assurance_values())
+    signature = String.duplicate("y", Sizes.signature())
 
     %Assurance{
       hash: hash,
@@ -455,10 +456,5 @@ defmodule Jamixir.Factory do
 
   def shuffle_hash_factory do
     Util.Hash.blake2b_256(<<"This generates the shuffle hash for testing">>)
-  end
-
-  # Private Helper Functions
-  defp random_hash do
-    :crypto.strong_rand_bytes(32)
   end
 end
