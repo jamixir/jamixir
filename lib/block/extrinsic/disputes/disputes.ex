@@ -205,14 +205,10 @@ defmodule Block.Extrinsic.Disputes do
   end
 
   defimpl Encodable do
-    alias Codec.VariableSize
+    use Codec.Encoder
 
     def encode(d = %Disputes{}) do
-      Codec.Encoder.encode({
-        VariableSize.new(d.verdicts),
-        VariableSize.new(d.culprits),
-        VariableSize.new(d.faults)
-      })
+      e({vs(d.verdicts), vs(d.culprits), vs(d.faults)})
     end
   end
 

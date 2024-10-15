@@ -275,16 +275,17 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   defimpl Encodable do
-    alias Codec.VariableSize
+    use Codec.Encoder
     alias Block.Extrinsic.Guarantee
+    alias Codec.VariableSize
 
     def encode(g = %Guarantee{}) do
-      Codec.Encoder.encode({
+      e({
         g.work_report,
-        Codec.Encoder.encode_le(g.timeslot, 4),
+        e_le(g.timeslot, 4),
         VariableSize.new(
           g.credentials
-          |> Enum.map(&{Codec.Encoder.encode_le(elem(&1, 0), 2), elem(&1, 1)})
+          |> Enum.map(&{e_le(elem(&1, 0), 2), elem(&1, 1)})
         )
       })
     end

@@ -122,4 +122,13 @@ defmodule Codec.Encoder do
     |> Enum.with_index()
     |> Enum.reduce(0, fn {bit, i}, acc -> acc + bit * 2 ** i end)
   end
+
+  defmacro __using__(_) do
+    quote do
+      alias Codec.VariableSize
+      def e(value), do: Codec.Encoder.encode(value)
+      def e_le(value, l), do: Codec.Encoder.encode_le(value, l)
+      def vs(value), do: VariableSize.new(value)
+    end
+  end
 end

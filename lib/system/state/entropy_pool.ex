@@ -34,8 +34,10 @@ defmodule System.State.EntropyPool do
   end
 
   defimpl Encodable do
+    use Codec.Encoder
+
     def encode(%EntropyPool{} = e) do
-      Codec.Encoder.encode({e.n0, e.n1, e.n2, e.n3})
+      e({e.n0, e.n1, e.n2, e.n3})
     end
   end
 

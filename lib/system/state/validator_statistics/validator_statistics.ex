@@ -137,12 +137,10 @@ defmodule System.State.ValidatorStatistics do
 
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
+    use Codec.Encoder
 
     def encode(%ValidatorStatistics{} = v) do
-      Codec.Encoder.encode({
-        v.current_epoch_statistics |> Enum.map(&Codec.Encoder.encode/1),
-        v.previous_epoch_statistics |> Enum.map(&Codec.Encoder.encode/1)
-      })
+      e({Enum.map(v.current_epoch_statistics, &e/1), Enum.map(v.previous_epoch_statistics, &e/1)})
     end
   end
 end

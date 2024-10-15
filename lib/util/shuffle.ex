@@ -1,4 +1,5 @@
 defmodule Shuffle do
+  use Codec.Encoder
   # Formula (328) v0.4.1
   @spec shuffle(list(any()), list(integer()) | Types.hash()) :: list(any())
   def shuffle([], _), do: []
@@ -19,7 +20,7 @@ defmodule Shuffle do
   defp transform_hash_into_sequence(hash, sequence_length) do
     numeric_sequence =
       Enum.reduce(0..(sequence_length - 1), [], fn i, acc ->
-        encoded_chunk = Codec.Encoder.encode_little_endian(div(i, 8), 4)
+        encoded_chunk = e_le(div(i, 8), 4)
         new_hash = Util.Hash.blake2b_256(hash <> encoded_chunk)
         encoded_numeric_position = :binary.part(new_hash, rem(4 * i, 32), 4)
         decoded_numeric_position = Codec.Decoder.decode_le(encoded_numeric_position, 4)

@@ -7,6 +7,7 @@ defmodule System.State.RecentHistory do
   alias System.State.RecentHistory
   alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, MMR}
+  use Codec.Encoder
 
   @max_length 8
 
@@ -86,7 +87,7 @@ defmodule System.State.RecentHistory do
       ) do
     # 32 bytes of zeros
     state_root_ = Hash.zero()
-    header_hash = Hash.default(Codec.Encoder.encode(header))
+    header_hash = Hash.default(e(header))
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
     # Formula (83)
@@ -102,10 +103,7 @@ defmodule System.State.RecentHistory do
           # The well-balanced merkle root of the beefy commitment map
           beefy_commitment_map.commitments
           |> (Enum.sort_by(&elem(&1, 0))
-              |> Enum.map(fn {service, hash} ->
-                encoded_index = Codec.Encoder.encode_little_endian(service, 4)
-                <<encoded_index::binary, hash::binary>>
-              end)
+              |> Enum.map(fn {service, hash} -> <<e_le(service, 4)::binary, hash::binary>> end)
               |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1))
       end
 
@@ -140,18 +138,18 @@ defmodule System.State.RecentHistory do
   end
 
   defimpl Encodable do
-    alias Codec.VariableSize
+    use Codec.Encoder
     # Formula (314) v0.4.1
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
-      Codec.Encoder.encode(
-        VariableSize.new(
+      e(
+        vs(
           Enum.map(rh.blocks, fn b ->
             {
               b.header_hash,
               Codec.Encoder.encode_mmr(b.accumulated_result_mmr),
               b.state_root,
-              VariableSize.new(b.work_report_hashes)
+              vs(b.work_report_hashes)
             }
           end)
         )

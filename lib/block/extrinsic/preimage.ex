@@ -61,11 +61,11 @@ defmodule Block.Extrinsic.Preimage do
   end
 
   defimpl Encodable do
+    use Codec.Encoder
     alias Codec.VariableSize
 
     def encode(%Block.Extrinsic.Preimage{service: s, blob: p}) do
-      Codec.Encoder.encode_le(s, 4) <>
-        Codec.Encoder.encode(VariableSize.new(p))
+      e_le(s, 4) <> e(VariableSize.new(p))
     end
   end
 
