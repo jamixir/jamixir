@@ -1,8 +1,9 @@
 defmodule RingVrfTest do
   use ExUnit.Case
-  alias RingVrfTest
   alias RingVrf
+  alias RingVrfTest
   alias Util.Hash
+  use Sizes
 
   defp gen_keys(public_key_index, count) do
     # Generate a secret key from randomness
@@ -64,7 +65,7 @@ defmodule RingVrfTest do
                )
 
       assert vrf_output_hash == output
-      assert byte_size(vrf_output_hash) == Sizes.hash()
+      assert byte_size(vrf_output_hash) == @hash_size
     end
   end
 
@@ -157,7 +158,7 @@ defmodule RingVrfTest do
       {signature, output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
 
       assert byte_size(signature) == 96
-      assert byte_size(output) == Sizes.hash()
+      assert byte_size(output) == @hash_size
     end
 
     test "key sign and verify - all ok" do
@@ -177,7 +178,7 @@ defmodule RingVrfTest do
         )
 
       assert {:ok, vrf_output_hash} = result
-      assert byte_size(vrf_output_hash) == Sizes.hash()
+      assert byte_size(vrf_output_hash) == @hash_size
     end
   end
 

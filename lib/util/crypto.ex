@@ -23,7 +23,9 @@ defmodule Util.Crypto do
     :crypto.sign(:eddsa, :none, payload, [private_key, :ed25519])
   end
 
+  use Sizes
+
   def zero_sign do
-    Utils.zero_bitstring(Sizes.signature())
+    Utils.zero_bitstring(@signature_size)
   end
 end

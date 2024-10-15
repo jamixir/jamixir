@@ -9,6 +9,7 @@ defmodule Jamixir.Factory do
   alias System.State.SealKeyTicket
   alias Util.Time
   use ExMachina
+  use Sizes
 
   @cores 2
   @validator_count 6
@@ -442,9 +443,9 @@ defmodule Jamixir.Factory do
   end
 
   def assurance_factory do
-    hash = String.duplicate("a", Sizes.hash())
+    hash = String.duplicate("a", @hash_size)
     bitfield = String.duplicate("x", Sizes.bitfield())
-    signature = String.duplicate("y", Sizes.signature())
+    signature = String.duplicate("y", @signature_size)
 
     %Assurance{
       hash: hash,

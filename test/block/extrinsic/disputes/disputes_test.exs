@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Disputes.Test do
   alias System.State.Judgements
   alias Util.{Hash, Time}
   import Jamixir.Factory
+  use Sizes
 
   setup_all do
     {current_pub, _} = :crypto.generate_key(:eddsa, :ed25519)
@@ -272,7 +273,7 @@ defmodule Block.Extrinsic.Disputes.Test do
                   work_report_hash: wrh,
                   key_pair: {pub, priv}
                 )
-                | signature: <<1::size(Sizes.signature() * 8)>>
+                | signature: <<1::size(@signature_size * 8)>>
               }
             ]
           }
