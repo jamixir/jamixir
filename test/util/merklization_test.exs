@@ -3,7 +3,7 @@ defmodule Util.MerklizationTest do
   import Jamixir.Factory
   alias System.State
   alias Util.{Hash, Merklization}
-
+  use Sizes
   # Formula (315) v0.4.1: TESTS
 
   describe "encode_branch/2 (l,r)" do
@@ -160,13 +160,13 @@ defmodule Util.MerklizationTest do
 
       hash = Merklization.merkelize_state(dict)
       assert is_binary(hash)
-      assert byte_size(hash) == Sizes.hash()
+      assert byte_size(hash) == @hash_size
     end
 
     test "smoke test real state" do
       hash = build(:genesis_state) |> State.serialize() |> Merklization.merkelize_state()
       assert is_binary(hash)
-      assert byte_size(hash) == Sizes.hash()
+      assert byte_size(hash) == @hash_size
     end
   end
 end

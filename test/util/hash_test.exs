@@ -1,13 +1,13 @@
 defmodule Util.HashTest do
   use ExUnit.Case
-
+  use Sizes
   alias Util.Hash
 
   describe "blake2b_n/2" do
     test "returns correct length for n=32" do
       data = "test data"
-      hash = Hash.blake2b_n(data, Sizes.hash())
-      assert byte_size(hash) == Sizes.hash()
+      hash = Hash.blake2b_n(data, @hash_size)
+      assert byte_size(hash) == @hash_size
     end
 
     test "returns correct length for n=16" do
@@ -39,7 +39,7 @@ defmodule Util.HashTest do
     test "returns correct length for 256-bit hash" do
       data = "test data"
       hash = Hash.default(data)
-      assert byte_size(hash) == Sizes.hash()
+      assert byte_size(hash) == @hash_size
     end
 
     test "returns correct hash for known input" do
