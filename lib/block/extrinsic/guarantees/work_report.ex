@@ -6,6 +6,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Util.Hash
+  use SelectiveMock
 
   # Formula (118) v0.4.1
   @type t :: %__MODULE__{
@@ -41,6 +42,25 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def valid_size?(%__MODULE__{} = wr) do
     map_size(wr.segment_root_lookup) <= 8 and
       byte_size(e(wr)) <= Constants.max_work_report_size()
+  end
+
+  # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
+  mockable available_work_reports(assurances, core_reports_intermediate_1) do
+    threshold = 2 * Constants.validator_count() / 3
+
+    0..(Constants.core_count() - 1)
+    |> Stream.filter(fn c ->
+      Stream.map(assurances, &Utils.get_bit(&1.bitfield, c))
+      |> Enum.sum() > threshold
+    end)
+    |> Stream.map(&Enum.at(core_reports_intermediate_1, &1).work_report)
+    |> Enum.to_list()
+  end
+
+  def mock(:available_work_reports, _) do
+    0..(Constants.core_count() - 1)
+    |> Enum.map(fn i -> %WorkReport{core_index: i} end)
   end
 
   use JsonDecoder

@@ -5,7 +5,6 @@ defmodule System.State.CoreReport do
   """
 
   alias System.State.CoreReport
-  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
   alias Util.Hash
@@ -35,7 +34,7 @@ defmodule System.State.CoreReport do
   # ρ‡ Formula (26) v0.4.1
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
     w =
-      Assurance.available_work_reports(assurances, core_reports_intermediate_1)
+      WorkReport.available_work_reports(assurances, core_reports_intermediate_1)
       |> MapSet.new()
 
     # Formula (131) v0.4.1

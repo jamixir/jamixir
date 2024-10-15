@@ -6,8 +6,6 @@ defmodule Block.Extrinsic.Assurance do
   Each assurance is a sequence of binary values (i.e., a bitstring), one per core,
   together with a signature and the index of the validator who is assuring.
   """
-  alias Block.Extrinsic.Guarantee.WorkReport
-  alias System.State.CoreReport
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
@@ -51,25 +49,6 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   def mock(:validate_assurances, _), do: :ok
-
-  def mock(:available_work_reports, _) do
-    0..(Constants.core_count() - 1)
-    |> Enum.map(fn i -> %WorkReport{core_index: i} end)
-  end
-
-  # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
-  @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
-  mockable available_work_reports(assurances, core_reports_intermediate_1) do
-    threshold = 2 * Constants.validator_count() / 3
-
-    0..(Constants.core_count() - 1)
-    |> Stream.filter(fn c ->
-      Stream.map(assurances, &Utils.get_bit(&1.bitfield, c))
-      |> Enum.sum() > threshold
-    end)
-    |> Stream.map(&Enum.at(core_reports_intermediate_1, &1).work_report)
-    |> Enum.to_list()
-  end
 
   # Formula (129) v0.4.1
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
