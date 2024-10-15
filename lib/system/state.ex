@@ -41,7 +41,7 @@ defmodule System.State do
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
           accumulation_history: list(%{Types.hash() => Types.hash()}),
-          ready_to_accumelate: list(Ready.t())
+          ready_to_accumulate: list(Ready.t())
         }
 
   # Formula (15) v0.4.1 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
@@ -77,7 +77,7 @@ defmodule System.State do
     # ξ
     accumulation_history: [],
     # ϑ
-    ready_to_accumelate: []
+    ready_to_accumulate: []
   ]
 
   # Formula (12) v0.4.1
@@ -271,7 +271,7 @@ defmodule System.State do
          accumulation_history: nil,
          #  ϑ'
          # TODO
-         ready_to_accumelate: nil
+         ready_to_accumulate: nil
        }}
     else
       {:error, reason} -> {:error, state, reason}
