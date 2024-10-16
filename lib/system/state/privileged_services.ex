@@ -12,12 +12,14 @@ defmodule System.State.PrivilegedServices do
   @type t :: %__MODULE__{
           manager_service: non_neg_integer(),
           alter_authorizer_service: non_neg_integer(),
-          alter_validator_service: non_neg_integer()
+          alter_validator_service: non_neg_integer(),
+          services_gas: %{non_neg_integer() => non_neg_integer()}
         }
 
   defstruct manager_service: 0,
             alter_authorizer_service: 0,
-            alter_validator_service: 0
+            alter_validator_service: 0,
+            services_gas: %{}
 
   defimpl Encodable do
     use Codec.Encoder
@@ -27,7 +29,7 @@ defmodule System.State.PrivilegedServices do
       e(
         [v.manager_service, v.alter_authorizer_service, v.alter_validator_service]
         |> Enum.map(&e_le(&1, 4))
-      )
+      ) <> e(v.services_gas)
     end
   end
 end
