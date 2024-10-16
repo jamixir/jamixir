@@ -151,8 +151,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # Formula (167) v0.4.1
     m = Time.epoch_phase(block_timeslot)
 
-    {before_m, rest} =
-      Enum.split(ready_to_accumulate, m)
+    {before_m, rest} = Enum.split(ready_to_accumulate, m)
 
     # Formula (168) v0.4.1
     w_bang ++
