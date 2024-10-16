@@ -7,4 +7,9 @@ defmodule System.State.Ready do
         }
 
   defstruct work_report: %WorkReport{}, dependencies: MapSet.new()
+
+  @spec to_tuple(t()) :: {WorkReport.t(), MapSet.t(Types.hash())}
+  def to_tuple(%__MODULE__{} = ready) do
+    {ready.work_report, ready.dependencies}
+  end
 end

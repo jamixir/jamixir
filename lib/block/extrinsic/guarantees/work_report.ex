@@ -5,7 +5,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   """
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias Util.Hash
+  alias System.State.{CoreReport, Ready}
+  alias Util.{Collections, Hash, Time}
+
   use SelectiveMock
 
   # Formula (118) v0.4.1
@@ -61,6 +63,109 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def mock(:available_work_reports, _) do
     0..(Constants.core_count() - 1)
     |> Enum.map(fn i -> %WorkReport{core_index: i} end)
+  end
+
+  # Formula (161) v0.4.1
+  # Formula (162) v0.4.1
+  @spec split_by_prerequisites(list(__MODULE__.t())) ::
+          {list(__MODULE__.t()), list(__MODULE__.t())}
+  def split_by_prerequisites(w) do
+    Enum.split_with(w, fn report ->
+      is_nil(report.refinement_context.prerequisite) and Enum.empty?(report.segment_root_lookup)
+    end)
+  end
+
+  # Formula (163) v0.4.1
+  @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
+  def with_dependencies(w) do
+    {w,
+     MapSet.new([w.refinement_context.prerequisite])
+     |> MapSet.delete(nil)
+     |> MapSet.union(MapSet.new(Map.keys(w.segment_root_lookup)))}
+  end
+
+  # Formula (164) v0.4.1
+  @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), %{Types.hash() => Types.hash()}) ::
+          list({__MODULE__.t(), MapSet.t(Types.hash())})
+  def edit_queue(r, x) do
+    x_keys = MapSet.new(Map.keys(x))
+
+    r
+    |> Enum.filter(fn {w, _d} ->
+      w.specification.work_package_hash not in x_keys and
+        Map.merge(x, w.segment_root_lookup) == Map.merge(w.segment_root_lookup, x)
+    end)
+    |> Enum.map(fn {w, d} ->
+      {w, MapSet.difference(d, x_keys)}
+    end)
+  end
+
+  # Formula (166) v0.4.1
+  @spec create_package_root_map(list(__MODULE__.t())) :: %{Types.hash() => Types.hash()}
+  def create_package_root_map(work_reports) do
+    Enum.map(work_reports, fn %{
+                                specification: %{
+                                  work_package_hash: h,
+                                  exports_root: e
+                                }
+                              } ->
+      {h, e}
+    end)
+    |> Map.new()
+  end
+
+  # Formula (165) v0.4.1
+  @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), %{
+          Types.hash() => Types.hash()
+        }) :: list(__MODULE__.t())
+  def accumulation_priority_queue(r, a) do
+    g = Enum.map(r, fn {w, _} -> w end)
+
+    if Enum.empty?(g) do
+      []
+    else
+      g_map = create_package_root_map(g)
+      g ++ accumulation_priority_queue(edit_queue(r, g_map), Map.merge(a, g_map))
+    end
+  end
+
+  # Formula (168) v0.4.1
+  @spec accumulatable_work_reports(
+          list(__MODULE__.t()),
+          non_neg_integer(),
+          list(%{Types.hash() => Types.hash()}),
+          list(list(Ready.t()))
+        ) ::
+          list(__MODULE__.t())
+  def accumulatable_work_reports(
+        work_reports,
+        block_timeslot,
+        accumulation_history,
+        ready_to_accumulate
+      ) do
+    {w_bang, pre_w_q} = split_by_prerequisites(work_reports)
+    # Formula (159) v0.4.1
+    accumelated = Collections.union(accumulation_history)
+
+    # Formula (162) v0.4.1
+    w_q =
+      pre_w_q
+      |> Enum.map(&with_dependencies/1)
+      |> edit_queue(accumelated)
+
+    # Formula (167) v0.4.1
+    m = Time.epoch_phase(block_timeslot)
+
+    {before_m, rest} =
+      Enum.split(ready_to_accumulate, m)
+
+    # Formula (168) v0.4.1
+    w_bang ++
+      accumulation_priority_queue(
+        ((Collections.concatenate_all(before_m) ++ Collections.concatenate_all(rest))
+         |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
+        accumelated
+      )
   end
 
   use JsonDecoder
