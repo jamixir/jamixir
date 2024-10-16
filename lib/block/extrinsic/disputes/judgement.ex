@@ -23,22 +23,23 @@ defmodule Block.Extrinsic.Disputes.Judgement do
 
   defimpl Encodable do
     use Codec.Encoder
-    alias Block.Extrinsic.Disputes.Judgement
 
-    def encode(j = %Judgement{}) do
+    def encode(j = %Block.Extrinsic.Disputes.Judgement{}) do
       e({if(j.vote, do: 1, else: 0), e_le(j.validator_index, 2), j.signature})
     end
   end
 
   use Sizes
+  use Codec.Decoder
 
+  @spec decode(binary()) :: {Block.Extrinsic.Disputes.Judgement.t(), binary()}
   def decode(blob) do
     <<vote::binary-size(1), validator_index::binary-size(@validator_size),
       signature::binary-size(@signature_size), rest::binary>> = blob
 
     {
       %Block.Extrinsic.Disputes.Judgement{
-        validator_index: Codec.Decoder.decode_le(validator_index, @validator_size),
+        validator_index: de_le(validator_index, @validator_size),
         vote: vote == <<1>>,
         signature: signature
       },
@@ -47,5 +48,6 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   end
 
   use JsonDecoder
+  @spec json_mapping() :: %{validator_index: :index}
   def json_mapping, do: %{validator_index: :index}
 end

@@ -55,4 +55,10 @@ defmodule Codec.Decoder do
         {1, 128}
     end
   end
+
+  defmacro __using__(_) do
+    quote do
+      def de_le(value, l), do: Codec.Decoder.decode_le(value, l)
+    end
+  end
 end

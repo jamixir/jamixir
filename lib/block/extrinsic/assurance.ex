@@ -123,6 +123,7 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   use Sizes
+  use Codec.Decoder
   # defimpl Decodable do
   def decode(blob) do
     # this size needs to be defined in runtime because of mocked core count
@@ -136,7 +137,7 @@ defmodule Block.Extrinsic.Assurance do
       %Block.Extrinsic.Assurance{
         hash: hash,
         bitfield: bitfield,
-        validator_index: Codec.Decoder.decode_le(validator_index, 2),
+        validator_index: de_le(validator_index, 2),
         signature: signature
       },
       rest

@@ -129,17 +129,14 @@ defmodule System.State.Judgements do
   def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do
-    alias Codec.VariableSize
     use Codec.Encoder
     # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
-    # TODO : convert each mapset into sorted array
     def encode(%Judgements{} = j) do
-      e({
-        VariableSize.new(j.good),
-        VariableSize.new(j.bad),
-        VariableSize.new(j.wonky),
-        VariableSize.new(j.punish)
-      })
+      e({sorted_vs(j.good), sorted_vs(j.bad), sorted_vs(j.wonky), sorted_vs(j.punish)})
+    end
+
+    defp sorted_vs(mapset) do
+      vs(mapset |> MapSet.to_list() |> Enum.sort())
     end
   end
 end
