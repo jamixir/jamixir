@@ -72,10 +72,6 @@ defmodule Util.Collections do
   def union([]), do: %{}
   def union([d1 | rest]), do: Map.merge(d1, union(rest))
 
-  @spec concatenate_all(list(list())) :: list()
-  def concatenate_all([]), do: []
-  def concatenate_all([head | tail]), do: head ++ concatenate_all(tail)
-
   def all_ok?(collection, fun) do
     Enum.all?(collection, fn item ->
       fun.(item) == :ok
