@@ -42,7 +42,7 @@ defmodule System.State do
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
           accumulation_history: list(%{Types.hash() => Types.hash()}),
-          ready_to_accumulate: list(Ready.t())
+          ready_to_accumulate: list(list(Ready.t()))
         }
 
   # Formula (15) v0.4.1 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
