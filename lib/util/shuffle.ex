@@ -16,6 +16,8 @@ defmodule Shuffle do
     shuffle(list, transform_hash_into_sequence(hash, length(list)))
   end
 
+  use Codec.Decoder
+
   # Formula (329) v0.4.1
   defp transform_hash_into_sequence(hash, sequence_length) do
     numeric_sequence =
@@ -23,7 +25,7 @@ defmodule Shuffle do
         encoded_chunk = e_le(div(i, 8), 4)
         new_hash = Util.Hash.default(hash <> encoded_chunk)
         encoded_numeric_position = :binary.part(new_hash, rem(4 * i, 32), 4)
-        decoded_numeric_position = Codec.Decoder.decode_le(encoded_numeric_position, 4)
+        decoded_numeric_position = de_le(encoded_numeric_position, 4)
         acc ++ [decoded_numeric_position]
       end)
 

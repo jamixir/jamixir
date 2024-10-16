@@ -34,13 +34,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: MapSet.new(),
             results: []
 
+  use Codec.Encoder
   # Formula (119) v0.4.1
-
   # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
     map_size(wr.segment_root_lookup) <= 8 and
-      byte_size(Codec.Encoder.encode(wr)) <= Constants.max_work_report_size()
+      byte_size(e(wr)) <= Constants.max_work_report_size()
   end
 
   use JsonDecoder
@@ -55,19 +55,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   defimpl Encodable do
-    alias Codec.VariableSize
+    use Codec.Encoder
     # Formula (307) v0.4.1
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
-      Codec.Encoder.encode({
-        wr.specification,
-        wr.refinement_context,
-        wr.core_index,
-        VariableSize.new(wr.segment_root_lookup),
-        wr.authorizer_hash,
-        VariableSize.new(wr.output),
-        VariableSize.new(wr.results)
-      })
+      e(
+        {wr.specification, wr.refinement_context, wr.core_index, vs(wr.segment_root_lookup),
+         wr.authorizer_hash, vs(wr.output), vs(wr.results)}
+      )
     end
   end
 end

@@ -44,11 +44,13 @@ defmodule Util.Merklization do
   Formally, we define the encoding functions B and L:
   """
 
+  use Codec.Encoder
+
   def encode_leaf(key, value) do
     if byte_size(value) <= 32 do
       result =
         [1, 0] ++
-          (bits(Codec.Encoder.encode_le(byte_size(value), 1)) |> Enum.take(6)) ++
+          (bits(e_le(byte_size(value), 1)) |> Enum.take(6)) ++
           (bits(key) |> Enum.take(248)) ++
           bits(value)
 

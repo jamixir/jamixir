@@ -35,6 +35,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   end
 
   use Sizes
+  use Codec.Decoder
 
   def decode(blob) do
     <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4), rest::binary>> =
@@ -43,7 +44,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     {
       %Block.Extrinsic.Disputes.Verdict{
         work_report_hash: work_report_hash,
-        epoch_index: Codec.Decoder.decode_le(epoch_index, 4)
+        epoch_index: de_le(epoch_index, 4)
       },
       rest
     }
