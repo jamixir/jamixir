@@ -63,7 +63,7 @@ defmodule System.StateTransition.EntropyPoolTest do
   end
 
   describe "randmoness accumaltor" do
-    test "correct entropy accumelations", %{state: state, key_pairs: key_pairs} do
+    test "correct entropy accumulations", %{state: state, key_pairs: key_pairs} do
       block = build(:safrole_block, state: state, key_pairs: key_pairs)
 
       expected_slot_sealer =
