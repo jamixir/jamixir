@@ -116,7 +116,7 @@ defmodule WorkReportTest do
 
       w2 =
         build(:work_report,
-          refinement_context: %{prerequisite: <<1::256>>},
+          refinement_context: %{prerequisite: Hash.one()},
           segment_root_lookup: %{}
         )
 
@@ -124,13 +124,13 @@ defmodule WorkReportTest do
 
       w4 =
         build(:work_report,
-          refinement_context: %{prerequisite: <<2::256>>},
+          refinement_context: %{prerequisite: Hash.two()},
           segment_root_lookup: %{}
         )
 
       w5 =
         build(:work_report,
-          refinement_context: %{prerequisite: <<3::256>>},
+          refinement_context: %{prerequisite: Hash.three()},
           segment_root_lookup: %{}
         )
 
@@ -145,13 +145,13 @@ defmodule WorkReportTest do
     test "handles list with only prerequisites" do
       w1 =
         build(:work_report,
-          refinement_context: %{prerequisite: <<1::256>>},
+          refinement_context: %{prerequisite: Hash.one()},
           segment_root_lookup: %{}
         )
 
       w2 =
         build(:work_report,
-          refinement_context: %{prerequisite: <<2::256>>},
+          refinement_context: %{prerequisite: Hash.two()},
           segment_root_lookup: %{}
         )
 
@@ -170,12 +170,12 @@ defmodule WorkReportTest do
     test "returns work report with its dependencies" do
       w =
         build(:work_report,
-          refinement_context: %{prerequisite: <<1::256>>},
-          segment_root_lookup: %{<<2::256>> => <<3::256>>}
+          refinement_context: %{prerequisite: Hash.one()},
+          segment_root_lookup: %{Hash.two() => Hash.three()}
         )
 
       assert {^w, deps} = WorkReport.with_dependencies(w)
-      assert deps == MapSet.new([<<1::256>>, <<2::256>>])
+      assert deps == MapSet.new([Hash.one(), Hash.two()])
     end
   end
 
@@ -183,18 +183,18 @@ defmodule WorkReportTest do
     test "filters and updates the queue based on accumulated work" do
       w1 =
         build(:work_report,
-          specification: %{work_package_hash: <<1::256>>},
+          specification: %{work_package_hash: Hash.one()},
           segment_root_lookup: %{}
         )
 
       w2 =
         build(:work_report,
-          specification: %{work_package_hash: <<2::256>>},
-          segment_root_lookup: %{<<3::256>> => <<4::256>>}
+          specification: %{work_package_hash: Hash.two()},
+          segment_root_lookup: %{Hash.three() => Hash.four()}
         )
 
-      r = [{w1, MapSet.new()}, {w2, MapSet.new([<<3::256>>])}]
-      x = %{<<2::256>> => <<5::256>>}
+      r = [{w1, MapSet.new()}, {w2, MapSet.new([Hash.three()])}]
+      x = %{Hash.two() => Hash.five()}
 
       result = WorkReport.edit_queue(r, x)
       assert [{^w1, empty_set}] = result
@@ -202,7 +202,60 @@ defmodule WorkReportTest do
     end
 
     test "handles empty queue" do
-      assert [] == WorkReport.edit_queue([], %{<<1::256>> => <<2::256>>})
+      assert [] == WorkReport.edit_queue([], %{Hash.one() => Hash.two()})
+    end
+
+    test "filters out work reports with work package hash already in accumulated work" do
+      w1 =
+        build(:work_report,
+          specification: %{work_package_hash: Hash.one()},
+          segment_root_lookup: %{}
+        )
+
+      w2 =
+        build(:work_report,
+          specification: %{work_package_hash: Hash.two()},
+          segment_root_lookup: %{}
+        )
+
+      r = [
+        {w1, MapSet.new()},
+        {w2, MapSet.new()}
+      ]
+
+      # w1's work package hash is already in x
+      x = %{Hash.one() => Hash.five()}
+
+      result = WorkReport.edit_queue(r, x)
+
+      assert [{^w2, _}] = result
+    end
+
+    test "filters out work reports with conflicting segment root lookups" do
+      w1 =
+        build(:work_report,
+          specification: %{work_package_hash: Hash.one()},
+          segment_root_lookup: %{Hash.three() => Hash.four()}
+        )
+
+      w2 =
+        build(:work_report,
+          specification: %{work_package_hash: Hash.two()},
+          segment_root_lookup: %{Hash.four() => Hash.five()}
+        )
+
+      r = [
+        {w1, MapSet.new()},
+        {w2, MapSet.new()}
+      ]
+
+      # Doesn't conflict with work package hashes
+      # but conflicts with segment root lookup of w2
+      x = %{Hash.four() => Hash.four()}
+
+      result = WorkReport.edit_queue(r, x)
+
+      assert [{^w1, _}] = result
     end
   end
 
@@ -210,12 +263,12 @@ defmodule WorkReportTest do
     test "creates a map of work package hashes to segment roots" do
       w1 =
         build(:work_report,
-          specification: %{work_package_hash: <<1::256>>, exports_root: <<2::256>>}
+          specification: %{work_package_hash: Hash.one(), exports_root: Hash.two()}
         )
 
       w2 =
         build(:work_report,
-          specification: %{work_package_hash: <<3::256>>, exports_root: <<4::256>>}
+          specification: %{work_package_hash: Hash.three(), exports_root: Hash.four()}
         )
 
       assert %{<<1::256>> => <<2::256>>, <<3::256>> => <<4::256>>} =
@@ -227,20 +280,20 @@ defmodule WorkReportTest do
     test "returns work reports in accumulation priority order" do
       w1 =
         build(:work_report,
-          specification: %{work_package_hash: <<1::256>>, exports_root: <<5::256>>},
+          specification: %{work_package_hash: Hash.one(), exports_root: Hash.five()},
           segment_root_lookup: %{}
         )
 
       w2 =
         build(:work_report,
-          specification: %{work_package_hash: <<2::256>>, exports_root: <<6::256>>},
-          segment_root_lookup: %{<<3::256>> => <<4::256>>}
+          specification: %{work_package_hash: Hash.two(), exports_root: Hash.one()},
+          segment_root_lookup: %{Hash.three() => Hash.four()}
         )
 
-      r = [{w1, MapSet.new()}, {w2, MapSet.new([<<3::256>>])}]
+      r = [{w1, MapSet.new()}, {w2, MapSet.new([Hash.three()])}]
       a = %{}
 
-      assert [^w1, ^w2] = WorkReport.accumulation_priority_queue(r, a)
+      assert [^w1] = WorkReport.accumulation_priority_queue(r, a)
     end
   end
 
@@ -261,8 +314,8 @@ defmodule WorkReportTest do
       # Modify w2 to have a prerequisite or non-empty segment_root_lookup
       w2 = %{
         w2
-        | refinement_context: %{prerequisite: <<1::256>>},
-          segment_root_lookup: %{<<5::256>> => <<6::256>>}
+        | refinement_context: %{prerequisite: Hash.one()},
+          segment_root_lookup: %{Hash.two() => Hash.three()}
       }
 
       %{
@@ -292,7 +345,7 @@ defmodule WorkReportTest do
           ready_to_accumulate
         )
 
-      assert [^w1, ^w3, ^w4, ^w2] = result
+      assert [^w1, ^w3, ^w4] = result
     end
   end
 end

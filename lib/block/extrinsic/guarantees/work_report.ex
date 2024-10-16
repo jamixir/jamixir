@@ -103,14 +103,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # Formula (166) v0.4.1
   @spec create_package_root_map(list(__MODULE__.t())) :: %{Types.hash() => Types.hash()}
   def create_package_root_map(work_reports) do
-    Enum.map(work_reports, fn %{
-                                specification: %{
-                                  work_package_hash: h,
-                                  exports_root: e
-                                }
-                              } ->
-      {h, e}
-    end)
+    Enum.map(work_reports, fn %{specification: ws} -> {ws.work_package_hash, ws.exports_root} end)
     |> Map.new()
   end
 
@@ -119,7 +112,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           Types.hash() => Types.hash()
         }) :: list(__MODULE__.t())
   def accumulation_priority_queue(r, a) do
-    g = Enum.map(r, fn {w, _} -> w end)
+    g =
+      Enum.filter(r, fn {_, d} -> MapSet.size(d) == 0 end)
+      |> Enum.map(fn {w, _} -> w end)
 
     if Enum.empty?(g) do
       []
@@ -162,7 +157,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # Formula (168) v0.4.1
     w_bang ++
       accumulation_priority_queue(
-        ((Collections.concatenate_all(before_m) ++ Collections.concatenate_all(rest))
+        ((List.flatten(before_m) ++ List.flatten(rest))
          |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
         accumulated
       )
