@@ -58,6 +58,15 @@ defmodule Codec.Encoder do
 
   # Formula (300) v0.4.1
   defp do_encode(%MapSet{} = m), do: MapSet.to_list(m) |> do_encode()
+  # Formula (300) v0.4.1
+  defp do_encode(value) when is_map(value) do
+    encoded_pairs =
+      value
+      |> Enum.sort_by(fn {k, _v} -> k end)
+      |> Enum.map(fn {k, v} -> {encode(k), encode(v)} end)
+
+    encode(VariableSize.new(encoded_pairs))
+  end
 
   defp do_encode(value) when is_struct(value) do
     if encodable?(value) do
