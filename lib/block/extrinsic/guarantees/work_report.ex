@@ -145,13 +145,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       ) do
     {w_bang, pre_w_q} = split_by_prerequisites(work_reports)
     # Formula (159) v0.4.1
-    accumelated = Collections.union(accumulation_history)
+    accumulated = Collections.union(accumulation_history)
 
     # Formula (162) v0.4.1
     w_q =
       pre_w_q
       |> Enum.map(&with_dependencies/1)
-      |> edit_queue(accumelated)
+      |> edit_queue(accumulated)
 
     # Formula (167) v0.4.1
     m = Time.epoch_phase(block_timeslot)
@@ -164,7 +164,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       accumulation_priority_queue(
         ((Collections.concatenate_all(before_m) ++ Collections.concatenate_all(rest))
          |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
-        accumelated
+        accumulated
       )
   end
 
