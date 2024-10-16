@@ -4,7 +4,7 @@ defmodule System.State.PrivilegedServicesTest do
 
   describe "encode/1" do
     test "encode smoke test" do
-      assert Codec.Encoder.encode(build(:privileged_services)) == "\0\0\0\0\0\0\0\0\0\0\0\0"
+      assert Codec.Encoder.encode(build(:privileged_services)) == "\0\0\0\0\0\0\0\0\0\0\0\0\0"
     end
   end
 end
