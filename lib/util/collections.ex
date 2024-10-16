@@ -1,4 +1,6 @@
 defmodule Util.Collections do
+  use MapUnion
+
   @doc """
   Checks if there are any duplicates in the given collection.
   Works with any enumerable collection.
@@ -65,7 +67,7 @@ defmodule Util.Collections do
   # Formula (11) v0.4.1
   @spec union([map()]) :: map()
   def union([]), do: %{}
-  def union([d1 | rest]), do: Map.merge(d1, union(rest))
+  def union([d1 | rest]), do: d1 ++ union(rest)
 
   def all_ok?(collection, fun) do
     Enum.all?(collection, fn item ->

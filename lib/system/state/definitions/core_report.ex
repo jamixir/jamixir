@@ -26,6 +26,7 @@ defmodule System.State.CoreReport do
   defp process_report(core_report, bad_wonky_set) do
     work_results_hash = Hash.default(Encoder.encode(core_report.work_report))
     if work_results_hash in bad_wonky_set, do: nil, else: core_report
+    if work_results_hash in bad_wonky_set, do: nil, else: core_report
   end
 
   @doc """
@@ -39,8 +40,8 @@ defmodule System.State.CoreReport do
 
     # Formula (131) v0.4.1
     Enum.zip(core_reports, core_reports_intermediate_1)
-    |> Enum.map(fn
-      {cr, intermediate} -> if cr.work_report in w, do: nil, else: intermediate
+    |> Enum.map(fn {cr, intermediate} ->
+      if cr.work_report in w, do: nil, else: intermediate
     end)
   end
 

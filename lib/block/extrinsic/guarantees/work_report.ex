@@ -9,6 +9,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Util.{Collections, Hash, Time}
 
   use SelectiveMock
+  use MapUnion
 
   # Formula (118) v0.4.1
   @type t :: %__MODULE__{
@@ -79,9 +80,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
     {w,
-     MapSet.new([w.refinement_context.prerequisite])
-     |> MapSet.delete(nil)
-     |> MapSet.union(MapSet.new(Map.keys(w.segment_root_lookup)))}
+     (MapSet.new([w.refinement_context.prerequisite])
+      |> MapSet.delete(nil)) ++ MapSet.new(Map.keys(w.segment_root_lookup))}
   end
 
   # Formula (164) v0.4.1
@@ -96,7 +96,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         Map.merge(x, w.segment_root_lookup) == Map.merge(w.segment_root_lookup, x)
     end)
     |> Enum.map(fn {w, d} ->
-      {w, MapSet.difference(d, x_keys)}
+      {w, d \\ x_keys}
     end)
   end
 
