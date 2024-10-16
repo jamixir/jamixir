@@ -3,6 +3,8 @@ defmodule Util.Hash do
   Utility functions for hashing.
   """
 
+  use Sizes
+
   @doc """
   Hashes the given data using the Blake2b algorithm with the given number of bytes.
   """
@@ -22,11 +24,13 @@ defmodule Util.Hash do
 
   def default(data), do: blake2b_256(data)
 
-  use Sizes
-  def zero, do: Utils.zero_bitstring(@hash_size)
-  def one, do: Utils.zero_bitstring(@hash_size - 1) <> <<1::8>>
-  def two, do: Utils.zero_bitstring(@hash_size - 1) <> <<2::8>>
-  def three, do: Utils.zero_bitstring(@hash_size - 1) <> <<3::8>>
+  # Generate hash functions for numbers 0 to 5
+  # use as Hash.zero(), Hash.one()  etc.
+  for {name, i} <- Enum.zip([:zero, :one, :two, :three, :four, :five], 0..5) do
+    def unquote(name)() do
+      Utils.zero_bitstring(@hash_size - 1) <> <<unquote(i)::8>>
+    end
+  end
 
   def random, do: :crypto.strong_rand_bytes(32)
 end
