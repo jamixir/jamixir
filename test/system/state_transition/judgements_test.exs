@@ -8,7 +8,7 @@ defmodule System.State.JudgementsTest do
   setup :verify_on_exit!
 
   defp assert_updated_set(result, state, set_key, new_item) do
-    assert MapSet.member?(Map.get(result, set_key), new_item)
+    assert new_item in Map.get(result, set_key)
     assert MapSet.subset?(Map.get(state.judgements, set_key), Map.get(result, set_key))
 
     for key <- [:good, :bad, :wonky] -- [set_key] do
@@ -266,8 +266,8 @@ defmodule System.State.JudgementsTest do
 
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       {pub, _} = key_pair
-      assert MapSet.member?(result.bad, wrh)
-      assert MapSet.member?(result.punish, pub)
+      assert wrh in result.bad
+      assert pub in result.punish
       assert result.good == state.judgements.good
       assert result.wonky == state.judgements.wonky
     end

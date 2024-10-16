@@ -150,11 +150,11 @@ defmodule Block.Extrinsic.Disputes do
 
       # Formula (101) v0.4.1
       # Formula (102) v0.4.1 - Check: Ensure all offense work report hashes are in the posterior bad set
-      !Enum.all?(offenses, &MapSet.member?(bad_set_, &1.work_report_hash)) ->
+      !Enum.all?(offenses, &(&1.work_report_hash in bad_set_)) ->
         {:error, "Work report hash in #{offense_type} not in the posterior bad set"}
 
       # Formula 101 and 102 - Check if all offense validator keys are valid
-      !Enum.all?(offenses, &MapSet.member?(allowed_validator_keys, &1.key)) ->
+      !Enum.all?(offenses, &(&1.key in allowed_validator_keys)) ->
         {:error, "#{offense_type} reported for a validator not in the allowed validator keys"}
 
       # Formula 101 and 102 - Check signatures

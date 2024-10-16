@@ -19,8 +19,7 @@ defmodule SelectiveMock do
             unquote(block)
 
           # If the function or module is on the list, use the original function
-          Enum.member?(mock_exclusion_list, unquote(name)) or
-              Enum.member?(mock_exclusion_list, __MODULE__) ->
+          unquote(name) in mock_exclusion_list or __MODULE__ in mock_exclusion_list ->
             unquote(block)
 
           # Otherwise, mock the function

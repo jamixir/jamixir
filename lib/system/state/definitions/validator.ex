@@ -39,13 +39,7 @@ defmodule System.State.Validator do
         [%__MODULE__{} | _] = next_validators,
         offenders
       ) do
-    Enum.map(next_validators, fn %__MODULE__{} = validator ->
-      if MapSet.member?(offenders, validator.ed25519) do
-        nullified(validator)
-      else
-        validator
-      end
-    end)
+    Enum.map(next_validators, &if(&1.ed25519 in offenders, do: nullified(&1), else: &1))
   end
 
   def nullified(validator) do

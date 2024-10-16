@@ -16,7 +16,7 @@ defmodule Util.Collections do
     |> Enum.reduce_while(%MapSet{}, fn item, seen ->
       key = key_func.(item)
 
-      if MapSet.member?(seen, key) do
+      if key in seen do
         # Duplicate found, halt the iteration
         {:halt, true}
       else
@@ -51,14 +51,9 @@ defmodule Util.Collections do
       current = key_fn.(item)
 
       cond do
-        MapSet.member?(seen, current) ->
-          {:halt, {:error, :duplicates}}
-
-        last != nil and not comparator.(last, current) ->
-          {:halt, {:error, :not_in_order}}
-
-        true ->
-          {:cont, {:ok, current, MapSet.put(seen, current)}}
+        current in seen -> {:halt, {:error, :duplicates}}
+        last != nil and not comparator.(last, current) -> {:halt, {:error, :not_in_order}}
+        true -> {:cont, {:ok, current, MapSet.put(seen, current)}}
       end
     end)
     |> case do
