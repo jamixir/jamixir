@@ -291,6 +291,10 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  def decode(_blob) do
+    # TODO
+  end
+
   use JsonDecoder
 
   def json_mapping,
