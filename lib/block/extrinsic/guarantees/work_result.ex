@@ -7,6 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   section 11.1.4
   Formula (122) v0.4.1
   """
+  alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
   alias Util.Hash
 
@@ -72,6 +73,34 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     defp do_encode({:error, e}) do
       Encoder.encode(WorkExecutionError.code(e))
     end
+  end
+
+  use Sizes
+  use Codec.Decoder
+
+  def decode(bin) do
+    <<service::binary-size(4), code_hash::binary-size(@hash_size),
+      payload_hash::binary-size(@hash_size), gas_ratio::binary-size(8), error_code::8,
+      temp_rest::binary>> = bin
+
+    {result, rest} =
+      case error_code do
+        0 ->
+          {result, rest} = VariableSize.decode(temp_rest, :binary)
+          {{:ok, result}, rest}
+
+        _ ->
+          code = WorkExecutionError.code_name(error_code)
+          {{:error, code}, temp_rest}
+      end
+
+    {%__MODULE__{
+       service: de_le(service, 4),
+       code_hash: code_hash,
+       payload_hash: payload_hash,
+       gas_ratio: de_le(gas_ratio, 8),
+       result: result
+     }, rest}
   end
 
   use JsonDecoder

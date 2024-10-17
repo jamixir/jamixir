@@ -74,4 +74,13 @@ defmodule Util.Collections do
       fun.(item) == :ok
     end)
   end
+
+  def key_for_value(map, value) do
+    map
+    |> Enum.find(fn {_key, val} -> val == value end)
+    |> case do
+      {key, _val} -> key
+      nil -> nil
+    end
+  end
 end
