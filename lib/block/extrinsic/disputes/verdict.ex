@@ -38,13 +38,23 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   use Codec.Decoder
 
   def decode(blob) do
-    <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4), rest::binary>> =
-      blob
+    judgements_count = div(2 * Constants.validator_count(), 3) + 1
+    judgements_size = Judgement.size() * judgements_count
+
+    <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4),
+      judgements_blob::binary-size(judgements_size), rest::binary>> = blob
+
+    {judgements, _} =
+      Enum.reduce(1..judgements_count, {[], judgements_blob}, fn _, {list, bin} ->
+        {judgement, rest} = Judgement.decode(bin)
+        {[judgement | list], rest}
+      end)
 
     {
-      %Block.Extrinsic.Disputes.Verdict{
+      %__MODULE__{
         work_report_hash: work_report_hash,
-        epoch_index: de_le(epoch_index, 4)
+        epoch_index: de_le(epoch_index, 4),
+        judgements: judgements
       },
       rest
     }

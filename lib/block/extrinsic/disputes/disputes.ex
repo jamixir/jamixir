@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
+  alias Codec.VariableSize
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.{Culprit, Fault, Judgement, Verdict}
   alias System.State.{Judgements, Validator}
@@ -207,6 +208,14 @@ defmodule Block.Extrinsic.Disputes do
     def encode(d = %Disputes{}) do
       e({vs(d.verdicts), vs(d.culprits), vs(d.faults)})
     end
+  end
+
+  def decode(bin) do
+    {verdicts, bin2} = VariableSize.decode(bin, Verdict)
+    {culprits, bin3} = VariableSize.decode(bin2, Culprit)
+    {faults, rest} = VariableSize.decode(bin3, Fault)
+
+    {%Disputes{verdicts: verdicts, culprits: culprits, faults: faults}, rest}
   end
 
   use JsonDecoder

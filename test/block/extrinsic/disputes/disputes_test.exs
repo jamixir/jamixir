@@ -138,11 +138,7 @@ defmodule Block.Extrinsic.Disputes.Test do
       }
 
       assert {:error, "Judgements not ordered by validator index or contain duplicates"} =
-               validate(
-                 disputes,
-                 state,
-                 header
-               )
+               validate(disputes, state, header)
     end
 
     test "returns error for invalid sum of judgements", %{
@@ -582,6 +578,27 @@ defmodule Block.Extrinsic.Disputes.Test do
                  state,
                  header
                )
+    end
+  end
+
+  describe "encode / decode" do
+    defmodule ConstantsMock do
+      def validator_count, do: 1
+    end
+
+    setup do
+      Application.put_env(:jamixir, Constants, ConstantsMock)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, Constants)
+      end)
+    end
+
+    test "encodes and decodes disputes" do
+      disputes = build(:disputes)
+      encoded = Codec.Encoder.encode(disputes)
+      {decoded, _} = Disputes.decode(encoded)
+      assert disputes == decoded
     end
   end
 end

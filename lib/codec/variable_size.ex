@@ -19,4 +19,13 @@ defmodule Codec.VariableSize do
       Encoder.encode(size) <> Encoder.encode(value)
     end
   end
+
+  def decode(bin, module) do
+    <<count::integer, rest::binary>> = bin
+
+    Enum.reduce(1..count, {[], rest}, fn _, {acc, rest} ->
+      {value, rest} = module.decode(rest)
+      {acc ++ [value], rest}
+    end)
+  end
 end

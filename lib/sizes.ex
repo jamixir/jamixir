@@ -10,7 +10,7 @@ defmodule Sizes do
       @signature_size 64
       @validator_size 2
       @hash_size Sizes.hash()
-      @bitfield_size div(Constants.core_count() + 7, 8)
+      @bitfield_size Sizes.bitfield()
     end
   end
 end

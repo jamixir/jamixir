@@ -29,6 +29,24 @@ defmodule Block.Extrinsic.Disputes.Fault do
     end
   end
 
+  use Sizes
+
+  @spec decode(binary()) :: {Block.Extrinsic.Disputes.Fault.t(), binary()}
+  def decode(blob) do
+    <<work_report_hash::binary-size(@hash_size), vote::binary-size(1),
+      key::binary-size(@hash_size), signature::binary-size(@signature_size), rest::binary>> = blob
+
+    {
+      %__MODULE__{
+        work_report_hash: work_report_hash,
+        vote: vote == <<1>>,
+        key: key,
+        signature: signature
+      },
+      rest
+    }
+  end
+
   use JsonDecoder
   def json_mapping, do: %{work_report_hash: :target}
 end
