@@ -93,11 +93,11 @@ defmodule Block.Extrinsic.Assurance do
       Utils.pad_binary(value, size)
     end
 
-    def encode(%Assurance{} = assurance) do
-      e(assurance.hash) <>
-        e(pad(assurance.bitfield, Sizes.bitfield())) <>
-        e_le(assurance.validator_index, @validator_size) <>
-        e(pad(assurance.signature, @signature_size))
+    def encode(%Assurance{} = a) do
+      e(a.hash) <>
+        e(pad(a.bitfield, Sizes.bitfield())) <>
+        e_le(a.validator_index, @validator_size) <>
+        e(pad(a.signature, @signature_size))
     end
   end
 
@@ -113,7 +113,7 @@ defmodule Block.Extrinsic.Assurance do
       rest::binary>> = blob
 
     {
-      %Block.Extrinsic.Assurance{
+      %__MODULE__{
         hash: hash,
         bitfield: bitfield,
         validator_index: de_le(validator_index, 2),

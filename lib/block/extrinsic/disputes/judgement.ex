@@ -38,13 +38,17 @@ defmodule Block.Extrinsic.Disputes.Judgement do
       signature::binary-size(@signature_size), rest::binary>> = blob
 
     {
-      %Block.Extrinsic.Disputes.Judgement{
+      %__MODULE__{
         validator_index: de_le(validator_index, @validator_size),
         vote: vote == <<1>>,
         signature: signature
       },
       rest
     }
+  end
+
+  def size do
+    @validator_size + 1 + @signature_size
   end
 
   use JsonDecoder

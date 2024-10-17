@@ -1,13 +1,11 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
-  alias Util.Hash
-  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
+  alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
   alias System.State.SealKeyTicket
-  alias Util.Time
+  alias Util.{Hash, Time}
   use ExMachina
   use Sizes
 
@@ -392,6 +390,14 @@ defmodule Jamixir.Factory do
     %Block{
       extrinsic: attrs[:extrinsic] || build(:extrinsic),
       header: header
+    }
+  end
+
+  def disputes_factory do
+    %Disputes{
+      verdicts: build_list(2, :verdict),
+      culprits: build_list(2, :culprit),
+      faults: build_list(2, :fault)
     }
   end
 
