@@ -477,4 +477,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
       credentials: credentials
     )
   end
+
+  # describe "encode / decode" do
+  #   test "encode/decode" do
+  #     guarantee = build(:guarantee)
+  #     encoded = Encodable.encode(guarantee)
+  #     {decoded, _} = Guarantee.decode(encoded)
+  #     assert guarantee == decoded
+  #   end
+  # end
 end

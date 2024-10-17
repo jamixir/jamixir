@@ -34,5 +34,21 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   use JsonDecoder
 
+  use Sizes
+  use Codec.Decoder
+
+  def decode(blob) do
+    <<work_package_hash::binary-size(@hash_size), len::binary-size(4),
+      erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
+      rest::binary>> = blob
+
+    {%__MODULE__{
+       work_package_hash: work_package_hash,
+       len: de_le(len, 4),
+       erasure_root: erasure_root,
+       exports_root: exports_root
+     }, rest}
+  end
+
   def json_mapping, do: %{work_package_hash: :hash}
 end

@@ -16,4 +16,13 @@ defmodule Codec.NilDiscriminator do
       end
     end
   end
+
+  def decode(bin, callback) do
+    <<first::8, rest::binary>> = bin
+
+    case first do
+      0 -> {nil, rest}
+      1 -> callback.(rest)
+    end
+  end
 end
