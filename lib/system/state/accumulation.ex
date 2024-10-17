@@ -8,6 +8,7 @@ defmodule System.State.Accumulation do
   alias System.DeferredTransfer
   alias System.State.PrivilegedServices
   alias Types
+  alias Util.Collections
 
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
 
@@ -128,5 +129,12 @@ defmodule System.State.Accumulation do
   defp delta_1(_state, _work_reports, _service) do
     # TODO: Implement delta_1 logic
     {0, %AccumulationState{}, [], nil}
+  end
+
+  def calculate_d_prime(initial_state, s, o, w) do
+    Map.merge(
+      Map.drop(initial_state.services, s) ,
+      Collections.union(Enum.map(s, &elem(delta_1(o, w, &1), 1).services))
+    )
   end
 end
