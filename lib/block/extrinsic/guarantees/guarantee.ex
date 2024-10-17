@@ -8,7 +8,7 @@ defmodule Block.Extrinsic.Guarantee do
   alias System.{State, State.EntropyPool, State.RecentHistory}
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
-
+  use MapUnion
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
@@ -87,7 +87,7 @@ defmodule Block.Extrinsic.Guarantee do
            ) do
     Enum.reduce_while(work_reports(guarantees), :ok, fn wr, _ ->
       cond do
-        !Enum.member?(Enum.at(authorizer_pool, wr.core_index), wr.authorizer_hash) ->
+        wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
           {:halt, {:error, :missing_authorizer}}
 
         Enum.at(core_reports_intermediate_2, wr.core_index)
@@ -180,7 +180,7 @@ defmodule Block.Extrinsic.Guarantee do
 
       # Formula (150) v0.4.1
       # ∀p ∈ p,∀x ∈ β ∶ p ∈/ xp
-      Enum.any?(p_set(w), fn p -> Enum.member?(all_work_report_hashes, p) end) ->
+      Enum.any?(p_set(w), &(&1 in all_work_report_hashes)) ->
         {:error, :work_package_in_recent_history}
 
       # Formula (151) v0.4.1
@@ -188,7 +188,7 @@ defmodule Block.Extrinsic.Guarantee do
       refinement_contexts(guarantees)
       |> Enum.map(& &1.prerequisite)
       |> Enum.filter(&(&1 != nil))
-      |> Enum.any?(&(!Enum.member?(MapSet.union(p_set(w), all_work_report_hashes), &1))) ->
+      |> Enum.any?(&(&1 not in (p_set(w) ++ all_work_report_hashes))) ->
         {:error, :invalid_prerequisite}
 
       true ->

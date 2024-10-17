@@ -35,10 +35,7 @@ defmodule System.State.Validator do
         ) :: list(Validator.t())
   def nullify_offenders([], _), do: []
 
-  def nullify_offenders(
-        [%__MODULE__{} | _] = next_validators,
-        offenders
-      ) do
+  def nullify_offenders([%__MODULE__{} | _] = next_validators, offenders) do
     Enum.map(next_validators, &if(&1.ed25519 in offenders, do: nullified(&1), else: &1))
   end
 

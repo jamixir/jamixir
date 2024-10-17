@@ -7,6 +7,7 @@ defmodule System.State.Judgements do
   alias Block.Header
   alias System.State.Judgements
   use SelectiveMock
+  use MapUnion
 
   @type t :: %__MODULE__{
           # g
@@ -39,14 +40,11 @@ defmodule System.State.Judgements do
         # Formula (115) v0.4.1
         new_offenders = (disputes.culprits ++ disputes.faults) |> Enum.map(& &1.key)
 
-        if valid_header_markers?(
-             header,
-             new_offenders
-           ) do
+        if valid_header_markers?(header, new_offenders) do
           {:ok,
            %Judgements{
              posterior_judgement_sets(v, state.judgements)
-             | punish: MapSet.union(state.judgements.punish, MapSet.new(new_offenders))
+             | punish: state.judgements.punish ++ MapSet.new(new_offenders)
            }, bad_wonky_verdicts}
         else
           {:error, "Header validation failed"}
@@ -120,7 +118,7 @@ defmodule System.State.Judgements do
   end
 
   def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
-    MapSet.union(g, b) |> MapSet.union(w)
+    g ++ b ++ w
   end
 
   def mock(:calculate_judgements_, context),

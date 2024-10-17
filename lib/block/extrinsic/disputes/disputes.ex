@@ -8,6 +8,7 @@ defmodule Block.Extrinsic.Disputes do
   alias Block.Extrinsic.Disputes.{Culprit, Fault, Judgement, Verdict}
   alias System.State.{Judgements, Validator}
   alias Util.{Collections, Crypto, Time}
+  use MapUnion
 
   @type t :: %__MODULE__{
           # v
@@ -124,20 +125,16 @@ defmodule Block.Extrinsic.Disputes do
   # Formula (101) v0.4.1
   # Formula (102) v0.4.1
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
-    MapSet.union(
-      MapSet.new(curr_validators, & &1.ed25519),
-      MapSet.new(prev_validators, & &1.ed25519)
-    )
-    |> MapSet.difference(judgements.punish)
+    MapSet.new(curr_validators, & &1.ed25519) ++ MapSet.new(prev_validators, & &1.ed25519) \\ judgements.punish
   end
 
   # Formula (113) v0.4.1
   defp compute_bad_set(verdicts, judgements) do
-    verdicts
-    |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
-    |> Enum.map(& &1.work_report_hash)
-    |> MapSet.new()
-    |> MapSet.union(judgements.bad)
+    (verdicts
+     |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
+     |> Enum.map(& &1.work_report_hash)
+     |> MapSet.new()) ++
+      judgements.bad
   end
 
   defp validate_offenses([], _, _, _), do: :ok
