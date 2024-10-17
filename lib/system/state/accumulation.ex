@@ -10,6 +10,8 @@ defmodule System.State.Accumulation do
   alias Types
   alias Util.Collections
 
+  use MapUnion
+
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
 
   @doc """
@@ -39,15 +41,15 @@ defmodule System.State.Accumulation do
         ) ::
           {non_neg_integer(), AccumulationState.t(), list(DeferredTransfer.t()),
            MapSet.t(accumulation_output)}
-  def outer_accumulation(gas_limit, work_reports, initial_state, free_accumulation_services) do
+  def outer_accumulation(gas_limit, work_reports, acc_state, free_accumulation_services) do
     i = calculate_i(work_reports, gas_limit)
 
     if i == 0 do
-      {0, initial_state, [], MapSet.new()}
+      {0, acc_state, [], MapSet.new()}
     else
       # delta_star (Δ*)
       {g_star, o_star, t_star, b_star} =
-        delta_star(initial_state, Enum.take(work_reports, i), free_accumulation_services)
+        delta_star(acc_state, Enum.take(work_reports, i), free_accumulation_services)
 
       # Recursive call to outer_accumulation (Δ+)
       {j, o_prime, t, b} =
@@ -55,19 +57,29 @@ defmodule System.State.Accumulation do
           gas_limit - g_star,
           Enum.drop(work_reports, i),
           o_star,
-          free_accumulation_services
+          MapSet.new()
         )
 
-      {i + j, o_prime, t_star ++ t, MapSet.union(b_star, b)}
+      {i + j, o_prime, t_star ++ t, b_star ++ b}
     end
   end
 
   @spec calculate_i(list(WorkReport.t()), non_neg_integer()) :: non_neg_integer()
   defp calculate_i(work_reports, gas_limit) do
-    Enum.filter(work_reports, fn w ->
-      Enum.sum(Enum.map(w.results, & &1.gas_ratio)) <= gas_limit
+    Enum.reduce_while(0..length(work_reports), 0, fn i, _acc ->
+      sum =
+        work_reports
+        |> Enum.take(i)
+        |> Enum.flat_map(& &1.results)
+        |> Enum.map(& &1.gas_ratio)
+        |> Enum.sum()
+
+      if sum <= gas_limit do
+        {:cont, i}
+      else
+        {:halt, i - 1}
+      end
     end)
-    |> length()
   end
 
   # Formula (173) v0.4.1
@@ -76,16 +88,17 @@ defmodule System.State.Accumulation do
         }) ::
           {non_neg_integer(), AccumulationState.t(), list(DeferredTransfer.t()),
            MapSet.t(accumulation_output)}
-  def delta_star(initial_state, work_reports, free_accumulation_services) do
+  def delta_star(acc_state, work_reports, free_accumulation_services) do
     s =
       MapSet.new(
-        (work_reports |> Enum.flat_map(& &1.results) |> Enum.map(& &1.service)) ++
-          Map.keys(free_accumulation_services)
-      )
+        Enum.flat_map(work_reports, & &1.results)
+        |> Enum.map(& &1.service)
+      ) ++
+        MapSet.new(Map.keys(free_accumulation_services))
 
     {u, b, t} =
       Enum.reduce(s, {0, MapSet.new(), []}, fn service, {acc_u, acc_b, acc_t} ->
-        {u, _, t, b} = delta_1(initial_state, work_reports, service)
+        {u, _, t, b} = delta_1(acc_state, work_reports, service)
 
         {
           acc_u + u,
@@ -94,23 +107,28 @@ defmodule System.State.Accumulation do
         }
       end)
 
-    %AccumulationState{privileged_services: privileged_services} = initial_state
+    %AccumulationState{privileged_services: %PrivilegedServices{
+      manager_service: m,
+      alter_authorizer_service: a,
+      alter_validator_service: v
+    }} = acc_state
 
     {x_prime, i_prime, q_prime} =
       [
-        {:privileged_services, :manager_service},
-        {:next_validators, :alter_validator_service},
-        {:authorizer_queue, :alter_authorizer_service}
+        {:privileged_services, m},
+        {:next_validators, a},
+        {:authorizer_queue, v}
       ]
       |> Enum.map(fn {key, service} ->
-        delta_1(initial_state, work_reports, Map.get(privileged_services, service))
+        delta_1(acc_state, work_reports, service)
         |> elem(1)
         |> Map.get(key)
       end)
       |> List.to_tuple()
 
-    # Placeholder for d' calculation
-    d_prime = initial_state.services
+    d_prime =
+      Map.drop(acc_state.services, s) ++
+        Collections.union(Enum.map(s, &elem(delta_1(acc_state, work_reports, &1), 1).services))
 
     updated_state = %AccumulationState{
       services: d_prime,
@@ -119,7 +137,7 @@ defmodule System.State.Accumulation do
       privileged_services: x_prime
     }
 
-    {u, updated_state, t, b}
+    {u, updated_state, List.flatten(t), b}
   end
 
   # Placeholder for delta_1 function
@@ -129,12 +147,5 @@ defmodule System.State.Accumulation do
   defp delta_1(_state, _work_reports, _service) do
     # TODO: Implement delta_1 logic
     {0, %AccumulationState{}, [], nil}
-  end
-
-  def calculate_d_prime(initial_state, s, o, w) do
-    Map.merge(
-      Map.drop(initial_state.services, s) ,
-      Collections.union(Enum.map(s, &elem(delta_1(o, w, &1), 1).services))
-    )
   end
 end
