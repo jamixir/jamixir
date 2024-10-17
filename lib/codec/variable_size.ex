@@ -21,11 +21,22 @@ defmodule Codec.VariableSize do
   end
 
   def decode(bin, module) do
-    <<count::integer, rest::binary>> = bin
+    if module == :binary do
+      decode_binary(bin)
+    else
+      <<count::integer, rest::binary>> = bin
 
-    Enum.reduce(1..count, {[], rest}, fn _, {acc, rest} ->
-      {value, rest} = module.decode(rest)
-      {acc ++ [value], rest}
-    end)
+      Enum.reduce(1..count, {[], rest}, fn _, {acc, rest} ->
+        {value, rest} = module.decode(rest)
+        {acc ++ [value], rest}
+      end)
+    end
+  end
+
+  defp decode_binary(bin) do
+    <<size::integer, rest::binary>> = bin
+    <<value::binary-size(size), rest::binary>> = rest
+
+    {value, rest}
   end
 end

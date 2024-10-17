@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic.Preimage do
+  alias Codec.VariableSize
   alias Util.{Collections, Hash}
   import SelectiveMock
   # Formula (154) v0.4.1
@@ -66,6 +67,15 @@ defmodule Block.Extrinsic.Preimage do
     def encode(%Block.Extrinsic.Preimage{service: s, blob: p}) do
       e_le(s, 4) <> e(vs(p))
     end
+  end
+
+  use Codec.Decoder
+
+  def decode(blob) do
+    <<service::binary-size(4), vs_blob::binary>> = blob
+
+    {blob, rest} = VariableSize.decode(vs_blob, :binary)
+    {%__MODULE__{service: de_le(service, 4), blob: blob}, rest}
   end
 
   use JsonDecoder

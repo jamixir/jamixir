@@ -7,10 +7,11 @@ defmodule Sizes do
 
   defmacro __using__(_) do
     quote do
+      @bandersnatch_proof_size 784
+      @bitfield_size Sizes.bitfield()
+      @hash_size Sizes.hash()
       @signature_size 64
       @validator_size 2
-      @hash_size Sizes.hash()
-      @bitfield_size Sizes.bitfield()
     end
   end
 end

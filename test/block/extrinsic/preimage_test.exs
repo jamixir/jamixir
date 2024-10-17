@@ -59,4 +59,13 @@ defmodule Block.Extrinsic.PreimageTest do
       assert :ok = Preimage.validate(preimages, services)
     end
   end
+
+  describe "encode / decode" do
+    test "encode/decode" do
+      preimage = build(:preimage)
+      encoded = Encodable.encode(preimage)
+      {decoded, _} = Preimage.decode(encoded)
+      assert preimage == decoded
+    end
+  end
 end

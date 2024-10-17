@@ -461,6 +461,13 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def ticket_proof_factory do
+    %TicketProof{
+      attempt: 1,
+      signature: Hash.random(@bandersnatch_proof_size)
+    }
+  end
+
   def shuffle_hash_factory do
     Util.Hash.default(<<"This generates the shuffle hash for testing">>)
   end

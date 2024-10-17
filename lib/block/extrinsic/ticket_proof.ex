@@ -113,4 +113,15 @@ defmodule Block.Extrinsic.TicketProof do
       e({tp.attempt, tp.signature})
     end
   end
+
+  use Sizes
+
+  def decode(blob) do
+    <<attempt::integer, signature::binary-size(@bandersnatch_proof_size), rest::binary>> = blob
+    {%__MODULE__{attempt: attempt, signature: signature}, rest}
+  end
+
+  def size do
+    @bandersnatch_proof_size + 1
+  end
 end
