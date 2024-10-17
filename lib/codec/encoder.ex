@@ -74,7 +74,7 @@ defmodule Codec.Encoder do
       |> Enum.sort_by(fn {k, _v} -> k end)
       |> Enum.map(fn {k, v} -> {encode(k), encode(v)} end)
 
-    encode(VariableSize.new(encoded_pairs))
+    encode(encoded_pairs)
   end
 
   defp do_encode(value) when is_integer(value), do: encode_integer(value)

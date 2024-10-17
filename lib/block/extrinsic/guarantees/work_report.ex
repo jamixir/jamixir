@@ -35,7 +35,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             core_index: 0,
             authorizer_hash: Hash.zero(),
             output: "",
-            segment_root_lookup: MapSet.new(),
+            segment_root_lookup: %{},
             results: []
 
   use Codec.Encoder
@@ -156,8 +156,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # Formula (168) v0.4.1
     w_bang ++
       accumulation_priority_queue(
-        ((List.flatten(before_m) ++ List.flatten(rest))
-         |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
+        (List.flatten(before_m ++ rest) |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
         accumulated
       )
   end
@@ -183,5 +182,28 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
          wr.authorizer_hash, vs(wr.output), vs(wr.results)}
       )
     end
+  end
+
+  use Codec.Decoder
+  use Sizes
+
+  def decode(bin) do
+    {specification, bin2} = AvailabilitySpecification.decode(bin)
+    {refinement_context, bin3} = RefinementContext.decode(bin2)
+    <<core_index::8, bin4::binary>> = bin3
+    {segment_root_lookup, bin5} = VariableSize.decode(bin4, :map, @hash_size, @hash_size)
+    <<authorizer_hash::binary-size(@hash_size), bin6::binary>> = bin5
+    {output, bin7} = VariableSize.decode(bin6, :binary)
+    {results, rest} = VariableSize.decode(bin7, WorkResult)
+
+    {%__MODULE__{
+       specification: specification,
+       refinement_context: refinement_context,
+       core_index: core_index,
+       segment_root_lookup: segment_root_lookup,
+       authorizer_hash: authorizer_hash,
+       output: output,
+       results: results
+     }, rest}
   end
 end
