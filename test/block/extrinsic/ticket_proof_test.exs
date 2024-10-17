@@ -182,4 +182,13 @@ defmodule Block.Extrinsic.TicketProofTest do
                )
     end
   end
+
+  describe "encode / decode" do
+    test "encode/decode" do
+      ticket_proof = build(:ticket_proof)
+      encoded = Encodable.encode(ticket_proof)
+      {decoded, _} = TicketProof.decode(encoded)
+      assert decoded == ticket_proof
+    end
+  end
 end

@@ -33,4 +33,5 @@ defmodule Util.Hash do
   end
 
   def random, do: :crypto.strong_rand_bytes(32)
+  def random(size), do: :crypto.strong_rand_bytes(size)
 end
