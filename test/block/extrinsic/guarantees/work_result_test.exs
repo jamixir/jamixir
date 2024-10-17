@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkResultTest do
-  alias Util.Hash
   alias Block.Extrinsic.Guarantee.WorkResult
+  alias Util.Hash
   use ExUnit.Case
   import Jamixir.Factory
 
@@ -10,15 +10,30 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
 
   describe "encode/1" do
     test "encodes a work result", %{wr: wr} do
-      assert Codec.Encoder.encode(wr) ==
+      assert Encodable.encode(wr) ==
                "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\0\x01\x04"
     end
 
     test "encode when output is an error", %{wr: wr} do
       wr = Map.put(wr, :result, {:error, :infinite})
 
-      assert Codec.Encoder.encode(wr) ==
+      assert Encodable.encode(wr) ==
                "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\x01"
+    end
+  end
+
+  describe "decode/1" do
+    test "decodes a work result", %{wr: wr} do
+      encoded = Encodable.encode(wr)
+      {decoded, _} = WorkResult.decode(encoded)
+      assert decoded == wr
+    end
+
+    test "decodes a work result with error", %{wr: wr} do
+      wr = put_in(wr.result, {:error, :halt})
+      encoded = Encodable.encode(wr)
+      {decoded, _} = WorkResult.decode(encoded)
+      assert decoded == wr
     end
   end
 
