@@ -20,18 +20,29 @@ defmodule Codec.VariableSize do
     end
   end
 
+  use Sizes
+
   def decode(bin, :binary) do
     <<size::integer, rest::binary>> = bin
     <<value::binary-size(size), rest::binary>> = rest
     {value, rest}
   end
 
+  def decode(bin, :hash) do
+    <<count::integer, rest::binary>> = bin
+
+    Enum.reduce(List.duplicate("", count), {[], rest}, fn _, {acc, rest} ->
+      <<value::binary-size(@hash_size), r::binary>> = rest
+      {acc ++ [value], r}
+    end)
+  end
+
   def decode(bin, module) do
     <<count::integer, rest::binary>> = bin
 
-    Enum.reduce(1..count, {[], rest}, fn _, {acc, rest} ->
-      {value, rest} = module.decode(rest)
-      {acc ++ [value], rest}
+    Enum.reduce(List.duplicate("", count), {[], rest}, fn _, {acc, rest} ->
+      {value, r} = module.decode(rest)
+      {acc ++ [value], r}
     end)
   end
 

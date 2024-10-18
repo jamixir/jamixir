@@ -17,6 +17,15 @@ defmodule Codec.NilDiscriminator do
     end
   end
 
+  use Sizes
+
+  def decode(bin, :hash) do
+    decode(bin, fn b ->
+      <<p::binary-size(@hash_size), r::binary>> = b
+      {p, r}
+    end)
+  end
+
   def decode(bin, callback) do
     <<first::8, rest::binary>> = bin
 

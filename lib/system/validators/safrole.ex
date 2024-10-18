@@ -6,7 +6,7 @@ defmodule System.Validators.Safrole do
 
   # Formula (72) v0.4.1
   mockable valid_epoch_marker(
-             %Header{timeslot: timeslot, epoch: epoch_marker},
+             %Header{timeslot: timeslot, epoch_mark: epoch_marker},
              state_timeslot,
              n1_,
              pending_

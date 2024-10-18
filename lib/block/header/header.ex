@@ -1,4 +1,5 @@
 defmodule Block.Header do
+  alias System.State.Validator
   alias System.State
   alias Util.Merklization
   alias Codec.{NilDiscriminator, VariableSize}
@@ -23,7 +24,7 @@ defmodule Block.Header do
           timeslot: integer(),
           # Formula (45) v0.4.1
           # He
-          epoch: {Types.hash(), list(Types.bandersnatch_key())} | nil,
+          epoch_mark: {Types.hash(), list(Validator.t())} | nil,
           # Hw
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Ho
@@ -48,7 +49,7 @@ defmodule Block.Header do
     # Ht
     timeslot: 0,
     # He
-    epoch: nil,
+    epoch_mark: nil,
     # Hw
     winning_tickets_marker: nil,
     # Ho
@@ -108,11 +109,12 @@ defmodule Block.Header do
   end
 
   # Formula (303) v0.4.1
-  def unsigned_serialize(%Block.Header{} = header) do
+  def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       e_le(header.timeslot, 4) <>
       e(
-        {NilDiscriminator.new(header.epoch), NilDiscriminator.new(header.winning_tickets_marker),
+        {NilDiscriminator.new(header.epoch_mark),
+         NilDiscriminator.new(header.winning_tickets_marker),
          VariableSize.new(header.offenders_marker), e_le(header.block_author_key_index, 2),
          header.vrf_signature}
       )
@@ -123,8 +125,46 @@ defmodule Block.Header do
     alias Block.Header
     # Formula (302) v0.4.1
     def encode(%Block.Header{} = header) do
-      Header.unsigned_serialize(header) <> e(header.block_seal)
+      <<>>
+      Header.unsigned_encode(header) <> e(header.block_seal)
     end
+  end
+
+  use Sizes
+  use Codec.Decoder
+
+  def unsigned_decode(bin) do
+    <<parent_hash::binary-size(@hash_size), prior_state_root::binary-size(@hash_size),
+      extrinsic_hash::binary-size(@hash_size), timeslot::binary-size(4), bin2::binary>> = bin
+
+    {epoch_mark, bin3} =
+      NilDiscriminator.decode(bin2, fn epoch_mark_bin ->
+        <<entropy::binary-size(@hash_size), rest::binary>> = epoch_mark_bin
+
+        {keys, cont} =
+          Enum.reduce(1..Constants.validator_count(), {[], rest}, fn _, {list, b} ->
+            <<key::binary-size(@signature_size), r::binary>> = b
+            {list ++ [key], r}
+          end)
+
+        {{entropy, keys}, cont}
+      end)
+
+    {winning_tickets_marker, bin4} = NilDiscriminator.decode(bin3, & &1)
+    {offenders_marker, bin5} = VariableSize.decode(bin4, :hash)
+
+    {%__MODULE__{
+       parent_hash: parent_hash,
+       prior_state_root: prior_state_root,
+       extrinsic_hash: extrinsic_hash,
+       timeslot: de_le(timeslot, 4),
+       epoch_mark: epoch_mark,
+       winning_tickets_marker: winning_tickets_marker,
+       offenders_marker: offenders_marker
+       # TODO
+       # block_author_key_index: e_le(bin5, 2)
+       # vrf_signature: vrf_signature,
+     }, bin5}
   end
 
   use JsonDecoder
@@ -134,7 +174,7 @@ defmodule Block.Header do
       parent_hash: :parent,
       prior_state_root: :parent_state_root,
       timeslot: :slot,
-      epoch: [&parse_epoch_mark/1, :epoch_mark],
+      epoch_mark: [&parse_epoch_mark/1, :epoch_mark],
       winning_tickets_marker: [[SealKeyTicket], :tickets_mark],
       offenders_marker: [:offenders_mark, []],
       block_author_key_index: [:author_index, 0],

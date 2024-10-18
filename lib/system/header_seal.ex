@@ -44,7 +44,7 @@ defmodule System.HeaderSeal do
     updated_header = %Header{header | vrf_signature: vrf_signature}
 
     {block_seal, _} =
-      RingVrf.ietf_vrf_sign(secret, seal_context, Header.unsigned_serialize(updated_header))
+      RingVrf.ietf_vrf_sign(secret, seal_context, Header.unsigned_encode(updated_header))
 
     %Header{updated_header | block_seal: block_seal}
   end
@@ -67,7 +67,7 @@ defmodule System.HeaderSeal do
            RingVrf.ietf_vrf_verify(
              bandersnatch_public_keys,
              construct_seal_context(expected_slot_sealer, entropy_pool),
-             Header.unsigned_serialize(header),
+             Header.unsigned_encode(header),
              header.block_seal,
              header.block_author_key_index
            ),
