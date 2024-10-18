@@ -1,7 +1,20 @@
+defmodule AccumulationResult do
+  alias System.{AccumulationState, DeferredTransfer}
+
+  @type t :: %__MODULE__{
+          state: AccumulationState.t(),
+          transfers: list(DeferredTransfer.t()),
+          output: Types.hash() | nil,
+          gas_used: non_neg_integer()
+        }
+  defstruct [:state, :transfers, :output, :gas_used]
+end
+
 defmodule System.State.Accumulation do
   @moduledoc """
   Handles the accumulation and commitment process for services, validators, and the authorization queue.
   """
+
 
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
@@ -11,6 +24,13 @@ defmodule System.State.Accumulation do
   alias Util.Collections
 
   use MapUnion
+
+  @callback single_accumulation(
+    AccumulationState.t(),
+    list(),
+    map(),
+    non_neg_integer()
+  ) :: AccumulationResult.t()
 
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
 
@@ -53,13 +73,13 @@ defmodule System.State.Accumulation do
       {:ok, {0, acc_state, [], MapSet.new()}}
     else
       with {:ok, {g_star, o_star, t_star, b_star}} <-
-        parallelized_accumulation(acc_state, Enum.take(work_reports, i), always_acc_services),
+             parallelized_accumulation(acc_state, Enum.take(work_reports, i), always_acc_services),
            {:ok, {j, o_prime, t, b}} <-
              outer_accumulation(
                gas_limit - g_star,
                Enum.drop(work_reports, i),
                o_star,
-               MapSet.new()
+               Map.new()
              ) do
         {:ok, {i + j, o_prime, t_star ++ t, b_star ++ b}}
       else
@@ -69,7 +89,7 @@ defmodule System.State.Accumulation do
   end
 
   @spec calculate_i(list(WorkReport.t()), non_neg_integer()) :: non_neg_integer()
-  defp calculate_i(work_reports, gas_limit) do
+  def calculate_i(work_reports, gas_limit) do
     Enum.reduce_while(0..length(work_reports), 0, fn i, _acc ->
       sum =
         work_reports
@@ -104,7 +124,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  defp collect_services(work_reports, always_acc_services) do
+  def collect_services(work_reports, always_acc_services) do
     MapSet.new(
       Enum.flat_map(work_reports, & &1.results)
       |> Enum.map(& &1.service)
@@ -112,9 +132,10 @@ defmodule System.State.Accumulation do
       MapSet.new(Map.keys(always_acc_services))
   end
 
-  defp accumulate_services(acc_state, work_reports, always_acc_services, s) do
+  def accumulate_services(acc_state, work_reports, always_acc_services, s) do
     Enum.reduce(s, {0, MapSet.new(), []}, fn service, {acc_u, acc_b, acc_t} ->
-      {u, _, t, b} = single_accumulation(acc_state, work_reports, always_acc_services[service], service)
+      %AccumulationResult{gas_used: u, transfers: t, output: b} =
+        single_accumulation(acc_state, work_reports, always_acc_services, service)
 
       {
         acc_u + u,
@@ -124,7 +145,18 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  defp update_accumulation_state(acc_state, work_reports, always_acc_services, s) do
+  @spec update_accumulation_state(
+          %AccumulationState{},
+          list(WorkReport.t()),
+          %{non_neg_integer() => non_neg_integer()},
+          MapSet.t(non_neg_integer())
+        ) :: AccumulationState.t()
+  def update_accumulation_state(
+        %AccumulationState{} = acc_state,
+        work_reports,
+        always_acc_services,
+        s
+      ) do
     %AccumulationState{
       privileged_services: %PrivilegedServices{
         manager_service: m,
@@ -136,15 +168,20 @@ defmodule System.State.Accumulation do
     {x_prime, i_prime, q_prime} =
       [m, a, v]
       |> Enum.map(fn service ->
-        single_accumulation(acc_state, work_reports, always_acc_services[service], service)
-        |> elem(1)
+        %AccumulationResult{state: state} =
+          single_accumulation(acc_state, work_reports, always_acc_services, service)
+
+        state.privileged_services
       end)
       |> List.to_tuple()
 
     d_prime =
-      Map.drop(acc_state.services, s) ++
+      Map.drop(acc_state.services, MapSet.to_list(s)) ++
         Collections.union(
-          Enum.map(s, &elem(single_accumulation(acc_state, work_reports, always_acc_services[&1], &1), 1).services)
+          Enum.map(
+            s,
+            &single_accumulation(acc_state, work_reports, always_acc_services, &1).state.services
+          )
         )
 
     %AccumulationState{
@@ -155,8 +192,8 @@ defmodule System.State.Accumulation do
     }
   end
 
-  defp validate_services(acc_state, services) do
-    if Enum.all?(services, &Map.has_key?(acc_state.services, &1)) do
+  def validate_services(%AccumulationState{services: d}, services) do
+    if Enum.all?(services, &Map.has_key?(d, &1)) do
       :ok
     else
       {:error, :invalid_service}
@@ -169,52 +206,47 @@ defmodule System.State.Accumulation do
           list(WorkReport.t()),
           %{non_neg_integer() => non_neg_integer()},
           non_neg_integer()
-        ) ::
-          { AccumulationState.t(), list(DeferredTransfer.t()),
-           Types.hash() | nil,
-           non_neg_integer()}
-
-  def single_accumulation(acc_state, work_reports, service_dict, service) do
-    initial_g = Enum.find([service_dict, 0], &(&1 != nil))
-
-    {g, p} =
-      work_reports
-      |> Enum.reduce({initial_g, []}, fn %WorkReport{
-                                           results: wr,
-                                           output: wo,
-                                           specification: %AvailabilitySpecification{
-                                             work_package_hash: sh
-                                           }
-                                         },
-                                         {acc_g, acc_p} ->
-        wr
-        |> Enum.filter(&(&1.service == service))
-        |> Enum.reduce({acc_g, acc_p}, fn %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl},
-                                          {g, p} ->
-          new_p = %{o: ro, l: rl, a: wo, k: sh}
-          {g + gr, [new_p | p]}
-        end)
-      end)
-
-    # Stub for ΨA, replace with actual implementation later
+        ) :: AccumulationResult.t()
+  def single_accumulation(%AccumulationState{} = acc_state, work_reports, service_dict, service) do
+    {g, p} = pre_single_accumulation(work_reports, service_dict, service)
     stub_psi_a(acc_state, service, g, p)
+  end
+
+  def pre_single_accumulation(work_reports, service_dict, service) do
+    initial_g = Map.get(service_dict, service, 0)
+
+    Enum.reduce(work_reports, {initial_g, []}, fn %WorkReport{
+                                                    results: wr,
+                                                    output: wo,
+                                                    specification: %AvailabilitySpecification{
+                                                      work_package_hash: sh
+                                                    }
+                                                  },
+                                                  {acc_g, acc_p} ->
+      wr
+      |> Enum.filter(&(&1.service == service))
+      |> Enum.reduce({acc_g, acc_p}, fn %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl},
+                                        {g, p} ->
+        new_p = %{o: ro, l: rl, a: wo, k: sh}
+        {g + gr, [new_p | p]}
+      end)
+    end)
   end
 
   # Stub for ΨA function
   @spec stub_psi_a(
-    AccumulationState.t(),
-    non_neg_integer(),
-    non_neg_integer(),
-    list(o_tuple())
-  ) :: {
-
-    AccumulationState.t(),
-    list(DeferredTransfer.t()),
-    Types.hash() | nil,
-    non_neg_integer()
-  }
-  defp stub_psi_a(acc_state, _service, _gas_limit, _payloads) do
+          AccumulationState.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          list(o_tuple())
+        ) :: AccumulationResult.t()
+  defp stub_psi_a(acc_state, _service, gas_used, _payloads) do
     # Replace this with actual implementation later
-    {acc_state, [], nil, 0}
+    %AccumulationResult{
+      state: acc_state,
+      transfers: [],
+      output: nil,
+      gas_used: gas_used
+    }
   end
 end
