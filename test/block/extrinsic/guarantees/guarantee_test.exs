@@ -478,12 +478,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
     )
   end
 
-  # describe "encode / decode" do
-  #   test "encode/decode" do
-  #     guarantee = build(:guarantee)
-  #     encoded = Encodable.encode(guarantee)
-  #     {decoded, _} = Guarantee.decode(encoded)
-  #     assert guarantee == decoded
-  #   end
-  # end
+  describe "encode / decode" do
+    test "encode/decode" do
+      guarantee = build(:guarantee)
+      encoded = Encodable.encode(guarantee)
+      {decoded, _} = Guarantee.decode(encoded)
+      assert guarantee == decoded
+    end
+  end
 end

@@ -58,7 +58,7 @@ defmodule CodecVectorsTest do
     case json_data do
       %{} ->
         object = module.from_json(json_data)
-        encoded = Codec.Encoder.encode(object)
+        encoded = Encodable.encode(object)
         assert encoded == expected
 
       # decoded = module.decode(expected)

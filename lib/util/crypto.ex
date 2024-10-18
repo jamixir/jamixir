@@ -28,4 +28,8 @@ defmodule Util.Crypto do
   def zero_sign do
     Utils.zero_bitstring(@signature_size)
   end
+
+  def random_sign do
+    :crypto.strong_rand_bytes(@signature_size)
+  end
 end
