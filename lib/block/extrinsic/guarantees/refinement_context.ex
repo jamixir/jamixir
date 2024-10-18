@@ -56,11 +56,7 @@ defmodule RefinementContext do
       beefy_root_::binary-size(@hash_size), lookup_anchor::binary-size(@hash_size),
       timeslot::binary-size(4), temp_rest::binary>> = bin
 
-    {prerequisite, rest} =
-      NilDiscriminator.decode(temp_rest, fn b ->
-        <<p::binary-size(@hash_size), r::binary>> = b
-        {p, r}
-      end)
+    {prerequisite, rest} = NilDiscriminator.decode(temp_rest, :hash)
 
     {
       %__MODULE__{

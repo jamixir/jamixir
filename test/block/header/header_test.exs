@@ -3,10 +3,22 @@ defmodule Block.HeaderTest do
   import TestHelper
   import Jamixir.Factory
 
-  alias Util.Merklization
   alias Block.Header
-  alias System.State
   alias Codec.{NilDiscriminator, VariableSize}
+  alias System.State
+  alias Util.{Hash, Merklization}
+
+  defmodule ConstantsMock do
+    def validator_count, do: 1
+  end
+
+  setup do
+    Application.put_env(:jamixir, Constants, ConstantsMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, Constants)
+    end)
+  end
 
   describe "valid_header?/1" do
     test "valid_header?/1 returns true when parent_hash is nil" do
@@ -69,7 +81,28 @@ defmodule Block.HeaderTest do
 
     test "encode header", %{header: header} do
       assert Encodable.encode(header) ==
-               Header.unsigned_serialize(header) <> Codec.Encoder.encode(header.block_seal)
+               Header.unsigned_encode(header) <> Codec.Encoder.encode(header.block_seal)
+    end
+  end
+
+  describe "decode/1" do
+    test "unsigned decode header smoke test" do
+      header = build(:header)
+      encoded = Header.unsigned_encode(header)
+      {decoded, _} = Header.unsigned_decode(encoded)
+      assert decoded == header
+    end
+
+    test "unsigned decode header will all fields" do
+      header =
+        build(:header,
+          prior_state_root: Hash.random(),
+          epoch_mark: {Hash.random(), [Hash.random(64)]}
+        )
+
+      encoded = Header.unsigned_encode(header)
+      {decoded, _} = Header.unsigned_decode(encoded)
+      assert decoded == header
     end
   end
 
@@ -106,13 +139,14 @@ defmodule Block.HeaderTest do
   end
 
   # Formula (303) v0.4.1
-  describe "unsigned_serialize/1" do
-    test "unsigned_serialize header", %{header: h} do
-      assert Header.unsigned_serialize(h) ==
+  describe "unsigned_encode/1" do
+    test "unsigned_encode header", %{header: h} do
+      assert Header.unsigned_encode(h) ==
                Codec.Encoder.encode({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
                  Codec.Encoder.encode_le(h.timeslot, 4) <>
                  Codec.Encoder.encode(
-                   {NilDiscriminator.new(h.epoch), NilDiscriminator.new(h.winning_tickets_marker),
+                   {NilDiscriminator.new(h.epoch_mark),
+                    NilDiscriminator.new(h.winning_tickets_marker),
                     VariableSize.new(h.offenders_marker),
                     Codec.Encoder.encode_le(h.block_author_key_index, 2), h.vrf_signature}
                  )

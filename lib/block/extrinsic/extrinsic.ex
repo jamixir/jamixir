@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic do
+  alias Codec.VariableSize
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
   # Formula (14) v0.4.1
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
@@ -51,6 +52,22 @@ defmodule Block.Extrinsic do
   end
 
   use JsonDecoder
+
+  def decode(bin) do
+    {tickets, bin2} = VariableSize.decode(bin, TicketProof)
+    {disputes, bin3} = Disputes.decode(bin2)
+    {preimages, bin4} = VariableSize.decode(bin3, Preimage)
+    {assurances, bin5} = VariableSize.decode(bin4, Assurance)
+    {guarantees, rest} = VariableSize.decode(bin5, Guarantee)
+
+    {%__MODULE__{
+       tickets: tickets,
+       disputes: disputes,
+       preimages: preimages,
+       assurances: assurances,
+       guarantees: guarantees
+     }, rest}
+  end
 
   def json_mapping,
     do: %{

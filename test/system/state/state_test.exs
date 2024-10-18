@@ -289,7 +289,7 @@ defmodule System.StateTest do
       with_original_modules([:valid_epoch_marker]) do
         # Invalid epoch marker, on a new epoch epoch marker should be nil
         invalid_block = %Block{
-          header: build(:header, timeslot: 600, epoch: {Hash.one(), [Hash.two()]}),
+          header: build(:header, timeslot: 600, epoch_mark: {Hash.one(), [Hash.two()]}),
           extrinsic: build(:extrinsic)
         }
 
