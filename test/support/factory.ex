@@ -5,7 +5,7 @@ defmodule Jamixir.Factory do
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
   alias System.State.SealKeyTicket
-  alias Util.{Hash, Time}
+  alias Util.{Crypto, Hash, Time}
   use ExMachina
   use Sizes
 
@@ -439,7 +439,7 @@ defmodule Jamixir.Factory do
     num_credentials = Enum.random(2..3)
 
     1..num_credentials
-    |> Enum.map(fn i -> {i, Hash.random()} end)
+    |> Enum.map(fn i -> {i, Crypto.random_sign()} end)
     |> Enum.sort_by(&elem(&1, 0))
   end
 

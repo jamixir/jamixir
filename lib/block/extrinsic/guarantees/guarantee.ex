@@ -274,25 +274,39 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  use Sizes
+
   defimpl Encodable do
     use Codec.Encoder
     alias Block.Extrinsic.Guarantee
-    alias Codec.VariableSize
 
     def encode(g = %Guarantee{}) do
       e({
         g.work_report,
         e_le(g.timeslot, 4),
-        VariableSize.new(
-          g.credentials
-          |> Enum.map(&{e_le(elem(&1, 0), 2), elem(&1, 1)})
-        )
+        vs(g.credentials |> Enum.map(&{e_le(elem(&1, 0), 2), elem(&1, 1)}))
       })
     end
   end
 
-  def decode(_blob) do
-    # TODO
+  use Codec.Decoder
+
+  def decode(bin) do
+    {work_report, bin2} = WorkReport.decode(bin)
+    <<timeslot::binary-size(4), credentials_count::8, bin3::binary>> = bin2
+
+    {credentials, rest} =
+      Enum.reduce(List.duplicate("", credentials_count), {[], bin3}, fn _i, {acc, b} ->
+        <<v::binary-size(@validator_size), s::binary-size(@signature_size), b2::binary>> = b
+
+        {acc ++ [{de_le(v, @validator_size), s}], b2}
+      end)
+
+    {%__MODULE__{
+       work_report: work_report,
+       timeslot: de_le(timeslot, 4),
+       credentials: credentials
+     }, rest}
   end
 
   use JsonDecoder

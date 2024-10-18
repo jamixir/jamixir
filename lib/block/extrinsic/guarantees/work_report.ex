@@ -177,10 +177,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # Formula (307) v0.4.1
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
-      e(
-        {wr.specification, wr.refinement_context, wr.core_index, vs(wr.segment_root_lookup),
-         wr.authorizer_hash, vs(wr.output), vs(wr.results)}
-      )
+      e({
+        wr.specification,
+        wr.refinement_context,
+        wr.core_index,
+        case wr.segment_root_lookup do
+          nil -> <<0>>
+          a -> a
+        end,
+        wr.authorizer_hash,
+        vs(wr.output),
+        vs(wr.results)
+      })
     end
   end
 

@@ -138,7 +138,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       validators: validators,
       core_reports: cr
     } do
-      invalid_assurance = %{assurance | signature: :crypto.strong_rand_bytes(64)}
+      invalid_assurance = %{assurance | signature: Crypto.random_sign()}
 
       assert {:error, :invalid_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
