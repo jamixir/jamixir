@@ -15,7 +15,6 @@ defmodule System.State.Accumulation do
   Handles the accumulation and commitment process for services, validators, and the authorization queue.
   """
 
-
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias System.{AccumulationState, DeferredTransfer}
@@ -25,12 +24,12 @@ defmodule System.State.Accumulation do
 
   use MapUnion
 
-  @callback single_accumulation(
-    AccumulationState.t(),
-    list(),
-    map(),
-    non_neg_integer()
-  ) :: AccumulationResult.t()
+  @callback do_single_accumulation(
+              AccumulationState.t(),
+              list(),
+              map(),
+              non_neg_integer()
+            ) :: AccumulationResult.t()
 
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
 
@@ -146,7 +145,7 @@ defmodule System.State.Accumulation do
   end
 
   @spec update_accumulation_state(
-          %AccumulationState{},
+          AccumulationState.t(),
           list(WorkReport.t()),
           %{non_neg_integer() => non_neg_integer()},
           MapSet.t(non_neg_integer())
@@ -166,12 +165,12 @@ defmodule System.State.Accumulation do
     } = acc_state
 
     {x_prime, i_prime, q_prime} =
-      [m, a, v]
-      |> Enum.map(fn service ->
+      [{m, :privileged_services}, {a, :next_validators}, {v, :authorizer_queue}]
+      |> Enum.map(fn {service, key} ->
         %AccumulationResult{state: state} =
           single_accumulation(acc_state, work_reports, always_acc_services, service)
 
-        state.privileged_services
+        Map.get(state, key)
       end)
       |> List.to_tuple()
 
@@ -201,17 +200,18 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (175) v0.4.1
-  @spec single_accumulation(
-          AccumulationState.t(),
-          list(WorkReport.t()),
-          %{non_neg_integer() => non_neg_integer()},
-          non_neg_integer()
-        ) :: AccumulationResult.t()
-  def single_accumulation(%AccumulationState{} = acc_state, work_reports, service_dict, service) do
+  def single_accumulation(acc_state, work_reports, service_dict, service) do
+    module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
+
+    module.do_single_accumulation(acc_state, work_reports, service_dict, service)
+  end
+
+  def do_single_accumulation(acc_state, work_reports, service_dict, service) do
     {g, p} = pre_single_accumulation(work_reports, service_dict, service)
     stub_psi_a(acc_state, service, g, p)
   end
 
+  # This sepertion is to allow testing of single_accumulation without having to test the stub as well
   def pre_single_accumulation(work_reports, service_dict, service) do
     initial_g = Map.get(service_dict, service, 0)
 

@@ -13,6 +13,15 @@ defmodule System.State.AccumulationTest do
 
   import Jamixir.Factory
 
+  setup_all do
+    service = 1
+    base_work_result = build(:work_result, service: service, gas_ratio: 0)
+    base_work_report = build(:work_report, results: [base_work_result])
+
+    {:ok,
+     service: service, base_work_result: base_work_result, base_work_report: base_work_report}
+  end
+
   describe "validate_services/2" do
     test "returns :ok when all indices exist" do
       state = %AccumulationState{services: %{1 => :service1, 2 => :service2, 3 => :service3}}
@@ -86,15 +95,6 @@ defmodule System.State.AccumulationTest do
       assert MapSet.new([1, 2, 3]) ==
                Accumulation.collect_services(work_reports, always_acc_services)
     end
-  end
-
-  setup_all do
-    service = 1
-    base_work_result = build(:work_result, service: service, gas_ratio: 0)
-    base_work_report = build(:work_report, results: [base_work_result])
-
-    {:ok,
-     service: service, base_work_result: base_work_result, base_work_report: base_work_report}
   end
 
   describe "pre_single_accumulation/3" do
@@ -208,17 +208,12 @@ defmodule System.State.AccumulationTest do
       service_dict = %{}
 
       work_reports = [
-        %{base_wr |
-          results: [
-            %{base_wr_result |
-              service: 2,
-              gas_ratio: 10
-            },
-            %{base_wr_result |
-              service: 2,
-              gas_ratio: 20
-            }
-          ]
+        %{
+          base_wr
+          | results: [
+              %{base_wr_result | service: 2, gas_ratio: 10},
+              %{base_wr_result | service: 2, gas_ratio: 20}
+            ]
         }
       ]
 
@@ -228,6 +223,16 @@ defmodule System.State.AccumulationTest do
   end
 
   describe "update_accumulation_state/4" do
+    setup do
+      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
+      end)
+
+      :ok
+    end
+
     test "updates state correctly" do
       initial_state = %AccumulationState{
         privileged_services: %PrivilegedServices{
@@ -235,42 +240,249 @@ defmodule System.State.AccumulationTest do
           alter_authorizer_service: 2,
           alter_validator_service: 3
         },
-        services: %{1 => :service1, 2 => :service2, 3 => :service3}
+        services: %{1 => :service1, 2 => :service2, 3 => :service3, 4 => :service4},
+        next_validators: :initial_next_validators,
+        authorizer_queue: :initial_authorizer_queue
       }
 
       work_reports = []
       always_acc_services = %{}
       s = MapSet.new([1, 2, 3])
 
-      # Set up expectations for single_accumulation calls
-      MockAccumulation
-      |> expect(:single_accumulation, fn ^initial_state, ^work_reports, ^always_acc_services, 1 ->
-        %AccumulationResult{
-          state: %AccumulationState{privileged_services: %PrivilegedServices{manager_service: 11}}
-        }
-      end)
-      |> expect(:single_accumulation, fn ^initial_state, ^work_reports, ^always_acc_services, 2 ->
-        %AccumulationResult{
-          state: %AccumulationState{privileged_services: %PrivilegedServices{alter_authorizer_service: 22}}
-        }
-      end)
-      |> expect(:single_accumulation, fn ^initial_state, ^work_reports, ^always_acc_services, 3 ->
-        %AccumulationResult{
-          state: %AccumulationState{privileged_services: %PrivilegedServices{alter_validator_service: 33}}
-        }
-      end)
-      |> expect(:single_accumulation, 3, fn ^initial_state, ^work_reports, ^always_acc_services, service ->
-        %AccumulationResult{state: %AccumulationState{services: %{service => :updated_service}}}
+      Enum.each(
+        [
+          {1, :privileged_services, :updated_privileged_services},
+          {2, :next_validators, :updated_next_validators},
+          {3, :authorizer_queue, :updated_authorizer_queue}
+        ],
+        fn {service, key, updated_value} ->
+          MockAccumulation
+          |> expect(:do_single_accumulation, fn ^initial_state,
+                                                ^work_reports,
+                                                ^always_acc_services,
+                                                ^service ->
+            %AccumulationResult{
+              state: struct(AccumulationState, [{key, updated_value}])
+            }
+          end)
+        end
+      )
+
+      Enum.each(s, fn service ->
+        MockAccumulation
+        |> expect(:do_single_accumulation, fn ^initial_state,
+                                              ^work_reports,
+                                              ^always_acc_services,
+                                              ^service ->
+          %AccumulationResult{
+            state: %AccumulationState{
+              services: Map.put(%{}, service, :"updated_service#{service}")
+            }
+          }
+        end)
       end)
 
-      updated_state = Accumulation.update_accumulation_state(initial_state, work_reports, always_acc_services, s)
+      updated_state =
+        Accumulation.update_accumulation_state(
+          initial_state,
+          work_reports,
+          always_acc_services,
+          s
+        )
 
-      assert updated_state.privileged_services == %PrivilegedServices{
-        manager_service: 11,
-        alter_authorizer_service: 22,
-        alter_validator_service: 33
+      assert updated_state.privileged_services == :updated_privileged_services
+      assert updated_state.next_validators == :updated_next_validators
+      assert updated_state.authorizer_queue == :updated_authorizer_queue
+
+      assert updated_state.services == %{
+               1 => :updated_service1,
+               2 => :updated_service2,
+               3 => :updated_service3,
+               4 => :service4
+             }
+    end
+  end
+
+  describe "parallelized_accumulation/3" do
+    setup do
+      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
+      end)
+
+      :ok
+    end
+
+    test "performs basic accumulation correctly" do
+      initial_state = %AccumulationState{
+        services: %{1 => :service1, 2 => :service2, 3 => :service3},
+        privileged_services: %PrivilegedServices{
+          manager_service: 1,
+          alter_authorizer_service: 2,
+          alter_validator_service: 3
+        },
+        next_validators: :initial_next_validators,
+        authorizer_queue: :initial_authorizer_queue
       }
-      assert updated_state.services == %{1 => :updated_service, 2 => :updated_service, 3 => :updated_service}
+
+      work_reports = [
+        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 10}]},
+        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 20}]}
+      ]
+
+      always_acc_services = %{3 => 30}
+
+      # Mock for accumulate_services (3 calls)
+      Enum.each([1, 2, 3], fn service ->
+        MockAccumulation
+        |> expect(:do_single_accumulation, fn ^initial_state,
+                                              ^work_reports,
+                                              ^always_acc_services,
+                                              ^service ->
+          %AccumulationResult{
+            state: %{initial_state | services: %{service => :"updated_service#{service}"}},
+            transfers: [%{amount: service * 10}],
+            output: "output#{service}",
+            gas_used: service * 10
+          }
+        end)
+      end)
+
+      # Mock for update_accumulation_state (6 calls)
+      # 3 calls for privileged services
+      Enum.each([1, 2, 3], fn service ->
+        MockAccumulation
+        |> expect(:do_single_accumulation, fn ^initial_state,
+                                              ^work_reports,
+                                              ^always_acc_services,
+                                              ^service ->
+          %AccumulationResult{
+            state: %AccumulationState{
+              privileged_services:
+                if(service == 1,
+                  do: :updated_privileged_services,
+                  else: initial_state.privileged_services
+                ),
+              next_validators:
+                if(service == 2,
+                  do: :updated_next_validators,
+                  else: initial_state.next_validators
+                ),
+              authorizer_queue:
+                if(service == 3,
+                  do: :updated_authorizer_queue,
+                  else: initial_state.authorizer_queue
+                )
+            }
+          }
+        end)
+      end)
+
+      # 3 more calls for regular services
+      Enum.each([1, 2, 3], fn service ->
+        MockAccumulation
+        |> expect(:do_single_accumulation, fn ^initial_state,
+                                              ^work_reports,
+                                              ^always_acc_services,
+                                              ^service ->
+          %AccumulationResult{
+            state: %AccumulationState{
+              services: %{service => :"updated_service#{service}"}
+            }
+          }
+        end)
+      end)
+
+      {:ok, result} =
+        Accumulation.parallelized_accumulation(initial_state, work_reports, always_acc_services)
+
+      assert {total_gas, updated_state, transfers, outputs} = result
+      # 10 + 20 + 30
+      assert total_gas == 60
+
+      assert updated_state.services == %{
+               1 => :updated_service1,
+               2 => :updated_service2,
+               3 => :updated_service3
+             }
+
+      assert updated_state.privileged_services == :updated_privileged_services
+      assert updated_state.next_validators == :updated_next_validators
+      assert updated_state.authorizer_queue == :updated_authorizer_queue
+      assert transfers == [%{amount: 30}, %{amount: 20}, %{amount: 10}]
+      assert MapSet.size(outputs) == 3
+      assert Enum.all?(outputs, fn {service, output} -> output == "output#{service}" end)
+    end
+  end
+
+  describe "outer_accumulation/4" do
+    setup do
+      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
+      end)
+
+      :ok
+    end
+
+    test "performs basic outer accumulation correctly" do
+      gas_limit = 100
+
+      initial_state = %AccumulationState{
+        services: %{1 => :service1, 2 => :service2, 3 => :service3},
+        privileged_services: %PrivilegedServices{
+          manager_service: 1,
+          alter_authorizer_service: 2,
+          alter_validator_service: 3
+        },
+        next_validators: :initial_next_validators,
+        authorizer_queue: :initial_authorizer_queue
+      }
+
+      work_reports = [
+        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 30}]},
+        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 40}]},
+        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 50}]}
+      ]
+
+      always_acc_services = %{3 => 20}
+
+      # Mock single_accumulation
+      MockAccumulation
+      |> expect(:do_single_accumulation, 9, fn acc_state, _work_reports, _service_dict, service ->
+        gas_used =
+          cond do
+            service == 1 -> 30
+            service == 2 -> 40
+            service == 3 -> 20
+          end
+
+        %AccumulationResult{
+          state: acc_state,
+          transfers: [%{amount: gas_used}],
+          output: "output#{service}",
+          gas_used: gas_used
+        }
+      end)
+
+      result =
+        Accumulation.outer_accumulation(
+          gas_limit,
+          work_reports,
+          initial_state,
+          always_acc_services
+        )
+
+      assert {:ok, {total_i, final_state, all_transfers, all_outputs}} = result
+      # Only two work reports should be processed due to gas limit
+      assert total_i == 2
+      assert final_state.services == %{1 => :service1, 2 => :service2, 3 => :service3}
+
+      # (30 + 40 + 20)
+      assert Enum.sum(Enum.map(all_transfers, & &1.amount)) == 90
+      assert Enum.all?(1..3, fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
     end
   end
 end
