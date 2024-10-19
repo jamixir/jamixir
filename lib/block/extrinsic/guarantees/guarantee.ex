@@ -292,14 +292,14 @@ defmodule Block.Extrinsic.Guarantee do
   use Codec.Decoder
 
   def decode(bin) do
-    {work_report, bin2} = WorkReport.decode(bin)
-    <<timeslot::binary-size(4), credentials_count::8, bin3::binary>> = bin2
+    {work_report, bin} = WorkReport.decode(bin)
+    <<timeslot::binary-size(4), credentials_count::8, bin::binary>> = bin
 
     {credentials, rest} =
-      Enum.reduce(List.duplicate("", credentials_count), {[], bin3}, fn _i, {acc, b} ->
-        <<v::binary-size(@validator_size), s::binary-size(@signature_size), b2::binary>> = b
+      Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->
+        <<v::binary-size(@validator_index_size), s::binary-size(@signature_size), b2::binary>> = b
 
-        {acc ++ [{de_le(v, @validator_size), s}], b2}
+        {acc ++ [{de_le(v, @validator_index_size), s}], b2}
       end)
 
     {%__MODULE__{

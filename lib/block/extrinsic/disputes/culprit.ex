@@ -29,9 +29,9 @@ defmodule Block.Extrinsic.Disputes.Culprit do
   use Sizes
 
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Culprit.t(), binary()}
-  def decode(blob) do
+  def decode(bin) do
     <<work_report_hash::binary-size(@hash_size), key::binary-size(@hash_size),
-      signature::binary-size(@signature_size), rest::binary>> = blob
+      signature::binary-size(@signature_size), rest::binary>> = bin
 
     {
       %__MODULE__{work_report_hash: work_report_hash, key: key, signature: signature},

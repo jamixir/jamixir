@@ -135,10 +135,10 @@ defmodule Block.Header do
 
   def unsigned_decode(bin) do
     <<parent_hash::binary-size(@hash_size), prior_state_root::binary-size(@hash_size),
-      extrinsic_hash::binary-size(@hash_size), timeslot::binary-size(4), bin2::binary>> = bin
+      extrinsic_hash::binary-size(@hash_size), timeslot::binary-size(4), bin::binary>> = bin
 
-    {epoch_mark, bin3} =
-      NilDiscriminator.decode(bin2, fn epoch_mark_bin ->
+    {epoch_mark, bin} =
+      NilDiscriminator.decode(bin, fn epoch_mark_bin ->
         <<entropy::binary-size(@hash_size), rest::binary>> = epoch_mark_bin
 
         {keys, cont} =
@@ -150,15 +150,15 @@ defmodule Block.Header do
         {{entropy, keys}, cont}
       end)
 
-    {winning_tickets_marker, bin4} =
+    {winning_tickets_marker, bin} =
       NilDiscriminator.decode(
-        bin3,
+        bin,
         &VariableSize.decode(&1, SealKeyTicket, Constants.epoch_length())
       )
 
-    {offenders_marker, bin5} = VariableSize.decode(bin4, :hash)
-    <<block_author_key_index::binary-size(2), bin6::binary>> = bin5
-    <<vrf_signature::binary-size(96), bin7::binary>> = bin6
+    {offenders_marker, bin} = VariableSize.decode(bin, :hash)
+    <<block_author_key_index::binary-size(2), bin::binary>> = bin
+    <<vrf_signature::binary-size(96), rest::binary>> = bin
 
     {%__MODULE__{
        parent_hash: parent_hash,
@@ -171,12 +171,12 @@ defmodule Block.Header do
        block_author_key_index: de_le(block_author_key_index, 2),
        vrf_signature: vrf_signature,
        block_seal: nil
-     }, bin7}
+     }, rest}
   end
 
   def decode(bin) do
-    {header, bin2} = unsigned_decode(bin)
-    <<block_seal::binary-size(96), rest::binary>> = bin2
+    {header, bin} = unsigned_decode(bin)
+    <<block_seal::binary-size(96), rest::binary>> = bin
     {%__MODULE__{header | block_seal: block_seal}, rest}
   end
 

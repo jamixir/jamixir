@@ -33,9 +33,9 @@ defmodule Block do
   end
 
   def decode(bin) do
-    {header, bin2} = Header.decode(bin)
-    {extrinsic, bin3} = Extrinsic.decode(bin2)
-    {%__MODULE__{header: header, extrinsic: extrinsic}, bin3}
+    {header, bin} = Header.decode(bin)
+    {extrinsic, bin} = Extrinsic.decode(bin)
+    {%__MODULE__{header: header, extrinsic: extrinsic}, bin}
   end
 
   use JsonDecoder

@@ -71,10 +71,10 @@ defmodule Block.Extrinsic.Preimage do
 
   use Codec.Decoder
 
-  def decode(blob) do
-    <<service::binary-size(4), vs_blob::binary>> = blob
+  def decode(bin) do
+    <<service::binary-size(4), bin::binary>> = bin
 
-    {blob, rest} = VariableSize.decode(vs_blob, :binary)
+    {blob, rest} = VariableSize.decode(bin, :binary)
     {%__MODULE__{service: de_le(service, 4), blob: blob}, rest}
   end
 

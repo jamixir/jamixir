@@ -33,13 +33,13 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   use Codec.Decoder
 
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Judgement.t(), binary()}
-  def decode(blob) do
-    <<vote::binary-size(1), validator_index::binary-size(@validator_size),
-      signature::binary-size(@signature_size), rest::binary>> = blob
+  def decode(bin) do
+    <<vote::binary-size(1), validator_index::binary-size(@validator_index_size),
+      signature::binary-size(@signature_size), rest::binary>> = bin
 
     {
       %__MODULE__{
-        validator_index: de_le(validator_index, @validator_size),
+        validator_index: de_le(validator_index, @validator_index_size),
         vote: vote == <<1>>,
         signature: signature
       },
@@ -48,7 +48,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   end
 
   def size do
-    @validator_size + 1 + @signature_size
+    @validator_index_size + 1 + @signature_size
   end
 
   use JsonDecoder

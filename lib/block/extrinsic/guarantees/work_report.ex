@@ -206,10 +206,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   use Sizes
 
   def decode(bin) do
-    {specification, bin2} = AvailabilitySpecification.decode(bin)
-    {refinement_context, bin3} = RefinementContext.decode(bin2)
-    <<core_index::8, bin4::binary>> = bin3
-    {segment_root_lookup, bin5} = VariableSize.decode(bin4, :map, @hash_size, @hash_size)
+    {specification, bin} = AvailabilitySpecification.decode(bin)
+    {refinement_context, bin} = RefinementContext.decode(bin)
+    <<core_index::8, bin::binary>> = bin
+    {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
 
     segment_root_lookup =
       if segment_root_lookup == %{} do
@@ -218,9 +218,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         segment_root_lookup
       end
 
-    <<authorizer_hash::binary-size(@hash_size), bin6::binary>> = bin5
-    {output, bin7} = VariableSize.decode(bin6, :binary)
-    {results, rest} = VariableSize.decode(bin7, WorkResult)
+    <<authorizer_hash::binary-size(@hash_size), bin::binary>> = bin
+    {output, bin} = VariableSize.decode(bin, :binary)
+    {results, rest} = VariableSize.decode(bin, WorkResult)
 
     {%__MODULE__{
        specification: specification,

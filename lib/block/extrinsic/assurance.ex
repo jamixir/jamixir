@@ -96,7 +96,7 @@ defmodule Block.Extrinsic.Assurance do
     def encode(%Assurance{} = a) do
       e(a.hash) <>
         e(pad(a.bitfield, Sizes.bitfield())) <>
-        e_le(a.validator_index, @validator_size) <>
+        e_le(a.validator_index, @validator_index_size) <>
         e(pad(a.signature, @signature_size))
     end
   end
@@ -104,13 +104,13 @@ defmodule Block.Extrinsic.Assurance do
   use Sizes
   use Codec.Decoder
   # defimpl Decodable do
-  def decode(blob) do
+  def decode(bin) do
     # this size needs to be defined in runtime because of mocked core count
     bitfield_size = Sizes.bitfield()
 
     <<hash::binary-size(@hash_size), bitfield::binary-size(bitfield_size),
-      validator_index::binary-size(@validator_size), signature::binary-size(@signature_size),
-      rest::binary>> = blob
+      validator_index::binary-size(@validator_index_size),
+      signature::binary-size(@signature_size), rest::binary>> = bin
 
     {
       %__MODULE__{
