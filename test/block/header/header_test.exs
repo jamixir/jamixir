@@ -86,20 +86,25 @@ defmodule Block.HeaderTest do
   end
 
   describe "decode/1" do
-    test "unsigned decode header smoke test" do
-      header = build(:header)
-      encoded = Header.unsigned_encode(header)
-      {decoded, _} = Header.unsigned_decode(encoded)
-      assert decoded == header
-    end
-
-    test "unsigned decode header will all fields" do
+    setup do
       header =
         build(:header,
           prior_state_root: Hash.random(),
-          epoch_mark: {Hash.random(), [Hash.random(64)]}
+          epoch_mark: {Hash.random(), [Hash.random(64)]},
+          vrf_signature: Hash.random()
         )
 
+      {:ok, header: header}
+    end
+
+    test "decode header smoke test", %{header: header} do
+      encoded = Encodable.encode(header)
+      {decoded, _} = Header.decode(encoded)
+      assert decoded == header
+    end
+
+    test "unsigned decode header will all fields", %{header: header} do
+      header = put_in(header.vrf_signature, nil)
       encoded = Header.unsigned_encode(header)
       {decoded, _} = Header.unsigned_decode(encoded)
       assert decoded == header

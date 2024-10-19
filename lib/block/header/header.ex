@@ -57,7 +57,7 @@ defmodule Block.Header do
     # Hi
     block_author_key_index: 0,
     # Hv
-    vrf_signature: <<>>,
+    vrf_signature: nil,
     # Hs
     block_seal: <<>>
   ]
@@ -152,6 +152,7 @@ defmodule Block.Header do
 
     {winning_tickets_marker, bin4} = NilDiscriminator.decode(bin3, & &1)
     {offenders_marker, bin5} = VariableSize.decode(bin4, :hash)
+    <<block_author_key_index::binary-size(2), bin6::binary>> = bin5
 
     {%__MODULE__{
        parent_hash: parent_hash,
@@ -160,11 +161,15 @@ defmodule Block.Header do
        timeslot: de_le(timeslot, 4),
        epoch_mark: epoch_mark,
        winning_tickets_marker: winning_tickets_marker,
-       offenders_marker: offenders_marker
-       # TODO
-       # block_author_key_index: e_le(bin5, 2)
-       # vrf_signature: vrf_signature,
-     }, bin5}
+       offenders_marker: offenders_marker,
+       block_author_key_index: de_le(block_author_key_index, 2)
+     }, bin6}
+  end
+
+  def decode(bin) do
+    {header, bin2} = unsigned_decode(bin)
+    <<vrf_signature::binary-size(@hash_size), rest::binary>> = bin2
+    {%__MODULE__{header | vrf_signature: vrf_signature}, rest}
   end
 
   use JsonDecoder
