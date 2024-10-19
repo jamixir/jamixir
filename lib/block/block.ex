@@ -32,6 +32,12 @@ defmodule Block do
     end
   end
 
+  def decode(bin) do
+    {header, bin2} = Header.decode(bin)
+    {extrinsic, bin3} = Extrinsic.decode(bin2)
+    {%__MODULE__{header: header, extrinsic: extrinsic}, bin3}
+  end
+
   use JsonDecoder
   def json_mapping, do: %{header: Header, extrinsic: Extrinsic}
 end
