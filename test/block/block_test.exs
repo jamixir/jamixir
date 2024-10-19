@@ -8,6 +8,18 @@ defmodule BlockTest do
   import Mox
   setup :verify_on_exit!
 
+  defmodule ConstantsMock do
+    def validator_count, do: 1
+  end
+
+  setup_all do
+    Application.put_env(:jamixir, Constants, ConstantsMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, Constants)
+    end)
+  end
+
   setup do
     state = %State{
       timeslot: 99,
@@ -41,6 +53,24 @@ defmodule BlockTest do
   describe "encode/1" do
     test "encode block smoke test" do
       Codec.Encoder.encode(build(:block))
+    end
+
+    test "decode block smoke test" do
+      extrinsic = build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
+
+      header =
+        build(:header,
+          prior_state_root: Hash.random(),
+          epoch_mark: {Hash.random(), [Hash.random(64)]},
+          vrf_signature: Hash.random()
+        )
+
+      block = build(:block, header: header, extrinsic: extrinsic)
+
+      encoded = Codec.Encoder.encode(block)
+      {decoded, _} = Block.decode(encoded)
+      assert decoded.header == block.header
+      assert decoded.extrinsic == block.extrinsic
     end
   end
 
