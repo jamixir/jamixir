@@ -54,11 +54,11 @@ defmodule Block.Extrinsic do
   use JsonDecoder
 
   def decode(bin) do
-    {tickets, bin2} = VariableSize.decode(bin, TicketProof)
-    {disputes, bin3} = Disputes.decode(bin2)
-    {preimages, bin4} = VariableSize.decode(bin3, Preimage)
-    {assurances, bin5} = VariableSize.decode(bin4, Assurance)
-    {guarantees, rest} = VariableSize.decode(bin5, Guarantee)
+    {tickets, bin} = VariableSize.decode(bin, TicketProof)
+    {disputes, bin} = Disputes.decode(bin)
+    {preimages, bin} = VariableSize.decode(bin, Preimage)
+    {assurances, bin} = VariableSize.decode(bin, Assurance)
+    {guarantees, rest} = VariableSize.decode(bin, Guarantee)
 
     {%__MODULE__{
        tickets: tickets,

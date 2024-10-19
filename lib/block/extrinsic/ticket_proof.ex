@@ -116,8 +116,8 @@ defmodule Block.Extrinsic.TicketProof do
 
   use Sizes
 
-  def decode(blob) do
-    <<attempt::integer, signature::binary-size(@bandersnatch_proof_size), rest::binary>> = blob
+  def decode(bin) do
+    <<attempt::integer, signature::binary-size(@bandersnatch_proof_size), rest::binary>> = bin
     {%__MODULE__{attempt: attempt, signature: signature}, rest}
   end
 

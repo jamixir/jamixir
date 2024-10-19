@@ -37,15 +37,15 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   use Sizes
   use Codec.Decoder
 
-  def decode(blob) do
+  def decode(bin) do
     judgements_count = div(2 * Constants.validator_count(), 3) + 1
     judgements_size = Judgement.size() * judgements_count
 
     <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4),
-      judgements_blob::binary-size(judgements_size), rest::binary>> = blob
+      judgements_bin::binary-size(judgements_size), rest::binary>> = bin
 
     {judgements, _} =
-      Enum.reduce(1..judgements_count, {[], judgements_blob}, fn _, {list, bin} ->
+      Enum.reduce(1..judgements_count, {[], judgements_bin}, fn _, {list, bin} ->
         {judgement, rest} = Judgement.decode(bin)
         {list ++ [judgement], rest}
       end)

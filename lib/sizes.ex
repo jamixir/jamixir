@@ -11,7 +11,7 @@ defmodule Sizes do
       @bitfield_size Sizes.bitfield()
       @hash_size Sizes.hash()
       @signature_size 64
-      @validator_size 2
+      @validator_index_size 2
     end
   end
 end

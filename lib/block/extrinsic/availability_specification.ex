@@ -37,10 +37,10 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  def decode(blob) do
+  def decode(bin) do
     <<work_package_hash::binary-size(@hash_size), len::binary-size(4),
       erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
-      rest::binary>> = blob
+      rest::binary>> = bin
 
     {%__MODULE__{
        work_package_hash: work_package_hash,

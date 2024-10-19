@@ -211,9 +211,9 @@ defmodule Block.Extrinsic.Disputes do
   end
 
   def decode(bin) do
-    {verdicts, bin2} = VariableSize.decode(bin, Verdict)
-    {culprits, bin3} = VariableSize.decode(bin2, Culprit)
-    {faults, rest} = VariableSize.decode(bin3, Fault)
+    {verdicts, bin} = VariableSize.decode(bin, Verdict)
+    {culprits, bin} = VariableSize.decode(bin, Culprit)
+    {faults, rest} = VariableSize.decode(bin, Fault)
 
     {%Disputes{verdicts: verdicts, culprits: culprits, faults: faults}, rest}
   end
