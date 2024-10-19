@@ -47,7 +47,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     {judgements, _} =
       Enum.reduce(1..judgements_count, {[], judgements_blob}, fn _, {list, bin} ->
         {judgement, rest} = Judgement.decode(bin)
-        {[judgement | list], rest}
+        {list ++ [judgement], rest}
       end)
 
     {

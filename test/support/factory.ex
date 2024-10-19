@@ -114,6 +114,7 @@ defmodule Jamixir.Factory do
       core_index: 1,
       authorizer_hash: Hash.two(),
       output: <<3>>,
+      segment_root_lookup: nil,
       results: build_list(2, :work_result)
     }
   end

@@ -16,5 +16,11 @@ defmodule System.State.SealKeyTicket do
     end
   end
 
+  use Sizes
+
+  def decode(<<id::binary-size(@hash_size), attempt::integer, rest::binary>>) do
+    {%__MODULE__{id: id, attempt: attempt}, rest}
+  end
+
   use JsonDecoder
 end

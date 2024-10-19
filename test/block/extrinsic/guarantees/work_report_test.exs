@@ -56,7 +56,7 @@ defmodule WorkReportTest do
 
     test "returns false when encoded size exceeds max_work_report_size" do
       large_output = String.duplicate("a", Constants.max_work_report_size())
-      invalid_wr = build(:work_report, output: large_output)
+      invalid_wr = build(:work_report, output: large_output, segment_root_lookup: %{})
       refute WorkReport.valid_size?(invalid_wr)
     end
   end
