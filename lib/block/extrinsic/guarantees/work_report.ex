@@ -43,8 +43,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    map_size(wr.segment_root_lookup) <= 8 and
-      byte_size(e(wr)) <= Constants.max_work_report_size()
+    if wr.segment_root_lookup == nil do
+      true
+    else
+      map_size(wr.segment_root_lookup) <= 8 and
+        byte_size(e(wr)) <= Constants.max_work_report_size()
+    end
   end
 
   # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
@@ -163,6 +167,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   use JsonDecoder
 
+  @spec json_mapping() :: %{
+          output: :auth_output,
+          refinement_context: %{f: :context, m: RefinementContext},
+          results: [Block.Extrinsic.Guarantee.WorkResult, ...],
+          specification: %{f: :package_spec, m: Block.Extrinsic.AvailabilitySpecification}
+        }
   def json_mapping do
     %{
       specification: %{m: AvailabilitySpecification, f: :package_spec},
@@ -200,6 +210,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {refinement_context, bin3} = RefinementContext.decode(bin2)
     <<core_index::8, bin4::binary>> = bin3
     {segment_root_lookup, bin5} = VariableSize.decode(bin4, :map, @hash_size, @hash_size)
+
+    segment_root_lookup =
+      if segment_root_lookup == %{} do
+        nil
+      else
+        segment_root_lookup
+      end
+
     <<authorizer_hash::binary-size(@hash_size), bin6::binary>> = bin5
     {output, bin7} = VariableSize.decode(bin6, :binary)
     {results, rest} = VariableSize.decode(bin7, WorkResult)

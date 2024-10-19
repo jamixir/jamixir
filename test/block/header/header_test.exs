@@ -90,8 +90,9 @@ defmodule Block.HeaderTest do
       header =
         build(:header,
           prior_state_root: Hash.random(),
-          epoch_mark: {Hash.random(), [Hash.random(64)]},
-          vrf_signature: Hash.random()
+          epoch_mark: {Hash.random(), [Hash.random()]},
+          vrf_signature: Hash.random(96),
+          block_seal: Hash.random(96)
         )
 
       {:ok, header: header}
@@ -104,7 +105,7 @@ defmodule Block.HeaderTest do
     end
 
     test "unsigned decode header will all fields", %{header: header} do
-      header = put_in(header.vrf_signature, nil)
+      header = put_in(header.block_seal, nil)
       encoded = Header.unsigned_encode(header)
       {decoded, _} = Header.unsigned_decode(encoded)
       assert decoded == header

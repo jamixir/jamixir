@@ -65,6 +65,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
           String.duplicate("a", Constants.max_work_report_size() + 1)
         end)
 
+      invalid_g1 = put_in(invalid_g1.work_report.segment_root_lookup, %{})
+
       assert Guarantee.validate([invalid_g1], state, 1) ==
                {:error, "Invalid work report size"}
     end

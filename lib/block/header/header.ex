@@ -143,16 +143,22 @@ defmodule Block.Header do
 
         {keys, cont} =
           Enum.reduce(1..Constants.validator_count(), {[], rest}, fn _, {list, b} ->
-            <<key::binary-size(@signature_size), r::binary>> = b
+            <<key::binary-size(@hash_size), r::binary>> = b
             {list ++ [key], r}
           end)
 
         {{entropy, keys}, cont}
       end)
 
-    {winning_tickets_marker, bin4} = NilDiscriminator.decode(bin3, & &1)
+    {winning_tickets_marker, bin4} =
+      NilDiscriminator.decode(
+        bin3,
+        &VariableSize.decode(&1, SealKeyTicket, Constants.epoch_length())
+      )
+
     {offenders_marker, bin5} = VariableSize.decode(bin4, :hash)
     <<block_author_key_index::binary-size(2), bin6::binary>> = bin5
+    <<vrf_signature::binary-size(96), bin7::binary>> = bin6
 
     {%__MODULE__{
        parent_hash: parent_hash,
@@ -162,14 +168,16 @@ defmodule Block.Header do
        epoch_mark: epoch_mark,
        winning_tickets_marker: winning_tickets_marker,
        offenders_marker: offenders_marker,
-       block_author_key_index: de_le(block_author_key_index, 2)
-     }, bin6}
+       block_author_key_index: de_le(block_author_key_index, 2),
+       vrf_signature: vrf_signature,
+       block_seal: nil
+     }, bin7}
   end
 
   def decode(bin) do
     {header, bin2} = unsigned_decode(bin)
-    <<vrf_signature::binary-size(@hash_size), rest::binary>> = bin2
-    {%__MODULE__{header | vrf_signature: vrf_signature}, rest}
+    <<block_seal::binary-size(96), rest::binary>> = bin2
+    {%__MODULE__{header | block_seal: block_seal}, rest}
   end
 
   use JsonDecoder

@@ -11,6 +11,7 @@ defmodule CodecVectorsTest do
   defmodule ConstantsMock do
     def core_count, do: 2
     def validator_count, do: 6
+    def epoch_length, do: 12
   end
 
   tests = [
@@ -61,8 +62,8 @@ defmodule CodecVectorsTest do
         encoded = Encodable.encode(object)
         assert encoded == expected
 
-      # decoded = module.decode(expected)
-      # assert object == decoded
+        {decoded, _} = module.decode(expected)
+        assert decoded == object
 
       l when is_list(l) ->
         encoded =
