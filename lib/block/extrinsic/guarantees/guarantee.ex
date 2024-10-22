@@ -70,12 +70,16 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (142) v0.4.1 - w
   def work_reports(guarantees) do
-    Enum.map(guarantees, & &1.work_report)
+    for g <- guarantees do
+      g.work_report
+    end
   end
 
   # Formula (145) v0.4.1 - x
   def refinement_contexts(guarantees) do
-    work_reports(guarantees) |> Enum.map(& &1.refinement_context)
+    for w <- work_reports(guarantees) do
+      w.refinement_context
+    end
   end
 
   # Formula (143) v0.4.1
@@ -145,9 +149,7 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (145) v0.4.1
   defp p_set(work_reports) do
-    work_reports
-    |> Enum.map(& &1.specification.work_package_hash)
-    |> MapSet.new()
+    for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
 
   # Formula (146) v0.4.1

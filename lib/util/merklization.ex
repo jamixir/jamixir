@@ -68,7 +68,12 @@ defmodule Util.Merklization do
 
   """
   def merkelize_state(dict) do
-    dict |> Enum.map(fn {k, v} -> {bits(k), {k, v}} end) |> Enum.into(%{}) |> merkelize
+    merkelize(
+      for {k, v} <- dict do
+        {bits(k), {k, v}}
+      end
+      |> Enum.into(%{})
+    )
   end
 
   @doc """

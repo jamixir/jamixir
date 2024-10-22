@@ -19,9 +19,7 @@ defmodule Block.Extrinsic.Guarantor do
             validators: []
 
   # Formula (133) v0.4.1
-  def rotate(list, n) do
-    list |> Enum.map(&rem(&1 + n, Constants.core_count()))
-  end
+  def rotate(c, n), do: for(x <- c, do: rem(x + n, Constants.core_count()))
 
   # Formula (134) v0.4.1
   def permute(e, t) when is_list(e) or is_binary(e) do

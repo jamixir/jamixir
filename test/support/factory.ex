@@ -211,19 +211,19 @@ defmodule Jamixir.Factory do
 
   # Authorizer Factories
   def authorizer_queue_factory do
-    Enum.map(1..@cores, fn _ ->
-      Enum.map(1..@max_authorize_queue_items, fn _ ->
+    for _ <- 1..@cores do
+      for _ <- 1..@max_authorize_queue_items do
         unique_hash_factory()
-      end)
-    end)
+      end
+    end
   end
 
   def authorizer_pool_factory do
-    Enum.map(1..@cores, fn _ ->
-      Enum.map(1..@max_authorizers_per_core, fn _ ->
+    for _ <- 1..@cores do
+      for _ <- 1..@max_authorizers_per_core do
         unique_hash_factory()
-      end)
-    end)
+      end
+    end
   end
 
   def unique_hash_factory do

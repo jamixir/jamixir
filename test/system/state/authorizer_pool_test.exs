@@ -8,14 +8,18 @@ defmodule System.StateTransition.AuthorizerPoolTest do
 
   setup do
     authorizer_queue_ =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..Constants.max_authorization_queue_items(), fn j -> "queue#{i}_#{j}" end)
-      end)
+      for i <- 1..Constants.core_count() do
+        for j <- 1..Constants.max_authorization_queue_items() do
+          "queue#{i}_#{j}"
+        end
+      end
 
     authorizer_pools =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..Constants.max_authorizations_items(), fn j -> "auth#{i}_#{j}" end)
-      end)
+      for i <- 1..Constants.core_count() do
+        for j <- 1..Constants.max_authorizations_items() do
+          "auth#{i}_#{j}"
+        end
+      end
 
     timeslot = 2
 
@@ -43,7 +47,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       )
 
     expected_result =
-      Enum.map(1..Constants.core_count(), fn i ->
+      for i <- 1..Constants.core_count() do
         [
           "auth#{i}_2",
           "auth#{i}_3",
@@ -54,7 +58,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
           "auth#{i}_8",
           "queue#{i}_3"
         ]
-      end)
+      end
 
     assert result == expected_result
   end
@@ -65,15 +69,15 @@ defmodule System.StateTransition.AuthorizerPoolTest do
     timeslot: timeslot
   } do
     guarantees =
-      Enum.map(1..Constants.core_count(), fn i ->
+      for i <- 1..Constants.core_count() do
         %Guarantee{work_report: %WorkReport{core_index: i - 1, authorizer_hash: "auth#{i}_3"}}
-      end)
+      end
 
     result =
       State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
-      Enum.map(1..Constants.core_count(), fn i ->
+      for i <- 1..Constants.core_count() do
         [
           "auth#{i}_1",
           "auth#{i}_2",
@@ -84,7 +88,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
           "auth#{i}_8",
           "queue#{i}_3"
         ]
-      end)
+      end
 
     assert result == expected_result
   end

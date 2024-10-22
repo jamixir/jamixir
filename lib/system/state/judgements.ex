@@ -59,7 +59,7 @@ defmodule System.State.Judgements do
     current_epoch = Util.Time.epoch_index(timeslot)
 
     v_set =
-      Enum.map(verdicts, fn verdict ->
+      for verdict <- verdicts do
         validator_set =
           Disputes.get_validator_set(
             state.curr_validators,
@@ -69,7 +69,7 @@ defmodule System.State.Judgements do
           )
 
         {verdict.work_report_hash, Verdict.sum_judgements(verdict), length(validator_set)}
-      end)
+      end
 
     case Enum.any?(v_set, fn {r, sum, v_count} ->
            # Formula (110) v0.4.1

@@ -27,8 +27,9 @@ defmodule System.State.PrivilegedServices do
 
     def encode(%PrivilegedServices{} = v) do
       e(
-        [v.manager_service, v.alter_authorizer_service, v.alter_validator_service]
-        |> Enum.map(&e_le(&1, 4))
+        for s <- [v.manager_service, v.alter_authorizer_service, v.alter_validator_service] do
+          e_le(s, 4)
+        end
       ) <> e(v.services_gas)
     end
   end

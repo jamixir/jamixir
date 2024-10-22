@@ -131,11 +131,9 @@ defmodule Block.Extrinsic.Disputes do
 
   # Formula (113) v0.4.1
   defp compute_bad_set(verdicts, judgements) do
-    (verdicts
-     |> Enum.filter(&(Verdict.sum_judgements(&1) == 0))
-     |> Enum.map(& &1.work_report_hash)
-     |> MapSet.new()) ++
-      judgements.bad
+    for v <- verdicts, Verdict.sum_judgements(v) == 0, into: MapSet.new() do
+      v.work_report_hash
+    end ++ judgements.bad
   end
 
   defp validate_offenses([], _, _, _), do: :ok
