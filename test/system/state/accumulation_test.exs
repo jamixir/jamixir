@@ -1,6 +1,8 @@
 defmodule System.State.AccumulationTest do
   use ExUnit.Case
   import Mox
+  alias System.State.Accumulation
+  alias System.PVM.AccumulationOperand
 
   setup :verify_on_exit!
 
@@ -184,9 +186,9 @@ defmodule System.State.AccumulationTest do
       assert Enum.all?(p, fn %{o: _, l: _, a: _, k: _} -> true end)
 
       assert p == [
-               %{o: "result3", l: "hash3", a: "output2", k: "wph2"},
-               %{o: "result2", l: "hash2", a: "output1", k: "wph1"},
-               %{o: "result1", l: "hash1", a: "output1", k: "wph1"}
+               %AccumulationOperand{o: "result3", l: "hash3", a: "output2", k: "wph2"},
+               %AccumulationOperand{o: "result2", l: "hash2", a: "output1", k: "wph1"},
+               %AccumulationOperand{o: "result1", l: "hash1", a: "output1", k: "wph1"}
              ]
     end
 

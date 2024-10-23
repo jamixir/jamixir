@@ -3,12 +3,12 @@ defmodule System.State.Accumulation do
   Handles the accumulation and commitment process for services, validators, and the authorization queue.
   """
 
-  alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias System.{AccumulationResult, DeferredTransfer}
   alias System.State.{PrivilegedServices, ServiceAccount, Validator}
   alias Types
   alias Util.Collections
+  alias System.PVM.AccumulationOperand
 
   use MapUnion
 
@@ -36,10 +36,8 @@ defmodule System.State.Accumulation do
             authorizer_queue: [[]],
             privileged_services: %PrivilegedServices{}
 
+  # Formula (171) v0.4.1
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
-
-  # Formula (174) v0.4.1
-  @type o_tuple :: %{o: binary(), l: Types.hash(), a: binary(), k: Types.hash()}
 
   @doc """
   Accumulates the availability, core reports, and services, and returns the updated state.
@@ -73,7 +71,7 @@ defmodule System.State.Accumulation do
     i = calculate_i(work_reports, gas_limit)
 
     if i == 0 do
-      {:ok, {0, acc_state, [], {}}}
+      {:ok, {0, acc_state, [], MapSet.new()}}
     else
       with {:ok, {g_star, o_star, t_star, b_star}} <-
              parallelized_accumulation(acc_state, Enum.take(work_reports, i), always_acc_services),
@@ -214,25 +212,19 @@ defmodule System.State.Accumulation do
     stub_psi_a(acc_state, service, g, p)
   end
 
-  # This sepertion is to allow testing of single_accumulation without having to test the stub as well
+  # This separation is to allow testing of single_accumulation without having to test the stub as well
   def pre_single_accumulation(work_reports, service_dict, service) do
     initial_g = Map.get(service_dict, service, 0)
 
-    Enum.reduce(work_reports, {initial_g, []}, fn %WorkReport{
-                                                    results: wr,
-                                                    output: wo,
-                                                    specification: %AvailabilitySpecification{
-                                                      work_package_hash: sh
-                                                    }
-                                                  },
-                                                  {acc_g, acc_p} ->
-      wr
-      |> Enum.filter(&(&1.service == service))
-      |> Enum.reduce({acc_g, acc_p}, fn %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl},
-                                        {g, p} ->
-        new_p = %{o: ro, l: rl, a: wo, k: sh}
-        {g + gr, [new_p | p]}
-      end)
+    Enum.reduce(work_reports, {initial_g, []}, fn
+      %WorkReport{results: wr, output: wo, specification: ws}, {acc_g, acc_p} ->
+        wr
+        |> Enum.filter(&(&1.service == service))
+        |> Enum.reduce({acc_g, acc_p}, fn
+          %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl}, {g, p} ->
+            new_p = %AccumulationOperand{o: ro, l: rl, a: wo, k: ws.work_package_hash}
+            {g + gr, [new_p | p]}
+        end)
     end)
   end
 
@@ -241,7 +233,7 @@ defmodule System.State.Accumulation do
           t(),
           non_neg_integer(),
           non_neg_integer(),
-          list(o_tuple())
+          list(AccumulationOperand.t())
         ) :: AccumulationResult.t()
   defp stub_psi_a(acc_state, _service, gas_used, _payloads) do
     # Replace this with actual implementation later
