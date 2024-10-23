@@ -73,7 +73,7 @@ defmodule System.State.Accumulation do
     i = calculate_i(work_reports, gas_limit)
 
     if i == 0 do
-      {:ok, {0, acc_state, [], MapSet.new()}}
+      {:ok, {0, acc_state, [], {}}}
     else
       with {:ok, {g_star, o_star, t_star, b_star}} <-
              parallelized_accumulation(acc_state, Enum.take(work_reports, i), always_acc_services),
@@ -93,7 +93,7 @@ defmodule System.State.Accumulation do
 
   @spec calculate_i(list(WorkReport.t()), non_neg_integer()) :: non_neg_integer()
   def calculate_i(work_reports, gas_limit) do
-    Enum.reduce_while(0..length(work_reports), 0, fn i, _acc ->
+    Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
         work_reports
         |> Enum.take(i)
