@@ -71,4 +71,7 @@ defmodule Constants do
 
   # 4104
   def wswc, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+
+  @doc "W_T - The size of the memo component in a deferred transfer, in octets."
+  def memo_size, do: 128
 end

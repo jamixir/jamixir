@@ -5,6 +5,7 @@ ExUnit.configure(exclude: [:full_vectors])
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
+Mox.defmock(MockAccumulation, for: System.State.Accumulation)
 
 defmodule TestHelper do
   alias System.State.Validator
