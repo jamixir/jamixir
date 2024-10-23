@@ -452,12 +452,8 @@ defmodule System.State.AccumulationTest do
       # Mock single_accumulation
       MockAccumulation
       |> expect(:do_single_accumulation, 9, fn acc_state, _work_reports, _service_dict, service ->
-        gas_used =
-          cond do
-            service == 1 -> 30
-            service == 2 -> 40
-            service == 3 -> 20
-          end
+        gas_map = %{1 => 30, 2 => 40, 3 => 20}
+        gas_used = gas_map[service]
 
         %AccumulationResult{
           state: acc_state,
@@ -483,6 +479,40 @@ defmodule System.State.AccumulationTest do
       # (30 + 40 + 20)
       assert Enum.sum(Enum.map(all_transfers, & &1.amount)) == 90
       assert Enum.all?(1..3, fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
+    end
+
+    test "returns error when encountering an invalid service" do
+      gas_limit = 100
+
+      initial_state = %Accumulation{
+        services: %{1 => :service1, 2 => :service2},
+        privileged_services: %PrivilegedServices{
+          manager_service: 1,
+          alter_authorizer_service: 2,
+          alter_validator_service: 3
+        },
+        next_validators: :initial_next_validators,
+        authorizer_queue: :initial_authorizer_queue
+      }
+
+      work_reports = [
+        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 30}]},
+        # Invalid service
+        %WorkReport{results: [%WorkResult{service: 3, gas_ratio: 40}]},
+        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 50}]}
+      ]
+
+      always_acc_services = %{}
+
+      result =
+        Accumulation.outer_accumulation(
+          gas_limit,
+          work_reports,
+          initial_state,
+          always_acc_services
+        )
+
+      assert {:error, :invalid_service} = result
     end
   end
 end
