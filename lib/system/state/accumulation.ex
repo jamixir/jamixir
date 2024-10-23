@@ -1,8 +1,8 @@
 defmodule AccumulationResult do
-  alias System.{AccumulationState, DeferredTransfer}
+  alias System.DeferredTransfer
 
   @type t :: %__MODULE__{
-          state: AccumulationState.t(),
+          state: t(),
           transfers: list(DeferredTransfer.t()),
           output: Types.hash() | nil,
           gas_used: non_neg_integer()
@@ -17,7 +17,7 @@ defmodule System.State.Accumulation do
 
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias System.{AccumulationState, DeferredTransfer}
+  alias System.DeferredTransfer
   alias System.State.PrivilegedServices
   alias Types
   alias Util.Collections
@@ -25,11 +25,28 @@ defmodule System.State.Accumulation do
   use MapUnion
 
   @callback do_single_accumulation(
-              AccumulationState.t(),
+              t(),
               list(),
               map(),
               non_neg_integer()
             ) :: AccumulationResult.t()
+
+  # Formula (169) v0.4.1
+  @type t :: %__MODULE__{
+          # d: Service accounts state (δ)
+          services: %{integer() => ServiceAccount.t()},
+          # i: Upcoming validator keys (ι)
+          next_validators: list(Validator.t()),
+          # q: Queue of work-reports (φ)
+          authorizer_queue: list(list(Types.hash())),
+          # x: Privileges state (χ)
+          privileged_services: PrivilegedServices.t()
+        }
+
+  defstruct services: %{},
+            next_validators: [],
+            authorizer_queue: [[]],
+            privileged_services: %PrivilegedServices{}
 
   @type accumulation_output :: {non_neg_integer(), Types.hash()}
 
@@ -58,12 +75,11 @@ defmodule System.State.Accumulation do
   @spec outer_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
-          AccumulationState.t(),
+          t(),
           %{non_neg_integer() => non_neg_integer()}
         ) ::
           {:ok,
-           {non_neg_integer(), AccumulationState.t(), list(DeferredTransfer.t()),
-            MapSet.t(accumulation_output)}}
+           {non_neg_integer(), t(), list(DeferredTransfer.t()), MapSet.t(accumulation_output)}}
           | {:error, atom()}
   def outer_accumulation(gas_limit, work_reports, acc_state, always_acc_services) do
     i = calculate_i(work_reports, gas_limit)
@@ -106,12 +122,11 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (173) v0.4.1
-  @spec parallelized_accumulation(AccumulationState.t(), list(WorkReport.t()), %{
+  @spec parallelized_accumulation(t(), list(WorkReport.t()), %{
           non_neg_integer() => non_neg_integer()
         }) ::
           {:ok,
-           {non_neg_integer(), AccumulationState.t(), list(DeferredTransfer.t()),
-            MapSet.t(accumulation_output)}}
+           {non_neg_integer(), t(), list(DeferredTransfer.t()), MapSet.t(accumulation_output)}}
           | {:error, atom()}
   def parallelized_accumulation(acc_state, work_reports, always_acc_services) do
     s = collect_services(work_reports, always_acc_services)
@@ -145,18 +160,18 @@ defmodule System.State.Accumulation do
   end
 
   @spec update_accumulation_state(
-          AccumulationState.t(),
+          t(),
           list(WorkReport.t()),
           %{non_neg_integer() => non_neg_integer()},
           MapSet.t(non_neg_integer())
-        ) :: AccumulationState.t()
+        ) :: t()
   def update_accumulation_state(
-        %AccumulationState{} = acc_state,
+        %__MODULE__{} = acc_state,
         work_reports,
         always_acc_services,
         s
       ) do
-    %AccumulationState{
+    %__MODULE__{
       privileged_services: %PrivilegedServices{
         manager_service: m,
         alter_authorizer_service: a,
@@ -183,7 +198,7 @@ defmodule System.State.Accumulation do
           )
         )
 
-    %AccumulationState{
+    %__MODULE__{
       services: d_prime,
       next_validators: i_prime,
       authorizer_queue: q_prime,
@@ -191,7 +206,7 @@ defmodule System.State.Accumulation do
     }
   end
 
-  def validate_services(%AccumulationState{services: d}, services) do
+  def validate_services(%__MODULE__{services: d}, services) do
     if Enum.all?(services, &Map.has_key?(d, &1)) do
       :ok
     else
@@ -235,7 +250,7 @@ defmodule System.State.Accumulation do
 
   # Stub for ΨA function
   @spec stub_psi_a(
-          AccumulationState.t(),
+          t(),
           non_neg_integer(),
           non_neg_integer(),
           list(o_tuple())

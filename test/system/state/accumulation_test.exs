@@ -5,7 +5,6 @@ defmodule System.State.AccumulationTest do
   setup :verify_on_exit!
 
   alias System.State.Accumulation
-  alias System.AccumulationState
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.Guarantee.WorkResult
   alias Block.Extrinsic.AvailabilitySpecification
@@ -24,12 +23,12 @@ defmodule System.State.AccumulationTest do
 
   describe "validate_services/2" do
     test "returns :ok when all indices exist" do
-      state = %AccumulationState{services: %{1 => :service1, 2 => :service2, 3 => :service3}}
+      state = %Accumulation{services: %{1 => :service1, 2 => :service2, 3 => :service3}}
       assert :ok == Accumulation.validate_services(state, MapSet.new([1, 2, 3]))
     end
 
     test "returns error when any index is missing" do
-      state = %AccumulationState{services: %{1 => :service1, 2 => :service2}}
+      state = %Accumulation{services: %{1 => :service1, 2 => :service2}}
 
       assert {:error, :invalid_service} ==
                Accumulation.validate_services(state, MapSet.new([1, 2, 3]))
@@ -234,7 +233,7 @@ defmodule System.State.AccumulationTest do
     end
 
     test "updates state correctly" do
-      initial_state = %AccumulationState{
+      initial_state = %Accumulation{
         privileged_services: %PrivilegedServices{
           manager_service: 1,
           alter_authorizer_service: 2,
@@ -262,7 +261,7 @@ defmodule System.State.AccumulationTest do
                                                 ^always_acc_services,
                                                 ^service ->
             %AccumulationResult{
-              state: struct(AccumulationState, [{key, updated_value}])
+              state: struct(Accumulation, [{key, updated_value}])
             }
           end)
         end
@@ -275,7 +274,7 @@ defmodule System.State.AccumulationTest do
                                               ^always_acc_services,
                                               ^service ->
           %AccumulationResult{
-            state: %AccumulationState{
+            state: %Accumulation{
               services: Map.put(%{}, service, :"updated_service#{service}")
             }
           }
@@ -315,7 +314,7 @@ defmodule System.State.AccumulationTest do
     end
 
     test "performs basic accumulation correctly" do
-      initial_state = %AccumulationState{
+      initial_state = %Accumulation{
         services: %{1 => :service1, 2 => :service2, 3 => :service3},
         privileged_services: %PrivilegedServices{
           manager_service: 1,
@@ -358,7 +357,7 @@ defmodule System.State.AccumulationTest do
                                               ^always_acc_services,
                                               ^service ->
           %AccumulationResult{
-            state: %AccumulationState{
+            state: %Accumulation{
               privileged_services:
                 if(service == 1,
                   do: :updated_privileged_services,
@@ -387,7 +386,7 @@ defmodule System.State.AccumulationTest do
                                               ^always_acc_services,
                                               ^service ->
           %AccumulationResult{
-            state: %AccumulationState{
+            state: %Accumulation{
               services: %{service => :"updated_service#{service}"}
             }
           }
@@ -430,7 +429,7 @@ defmodule System.State.AccumulationTest do
     test "performs basic outer accumulation correctly" do
       gas_limit = 100
 
-      initial_state = %AccumulationState{
+      initial_state = %Accumulation{
         services: %{1 => :service1, 2 => :service2, 3 => :service3},
         privileged_services: %PrivilegedServices{
           manager_service: 1,
