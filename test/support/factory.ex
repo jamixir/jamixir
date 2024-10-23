@@ -17,11 +17,10 @@ defmodule Jamixir.Factory do
   # Validator Key Pairs Factory
   def validators_and_bandersnatch_keys(count \\ @validator_count) do
     {validators, key_pairs} =
-      Enum.map(1..count, fn _ ->
+      for _ <- 1..count do
         keypair = {_, b} = RingVrf.generate_secret_from_rand()
-
         {build(:validator, bandersnatch: b), keypair}
-      end)
+      end
       |> Enum.unzip()
 
     %{validators: validators, key_pairs: key_pairs}
@@ -433,10 +432,7 @@ defmodule Jamixir.Factory do
   end
 
   defp credentials_list do
-    num_credentials = Enum.random(2..3)
-
-    1..num_credentials
-    |> Enum.map(fn i -> {i, Crypto.random_sign()} end)
+    for(i <- 1..Enum.random(2..3), do: {i, Crypto.random_sign()})
     |> Enum.sort_by(&elem(&1, 0))
   end
 

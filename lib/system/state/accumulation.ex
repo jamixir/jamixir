@@ -93,11 +93,9 @@ defmodule System.State.Accumulation do
   def calculate_i(work_reports, gas_limit) do
     Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
-        work_reports
-        |> Enum.take(i)
-        |> Enum.flat_map(& &1.results)
-        |> Enum.map(& &1.gas_ratio)
-        |> Enum.sum()
+        Enum.sum(
+          for r <- Enum.flat_map(Enum.take(work_reports, i), & &1.results), do: r.gas_ratio
+        )
 
       if sum <= gas_limit do
         {:cont, i}
@@ -125,9 +123,10 @@ defmodule System.State.Accumulation do
   end
 
   def collect_services(work_reports, always_acc_services) do
-    MapSet.new(
-      Enum.flat_map(work_reports, & &1.results)
-      |> Enum.map(& &1.service)
+    for(
+      r <- Enum.flat_map(work_reports, & &1.results),
+      do: r.service,
+      into: MapSet.new()
     ) ++
       MapSet.new(Map.keys(always_acc_services))
   end
@@ -166,13 +165,12 @@ defmodule System.State.Accumulation do
     } = acc_state
 
     {x_prime, i_prime, q_prime} =
-      [{m, :privileged_services}, {a, :next_validators}, {v, :authorizer_queue}]
-      |> Enum.map(fn {service, key} ->
+      for {s, key} <- [{m, :privileged_services}, {a, :next_validators}, {v, :authorizer_queue}] do
         %AccumulationResult{state: state} =
-          single_accumulation(acc_state, work_reports, always_acc_services, service)
+          single_accumulation(acc_state, work_reports, always_acc_services, s)
 
         Map.get(state, key)
-      end)
+      end
       |> List.to_tuple()
 
     d_prime =

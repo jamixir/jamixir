@@ -4,7 +4,7 @@ defmodule CodecVectorsTest do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
   alias Block.Header
-  alias Codec.VariableSize
+  use Codec.Encoder
   use ExUnit.Case
   import TestVectorUtil
 
@@ -66,12 +66,7 @@ defmodule CodecVectorsTest do
         assert decoded == object
 
       l when is_list(l) ->
-        encoded =
-          Codec.Encoder.encode(
-            Enum.map(l, &module.from_json(&1))
-            |> VariableSize.new()
-          )
-
+        encoded = e(vs(for o <- l, do: module.from_json(o)))
         assert encoded == expected
     end
   end

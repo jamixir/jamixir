@@ -1,18 +1,16 @@
 defmodule System.State.CoreReportTest do
-  alias Codec.Encoder
   alias System.State.CoreReport
   alias Util.Hash
   use ExUnit.Case
   import Jamixir.Factory
   import OriginalModules
+  use Codec.Encoder
 
   describe "encode/1" do
     test "encode core report smoke test" do
       core_report = build(:core_report)
 
-      assert Codec.Encoder.encode(core_report) ==
-               Codec.Encoder.encode(core_report.work_report) <>
-                 Codec.Encoder.encode_le(core_report.timeslot, 4)
+      assert e(core_report) == e(core_report.work_report) <> e_le(core_report.timeslot, 4)
     end
   end
 
@@ -31,8 +29,7 @@ defmodule System.State.CoreReportTest do
     end
 
     test "removes disputed reports", %{cr1: cr1, cr2: cr2, core_reports: crs} do
-      assert CoreReport.process_disputes(crs, [Hash.default(Encoder.encode(cr1.work_report))]) ==
-               [nil, cr2]
+      assert CoreReport.process_disputes(crs, [Hash.default(e(cr1.work_report))]) == [nil, cr2]
     end
 
     test "keeps undisputed reports", %{core_reports: crs} do
@@ -44,7 +41,7 @@ defmodule System.State.CoreReportTest do
     end
 
     test "handles all reports disputed", %{cr1: cr1, cr2: cr2, core_reports: crs} do
-      bad_wonky_verdicts = Enum.map([cr1, cr2], &Hash.default(Encoder.encode(&1.work_report)))
+      bad_wonky_verdicts = for c <- [cr1, cr2], do: Hash.default(e(c.work_report))
       assert CoreReport.process_disputes(crs, bad_wonky_verdicts) == [nil, nil]
     end
   end

@@ -106,10 +106,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       state = %{
         state
-        | curr_validators:
-            Enum.map(key_pairs, fn {pub, _priv} ->
-              %{build(:validator) | ed25519: pub}
-            end)
+        | curr_validators: for({pub, _} <- key_pairs, do: build(:validator, ed25519: pub))
       }
 
       disputes = %Disputes{
@@ -146,38 +143,18 @@ defmodule Block.Extrinsic.Disputes.Test do
       header: header,
       work_report_hash: wrh
     } do
-      key_pairs = for _ <- 1..5, do: :crypto.generate_key(:eddsa, :ed25519)
+      key_pairs = [k1, k2, k3, k4, _] = for _ <- 1..5, do: :crypto.generate_key(:eddsa, :ed25519)
 
       state = %{
         state
-        | curr_validators: Enum.map(key_pairs, fn {pub, _} -> build(:validator, ed25519: pub) end)
+        | curr_validators: for({pub, _} <- key_pairs, do: build(:validator, ed25519: pub))
       }
 
       judgements = [
-        build(:judgement,
-          vote: true,
-          key_pair: Enum.at(key_pairs, 0),
-          work_report_hash: wrh,
-          validator_index: 0
-        ),
-        build(:judgement,
-          vote: true,
-          key_pair: Enum.at(key_pairs, 1),
-          work_report_hash: wrh,
-          validator_index: 1
-        ),
-        build(:judgement,
-          vote: false,
-          key_pair: Enum.at(key_pairs, 2),
-          work_report_hash: wrh,
-          validator_index: 2
-        ),
-        build(:judgement,
-          vote: false,
-          key_pair: Enum.at(key_pairs, 3),
-          work_report_hash: wrh,
-          validator_index: 3
-        )
+        build(:judgement, vote: true, key_pair: k1, work_report_hash: wrh, validator_index: 0),
+        build(:judgement, vote: true, key_pair: k2, work_report_hash: wrh, validator_index: 1),
+        build(:judgement, vote: false, key_pair: k3, work_report_hash: wrh, validator_index: 2),
+        build(:judgement, vote: false, key_pair: k4, work_report_hash: wrh, validator_index: 3)
       ]
 
       assert {:error, "Invalid sum of judgements in verdicts"} =
@@ -401,7 +378,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       state = %{
         state
-        | curr_validators: Enum.map(key_pairs, fn {pub, _} -> build(:validator, ed25519: pub) end)
+        | curr_validators: for({pub, _} <- key_pairs, do: build(:validator, ed25519: pub))
       }
 
       judgements = [

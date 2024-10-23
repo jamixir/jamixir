@@ -130,16 +130,13 @@ defmodule Util.Merklization do
   """
 
   def bits_to_bytes(bits) do
-    bits
-    |> Enum.chunk_every(8)
-    |> Enum.map(fn chunk ->
-      chunk
-      |> Enum.with_index()
+    for chunk <- Enum.chunk_every(bits, 8) do
+      Enum.with_index(chunk)
       |> Enum.reduce(0, fn {bit, index}, acc ->
         acc + bit * :math.pow(2, index)
       end)
       |> round()
-    end)
+    end
     |> :binary.list_to_bin()
   end
 end

@@ -28,7 +28,7 @@ defmodule Codec.Encoder do
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
-    do_encode(VariableSize.new(Enum.map(mmr, fn b -> NilDiscriminator.new(b) end)))
+    do_encode(VariableSize.new(for b <- mmr, do: NilDiscriminator.new(b)))
   end
 
   # Private Functions

@@ -36,15 +36,12 @@ defmodule System.State.RotateKeys do
 
       # γ_k' = Φ(ι) (next -> pending)
       pending_ = Validator.nullify_offenders(next_validators, offenders)
-
       # κ' = γ_k (pending -> current)
       current_ = pending
-
       # λ' = κ (current -> prev)
       prev_ = curr_validators
-
       # γ_z' = z, z = O([kb ∣ k <- γk ])
-      epoch_root_ = RingVrf.create_commitment(Enum.map(pending_, & &1.bandersnatch))
+      epoch_root_ = RingVrf.create_commitment(for p <- pending_, do: p.bandersnatch)
 
       {pending_, current_, prev_, epoch_root_}
     else

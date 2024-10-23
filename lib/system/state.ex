@@ -1,9 +1,9 @@
 defmodule System.State do
+  alias Codec.NilDiscriminator
   use Codec.Encoder
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{NilDiscriminator, VariableSize}
   alias Constants
   alias System.State
 
@@ -290,9 +290,11 @@ defmodule System.State do
       ) do
     # Zip the authorizer pools with the posterior authorizer queue
     # and use the index to keep track of the core index
-    Enum.zip(authorizer_pools, authorizer_queue_)
-    |> Enum.with_index()
-    |> Enum.map(fn {{current_pool, queue}, core_index} ->
+
+    for(
+      {{current_pool, queue}, core_index} <-
+        Enum.zip(authorizer_pools, authorizer_queue_) |> Enum.with_index()
+    ) do
       # Adjust the current pool by removing the oldest used authorizer
       adjusted_pool = remove_oldest_used_authorizer(core_index, current_pool, guarantees)
 
@@ -308,7 +310,7 @@ defmodule System.State do
       # Take only the rightmost elements to ensure the pool size is within the limit
       # Adjust to take only if the pool exceeds the max size
       Enum.take(authorizer_pool_, -Constants.max_authorizations_items())
-    end)
+    end
   end
 
   # Formula (87) v0.4.1 F(c)
@@ -328,7 +330,7 @@ defmodule System.State do
   def state_keys(s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
-      1 => e(s.authorizer_pool |> Enum.map(&VariableSize.new/1)),
+      1 => e(for x <- s.authorizer_pool, do: vs(x)),
       # C(2) ↦ E(φ)
       2 => e(s.authorizer_queue),
       # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
@@ -346,7 +348,7 @@ defmodule System.State do
       # C(9) ↦ E(λ)
       9 => e(s.prev_validators),
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
-      10 => e(s.core_reports |> Enum.map(&NilDiscriminator.new/1)),
+      10 => e(for c <- s.core_reports, do: NilDiscriminator.new(c)),
       # C(11) ↦ E4(τ)
       11 => e_le(s.timeslot, 4),
       # C(12) ↦ E4(χ)
@@ -378,9 +380,7 @@ defmodule System.State do
   def key_to_32_octet(key) when key < 256, do: <<key::8, 0::248>>
 
   def serialize(state) do
-    state_keys(state)
-    |> Enum.map(fn {k, v} -> {key_to_32_octet(k), v} end)
-    |> Enum.into(%{})
+    for {k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{}
   end
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
@@ -409,11 +409,7 @@ defmodule System.State do
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
-        value =
-          t
-          |> Enum.map(&e_le(&1, 4))
-          |> VariableSize.new()
-          |> e()
+        value = e(vs(for x <- t, do: e_le(x, 4)))
 
         <<_::binary-size(4), rest::binary>> = h
         key = e_le(l, 4) <> Utils.invert_bits(rest)
@@ -438,9 +434,9 @@ defmodule System.State do
     %System.State{
       timeslot: timeslot,
       entropy_pool: EntropyPool.from_json(entropy_pool),
-      prev_validators: Enum.map(prev_validators, &Validator.from_json/1),
-      curr_validators: Enum.map(curr_validators, &Validator.from_json/1),
-      next_validators: Enum.map(next_validators, &Validator.from_json/1),
+      prev_validators: for(v <- prev_validators, do: Validator.from_json(v)),
+      curr_validators: for(v <- curr_validators, do: Validator.from_json(v)),
+      next_validators: for(v <- next_validators, do: Validator.from_json(v)),
       safrole:
         Safrole.from_json(%{
           pending: pending,

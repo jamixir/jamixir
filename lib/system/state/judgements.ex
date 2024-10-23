@@ -35,7 +35,7 @@ defmodule System.State.Judgements do
           for {hash, sum, validator_count} <- v, sum != div(2 * validator_count, 3) + 1, do: hash
 
         # Formula (115) v0.4.1
-        new_offenders = (disputes.culprits ++ disputes.faults) |> Enum.map(& &1.key)
+        new_offenders = for %{key: k} <- disputes.culprits ++ disputes.faults, do: k
 
         if valid_header_markers?(header, new_offenders) do
           {:ok,

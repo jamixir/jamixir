@@ -187,9 +187,7 @@ defmodule Block.Extrinsic.Guarantee do
 
       # Formula (151) v0.4.1
       # ∀w ∈ w, (wx)p ≠ ∅ ∶ (wx)p ∈ p ∪ {x ∣ x ∈ bp, b ∈ β}
-      refinement_contexts(guarantees)
-      |> Enum.map(& &1.prerequisite)
-      |> Enum.filter(&(&1 != nil))
+      for(w <- refinement_contexts(guarantees), w.prerequisite != nil, do: w.prerequisite)
       |> Enum.any?(&(&1 not in (p_set(w) ++ all_work_report_hashes))) ->
         {:error, :invalid_prerequisite}
 
@@ -320,6 +318,7 @@ defmodule Block.Extrinsic.Guarantee do
       credentials: [&json_credentials/1, :signatures]
     }
 
-  def json_credentials(json),
-    do: Enum.map(json, &{&1.validator_index, JsonDecoder.from_json(&1.signature)})
+  def json_credentials(json) do
+    for c <- json, do: {c.validator_index, JsonDecoder.from_json(c.signature)}
+  end
 end

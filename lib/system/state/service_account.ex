@@ -48,20 +48,8 @@ defmodule System.State.ServiceAccount do
 
   # al ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    octets_in_preimage_storage_l =
-      Enum.sum(
-        for {_h, z} <- Map.keys(l) do
-          81 + z
-        end
-      )
-
-    # total octets in storage s
-    octets_in_storage =
-      Map.values(s)
-      |> Enum.map(&(32 + byte_size(&1)))
-      |> Enum.sum()
-
-    octets_in_preimage_storage_l + octets_in_storage
+    Enum.sum(for {_h, z} <- Map.keys(l), do: 81 + z) +
+      Enum.sum(for v <- Map.values(s), do: 32 + byte_size(v))
   end
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al

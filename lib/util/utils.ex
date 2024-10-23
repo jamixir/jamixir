@@ -31,9 +31,9 @@ defmodule Utils do
   def atomize_keys(value), do: value
 
   def invert_bits(binary) when is_binary(binary) do
-    binary
-    |> :binary.bin_to_list()
-    |> Enum.map(&(bnot(&1) &&& 0xFF))
+    for b <- :binary.bin_to_list(binary) do
+      bnot(b) &&& 0xFF
+    end
     |> :binary.list_to_bin()
   end
 

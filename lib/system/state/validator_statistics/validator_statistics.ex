@@ -29,7 +29,7 @@ defmodule System.State.ValidatorStatistics do
     for _ <- 1..Constants.validator_count(), do: %ValidatorStatistic{}
   end
 
-  @empty_epoch_stats Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
+  @empty_epoch_stats for _ <- 1..Constants.validator_count(), do: %ValidatorStatistic{}
 
   defstruct current_epoch_statistics: @empty_epoch_stats,
             previous_epoch_statistics: @empty_epoch_stats

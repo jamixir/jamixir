@@ -57,7 +57,7 @@ defmodule System.HeaderSeal do
         epoch_slot_sealers_,
         %EntropyPool{} = entropy_pool
       ) do
-    bandersnatch_public_keys = Enum.map(curr_validators_, & &1.bandersnatch)
+    bandersnatch_public_keys = for v <- curr_validators_, do: v.bandersnatch
     # let i = γs′ [Ht ]↺
     expected_slot_sealer =
       epoch_slot_sealers_ |> Enum.at(rem(header.timeslot, length(epoch_slot_sealers_)))

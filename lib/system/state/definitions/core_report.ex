@@ -13,12 +13,13 @@ defmodule System.State.CoreReport do
   @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
 
   defstruct work_report: %WorkReport{}, timeslot: 0
-  def initial_core_reports, do: 1..Constants.core_count() |> Enum.map(fn _ -> nil end)
+  def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
   # Formula (111) v0.4.1
   def process_disputes(core_reports, bad_wonky_verdicts) do
-    bad_wonky_set = MapSet.new(bad_wonky_verdicts)
-    Enum.map(core_reports, &process_report(&1, bad_wonky_set))
+    for c <- core_reports do
+      process_report(c, MapSet.new(bad_wonky_verdicts))
+    end
   end
 
   defp process_report(nil, _bad_wonky_set), do: nil

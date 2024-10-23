@@ -118,11 +118,10 @@ defmodule System.State.Safrole do
   def fallback_key_sequence(n2, current_validators) do
     validator_set_size = length(current_validators)
 
-    0..(Constants.epoch_length() - 1)
-    |> Enum.map(fn i ->
+    for i <- 0..(Constants.epoch_length() - 1) do
       validator_index = generate_index_using_entropy(n2, i, validator_set_size)
       Enum.at(current_validators, validator_index).bandersnatch
-    end)
+    end
   end
 
   @doc """

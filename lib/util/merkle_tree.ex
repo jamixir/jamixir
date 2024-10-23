@@ -27,9 +27,7 @@ defmodule Util.MerkleTree do
   def c_preprocess([], _), do: [Hash.zero()]
 
   def c_preprocess(list, hash_func) do
-    list
-    |> Enum.map(&hash_func.("leaf" <> &1))
-    |> pad_to_power_of_two(Hash.zero())
+    pad_to_power_of_two(for(x <- list, do: hash_func.("leaf" <> x)), Hash.zero())
   end
 
   # Formula (320) v0.4.1

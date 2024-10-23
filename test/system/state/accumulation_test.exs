@@ -477,7 +477,7 @@ defmodule System.State.AccumulationTest do
       assert final_state.services == %{1 => :service1, 2 => :service2, 3 => :service3}
 
       # (30 + 40 + 20)
-      assert Enum.sum(Enum.map(all_transfers, & &1.amount)) == 90
+      assert Enum.sum(for t <- all_transfers, do: t.amount) == 90
       assert Enum.all?(1..3, fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
     end
 

@@ -11,7 +11,7 @@ defmodule System.Validators.SafroleValidatorTest do
     %{
       entropy_pool: build(:entropy_pool),
       safrole: safrole,
-      bandersnatch_keys: Enum.map(safrole.pending, & &1.bandersnatch)
+      bandersnatch_keys: for(p <- safrole.pending, do: p.bandersnatch)
     }
   end
 

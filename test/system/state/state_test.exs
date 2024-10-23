@@ -7,7 +7,6 @@ defmodule System.StateTest do
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.NilDiscriminator
-  alias Codec.VariableSize
   alias System.{State, State.ValidatorStatistics}
   alias Util.Hash
 
@@ -68,7 +67,7 @@ defmodule System.StateTest do
     test "core reports serialization - C(10)", %{state: state} do
       s = %{state | core_reports: build_list(1, :core_report) ++ [nil]}
 
-      expected_to_encode = s.core_reports |> Enum.map(&NilDiscriminator.new/1)
+      expected_to_encode = for c <- s.core_reports, do: NilDiscriminator.new(c)
 
       assert state_keys(s)[10] == e(expected_to_encode)
     end
@@ -104,11 +103,8 @@ defmodule System.StateTest do
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
           <<_::binary-size(4), rest::binary>> = h
-          key = Codec.Encoder.encode_le(l, 4) <> Utils.invert_bits(rest)
-
-          value =
-            e(VariableSize.new(t |> Enum.map(&Codec.Encoder.encode_le(&1, 4))))
-
+          key = e_le(l, 4) <> Utils.invert_bits(rest)
+          value = e(vs(for x <- t, do: e_le(x, 4)))
           assert state_keys(state)[{s, key}] == value
         end)
       end)

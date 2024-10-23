@@ -47,7 +47,7 @@ defmodule CodecEncoderTest do
     end
 
     test "encode random integer list" do
-      random_list = Enum.map(1..20, fn _ -> :rand.uniform(100) end)
+      random_list = for(_ <- 1..20, do: :rand.uniform(100))
       expected = Enum.reduce(random_list, <<>>, fn x, acc -> acc <> Encoder.encode(x) end)
       assert Encoder.encode(random_list) == expected
     end

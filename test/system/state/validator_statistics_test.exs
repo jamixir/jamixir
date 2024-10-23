@@ -99,7 +99,7 @@ defmodule System.State.ValidatorStatisticsTest do
         )
 
       updated_blocks_produced =
-        Enum.map(validator_stats_.current_epoch_statistics, & &1.blocks_produced)
+        for s <- validator_stats_.current_epoch_statistics, do: s.blocks_produced
 
       assert Enum.with_index(updated_blocks_produced) ==
                Enum.with_index(initial_blocks_produced)
@@ -115,7 +115,7 @@ defmodule System.State.ValidatorStatisticsTest do
       author_key_index = 1
 
       initial_tickets_introduced =
-        Enum.map(validator_statistics.current_epoch_statistics, & &1.tickets_introduced)
+        for s <- validator_statistics.current_epoch_statistics, do: s.tickets_introduced
 
       {:ok, validator_stats_} =
         ValidatorStatistics.calculate_validator_statistics_(
@@ -143,7 +143,7 @@ defmodule System.State.ValidatorStatisticsTest do
       author_key_index = 1
 
       initial_preimages_introduced =
-        Enum.map(validator_statistics.current_epoch_statistics, & &1.preimages_introduced)
+        for s <- validator_statistics.current_epoch_statistics, do: s.preimages_introduced
 
       {:ok, validator_stats_} =
         ValidatorStatistics.calculate_validator_statistics_(
@@ -170,8 +170,7 @@ defmodule System.State.ValidatorStatisticsTest do
       extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
       author_key_index = 1
 
-      initial_data_size =
-        Enum.map(validator_statistics.current_epoch_statistics, & &1.data_size)
+      initial_data_size = for s <- validator_statistics.current_epoch_statistics, do: s.data_size
 
       {:ok, validator_stats_} =
         ValidatorStatistics.calculate_validator_statistics_(
@@ -199,7 +198,7 @@ defmodule System.State.ValidatorStatisticsTest do
       author_key_index = 1
 
       initial_availability_assurances =
-        Enum.map(validator_statistics.current_epoch_statistics, & &1.availability_assurances)
+        for s <- validator_statistics.current_epoch_statistics, do: s.availability_assurances
 
       {:ok, validator_stats_} =
         ValidatorStatistics.calculate_validator_statistics_(

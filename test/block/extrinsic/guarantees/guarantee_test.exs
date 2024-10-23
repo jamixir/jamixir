@@ -446,10 +446,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
   end
 
   defp create_valid_guarantees(context) do
-    Enum.map(0..1, fn core_index ->
-      work_report = build(:work_report, core_index: core_index)
-      create_valid_guarantee(work_report, context)
-    end)
+    for core_index <- 0..1 do
+      create_valid_guarantee(build(:work_report, core_index: core_index), context)
+    end
   end
 
   defp create_valid_guarantee(work_report, context) do
@@ -457,21 +456,19 @@ defmodule Block.Extrinsic.GuaranteeTest do
     payload = SigningContexts.jam_guarantee() <> Hash.default(Codec.Encoder.encode(work_report))
 
     assigned_validators =
-      Enum.with_index(guarantor.validators)
-      |> Enum.filter(fn {_, index} ->
-        Enum.at(guarantor.assigned_cores, index) == work_report.core_index
-      end)
-      |> Enum.map(fn {validator, _} -> validator end)
+      for {validator, index} <- Enum.with_index(guarantor.validators),
+          Enum.at(guarantor.assigned_cores, index) == work_report.core_index,
+          do: validator
 
     credentials =
-      Enum.map(assigned_validators, fn validator ->
+      for validator <- assigned_validators do
         index = Enum.find_index(context.curr_validators, &(&1.ed25519 == validator.ed25519))
         {_, priv} = Enum.at(context.curr_key_pairs, index)
 
         signature = Crypto.sign(payload, priv)
 
         {index, signature}
-      end)
+      end
 
     build(:guarantee,
       work_report: work_report,

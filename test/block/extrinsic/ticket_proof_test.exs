@@ -4,9 +4,9 @@ defmodule Block.Extrinsic.TicketProofTest do
   alias Block.Extrinsic.TicketProof
 
   defp create_valid_tickets(count, state, key_pairs) do
-    ring = Enum.map(state.curr_validators, & &1.bandersnatch)
+    ring = for v <- state.curr_validators, do: v.bandersnatch
 
-    Enum.map(0..(count - 1), fn i ->
+    for i <- 0..(count - 1) do
       {secret, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
       attempt = rem(i, 2)
 
@@ -20,7 +20,7 @@ defmodule Block.Extrinsic.TicketProofTest do
         )
 
       %TicketProof{attempt: attempt, signature: proof}
-    end)
+    end
   end
 
   defp create_valid_proof(state, {secret, _}, prover_idx, attempt) do
@@ -34,18 +34,16 @@ defmodule Block.Extrinsic.TicketProofTest do
   end
 
   defp create_and_sort_tickets(count, state, key_pairs) do
-    create_valid_tickets(count, state, key_pairs)
-    |> Enum.map(fn %TicketProof{attempt: r, signature: proof} ->
-      {:ok, output_hash} =
-        RingVrf.ring_vrf_verify(
-          state.safrole.epoch_root,
-          SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<r>>,
-          <<>>,
-          proof
-        )
-
-      {output_hash, %TicketProof{attempt: r, signature: proof}}
-    end)
+    for ticket <- create_valid_tickets(count, state, key_pairs),
+        {:ok, output_hash} =
+          RingVrf.ring_vrf_verify(
+            state.safrole.epoch_root,
+            SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<ticket.attempt>>,
+            <<>>,
+            ticket.signature
+          ) do
+      {output_hash, ticket}
+    end
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.map(&elem(&1, 1))
   end
@@ -156,7 +154,7 @@ defmodule Block.Extrinsic.TicketProofTest do
 
       # Generate the output hash using ring_vrf_output
       {secret, _} = List.first(key_pairs)
-      public_keys = Enum.map(state.curr_validators, & &1.bandersnatch)
+      public_keys = for v <- state.curr_validators, do: v.bandersnatch
 
       context =
         SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<ticket.attempt>>

@@ -54,7 +54,7 @@ defmodule WorkPackageTest do
     end
 
     test "validates different work_item import_segments length", %{wp: wp} do
-      [ds1 | rest] = Enum.map(1..500, fn _ -> {Hash.zero(), 21_062} end)
+      [ds1 | rest] = for _ <- 1..500, do: {Hash.zero(), 21_062}
 
       in_limit_work_item =
         build(:work_item, import_segments: rest, extrinsic: rest)

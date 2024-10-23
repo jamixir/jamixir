@@ -152,7 +152,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # Formula (168) v0.4.1
     w_bang ++
       accumulation_priority_queue(
-        (List.flatten(before_m ++ rest) |> Enum.map(&Ready.to_tuple/1)) ++ w_q,
+        for(x <- List.flatten(before_m ++ rest), do: Ready.to_tuple(x)) ++ w_q,
         accumulated
       )
   end

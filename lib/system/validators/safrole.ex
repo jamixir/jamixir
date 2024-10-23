@@ -14,8 +14,7 @@ defmodule System.Validators.Safrole do
     new_epoch? = Time.new_epoch?(state_timeslot, timeslot)
 
     cond do
-      new_epoch? and
-          epoch_marker == {n1_, Enum.map(pending_, & &1.bandersnatch)} ->
+      new_epoch? and epoch_marker == {n1_, for(v <- pending_, do: v.bandersnatch)} ->
         :ok
 
       not new_epoch? and is_nil(epoch_marker) ->
