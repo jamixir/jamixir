@@ -26,7 +26,7 @@ defmodule System.State.ValidatorStatistics do
         }
 
   def empty_epoc_stats do
-    Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
+    for _ <- 1..Constants.validator_count(), do: %ValidatorStatistic{}
   end
 
   @empty_epoch_stats Enum.map(1..Constants.validator_count(), fn _ -> %ValidatorStatistic{} end)
@@ -91,9 +91,7 @@ defmodule System.State.ValidatorStatistics do
             preimages_introduced: author_stats.preimages_introduced + length(extrinsic.preimages),
             data_size:
               author_stats.data_size +
-                (extrinsic.preimages
-                 |> Enum.map(&byte_size(&1.blob))
-                 |> Enum.sum())
+                Enum.sum(for preimage <- extrinsic.preimages, do: byte_size(preimage.blob))
         }
 
         current_epoc_stats_ =
@@ -140,7 +138,10 @@ defmodule System.State.ValidatorStatistics do
     use Codec.Encoder
 
     def encode(%ValidatorStatistics{} = v) do
-      e({Enum.map(v.current_epoch_statistics, &e/1), Enum.map(v.previous_epoch_statistics, &e/1)})
+      e({
+        for(s <- v.current_epoch_statistics, do: e(s)),
+        for(s <- v.previous_epoch_statistics, do: e(s))
+      })
     end
   end
 end

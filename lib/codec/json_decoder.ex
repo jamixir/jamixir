@@ -1,14 +1,10 @@
 defmodule JsonDecoder do
   def from_json(map) when is_map(map) do
-    map
-    |> Enum.map(fn {key, value} ->
-      {key, from_json(value)}
-    end)
-    |> Enum.into(%{})
+    for {key, value} <- map, do: {key, from_json(value)}, into: %{}
   end
 
   def from_json(list) when is_list(list) do
-    list |> Enum.map(&from_json/1)
+    for a <- list, do: from_json(a)
   end
 
   def from_json(nil), do: nil
@@ -34,7 +30,7 @@ defmodule JsonDecoder do
       end
 
     values =
-      Enum.map(Utils.list_struct_fields(module), fn field ->
+      for field <- Utils.list_struct_fields(module), into: %{} do
         {field,
          case mapping[field] do
            nil ->
@@ -68,8 +64,7 @@ defmodule JsonDecoder do
                JsonDecoder.from_json(json_data[value])
              end
          end}
-      end)
-      |> Enum.into(%{})
+      end
 
     struct(module, values)
   end

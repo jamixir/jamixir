@@ -16,18 +16,16 @@ defmodule Utils do
   end
 
   def atomize_keys(map) when is_map(map) do
-    map
-    |> Enum.map(fn {key, value} ->
+    for {key, value} <- map, into: %{} do
       case safe_to_existing_atom(key) do
         {:error, :not_existing_atom} -> {String.to_atom(key), atomize_keys(value)}
         atom -> {atom, atomize_keys(value)}
       end
-    end)
-    |> Enum.into(%{})
+    end
   end
 
   def atomize_keys(list) when is_list(list) do
-    list |> Enum.map(&atomize_keys/1)
+    for x <- list, do: atomize_keys(x)
   end
 
   def atomize_keys(value), do: value

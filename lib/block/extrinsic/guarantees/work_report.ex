@@ -66,8 +66,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   def mock(:available_work_reports, _) do
-    0..(Constants.core_count() - 1)
-    |> Enum.map(fn i -> %WorkReport{core_index: i} end)
+    for i <- 0..(Constants.core_count() - 1), do: %WorkReport{core_index: i}
   end
 
   # Formula (161) v0.4.1
@@ -94,21 +93,19 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def edit_queue(r, x) do
     x_keys = MapSet.new(Map.keys(x))
 
-    r
-    |> Enum.filter(fn {w, _d} ->
-      w.specification.work_package_hash not in x_keys and
-        Map.merge(x, w.segment_root_lookup) == Map.merge(w.segment_root_lookup, x)
-    end)
-    |> Enum.map(fn {w, d} ->
+    for {w, d} <- r,
+        w.specification.work_package_hash not in x_keys,
+        x ++ w.segment_root_lookup == w.segment_root_lookup ++ x do
       {w, d \\ x_keys}
-    end)
+    end
   end
 
   # Formula (166) v0.4.1
   @spec create_package_root_map(list(__MODULE__.t())) :: %{Types.hash() => Types.hash()}
   def create_package_root_map(work_reports) do
-    Enum.map(work_reports, fn %{specification: ws} -> {ws.work_package_hash, ws.exports_root} end)
-    |> Map.new()
+    for %{specification: ws} <- work_reports,
+        do: {ws.work_package_hash, ws.exports_root},
+        into: Map.new()
   end
 
   # Formula (165) v0.4.1
@@ -116,9 +113,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           Types.hash() => Types.hash()
         }) :: list(__MODULE__.t())
   def accumulation_priority_queue(r, a) do
-    g =
-      Enum.filter(r, fn {_, d} -> MapSet.size(d) == 0 end)
-      |> Enum.map(fn {w, _} -> w end)
+    g = for {w, d} <- r, MapSet.size(d) == 0, do: w
 
     if Enum.empty?(g) do
       []
@@ -147,10 +142,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     accumulated = Collections.union(accumulation_history)
 
     # Formula (162) v0.4.1
-    w_q =
-      pre_w_q
-      |> Enum.map(&with_dependencies/1)
-      |> edit_queue(accumulated)
+    w_q = edit_queue(for(w <- pre_w_q, do: with_dependencies(w)), accumulated)
 
     # Formula (167) v0.4.1
     m = Time.epoch_phase(block_timeslot)

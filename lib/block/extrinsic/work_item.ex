@@ -57,17 +57,15 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
+    use Codec.Encoder
+
     # TODO: align encoding with 0.4.1
     defp encode_import_segments(work_item) do
-      Enum.map(work_item.import_segments, fn {h, i} ->
-        {h, Encoder.encode_le(i, 2)}
-      end)
+      for {h, i} <- work_item.import_segments, do: {h, e_le(i, 2)}
     end
 
     defp encode_extrinsic(work_item) do
-      Enum.map(work_item.extrinsic, fn {h, i} ->
-        {h, Encoder.encode_le(i, 4)}
-      end)
+      for {h, i} <- work_item.extrinsic, do: {h, e_le(i, 4)}
     end
   end
 

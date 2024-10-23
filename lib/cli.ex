@@ -23,9 +23,7 @@ defmodule Jamixir.CLI do
 
   # Main CLI function to generate keypair, encrypt, and store in env vars
   def generate_keypair do
-    {private_key_tuple, public_key} = RingVrf.generate_secret_from_rand()
-
-    private_key = elem(private_key_tuple, 0)
+    {{private_key, _}, public_key} = RingVrf.generate_secret_from_rand()
 
     encoded_public_key = Base.encode64(public_key)
     File.write!(".env", "PUBLIC_KEY=#{encoded_public_key}\n", [:append])

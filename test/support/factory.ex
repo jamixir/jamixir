@@ -18,9 +18,9 @@ defmodule Jamixir.Factory do
   def validators_and_bandersnatch_keys(count \\ @validator_count) do
     {validators, key_pairs} =
       Enum.map(1..count, fn _ ->
-        keypair = RingVrf.generate_secret_from_rand()
+        keypair = {_, b} = RingVrf.generate_secret_from_rand()
 
-        {build(:validator, bandersnatch: elem(keypair, 1)), keypair}
+        {build(:validator, bandersnatch: b), keypair}
       end)
       |> Enum.unzip()
 
@@ -29,11 +29,11 @@ defmodule Jamixir.Factory do
 
   def validators_and_ed25519_keys(count \\ @validator_count) do
     {validators, key_pairs} =
-      Enum.map(1..count, fn _ ->
-        keypair = :crypto.generate_key(:eddsa, :ed25519)
+      for _ <- 1..count do
+        {e, _} = keypair = :crypto.generate_key(:eddsa, :ed25519)
 
-        {build(:validator, ed25519: elem(keypair, 0)), keypair}
-      end)
+        {build(:validator, ed25519: e), keypair}
+      end
       |> Enum.unzip()
 
     %{validators: validators, key_pairs: key_pairs}
@@ -59,9 +59,8 @@ defmodule Jamixir.Factory do
   end
 
   def seal_key_ticket_factory(key_pairs, entropy_pool) do
-    Enum.map(0..(Constants.epoch_length() - 1), fn i ->
-      single_seal_key_ticket_factory(key_pairs, entropy_pool, i)
-    end)
+    for i <- 0..(Constants.epoch_length() - 1),
+        do: single_seal_key_ticket_factory(key_pairs, entropy_pool, i)
   end
 
   def genesis_state_factory do
@@ -77,7 +76,7 @@ defmodule Jamixir.Factory do
     %{validators: validators, key_pairs: key_pairs} =
       validators_and_bandersnatch_keys(validator_count)
 
-    public_keys = Enum.map(key_pairs, &(&1 |> elem(1)))
+    public_keys = for {_, p} <- key_pairs, do: p
     RingVrf.init_ring_context(length(validators))
 
     entropy_pool = build(:entropy_pool)
@@ -211,19 +210,19 @@ defmodule Jamixir.Factory do
 
   # Authorizer Factories
   def authorizer_queue_factory do
-    Enum.map(1..@cores, fn _ ->
-      Enum.map(1..@max_authorize_queue_items, fn _ ->
+    for _ <- 1..@cores do
+      for _ <- 1..@max_authorize_queue_items do
         unique_hash_factory()
-      end)
-    end)
+      end
+    end
   end
 
   def authorizer_pool_factory do
-    Enum.map(1..@cores, fn _ ->
-      Enum.map(1..@max_authorizers_per_core, fn _ ->
+    for _ <- 1..@cores do
+      for _ <- 1..@max_authorizers_per_core do
         unique_hash_factory()
-      end)
-    end)
+      end
+    end
   end
 
   def unique_hash_factory do
@@ -409,10 +408,7 @@ defmodule Jamixir.Factory do
       preimages: build_list(2, :preimage),
       assurances: [],
       guarantees:
-        1..3
-        |> Enum.map(fn i ->
-          build(:guarantee, work_report: build(:work_report, core_index: i))
-        end)
+        for(i <- 1..3, do: build(:guarantee, work_report: build(:work_report, core_index: i)))
     }
   end
 

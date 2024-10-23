@@ -19,16 +19,19 @@ defmodule Block.Extrinsic.Guarantor do
             validators: []
 
   # Formula (133) v0.4.1
-  def rotate(list, n) do
-    list |> Enum.map(&rem(&1 + n, Constants.core_count()))
-  end
+  def rotate(c, n), do: for(x <- c, do: rem(x + n, Constants.core_count()))
 
   # Formula (134) v0.4.1
   def permute(e, t) when is_list(e) or is_binary(e) do
-    0..(Constants.validator_count() - 1)
-    |> Enum.map(&div(Constants.core_count() * &1, Constants.validator_count()))
-    |> Shuffle.shuffle(e)
-    |> rotate(div(Time.epoch_phase(t), Constants.rotation_period()))
+    rotate(
+      Shuffle.shuffle(
+        for i <- 0..(Constants.validator_count() - 1) do
+          div(Constants.core_count() * i, Constants.validator_count())
+        end,
+        e
+      ),
+      div(Time.epoch_phase(t), Constants.rotation_period())
+    )
   end
 
   # Formula (135) v0.4.1

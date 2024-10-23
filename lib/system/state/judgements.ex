@@ -32,10 +32,7 @@ defmodule System.State.Judgements do
     case calculate_v(disputes, state, ts) do
       {:ok, v} ->
         bad_wonky_verdicts =
-          Enum.filter(v, fn {_, sum, validator_count} ->
-            sum != div(2 * validator_count, 3) + 1
-          end)
-          |> Enum.map(fn {hash, _, _} -> hash end)
+          for {hash, sum, validator_count} <- v, sum != div(2 * validator_count, 3) + 1, do: hash
 
         # Formula (115) v0.4.1
         new_offenders = (disputes.culprits ++ disputes.faults) |> Enum.map(& &1.key)
@@ -59,7 +56,7 @@ defmodule System.State.Judgements do
     current_epoch = Util.Time.epoch_index(timeslot)
 
     v_set =
-      Enum.map(verdicts, fn verdict ->
+      for verdict <- verdicts do
         validator_set =
           Disputes.get_validator_set(
             state.curr_validators,
@@ -69,7 +66,7 @@ defmodule System.State.Judgements do
           )
 
         {verdict.work_report_hash, Verdict.sum_judgements(verdict), length(validator_set)}
-      end)
+      end
 
     case Enum.any?(v_set, fn {r, sum, v_count} ->
            # Formula (110) v0.4.1
