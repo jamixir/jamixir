@@ -1,15 +1,3 @@
-defmodule AccumulationResult do
-  alias System.DeferredTransfer
-
-  @type t :: %__MODULE__{
-          state: t(),
-          transfers: list(DeferredTransfer.t()),
-          output: Types.hash() | nil,
-          gas_used: non_neg_integer()
-        }
-  defstruct [:state, :transfers, :output, :gas_used]
-end
-
 defmodule System.State.Accumulation do
   @moduledoc """
   Handles the accumulation and commitment process for services, validators, and the authorization queue.
@@ -17,8 +5,8 @@ defmodule System.State.Accumulation do
 
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias System.DeferredTransfer
-  alias System.State.PrivilegedServices
+  alias System.{AccumulationResult, DeferredTransfer}
+  alias System.State.{PrivilegedServices, ServiceAccount, Validator}
   alias Types
   alias Util.Collections
 
@@ -34,7 +22,7 @@ defmodule System.State.Accumulation do
   # Formula (169) v0.4.1
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
-          services: %{integer() => ServiceAccount.t()},
+          services: %{non_neg_integer() => ServiceAccount.t()},
           # i: Upcoming validator keys (ι)
           next_validators: list(Validator.t()),
           # q: Queue of work-reports (φ)

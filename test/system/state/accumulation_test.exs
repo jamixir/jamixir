@@ -4,11 +4,10 @@ defmodule System.State.AccumulationTest do
 
   setup :verify_on_exit!
 
-  alias System.State.Accumulation
-  alias Block.Extrinsic.Guarantee.WorkReport
-  alias Block.Extrinsic.Guarantee.WorkResult
   alias Block.Extrinsic.AvailabilitySpecification
-  alias System.State.PrivilegedServices
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias System.AccumulationResult
+  alias System.State.{Accumulation, PrivilegedServices}
 
   import Jamixir.Factory
 
