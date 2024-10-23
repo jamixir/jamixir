@@ -100,17 +100,17 @@ defmodule System.StateTransition.AuthorizerPoolTest do
     guarantees = []
 
     authorizer_pools =
-      Enum.map(1..Constants.core_count(), fn i ->
-        Enum.map(1..(Constants.max_authorizations_items() - 3), fn j -> "auth#{i}_#{j}" end)
-      end)
+      for i <- 1..Constants.core_count() do
+        for(j <- 1..(Constants.max_authorizations_items() - 3), do: "auth#{i}_#{j}")
+      end
 
     result =
       State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
-      Enum.map(1..Constants.core_count(), fn i ->
+      for i <- 1..Constants.core_count() do
         Enum.concat(Enum.at(authorizer_pools, i - 1), ["queue#{i}_3"])
-      end)
+      end
 
     assert result == expected_result
   end

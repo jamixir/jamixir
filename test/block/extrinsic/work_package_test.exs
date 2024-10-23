@@ -26,7 +26,7 @@ defmodule WorkPackageTest do
     end
 
     test "invalid when the sum of import_segments exceeds the maximum", %{wp: wp} do
-      data_segments = Enum.map(1..1500, fn _ -> {Hash.zero(), 1} end)
+      data_segments = for _ <- 1..1500, do: {Hash.zero(), 1}
       medium_work_item = build(:work_item, import_segments: data_segments)
       big_work_item = build(:work_item, import_segments: data_segments ++ data_segments)
 

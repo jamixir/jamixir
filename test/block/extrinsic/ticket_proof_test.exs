@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.TicketProofTest do
 
   defp create_valid_proof(state, {secret, _}, prover_idx, attempt) do
     RingVrf.ring_vrf_sign(
-      Enum.map(state.curr_validators, & &1.bandersnatch),
+      for(v <- state.curr_validators, do: v.bandersnatch),
       secret,
       prover_idx,
       SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,

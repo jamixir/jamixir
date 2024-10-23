@@ -100,9 +100,10 @@ defmodule Util.Merklization do
           dict
           |> Enum.split_with(fn {[b0 | _], _} -> b0 == 0 end)
           |> (fn {left, right} ->
-                left = Enum.map(left, fn {[_ | rest], value} -> {rest, value} end)
-                right = Enum.map(right, fn {[_ | rest], value} -> {rest, value} end)
-                {Enum.into(left, %{}), Enum.into(right, %{})}
+                {
+                  for({[_ | rest], value} <- left, do: {rest, value}, into: %{}),
+                  for({[_ | rest], value} <- right, do: {rest, value}, into: %{})
+                }
               end).()
 
         Hash.default(bits_to_bytes(encode_branch(merkelize(l), merkelize(r))))

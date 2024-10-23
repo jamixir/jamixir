@@ -69,7 +69,7 @@ defmodule Block.Extrinsic.WorkPackage do
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
       part1 = length(i.import_segments) * Constants.wswc()
-      part2 = i.extrinsic |> Enum.map(&elem(&1, 1)) |> Enum.sum()
+      part2 = Enum.sum(for {_, e} <- i.extrinsic, do: e)
       acc + part1 + part2
     end) <= @maximum_size
   end

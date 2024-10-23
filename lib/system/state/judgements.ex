@@ -32,10 +32,7 @@ defmodule System.State.Judgements do
     case calculate_v(disputes, state, ts) do
       {:ok, v} ->
         bad_wonky_verdicts =
-          Enum.filter(v, fn {_, sum, validator_count} ->
-            sum != div(2 * validator_count, 3) + 1
-          end)
-          |> Enum.map(fn {hash, _, _} -> hash end)
+          for {hash, sum, validator_count} <- v, sum != div(2 * validator_count, 3) + 1, do: hash
 
         # Formula (115) v0.4.1
         new_offenders = (disputes.culprits ++ disputes.faults) |> Enum.map(& &1.key)

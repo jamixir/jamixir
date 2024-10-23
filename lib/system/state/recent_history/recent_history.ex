@@ -101,10 +101,10 @@ defmodule System.State.RecentHistory do
 
         _ ->
           # The well-balanced merkle root of the beefy commitment map
-          beefy_commitment_map.commitments
-          |> (Enum.sort_by(&elem(&1, 0))
-              |> Enum.map(fn {service, hash} -> <<e_le(service, 4)::binary, hash::binary>> end)
-              |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1))
+          for {service, hash} <- Enum.sort_by(beefy_commitment_map.commitments, &elem(&1, 0)) do
+            <<e_le(service, 4)::binary, hash::binary>>
+          end
+          |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
       end
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
@@ -123,18 +123,10 @@ defmodule System.State.RecentHistory do
       end
 
     # Work report hashes
-    work_package_hashes =
-      guarantees
-      |> Enum.map(& &1.work_report.specification.work_package_hash)
+    wp_hashes = for g <- guarantees, do: g.work_report.specification.work_package_hash
 
     # Formula (84) v0.4.1
-    RecentHistory.add(
-      recent_history,
-      header_hash,
-      state_root_,
-      mmr_roots,
-      work_package_hashes
-    )
+    RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
   defimpl Encodable do
@@ -144,14 +136,10 @@ defmodule System.State.RecentHistory do
     def encode(%RecentHistory{} = rh) do
       e(
         vs(
-          Enum.map(rh.blocks, fn b ->
-            {
-              b.header_hash,
-              Codec.Encoder.encode_mmr(b.accumulated_result_mmr),
-              b.state_root,
-              vs(b.work_report_hashes)
-            }
-          end)
+          for b <- rh.blocks do
+            {b.header_hash, Codec.Encoder.encode_mmr(b.accumulated_result_mmr), b.state_root,
+             vs(b.work_report_hashes)}
+          end
         )
       )
     end

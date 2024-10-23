@@ -103,8 +103,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # Formula (166) v0.4.1
   @spec create_package_root_map(list(__MODULE__.t())) :: %{Types.hash() => Types.hash()}
   def create_package_root_map(work_reports) do
-    Enum.map(work_reports, fn %{specification: ws} -> {ws.work_package_hash, ws.exports_root} end)
-    |> Map.new()
+    for %{specification: ws} <- work_reports,
+        do: {ws.work_package_hash, ws.exports_root},
+        into: Map.new()
   end
 
   # Formula (165) v0.4.1
@@ -141,10 +142,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     accumulated = Collections.union(accumulation_history)
 
     # Formula (162) v0.4.1
-    w_q =
-      pre_w_q
-      |> Enum.map(&with_dependencies/1)
-      |> edit_queue(accumulated)
+    w_q = edit_queue(for(w <- pre_w_q, do: with_dependencies(w)), accumulated)
 
     # Formula (167) v0.4.1
     m = Time.epoch_phase(block_timeslot)

@@ -86,7 +86,7 @@ defmodule System.State.ValidatorStatisticsTest do
       author_key_index = 1
 
       initial_blocks_produced =
-        Enum.map(validator_statistics.current_epoch_statistics, & &1.blocks_produced)
+        for s <- validator_statistics.current_epoch_statistics, do: s.blocks_produced
 
       {:ok, validator_stats_} =
         ValidatorStatistics.calculate_validator_statistics_(

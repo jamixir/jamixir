@@ -34,15 +34,12 @@ defmodule System.State.CoreReport do
   """
   # ρ‡ Formula (26) v0.4.1
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
-    w =
-      WorkReport.available_work_reports(assurances, core_reports_intermediate_1)
-      |> MapSet.new()
+    w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
     # Formula (131) v0.4.1
-    Enum.zip(core_reports, core_reports_intermediate_1)
-    |> Enum.map(fn {cr, intermediate} ->
+    for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr.work_report in w, do: nil, else: intermediate
-    end)
+    end
   end
 
   def mock(:process_availability, context) do

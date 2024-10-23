@@ -70,9 +70,7 @@ defmodule Codec.Encoder do
   # Formula (300) v0.4.1
   defp do_encode(value) when is_map(value) and not is_struct(value) do
     encoded_pairs =
-      value
-      |> Enum.sort_by(fn {k, _v} -> k end)
-      |> Enum.map(fn {k, v} -> {encode(k), encode(v)} end)
+      for {k, v} <- Enum.sort_by(value, fn {k, _v} -> k end), do: {encode(k), encode(v)}
 
     encode(VariableSize.new(encoded_pairs))
   end
@@ -115,7 +113,7 @@ defmodule Codec.Encoder do
   end
 
   defp encode_list(value) do
-    value |> Enum.map_join(&do_encode/1)
+    Enum.map_join(value, &do_encode/1)
   end
 
   # Formula (299) v0.4.1

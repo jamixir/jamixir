@@ -8,14 +8,12 @@ defmodule Block.Extrinsic.AssuranceTest do
 
   setup_all do
     hp = Hash.random()
-    keys = 1..3 |> Enum.map(fn _ -> :crypto.generate_key(:eddsa, :ed25519) end)
+    keys = for _ <- 1..3, do: :crypto.generate_key(:eddsa, :ed25519)
 
     validators =
-      build_list(3, :validator)
-      |> Enum.with_index()
-      |> Enum.map(fn {v, i} ->
+      for {v, i} <- Enum.with_index(build_list(3, :validator)) do
         %Validator{v | ed25519: elem(Enum.at(keys, i), 0)}
-      end)
+      end
 
     [_, {_, s2}, _] = keys
     payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::344>>)

@@ -286,7 +286,7 @@ defmodule Block.Extrinsic.Guarantee do
       e({
         g.work_report,
         e_le(g.timeslot, 4),
-        vs(g.credentials |> Enum.map(&{e_le(elem(&1, 0), 2), elem(&1, 1)}))
+        vs(for {i, s} <- g.credentials, do: {e_le(i, 2), s})
       })
     end
   end
