@@ -57,7 +57,7 @@ defmodule Constants do
   @doc "V - The total number of validators."
   defmockable(:validator_count, do: 1023)
 
-  @doc "WC - The basic size of our erasure-coded pieces."
+  @doc "WE - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: 684
 
   @doc "WR - The maximum size of an encoded work-report in octets."
@@ -70,7 +70,7 @@ defmodule Constants do
   defmockable(:ticket_submission_end, do: 500)
 
   # 4104
-  def wswc, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+  def wswe, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
 
   @doc "W_T - The size of the memo component in a deferred transfer, in octets."
   def memo_size, do: 128

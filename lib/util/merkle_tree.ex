@@ -41,16 +41,20 @@ defmodule Util.MerkleTree do
 
   # Formula (323) v0.4.1
   @spec justification([binary()], integer(), (binary() -> Types.hash())) :: [binary()]
-  def justification(v, i, hash_func) do
+  def justification(v, i, hash_func) when is_function(hash_func, 1) do
     trace(c_preprocess(v, hash_func), i, hash_func)
   end
+
+  def justification(v, i, x) when is_integer(x), do: justification(v, i, &Hash.default/1, x)
+
+  def justification(v, i), do: justification(v, i, &Hash.default/1)
 
   # Formula (324) v0.4.1
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
   @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
-  def justification([], _, _, _), do: []
+  def justification([], _, hash_func, _) when is_function(hash_func, 1), do: []
 
-  def justification(v, i, hash_func, x) when x >= 0 do
+  def justification(v, i, hash_func, x) when x >= 0 and is_function(hash_func, 1) do
     size = max(0, ceil(:math.log2(max(1, length(v))) - x))
     justification(v, i, hash_func) |> Enum.take(size)
   end
