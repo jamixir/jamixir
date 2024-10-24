@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
+  alias Block.Extrinsic.Guarantee.WorkResult
   alias Util.Hash
 
   @type t :: %__MODULE__{
@@ -67,6 +68,17 @@ defmodule Block.Extrinsic.WorkItem do
     defp encode_extrinsic(work_item) do
       for {h, i} <- work_item.extrinsic, do: {h, e_le(i, 4)}
     end
+  end
+
+  # Formula (193) v0.4.1
+  def to_work_result(%__MODULE__{} = wi, output) do
+    %WorkResult{
+      service: wi.service,
+      code_hash: wi.code_hash,
+      payload_hash: Hash.default(wi.payload),
+      gas_ratio: wi.gas_limit,
+      result: output
+    }
   end
 
   use JsonDecoder

@@ -90,4 +90,11 @@ defmodule UtilsTest do
       assert Utils.get_bit(bitstring, 3) == 0
     end
   end
+
+  describe "zero_padding/2" do
+    test "pads binary with zeros" do
+      assert Utils.pad_binary_right(<<1, 2, 3>>, 8) == <<1, 2, 3, 0, 0, 0, 0, 0>>
+      assert Utils.pad_binary_right(<<>>, 8) == <<>>
+    end
+  end
 end

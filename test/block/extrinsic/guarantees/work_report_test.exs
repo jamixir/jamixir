@@ -357,4 +357,19 @@ defmodule WorkReportTest do
       assert [^w1, ^w3, ^w4] = result
     end
   end
+
+  @size Constants.wswe() * 8
+  describe "paged_proofs/2" do
+    test "paged proof smoke test" do
+      bytes = for _ <- 1..10, do: <<7::@size>>
+      proofs = WorkReport.paged_proofs(bytes)
+      assert length(proofs) == 2
+    end
+
+    test "paged proof empty bytestring" do
+      proofs = WorkReport.paged_proofs([])
+      assert length(proofs) == 1
+      assert Enum.all?(proofs, &(byte_size(&1) == Constants.wswe()))
+    end
+  end
 end

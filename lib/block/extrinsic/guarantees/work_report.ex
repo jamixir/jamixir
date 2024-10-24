@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias System.State.{CoreReport, Ready}
-  alias Util.{Collections, Hash, Time}
+  alias Util.{Collections, Hash, MerkleTree, Time}
 
   use SelectiveMock
   use MapUnion
@@ -155,6 +155,23 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         for(x <- List.flatten(before_m ++ rest), do: Ready.to_tuple(x)) ++ w_q,
         accumulated
       )
+  end
+
+  use Codec.Encoder
+
+  @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
+  def paged_proofs(exported_segments) do
+    segments_count = ceil(length(exported_segments) / 64)
+
+    for i <- for(s <- 0..segments_count, do: 64 * s) do
+      Utils.pad_binary_right(
+        e({
+          vs(MerkleTree.justification(exported_segments, i, 6)),
+          vs(Enum.slice(exported_segments, i, 64))
+        }),
+        Constants.wswe()
+      )
+    end
   end
 
   use JsonDecoder
