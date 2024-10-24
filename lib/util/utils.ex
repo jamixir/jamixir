@@ -56,6 +56,13 @@ defmodule Utils do
 
   def pad_binary(value, _size), do: value
 
+  # Formula (202) v0.4.1
+  def pad_binary_right(x, n) do
+    start = rem(byte_size(x) + n - 1, n) + 1
+    pad = for _ <- List.duplicate("", n - start), into: <<>>, do: <<0>>
+    x <> pad
+  end
+
   def zero_bitstring(size) do
     String.duplicate(<<0>>, size)
   end

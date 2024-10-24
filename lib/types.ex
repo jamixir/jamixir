@@ -47,4 +47,7 @@ defmodule Types do
   identified by some root in the set of valid roots YR ⊂ Y144 .
   """
   @type bandersnatch_ringVRF_proof_of_knowledge :: <<_::6272>>
+
+  # Formula (187) v0.4.1 - G ≡ Y WS*WE
+  @type export_segment :: <<_::32_832>>
 end
