@@ -8,8 +8,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias System.State.{CoreReport, Ready, WorkPackageRootMap}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
-  use SelectiveMock
+  use Codec.Encoder
   use MapUnion
+  use SelectiveMock
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
@@ -40,7 +41,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  use Codec.Encoder
   # Formula (119) v0.4.1
   # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
@@ -163,8 +163,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       )
   end
 
-  use Codec.Encoder
-
+  # Formula (195) v0.4.1 - updated to 196 on 0.4.3 with H#
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
@@ -173,7 +172,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       Utils.pad_binary_right(
         e({
           vs(MerkleTree.justification(exported_segments, i, 6)),
-          vs(Enum.slice(exported_segments, i, 64))
+          vs(for x <- Enum.slice(exported_segments, i, 64), do: Hash.default(x))
         }),
         Constants.wswe()
       )
