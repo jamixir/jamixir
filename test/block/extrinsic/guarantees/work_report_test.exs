@@ -364,6 +364,7 @@ defmodule WorkReportTest do
       bytes = for _ <- 1..10, do: <<7::@size>>
       proofs = WorkReport.paged_proofs(bytes)
       assert length(proofs) == 2
+      assert Enum.all?(proofs, &(byte_size(&1) == Constants.wswe()))
     end
 
     test "paged proof empty bytestring" do
