@@ -29,7 +29,7 @@ defmodule RefinementContext do
             # t
             timeslot: 0,
             # p
-            prerequisite: Hash.zero()
+            prerequisite: nil
 
   defimpl Encodable do
     alias Codec.{Encoder, NilDiscriminator}

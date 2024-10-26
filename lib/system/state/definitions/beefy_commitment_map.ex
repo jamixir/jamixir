@@ -1,19 +1,9 @@
 defmodule System.State.BeefyCommitmentMap do
   @moduledoc """
-  a set of tuples, each tuple contain a service index and a an accumulation-result tree root
-  see section 12.4
+  A set of tuples, each tuple containing a service index and an accumulation-result tree root.
+  See section 12.4
   """
-  alias Util.Hash
 
-  @type t :: %__MODULE__{
-          commitments: [{non_neg_integer(), Types.hash()}]
-        }
-
-  defstruct commitments: []
-
-  def stub do
-    %__MODULE__{
-      commitments: [{0, Hash.zero()}]
-    }
-  end
+  @type t :: MapSet.t({non_neg_integer(), Types.hash()})
+  def new(list), do: MapSet.new(list)
 end

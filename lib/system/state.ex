@@ -18,7 +18,8 @@ defmodule System.State do
     ServiceAccount,
     Validator,
     ValidatorStatistics,
-    Ready
+    Ready,
+    WorkPackageRootMap
   }
 
   @type t :: %__MODULE__{
@@ -42,7 +43,7 @@ defmodule System.State do
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
           # Formula (158) v0.4.1
-          accumulation_history: list(%{Types.hash() => Types.hash()}),
+          accumulation_history: list(WorkPackageRootMap.t()),
           # Formula (160) v0.4.1
           ready_to_accumulate: list(list(Ready.t()))
         }
@@ -78,9 +79,9 @@ defmodule System.State do
     # π: Validator statistics
     validator_statistics: %ValidatorStatistics{},
     # ξ
-    accumulation_history: [],
+    accumulation_history: WorkPackageRootMap.initial_state(),
     # ϑ
-    ready_to_accumulate: []
+    ready_to_accumulate: Ready.initial_state()
   ]
 
   # Formula (12) v0.4.1
@@ -124,23 +125,22 @@ defmodule System.State do
              e.guarantees,
              timeslot_
            ),
+         available_work_reports =
+           WorkReport.available_work_reports(e.assurances, core_reports_intermediate_1),
          # Formula (28) v0.4.1
          # Formula (29) v0.4.1
-         {_services_, _privileged_services, _next_validators_, authorizer_queue_,
-          beefy_commitment_map} =
+         {:ok, accumulation_result} <-
            State.Accumulation.accumulate(
-             e.assurances,
-             core_reports_,
-             services_intermediate,
-             state.privileged_services,
-             state.next_validators,
-             state.authorizer_queue
+             available_work_reports,
+             h,
+             state,
+             services_intermediate
            ),
          # α' Formula (30) v0.4.1
          authorizer_pool_ =
            calculate_authorizer_pool_(
              e.guarantees,
-             authorizer_queue_,
+             accumulation_result.authorizer_queue,
              state.authorizer_pool,
              h.timeslot
            ),
@@ -150,7 +150,7 @@ defmodule System.State do
              h,
              e.guarantees,
              initial_recent_history,
-             beefy_commitment_map
+             accumulation_result.beefy_commitment_map
            ),
          # κ' Formula (21) v0.4.1
          # λ' Formula (22) v0.4.1
@@ -245,13 +245,11 @@ defmodule System.State do
          # γ'
          safrole: safrole_,
          # δ'
-         # TODO
-         services: nil,
+         services: accumulation_result.services,
          # η'
          entropy_pool: entropy_pool_,
          # ι'
-         # TODO
-         next_validators: nil,
+         next_validators: accumulation_result.next_validators,
          # κ'
          curr_validators: curr_validators_,
          # λ'
@@ -261,20 +259,17 @@ defmodule System.State do
          # τ'
          timeslot: timeslot_,
          # φ'
-         authorizer_queue: authorizer_queue_,
+         authorizer_queue: accumulation_result.authorizer_queue,
          # χ'
-         # TODO
-         privileged_services: nil,
+         privileged_services: accumulation_result.privileged_services,
          # ψ'
          judgements: judgements_,
          # π'
          validator_statistics: validator_statistics_,
          #  ξ'
-         # TODO
-         accumulation_history: nil,
+         accumulation_history: accumulation_result.accumulation_history,
          #  ϑ'
-         # TODO
-         ready_to_accumulate: nil
+         ready_to_accumulate: accumulation_result.ready_to_accumulate
        }}
     else
       {:error, reason} -> {:error, state, reason}
@@ -322,7 +317,11 @@ defmodule System.State do
 
       %Guarantee{work_report: %WorkReport{authorizer_hash: hash}} ->
         {left, right} = Enum.split_while(current_pool, &(&1 != hash))
-        left ++ tl(right)
+
+        case right do
+          [] -> left
+          [_ | tail] -> left ++ tail
+        end
     end
   end
 

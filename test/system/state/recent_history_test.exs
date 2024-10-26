@@ -41,7 +41,7 @@ defmodule RecentHistoryTest do
   describe "calculate_recent_history_" do
     test "handles empty guarantees list" do
       recent_history = %RecentHistory{}
-      beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, Hash.one()}]}
+      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -85,7 +85,7 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, Hash.one()}]}
+      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -115,7 +115,7 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment_map = %BeefyCommitmentMap{commitments: [{2, <<5::256>>}]}
+      beefy_commitment_map = BeefyCommitmentMap.new([{2, <<5::256>>}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -143,7 +143,7 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment_map = %BeefyCommitmentMap{commitments: [{3, Hash.three()}]}
+      beefy_commitment_map = BeefyCommitmentMap.new([{3, Hash.three()}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -178,7 +178,7 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment_map = %BeefyCommitmentMap{commitments: [{1, Hash.one()}]}
+      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       # Call the function to add a new block
       result =
@@ -201,12 +201,11 @@ defmodule RecentHistoryTest do
 
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
-      beefy_commitment_map = %BeefyCommitmentMap{
-        commitments: [
+      beefy_commitment_map =
+        BeefyCommitmentMap.new([
           {1, <<11::256>>},
           {2, <<22::256>>}
-        ]
-      }
+        ])
 
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
@@ -239,7 +238,7 @@ defmodule RecentHistoryTest do
 
       # Construct the expected Merkle tree root from the beefy_commitment_map
       expected_merkle_root =
-        beefy_commitment_map.commitments
+        MapSet.to_list(beefy_commitment_map)
         |> Enum.sort_by(&elem(&1, 0))
         |> Enum.map(fn {service, hash} ->
           encoded_index = Codec.Encoder.encode_little_endian(service, 4)
@@ -270,7 +269,7 @@ defmodule RecentHistoryTest do
           %Header{},
           [guarantee],
           recent_history,
-          %BeefyCommitmentMap{commitments: [{2, <<5::256>>}]}
+          BeefyCommitmentMap.new([{2, <<5::256>>}])
         )
 
       # Verify that the state root in the newly added block is all zeros
@@ -302,4 +301,21 @@ defmodule RecentHistoryTest do
       Codec.Encoder.encode(%RecentHistory{})
     end
   end
+
+  describe "get_well_balanced_merkle_root/1" do
+    test "returns Hash.zero() for nil input" do
+      assert RecentHistory.get_well_balanced_merkle_root(nil) == Hash.zero()
+    end
+
+    test "returns Hash.zero() for empty MapSet" do
+      assert RecentHistory.get_well_balanced_merkle_root(MapSet.new()) == Hash.zero()
+    end
+
+    test "calculates merkle root for non-empty MapSet" do
+      map = BeefyCommitmentMap.new([{1, Hash.one()}, {2, Hash.two()}])
+      result = RecentHistory.get_well_balanced_merkle_root(map)
+      refute result == Hash.zero()
+    end
+  end
+
 end

@@ -19,4 +19,13 @@ defmodule System.DeferredTransfer do
             amount: 0,
             memo: <<0::size(Constants.memo_size() * 8)>>,
             gas_limit: 0
+
+  # Formula (178) v0.4.1
+  @spec select_transfers_for_destination(list(t()), non_neg_integer()) :: list(t())
+  def select_transfers_for_destination(transfers, destination) do
+    Enum.with_index(transfers)
+    |> Enum.filter(fn {t, _} -> t.receiver == destination end)
+    |> Enum.sort_by(fn {t, index} -> {t.sender, index} end)
+    |> Enum.map(fn {t, _} -> t end)
+  end
 end
