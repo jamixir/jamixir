@@ -13,6 +13,7 @@ defmodule System.State.ServiceAccount do
   - `b`: Balance
   - `g`, `m`: Gas limits
   """
+  alias System.State.ServiceAccount
   alias Util.Hash
 
   @type t :: %__MODULE__{
@@ -75,7 +76,7 @@ defmodule System.State.ServiceAccount do
   end
 
   # Formula (94) v0.4.1
-  @spec historical_lookup(System.State.ServiceAccount.t(), integer(), Types.hash()) :: binary()
+  @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary()
   def historical_lookup(
         %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},
         timeslot,
