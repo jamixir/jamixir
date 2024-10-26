@@ -119,8 +119,8 @@ defmodule WorkReportTest do
     end
   end
 
-  describe "split_by_prerequisites/1" do
-    test "splits work reports based on prerequisites" do
+  describe "separate_work_reports/2" do
+    test "separates work reports based on prerequisites and dependencies" do
       w1 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
 
       w2 =
@@ -143,12 +143,16 @@ defmodule WorkReportTest do
           segment_root_lookup: %{}
         )
 
-      assert {[^w1, ^w3], [^w2, ^w4, ^w5]} =
-               WorkReport.split_by_prerequisites([w1, w2, w3, w4, w5])
+      accumulated = %{}
+
+      {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2, w3, w4, w5], accumulated)
+
+      assert w_bang == [w1, w3]
+      assert [^w2, ^w4, ^w5] = Enum.map(w_q, fn {wr, _deps} -> wr end)
     end
 
     test "handles empty list" do
-      assert {[], []} = WorkReport.split_by_prerequisites([])
+      assert {[], []} = WorkReport.separate_work_reports([], %{})
     end
 
     test "handles list with only prerequisites" do
@@ -164,14 +168,37 @@ defmodule WorkReportTest do
           segment_root_lookup: %{}
         )
 
-      assert {[], [^w1, ^w2]} = WorkReport.split_by_prerequisites([w1, w2])
+      {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
+
+      assert w_bang == []
+      assert [^w1, ^w2] = Enum.map(w_q, fn {wr, _deps} -> wr end)
     end
 
     test "handles list with only non-prerequisites" do
       w1 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
       w2 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
 
-      assert {[^w1, ^w2], []} = WorkReport.split_by_prerequisites([w1, w2])
+      {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
+
+      assert w_bang == [w1, w2]
+      assert w_q == []
+    end
+
+    test "handles work reports with non-empty segment_root_lookup" do
+      w1 =
+        build(:work_report,
+          refinement_context: %{prerequisite: nil},
+          segment_root_lookup: %{Hash.one() => Hash.two()}
+        )
+
+      w2 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
+
+      {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
+
+      assert w_bang == [w2]
+      assert length(w_q) == 1
+      assert [{^w1, deps}] = w_q
+      assert MapSet.equal?(deps, MapSet.new([Hash.one()]))
     end
   end
 
@@ -265,23 +292,6 @@ defmodule WorkReportTest do
       result = WorkReport.edit_queue(r, x)
 
       assert [{^w1, _}] = result
-    end
-  end
-
-  describe "create_package_root_map/1" do
-    test "creates a map of work package hashes to segment roots" do
-      w1 =
-        build(:work_report,
-          specification: %{work_package_hash: Hash.one(), exports_root: Hash.two()}
-        )
-
-      w2 =
-        build(:work_report,
-          specification: %{work_package_hash: Hash.three(), exports_root: Hash.four()}
-        )
-
-      assert %{<<1::256>> => <<2::256>>, <<3::256>> => <<4::256>>} =
-               WorkReport.create_package_root_map([w1, w2])
     end
   end
 

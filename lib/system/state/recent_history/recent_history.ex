@@ -91,21 +91,7 @@ defmodule System.State.RecentHistory do
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
     # Formula (83)
-    well_balanced_merkle_root =
-      case beefy_commitment_map do
-        nil ->
-          Hash.zero()
-
-        [] ->
-          Hash.zero()
-
-        _ ->
-          # The well-balanced merkle root of the beefy commitment map
-          for {service, hash} <- Enum.sort_by(beefy_commitment_map.commitments, &elem(&1, 0)) do
-            <<e_le(service, 4)::binary, hash::binary>>
-          end
-          |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
-      end
+    well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment_map)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
     # Formula (83) v0.4.1
@@ -126,6 +112,29 @@ defmodule System.State.RecentHistory do
 
     # Formula (84) v0.4.1
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
+  end
+
+  def get_well_balanced_merkle_root(beefy_commitment_map) do
+    case beefy_commitment_map do
+      nil ->
+        Hash.zero()
+
+      %MapSet{} = map ->
+        if MapSet.size(map) == 0 do
+          Hash.zero()
+        else
+          prepare_commitments(map)
+          |> Util.MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
+        end
+    end
+  end
+
+  def prepare_commitments(map) do
+    MapSet.to_list(map)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Enum.map(fn {service, hash} ->
+      <<e_le(service, 4)::binary, hash::binary>>
+    end)
   end
 
   defimpl Encodable do

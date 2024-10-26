@@ -1,17 +1,14 @@
 defmodule System.State.AccumulationTest do
-  use ExUnit.Case
-  import Mox
-  alias System.State.Accumulation
-  alias System.PVM.AccumulationOperand
-
-  setup :verify_on_exit!
-
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias System.AccumulationResult
-  alias System.State.{Accumulation, PrivilegedServices}
-
+  alias System.{AccumulationResult, DeferredTransfer}
+  alias System.PVM.AccumulationOperand
+  alias System.State
+  alias System.State.{Accumulation, PrivilegedServices, Ready, ServiceAccount}
   import Jamixir.Factory
+  import Mox
+  use ExUnit.Case
+  setup :verify_on_exit!
 
   setup_all do
     service = 1
@@ -513,6 +510,230 @@ defmodule System.State.AccumulationTest do
         )
 
       assert {:error, :invalid_service} = result
+    end
+  end
+
+  describe "calculate_posterior_services/2" do
+    test "applies transfers correctly" do
+      services_intermediate_2 = %{
+        1 => %ServiceAccount{balance: 100},
+        2 => %ServiceAccount{balance: 200},
+        3 => %ServiceAccount{balance: 300}
+      }
+
+      transfers = [
+        %DeferredTransfer{sender: 1, receiver: 2, amount: 50},
+        %DeferredTransfer{sender: 2, receiver: 3, amount: 75},
+        %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
+      ]
+
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
+      assert result[1].balance == 150
+      assert result[2].balance == 175
+      assert result[3].balance == 275
+    end
+
+    test "handles empty transfers" do
+      services_intermediate_2 = %{
+        1 => %{balance: 100},
+        2 => %{balance: 200}
+      }
+
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, [])
+
+      assert result == services_intermediate_2
+    end
+
+    test "transfers to non-existent services is a noop" do
+      services_intermediate_2 = %{
+        1 => %{balance: 100},
+        2 => %{balance: 200}
+      }
+
+      transfers = [
+        %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
+      ]
+
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
+
+      assert result == services_intermediate_2
+    end
+  end
+
+  describe "build_ready_to_accumulate_/6" do
+    setup do
+      ready_to_accumulate = [
+        [
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash1", exports_root: "root1"}
+            }
+          },
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash2", exports_root: "root2"}
+            }
+          }
+        ],
+        [
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash3", exports_root: "root3"}
+            }
+          },
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash4", exports_root: "root4"}
+            }
+          }
+        ],
+        [
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash5", exports_root: "root5"}
+            }
+          },
+          %Ready{
+            work_report: %WorkReport{
+              specification: %{work_package_hash: "hash6", exports_root: "root6"}
+            }
+          }
+        ]
+      ]
+
+      w_star = []
+
+      w_q = [
+        {%WorkReport{specification: %{work_package_hash: "wph3", exports_root: "root3"}},
+         MapSet.new(["hash7"])},
+        {%WorkReport{specification: %{work_package_hash: "wph4", exports_root: "root4"}},
+         MapSet.new(["hash8"])}
+      ]
+
+      {:ok, ready_to_accumulate: ready_to_accumulate, w_star: w_star, w_q: w_q}
+    end
+
+    test "builds ready_to_accumulate correctly", %{
+      ready_to_accumulate: ready_to_accumulate,
+      w_star: w_star,
+      w_q: w_q
+    } do
+      n = 2
+      header_timeslot = 5
+      state_timeslot = 3
+
+      result =
+        Accumulation.build_ready_to_accumulate_(
+          ready_to_accumulate,
+          w_star,
+          w_q,
+          n,
+          header_timeslot,
+          state_timeslot
+        )
+
+      # Update these assertions to match the actual output format
+      assert Enum.at(result, 0) == w_q
+      assert Enum.at(result, 1) == []
+      assert Enum.at(result, 2) == Enum.map(Enum.at(ready_to_accumulate, 0), &Ready.to_tuple/1)
+    end
+
+    test "handles empty inputs" do
+      result =
+        Accumulation.build_ready_to_accumulate_(
+          [],
+          [],
+          [],
+          0,
+          1,
+          1
+        )
+
+      assert result == []
+    end
+
+    test "handles large timeslot difference", %{ready_to_accumulate: ready_to_accumulate} do
+      result =
+        Accumulation.build_ready_to_accumulate_(
+          ready_to_accumulate,
+          [],
+          [],
+          0,
+          10,
+          1
+        )
+
+      assert result == [[], [], []]
+    end
+  end
+
+  describe "accumulate/4" do
+    setup do
+      header = build(:header, timeslot: 5)
+
+      state = %State{
+        privileged_services: %PrivilegedServices{
+          manager_service: 1,
+          alter_authorizer_service: 2,
+          alter_validator_service: 2,
+          services_gas: %{1 => 100, 2 => 100}
+        },
+        timeslot: 3
+      }
+
+      services_intermediate = %{
+        1 => build(:service_account, balance: 1000),
+        2 => build(:service_account, balance: 1000)
+      }
+
+      # Set the mock module for accumulation
+      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :accumulation_module)
+      end)
+
+      %{
+        header: header,
+        state: state,
+        services_intermediate: services_intermediate
+      }
+    end
+
+    test "successfully accumulates valid work reports", %{
+      header: header,
+      state: state,
+      services_intermediate: services_intermediate
+    } do
+      work_reports = [
+        build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
+        build(:work_report, results: [%{service: 2, gas_ratio: 20}], segment_root_lookup: %{})
+      ]
+
+      # Set up expectations for the mock
+      MockAccumulation
+      |> stub(:do_single_accumulation, fn _, _, _, _ ->
+        %AccumulationResult{}
+      end)
+
+      result = Accumulation.accumulate(work_reports, header, state, services_intermediate)
+
+      assert {:ok, _accumulated_state} = result
+    end
+
+    test "returns error when encountering an invalid service", %{
+      header: header,
+      state: state,
+      services_intermediate: services_intermediate
+    } do
+      work_reports = [
+        build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
+        # Invalid service
+        build(:work_report, results: [%{service: 3, gas_ratio: 20}], segment_root_lookup: %{})
+      ]
+
+      assert {:error, :invalid_service} =
+               Accumulation.accumulate(work_reports, header, state, services_intermediate)
     end
   end
 end

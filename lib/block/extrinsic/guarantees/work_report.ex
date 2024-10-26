@@ -3,13 +3,15 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   Work report
   section 11.1
   """
-  alias Block.Extrinsic.AvailabilitySpecification
+  alias Block.Extrinsic.{Assurance, AvailabilitySpecification}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias System.State.{CoreReport, Ready}
+  alias System.State.{CoreReport, Ready, WorkPackageRootMap}
   alias Util.{Collections, Hash, Time}
 
   use SelectiveMock
   use MapUnion
+
+  @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
   # Formula (118) v0.4.1
   @type t :: %__MODULE__{
@@ -24,13 +26,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # o
           output: binary(),
           # l
-          segment_root_lookup: %{Types.hash() => Types.hash()},
+          segment_root_lookup: segment_root_lookup(),
           # r
           results: list(WorkResult.t())
         }
 
   # Formula (118) v0.4.1
-  defstruct specification: {},
+  defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
             authorizer_hash: Hash.zero(),
@@ -52,7 +54,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
-  @spec available_work_reports(list(__MODULE__.t()), list(CoreReport.t())) :: list(WorkReport.t())
+  @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     threshold = 2 * Constants.validator_count() / 3
 
@@ -71,12 +73,30 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (161) v0.4.1
   # Formula (162) v0.4.1
-  @spec split_by_prerequisites(list(__MODULE__.t())) ::
-          {list(__MODULE__.t()), list(__MODULE__.t())}
-  def split_by_prerequisites(w) do
-    Enum.split_with(w, fn report ->
-      is_nil(report.refinement_context.prerequisite) and Enum.empty?(report.segment_root_lookup)
-    end)
+  @spec separate_work_reports(list(__MODULE__.t()), list(segment_root_lookup())) ::
+          {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
+  def separate_work_reports(work_reports, accumulation_history)
+      when is_list(accumulation_history),
+      do: separate_work_reports(work_reports, Collections.union(accumulation_history))
+
+  @spec separate_work_reports(list(__MODULE__.t()), segment_root_lookup()) ::
+          {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
+  def separate_work_reports(work_reports, accumulated) do
+    {w_bang, pre_w_q} =
+      Enum.split_with(work_reports, fn %WorkReport{
+                                         refinement_context: wx,
+                                         segment_root_lookup: wl
+                                       } ->
+        is_nil(wx.prerequisite) and Enum.empty?(wl)
+      end)
+
+    dependencies =
+      for w <- pre_w_q do
+        with_dependencies(w)
+      end
+
+    w_q = edit_queue(dependencies, accumulated)
+    {w_bang, w_q}
   end
 
   # Formula (163) v0.4.1
@@ -88,7 +108,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (164) v0.4.1
-  @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), %{Types.hash() => Types.hash()}) ::
+  @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), WorkPackageRootMap.t()) ::
           list({__MODULE__.t(), MapSet.t(Types.hash())})
   def edit_queue(r, x) do
     x_keys = MapSet.new(Map.keys(x))
@@ -98,14 +118,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         x ++ w.segment_root_lookup == w.segment_root_lookup ++ x do
       {w, d \\ x_keys}
     end
-  end
-
-  # Formula (166) v0.4.1
-  @spec create_package_root_map(list(__MODULE__.t())) :: %{Types.hash() => Types.hash()}
-  def create_package_root_map(work_reports) do
-    for %{specification: ws} <- work_reports,
-        do: {ws.work_package_hash, ws.exports_root},
-        into: Map.new()
   end
 
   # Formula (165) v0.4.1
@@ -118,7 +130,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     if Enum.empty?(g) do
       []
     else
-      g_map = create_package_root_map(g)
+      g_map = WorkPackageRootMap.create(g)
       g ++ accumulation_priority_queue(edit_queue(r, g_map), Map.merge(a, g_map))
     end
   end
@@ -127,7 +139,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec accumulatable_work_reports(
           list(__MODULE__.t()),
           non_neg_integer(),
-          list(%{Types.hash() => Types.hash()}),
+          list(WorkPackageRootMap.t()),
           list(list(Ready.t()))
         ) ::
           list(__MODULE__.t())
@@ -137,19 +149,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    {w_bang, pre_w_q} = split_by_prerequisites(work_reports)
     # Formula (159) v0.4.1
     accumulated = Collections.union(accumulation_history)
 
     # Formula (162) v0.4.1
-    w_q = edit_queue(for(w <- pre_w_q, do: with_dependencies(w)), accumulated)
-
+    {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
     # Formula (167) v0.4.1
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, rest} = Enum.split(ready_to_accumulate, m)
 
     # Formula (168) v0.4.1
+    # this has changed after v0.4.1
     w_bang ++
       accumulation_priority_queue(
         for(x <- List.flatten(before_m ++ rest), do: Ready.to_tuple(x)) ++ w_q,

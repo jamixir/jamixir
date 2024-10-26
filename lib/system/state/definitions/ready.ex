@@ -12,4 +12,7 @@ defmodule System.State.Ready do
   def to_tuple(%__MODULE__{} = ready) do
     {ready.work_report, ready.dependencies}
   end
+
+  @spec initial_state() :: list(t())
+  def initial_state, do: List.duplicate([], Constants.epoch_length())
 end
