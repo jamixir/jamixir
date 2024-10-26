@@ -65,6 +65,12 @@ defmodule Block.Extrinsic.WorkPackage do
     Hash.default(authorization_code(wp, state) <> wp.parameterization_blob)
   end
 
+  # Formula (197) v0.4.1
+  def segment_root(r) do
+    # TODO ⊞ part
+    r
+  end
+
   # Formula (191) v0.4.1
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->

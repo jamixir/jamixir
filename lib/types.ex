@@ -25,6 +25,7 @@ defmodule Types do
   @type gas_result :: integer()
   # Formula (34) v0.4.1 - NR - shoud be a 32-bit integer <= 2^32
   @type register_value :: non_neg_integer()
+  @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil
   @type vote :: boolean()
   # 144 bytes YR ⊂ Y144

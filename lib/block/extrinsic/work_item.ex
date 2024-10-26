@@ -3,8 +3,9 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
-  alias Block.Extrinsic.Guarantee.WorkResult
-  alias Util.Hash
+  alias Block.Extrinsic.{Guarantee.WorkResult, WorkPackage}
+  alias Util.{Hash, MerkleTree}
+  use Codec.Encoder
 
   @type t :: %__MODULE__{
           # s
@@ -79,6 +80,30 @@ defmodule Block.Extrinsic.WorkItem do
       gas_ratio: wi.gas_limit,
       result: output
     }
+  end
+
+  # Formula (199) v0.4.1
+  # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
+  def extrinsic_data(%__MODULE__{} = w, d) do
+    for {r, _n} <- w.extrinsic do
+      Map.get(d, r)
+    end
+  end
+
+  # Formula (199) v0.4.1
+  # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
+  def import_segment_data(%__MODULE__{} = w, s) do
+    for {r, n} <- w.import_segments,
+        MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
+        do: Enum.at(s, n)
+  end
+
+  # Formula (199) v0.4.1
+  # J ( w ∈ I ) ≡ [ ↕ J ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
+  def segment_justification(%__MODULE__{} = w, s) do
+    for {r, n} <- w.import_segments,
+        MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
+        do: vs(MerkleTree.justification(s, n))
   end
 
   use JsonDecoder
