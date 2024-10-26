@@ -66,4 +66,12 @@ defmodule Utils do
   def zero_bitstring(size) do
     String.duplicate(<<0>>, size)
   end
+
+  def transpose_binaries(binaries) do
+    binaries
+    |> Enum.map(&:binary.bin_to_list/1)
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+    |> Enum.map(&:binary.list_to_bin/1)
+  end
 end

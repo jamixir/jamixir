@@ -3,11 +3,23 @@ defmodule WorkReportTest do
   import Jamixir.Factory
   import TestHelper
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.WorkPackage
   alias System.State.Ready
+  alias System.State.ServiceAccount
   alias Util.Hash
 
-  setup do
+  setup_all do
+    preimage = Hash.random()
+    sa = ServiceAccount.store_preimage(build(:service_account), preimage, 0)
+
     {:ok,
+     wp:
+       build(:work_package,
+         service: 0,
+         parameterization_blob: <<1, 2, 3>>,
+         authorization_code_hash: Hash.default(preimage)
+       ),
+     state: build(:genesis_state, services: %{0 => sa}),
      wr:
        build(:work_report,
          specification: build(:availability_specification, work_package_hash: Hash.one())
@@ -376,6 +388,13 @@ defmodule WorkReportTest do
       proofs = WorkReport.paged_proofs([])
       assert length(proofs) == 1
       assert Enum.all?(proofs, &(byte_size(&1) == Constants.wswe()))
+    end
+  end
+
+  describe "process_item/3" do
+    test "processes a work item smoke test", %{wp: wp, state: state} do
+      wp = %WorkPackage{wp | work_items: [build(:work_item)]}
+      assert WorkReport.process_item(wp, 0, <<>>, state) == {"", []}
     end
   end
 end

@@ -3,8 +3,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   Work report
   section 11.1
   """
-  alias Block.Extrinsic.{Assurance, AvailabilitySpecification}
+
+  alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.WorkPackage
+  alias System.{PVM, PVM.RefineParams}
+  alias System.State
   alias System.State.{CoreReport, Ready, WorkPackageRootMap}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
@@ -177,6 +181,86 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         Constants.wswe()
       )
     end
+  end
+
+  # Formula (196) v0.4.1
+  def compute_work_result(%WorkPackage{} = wp, core, %State{} = state) do
+    _l = calculate_segments(wp)
+    # TODO
+    d = %{}
+    # TODO
+    s = []
+
+    case System.PVM.authorized(wp, core, state) do
+      error when is_integer(error) ->
+        error
+
+      o ->
+        # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
+        {r, e} =
+          for j <- 0..(length(wp.work_items) - 1) do
+            {result, exports} = process_item(wp, j, o, state)
+            {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
+          end
+
+        # Formula (200) v0.4.1
+        specification =
+          AvailabilitySpecification.from_package_execution(
+            Hash.default(e(wp)),
+            e(
+              {wp, for(w <- wp, do: WorkItem.extrinsic_data(w, d)),
+               for(w <- wp, do: WorkItem.import_segment_data(w, s)),
+               for(w <- wp, do: WorkItem.segment_justification(w, s))}
+            ),
+            e
+          )
+
+        %__MODULE__{
+          authorizer_hash: WorkPackage.implied_authorizer(wp, state),
+          output: o,
+          refinement_context: nil,
+          # s
+          specification: specification,
+          # l # TODO
+          # segment_root_lookup: %{Types.hash() => Types.hash()},
+          results: r
+        }
+    end
+  end
+
+  # Formula (196) v0.4.1
+  # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
+  # and h = H(p), w = pw[j], l = ∑ pw[k]e
+  def process_item(%WorkPackage{} = p, j, o, %State{} = s) do
+    w = Enum.at(p.work_items, j)
+    h = Hash.default(e(p))
+    l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
+    pa = WorkPackage.implied_authorizer(p, s)
+
+    PVM.refine(
+      %RefineParams{
+        service_code: w.code_hash,
+        gas: w.gas_limit,
+        service: w.service,
+        work_package_hash: h,
+        payload: w.payload,
+        refinement_context: p.context,
+        authorizer_hash: pa,
+        output: o,
+        # TODO
+        import_segments: [],
+        # TODO
+        extrinsic_data: [],
+        export_offset: l
+      },
+      s
+    )
+
+    # ...
+  end
+
+  defp calculate_segments(%WorkPackage{} = _wp) do
+    # for w <- wp.work_items, do:
   end
 
   use JsonDecoder
