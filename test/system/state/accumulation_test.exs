@@ -639,29 +639,13 @@ defmodule System.State.AccumulationTest do
     end
 
     test "handles empty inputs" do
-      result =
-        Accumulation.build_ready_to_accumulate_(
-          [],
-          [],
-          [],
-          0,
-          1,
-          1
-        )
+      result = Accumulation.build_ready_to_accumulate_([], [], [], 0, 1, 1)
 
       assert result == []
     end
 
     test "handles large timeslot difference", %{ready_to_accumulate: ready_to_accumulate} do
-      result =
-        Accumulation.build_ready_to_accumulate_(
-          ready_to_accumulate,
-          [],
-          [],
-          0,
-          10,
-          1
-        )
+      result = Accumulation.build_ready_to_accumulate_(ready_to_accumulate, [], [], 0, 10, 1)
 
       assert result == [[], [], []]
     end

@@ -90,12 +90,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         is_nil(wx.prerequisite) and Enum.empty?(wl)
       end)
 
-    dependencies =
-      for w <- pre_w_q do
-        with_dependencies(w)
-      end
-
-    w_q = edit_queue(dependencies, accumulated)
+    w_q = edit_queue(for(w <- pre_w_q, do: with_dependencies(w)), accumulated)
     {w_bang, w_q}
   end
 

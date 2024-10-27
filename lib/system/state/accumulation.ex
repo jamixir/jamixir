@@ -331,7 +331,6 @@ defmodule System.State.Accumulation do
     end)
   end
 
-
   # Formula (182) v0.4.1
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
@@ -363,7 +362,6 @@ defmodule System.State.Accumulation do
       ) do
     e = length(ready_to_accumulate)
     m = Util.Time.epoch_phase(header_timeslot)
-    tau_diff = header_timeslot - state_timeslot
 
     work_package_root_map = WorkPackageRootMap.create(Enum.take(w_star, n))
 
@@ -374,7 +372,7 @@ defmodule System.State.Accumulation do
         i == 0 ->
           WorkReport.edit_queue(w_q, work_package_root_map)
 
-        i < tau_diff ->
+        i < header_timeslot - state_timeslot ->
           []
 
         true ->
