@@ -30,13 +30,20 @@ defmodule BlockTest do
     }
 
     state_root = Merklization.merkelize_state(State.serialize(state))
+    extrinsic = build(:extrinsic)
+    extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
 
     valid_block = %Block{
-      header: build(:header, timeslot: 100, prior_state_root: state_root),
-      extrinsic: build(:extrinsic)
+      header: build(:header,
+        timeslot: 100,
+        prior_state_root: state_root,
+        extrinsic_hash: extrinsic_hash
+      ),
+      extrinsic: extrinsic
     }
 
     Application.put_env(:jamixir, :original_modules, [
+      Block,
       Block.Header,
       Block.Extrinsic,
       System.Validators.Safrole,
@@ -47,7 +54,7 @@ defmodule BlockTest do
       Application.delete_env(:jamixir, :original_modules)
     end)
 
-    {:ok, state: state, valid_block: valid_block}
+    {:ok, state: state, valid_block: valid_block, state_root: state_root}
   end
 
   describe "encode/1" do
@@ -106,6 +113,35 @@ defmodule BlockTest do
 
       invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
       assert {:error, _} = Block.validate(invalid_block, state)
+    end
+
+    test "returns error when extrinsic hash is invalid", %{state: state, state_root: state_root} do
+      extrinsic = build(:extrinsic)
+
+      header =
+        build(:header, extrinsic_hash: Hash.one(), timeslot: 100, prior_state_root: state_root)
+
+      block = %Block{header: header, extrinsic: extrinsic}
+      assert {:error, "Invalid extrinsic hash"} = Block.validate(block, state)
+    end
+
+    test "validates successfully with correct extrinsic hash", %{
+      state: state,
+      state_root: state_root
+    } do
+      extrinsic = build(:extrinsic)
+      extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
+
+      header =
+        build(:header,
+          extrinsic_hash: extrinsic_hash,
+          timeslot: 100,
+          prior_state_root: state_root
+        )
+
+      block = %Block{header: header, extrinsic: extrinsic}
+
+      assert :ok = Block.validate(block, state)
     end
   end
 
