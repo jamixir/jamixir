@@ -18,6 +18,7 @@ defmodule Block do
   def validate(%__MODULE__{header: h, extrinsic: e}, %State{} = s) do
     with :ok <- Header.validate(h, s),
          :ok <- validate_extrinsic_hash(h, e),
+         :ok <- validate_refinement_context(h, e),
          :ok <- Extrinsic.validate(e, h, s) do
       :ok
     else
@@ -34,6 +35,22 @@ defmodule Block do
   end
 
   def mock(:validate_extrinsic_hash, _), do: :ok
+  def mock(:validate_refinement_context, _), do: :ok
+
+  use Codec.Encoder
+  # Formula (149) v0.4.1
+  mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
+    Enum.reduce_while(guarantees, :ok, fn g, _ ->
+      x = g.work_report.refinement_context
+
+      case Enum.any?(Header.ancestors(header), fn h ->
+             h.timeslot == x.timeslot and h(e(h)) == x.lookup_anchor
+           end) do
+        true -> {:cont, :ok}
+        false -> {:halt, {:error, "Refinement context is invalid"}}
+      end
+    end)
+  end
 
   defimpl Encodable do
     use Codec.Encoder

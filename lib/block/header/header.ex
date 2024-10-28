@@ -1,11 +1,9 @@
 defmodule Block.Header do
   alias Block.Header
-  alias System.State.Validator
-  alias System.State
   alias Util.Merklization
   alias Codec.{NilDiscriminator, VariableSize}
-  alias System.State.SealKeyTicket
-  alias System.Validators
+  alias System.{State, Validators}
+  alias System.State.{SealKeyTicket, Validator}
   alias Util.{Hash, Time}
   use SelectiveMock
   use Codec.Encoder
@@ -93,11 +91,21 @@ defmodule Block.Header do
   use MapUnion
   # Formula (40) v0.4.1
   # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
-  def ancestors(nil), do: MapSet.new([])
-  def ancestors(%__MODULE__{parent_hash: nil} = h), do: MapSet.new([h])
+  # def ancestors(nil), do: MapSet.new([])
+  # def ancestors(%__MODULE__{parent_hash: nil} = h), do: MapSet.new([h])
 
-  def ancestors(%__MODULE__{parent_hash: parent_hash} = h) do
-    MapSet.new([h]) ++ __MODULE__.ancestors(Storage.get(parent_hash, Header))
+  # def ancestors(%__MODULE__{parent_hash: parent_hash} = h) do
+  #   MapSet.new([h]) ++ __MODULE__.ancestors(Storage.get(parent_hash, Header))
+  # end
+
+  def ancestors(nil), do: []
+
+  def ancestors(%__MODULE__{} = h) do
+    Stream.unfold(h, fn
+      nil -> nil
+      %__MODULE__{parent_hash: nil} = current -> {current, nil}
+      %__MODULE__{parent_hash: ph} = current -> {current, Storage.get(ph, Header)}
+    end)
   end
 
   def mock(:validate_state_root, _), do: :ok

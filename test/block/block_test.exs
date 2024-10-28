@@ -7,6 +7,8 @@ defmodule BlockTest do
   alias Util.{Hash, Merklization}
   import Mox
   import TestHelper
+  import OriginalModules
+  use Codec.Encoder
   setup :verify_on_exit!
 
   setup_validators(1)
@@ -130,13 +132,8 @@ defmodule BlockTest do
 
   describe "preimage validation" do
     setup do
-      Application.put_env(:jamixir, :original_modules, [
-        Block.Extrinsic.Preimage
-      ])
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, :original_modules)
-      end)
+      Application.put_env(:jamixir, :original_modules, [Block.Extrinsic.Preimage])
+      on_exit(fn -> Application.delete_env(:jamixir, :original_modules) end)
     end
 
     test "returns error when preimage validation fails", %{state: state} do
@@ -151,6 +148,34 @@ defmodule BlockTest do
 
       assert {:error, reason} = Block.validate(invalid_block, state)
       assert reason == :not_in_order
+    end
+  end
+
+  describe "validate_refinement_context" do
+    test "returns error when refinement context is invalid" do
+      with_original_modules([:validate_refinement_context]) do
+        header = build(:header, timeslot: 100)
+        extrinsic = build(:extrinsic, guarantees: [build(:guarantee)])
+
+        assert {:error, "Refinement context is invalid"} =
+                 Block.validate_refinement_context(header, extrinsic)
+      end
+    end
+
+    test "returns :ok when refinement context is valid" do
+      with_original_modules([:validate_refinement_context]) do
+        parent = build(:decodable_header, timeslot: 100)
+        header = build(:header, timeslot: 101, parent_hash: h(e(parent)))
+
+        rc = build(:refinement_context, timeslot: 100, lookup_anchor: h(e(parent)))
+        work_report = build(:work_report, refinement_context: rc)
+
+        extrinsic =
+          build(:extrinsic, guarantees: [build(:guarantee, work_report: work_report)])
+
+        Storage.put([parent, header])
+        assert :ok = Block.validate_refinement_context(header, extrinsic)
+      end
     end
   end
 end
