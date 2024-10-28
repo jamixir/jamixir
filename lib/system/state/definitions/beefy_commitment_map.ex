@@ -4,6 +4,7 @@ defmodule System.State.BeefyCommitmentMap do
   See section 12.4
   """
 
+  # Formula (171) v0.4.1
   @type t :: MapSet.t({non_neg_integer(), Types.hash()})
   def new(list), do: MapSet.new(list)
 end
