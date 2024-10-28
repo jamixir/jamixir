@@ -1,4 +1,5 @@
 defmodule Block.Header do
+  alias Block.Header
   alias System.State.Validator
   alias System.State
   alias Util.Merklization
@@ -93,12 +94,12 @@ defmodule Block.Header do
 
   def mock(:validate_state_root, _), do: :ok
 
-  def valid_header?(_, %Block.Header{parent_hash: nil} = h) do
+  def valid_header?(%Block.Header{parent_hash: nil} = h) do
     Time.valid_block_timeslot?(h.timeslot)
   end
 
-  def valid_header?(storage, header) do
-    case storage[header.parent_hash] do
+  def valid_header?(header) do
+    case Storage.get(header.parent_hash, Header) do
       nil ->
         false
 

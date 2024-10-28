@@ -6,19 +6,10 @@ defmodule BlockTest do
   alias System.State
   alias Util.{Hash, Merklization}
   import Mox
+  import TestHelper
   setup :verify_on_exit!
 
-  defmodule ConstantsMock do
-    def validator_count, do: 1
-  end
-
-  setup_all do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
-  end
+  setup_validators(1)
 
   setup do
     state = %State{
@@ -65,13 +56,7 @@ defmodule BlockTest do
     test "decode block smoke test" do
       extrinsic = build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
 
-      header =
-        build(:header,
-          prior_state_root: Hash.random(),
-          epoch_mark: {Hash.random(), [Hash.random()]},
-          vrf_signature: Hash.random(96),
-          block_seal: Hash.random(96)
-        )
+      header = build(:decodable_header)
 
       block = build(:block, header: header, extrinsic: extrinsic)
 
