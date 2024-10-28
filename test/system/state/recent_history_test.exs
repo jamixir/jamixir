@@ -317,5 +317,4 @@ defmodule RecentHistoryTest do
       refute result == Hash.zero()
     end
   end
-
 end

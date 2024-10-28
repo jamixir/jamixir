@@ -51,9 +51,9 @@ defmodule MapUnion do
       [1, 2, 3, 4]
 
   """
-  @spec left ++ right :: map() | MapSet.t() | list() when
-    left: map() | MapSet.t() | list(),
-    right: map() | MapSet.t() | list()
+  @spec left ++ right :: map() | MapSet.t() | list()
+        when left: map() | MapSet.t() | list(),
+             right: map() | MapSet.t() | list()
   defmacro left ++ right do
     quote do
       case {unquote(left), unquote(right)} do
@@ -88,9 +88,9 @@ defmodule MapUnion do
       #MapSet<[1]>
 
   """
-  @spec (left \\ right) :: map() | MapSet.t() when
-    left: map() | MapSet.t(),
-    right: map() | MapSet.t()
+  @spec (left \\ right) :: map() | MapSet.t()
+        when left: map() | MapSet.t(),
+             right: map() | MapSet.t()
   defmacro left \\ right do
     quote do
       case {unquote(left), unquote(right)} do
