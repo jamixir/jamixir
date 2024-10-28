@@ -134,4 +134,15 @@ defmodule System.State.Judgements do
       vs(mapset |> MapSet.to_list() |> Enum.sort())
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      good: :psi_g,
+      bad: :psi_b,
+      wonky: :psi_w,
+      punish: :psi_o
+    }
+  end
 end
