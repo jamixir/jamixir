@@ -2,6 +2,7 @@ defmodule System.State.ServicesTest do
   use ExUnit.Case
   alias System.State.{ServiceAccount, Services}
   alias Block.Extrinsic.{Assurance, Preimage}
+  use Codec.Encoder
 
   import TestHelper
 
@@ -44,7 +45,7 @@ defmodule System.State.ServicesTest do
 
       # Service index 1 and 3 are updated
       for {idx, data} <- [{1, <<1, 2, 3>>}, {3, <<4, 5, 6>>}] do
-        hash = Util.Hash.default(data)
+        hash = h(data)
         assert updated[idx].preimage_storage_p[hash] == data
         assert updated[idx].preimage_storage_l[{hash, 3}] == [ts]
       end

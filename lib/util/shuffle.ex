@@ -23,7 +23,7 @@ defmodule Shuffle do
     numeric_sequence =
       Enum.reduce(0..(sequence_length - 1), [], fn i, acc ->
         encoded_chunk = e_le(div(i, 8), 4)
-        new_hash = Util.Hash.default(hash <> encoded_chunk)
+        new_hash = h(hash <> encoded_chunk)
         encoded_numeric_position = :binary.part(new_hash, rem(4 * i, 32), 4)
         decoded_numeric_position = de_le(encoded_numeric_position, 4)
         acc ++ [decoded_numeric_position]

@@ -11,6 +11,10 @@ defmodule Storage do
     put(Encodable.encode(object))
   end
 
+  def put(list) when is_list(list) do
+    for o <- list, do: put(o)
+  end
+
   def put(blob) when is_binary(blob) do
     case :mnesia.transaction(fn -> :mnesia.write({@table_name, Hash.default(blob), blob}) end) do
       {:atomic, :ok} -> :ok

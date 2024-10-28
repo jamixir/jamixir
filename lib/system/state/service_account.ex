@@ -14,6 +14,7 @@ defmodule System.State.ServiceAccount do
   - `g`, `m`: Gas limits
   """
   alias Util.Hash
+  use Codec.Encoder
 
   @type t :: %__MODULE__{
           # s
@@ -68,7 +69,7 @@ defmodule System.State.ServiceAccount do
   # Formula (92) v0.4.1
   # Formula (93) v0.4.1
   def store_preimage(%__MODULE__{} = a, preimage, timeslot) do
-    hash = Util.Hash.default(preimage)
+    hash = h(preimage)
 
     p2 = put_in(a.preimage_storage_p[hash], preimage)
     put_in(p2.preimage_storage_l[{hash, byte_size(preimage)}], [timeslot])

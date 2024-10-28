@@ -56,9 +56,7 @@ defmodule BlockTest do
     test "decode block smoke test" do
       extrinsic = build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
 
-      header = build(:decodable_header)
-
-      block = build(:block, header: header, extrinsic: extrinsic)
+      block = build(:block, header: build(:decodable_header), extrinsic: extrinsic)
 
       encoded = Codec.Encoder.encode(block)
       {decoded, _} = Block.decode(encoded)

@@ -423,12 +423,15 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def decodable_header_factory do
-    build(:header,
-      prior_state_root: Hash.random(),
-      epoch_mark: {Hash.random(), [Hash.random()]},
-      vrf_signature: Hash.random(96),
-      block_seal: Hash.random(96)
+  def decodable_header_factory(attrs) do
+    build(
+      :header,
+      Map.merge(attrs, %{
+        prior_state_root: Hash.random(),
+        epoch_mark: {Hash.random(), [Hash.random()]},
+        vrf_signature: Hash.random(96),
+        block_seal: Hash.random(96)
+      })
     )
   end
 
@@ -471,6 +474,6 @@ defmodule Jamixir.Factory do
   end
 
   def shuffle_hash_factory do
-    Util.Hash.default(<<"This generates the shuffle hash for testing">>)
+    Hash.default(<<"This generates the shuffle hash for testing">>)
   end
 end
