@@ -2,6 +2,7 @@ defmodule System.State.ServiceAccountTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
 
   setup do
@@ -54,7 +55,7 @@ defmodule System.State.ServiceAccountTest do
 
   describe "store_preimage/3" do
     test "store preimage in preimage storage", %{sa: sa, preimage: preimage} do
-      expected_hash = Util.Hash.default(preimage)
+      expected_hash = h(preimage)
 
       p_key_count = Map.keys(sa.preimage_storage_p) |> length()
       l_key_count = Map.keys(sa.preimage_storage_l) |> length()
@@ -77,7 +78,7 @@ defmodule System.State.ServiceAccountTest do
 
     # case when x <= t
     test "return correct value when historical lookup does exist", %{sa: sa, preimage: preimage} do
-      expected_hash = Util.Hash.default(preimage)
+      expected_hash = h(preimage)
 
       sa = ServiceAccount.store_preimage(sa, preimage, 1)
 
@@ -86,7 +87,7 @@ defmodule System.State.ServiceAccountTest do
 
     # case when x > t
     test "return nil when it is not available yet", %{sa: sa, preimage: preimage} do
-      expected_hash = Util.Hash.default(preimage)
+      expected_hash = h(preimage)
 
       sa = ServiceAccount.store_preimage(sa, preimage, 10)
 
@@ -94,7 +95,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "marked as unavailable ", %{sa: sa, preimage: preimage} do
-      expected_hash = Util.Hash.default(preimage)
+      expected_hash = h(preimage)
       sa = ServiceAccount.store_preimage(sa, preimage, 10)
       sa = sa |> Map.put(:preimage_storage_l, %{{expected_hash, byte_size(preimage)} => [10, 20]})
 
@@ -113,7 +114,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "marked as available again", %{sa: sa, preimage: preimage} do
-      expected_hash = Util.Hash.default(preimage)
+      expected_hash = h(preimage)
       sa = ServiceAccount.store_preimage(sa, preimage, 10)
 
       sa =

@@ -4,17 +4,18 @@ defmodule Block.HeaderTest do
   import Jamixir.Factory
 
   alias Block.Header
-  alias Codec.{NilDiscriminator, VariableSize}
+  alias Codec.NilDiscriminator
   alias System.State
   alias Util.{Hash, Merklization}
   import TestHelper
+
+  use Codec.Encoder
 
   setup_validators(1)
 
   describe "valid_header?/1" do
     test "valid_header?/1 returns true when parent_hash is nil" do
-      header = build(:decodable_header)
-      header = %Header{header | parent_hash: nil, timeslot: past_timeslot()}
+      header = build(:decodable_header, parent_hash: nil, timeslot: past_timeslot())
       assert Header.valid_header?(header)
     end
 
@@ -25,10 +26,11 @@ defmodule Block.HeaderTest do
     end
 
     test "valid_header?/1 returns false when timeslot is not greater than parent header's timeslot" do
-      parent = build(:decodable_header)
-      parent = %Header{parent | timeslot: 1}
-      header = build(:decodable_header)
-      header = %Header{header | parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2}
+      parent = build(:decodable_header, timeslot: 1)
+
+      header =
+        build(:decodable_header, parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2)
+
       Storage.put(parent)
       Storage.put(header)
 
@@ -36,11 +38,10 @@ defmodule Block.HeaderTest do
     end
 
     test "valid_header?/1 returns false when timeslot is in the future" do
-      parent = build(:decodable_header)
-      parent = %Header{parent | timeslot: 3}
+      parent = build(:decodable_header, timeslot: 3)
 
-      header = build(:decodable_header)
-      header = %Header{header | parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2}
+      header =
+        build(:decodable_header, parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2)
 
       Storage.put(parent)
       Storage.put(header)
@@ -64,7 +65,7 @@ defmodule Block.HeaderTest do
 
     test "valid_extrinsic_hash?/2 correct" do
       extrinsic = build(:extrinsic)
-      header = %Header{extrinsic_hash: Util.Hash.default(Codec.Encoder.encode(extrinsic))}
+      header = %Header{extrinsic_hash: h(e(extrinsic))}
       assert Header.valid_extrinsic_hash?(header, extrinsic)
     end
   end
@@ -81,14 +82,13 @@ defmodule Block.HeaderTest do
 
     test "encode header", %{header: header} do
       assert Encodable.encode(header) ==
-               Header.unsigned_encode(header) <> Codec.Encoder.encode(header.block_seal)
+               Header.unsigned_encode(header) <> e(header.block_seal)
     end
   end
 
   describe "decode/1" do
     setup do
-      header = build(:decodable_header)
-      {:ok, header: header}
+      {:ok, header: build(:decodable_header)}
     end
 
     test "decode header smoke test", %{header: header} do
@@ -141,14 +141,31 @@ defmodule Block.HeaderTest do
   describe "unsigned_encode/1" do
     test "unsigned_encode header", %{header: h} do
       assert Header.unsigned_encode(h) ==
-               Codec.Encoder.encode({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
-                 Codec.Encoder.encode_le(h.timeslot, 4) <>
-                 Codec.Encoder.encode(
+               e({h.parent_hash, h.prior_state_root, h.extrinsic_hash}) <>
+                 e_le(h.timeslot, 4) <>
+                 e(
                    {NilDiscriminator.new(h.epoch_mark),
-                    NilDiscriminator.new(h.winning_tickets_marker),
-                    VariableSize.new(h.offenders_marker),
-                    Codec.Encoder.encode_le(h.block_author_key_index, 2), h.vrf_signature}
+                    NilDiscriminator.new(h.winning_tickets_marker), vs(h.offenders_marker),
+                    e_le(h.block_author_key_index, 2), h.vrf_signature}
                  )
+    end
+  end
+
+  describe "ancestors/1" do
+    test "ancestors returns empty list when parent_header is nil" do
+      header = %Header{parent_hash: nil}
+      assert Header.ancestors(header) == MapSet.new([header])
+    end
+
+    test "ancestors returns parent header when parent header is found" do
+      grandparent = build(:decodable_header)
+      parent = build(:decodable_header, parent_hash: h(e(grandparent)))
+      header = build(:decodable_header, parent_hash: h(e(parent)))
+      Storage.put([grandparent, parent, header])
+
+      assert Header.ancestors(header) == MapSet.new([grandparent, parent, header])
+      assert Header.ancestors(parent) == MapSet.new([grandparent, parent])
+      assert Header.ancestors(grandparent) == MapSet.new([grandparent])
     end
   end
 end

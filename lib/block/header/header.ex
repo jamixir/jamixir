@@ -81,15 +81,23 @@ defmodule Block.Header do
   end
 
   # Formula (41) v0.4.1
-  def valid_extrinsic_hash?(header, extrinsic) do
-    header.extrinsic_hash == Util.Hash.default(e(extrinsic))
-  end
+  def valid_extrinsic_hash?(header, extrinsic), do: header.extrinsic_hash == h(e(extrinsic))
 
   # Formula (43) v0.4.1
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
     if Merklization.merkelize_state(State.serialize(state)) == r,
       do: :ok,
       else: {:error, "Invalid state root"}
+  end
+
+  use MapUnion
+  # Formula (40) v0.4.1
+  # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
+  def ancestors(nil), do: MapSet.new([])
+  def ancestors(%__MODULE__{parent_hash: nil} = h), do: MapSet.new([h])
+
+  def ancestors(%__MODULE__{parent_hash: parent_hash} = h) do
+    MapSet.new([h]) ++ __MODULE__.ancestors(Storage.get(parent_hash, Header))
   end
 
   def mock(:validate_state_root, _), do: :ok

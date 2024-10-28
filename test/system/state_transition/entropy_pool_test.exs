@@ -83,7 +83,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
       {:ok, state_} = System.State.add_block(state, block)
 
-      assert state_.entropy_pool.n0 == Util.Hash.default(state.entropy_pool.n0 <> vrf_output)
+      assert state_.entropy_pool.n0 == h(state.entropy_pool.n0 <> vrf_output)
     end
   end
 end

@@ -10,6 +10,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
   alias Util.Hash
+  use Codec.Encoder
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
@@ -45,7 +46,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     %__MODULE__{
       service: wi.service,
       code_hash: wi.code_hash,
-      payload_hash: Util.Hash.default(wi.payload),
+      payload_hash: h(wi.payload),
       gas_ratio: wi.gas_limit,
       result: output
     }

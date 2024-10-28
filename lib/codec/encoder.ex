@@ -4,6 +4,7 @@ defmodule Codec.Encoder do
   """
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
+  alias Util.Hash
 
   @doc """
   Encodes a given value into a binary format.
@@ -137,6 +138,7 @@ defmodule Codec.Encoder do
       def e(value), do: Codec.Encoder.encode(value)
       def e_le(value, l), do: Codec.Encoder.encode_le(value, l)
       def vs(value), do: VariableSize.new(value)
+      def h(value), do: Hash.default(value)
     end
   end
 end
