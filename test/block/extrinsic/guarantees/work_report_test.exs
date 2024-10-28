@@ -1,11 +1,7 @@
-defmodule WConstantsMock do
-  def validator_count, do: 6
-  def core_count, do: 2
-end
-
 defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
+  import TestHelper
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.State.Ready
   alias Util.Hash
@@ -62,6 +58,11 @@ defmodule WorkReportTest do
   end
 
   describe "available_work_reports/2" do
+    setup_constants do
+      def validator_count, do: 6
+      def core_count, do: 2
+    end
+
     setup do
       # Create mock assurances using factory
       # 6 validators / 2 cores
@@ -79,12 +80,6 @@ defmodule WorkReportTest do
         build(:core_report, work_report: build(:work_report, core_index: 0)),
         build(:core_report, work_report: build(:work_report, core_index: 1))
       ]
-
-      Application.put_env(:jamixir, Constants, WConstantsMock)
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, Constants)
-      end)
 
       %{assurances: assurances, core_reports: core_reports}
     end

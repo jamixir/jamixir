@@ -2,18 +2,9 @@ defmodule Block.Extrinsic.Disputes.VerdictTest do
   use ExUnit.Case
   alias Block.Extrinsic.Disputes.Verdict
   import Jamixir.Factory
+  import TestHelper
 
-  defmodule ConstantsMock do
-    def validator_count, do: 1
-  end
-
-  setup_all do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
-  end
+  setup_validators(1)
 
   describe "encode/decode" do
     test "encodes and decodes a verdict" do

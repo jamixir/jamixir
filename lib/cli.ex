@@ -1,6 +1,7 @@
 defmodule Jamixir.CLI do
   def start do
     IO.puts("Starting Jamixir...")
+    Storage.start_link()
     Jamixir.TCPServer.start(4000)
   end
 

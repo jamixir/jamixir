@@ -7,51 +7,51 @@ defmodule Block.HeaderTest do
   alias Codec.{NilDiscriminator, VariableSize}
   alias System.State
   alias Util.{Hash, Merklization}
+  import TestHelper
 
-  defmodule ConstantsMock do
-    def validator_count, do: 1
-  end
-
-  setup do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
-  end
+  setup_validators(1)
 
   describe "valid_header?/1" do
     test "valid_header?/1 returns true when parent_hash is nil" do
-      header = %Header{parent_hash: nil, timeslot: past_timeslot()}
-      assert Header.valid_header?(Storage.new(), header)
+      header = build(:decodable_header)
+      header = %Header{header | parent_hash: nil, timeslot: past_timeslot()}
+      assert Header.valid_header?(header)
     end
 
     test "valid_header?/1 returns false when parent header is not found" do
       header = %Header{parent_hash: "parent_hash", timeslot: past_timeslot()}
 
-      assert !Header.valid_header?(Storage.new(), header)
+      assert !Header.valid_header?(header)
     end
 
     test "valid_header?/1 returns false when timeslot is not greater than parent header's timeslot" do
-      header = %Header{parent_hash: :parent, timeslot: 2}
-      s1 = Storage.put(Storage.new(), :parent, %Header{timeslot: 1})
-      s2 = Storage.put(s1, :header, header)
+      parent = build(:decodable_header)
+      parent = %Header{parent | timeslot: 1}
+      header = build(:decodable_header)
+      header = %Header{header | parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2}
+      Storage.put(parent)
+      Storage.put(header)
 
-      assert Header.valid_header?(s2, header)
+      assert Header.valid_header?(header)
     end
 
     test "valid_header?/1 returns false when timeslot is in the future" do
-      header = %Header{parent_hash: :parent, timeslot: 2}
-      s1 = Storage.put(Storage.new(), :parent, %Header{timeslot: 3})
-      s2 = Storage.put(s1, :header, header)
+      parent = build(:decodable_header)
+      parent = %Header{parent | timeslot: 3}
 
-      assert !Header.valid_header?(s2, header)
+      header = build(:decodable_header)
+      header = %Header{header | parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2}
+
+      Storage.put(parent)
+      Storage.put(header)
+
+      assert !Header.valid_header?(header)
     end
 
     test "valid_header?/1 returns false if timeslot is bigger now" do
       header = %Header{parent_hash: nil, timeslot: future_timeslot()}
 
-      assert !Header.valid_header?(Storage.new(), header)
+      assert !Header.valid_header?(header)
     end
   end
 
@@ -87,14 +87,7 @@ defmodule Block.HeaderTest do
 
   describe "decode/1" do
     setup do
-      header =
-        build(:header,
-          prior_state_root: Hash.random(),
-          epoch_mark: {Hash.random(), [Hash.random()]},
-          vrf_signature: Hash.random(96),
-          block_seal: Hash.random(96)
-        )
-
+      header = build(:decodable_header)
       {:ok, header: header}
     end
 

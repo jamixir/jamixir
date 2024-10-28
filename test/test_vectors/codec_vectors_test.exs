@@ -7,12 +7,7 @@ defmodule CodecVectorsTest do
   use Codec.Encoder
   use ExUnit.Case
   import TestVectorUtil
-
-  defmodule ConstantsMock do
-    def core_count, do: 2
-    def validator_count, do: 6
-    def epoch_length, do: 12
-  end
+  import TestHelper
 
   tests = [
     {"assurances_extrinsic", Assurance},
@@ -31,12 +26,10 @@ defmodule CodecVectorsTest do
     {"work_result_1", WorkResult}
   ]
 
-  setup_all do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
+  setup_constants do
+    def core_count, do: 2
+    def validator_count, do: 6
+    def epoch_length, do: 12
   end
 
   describe "encode vectors" do

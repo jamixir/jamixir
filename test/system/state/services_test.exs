@@ -3,19 +3,15 @@ defmodule System.State.ServicesTest do
   alias System.State.{ServiceAccount, Services}
   alias Block.Extrinsic.{Assurance, Preimage}
 
-  defmodule ConstantsMock do
+  import TestHelper
+
+  setup_constants do
     def validator_count, do: 3
     def core_count, do: 3
     def gas_accumulation, do: 1000
   end
 
   setup_all do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
-
     # only core index 0 will be considered available (reported availble by more then 2/3 validator set)
     assurances = [
       # Assuring for all three cores

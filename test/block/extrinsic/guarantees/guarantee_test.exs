@@ -8,13 +8,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   alias Block.Extrinsic.{Guarantee, Guarantor}
   alias System.State
   alias Util.{Crypto, Hash}
-
-  defmodule GuaranteeConstantsMock do
-    def validator_count, do: 6
-    def core_count, do: 2
-    def rotation_period, do: 10
-    def gas_accumulation, do: 1000
-  end
+  import TestHelper
 
   describe "validate/1" do
     setup do
@@ -259,13 +253,14 @@ defmodule Block.Extrinsic.GuaranteeTest do
   end
 
   describe "reporters_set/6" do
+    setup_constants do
+      def validator_count, do: 6
+      def core_count, do: 2
+      def rotation_period, do: 10
+      def gas_accumulation, do: 1000
+    end
+
     setup do
-      Application.put_env(:jamixir, Constants, GuaranteeConstantsMock)
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, Constants)
-      end)
-
       entropy_pool = build(:entropy_pool)
 
       %{validators: curr_validators, key_pairs: curr_key_pairs} =
@@ -327,7 +322,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "uses previous guarantor when timeslot is in previous rotation period", context do
-      prev_timeslot = context.timeslot - GuaranteeConstantsMock.rotation_period()
+      prev_timeslot = context.timeslot - ConstantsMock.rotation_period()
 
       guarantees =
         create_valid_guarantees(%{
@@ -384,7 +379,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error when guarantee timeslot is too old", context do
-      old_timeslot = context.timeslot - GuaranteeConstantsMock.rotation_period() * 2
+      old_timeslot = context.timeslot - ConstantsMock.rotation_period() * 2
       guarantees = create_valid_guarantees(%{context | timeslot: old_timeslot})
 
       result =

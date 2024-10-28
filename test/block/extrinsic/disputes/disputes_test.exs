@@ -658,18 +658,10 @@ defmodule Block.Extrinsic.Disputes.Test do
     end
   end
 
+  import TestHelper
+
   describe "encode / decode" do
-    defmodule ConstantsMock do
-      def validator_count, do: 1
-    end
-
-    setup do
-      Application.put_env(:jamixir, Constants, ConstantsMock)
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, Constants)
-      end)
-    end
+    setup_validators(1)
 
     test "encodes and decodes disputes" do
       disputes = build(:disputes)

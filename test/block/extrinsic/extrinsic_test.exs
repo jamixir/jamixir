@@ -2,18 +2,8 @@ defmodule Block.ExtrinsicTest do
   alias Block.Extrinsic
   use ExUnit.Case
   import Jamixir.Factory
-
-  defmodule ConstantsMock do
-    def validator_count, do: 1
-  end
-
-  setup do
-    Application.put_env(:jamixir, Constants, ConstantsMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, Constants)
-    end)
-  end
+  import TestHelper
+  setup_validators(1)
 
   describe "encode / decode" do
     test "smoke test" do
