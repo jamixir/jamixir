@@ -152,9 +152,13 @@ defmodule Block.HeaderTest do
   end
 
   describe "ancestors/1" do
+    test "ancestors for nil is empty" do
+      assert Header.ancestors(nil) == []
+    end
+
     test "ancestors returns empty list when parent_header is nil" do
       header = %Header{parent_hash: nil}
-      assert Header.ancestors(header) == MapSet.new([header])
+      assert Enum.take(Header.ancestors(header), 1) == [header]
     end
 
     test "ancestors returns parent header when parent header is found" do
@@ -163,9 +167,7 @@ defmodule Block.HeaderTest do
       header = build(:decodable_header, parent_hash: h(e(parent)))
       Storage.put([grandparent, parent, header])
 
-      assert Header.ancestors(header) == MapSet.new([grandparent, parent, header])
-      assert Header.ancestors(parent) == MapSet.new([grandparent, parent])
-      assert Header.ancestors(grandparent) == MapSet.new([grandparent])
+      assert Enum.take(Header.ancestors(header), 3) == [header, parent, grandparent]
     end
   end
 end
