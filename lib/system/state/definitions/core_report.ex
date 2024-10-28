@@ -4,6 +4,7 @@ defmodule System.State.CoreReport do
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
+  alias Block.Extrinsic.AvailabilitySpecification
   alias System.State.CoreReport
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
@@ -69,5 +70,21 @@ defmodule System.State.CoreReport do
     def encode(%CoreReport{} = c) do
       e({c.work_report, e_le(c.timeslot, 4)})
     end
+  end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      work_report: [fn wph ->
+        hash = JsonDecoder.from_json(wph)
+        %WorkReport{
+          specification: %AvailabilitySpecification{
+            work_package_hash: hash
+          }
+        }
+      end, :dummy_work_report],
+      timeslot: :timeout
+    }
   end
 end
