@@ -370,31 +370,44 @@ defmodule System.State do
   end
 
   def from_json(json) do
-    %{
-      tau: timeslot,
-      eta: entropy_pool,
-      lambda: prev_validators,
-      kappa: curr_validators,
-      iota: next_validators,
-      gamma_k: pending,
-      gamma_a: ticket_accumulator,
-      gamma_s: current_epoch_slot_sealers,
-      gamma_z: epoch_root
-    } = json
+    decoded_fields =
+      for {key, value} <- json,
+          {struct_key, decoded_value} <- decode_json_field(key, value),
+          into: %{} do
+        {struct_key, decoded_value}
+      end
+      |> merge_safrole_fields()
 
-    %System.State{
-      timeslot: timeslot,
-      entropy_pool: EntropyPool.from_json(entropy_pool),
-      prev_validators: for(v <- prev_validators, do: Validator.from_json(v)),
-      curr_validators: for(v <- curr_validators, do: Validator.from_json(v)),
-      next_validators: for(v <- next_validators, do: Validator.from_json(v)),
-      safrole:
-        Safrole.from_json(%{
-          pending: pending,
-          epoch_root: epoch_root,
-          current_epoch_slot_sealers: current_epoch_slot_sealers,
-          ticket_accumulator: ticket_accumulator
-        })
-    }
+    struct(%System.State{}, decoded_fields)
+  end
+
+  defp decode_json_field(:tau, value), do: [{:timeslot, value}]
+  defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
+  defp decode_json_field(:lambda, value), do: [{:prev_validators, Enum.map(value, &Validator.from_json/1)}]
+  defp decode_json_field(:kappa, value), do: [{:curr_validators, Enum.map(value, &Validator.from_json/1)}]
+  defp decode_json_field(:iota, value), do: [{:next_validators, Enum.map(value, &Validator.from_json/1)}]
+  defp decode_json_field(:gamma_k, value), do: [{:safrole_pending, value}]
+  defp decode_json_field(:gamma_z, value), do: [{:safrole_epoch_root, value}]
+  defp decode_json_field(:gamma_s, value), do: [{:safrole_slot_sealers, value}]
+  defp decode_json_field(:gamma_a, value), do: [{:safrole_ticket_accumulator, value}]
+  defp decode_json_field(:psi, value), do: [{:judgements, Judgements.from_json(value)}]
+  defp decode_json_field(:rho, value), do: [{:core_reports, Enum.map(value, &CoreReport.from_json/1)}]
+
+  defp decode_json_field(_, _), do: []
+
+  defp merge_safrole_fields(fields) do
+    safrole = if fields[:safrole_pending] || fields[:safrole_epoch_root] ||
+                 fields[:safrole_slot_sealers] || fields[:safrole_ticket_accumulator] do
+      Safrole.from_json(%{
+        pending: fields[:safrole_pending],
+        epoch_root: fields[:safrole_epoch_root],
+        current_epoch_slot_sealers: fields[:safrole_slot_sealers],
+        ticket_accumulator: fields[:safrole_ticket_accumulator]
+      })
+    end
+
+    fields
+    |> Map.drop([:safrole_pending, :safrole_epoch_root, :safrole_slot_sealers, :safrole_ticket_accumulator])
+    |> Map.put(:safrole, safrole)
   end
 end
