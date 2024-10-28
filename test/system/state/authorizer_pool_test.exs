@@ -4,7 +4,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Constants
-  alias System.State
+  alias System.State.AuthorizerPool
 
   setup do
     authorizer_queue_ =
@@ -39,7 +39,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
     guarantees = []
 
     result =
-      State.calculate_authorizer_pool_(
+      AuthorizerPool.calculate_authorizer_pool_(
         guarantees,
         authorizer_queue_,
         authorizer_pools,
@@ -74,7 +74,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end
 
     result =
-      State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
+      AuthorizerPool.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       for i <- 1..Constants.core_count() do
@@ -105,7 +105,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end
 
     result =
-      State.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
+      AuthorizerPool.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       for i <- 1..Constants.core_count() do

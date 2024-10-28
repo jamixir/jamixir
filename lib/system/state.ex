@@ -8,6 +8,7 @@ defmodule System.State do
   alias System.State
 
   alias System.State.{
+    AuthorizerPool,
     CoreReport,
     EntropyPool,
     Judgements,
@@ -138,7 +139,7 @@ defmodule System.State do
            ),
          # α' Formula (30) v0.4.1
          authorizer_pool_ =
-           calculate_authorizer_pool_(
+           AuthorizerPool.calculate_authorizer_pool_(
              e.guarantees,
              accumulation_result.authorizer_queue,
              state.authorizer_pool,
@@ -273,55 +274,6 @@ defmodule System.State do
        }}
     else
       {:error, reason} -> {:error, state, reason}
-    end
-  end
-
-  # Formula (86) v0.4.1
-  def calculate_authorizer_pool_(
-        guarantees,
-        authorizer_queue_,
-        authorizer_pools,
-        timeslot
-      ) do
-    # Zip the authorizer pools with the posterior authorizer queue
-    # and use the index to keep track of the core index
-
-    for(
-      {{current_pool, queue}, core_index} <-
-        Enum.zip(authorizer_pools, authorizer_queue_) |> Enum.with_index()
-    ) do
-      # Adjust the current pool by removing the oldest used authorizer
-      adjusted_pool = remove_oldest_used_authorizer(core_index, current_pool, guarantees)
-
-      # Calculate the timeslot index using the header's timeslot
-      timeslot_index = rem(timeslot, Constants.max_authorization_queue_items())
-
-      # Pick the correct element from the queue based on the timeslot index
-      selected_queue_element = Enum.at(queue, timeslot_index)
-
-      # Add the selected queue element to the adjusted pool
-      authorizer_pool_ = adjusted_pool ++ [selected_queue_element]
-
-      # Take only the rightmost elements to ensure the pool size is within the limit
-      # Adjust to take only if the pool exceeds the max size
-      Enum.take(authorizer_pool_, -Constants.max_authorizations_items())
-    end
-  end
-
-  # Formula (87) v0.4.1 F(c)
-  # Function to remove the oldest (first from left) used authorizer from the pool
-  def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
-    case Enum.find(guarantees, &(&1.work_report.core_index == core_index)) do
-      nil ->
-        current_pool
-
-      %Guarantee{work_report: %WorkReport{authorizer_hash: hash}} ->
-        {left, right} = Enum.split_while(current_pool, &(&1 != hash))
-
-        case right do
-          [] -> left
-          [_ | tail] -> left ++ tail
-        end
     end
   end
 
