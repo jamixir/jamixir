@@ -27,16 +27,17 @@ defmodule BlockTest do
     extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
 
     valid_block = %Block{
-      header: build(:header,
-        timeslot: 100,
-        prior_state_root: state_root,
-        extrinsic_hash: extrinsic_hash
-      ),
+      header:
+        build(:header,
+          timeslot: 100,
+          prior_state_root: state_root,
+          extrinsic_hash: extrinsic_hash
+        ),
       extrinsic: extrinsic
     }
 
     Application.put_env(:jamixir, :original_modules, [
-      Block,
+      :validate_extrinsic_hash,
       Block.Header,
       Block.Extrinsic,
       System.Validators.Safrole,
