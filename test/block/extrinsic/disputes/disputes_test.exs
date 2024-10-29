@@ -1,12 +1,20 @@
 defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
   alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.Disputes.Error
   alias System.State.Judgements
   alias Util.{Hash, Time}
   import Jamixir.Factory
   use Sizes
 
   setup_all do
+    # Generate and sort key pairs
+    key_pairs =
+      for _ <- 1..3 do
+        :crypto.generate_key(:eddsa, :ed25519)
+      end
+      |> Enum.sort_by(fn {pub, _priv} -> pub end)
+
     {current_pub, _} = :crypto.generate_key(:eddsa, :ed25519)
     {prev_pub, _} = :crypto.generate_key(:eddsa, :ed25519)
 
@@ -17,7 +25,11 @@ defmodule Block.Extrinsic.Disputes.Test do
         judgements: %Judgements{}
     }
 
-    {:ok, work_report_hash: Hash.random(), state: state, header: build(:header)}
+    {:ok,
+     work_report_hash: Hash.random(),
+     state: state,
+     header: build(:header),
+     sorted_key_pairs: key_pairs}
   end
 
   defp validate(disputes, state, header) do
@@ -38,15 +50,15 @@ defmodule Block.Extrinsic.Disputes.Test do
     } do
       error_cases = [
         {
-          "Invalid epoch index in verdicts",
+          Error.invalid_epoch(),
           %Disputes{verdicts: [build(:verdict, epoch_index: 100)]}
         },
         {
-          "Invalid number of judgements in verdicts",
+          Error.invalid_vote_count(),
           %Disputes{verdicts: [build(:verdict, judgements: [])]}
         },
         {
-          "Invalid order or duplicates in verdict work report hashes",
+          Error.unsorted_verdicts(),
           %Disputes{
             verdicts: [
               build(:verdict, work_report_hash: wrh),
@@ -55,7 +67,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "Invalid order or duplicates in verdict work report hashes",
+          Error.unsorted_verdicts(),
           %Disputes{
             verdicts: [
               build(:verdict, work_report_hash: <<0xCC::256>>),
@@ -65,14 +77,14 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "Work report hashes already exist in current judgments",
+          Error.already_judged(),
           %Disputes{verdicts: [build(:verdict, work_report_hash: wrh)]},
           fn state ->
             %{state | judgements: %{state.judgements | good: MapSet.new([wrh])}}
           end
         },
         {
-          "Invalid signatures in verdicts",
+          Error.invalid_signature(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -134,8 +146,8 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      assert {:error, "Judgements not ordered by validator index or contain duplicates"} =
-               validate(disputes, state, header)
+      expected_error = Error.unsorted_judgements()
+      assert {:error, ^expected_error} = validate(disputes, state, header)
     end
 
     test "returns error for invalid sum of judgements", %{
@@ -157,7 +169,9 @@ defmodule Block.Extrinsic.Disputes.Test do
         build(:judgement, vote: false, key_pair: k4, work_report_hash: wrh, validator_index: 3)
       ]
 
-      assert {:error, "Invalid sum of judgements in verdicts"} =
+      expected_error = Error.invalid_vote_count()
+
+      assert {:error, ^expected_error} =
                validate(
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: judgements)]
@@ -179,7 +193,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       error_cases = [
         {
-          "Invalid order or duplicates in culprits Ed25519 keys",
+          Error.unsorted_culprits(),
           %Disputes{
             culprits: [
               %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
@@ -188,7 +202,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "Invalid order or duplicates in culprits Ed25519 keys",
+          Error.unsorted_culprits(),
           %Disputes{
             culprits: [
               %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
@@ -197,7 +211,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "Work report hash in culprits not in the posterior bad set",
+          Error.not_enough_faults(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -211,7 +225,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "culprits reported for a validator not in the allowed validator keys",
+          Error.not_enough_culprits(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -230,7 +244,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          "Invalid signature in culprits",
+          Error.not_enough_culprits(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -294,8 +308,8 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      assert {:error, "culprits reported for a validator not in the allowed validator keys"} =
-               validate(disputes, state, header)
+      expected_error = Error.not_enough_culprits()
+      assert {:error, ^expected_error} = validate(disputes, state, header)
     end
   end
 
@@ -330,13 +344,18 @@ defmodule Block.Extrinsic.Disputes.Test do
     test "returns :ok for valid disputes with bad set from new verdicts", %{
       state: state,
       header: header,
-      work_report_hash: wrh
+      work_report_hash: wrh,
+      sorted_key_pairs: [k1, k2 | _]
     } do
-      {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+      {pub1, priv1} = k1
+      {pub2, priv2} = k2
 
       state = %{
         state
-        | curr_validators: [build(:validator, ed25519: pub)]
+        | curr_validators: [
+            build(:validator, ed25519: pub1),
+            build(:validator, ed25519: pub2)
+          ]
       }
 
       disputes = %Disputes{
@@ -346,8 +365,15 @@ defmodule Block.Extrinsic.Disputes.Test do
             judgements: [
               build(:judgement,
                 vote: false,
-                key_pair: {pub, priv},
-                work_report_hash: wrh
+                key_pair: {pub1, priv1},
+                work_report_hash: wrh,
+                validator_index: 0
+              ),
+              build(:judgement,
+                vote: false,
+                key_pair: {pub2, priv2},
+                work_report_hash: wrh,
+                validator_index: 1
               )
             ],
             epoch_index: Time.epoch_index(header.timeslot)
@@ -356,7 +382,11 @@ defmodule Block.Extrinsic.Disputes.Test do
         culprits: [
           build(:culprit,
             work_report_hash: wrh,
-            key_pair: {pub, priv}
+            key_pair: {pub1, priv1}
+          ),
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {pub2, priv2}
           )
         ]
       }
@@ -443,13 +473,18 @@ defmodule Block.Extrinsic.Disputes.Test do
     test "returns :ok for valid disputes with faults (jam_valid)", %{
       state: state,
       header: header,
-      work_report_hash: wrh
+      work_report_hash: wrh,
+      sorted_key_pairs: [k1, k2 | _]
     } do
-      {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+      {pub1, priv1} = k1
+      {pub2, priv2} = k2
 
       state = %{
         state
-        | curr_validators: [build(:validator, ed25519: pub)]
+        | curr_validators: [
+            build(:validator, ed25519: pub1),
+            build(:validator, ed25519: pub2)
+          ]
       }
 
       disputes = %Disputes{
@@ -459,18 +494,34 @@ defmodule Block.Extrinsic.Disputes.Test do
             judgements: [
               build(:judgement,
                 vote: false,
-                key_pair: {pub, priv},
-                work_report_hash: wrh
+                key_pair: {pub1, priv1},
+                work_report_hash: wrh,
+                validator_index: 0
+              ),
+              build(:judgement,
+                vote: false,
+                key_pair: {pub2, priv2},
+                work_report_hash: wrh,
+                validator_index: 1
               )
             ],
             epoch_index: Time.epoch_index(header.timeslot)
           )
         ],
+        culprits: [
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {pub1, priv1}
+          ),
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {pub2, priv2}
+          )
+        ],
         faults: [
           build(:fault,
             work_report_hash: wrh,
-            key_pair: {pub, priv},
-            # This should use SigningContexts.jam_valid()
+            key_pair: {pub1, priv1},
             vote: true
           )
         ]
@@ -482,13 +533,18 @@ defmodule Block.Extrinsic.Disputes.Test do
     test "returns :ok for valid disputes with faults (jam_invalid)", %{
       state: state,
       header: header,
-      work_report_hash: wrh
+      work_report_hash: wrh,
+      sorted_key_pairs: [k1, k2 | _]
     } do
-      {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+      {pub1, priv1} = k1
+      {pub2, priv2} = k2
 
       state = %{
         state
-        | curr_validators: [build(:validator, ed25519: pub)]
+        | curr_validators: [
+            build(:validator, ed25519: pub1),
+            build(:validator, ed25519: pub2)
+          ]
       }
 
       disputes = %Disputes{
@@ -498,19 +554,40 @@ defmodule Block.Extrinsic.Disputes.Test do
             judgements: [
               build(:judgement,
                 vote: false,
-                key_pair: {pub, priv},
-                work_report_hash: wrh
+                key_pair: {pub1, priv1},
+                work_report_hash: wrh,
+                validator_index: 0
+              ),
+              build(:judgement,
+                vote: false,
+                key_pair: {pub2, priv2},
+                work_report_hash: wrh,
+                validator_index: 1
               )
             ],
             epoch_index: Time.epoch_index(header.timeslot)
           )
         ],
+        culprits: [
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {pub1, priv1}
+          ),
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {pub2, priv2}
+          )
+        ],
         faults: [
           build(:fault,
             work_report_hash: wrh,
-            key_pair: {pub, priv},
-            # This should use SigningContexts.jam_invalid()
-            vote: false
+            key_pair: {pub1, priv1},
+            vote: true
+          ),
+          build(:fault,
+            work_report_hash: wrh,
+            key_pair: {pub2, priv2},
+            vote: true
           )
         ]
       }
@@ -521,15 +598,21 @@ defmodule Block.Extrinsic.Disputes.Test do
     test "returns :ok for valid disputes with verdict from previous epoch", %{
       state: state,
       header: header,
-      work_report_hash: wrh
+      work_report_hash: wrh,
+      sorted_key_pairs: [k1, k2 | _]
     } do
-      {curr_pub, _curr_priv} = :crypto.generate_key(:eddsa, :ed25519)
-      {prev_pub, prev_priv} = :crypto.generate_key(:eddsa, :ed25519)
+      {prev_pub1, prev_priv1} = k1
+      {prev_pub2, prev_priv2} = k2
 
       state = %{
         state
-        | curr_validators: [build(:validator, ed25519: curr_pub)],
-          prev_validators: [build(:validator, ed25519: prev_pub)]
+        | curr_validators: [
+            build(:validator, ed25519: :crypto.generate_key(:eddsa, :ed25519) |> elem(0))
+          ],
+          prev_validators: [
+            build(:validator, ed25519: prev_pub1),
+            build(:validator, ed25519: prev_pub2)
+          ]
       }
 
       disputes = %Disputes{
@@ -539,12 +622,28 @@ defmodule Block.Extrinsic.Disputes.Test do
             judgements: [
               build(:judgement,
                 vote: false,
-                key_pair: {prev_pub, prev_priv},
+                key_pair: {prev_pub1, prev_priv1},
                 work_report_hash: wrh,
                 validator_index: 0
+              ),
+              build(:judgement,
+                vote: false,
+                key_pair: {prev_pub2, prev_priv2},
+                work_report_hash: wrh,
+                validator_index: 1
               )
             ],
             epoch_index: Time.epoch_index(header.timeslot) - 1
+          )
+        ],
+        culprits: [
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {prev_pub1, prev_priv1}
+          ),
+          build(:culprit,
+            work_report_hash: wrh,
+            key_pair: {prev_pub2, prev_priv2}
           )
         ]
       }

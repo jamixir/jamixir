@@ -3,7 +3,7 @@ defmodule System.State.Judgements do
   Represents the state and operations related to judgements in the disputes system.
   """
   alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.Disputes.Verdict
+  alias Block.Extrinsic.Disputes.{Error, Verdict}
   alias Block.Header
   alias System.State.Judgements
   use SelectiveMock
@@ -26,13 +26,15 @@ defmodule System.State.Judgements do
             wonky: MapSet.new(),
             punish: MapSet.new()
 
-  mockable calculate_judgements_(%Header{timeslot: ts} = header, disputes, state) do
+  mockable calculate_judgements_(%Header{} = header, disputes, state) do
     # Formula (107) v0.4.1
     # Formula (108) v0.4.1
-    case calculate_v(disputes, state, ts) do
+    case calculate_v(disputes, state) do
       {:ok, v} ->
         bad_wonky_verdicts =
-          for {hash, sum, validator_count} <- v, sum != div(2 * validator_count, 3) + 1, do: hash
+          for {hash, sum, validator_count} <- v,
+              sum != div(2 * validator_count, 3) + 1,
+              do: hash
 
         # Formula (115) v0.4.1
         new_offenders = for %{key: k} <- disputes.culprits ++ disputes.faults, do: k
@@ -44,7 +46,7 @@ defmodule System.State.Judgements do
              | punish: state.judgements.punish ++ MapSet.new(new_offenders)
            }, bad_wonky_verdicts}
         else
-          {:error, "Header validation failed"}
+          {:error, Error.invalid_header_markers()}
         end
 
       {:error, reason} ->
@@ -52,8 +54,8 @@ defmodule System.State.Judgements do
     end
   end
 
-  defp calculate_v(%Disputes{verdicts: verdicts, culprits: c, faults: f}, state, timeslot) do
-    current_epoch = Util.Time.epoch_index(timeslot)
+  def calculate_v(%Disputes{verdicts: verdicts, culprits: c, faults: f}, state) do
+    current_epoch = Util.Time.epoch_index(state.timeslot)
 
     v_set =
       for verdict <- verdicts do
@@ -68,21 +70,29 @@ defmodule System.State.Judgements do
         {verdict.work_report_hash, Verdict.sum_judgements(verdict), length(validator_set)}
       end
 
-    case Enum.any?(v_set, fn {r, sum, v_count} ->
-           # Formula (110) v0.4.1
-           culprits_check = sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2
+    issues =
+      Enum.reduce(v_set, {false, false}, fn {r, sum, v_count}, {culprits_issue, faults_issue} ->
+        # Formula (110) v0.4.1
+        new_culprits_issue =
+          culprits_issue or (sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2)
 
-           # Formula (109) v0.4.1
-           faults_check =
-             sum == div(2 * v_count, 3) + 1 &&
-               Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r)))
+        # Formula (109) v0.4.1
+        new_faults_issue =
+          faults_issue or
+            (sum == div(2 * v_count, 3) + 1 &&
+               Enum.empty?(Enum.filter(f, &(&1.work_report_hash == r))))
 
-           culprits_check or faults_check
-         end) do
-      true ->
-        {:error, :invalid_v_set}
+        {new_culprits_issue, new_faults_issue}
+      end)
 
-      false ->
+    case issues do
+      {true, _} ->
+        {:error, Error.not_enough_culprits()}
+
+      {_, true} ->
+        {:error, Error.not_enough_faults()}
+
+      _ ->
         {:ok, v_set}
     end
   end
@@ -138,11 +148,13 @@ defmodule System.State.Judgements do
   use JsonDecoder
 
   def json_mapping do
+    decoder = &(JsonDecoder.from_json(&1) |> MapSet.new())
+
     %{
-      good: :psi_g,
-      bad: :psi_b,
-      wonky: :psi_w,
-      punish: :psi_o
+      good: [decoder, :psi_g],
+      bad: [decoder, :psi_b],
+      wonky: [decoder, :psi_w],
+      punish: [decoder, :psi_o]
     }
   end
 end

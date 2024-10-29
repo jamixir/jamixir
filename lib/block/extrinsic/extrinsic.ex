@@ -34,7 +34,7 @@ defmodule Block.Extrinsic do
              state.curr_validators,
              state.prev_validators,
              state.judgements,
-             header.timeslot
+             state.timeslot
            ),
          :ok <- Preimage.validate(extrinsic.preimages, state.services) do
       :ok
