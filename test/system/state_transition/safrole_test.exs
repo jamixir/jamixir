@@ -23,7 +23,7 @@ defmodule System.StateTransition.SafroleStateTest do
 
   setup_all do
     # Exclude Safrole module from being mocked
-    Application.put_env(:jamixir, :original_modules, [System.State.Safrole])
+    Application.put_env(:jamixir, :original_modules, [System.State.Safrole, Util.Time])
 
     on_exit(fn ->
       Application.delete_env(:jamixir, :original_modules)

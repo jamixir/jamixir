@@ -173,7 +173,7 @@ defmodule System.StateTest do
 
   describe "add_block/2" do
     setup do
-      Application.put_env(:jamixir, :original_modules, [])
+      Application.put_env(:jamixir, :original_modules, [Util.Time])
 
       on_exit(fn ->
         Application.delete_env(:jamixir, :original_modules)
@@ -225,7 +225,7 @@ defmodule System.StateTest do
     end
 
     test "state transition with core report update", %{state: state, key_pairs: key_pairs} do
-      with_original_modules([:calculate_judgements_]) do
+      with_original_modules([:calculate_judgements_, Util.Time]) do
         new_core_report = build(:core_report)
         state = %{state | core_reports: [new_core_report | tl(state.core_reports)]}
 
@@ -250,7 +250,7 @@ defmodule System.StateTest do
           assurances: [build(:assurance, validator_index: 0, bitfield: <<0b1111::4>>)]
         )
 
-      with_original_modules([:process_availability]) do
+      with_original_modules([:process_availability, Util.Time]) do
         {:ok, new_state} =
           State.add_block(
             state,
@@ -268,7 +268,7 @@ defmodule System.StateTest do
 
   describe "validations fails" do
     test "returns error when assurance validation fails", %{state: state} do
-      with_original_modules([:validate_assurances]) do
+      with_original_modules([:validate_assurances, Util.Time]) do
         # Invalid assurance hash
         invalid_extrinsic = build(:extrinsic, assurances: [build(:assurance)])
 
@@ -282,7 +282,7 @@ defmodule System.StateTest do
     end
 
     test "returns error when epoch marker validation fails", %{state: state} do
-      with_original_modules([:valid_epoch_marker]) do
+      with_original_modules([:valid_epoch_marker, Util.Time]) do
         # Invalid epoch marker, on a new epoch epoch marker should be nil
         invalid_block = %Block{
           header: build(:header, timeslot: 600, epoch_mark: {Hash.one(), [Hash.two()]}),
