@@ -61,15 +61,6 @@ defmodule TestVectorUtil do
     end
   end
 
-  def fetch_and_parse_local_json(file_name, path) do
-    file_path = Path.join(["test", "test_vectors", path, file_name])
-
-    case File.read(file_path) do
-      {:ok, contents} -> {:ok, Jason.decode!(contents) |> Utils.atomize_keys()}
-      error -> error
-    end
-  end
-
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do
     pre_state = System.State.from_json(json_data[:pre_state])
     ok_output = json_data[:output][:ok]
