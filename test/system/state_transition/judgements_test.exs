@@ -2,6 +2,7 @@ defmodule System.State.JudgementsTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block.Extrinsic.Disputes
+  alias Block.Extrinsic.Disputes.Error
   alias System.State.Judgements
   alias Util.{Hash, Time}
   import Mox
@@ -53,7 +54,9 @@ defmodule System.State.JudgementsTest do
     end
 
     test "fails because of verdicts mismatch", %{state: state, work_report_hash: wrh, header: h} do
-      assert {:error, "Header validation failed"} =
+      expected_error = Error.invalid_header_markers()
+
+      assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
                  %{h | offenders_marker: [wrh]},
                  %Disputes{
@@ -70,7 +73,9 @@ defmodule System.State.JudgementsTest do
       current_key: {pub, _},
       header: header
     } do
-      assert {:error, "Header validation failed"} =
+      expected_error = Error.invalid_header_markers()
+
+      assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
                  %{header | offenders_marker: []},
                  %Disputes{
@@ -85,7 +90,9 @@ defmodule System.State.JudgementsTest do
     test "fails because of order mismatch", %{state: state, work_report_hash: wrh, header: header} do
       wrh2 = Hash.random()
 
-      assert {:error, "Header validation failed"} =
+      expected_error = Error.invalid_header_markers()
+
+      assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
                  %{header | offenders_marker: [wrh2, wrh]},
                  %Disputes{
@@ -177,7 +184,10 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:error, :invalid_v_set} = Judgements.calculate_judgements_(header, disputes, state)
+      expected_error = Error.not_enough_culprits()
+
+      assert {:error, ^expected_error} =
+               Judgements.calculate_judgements_(header, disputes, state)
     end
 
     test "invalid v_set - not enough faults", %{
@@ -196,7 +206,10 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:error, :invalid_v_set} = Judgements.calculate_judgements_(header, disputes, state)
+      expected_error = Error.not_enough_faults()
+
+      assert {:error, ^expected_error} =
+               Judgements.calculate_judgements_(header, disputes, state)
     end
 
     test "updates wonky set correctly", %{
