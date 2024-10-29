@@ -11,7 +11,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-    Application.put_env(:jamixir, :original_modules, [System.State.EntropyPool])
+    Application.put_env(:jamixir, :original_modules, [System.State.EntropyPool, Util.Time])
 
     on_exit(fn ->
       Application.delete_env(:jamixir, :original_modules)

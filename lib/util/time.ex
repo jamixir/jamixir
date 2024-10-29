@@ -1,4 +1,5 @@
 defmodule Util.Time do
+  use SelectiveMock
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
 
   @doc """
@@ -39,7 +40,7 @@ defmodule Util.Time do
 
   def valid_block_timeslot?(block_timeslot), do: validate_block_timeslot(block_timeslot) == :ok
 
-  def validate_timeslot_order(previous_timeslot, current_timeslot) do
+  mockable validate_timeslot_order(previous_timeslot, current_timeslot) do
     if previous_timeslot >= current_timeslot do
       {:error,
        "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
@@ -47,6 +48,8 @@ defmodule Util.Time do
       :ok
     end
   end
+
+  def mock(:validate_timeslot_order, _), do: :ok
 
   @doc """
   Determines if a new epoch has started based on the previous and current timeslots.
