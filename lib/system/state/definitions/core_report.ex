@@ -76,14 +76,18 @@ defmodule System.State.CoreReport do
 
   def json_mapping do
     %{
-      work_report: [fn wph ->
-        hash = JsonDecoder.from_json(wph)
-        %WorkReport{
-          specification: %AvailabilitySpecification{
-            work_package_hash: hash
+      work_report: [
+        fn wph ->
+          hash = JsonDecoder.from_json(wph)
+
+          %WorkReport{
+            specification: %AvailabilitySpecification{
+              work_package_hash: hash
+            }
           }
-        }
-      end, :dummy_work_report],
+        end,
+        :dummy_work_report
+      ],
       timeslot: :timeout
     }
   end
