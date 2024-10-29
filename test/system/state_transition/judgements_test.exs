@@ -54,7 +54,7 @@ defmodule System.State.JudgementsTest do
     end
 
     test "fails because of verdicts mismatch", %{state: state, work_report_hash: wrh, header: h} do
-      expected_error = Error.invalid_header_markers()
+      expected_error = Error.invalid_header_markers
 
       assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
@@ -73,7 +73,7 @@ defmodule System.State.JudgementsTest do
       current_key: {pub, _},
       header: header
     } do
-      expected_error = Error.invalid_header_markers()
+      expected_error = Error.invalid_header_markers
 
       assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
@@ -90,7 +90,7 @@ defmodule System.State.JudgementsTest do
     test "fails because of order mismatch", %{state: state, work_report_hash: wrh, header: header} do
       wrh2 = Hash.random()
 
-      expected_error = Error.invalid_header_markers()
+      expected_error = Error.invalid_header_markers
 
       assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(
@@ -184,7 +184,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      expected_error = Error.not_enough_culprits()
+      expected_error = Error.not_enough_culprits
 
       assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(header, disputes, state)
@@ -206,7 +206,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      expected_error = Error.not_enough_faults()
+      expected_error = Error.not_enough_faults
 
       assert {:error, ^expected_error} =
                Judgements.calculate_judgements_(header, disputes, state)

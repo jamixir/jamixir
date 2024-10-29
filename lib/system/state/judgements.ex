@@ -46,7 +46,7 @@ defmodule System.State.Judgements do
              | punish: state.judgements.punish ++ MapSet.new(new_offenders)
            }, bad_wonky_verdicts}
         else
-          {:error, Error.invalid_header_markers()}
+          {:error, Error.invalid_header_markers}
         end
 
       {:error, reason} ->
@@ -87,10 +87,10 @@ defmodule System.State.Judgements do
 
     case issues do
       {true, _} ->
-        {:error, Error.not_enough_culprits()}
+        {:error, Error.not_enough_culprits}
 
       {_, true} ->
-        {:error, Error.not_enough_faults()}
+        {:error, Error.not_enough_faults}
 
       _ ->
         {:ok, v_set}
