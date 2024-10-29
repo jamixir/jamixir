@@ -28,7 +28,6 @@ defmodule System.State.CoreReport do
   defp process_report(core_report, bad_wonky_set) do
     work_results_hash = Hash.default(Encoder.encode(core_report.work_report))
     if work_results_hash in bad_wonky_set, do: nil, else: core_report
-    if work_results_hash in bad_wonky_set, do: nil, else: core_report
   end
 
   @doc """

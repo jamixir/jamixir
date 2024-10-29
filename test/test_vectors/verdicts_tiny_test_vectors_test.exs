@@ -23,6 +23,7 @@ defmodule VerdictsTinyTestVectors do
 
     Application.put_env(:jamixir, :original_modules, [
       System.State.Judgements,
+      System.State.CoreReport,
       Block.Extrinsic.Disputes,
       Block.Extrinsic.Disputes.Culprit,
       Block.Extrinsic.Disputes.Fault,
@@ -45,7 +46,7 @@ defmodule VerdictsTinyTestVectors do
     end
 
     files_to_test = [
-      #   "progress_invalidates_avail_assignments-1",
+      # "progress_invalidates_avail_assignments-1"
       "progress_with_bad_signatures-1",
       "progress_with_bad_signatures-2",
       "progress_with_culprits-1",
