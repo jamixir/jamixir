@@ -20,7 +20,6 @@ defmodule SafroleTinyTestVectors do
       System.State.Safrole,
       System.Validators.Safrole,
       Block.Extrinsic.TicketProof,
-      Util.Time
     ])
 
     on_exit(fn ->

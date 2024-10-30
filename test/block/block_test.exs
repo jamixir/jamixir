@@ -40,8 +40,7 @@ defmodule BlockTest do
       Block.Header,
       Block.Extrinsic,
       System.Validators.Safrole,
-      Disputes,
-      Util.Time
+      Disputes
     ])
 
     on_exit(fn ->
@@ -113,8 +112,7 @@ defmodule BlockTest do
   describe "preimage validation" do
     setup do
       Application.put_env(:jamixir, :original_modules, [
-        Block.Extrinsic.Preimage,
-        Util.Time
+        Block.Extrinsic.Preimage
       ])
 
       on_exit(fn ->

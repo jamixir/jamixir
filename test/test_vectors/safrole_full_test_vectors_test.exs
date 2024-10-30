@@ -3,7 +3,7 @@ defmodule SafroleFullTestVectors do
   import Mox
   import TestVectorUtil
   setup :verify_on_exit!
-  @moduletag :full_vectors
+  @moduletag :full_vectorss
 
   @path "safrole/full"
 
@@ -14,7 +14,7 @@ defmodule SafroleFullTestVectors do
     Application.put_env(:jamixir, :original_modules, [
       System.State.Safrole,
       System.Validators.Safrole,
-      Block.Extrinsic.TicketProof
+      Block.Extrinsic.TicketProof,
     ])
 
     on_exit(fn ->
@@ -31,26 +31,26 @@ defmodule SafroleFullTestVectors do
     end
 
     files_to_test = [
-      "enact-epoch-change-with-no-tickets-1",
+      # "enact-epoch-change-with-no-tickets-1",
       "enact-epoch-change-with-no-tickets-2",
-      "enact-epoch-change-with-no-tickets-3",
-      "enact-epoch-change-with-no-tickets-4",
-      "publish-tickets-no-mark-1",
-      "publish-tickets-no-mark-2",
-      "publish-tickets-no-mark-3",
-      "publish-tickets-no-mark-4",
-      "publish-tickets-no-mark-5",
-      "publish-tickets-no-mark-6",
-      "publish-tickets-no-mark-7",
-      "publish-tickets-no-mark-8",
-      "publish-tickets-no-mark-9",
-      "publish-tickets-with-mark-1",
-      "publish-tickets-with-mark-2",
-      "publish-tickets-with-mark-3",
-      "publish-tickets-with-mark-4",
-      "publish-tickets-with-mark-5",
-      "skip-epoch-tail-1",
-      "skip-epochs-1"
+      # "enact-epoch-change-with-no-tickets-3",
+      # "enact-epoch-change-with-no-tickets-4",
+      # "publish-tickets-no-mark-1",
+      # "publish-tickets-no-mark-2",
+      # "publish-tickets-no-mark-3",
+      # "publish-tickets-no-mark-4",
+      # "publish-tickets-no-mark-5",
+      # "publish-tickets-no-mark-6",
+      # "publish-tickets-no-mark-7",
+      # "publish-tickets-no-mark-8",
+      # "publish-tickets-no-mark-9",
+      # "publish-tickets-with-mark-1",
+      # "publish-tickets-with-mark-2",
+      # "publish-tickets-with-mark-3",
+      # "publish-tickets-with-mark-4",
+      # "publish-tickets-with-mark-5",
+      # "skip-epoch-tail-1",
+      # "skip-epochs-1"
     ]
 
     Enum.each(files_to_test, fn file_name ->

@@ -16,6 +16,23 @@ defmodule Mockable do
     end
   end
 
+  # For functions with arguments
+  defmacro defmockable({name, _context, args} = func) when is_atom(name) and is_list(args) do
+    quote bind_quoted: [func: Macro.escape(func), name: name, args: Macro.escape(args)] do
+      def unquote(name)(unquote_splicing(args)) do
+        mock_module = get_mock_module()
+
+        if mock_module != __MODULE__ and
+             function_exported?(mock_module, unquote(name), length(unquote(args))) do
+          apply(mock_module, unquote(name), unquote(args))
+        else
+          apply(__MODULE__, :"#{unquote(name)}_impl", unquote(args))
+        end
+      end
+    end
+  end
+
+  # For functions with no arguments
   defmacro defmockable(name) when is_atom(name) do
     quote bind_quoted: [name: name] do
       def unquote(name)() do
@@ -30,7 +47,16 @@ defmodule Mockable do
     end
   end
 
-  defmacro defmockable(name, do: body) do
+  # For functions with arguments and do block
+  defmacro defmockable({name, _context, args} = func, do: body) when is_list(args) do
+    quote do
+      def unquote(:"#{name}_impl")(unquote_splicing(args)), do: unquote(body)
+      defmockable(unquote(func))
+    end
+  end
+
+  # For atom name with do block (Constants.ex style)
+  defmacro defmockable(name, do: body) when is_atom(name) do
     quote do
       def unquote(:"#{name}_impl")(), do: unquote(body)
       defmockable(unquote(name))
