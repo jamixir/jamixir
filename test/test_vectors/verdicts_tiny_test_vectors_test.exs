@@ -4,7 +4,7 @@ defmodule VerdictsConstantsMock do
 end
 
 defmodule TimeMock do
-  def validate_timeslot_order(previous_timeslot, current_timeslot), do: :ok
+  def validate_timeslot_order(_, _), do: :ok
 end
 
 defmodule VerdictsTinyTestVectors do
