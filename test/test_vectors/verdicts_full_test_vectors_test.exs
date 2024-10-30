@@ -12,9 +12,14 @@ defmodule VerdictsFullTestVectors do
   @branch "disputes"
   @path "disputes/full"
 
+  defmodule TimeMock do
+    def validate_timeslot_order(_, _), do: :ok
+  end
+
   setup_all do
     RingVrf.init_ring_context(1023)
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, Util.Time, TimeMock)
 
     Application.put_env(:jamixir, :original_modules, [
       System.State.Judgements,
@@ -28,6 +33,7 @@ defmodule VerdictsFullTestVectors do
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.delete_env(:jamixir, Util.Time)
       Application.delete_env(:jamixir, :original_modules)
     end)
 

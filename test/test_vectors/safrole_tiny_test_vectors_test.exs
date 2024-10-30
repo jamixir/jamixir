@@ -19,7 +19,7 @@ defmodule SafroleTinyTestVectors do
     Application.put_env(:jamixir, :original_modules, [
       System.State.Safrole,
       System.Validators.Safrole,
-      Block.Extrinsic.TicketProof,
+      Block.Extrinsic.TicketProof
     ])
 
     on_exit(fn ->
