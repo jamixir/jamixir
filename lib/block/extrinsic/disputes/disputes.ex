@@ -65,7 +65,7 @@ defmodule Block.Extrinsic.Disputes do
     cond do
       # Formula (98) v0.4.1 - epoch index
       !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
-        {:error, Error.invalid_epoch}
+        {:error, Error.invalid_epoch()}
 
       # Formula (98) v0.4.1 - required length ⌊2/3V⌋+1
       !Enum.all?(verdicts, fn %Verdict{judgements: judgements, epoch_index: epoch_index} ->
@@ -74,21 +74,21 @@ defmodule Block.Extrinsic.Disputes do
 
         length(judgements) == div(2 * length(validator_set), 3) + 1
       end) ->
-        {:error, Error.invalid_vote_count}
+        {:error, Error.invalid_vote_count()}
 
       # Formula (103) v0.4.1
       !match?(
         :ok,
         Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
       ) ->
-        {:error, Error.unsorted_verdicts}
+        {:error, Error.unsorted_verdicts()}
 
       # Formula (105) v0.4.1
       !MapSet.disjoint?(
         Judgements.union_all(judgements),
         MapSet.new(verdicts, & &1.work_report_hash)
       ) ->
-        {:error, Error.already_judged}
+        {:error, Error.already_judged()}
 
       #  Formula (99) v0.4.1 - signatures
       !Enum.all?(verdicts, fn verdict ->
@@ -96,13 +96,13 @@ defmodule Block.Extrinsic.Disputes do
         |> get_validator_set(prev_validators, current_epoch, verdict.epoch_index)
         |> valid_signatures?(verdict)
       end) ->
-        {:error, Error.invalid_signature}
+        {:error, Error.invalid_signature()}
 
       # Formula (106) v0.4.1
       !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
         Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
       end) ->
-        {:error, Error.unsorted_judgements}
+        {:error, Error.unsorted_judgements()}
 
       # Formula (107) v0.4.1
       # Formula (108) v0.4.1
@@ -123,7 +123,7 @@ defmodule Block.Extrinsic.Disputes do
           div(2 * validator_count, 3) + 1
         ]
       end) ->
-        {:error, Error.invalid_vote_count}
+        {:error, Error.invalid_vote_count()}
 
       true ->
         :ok
@@ -148,11 +148,11 @@ defmodule Block.Extrinsic.Disputes do
       # Formula (104) v0.4.1
       !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.key)) ->
         {:error,
-         if(offense_type == :faults, do: Error.unsorted_faults, else: Error.unsorted_culprits)}
+         if(offense_type == :faults, do: Error.unsorted_faults(), else: Error.unsorted_culprits())}
 
       # Formula 101 and 102 - Check if all offense validator keys are valid
       !Enum.all?(offenses, &(&1.key in allowed_validator_keys)) ->
-        {:error, Error.offender_already_reported}
+        {:error, Error.offender_already_reported()}
 
       # Formula 101 and 102 - Check signatures
       !Enum.all?(
@@ -176,7 +176,7 @@ defmodule Block.Extrinsic.Disputes do
           )
         end
       ) ->
-        {:error, Error.invalid_signature}
+        {:error, Error.invalid_signature()}
 
       true ->
         :ok
@@ -190,7 +190,7 @@ defmodule Block.Extrinsic.Disputes do
       if Enum.all?(culprits, &(&1.work_report_hash in bad_set)) do
         :ok
       else
-        {:error, Error.culprit_verdict_not_bad}
+        {:error, Error.culprit_verdict_not_bad()}
       end
     end
   end
@@ -201,17 +201,12 @@ defmodule Block.Extrinsic.Disputes do
     with :ok <- validate_common_offense_rules(faults, allowed_validator_keys, :faults) do
       if Enum.any?(faults, fn fault ->
            case Enum.find(v_set, fn {hash, _sum, _v_count} -> hash == fault.work_report_hash end) do
-             {_, sum, v_count} when sum == div(2 * v_count, 3) + 1 ->
-               fault.vote == true
-
-             {_, 0, _} ->
-               fault.vote == false
-
-             _ ->
-               false
+             {_, sum, v_count} when sum == div(2 * v_count, 3) + 1 -> fault.vote
+             {_, 0, _} -> !fault.vote
+             _ -> false
            end
          end) do
-        {:error, Error.invalid_fault_vote}
+        {:error, Error.invalid_fault_vote()}
       else
         :ok
       end
