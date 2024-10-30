@@ -51,34 +51,25 @@ defmodule VerdictsTinyTestVectors do
       assert Constants.epoch_length() == 12
     end
 
-    files_to_test = [
-      # "progress_invalidates_avail_assignments-1"
-      "progress_with_bad_signatures-1",
-      "progress_with_bad_signatures-2",
-      "progress_with_culprits-1",
-      "progress_with_culprits-2",
-      "progress_with_culprits-3",
-      "progress_with_culprits-4",
-      "progress_with_culprits-5",
-      "progress_with_culprits-6",
-      "progress_with_culprits-7",
-      "progress_with_faults-1",
-      "progress_with_faults-2",
-      "progress_with_faults-3",
-      "progress_with_faults-4",
-      "progress_with_faults-5",
-      "progress_with_faults-6",
-      "progress_with_faults-7",
-      "progress_with_no_verdicts-1",
-      "progress_with_verdict_signatures_from_previous_set-1",
-      "progress_with_verdict_signatures_from_previous_set-2",
-      "progress_with_verdicts-1",
-      "progress_with_verdicts-2",
-      "progress_with_verdicts-3",
-      "progress_with_verdicts-4",
-      "progress_with_verdicts-5",
-      "progress_with_verdicts-6"
-    ]
+    files_to_test =
+      [
+        # "progress_invalidates_avail_assignments-1"
+        for(i <- 1..2, do: "progress_with_bad_signatures-#{i}"),
+        for(i <- 1..7, do: "progress_with_culprits-#{i}"),
+        for(i <- 1..7, do: "progress_with_faults-#{i}"),
+        "progress_with_no_verdicts-1",
+        for(i <- 1..2, do: "progress_with_verdict_signatures_from_previous_set-#{i}"),
+        for(i <- 1..6, do: "progress_with_verdicts-#{i}")
+      ]
+      |> List.flatten()
+
+    setup do
+      stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+        {:ok, %{vrf_signature_output: Hash.zero()}}
+      end)
+
+      :ok
+    end
 
     Enum.each(files_to_test, fn file_name ->
       @tag file_name: file_name
@@ -86,11 +77,6 @@ defmodule VerdictsTinyTestVectors do
       test "verify tiny test vectors #{file_name}", %{file_name: file_name} do
         {:ok, json_data} =
           fetch_and_parse_json(file_name <> ".json", @path, @owner, @repo, @branch)
-
-        HeaderSealMock
-        |> stub(:do_validate_header_seals, fn _, _, _, _ ->
-          {:ok, %{vrf_signature_output: Hash.zero()}}
-        end)
 
         extrinsic =
           Map.from_struct(%Extrinsic{})
@@ -104,13 +90,7 @@ defmodule VerdictsTinyTestVectors do
 
         assert_expected_results(
           json_data,
-          [
-            :judgements,
-            :core_reports,
-            :timeslot,
-            :curr_validators,
-            :prev_validators
-          ],
+          [:judgements, :core_reports, :timeslot, :curr_validators, :prev_validators],
           file_name,
           extrinsic,
           header
