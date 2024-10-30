@@ -9,7 +9,7 @@ defmodule System.StateTransition.TimeslotTest do
   setup_all do
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
     # All `mockable` defs will be stubbed
-    Application.put_env(:jamixir, :original_modules, [Util.Time])
+    Application.put_env(:jamixir, :original_modules, [])
 
     on_exit(fn ->
       Application.delete_env(:jamixir, :original_modules)
