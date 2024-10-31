@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.WorkPackage do
   Defines a WorkPackage struct and its types.
   """
   alias Block.Extrinsic.WorkItem
-  alias System.{State, State.ServiceAccount}
+  alias System.State.ServiceAccount
   alias Util.Hash
 
   @type t :: %__MODULE__{
@@ -51,9 +51,9 @@ defmodule Block.Extrinsic.WorkPackage do
 
   # Formula (194) v0.4.1
   # pc
-  def authorization_code(%__MODULE__{} = wp, %State{services: s}) do
+  def authorization_code(%__MODULE__{} = wp, services) do
     ServiceAccount.historical_lookup(
-      s[wp.service],
+      services[wp.service],
       wp.context.timeslot,
       wp.authorization_code_hash
     )
@@ -61,8 +61,8 @@ defmodule Block.Extrinsic.WorkPackage do
 
   # Formula (194) v0.4.1
   # pa
-  def implied_authorizer(%__MODULE__{} = wp, %State{} = state) do
-    Hash.default(authorization_code(wp, state) <> wp.parameterization_blob)
+  def implied_authorizer(%__MODULE__{} = wp, services) do
+    Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
   # Formula (197) v0.4.1

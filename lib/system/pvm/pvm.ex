@@ -1,9 +1,9 @@
 defmodule System.PVM do
+  alias System.State.ServiceAccount
   alias System.PVM.RefineParams
   alias System.PVM.Host
   alias System.PVM.Constants
   alias Block.Extrinsic.Guarantee.WorkExecutionError
-  alias System.State
   alias Block.Extrinsic.WorkPackage
   alias System.PVM.Memory
   use Codec.Encoder
@@ -25,10 +25,10 @@ defmodule System.PVM do
 
   # ΨI : The Is-Authorized pvm invocation function.
   # Formula (267) v0.4.1
-  @spec authorized(WorkPackage.t(), non_neg_integer(), State.t()) ::
+  @spec authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
           binary() | WorkExecutionError.t()
-  def authorized(p = %WorkPackage{}, core, state = %State{}) do
-    pc = WorkPackage.authorization_code(p, state)
+  def authorized(p = %WorkPackage{}, core, services) do
+    pc = WorkPackage.authorization_code(p, services)
     # TODO: get_gas
     gi = 0
     {_g, r, nil} = __MODULE__.marshalling_call(pc, 0, e({p, core}), gi, &authorized_f/4, nil)
@@ -67,8 +67,8 @@ defmodule System.PVM do
   data blobs as dictated by the work-item, i and x. It results in either some error J or a pair of the
   refinement output blob and the export sequence.
   """
-  @spec refine(RefineParams.t(), State.t()) :: {binary() | WorkExecutionError.t(), list(binary())}
-  def refine(_params = %RefineParams{}, _state = %State{}) do
+  @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) :: {binary() | WorkExecutionError.t(), list(binary())}
+  def refine(_params = %RefineParams{}, _services) do
     # TODO
     {<<>>, []}
   end
