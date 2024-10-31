@@ -22,7 +22,7 @@ defmodule Block.HeaderTest do
     test "valid_header?/1 returns false when parent header is not found" do
       header = %Header{parent_hash: "parent_hash", timeslot: past_timeslot()}
 
-      assert !Header.valid_header?(header)
+     refute Header.valid_header?(header)
     end
 
     test "valid_header?/1 returns false when timeslot is not greater than parent header's timeslot" do
