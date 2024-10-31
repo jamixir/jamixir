@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic.AvailabilitySpecification do
+  alias Util.Collections
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Util.{Hash, MerkleTree}
 
@@ -71,7 +72,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           do: Hash.default(x)
 
     MerkleTree.well_balanced_merkle_root(
-      for x <- Utils.transpose_binaries([b_clubs, s_clubs]), do: Enum.join(x)
+      Collections.union(for x <- Utils.transpose_binaries([b_clubs, s_clubs]), do: x)
     )
   end
 
