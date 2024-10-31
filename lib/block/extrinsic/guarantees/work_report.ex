@@ -8,7 +8,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
   alias System.{PVM, PVM.RefineParams}
-  alias System.State
   alias System.State.{CoreReport, Ready, WorkPackageRootMap}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
