@@ -84,10 +84,8 @@ defmodule Block.Extrinsic.WorkItem do
 
   # Formula (199) v0.4.1
   # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
-  def extrinsic_data(%__MODULE__{} = w, d) do
-    for {r, _n} <- w.extrinsic do
-      Map.get(d, r)
-    end
+  def extrinsic_data(%__MODULE__{} = w, storage) do
+    for {r, n} <- w.extrinsic, d = Map.get(storage, r), byte_size(d) == n, do: d
   end
 
   # Formula (199) v0.4.1
