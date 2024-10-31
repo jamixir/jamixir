@@ -1,4 +1,5 @@
 defmodule Codec.VariableSize do
+  import RangeMacros
   defstruct [:value, :size]
 
   def new(value) do
@@ -31,7 +32,7 @@ defmodule Codec.VariableSize do
   def decode(bin, :hash) do
     <<count::integer, rest::binary>> = bin
 
-    Enum.reduce(List.duplicate("", count), {[], rest}, fn _, {acc, rest} ->
+    Enum.reduce(from_0_to(count), {[], rest}, fn _, {acc, rest} ->
       <<value::binary-size(@hash_size), r::binary>> = rest
       {acc ++ [value], r}
     end)
@@ -43,7 +44,7 @@ defmodule Codec.VariableSize do
   end
 
   def decode(bin, module, count) do
-    Enum.reduce(List.duplicate("", count), {[], bin}, fn _, {acc, bin} ->
+    Enum.reduce(from_0_to(count), {[], bin}, fn _, {acc, bin} ->
       {value, r} = module.decode(bin)
       {acc ++ [value], r}
     end)
@@ -52,7 +53,7 @@ defmodule Codec.VariableSize do
   def decode(bin, :map, key_size, value_size) do
     <<count::8, rest::binary>> = bin
 
-    Enum.reduce(List.duplicate(<<>>, count), {%{}, rest}, fn _, {acc, rest} ->
+    Enum.reduce(from_0_to(count), {%{}, rest}, fn _, {acc, rest} ->
       <<key::binary-size(key_size), value::binary-size(value_size), rest::binary>> = rest
       {Map.put(acc, key, value), rest}
     end)
