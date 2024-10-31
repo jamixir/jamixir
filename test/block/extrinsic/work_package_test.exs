@@ -94,14 +94,14 @@ defmodule WorkPackageTest do
 
       state = %State{state | services: %{wp.service => service_account}}
 
-      assert WorkPackage.authorization_code(wp, state) == <<7, 7, 7>>
+      assert WorkPackage.authorization_code(wp, state.services) == <<7, 7, 7>>
 
-      assert WorkPackage.implied_authorizer(wp, state) ==
+      assert WorkPackage.implied_authorizer(wp, state.services) ==
                Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
     end
 
     test "return nil authorization code when it is not available", %{state: state} do
-      assert WorkPackage.authorization_code(build(:work_package), state) == nil
+      assert WorkPackage.authorization_code(build(:work_package), state.services) == nil
     end
   end
 

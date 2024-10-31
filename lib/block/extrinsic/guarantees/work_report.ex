@@ -184,14 +184,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (196) v0.4.1
-  def compute_work_result(%WorkPackage{} = wp, core, %State{} = state) do
+  def compute_work_result(%WorkPackage{} = wp, core, services) do
     _l = calculate_segments(wp)
     # TODO
     d = %{}
     # TODO
     s = []
 
-    case System.PVM.authorized(wp, core, state) do
+    case System.PVM.authorized(wp, core, services) do
       error when is_integer(error) ->
         error
 
@@ -199,7 +199,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
           for j <- 0..(length(wp.work_items) - 1) do
-            {result, exports} = process_item(wp, j, o, state)
+            {result, exports} = process_item(wp, j, o, services)
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
 
@@ -216,7 +216,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           )
 
         %__MODULE__{
-          authorizer_hash: WorkPackage.implied_authorizer(wp, state),
+          authorizer_hash: WorkPackage.implied_authorizer(wp, services),
           output: o,
           refinement_context: nil,
           # s
@@ -231,11 +231,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # Formula (196) v0.4.1
   # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
-  def process_item(%WorkPackage{} = p, j, o, %State{} = s) do
+  def process_item(%WorkPackage{} = p, j, o, services) do
     w = Enum.at(p.work_items, j)
     h = Hash.default(e(p))
     l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
-    pa = WorkPackage.implied_authorizer(p, s)
+    pa = WorkPackage.implied_authorizer(p, services)
 
     PVM.refine(
       %RefineParams{
@@ -253,7 +253,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         extrinsic_data: [],
         export_offset: l
       },
-      s
+      services
     )
 
     # ...
