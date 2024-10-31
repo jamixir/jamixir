@@ -91,12 +91,6 @@ defmodule Block.Header do
   use MapUnion
   # Formula (40) v0.4.1
   # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
-  # def ancestors(nil), do: MapSet.new([])
-  # def ancestors(%__MODULE__{parent_hash: nil} = h), do: MapSet.new([h])
-
-  # def ancestors(%__MODULE__{parent_hash: parent_hash} = h) do
-  #   MapSet.new([h]) ++ __MODULE__.ancestors(Storage.get(parent_hash, Header))
-  # end
 
   def ancestors(nil), do: []
 
