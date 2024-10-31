@@ -1,5 +1,6 @@
 defmodule Utils do
   import Bitwise
+  import RangeMacros
 
   def list_struct_fields(module) do
     module.__struct__()
@@ -59,7 +60,7 @@ defmodule Utils do
   # Formula (202) v0.4.1
   def pad_binary_right(x, n) do
     start = rem(byte_size(x) + n - 1, n) + 1
-    pad = for _ <- List.duplicate("", n - start), into: <<>>, do: <<0>>
+    pad = for _ <- from_0_to(n - start), into: <<>>, do: <<0>>
     x <> pad
   end
 
