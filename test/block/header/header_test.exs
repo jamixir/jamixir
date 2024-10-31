@@ -41,7 +41,7 @@ defmodule Block.HeaderTest do
       parent = build(:decodable_header, timeslot: 3)
 
       header =
-        build(:decodable_header, parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2)
+        build(:decodable_header, parent_hash: h(e(parent)), timeslot: 2)
 
       Storage.put(parent)
       Storage.put(header)
