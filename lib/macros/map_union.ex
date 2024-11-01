@@ -91,6 +91,7 @@ defmodule MapUnion do
   @spec (left \\ right) :: map() | MapSet.t()
         when left: map() | MapSet.t(),
              right: map() | MapSet.t()
+  # credo:disable-for-next-line
   defmacro left \\ right do
     quote do
       case {unquote(left), unquote(right)} do
