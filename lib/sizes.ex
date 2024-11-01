@@ -3,7 +3,7 @@ defmodule Sizes do
   def bitfield, do: div(Constants.core_count() + 7, 8)
 
   def merkle_root, do: 64
-  def merkle_root_bits, do: 512
+  def merkle_root_bits, do: __MODULE__.merkle_root() * 8
   def signature, do: 64
 
   def bandersnatch_signature, do: 96

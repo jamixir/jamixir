@@ -1,5 +1,7 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias System.State.RecentHistory.RecentBlock
+  alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
@@ -440,6 +442,23 @@ defmodule Jamixir.Factory do
       work_report: build(:work_report),
       timeslot: 5,
       credentials: credentials_list()
+    }
+  end
+
+  def recent_history_factory do
+    alias System.State.RecentHistory
+
+    %RecentHistory{
+      blocks: build_list(2, :recent_block)
+    }
+  end
+
+  def recent_block_factory do
+    %RecentBlock{
+      header_hash: Hash.random(),
+      state_root: Hash.random(),
+      accumulated_result_mmr: [Hash.random()],
+      work_report_hashes: [Hash.random()]
     }
   end
 

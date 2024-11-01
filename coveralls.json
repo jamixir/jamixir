@@ -9,6 +9,7 @@
     "test/support/github_repo_reader.ex",
     "test/support/mockable.ex",
     "test/test_vectors/test_vector_util.ex",
-    "test/support_original_modules.ex"
+    "test/support_original_modules.ex",
+    "lib/macros/"
   ]
 }

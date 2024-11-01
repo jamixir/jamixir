@@ -41,6 +41,13 @@ defmodule System.State.SafroleTest do
   end
 
   describe "generate_index_using_entropy/3" do
+    test "uses default validator set size" do
+      entropy = Hash.random()
+      index = Safrole.generate_index_using_entropy(entropy, 5)
+
+      assert index >= 0 and index < Constants.validator_count()
+    end
+
     test "returns a value within the valid range for validator set size" do
       entropy = Hash.random()
       validator_set_size = 10
@@ -143,21 +150,32 @@ defmodule System.State.SafroleTest do
       validators: validators
     } do
       safrole = %{safrole | current_epoch_slot_sealers: []}
-
       header = build(:header, timeslot: 600)
-      timeslot = 400
 
       result =
-        Safrole.get_epoch_slot_sealers_(
-          header,
-          timeslot,
-          safrole,
-          entropy_pool,
-          validators
-        )
+        Safrole.get_epoch_slot_sealers_(header, 400, safrole, entropy_pool, validators)
 
       expected_result = Safrole.fallback_key_sequence(entropy_pool.n2, validators)
       assert result == expected_result
+    end
+  end
+
+  describe "encode/1" do
+    test "encodes a safrole smoke test" do
+      safrole = build(:safrole)
+      Encodable.encode(safrole)
+    end
+
+    test "encode with seal type 1" do
+      safrole =
+        build(:safrole,
+          pending: [],
+          epoch_root: <<0>>,
+          current_epoch_slot_sealers: [<<2>>],
+          ticket_accumulator: []
+        )
+
+      assert Encodable.encode(safrole) == "\0\x01\x02\0"
     end
   end
 end

@@ -7,6 +7,8 @@ defmodule RecentHistoryTest do
   alias System.State.RecentHistory.RecentBlock
   alias System.State.{BeefyCommitmentMap, RecentHistory}
   alias Util.{Hash, MerkleTree, MMR}
+  import Jamixir.Factory
+  use Codec.Encoder
 
   describe "update_latest_state_root_/2" do
     test "returns empty list when given nil" do
@@ -17,7 +19,7 @@ defmodule RecentHistoryTest do
     test "returns empty list when given empty list" do
       header = %Header{prior_state_root: "s"}
 
-      assert RecentHistory.update_latest_state_root_(RecentHistory.new(), header).blocks ===
+      assert RecentHistory.update_latest_state_root_(%RecentHistory{}, header).blocks ===
                []
     end
 
@@ -27,7 +29,7 @@ defmodule RecentHistoryTest do
       most_recent_block2 = %RecentBlock{state_root: "s2"}
 
       block_history =
-        RecentHistory.new()
+        %RecentHistory{}
         |> RecentHistory.add(most_recent_block1)
         |> RecentHistory.add(most_recent_block2)
 
@@ -202,10 +204,7 @@ defmodule RecentHistoryTest do
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
       beefy_commitment_map =
-        BeefyCommitmentMap.new([
-          {1, <<11::256>>},
-          {2, <<22::256>>}
-        ])
+        BeefyCommitmentMap.new([{1, <<11::256>>}, {2, <<22::256>>}])
 
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
@@ -220,15 +219,12 @@ defmodule RecentHistoryTest do
         }
       }
 
-      # Initialize recent history with one block
-      recent_history = RecentHistory.new()
-
       # Call the function to update recent history
       result =
         RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee1, guarantee2],
-          recent_history,
+          %RecentHistory{},
           beefy_commitment_map
         )
 
@@ -260,15 +256,12 @@ defmodule RecentHistoryTest do
         }
       }
 
-      # Initialize recent history
-      recent_history = RecentHistory.new()
-
       # Call the function to update recent history
       result =
         RecentHistory.calculate_recent_history_(
           %Header{},
           [guarantee],
-          recent_history,
+          %RecentHistory{},
           BeefyCommitmentMap.new([{2, <<5::256>>}])
         )
 
@@ -279,26 +272,18 @@ defmodule RecentHistoryTest do
     test "verifies header hash" do
       header = %Header{block_seal: Hash.one()}
 
-      # Initialize recent history
-      recent_history = RecentHistory.new()
-
       # Call the function to update recent history
       result =
-        RecentHistory.calculate_recent_history_(
-          header,
-          [],
-          recent_history,
-          nil
-        )
+        RecentHistory.calculate_recent_history_(header, [], %RecentHistory{}, nil)
 
       # Verify that the state root in the newly added block is all zeros
-      assert Enum.at(result.blocks, -1).header_hash == Hash.default(Codec.Encoder.encode(header))
+      assert Enum.at(result.blocks, -1).header_hash == h(e(header))
     end
   end
 
   describe "encode/1" do
     test "encode recent history smoke test" do
-      Codec.Encoder.encode(%RecentHistory{})
+      e(build(:recent_history))
     end
   end
 

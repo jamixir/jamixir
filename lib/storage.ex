@@ -38,6 +38,7 @@ defmodule Storage do
       {:atomic, [{@table_name, _hash, blob}]} -> blob
       {:atomic, []} -> nil
       {:aborted, {:no_exists, _}} -> nil
+      _ -> nil
     end
   end
 

@@ -91,10 +91,17 @@ defmodule UtilsTest do
     end
   end
 
-  describe "zero_padding/2" do
+  describe "pad_binary_right/2" do
     test "pads binary with zeros" do
       assert Utils.pad_binary_right(<<1, 2, 3>>, 8) == <<1, 2, 3, 0, 0, 0, 0, 0>>
       assert Utils.pad_binary_right(<<>>, 8) == <<>>
+    end
+  end
+
+  describe "pad_binary/2" do
+    test "pads binary with zeros" do
+      assert Utils.pad_binary(<<1, 2, 3>>, 8) == <<0, 0, 0, 0, 0, 1, 2, 3>>
+      assert Utils.pad_binary(<<>>, 8) == <<0, 0, 0, 0, 0, 0, 0, 0>>
     end
   end
 end

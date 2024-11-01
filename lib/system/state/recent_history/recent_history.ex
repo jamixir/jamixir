@@ -18,14 +18,6 @@ defmodule System.State.RecentHistory do
   defstruct blocks: []
 
   @doc """
-  Initializes a RecentBlocks struct.
-  """
-  @spec new() :: t()
-  def new do
-    %__MODULE__{blocks: []}
-  end
-
-  @doc """
   Adds a new RecentBlock to the list, ensuring the max length is maintained.
   """
   def add(%__MODULE__{blocks: blocks} = self, %RecentBlock{} = new_block) do
@@ -57,7 +49,7 @@ defmodule System.State.RecentHistory do
   Formula (82) v0.4.1
   """
   def update_latest_state_root_(nil, %Header{}) do
-    __MODULE__.new()
+    %__MODULE__{}
   end
 
   @spec update_latest_state_root_(t(), Header.t()) :: t()

@@ -92,7 +92,6 @@ defmodule System.HeaderSeal do
       {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
       {:error, reason} -> {:error, reason}
-      other -> {:error, other}
     end
   end
 

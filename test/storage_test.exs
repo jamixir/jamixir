@@ -48,5 +48,20 @@ defmodule StorageTest do
       hash = h(Encodable.encode(header))
       assert Storage.get(hash, Header) == header
     end
+
+    test "get inexistent header" do
+      assert Storage.get(Hash.random(), Header) == nil
+    end
+  end
+
+  describe "start_link" do
+    test "creates the schema and table" do
+      assert Storage.start_link() == :ok
+    end
+
+    test "ok when calling start_link twice" do
+      assert Storage.start_link() == :ok
+      assert Storage.start_link() == :ok
+    end
   end
 end
