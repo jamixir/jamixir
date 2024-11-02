@@ -90,4 +90,44 @@ defmodule System.State.CoreReportTest do
       end
     end
   end
+
+  describe "a/1" do
+    setup do
+      r1 =
+        put_in(build(:core_report).work_report.refinement_context.prerequisite, Hash.one())
+
+      r2 =
+        put_in(
+          r1.work_report.refinement_context.prerequisite,
+          Hash.two()
+        )
+
+      r_nil =
+        put_in(
+          r1.work_report.refinement_context.prerequisite,
+          nil
+        )
+
+      {:ok, r1: r1, r2: r2, r_nil: r_nil}
+    end
+
+    test "returns empty MapSet for initial state" do
+      assert CoreReport.a(CoreReport.initial_core_reports()) == MapSet.new()
+    end
+
+    test "collects unique prerequisite hashes", %{r1: r1, r2: r2} do
+      assert CoreReport.a([r1, r2, r1]) ==
+               MapSet.new([Hash.one(), Hash.two()])
+    end
+
+    test "handles nil core reports", %{r1: r1} do
+      assert CoreReport.a([nil, r1, nil]) ==
+               MapSet.new([Hash.one()])
+    end
+
+    test "filters out nil prerequisites", %{r1: r1, r_nil: r_nil} do
+      assert CoreReport.a([r1, r_nil]) ==
+               MapSet.new([Hash.one()])
+    end
+  end
 end
