@@ -28,7 +28,7 @@ defmodule System.State.RecentHistory do
   @doc """
   Creates a new RecentBlock and adds it to the list, ensuring the max length is maintained.
   """
-  @spec add(t(), Types.hash(), Types.hash(), list(Types.hash()), list(Types.hash())) :: t()
+  @spec add(t(), Types.hash(), Types.hash(), list(Types.hash()), %{Types.hash() => Types.hash()}) :: t()
   def add(
         %__MODULE__{} = self,
         header_hash,
@@ -100,7 +100,11 @@ defmodule System.State.RecentHistory do
       end
 
     # Work report hashes
-    wp_hashes = for g <- guarantees, do: g.work_report.specification.work_package_hash
+    wp_hashes =
+      for g <- guarantees,
+          spec = g.work_report.specification,
+          do: {spec.work_package_hash, spec.exports_root},
+          into: %{}
 
     # Formula (84) v0.4.1
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
