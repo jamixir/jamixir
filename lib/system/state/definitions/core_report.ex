@@ -90,4 +90,15 @@ defmodule System.State.CoreReport do
       timeslot: :timeout
     }
   end
+
+  # Formula (151) v0.4.5
+  @spec a(list(t())) :: MapSet.t(Types.hash())
+  def a(core_reports) do
+    for i <- core_reports,
+        i != nil,
+        p = i.work_report.refinement_context.prerequisite,
+        p != nil,
+        into: MapSet.new(),
+        do: p
+  end
 end
