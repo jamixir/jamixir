@@ -52,7 +52,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == []
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{}
     end
 
     test "handles nil beefy_commitment_map" do
@@ -96,7 +96,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == [Hash.one()]
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{ Hash.one => Hash.zero}
     end
 
     test "handles non-empty recent_history.blocks" do
@@ -104,18 +104,21 @@ defmodule RecentHistoryTest do
         header_hash: Hash.one(),
         accumulated_result_mmr: [Hash.two()],
         state_root: Hash.one(),
-        work_report_hashes: [Hash.three()]
+        work_report_hashes: %{Hash.three() => Hash.zero()}
       }
 
       recent_history = %RecentHistory{blocks: [previous_block]}
 
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: <<4::256>>}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.four,
+            exports_root: Hash.five
+          }
         }
       }
 
-      beefy_commitment_map = BeefyCommitmentMap.new([{2, <<5::256>>}])
+      beefy_commitment_map = BeefyCommitmentMap.new([{2, Hash.five}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -126,19 +129,25 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 2
-      assert Enum.at(result.blocks, -1).work_report_hashes == [<<4::256>>]
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.four => Hash.five}
     end
 
     test "verifies work_package_hashes are extracted correctly" do
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.one,
+            exports_root: Hash.two
+          }
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: Hash.two()}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.two,
+            exports_root: Hash.three
+          }
         }
       }
 
@@ -153,7 +162,10 @@ defmodule RecentHistoryTest do
           beefy_commitment_map
         )
 
-      assert Enum.at(result.blocks, -1).work_report_hashes == [Hash.one(), Hash.two()]
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{
+        Hash.one => Hash.two,
+        Hash.two => Hash.three
+      }
     end
 
     test "correctly updates RecentHistory when list is full" do
@@ -164,7 +176,7 @@ defmodule RecentHistoryTest do
             header_hash: <<i::256>>,
             accumulated_result_mmr: [<<i::256>>],
             state_root: <<i::256>>,
-            work_report_hashes: [<<i::256>>]
+            work_report_hashes: %{<<i::256>> => Hash.zero()}
           }
         end
 
@@ -174,7 +186,10 @@ defmodule RecentHistoryTest do
       # Create a new guarantee with a unique work_package_hash
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: <<9::256>>}
+          specification: %AvailabilitySpecification{
+            work_package_hash: <<9::256>>,
+            exports_root: Hash.five
+          }
         }
       }
 
@@ -193,10 +208,10 @@ defmodule RecentHistoryTest do
       assert length(result.blocks) == 8
 
       # Verify that the oldest block was removed (i.e., the block with work_report_hashes == [Hash.one()])
-      assert Enum.at(result.blocks, 0).work_report_hashes == [Hash.two()]
+      assert Enum.at(result.blocks, 0).work_report_hashes == %{Hash.two => Hash.zero}
 
       # Verify that the newest block was added (i.e., the block with work_report_hashes == [<<9::256>>])
-      assert Enum.at(result.blocks, -1).work_report_hashes == [<<9::256>>]
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::256>> => Hash.five}
     end
 
     test "correctly links inputs to MMR and work_package_hashes" do
@@ -210,13 +225,19 @@ defmodule RecentHistoryTest do
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.one,
+            exports_root: Hash.two
+          }
         }
       }
 
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: Hash.two()}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.two,
+            exports_root: Hash.three
+          }
         }
       }
 
@@ -234,7 +255,10 @@ defmodule RecentHistoryTest do
 
       # Verify that the MMR and work_package_hashes are correctly linked
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == [Hash.one(), Hash.two()]
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{
+        Hash.one => Hash.two,
+        Hash.two => Hash.three
+      }
 
       # Construct the expected Merkle tree root from the beefy_commitment_map
       expected_merkle_root =
@@ -256,7 +280,10 @@ defmodule RecentHistoryTest do
       # Create a guarantee with specific work_package_hashes
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
-          specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
+          specification: %AvailabilitySpecification{
+            work_package_hash: Hash.one,
+            exports_root: Hash.two
+          }
         }
       }
 
