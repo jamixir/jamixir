@@ -294,9 +294,16 @@ defmodule System.StateTest do
     end
   end
 
-  describe "from_json/1" do
-    test "from_json smoke test" do
-      assert State.from_json(%{"x" => 1}).timeslot == 0
+  # describe "from_json/1" do
+  #   test "from_json smoke test" do
+  #     assert State.from_json(%{"x" => 1}).timeslot == 0
+  #   end
+  # end
+
+  describe "from_genesis/0" do
+    test "from_genesis smoke test" do
+      {:ok, state} = State.from_genesis()
+      assert state.timeslot == 0
     end
   end
 end

@@ -381,6 +381,22 @@ defmodule System.State do
     struct(%System.State{}, decoded_fields)
   end
 
+  def from_genesis do
+    case File.read("genesis.json") do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, json_data} ->
+            {:ok, State.from_json(json_data |> Utils.atomize_keys())}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   defp decode_json_field(:tau, value), do: [{:timeslot, value}]
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
 
