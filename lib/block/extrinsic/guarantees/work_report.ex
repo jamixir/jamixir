@@ -44,14 +44,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (119) v0.4.1
+  # Formula (119) v0.4.5
   # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
     if wr.segment_root_lookup == nil do
       true
     else
-      map_size(wr.segment_root_lookup) <= 8 and
+      map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <= 8 and
         byte_size(e(wr)) <= Constants.max_work_report_size()
     end
   end
