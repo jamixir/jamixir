@@ -19,10 +19,10 @@ defmodule Constants do
   def service_minimum_balance, do: 100
 
   @doc "C - total number of cores"
-  defmockable(:core_count, do: 341)
+  defmockable(:core_count, do: Jamixir.config()[:core_count])
 
   @doc "E - The length of an epoch in timeslots."
-  defmockable(:epoch_length, do: 600)
+  defmockable(:epoch_length, do: Jamixir.config()[:epoch_length])
 
   @doc "GA - The total gas allocated to a core for Accumulation."
   defmockable(:gas_accumulation, do: 100_000)
@@ -52,13 +52,13 @@ defmodule Constants do
   def max_authorization_queue_items, do: 80
 
   @doc "R - The rotation period of validator-core assignments, in timeslots."
-  defmockable(:rotation_period, do: 10)
+  defmockable(:rotation_period, do: Jamixir.config()[:rotation_period])
 
   @doc "U - The period in timeslots after which reported but unavailable work may be replaced."
   def unavailability_period, do: 5
 
   @doc "V - The total number of validators."
-  defmockable(:validator_count, do: 1023)
+  defmockable(:validator_count, do: Jamixir.config()[:validator_count])
 
   @doc "WE - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: 684

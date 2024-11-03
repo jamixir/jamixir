@@ -24,7 +24,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
               refinement_context: refinement_context,
               segment_root_lookup: %{}
             ),
-          timeslot: 100,
+          timeslot: 6,
           credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
         )
 
@@ -36,7 +36,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
               refinement_context: refinement_context,
               segment_root_lookup: %{}
             ),
-          timeslot: 100,
+          timeslot: 6,
           credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
         )
 
@@ -284,7 +284,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         validators_and_ed25519_keys(6)
 
       offenders = MapSet.new()
-      timeslot = 15
+      timeslot = 3
 
       curr_guarantor =
         Guarantor.guarantors(
