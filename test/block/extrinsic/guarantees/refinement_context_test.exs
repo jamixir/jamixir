@@ -26,7 +26,7 @@ defmodule RefinementContextTest do
   end
 
   test "decode/1 with prerequisite not nil", %{rc: rc} do
-    rc = put_in(rc.prerequisite, Hash.random())
+    rc = put_in(rc.prerequisite, MapSet.new([Hash.random()]))
     encoded = Encodable.encode(rc)
     {decoded, _} = RefinementContext.decode(encoded)
     assert rc == decoded
