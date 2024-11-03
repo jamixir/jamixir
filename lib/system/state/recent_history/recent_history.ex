@@ -77,7 +77,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  Formula (83) v0.4.1
+  Formula (83) v0.4.5
   """
   def calculate_recent_history_(
         %Header{} = header,
@@ -94,7 +94,7 @@ defmodule System.State.RecentHistory do
     well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment_map)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # Formula (83) v0.4.1
+    # Formula (83) v0.4.5
     mmr_roots =
       case recent_history.blocks do
         [] ->
