@@ -43,6 +43,15 @@ defmodule Codec.VariableSize do
     decode(rest, module, count)
   end
 
+  def decode(bin, :mapset, value_size) do
+    <<count::integer, rest::binary>> = bin
+
+    Enum.reduce(from_0_to(count), {MapSet.new(), rest}, fn _, {acc, rest} ->
+      <<value::binary-size(value_size), r::binary>> = rest
+      {MapSet.put(acc, value), r}
+    end)
+  end
+
   def decode(bin, module, count) do
     Enum.reduce(from_0_to(count), {[], bin}, fn _, {acc, bin} ->
       {value, r} = module.decode(bin)

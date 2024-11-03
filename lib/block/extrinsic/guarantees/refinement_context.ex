@@ -1,5 +1,4 @@
 defmodule RefinementContext do
-  alias Codec.NilDiscriminator
   alias Util.Hash
 
   @type t :: %__MODULE__{
@@ -14,10 +13,10 @@ defmodule RefinementContext do
           # t
           timeslot: Types.timeslot(),
           # p
-          prerequisite: Types.hash() | nil
+          prerequisite: MapSet.t(Types.hash())
         }
 
-  # Formula (120) v0.4.1
+  # Formula (120) v0.4.5
   # a - anchor header hash
   defstruct anchor: Hash.zero(),
             # s - posterior state root
@@ -29,10 +28,10 @@ defmodule RefinementContext do
             # t
             timeslot: 0,
             # p
-            prerequisite: nil
+            prerequisite: MapSet.new()
 
   defimpl Encodable do
-    alias Codec.{Encoder, NilDiscriminator}
+    alias Codec.{Encoder, VariableSize}
 
     # Formula (304) v0.4.1
     def encode(%RefinementContext{
@@ -44,7 +43,7 @@ defmodule RefinementContext do
           prerequisite: p
         }) do
       Encoder.encode({a, s, b, l}) <>
-        Encoder.encode_le(t, 4) <> Encoder.encode(NilDiscriminator.new(p))
+        Encoder.encode_le(t, 4) <> Encoder.encode(VariableSize.new(p))
     end
   end
 
@@ -52,11 +51,13 @@ defmodule RefinementContext do
   use Codec.Decoder
 
   def decode(bin) do
+    alias Codec.VariableSize
+
     <<anchor::binary-size(@hash_size), state_root_::binary-size(@hash_size),
       beefy_root_::binary-size(@hash_size), lookup_anchor::binary-size(@hash_size),
       timeslot::binary-size(4), temp_rest::binary>> = bin
 
-    {prerequisite, rest} = NilDiscriminator.decode(temp_rest, :hash)
+    {prerequisite, rest} = VariableSize.decode(temp_rest, :mapset, @hash_size)
 
     {
       %__MODULE__{

@@ -133,7 +133,6 @@ defmodule Jamixir.Factory do
       beefy_root_: Hash.three(),
       lookup_anchor: <<4::256>>,
       timeslot: 5,
-      prerequisite: nil
     }
   end
 
