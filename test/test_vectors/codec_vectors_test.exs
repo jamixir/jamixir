@@ -9,19 +9,23 @@ defmodule CodecVectorsTest do
   import TestVectorUtil
   import TestHelper
 
+  # in v0.4.5 refinement_context.prerequisite type changed from Hash | nil to MapSet<Hash>
+  # the test vectors block, extrinsic, refine_context, work_report are not updated yet
+  # so they are temporarily excluded from the test (03.11.2024)
+
   tests = [
     {"assurances_extrinsic", Assurance},
-    {"block", Block},
+    # {"block", Block},
     {"disputes_extrinsic", Disputes},
-    {"extrinsic", Extrinsic},
+    # {"extrinsic", Extrinsic},
     {"guarantees_extrinsic", Guarantee},
     {"header_0", Header},
     {"header_1", Header},
     {"preimages_extrinsic", Preimage},
-    {"refine_context", RefinementContext},
+    # {"refine_context", RefinementContext},
     {"tickets_extrinsic", TicketProof},
     # {"work_item", WorkItem},
-    {"work_report", WorkReport},
+    # {"work_report", WorkReport},
     {"work_result_0", WorkResult},
     {"work_result_1", WorkResult}
   ]
