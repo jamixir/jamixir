@@ -6,7 +6,7 @@ defmodule System.State.Services do
   alias System.State.ServiceAccount
 
   @doc """
-  Formula (157) v0.4.1
+  Formula (161) v0.4.5
   """
   def process_preimages(services, preimages, timeslot_) do
     Enum.reduce(preimages, services, fn preimage, acc_services ->
