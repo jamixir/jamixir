@@ -14,7 +14,7 @@ defmodule RingVrf do
     create_ring_context(filename, ring_size)
   end
 
-  # Formula (240) v0.4.5
+  # Formula (340) v0.4.5
   @spec create_commitment(any()) :: any()
   def create_commitment(_keys), do: :erlang.nif_error(:nif_not_loaded)
 
