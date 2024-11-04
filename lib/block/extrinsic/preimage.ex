@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.Preimage do
   alias Codec.VariableSize
   alias Util.{Collections, Hash}
   import SelectiveMock
-  # Formula (154) v0.4.1
+  # Formula (158) v0.4.5
   @type t :: %__MODULE__{
           # i
           service: non_neg_integer(),
@@ -15,14 +15,14 @@ defmodule Block.Extrinsic.Preimage do
             # d
             blob: <<>>
 
-  # Formula (155) v0.4.1
-  # Formula (156) v0.4.1
+  # Formula (159) v0.4.5
+  # Formula (160) v0.4.5
   @spec validate(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
-    # Formula (155) v0.4.1
+    # Formula (155) v0.4.5
     with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service),
-         # Formula (156) v0.4.1
+         # Formula (160) v0.4.5
          :ok <- check_all_preimages(preimages, services) do
       :ok
     else
@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Preimage do
 
   def mock(:validate, _), do: :ok
 
-  # Formula (156) v0.4.1
+  # Formula (160) v0.4.5
   @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   defp check_all_preimages(preimages, services) do
@@ -45,7 +45,7 @@ defmodule Block.Extrinsic.Preimage do
     end)
   end
 
-  # Formula (156) v0.4.1
+  # Formula (160) v0.4.5
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   defp not_provided?(preimage, services) do
     case services[preimage.service] do
