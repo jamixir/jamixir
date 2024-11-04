@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
-  alias System.State.ServiceAccount
+  alias System.State.{CoreReport, Ready, ServiceAccount}
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
   alias System.{State, State.EntropyPool, State.RecentHistory}
   alias Util.{Collections, Crypto, Hash}
@@ -40,8 +40,23 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_unique_wp_hash(guarantees),
          # Formula (148) v0.4.1
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
-         # Formula (152) v0.4.1
+         # Formula (156) v0.4.1
          :ok <- validate_work_result_cores(w, state.services),
+         # Formula (147) v0.4.1
+         :ok <- validate_anchor_block(guarantees, state.recent_history),
+         # Formula (152) v0.4.5
+         :ok <-
+           validate_new_work_packages(
+             w,
+             state.recent_history,
+             state.accumulation_history,
+             state.ready_to_accumulate,
+             state.core_reports
+           ),
+         # Formula (153) v0.4.5
+         :ok <- validate_prerequisites(w, state.recent_history),
+         # Formula (155) v0.4.5
+         :ok <- validate_segment_root_lookups(w, state.recent_history),
          # Formula (137) v0.4.1
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
@@ -49,9 +64,7 @@ defmodule Block.Extrinsic.Guarantee do
          true <-
            Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
              Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
-           end),
-         # Formula (147) v0.4.1
-         :ok <- validate_anchor_block(guarantees, state.recent_history) do
+           end) do
       :ok
     else
       {:error, error} -> {:error, error}
@@ -69,6 +82,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (142) v0.4.1 - w
+  @spec work_reports(list(t())) :: list(WorkReport.t())
   def work_reports(guarantees) do
     for g <- guarantees do
       g.work_report
@@ -104,11 +118,6 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  def mock(:validate_availability, _), do: :ok
-  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
-  def mock(:validate_anchor_block, _), do: :ok
-  def mock(:validate_gas_accumulation, _), do: :ok
-  def mock(:validate_work_result_cores, _), do: :ok
   # Formula (144) v0.4.1
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
@@ -136,7 +145,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (152) v0.4.1
+  # Formula (156) v0.4.1
   mockable validate_work_result_cores(w, services) do
     if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
          r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
@@ -148,6 +157,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (145) v0.4.1
+  @spec p_set(list(WorkReport.t())) :: MapSet.t(Types.hash())
   defp p_set(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
@@ -164,35 +174,19 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  # Formula (147) v0.4.1
+  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
-    w = work_reports(guarantees)
-    all_work_report_hashes = Enum.flat_map(blocks, & &1.work_report_hashes) |> MapSet.new()
-
-    cond do
-      # Formula (147) v0.4.1
-      # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
-      !Enum.all?(refinement_contexts(guarantees), fn x ->
-        Enum.any?(blocks, fn y ->
-          x.anchor == y.header_hash and
-            x.state_root_ == y.state_root and
-              x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-        end)
-      end) ->
-        {:error, :invalid_anchor_block}
-
-      # Formula (150) v0.4.1
-      # ∀p ∈ p,∀x ∈ β ∶ p ∈/ xp
-      Enum.any?(p_set(w), &(&1 in all_work_report_hashes)) ->
-        {:error, :work_package_in_recent_history}
-
-      # Formula (151) v0.4.1
-      # ∀w ∈ w, (wx)p ≠ ∅ ∶ (wx)p ∈ p ∪ {x ∣ x ∈ bp, b ∈ β}
-      for(w <- refinement_contexts(guarantees), w.prerequisite != nil, do: w.prerequisite)
-      |> Enum.any?(&(&1 not in (p_set(w) ++ all_work_report_hashes))) ->
-        {:error, :invalid_prerequisite}
-
-      true ->
-        :ok
+    if Enum.all?(refinement_contexts(guarantees), fn x ->
+         Enum.any?(blocks, fn y ->
+           x.anchor == y.header_hash and
+             x.state_root_ == y.state_root and
+             x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+         end)
+       end) do
+      :ok
+    else
+      {:error, :invalid_anchor_block}
     end
   end
 
@@ -205,6 +199,30 @@ defmodule Block.Extrinsic.Guarantee do
       :ok
     else
       {:error, :refine_context_timeslot}
+    end
+  end
+
+  # Formula (152) v0.4.5
+  mockable validate_new_work_packages(
+             work_reports,
+             %RecentHistory{blocks: blocks},
+             accumulation_history,
+             ready_to_accumulate,
+             core_reports
+           ) do
+    recent_history_work_report_hashes =
+      Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)) |> MapSet.new()
+
+    accumulated = Enum.reduce(accumulation_history, MapSet.new(), &(&1 ++ &2))
+
+    existing_packages =
+      recent_history_work_report_hashes ++
+        accumulated ++ Ready.q(ready_to_accumulate) ++ CoreReport.a(core_reports)
+
+    if MapSet.disjoint?(p_set(work_reports), existing_packages) do
+      :ok
+    else
+      {:error, :work_package_already_exists}
     end
   end
 
@@ -274,6 +292,38 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  # Formula (153) v0.4.5
+  @spec validate_prerequisites(list(WorkReport.t()), RecentHistory.t()) ::
+          :ok | {:error, :missing_prerequisite_work_packages}
+  mockable validate_prerequisites(work_reports, %RecentHistory{blocks: blocks}) do
+    extrinsic_and_recent_work_hashes =
+      MapSet.union(
+        p_set(work_reports),
+        MapSet.new(Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)))
+      )
+
+    required_hashes =
+      for w <- work_reports do
+        w.refinement_context.prerequisite ++
+          MapSet.new(Map.keys(w.segment_root_lookup))
+      end
+      |> Enum.reduce(MapSet.new(), &MapSet.union/2)
+
+    if MapSet.subset?(required_hashes, extrinsic_and_recent_work_hashes) do
+      :ok
+    else
+      {:error, :missing_prerequisite_work_packages}
+    end
+  end
+
+  # Formula (154) v0.4.5
+  @spec p_map(list(WorkReport.t())) :: %{Types.hash() => Types.hash()}
+  def p_map(work_reports) do
+    for w <- work_reports,
+        into: %{},
+        do: {w.specification.work_package_hash, w.specification.exports_root}
+  end
+
   use Sizes
 
   defimpl Encodable do
@@ -320,5 +370,34 @@ defmodule Block.Extrinsic.Guarantee do
 
   def json_credentials(json) do
     for c <- json, do: {c.validator_index, JsonDecoder.from_json(c.signature)}
+  end
+
+  def mock(:validate_availability, _), do: :ok
+  def mock(:reporters_set, _), do: {:ok, MapSet.new()}
+  def mock(:validate_anchor_block, _), do: :ok
+  def mock(:validate_gas_accumulation, _), do: :ok
+  def mock(:validate_work_result_cores, _), do: :ok
+  def mock(:validate_new_work_packages, _), do: :ok
+  def mock(:validate_prerequisites, _), do: :ok
+  def mock(:validate_segment_root_lookups, _), do: :ok
+
+  # Formula (155) v0.4.5
+  @spec validate_segment_root_lookups(list(WorkReport.t()), RecentHistory.t()) ::
+          :ok | {:error, String.t()}
+  mockable validate_segment_root_lookups(work_reports, %RecentHistory{blocks: blocks}) do
+    if Enum.all?(work_reports, fn w ->
+         map_subset?(
+           w.segment_root_lookup,
+           p_map(work_reports) ++ Collections.union(for b <- blocks, do: b.work_report_hashes)
+         )
+       end) do
+      :ok
+    else
+      {:error, :invalid_segment_root_lookup}
+    end
+  end
+
+  def map_subset?(map1, map2) do
+    Enum.all?(map1, fn {k, v} -> Map.get(map2, k) == v end)
   end
 end
