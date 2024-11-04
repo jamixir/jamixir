@@ -1,7 +1,5 @@
 defmodule CodecVectorsTest do
-  alias Block.Extrinsic
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
-  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
   alias Block.Header
   use Codec.Encoder

@@ -210,13 +210,10 @@ defmodule Block.Extrinsic.Guarantee do
              ready_to_accumulate,
              core_reports
            ) do
-    recent_history_work_report_hashes =
-      Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)) |> MapSet.new()
-
     accumulated = Enum.reduce(accumulation_history, MapSet.new(), &(&1 ++ &2))
 
     existing_packages =
-      recent_history_work_report_hashes ++
+      recent_block_hashes(blocks) ++
         accumulated ++ Ready.q(ready_to_accumulate) ++ CoreReport.a(core_reports)
 
     if MapSet.disjoint?(p_set(work_reports), existing_packages) do
@@ -296,18 +293,13 @@ defmodule Block.Extrinsic.Guarantee do
   @spec validate_prerequisites(list(WorkReport.t()), RecentHistory.t()) ::
           :ok | {:error, :missing_prerequisite_work_packages}
   mockable validate_prerequisites(work_reports, %RecentHistory{blocks: blocks}) do
-    extrinsic_and_recent_work_hashes =
-      MapSet.union(
-        p_set(work_reports),
-        MapSet.new(Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)))
-      )
+    extrinsic_and_recent_work_hashes = p_set(work_reports) ++ recent_block_hashes(blocks)
 
     required_hashes =
       for w <- work_reports do
-        w.refinement_context.prerequisite ++
-          MapSet.new(Map.keys(w.segment_root_lookup))
+        w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)
       end
-      |> Enum.reduce(MapSet.new(), &MapSet.union/2)
+      |> Enum.reduce(MapSet.new(), &++/2)
 
     if MapSet.subset?(required_hashes, extrinsic_and_recent_work_hashes) do
       :ok
@@ -322,6 +314,10 @@ defmodule Block.Extrinsic.Guarantee do
     for w <- work_reports,
         into: %{},
         do: {w.specification.work_package_hash, w.specification.exports_root}
+  end
+
+  defp recent_block_hashes(blocks) do
+    Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)) |> MapSet.new()
   end
 
   use Sizes
