@@ -132,7 +132,7 @@ defmodule Jamixir.Factory do
       state_root_: Hash.two(),
       beefy_root_: Hash.three(),
       lookup_anchor: <<4::256>>,
-      timeslot: 5,
+      timeslot: 5
     }
   end
 

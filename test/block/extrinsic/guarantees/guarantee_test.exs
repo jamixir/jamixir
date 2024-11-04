@@ -160,8 +160,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 30000, code_hash: Hash.one()},
-          2 => %ServiceAccount{gas_limit_g: 20000, code_hash: Hash.one()}
+          1 => %ServiceAccount{gas_limit_g: 30_000, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 20_000, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}

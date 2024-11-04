@@ -101,7 +101,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
-    {w, w.refinement_context.prerequisite ++ MapSet.new(Map.keys(w.segment_root_lookup))}
+    {w, w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)}
   end
 
   # Formula (168) v0.4.5
@@ -118,12 +118,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())})) ::
           list(__MODULE__.t())
   def accumulation_priority_queue(r) do
-    g = for {w, d} <- r, MapSet.size(d) == 0, do: w
-
-    if Enum.empty?(g) do
-      []
-    else
-      g ++ accumulation_priority_queue(edit_queue(r, work_package_hashes(g)))
+    case for {w, d} <- r, MapSet.size(d) == 0, do: w do
+      [] -> []
+      g -> g ++ accumulation_priority_queue(edit_queue(r, work_package_hashes(g)))
     end
   end
 

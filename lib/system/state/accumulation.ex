@@ -197,8 +197,7 @@ defmodule System.State.Accumulation do
       r <- Enum.flat_map(work_reports, & &1.results),
       do: r.service,
       into: MapSet.new()
-    ) ++
-      MapSet.new(Map.keys(always_acc_services))
+    ) ++ Utils.keys_set(always_acc_services)
   end
 
   def accumulate_services(acc_state, work_reports, always_acc_services, s) do

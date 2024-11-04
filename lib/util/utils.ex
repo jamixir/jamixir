@@ -75,4 +75,6 @@ defmodule Utils do
     |> Enum.map(&Tuple.to_list/1)
     |> Enum.map(&:binary.list_to_bin/1)
   end
+
+  def keys_set(map), do: MapSet.new(Map.keys(map))
 end
