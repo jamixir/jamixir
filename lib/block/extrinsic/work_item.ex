@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (189) v0.4.1
+  # Formula (195) v0.4.5
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
@@ -46,7 +46,7 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     alias Codec.{Encoder, VariableSize}
-    # Formula (309) v0.4.1
+    # Formula (316) v0.4.5
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
         Encoder.encode_le(wi.service, 4),
@@ -61,7 +61,7 @@ defmodule Block.Extrinsic.WorkItem do
 
     use Codec.Encoder
 
-    # TODO: align encoding with 0.4.1
+    # TODO: align encoding with 0.4.5
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments, do: {h, e_le(i, 2)}
     end
@@ -71,7 +71,7 @@ defmodule Block.Extrinsic.WorkItem do
     end
   end
 
-  # Formula (193) v0.4.1
+  # Formula (199) v0.4.5
   def to_work_result(%__MODULE__{} = wi, output) do
     %WorkResult{
       service: wi.service,
@@ -82,13 +82,13 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (199) v0.4.1
+  # Formula (205) v0.4.5
   # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w, storage) do
     for {r, n} <- w.extrinsic, d = Map.get(storage, r), byte_size(d) == n, do: d
   end
 
-  # Formula (199) v0.4.1
+  # Formula (205) v0.4.5
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,
@@ -96,7 +96,7 @@ defmodule Block.Extrinsic.WorkItem do
         do: Enum.at(s, n)
   end
 
-  # Formula (199) v0.4.1
+  # Formula (205) v0.4.5
   # J ( w ∈ I ) ≡ [ ↕ J ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
   def segment_justification(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,

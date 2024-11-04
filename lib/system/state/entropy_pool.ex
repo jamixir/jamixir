@@ -9,10 +9,10 @@ defmodule System.State.EntropyPool do
 
   @type t :: %__MODULE__{n0: Types.hash(), n1: Types.hash(), n2: Types.hash(), n3: Types.hash()}
 
-  # Formula (66) v0.4.1
+  # Formula (66) v0.4.5
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
-  # Formula (68) v0.4.1
+  # Formula (68) v0.4.5
   @spec rotate_history(Block.Header.t(), non_neg_integer(), t()) ::
           t()
   def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
@@ -23,7 +23,7 @@ defmodule System.State.EntropyPool do
     end
   end
 
-  # Formula (67) v0.4.1
+  # Formula (67) v0.4.5
   def calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
     %EntropyPool{pool | n0: Hash.default(n0 <> vrf_output)}
   end

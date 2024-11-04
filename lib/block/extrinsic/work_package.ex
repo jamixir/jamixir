@@ -21,7 +21,7 @@ defmodule Block.Extrinsic.WorkPackage do
           work_items: list(WorkItem.t())
         }
 
-  # Formula (188) v0.4.1
+  # Formula (194) v0.4.5
   defstruct [
     # j
     authorization_token: <<>>,
@@ -41,7 +41,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_exported_items 2048
   def maximum_exported_items, do: @maximum_exported_items
 
-  # Formula (192) v0.4.1
+  # Formula (198) v0.4.5
   # 12 * 2 ** 20
   @maximum_size 12_582_912
 
@@ -49,7 +49,7 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp)
   end
 
-  # Formula (194) v0.4.1
+  # Formula (200) v0.4.5
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
     ServiceAccount.historical_lookup(
@@ -59,19 +59,19 @@ defmodule Block.Extrinsic.WorkPackage do
     )
   end
 
-  # Formula (194) v0.4.1
+  # Formula (200) v0.4.5
   # pa
   def implied_authorizer(%__MODULE__{} = wp, services) do
     Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
-  # Formula (197) v0.4.1
+  # Formula (203) v0.4.5
   def segment_root(r) do
     # TODO ⊞ part
     r
   end
 
-  # Formula (191) v0.4.1
+  # Formula (197) v0.4.5
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
       part1 = length(i.import_segments) * Constants.wswe()
@@ -80,7 +80,7 @@ defmodule Block.Extrinsic.WorkPackage do
     end) <= @maximum_size
   end
 
-  # Formula (190) v0.4.1
+  # Formula (196) v0.4.5
   defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
     {exported_sum, imported_sum} =
       Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
@@ -93,7 +93,7 @@ defmodule Block.Extrinsic.WorkPackage do
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     alias Codec.{Encoder, VariableSize}
-    # Formula (308) v0.4.1
+    # Formula (315) v0.4.5
     def encode(%WorkPackage{} = wp) do
       Encoder.encode({
         VariableSize.new(wp.authorization_token),

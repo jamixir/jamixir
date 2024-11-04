@@ -12,7 +12,7 @@ defmodule Block.Extrinsic.Guarantee do
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
-  # Formula (137) v0.4.1
+  # Formula (137) v0.4.5
   @type t :: %__MODULE__{
           # w
           work_report: WorkReport.t(),
@@ -30,19 +30,19 @@ defmodule Block.Extrinsic.Guarantee do
   def validate(guarantees, state, timeslot) do
     w = work_reports(guarantees)
 
-    # Formula (138) v0.4.1
+    # Formula (138) v0.4.5
     with :ok <- Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index),
-         # Formula (119) v0.4.1
+         # Formula (119) v0.4.5
          :ok <- validate_work_report_sizes(w),
-         # Formula (144) v0.4.1
+         # Formula (144) v0.4.5
          :ok <- validate_gas_accumulation(w, state.services),
-         # Formula (146) v0.4.1
+         # Formula (146) v0.4.5
          :ok <- validate_unique_wp_hash(guarantees),
-         # Formula (148) v0.4.1
+         # Formula (148) v0.4.5
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
-         # Formula (156) v0.4.1
+         # Formula (156) v0.4.5
          :ok <- validate_work_result_cores(w, state.services),
-         # Formula (147) v0.4.1
+         # Formula (147) v0.4.5
          :ok <- validate_anchor_block(guarantees, state.recent_history),
          # Formula (152) v0.4.5
          :ok <-
@@ -57,10 +57,10 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_prerequisites(w, state.recent_history),
          # Formula (155) v0.4.5
          :ok <- validate_segment_root_lookups(w, state.recent_history),
-         # Formula (137) v0.4.1
+         # Formula (137) v0.4.5
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
-         # Formula (139) v0.4.1
+         # Formula (139) v0.4.5
          true <-
            Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
              Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
@@ -81,7 +81,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (142) v0.4.1 - w
+  # Formula (142) v0.4.5 - w
   @spec work_reports(list(t())) :: list(WorkReport.t())
   def work_reports(guarantees) do
     for g <- guarantees do
@@ -89,14 +89,14 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (145) v0.4.1 - x
+  # Formula (145) v0.4.5 - x
   def refinement_contexts(guarantees) do
     for w <- work_reports(guarantees) do
       w.refinement_context
     end
   end
 
-  # Formula (143) v0.4.1
+  # Formula (143) v0.4.5
   mockable validate_availability(
              guarantees,
              core_reports_intermediate_2,
@@ -118,7 +118,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (144) v0.4.1
+  # Formula (144) v0.4.5
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
@@ -145,7 +145,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (156) v0.4.1
+  # Formula (156) v0.4.5
   mockable validate_work_result_cores(w, services) do
     if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
          r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
@@ -156,13 +156,13 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (145) v0.4.1
+  # Formula (145) v0.4.5
   @spec p_set(list(WorkReport.t())) :: MapSet.t(Types.hash())
   defp p_set(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
 
-  # Formula (146) v0.4.1
+  # Formula (146) v0.4.5
   @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicated_wp_hash}
   def validate_unique_wp_hash(guarantees) do
     wr = work_reports(guarantees)
@@ -174,7 +174,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (147) v0.4.1
+  # Formula (147) v0.4.5
   # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
     if Enum.all?(refinement_contexts(guarantees), fn x ->
@@ -190,7 +190,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (148) v0.4.1
+  # Formula (148) v0.4.5
   def validate_refine_context_timeslot(guarantees, t) do
     if Enum.all?(
          refinement_contexts(guarantees),
@@ -226,7 +226,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (140) v0.4.1
+  # Formula (140) v0.4.5
   mockable reporters_set(
              guarantees,
              %EntropyPool{n2: n2_, n3: n3_},

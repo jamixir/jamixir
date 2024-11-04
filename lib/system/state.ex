@@ -20,25 +20,24 @@ defmodule System.State do
     Validator,
     ValidatorStatistics,
     Ready,
-    WorkPackageRootMap
   }
 
   @type t :: %__MODULE__{
-          # Formula (85) v0.4.1
+          # Formula (85) v0.4.5
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
-          # Formula (88) v0.4.1 # TODO enforce key to be less than 2^32
-          # Formula (89) v0.4.1
+          # Formula (88) v0.4.5 # TODO enforce key to be less than 2^32
+          # Formula (89) v0.4.5
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
-          # Formula (52) v0.4.1
+          # Formula (52) v0.4.5
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t() | nil),
           timeslot: integer(),
-          # Formula (85) v0.4.1
+          # Formula (85) v0.4.5
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
@@ -49,7 +48,7 @@ defmodule System.State do
           ready_to_accumulate: list(list(Ready.t()))
         }
 
-  # Formula (15) v0.4.1 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
+  # Formula (15) v0.4.5 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
     authorizer_pool: [[]],
@@ -80,32 +79,32 @@ defmodule System.State do
     # π: Validator statistics
     validator_statistics: %ValidatorStatistics{},
     # ξ
-    accumulation_history: WorkPackageRootMap.initial_state(),
+    accumulation_history: List.duplicate(%{}, Constants.epoch_length()),
     # ϑ
     ready_to_accumulate: Ready.initial_state()
   ]
 
-  # Formula (12) v0.4.1
+  # Formula (12) v0.4.5
   @spec add_block(System.State.t(), Block.t()) :: {:error, System.State.t(), <<_::64, _::_*8>>}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
-    # Formula (16) v0.4.1
-    # Formula (46) v0.4.1
+    # Formula (16) v0.4.5
+    # Formula (46) v0.4.5
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
-         # β† Formula (17) v0.4.1
+         # β† Formula (17) v0.4.5
          initial_recent_history =
            RecentHistory.update_latest_state_root_(state.recent_history, h),
-         # δ† Formula (24) v0.4.1
+         # δ† Formula (24) v0.4.5
          services_intermediate =
            State.Services.process_preimages(state.services, e.preimages, timeslot_),
-         # ψ' Formula (23) v0.4.1
+         # ψ' Formula (23) v0.4.5
          {:ok, judgements_, bad_wonky_verdicts} <-
            Judgements.calculate_judgements_(h, e.disputes, state),
-         # ρ† Formula (25) v0.4.1
+         # ρ† Formula (25) v0.4.5
          core_reports_intermediate_1 =
            State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
-         # ρ‡ Formula (26) v0.4.1
+         # ρ‡ Formula (26) v0.4.5
          core_reports_intermediate_2 =
            State.CoreReport.process_availability(
              state.core_reports,
@@ -119,7 +118,7 @@ defmodule System.State do
              h.timeslot,
              state.authorizer_pool
            ),
-         # ρ' Formula (27) v0.4.1
+         # ρ' Formula (27) v0.4.5
          core_reports_ =
            State.CoreReport.calculate_core_reports_(
              core_reports_intermediate_2,
@@ -128,8 +127,8 @@ defmodule System.State do
            ),
          available_work_reports =
            WorkReport.available_work_reports(e.assurances, core_reports_intermediate_1),
-         # Formula (28) v0.4.1
-         # Formula (29) v0.4.1
+         # Formula (28) v0.4.5
+         # Formula (29) v0.4.5
          {:ok, accumulation_result} <-
            State.Accumulation.accumulate(
              available_work_reports,
@@ -137,7 +136,7 @@ defmodule System.State do
              state,
              services_intermediate
            ),
-         # α' Formula (30) v0.4.1
+         # α' Formula (30) v0.4.5
          authorizer_pool_ =
            AuthorizerPool.calculate_authorizer_pool_(
              e.guarantees,
@@ -145,7 +144,7 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # β' Formula (18) v0.4.1
+         # β' Formula (18) v0.4.5
          recent_history_ =
            RecentHistory.calculate_recent_history_(
              h,
@@ -153,9 +152,9 @@ defmodule System.State do
              initial_recent_history,
              accumulation_result.beefy_commitment_map
            ),
-         # κ' Formula (21) v0.4.1
-         # λ' Formula (22) v0.4.1
-         # γ'(gamma_k, gamma_z) Formula (19) v0.4.1
+         # κ' Formula (21) v0.4.5
+         # λ' Formula (22) v0.4.5
+         # γ'(gamma_k, gamma_z) Formula (19) v0.4.5
          {pending_, curr_validators_, prev_validators_, epoch_root_} =
            RotateKeys.rotate_keys(
              h,
@@ -174,7 +173,7 @@ defmodule System.State do
              core_reports_intermediate_1
            ),
 
-         # η' Formula (20) v0.4.1
+         # η' Formula (20) v0.4.5
          rotated_history_entropy_pool =
            EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
          :ok <-
@@ -184,7 +183,7 @@ defmodule System.State do
              rotated_history_entropy_pool.n1,
              pending_
            ),
-         # Formula (69) v0.4.1
+         # Formula (69) v0.4.5
          epoch_slot_sealers_ =
            Safrole.get_epoch_slot_sealers_(
              h,
@@ -193,7 +192,7 @@ defmodule System.State do
              rotated_history_entropy_pool,
              curr_validators_
            ),
-         # Formula (79) v0.4.1
+         # Formula (79) v0.4.5
          {:ok, ticket_accumulator_} <-
            Safrole.calculate_ticket_accumulator_(
              h.timeslot,
@@ -226,7 +225,7 @@ defmodule System.State do
              prev_validators_,
              Judgements.union_all(judgements_)
            ),
-         # π' Formula (31) v0.4.1
+         # π' Formula (31) v0.4.5
          # π' ≺ (EG,EP,EA, ET,τ,κ',π,H)
          {:ok, validator_statistics_} <-
            ValidatorStatistics.calculate_validator_statistics_(
@@ -277,7 +276,7 @@ defmodule System.State do
     end
   end
 
-  # Formula (314) v0.4.1
+  # Formula (321) v0.4.5
   def state_keys(s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
@@ -313,7 +312,7 @@ defmodule System.State do
     |> encode_accounts_preimage_storage_l(s)
   end
 
-  # Formula (313) v0.4.1 - C constructor
+  # Formula (320) v0.4.5 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, n1, n2, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<i::8>> <> e_le(s, 4) <> <<0::216>>

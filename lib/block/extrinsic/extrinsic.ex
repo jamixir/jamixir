@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic do
   alias Codec.VariableSize
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
-  # Formula (14) v0.4.1
+  # Formula (14) v0.4.5
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
   @type t :: %__MODULE__{

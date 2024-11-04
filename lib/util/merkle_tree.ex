@@ -7,7 +7,7 @@ defmodule Util.MerkleTree do
 
   @doc """
     Constructs a well-balanced binary Merkle tree and returns the root hash.
-    Formula (321) v0.4.1
+    Formula (328) v0.4.5
   """
   @spec well_balanced_merkle_root(list(binary())) :: Types.hash()
   def well_balanced_merkle_root(l), do: well_balanced_merkle_root(l, &Hash.default/1)
@@ -16,13 +16,13 @@ defmodule Util.MerkleTree do
   def well_balanced_merkle_root([single_blob], hash_func), do: hash_func.(single_blob)
   def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
-  # Formula (322) v0.4.1
+  # Formula (329) v0.4.5
   @spec merkle_root(list(binary())) :: Types.hash()
   def merkle_root(v), do: merkle_root(v, &Hash.default/1)
   @spec merkle_root(list(binary()), (binary() -> Types.hash())) :: Types.hash()
   def merkle_root(list, hash_func), do: node(c_preprocess(list, hash_func), hash_func)
 
-  # Formula (325) v0.4.1
+  # Formula (332) v0.4.5
   @spec c_preprocess(list(binary()), (binary() -> Types.hash())) :: list(Types.hash())
   def c_preprocess([], _), do: [Hash.zero()]
 
@@ -30,7 +30,7 @@ defmodule Util.MerkleTree do
     pad_to_power_of_two(for(x <- list, do: hash_func.("leaf" <> x)), Hash.zero())
   end
 
-  # Formula (320) v0.4.1
+  # Formula (327) v0.4.5
   # case |v| <= 1
   # case |v| > 1
   def trace(v, i, hash_func) when length(v) > 1 do
@@ -39,7 +39,7 @@ defmodule Util.MerkleTree do
 
   def trace(_, _i, _hash_func), do: []
 
-  # Formula (323) v0.4.1
+  # Formula (330) v0.4.5
   @spec justification([binary()], integer(), (binary() -> Types.hash())) :: [binary()]
   def justification(v, i, hash_func) when is_function(hash_func, 1) do
     trace(c_preprocess(v, hash_func), i, hash_func)
@@ -49,7 +49,7 @@ defmodule Util.MerkleTree do
 
   def justification(v, i), do: justification(v, i, &Hash.default/1)
 
-  # Formula (324) v0.4.1
+  # Formula (331) v0.4.5
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
   @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification([], _, hash_func, _) when is_function(hash_func, 1), do: []
@@ -87,7 +87,7 @@ defmodule Util.MerkleTree do
   end
 
   # Node function N for the Merkle tree.
-  # Formula (319) v0.4.1
+  # Formula (326) v0.4.5
   @spec node(list(binary()), (binary() -> Types.hash())) :: binary() | Types.hash()
   def node([], _), do: <<0::256>>
   def node([single_blob], _), do: single_blob

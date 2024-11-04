@@ -9,7 +9,7 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
-  # Formula (124) v0.4.1
+  # Formula (124) v0.4.5
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
             bitfield: Utils.zero_bitstring(Sizes.bitfield()),
@@ -33,13 +33,13 @@ defmodule Block.Extrinsic.Assurance do
              curr_validators_,
              core_reports_intermediate_1
            ) do
-    # Formula (125) v0.4.1
+    # Formula (125) v0.4.5
     with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
-         # Formula (126) v0.4.1
+         # Formula (126) v0.4.5
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
-         # Formula (127) v0.4.1
+         # Formula (127) v0.4.5
          :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
-         # Formula (129) v0.4.1
+         # Formula (129) v0.4.5
          :ok <- validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
     else
@@ -50,7 +50,7 @@ defmodule Block.Extrinsic.Assurance do
 
   def mock(:validate_assurances, _), do: :ok
 
-  # Formula (129) v0.4.1
+  # Formula (129) v0.4.5
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->

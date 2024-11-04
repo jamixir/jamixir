@@ -1,9 +1,9 @@
 defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   alias Util.Collections
-  # Formula (123) v0.4.1
+  # Formula (123) v0.4.5
   @type t :: :infinite | :halt | :bad | :big
 
-  # Formula (311) v0.4.1
+  # Formula (318) v0.4.5
   @codes %{infinite: 1, halt: 2, bad: 3, big: 4}
 
   def code(error) do

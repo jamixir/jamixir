@@ -74,7 +74,7 @@ defmodule WorkPackageTest do
     end
   end
 
-  # Formula (194) v0.4.1
+  # Formula (200) v0.4.5
   describe "authorization_code/2" do
     test "returns authorization_code when it is available in history", %{state: state} do
       h = Hash.random()

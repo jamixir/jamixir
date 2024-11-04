@@ -8,7 +8,7 @@ defmodule System.PVM do
   alias System.PVM.Memory
   use Codec.Encoder
 
-  # Formula (33) v0.4.1
+  # Formula (33) v0.4.5
   # Ψ: The whole-program pvm machine state-transition function.
   @spec call(System.PVM.CallParams.t()) :: System.PVM.CallResult.t()
   def call(_call_params) do
@@ -24,7 +24,7 @@ defmodule System.PVM do
   """
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (267) v0.4.1
+  # Formula (273) v0.4.5
   @spec authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
           binary() | WorkExecutionError.t()
   def authorized(p = %WorkPackage{}, core, services) do
@@ -35,7 +35,7 @@ defmodule System.PVM do
     r
   end
 
-  # Formula (268) v0.4.1
+  # Formula (274) v0.4.5
   @spec authorized_f(non_neg_integer(), non_neg_integer(), list(non_neg_integer()), Memory.t()) ::
           {integer(), list(non_neg_integer()), Memory.t()}
   def authorized_f(n, gas, registers, memory) do

@@ -54,7 +54,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
-  Formula (82) v0.4.1
+  Formula (82) v0.4.5
   """
   def update_latest_state_root_(nil, %Header{}) do
     __MODULE__.new()
@@ -114,7 +114,7 @@ defmodule System.State.RecentHistory do
           do: {spec.work_package_hash, spec.exports_root},
           into: %{}
 
-    # Formula (84) v0.4.1
+    # Formula (84) v0.4.5
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
@@ -143,7 +143,7 @@ defmodule System.State.RecentHistory do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (314) v0.4.1
+    # Formula (321) v0.4.5
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
       e(

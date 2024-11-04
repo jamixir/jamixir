@@ -166,7 +166,7 @@ defmodule Block.Extrinsic.AssuranceTest do
                Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
     end
 
-    # Formula (129) v0.4.1
+    # Formula (129) v0.4.5
     test "returns :error when assurance bit is set but core report is null", %{
       hp: hp,
       assurance: assurance,
