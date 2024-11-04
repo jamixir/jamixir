@@ -1,5 +1,5 @@
 defmodule System.DeferredTransfer do
-  # Formula (170) v0.4.1
+  # Formula (175) v0.4.5
 
   @type t :: %__MODULE__{
           # s ∈ ℕ_S
@@ -20,7 +20,7 @@ defmodule System.DeferredTransfer do
             memo: <<0::size(Constants.memo_size() * 8)>>,
             gas_limit: 0
 
-  # Formula (178) v0.4.1
+  # Formula (184) v0.4.5
   @spec select_transfers_for_destination(list(t()), non_neg_integer()) :: list(t())
   def select_transfers_for_destination(transfers, destination) do
     Enum.with_index(transfers)

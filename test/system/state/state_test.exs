@@ -112,7 +112,7 @@ defmodule System.StateTest do
   end
 
   # C Constructor
-  # Formula (313) v0.4.1
+  # Formula (320) v0.4.5
   describe "key_to_32_octet" do
     test "convert integer" do
       assert key_to_32_octet(0) == :binary.copy(<<0>>, 32)

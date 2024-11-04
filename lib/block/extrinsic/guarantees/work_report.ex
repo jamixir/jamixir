@@ -8,7 +8,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
   alias System.{PVM, PVM.RefineParams}
-  alias System.State.{CoreReport, Ready, WorkPackageRootMap}
+  alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
   use Codec.Encoder
@@ -17,7 +17,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (118) v0.4.1
+  # Formula (118) v0.4.5
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -35,7 +35,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           results: list(WorkResult.t())
         }
 
-  # Formula (118) v0.4.1
+  # Formula (118) v0.4.5
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -56,7 +56,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (130) v0.4.1 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (130) v0.4.5 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     threshold = 2 * Constants.validator_count() / 3
@@ -135,7 +135,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec accumulatable_work_reports(
           list(__MODULE__.t()),
           non_neg_integer(),
-          list(WorkPackageRootMap.t()),
+          list(MapSet.t(Types.hash())),
           list(list(Ready.t()))
         ) ::
           list(__MODULE__.t())
@@ -166,7 +166,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     w_bang ++ accumulation_priority_queue(q)
   end
 
-  # Formula (195) v0.4.1 - updated to 196 on 0.4.3 with H#
+  # Formula (201) v0.4.5
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
@@ -182,7 +182,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (196) v0.4.1
+  # Formula (202) v0.4.5
   def compute_work_result(%WorkPackage{} = wp, core, services) do
     _l = calculate_segments(wp)
     # TODO
@@ -202,7 +202,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
 
-        # Formula (200) v0.4.1
+        # Formula (206) v0.4.5
         specification =
           AvailabilitySpecification.from_package_execution(
             Hash.default(e(wp)),
@@ -227,7 +227,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (196) v0.4.1
+  # Formula (202) v0.4.5
   # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
   def process_item(%WorkPackage{} = p, j, o, services) do
@@ -281,7 +281,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (307) v0.4.1
+    # Formula (314) v0.4.5
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       e({

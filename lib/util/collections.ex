@@ -64,7 +64,7 @@ defmodule Util.Collections do
     end
   end
 
-  # Formula (11) v0.4.1
+  # Formula (11) v0.4.5
   @spec union([map()]) :: map()
   def union([]), do: %{}
   def union([d1 | rest]), do: d1 ++ union(rest)

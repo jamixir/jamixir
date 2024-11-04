@@ -1,6 +1,6 @@
 defmodule System.State.CoreReport do
   @moduledoc """
-  Formula (117) v0.4.1
+  Formula (117) v0.4.5
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
@@ -16,7 +16,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
-  # Formula (111) v0.4.1
+  # Formula (111) v0.4.5
   def process_disputes(core_reports, bad_wonky_verdicts) do
     for c <- core_reports do
       process_report(c, MapSet.new(bad_wonky_verdicts))
@@ -33,11 +33,11 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (26) v0.4.1
+  # ρ‡ Formula (26) v0.4.5
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
-    # Formula (131) v0.4.1
+    # Formula (131) v0.4.5
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr.work_report in w, do: nil, else: intermediate
     end
@@ -63,7 +63,7 @@ defmodule System.State.CoreReport do
   defimpl Encodable do
     alias System.State.CoreReport
     use Codec.Encoder
-    # Formula (314) v0.4.1
+    # Formula (321) v0.4.5
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     # TODO: fix missing NilDiscriminator
     def encode(%CoreReport{} = c) do

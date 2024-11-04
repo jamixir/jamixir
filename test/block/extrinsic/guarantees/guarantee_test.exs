@@ -149,9 +149,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 999)
-      wr2 = build(:work_result, service: 2, gas_ratio: 600)
-      wr3 = build(:work_result, service: 1, gas_ratio: 401)
+      wr1 = build(:work_result, service: 1, gas_ratio: 99_900)
+      wr2 = build(:work_result, service: 2, gas_ratio: 60_000)
+      wr3 = build(:work_result, service: 1, gas_ratio: 40_100)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -160,8 +160,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300, code_hash: Hash.one()},
-          2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
+          1 => %ServiceAccount{gas_limit_g: 30000, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 20000, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :invalid_gas_accumulation}
@@ -410,7 +410,6 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
   end
 
-  # Formula (143) v0.4.1
   describe "validate_availability/4" do
     setup do
       guarantees = [

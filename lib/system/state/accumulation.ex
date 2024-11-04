@@ -8,7 +8,7 @@ defmodule System.State.Accumulation do
   alias Block.Header
   alias System.{AccumulationResult, DeferredTransfer}
   alias System.State
-  alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator, WorkPackageRootMap}
+  alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator}
   alias Types
   alias Util.Collections
   alias System.PVM.AccumulationOperand
@@ -22,7 +22,7 @@ defmodule System.State.Accumulation do
               non_neg_integer()
             ) :: AccumulationResult.t()
 
-  # Formula (169) v0.4.1
+  # Formula (174) v0.4.5
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -56,10 +56,13 @@ defmodule System.State.Accumulation do
         },
         services_intermediate
       ) do
-    # The total gas allocated across all cores for Accumulation. May be no smaller than GA ⋅ C + ∑g∈V(χg )(g).
+    # Formula (181) v0.4.5
     gas_limit =
-      Constants.gas_accumulation() * Constants.core_count() +
-        Enum.sum(Map.values(privileged_services.services_gas))
+      max(
+        Constants.gas_total_accumulation(),
+        Constants.gas_accumulation() * Constants.core_count() +
+          Enum.sum(Map.values(privileged_services.services_gas))
+      )
 
     accumulatable_reports =
       Block.Extrinsic.Guarantee.WorkReport.accumulatable_work_reports(
@@ -76,8 +79,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (176) v0.4.1
-    # Formula (177) v0.4.1
+    # Formula (182) v0.4.5
+    # Formula (183) v0.4.5
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,
@@ -92,14 +95,14 @@ defmodule System.State.Accumulation do
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
         }, deferred_transfers, beefy_commitment_map}} ->
-        # Formula (179) v0.4.1
+        # Formula (185) v0.4.5
         services_ = calculate_posterior_services(services_intermediate_2, deferred_transfers)
-        # Formula (180) v0.4.1
-        new_root_map = WorkPackageRootMap.create(Enum.take(accumulatable_reports, n))
-        # Formula (181) v0.4.1
-        accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [new_root_map]
+        # Formula (186) v0.4.5
+        work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
+        # Formula (187) v0.4.5
+        accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
         {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-        # Formula (182) v0.4.1
+        # Formula (188) v0.4.5
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
@@ -126,7 +129,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (172) v0.4.1
+  # Formula (177) v0.4.5
   @spec outer_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
@@ -173,7 +176,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (173) v0.4.1
+  # Formula (178) v0.4.5
   @spec parallelized_accumulation(t(), list(WorkReport.t()), %{
           non_neg_integer() => non_neg_integer()
         }) ::
@@ -265,7 +268,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (175) v0.4.1
+  # Formula (180) v0.4.5
   def single_accumulation(acc_state, work_reports, service_dict, service) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
@@ -293,7 +296,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (179) v0.4.1
+  # Formula (185) v0.4.5
   def calculate_posterior_services(services_intermediate_2, transfers) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
@@ -331,7 +334,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (182) v0.4.1
+  # Formula (188) v0.4.5
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
@@ -363,14 +366,14 @@ defmodule System.State.Accumulation do
     e = length(ready_to_accumulate)
     m = Util.Time.epoch_phase(header_timeslot)
 
-    work_package_root_map = WorkPackageRootMap.create(Enum.take(w_star, n))
+    work_package_hashes = WorkReport.work_package_hashes(Enum.take(w_star, n))
 
     Enum.map(0..(e - 1), fn i ->
       index = rem(m - i, e)
 
       cond do
         i == 0 ->
-          WorkReport.edit_queue(w_q, work_package_root_map)
+          WorkReport.edit_queue(w_q, work_package_hashes)
 
         i < header_timeslot - state_timeslot ->
           []
@@ -378,7 +381,7 @@ defmodule System.State.Accumulation do
         true ->
           WorkReport.edit_queue(
             Enum.at(ready_to_accumulate, index) |> Enum.map(&Ready.to_tuple/1),
-            work_package_root_map
+            work_package_hashes
           )
       end
     end)

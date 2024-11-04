@@ -14,12 +14,12 @@ defmodule RingVrf do
     create_ring_context(filename, ring_size)
   end
 
-  # Formula (333) v0.4.1
+  # Formula (240) v0.4.5
   @spec create_commitment(any()) :: any()
   def create_commitment(_keys), do: :erlang.nif_error(:nif_not_loaded)
 
-  # Formula (334) v0.4.1
-  # Formula (335) v0.4.1
+  # Formula (341) v0.4.5
+  # Formula (342) v0.4.5
   def ring_vrf_verify(_commitment, _context, _message, _signature),
     do: :erlang.nif_error(:nif_not_loaded)
 
@@ -49,8 +49,8 @@ defmodule RingVrf do
   # IETF VRF Sign
   # Non-Anonymous VRF signature
   # Used for ticket claiming during block production
-  # Formula (331) v0.4.1
-  # Formula (332) v0.4.1
+  # Formula (338) v0.4.5
+  # Formula (339) v0.4.5
   def ietf_vrf_sign(_secret, _context, _message),
     do: :erlang.nif_error(:nif_not_loaded)
 

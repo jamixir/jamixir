@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   work-package
 
   section 11.1.4
-  Formula (122) v0.4.1
+  Formula (122) v0.4.5
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
@@ -56,8 +56,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
     alias Codec.{Encoder, VariableSize}
 
-    # Formula (306) v0.4.1
-    # TODO: fix it to sync with v0.4.1
+    # Formula (313) v0.4.5
     def encode(%WorkResult{} = wr) do
       Encoder.encode_le(wr.service, 4) <>
         Encoder.encode({wr.code_hash, wr.payload_hash}) <>
@@ -65,12 +64,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
         do_encode(wr.result)
     end
 
-    # Formula (311) v0.4.1
+    # Formula (318) v0.4.5
     defp do_encode({:ok, b}) do
       Encoder.encode({0, VariableSize.new(b)})
     end
 
-    # Formula (311) v0.4.1
+    # Formula (318) v0.4.5
     defp do_encode({:error, e}) do
       Encoder.encode(WorkExecutionError.code(e))
     end

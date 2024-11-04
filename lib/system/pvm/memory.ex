@@ -1,5 +1,5 @@
 defmodule System.PVM.Memory do
-  # Formula (35) v0.4.1
+  # Formula (35) v0.4.5
   @type t :: %__MODULE__{
           # V
           octets: binary(),
@@ -10,7 +10,7 @@ defmodule System.PVM.Memory do
   defstruct octets: <<>>,
             access: []
 
-  # Formula (36) v0.4.1
+  # Formula (36) v0.4.5
   @spec readable_indexes(t()) :: MapSet.t(integer())
   def readable_indexes(%__MODULE__{access: access}) do
     Stream.with_index(access)

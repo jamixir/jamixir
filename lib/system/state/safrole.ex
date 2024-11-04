@@ -10,24 +10,24 @@ defmodule System.State.Safrole do
   alias Util.{Hash, Time}
 
   @type t :: %__MODULE__{
-          # Formula (52) v0.4.1
+          # Formula (52) v0.4.5
           # gamma_k
           pending: list(Validator.t()),
-          # Formula (49) v0.4.1
+          # Formula (49) v0.4.5
           # gamma_z
           epoch_root: Types.bandersnatch_ring_root(),
-          # Formula (50) v0.4.1
+          # Formula (50) v0.4.5
           # gamma_s
           current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
-          # Formula (50) v0.4.1
+          # Formula (50) v0.4.5
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
 
-  # Formula (48) v0.4.1
+  # Formula (48) v0.4.5
   defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
 
-  # Formula (69) v0.4.1
+  # Formula (69) v0.4.5
   def get_epoch_slot_sealers_(
         %Header{timeslot: timeslot_},
         timeslot,
@@ -38,11 +38,11 @@ defmodule System.State.Safrole do
         %EntropyPool{n2: n2},
         curr_validators
       ) do
-    # Formula (69) v0.4.1 - second arm
+    # Formula (69) v0.4.5 - second arm
     if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) do
       slot_sealers
     else
-      # Formula (69) v0.4.1 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
+      # Formula (69) v0.4.5 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
       if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) + 1 and
            length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
@@ -53,8 +53,8 @@ defmodule System.State.Safrole do
     end
   end
 
-  # Formula (79) v0.4.1
-  # Formula (80) v0.4.1
+  # Formula (79) v0.4.5
+  # Formula (80) v0.4.5
   def calculate_ticket_accumulator_(
         header_timeslot,
         state_timeslot,
@@ -92,7 +92,7 @@ defmodule System.State.Safrole do
   @doc """
   Z function: Outside-in sequencer function.
   Reorders the list by alternating between the first and last elements.
-  Formula (70) v0.4.1
+  Formula (70) v0.4.5
   """
   @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
   def outside_in_sequencer(tickets) do
@@ -109,7 +109,7 @@ defmodule System.State.Safrole do
   end
 
   @doc """
-  Formula (71) v0.4.1
+  Formula (71) v0.4.5
   Fallback key sequence function.
   selects an epoch’s worth of validator Bandersnatch keys
   """
@@ -142,7 +142,7 @@ defmodule System.State.Safrole do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (314) v0.4.1 - C(4)
+    # Formula (321) v0.4.5 - C(4)
     # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
     def encode(safrole) do
       sealer_type =

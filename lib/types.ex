@@ -32,15 +32,15 @@ defmodule Types do
   @type bls_key :: <<_::1152>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
-  # Formula (37) v0.4.1 - should be guarded as <= 2^32
+  # Formula (37) v0.4.5 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
-  # Formula (32) v0.4.1 - NB - should be guarded as <= 2^64
+  # Formula (32) v0.4.5 - NB - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
-  # Formula (34) v0.4.1 - NG - shoud be a 64-bit integer <= 2^64
+  # Formula (34) v0.4.5 - NG - shoud be a 64-bit integer <= 2^64
   @type gas :: non_neg_integer()
-  # Formula (34) v0.4.1 - ZG - shoud be a 64-bit signed (-2^63..2^63)
+  # Formula (34) v0.4.5 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (34) v0.4.1 - NR - shoud be a 32-bit integer <= 2^32
+  # Formula (34) v0.4.5 - NR - shoud be a 32-bit integer <= 2^32
   @type register_value :: non_neg_integer()
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil
@@ -50,6 +50,6 @@ defmodule Types do
   # L
   @type max_age_timeslot_lookup_anchor :: non_neg_integer()
 
-  # Formula (187) v0.4.1 - G ≡ Y WS*WE
+  # Formula (193) v0.4.5 - G ≡ Y WS*WE
   @type export_segment :: <<_::32_832>>
 end

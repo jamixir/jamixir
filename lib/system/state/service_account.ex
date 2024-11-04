@@ -1,6 +1,6 @@
 defmodule System.State.ServiceAccount do
   @moduledoc """
-  Formula (90) v0.4.1
+  Formula (90) v0.4.5
   Represents a service account in the Jam system, analogous to a smart contract in Ethereum.
   Each service account includes a storage component, preimage lookup dictionaries,
   code hash, balance, and gas limits.
@@ -42,7 +42,7 @@ defmodule System.State.ServiceAccount do
             gas_limit_g: 0,
             gas_limit_m: 0
 
-  # Formula (95) v0.4.1
+  # Formula (95) v0.4.5
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
     2 * length(Map.keys(l)) + length(Map.keys(s))
@@ -62,13 +62,13 @@ defmodule System.State.ServiceAccount do
       Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
   end
 
-  # Formula (91) v0.4.1
+  # Formula (91) v0.4.5
   def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
     p[hash]
   end
 
-  # Formula (92) v0.4.1
-  # Formula (93) v0.4.1
+  # Formula (92) v0.4.5
+  # Formula (93) v0.4.5
   def store_preimage(%__MODULE__{} = a, preimage, timeslot) do
     hash = h(preimage)
 
@@ -76,7 +76,7 @@ defmodule System.State.ServiceAccount do
     put_in(p2.preimage_storage_l[{hash, byte_size(preimage)}], [timeslot])
   end
 
-  # Formula (94) v0.4.1
+  # Formula (94) v0.4.5
   @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary()
   def historical_lookup(
         %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},
@@ -101,7 +101,7 @@ defmodule System.State.ServiceAccount do
   defimpl Encodable do
     alias Codec.Encoder
     alias System.State.ServiceAccount
-    # Formula (314) v0.4.1
+    # Formula (321) v0.4.5
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do

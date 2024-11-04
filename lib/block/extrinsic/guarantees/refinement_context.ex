@@ -33,7 +33,7 @@ defmodule RefinementContext do
   defimpl Encodable do
     alias Codec.{Encoder, VariableSize}
 
-    # Formula (304) v0.4.1
+    # Formula (311) v0.4.5
     def encode(%RefinementContext{
           anchor: a,
           state_root_: s,
