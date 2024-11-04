@@ -67,9 +67,25 @@ defmodule System.PVM do
   data blobs as dictated by the work-item, i and x. It results in either some error J or a pair of the
   refinement output blob and the export sequence.
   """
-  @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) :: {binary() | WorkExecutionError.t(), list(binary())}
+  @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) ::
+          {binary() | WorkExecutionError.t(), list(binary())}
   def refine(_params = %RefineParams{}, _services) do
     # TODO
     {<<>>, []}
   end
+
+  @spec skip(non_neg_integer(), bitstring()) :: non_neg_integer()
+  def skip(i, k) when is_integer(i) and is_bitstring(k) do
+    case k do
+      <<_::size(i+1), rest::bitstring>> -> find_next_one(0, rest, 0)
+      _ -> 0  # i is beyond bitstring length, implicit 1 found
+    end
+  end
+
+  defp find_next_one(_i, <<>>, count) when count < 24, do: count
+  defp find_next_one(_i, <<1::1, _::bitstring>>, count), do: count
+  defp find_next_one(i, <<0::1, rest::bitstring>>, count) when count < 24 do
+    find_next_one(i + 1, rest, count + 1)
+  end
+  defp find_next_one(_i, _k, _count), do: 24
 end
