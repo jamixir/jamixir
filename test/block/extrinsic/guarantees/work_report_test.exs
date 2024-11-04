@@ -128,25 +128,25 @@ defmodule WorkReportTest do
 
   describe "separate_work_reports/2" do
     test "separates work reports based on prerequisites and dependencies" do
-      w1 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
+      w1 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
 
       w2 =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.one()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.one()])},
           segment_root_lookup: %{}
         )
 
-      w3 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
+      w3 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
 
       w4 =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.two()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.two()])},
           segment_root_lookup: %{}
         )
 
       w5 =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.three()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.three()])},
           segment_root_lookup: %{}
         )
 
@@ -165,13 +165,13 @@ defmodule WorkReportTest do
     test "handles list with only prerequisites" do
       w1 =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.one()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.one()])},
           segment_root_lookup: %{}
         )
 
       w2 =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.two()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.two()])},
           segment_root_lookup: %{}
         )
 
@@ -182,8 +182,8 @@ defmodule WorkReportTest do
     end
 
     test "handles list with only non-prerequisites" do
-      w1 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
-      w2 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
+      w1 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
+      w2 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
 
       {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
 
@@ -194,11 +194,11 @@ defmodule WorkReportTest do
     test "handles work reports with non-empty segment_root_lookup" do
       w1 =
         build(:work_report,
-          refinement_context: %{prerequisite: nil},
+          refinement_context: %{prerequisite: MapSet.new()},
           segment_root_lookup: %{Hash.one() => Hash.two()}
         )
 
-      w2 = build(:work_report, refinement_context: %{prerequisite: nil}, segment_root_lookup: %{})
+      w2 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
 
       {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
 
@@ -213,7 +213,7 @@ defmodule WorkReportTest do
     test "returns work report with its dependencies" do
       w =
         build(:work_report,
-          refinement_context: %{prerequisite: Hash.one()},
+          refinement_context: %{prerequisite: MapSet.new([Hash.one()])},
           segment_root_lookup: %{Hash.two() => Hash.three()}
         )
 
@@ -237,7 +237,7 @@ defmodule WorkReportTest do
         )
 
       r = [{w1, MapSet.new()}, {w2, MapSet.new([Hash.three()])}]
-      x = %{Hash.two() => Hash.five()}
+      x = MapSet.new([Hash.two()])
 
       result = WorkReport.edit_queue(r, x)
       assert [{^w1, empty_set}] = result
@@ -267,38 +267,11 @@ defmodule WorkReportTest do
       ]
 
       # w1's work package hash is already in x
-      x = %{Hash.one() => Hash.five()}
+      x = MapSet.new([Hash.one()])
 
       result = WorkReport.edit_queue(r, x)
 
       assert [{^w2, _}] = result
-    end
-
-    test "filters out work reports with conflicting segment root lookups" do
-      w1 =
-        build(:work_report,
-          specification: %{work_package_hash: Hash.one()},
-          segment_root_lookup: %{Hash.three() => Hash.four()}
-        )
-
-      w2 =
-        build(:work_report,
-          specification: %{work_package_hash: Hash.two()},
-          segment_root_lookup: %{Hash.four() => Hash.five()}
-        )
-
-      r = [
-        {w1, MapSet.new()},
-        {w2, MapSet.new()}
-      ]
-
-      # Doesn't conflict with work package hashes
-      # but conflicts with segment root lookup of w2
-      x = %{Hash.four() => Hash.four()}
-
-      result = WorkReport.edit_queue(r, x)
-
-      assert [{^w1, _}] = result
     end
   end
 
@@ -317,9 +290,9 @@ defmodule WorkReportTest do
         )
 
       r = [{w1, MapSet.new()}, {w2, MapSet.new([Hash.three()])}]
-      a = %{}
 
-      assert [^w1] = WorkReport.accumulation_priority_queue(r, a)
+      assert [^w1] = WorkReport.accumulation_priority_queue(r)
+      assert [] = WorkReport.accumulation_priority_queue([])
     end
   end
 
@@ -330,7 +303,7 @@ defmodule WorkReportTest do
           build(:work_report,
             core_index: i,
             specification: %{work_package_hash: <<i::256>>, exports_root: <<i::256>>},
-            refinement_context: %{prerequisite: nil},
+            refinement_context: %{prerequisite: MapSet.new()},
             segment_root_lookup: %{}
           )
         end
@@ -340,7 +313,7 @@ defmodule WorkReportTest do
       # Modify w2 to have a prerequisite or non-empty segment_root_lookup
       w2 = %{
         w2
-        | refinement_context: %{prerequisite: Hash.one()},
+        | refinement_context: %{prerequisite: MapSet.new([Hash.one()])},
           segment_root_lookup: %{Hash.two() => Hash.three()}
       }
 
@@ -371,7 +344,9 @@ defmodule WorkReportTest do
           ready_to_accumulate
         )
 
-      assert [^w1, ^w3, ^w4] = result
+      # q =E(after_m ++ before_m ++ w_q) = E([w4,w3,w2]) = [w4,w3, w2]
+      # W* = w! ++ Q(q) = [w1] ++ [w4,w3] = [w1,w4,w3]
+      assert [^w1, ^w4, ^w3] = result
     end
   end
 
