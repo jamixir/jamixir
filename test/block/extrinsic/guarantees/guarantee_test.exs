@@ -1,12 +1,9 @@
 defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
   import Jamixir.Factory
-
-  alias System.State.ServiceAccount
-  alias System.State.RecentHistory
-  alias System.State.RecentHistory.RecentBlock
   alias Block.Extrinsic.{Guarantee, Guarantor}
   alias System.State
+  alias System.State.{CoreReport, RecentHistory, RecentHistory.RecentBlock, Ready, ServiceAccount}
   alias Util.{Crypto, Hash}
   import TestHelper
 
@@ -21,14 +18,24 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       g1 =
         build(:guarantee,
-          work_report: build(:work_report, core_index: 1, refinement_context: refinement_context),
+          work_report:
+            build(:work_report,
+              core_index: 1,
+              refinement_context: refinement_context,
+              segment_root_lookup: %{}
+            ),
           timeslot: 100,
           credentials: [{1, <<3::512>>}, {2, <<4::512>>}]
         )
 
       g2 =
         build(:guarantee,
-          work_report: build(:work_report, core_index: 2, refinement_context: refinement_context),
+          work_report:
+            build(:work_report,
+              core_index: 2,
+              refinement_context: refinement_context,
+              segment_root_lookup: %{}
+            ),
           timeslot: 100,
           credentials: [{1, <<1::512>>}, {2, <<2::512>>}]
         )
@@ -227,28 +234,35 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate([g1], invalid_state, 1) == {:error, :invalid_anchor_block}
     end
 
-    test "returns error when work package is in recent history", %{g1: g1, state: state} do
+    test "returns error when work package exists in recent history", %{state: state, g1: g1} do
+      # Add the work package hash to recent history
       wp_hash = g1.work_report.specification.work_package_hash
-      # Add the new work package hash to the recent history
-      recent_blocks = [%{hd(state.recent_history.blocks) | work_report_hashes: [wp_hash]}]
-      new_state = %{state | recent_history: %RecentHistory{blocks: recent_blocks}}
+      block = %{hd(state.recent_history.blocks) | work_report_hashes: %{wp_hash => "hash"}}
+      s = put_in(state.recent_history.blocks, [block])
 
-      assert Guarantee.validate([g1], new_state, 1) == {:error, :work_package_in_recent_history}
+      assert Guarantee.validate([g1], s, 1) == {:error, :work_package_already_exists}
     end
 
-    test "validates prerequisite", %{g1: g1, g2: g2, state: state} do
-      # (wx)p ≠ ∅
-      updated_g1 = put_in(g1.work_report.refinement_context.prerequisite, "hash")
-      assert Guarantee.validate([updated_g1, g2], state, 1) == {:error, :invalid_prerequisite}
+    test "returns error when work package exists in accumulation history", %{state: state, g1: g1} do
+      # Add the work package hash to accumulation history
+      wp_hash = g1.work_report.specification.work_package_hash
+      s = put_in(state.accumulation_history, [MapSet.new([wp_hash])])
 
-      # (wx)p ∈ p
-      valid_g1 = put_in(g1.work_report.specification.work_package_hash, "hash")
-      assert Guarantee.validate([valid_g1, g2], state, 1) == :ok
+      assert Guarantee.validate([g1], s, 1) == {:error, :work_package_already_exists}
+    end
 
-      # (wx)p ∈ bp, b ∈ β
-      valid_rb = put_in(Enum.at(state.recent_history.blocks, 0).work_report_hashes, ["hash"])
-      valid_state = put_in(state.recent_history.blocks, [valid_rb])
-      assert Guarantee.validate([updated_g1, g2], valid_state, 1) == :ok
+    test "returns error when segment root lookup value mismatches", %{state: state, g1: g1} do
+      # Add a hash to recent history
+      block = %{
+        hd(state.recent_history.blocks)
+        | work_report_hashes: %{"hash1" => "correct_export"}
+      }
+
+      s = put_in(state.recent_history.blocks, [block])
+      invalid_g1 = put_in(g1.work_report.segment_root_lookup, %{"hash1" => "wrong_export"})
+
+      assert Guarantee.validate([invalid_g1], s, 1) ==
+               {:error, :invalid_segment_root_lookup}
     end
   end
 
@@ -472,12 +486,243 @@ defmodule Block.Extrinsic.GuaranteeTest do
     )
   end
 
+  describe "validate_new_work_packages/5" do
+    setup do
+      offending_work_report =
+        put_in(
+          build(:work_report),
+          [Access.key(:refinement_context), Access.key(:prerequisite)],
+          "wrh"
+        )
+
+      work_reports = [
+        put_in(
+          build(:work_report),
+          [Access.key(:specification), Access.key(:work_package_hash)],
+          "wrh"
+        )
+      ]
+
+      recent_blocks = [
+        %RecentBlock{
+          header_hash: "hash1",
+          state_root: "root1",
+          accumulated_result_mmr: ["mmr1"],
+          work_report_hashes: %{}
+        }
+      ]
+
+      {:ok,
+       work_reports: work_reports,
+       recent_blocks: recent_blocks,
+       accumulation_history: [],
+       ready_to_accumulate: [[]],
+       core_reports: [],
+       offending_work_report: offending_work_report}
+    end
+
+    test "rejects when hash exists in recent history", context do
+      blocks = [%{hd(context.recent_blocks) | work_report_hashes: %{"wrh" => "export1"}}]
+
+      assert Guarantee.validate_new_work_packages(
+               context.work_reports,
+               %RecentHistory{blocks: blocks},
+               context.accumulation_history,
+               context.ready_to_accumulate,
+               context.core_reports
+             ) == {:error, :work_package_already_exists}
+    end
+
+    test "rejects when hash exists in accumulation history", context do
+      accumulation_history = [MapSet.new(["wrh"])]
+
+      assert Guarantee.validate_new_work_packages(
+               context.work_reports,
+               %RecentHistory{blocks: context.recent_blocks},
+               accumulation_history,
+               context.ready_to_accumulate,
+               context.core_reports
+             ) == {:error, :work_package_already_exists}
+    end
+
+    test "rejects when hash exists in ready to accumulate", context do
+      ready = [
+        %Ready{work_report: context.offending_work_report}
+      ]
+
+      assert Guarantee.validate_new_work_packages(
+               context.work_reports,
+               %RecentHistory{blocks: context.recent_blocks},
+               context.accumulation_history,
+               ready,
+               context.core_reports
+             ) == {:error, :work_package_already_exists}
+    end
+
+    test "rejects when hash exists in core reports", context do
+      core_reports = [%CoreReport{work_report: context.offending_work_report}]
+
+      assert Guarantee.validate_new_work_packages(
+               context.work_reports,
+               %RecentHistory{blocks: context.recent_blocks},
+               context.accumulation_history,
+               context.ready_to_accumulate,
+               core_reports
+             ) == {:error, :work_package_already_exists}
+    end
+
+    test "accepts when hashes are disjoint from all sources", context do
+      assert Guarantee.validate_new_work_packages(
+               context.work_reports,
+               %RecentHistory{blocks: context.recent_blocks},
+               context.accumulation_history,
+               context.ready_to_accumulate,
+               context.core_reports
+             ) == :ok
+    end
+  end
+
   describe "encode / decode" do
     test "encode/decode" do
       guarantee = build(:guarantee)
       encoded = Encodable.encode(guarantee)
       {decoded, _} = Guarantee.decode(encoded)
       assert guarantee == decoded
+    end
+  end
+
+  describe "validate_prerequisites/2" do
+    setup do
+      work_report =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new(["prereq_hash"])},
+          segment_root_lookup: %{"segment_hash1" => "value1", "segment_hash2" => "value2"}
+        )
+
+      recent_blocks = [
+        %RecentBlock{work_report_hashes: %{"some_hash" => "value", "segment_hash1" => "value1"}}
+      ]
+
+      {:ok, work_report: work_report, recent_blocks: recent_blocks}
+    end
+
+    test "fails when prerequisite hash is missing", %{
+      work_report: work_report,
+      recent_blocks: recent_blocks
+    } do
+      assert {:error, :missing_prerequisite_work_packages} ==
+               Guarantee.validate_prerequisites([work_report], %RecentHistory{
+                 blocks: recent_blocks
+               })
+    end
+
+    test "fails when segment root lookup hash is missing", %{
+      work_report: work_report,
+      recent_blocks: recent_blocks
+    } do
+      blocks = [
+        %{
+          hd(recent_blocks)
+          | work_report_hashes: %{"prereq_hash" => "value", "segment_hash1" => "value1"}
+        }
+      ]
+
+      assert {:error, :missing_prerequisite_work_packages} ==
+               Guarantee.validate_prerequisites([work_report], %RecentHistory{blocks: blocks})
+    end
+
+    test "succeeds when all required hashes are present", %{
+      work_report: work_report,
+      recent_blocks: recent_blocks
+    } do
+      blocks = [
+        %{
+          hd(recent_blocks)
+          | work_report_hashes: %{
+              "prereq_hash" => "value",
+              "segment_hash1" => "value1",
+              "segment_hash2" => "value2"
+            }
+        }
+      ]
+
+      assert :ok ==
+               Guarantee.validate_prerequisites([work_report], %RecentHistory{blocks: blocks})
+    end
+
+    test "succeeds when prerequisite points to any work package in extrinsic", %{
+      recent_blocks: recent_blocks
+    } do
+      dependent_report =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new(["other_hash"])},
+          segment_root_lookup: %{}
+        )
+
+      other_report =
+        build(:work_report,
+          specification: %{work_package_hash: "other_hash"},
+          segment_root_lookup: %{}
+        )
+
+      blocks = [%{hd(recent_blocks) | work_report_hashes: %{}}]
+
+      assert :ok ==
+               Guarantee.validate_prerequisites([dependent_report, other_report], %RecentHistory{
+                 blocks: blocks
+               })
+    end
+  end
+
+  describe "validate_segment_root_lookups/2" do
+    setup do
+      work_report1 =
+        build(:work_report,
+          specification: %{work_package_hash: "hash1", exports_root: "export1"},
+          segment_root_lookup: %{"hash1" => "export1", "hash2" => "export2"}
+        )
+
+      recent_blocks = [
+        %RecentBlock{work_report_hashes: %{"hash2" => "export2", "hash3" => "export3"}}
+      ]
+
+      {:ok, work_report1: work_report1, recent_blocks: recent_blocks}
+    end
+
+    test "fails when segment_root_lookup has key not in combined map", %{
+      work_report1: work_report1,
+      recent_blocks: recent_blocks
+    } do
+      invalid_report = put_in(work_report1.segment_root_lookup, %{"missing_hash" => "export1"})
+
+      assert {:error, :invalid_segment_root_lookup} ==
+               Guarantee.validate_segment_root_lookups([invalid_report], %RecentHistory{
+                 blocks: recent_blocks
+               })
+    end
+
+    test "fails when value mismatches for existing key", %{
+      work_report1: work_report1,
+      recent_blocks: recent_blocks
+    } do
+      invalid_report = put_in(work_report1.segment_root_lookup, %{"hash2" => "wrong_export"})
+
+      assert {:error, :invalid_segment_root_lookup} ==
+               Guarantee.validate_segment_root_lookups([invalid_report], %RecentHistory{
+                 blocks: recent_blocks
+               })
+    end
+
+    test "succeeds when entries come from both p_map and recent history", %{
+      work_report1: work_report1,
+      recent_blocks: recent_blocks
+    } do
+      # %{hash1 => export1} comes from work_report.specifictions
+      # %{hash2 => export2} comes from recent history
+      assert :ok ==
+               Guarantee.validate_segment_root_lookups([work_report1], %RecentHistory{
+                 blocks: recent_blocks
+               })
     end
   end
 end
