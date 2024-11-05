@@ -1,6 +1,7 @@
 defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Guarantee, Guarantor}
   alias System.State
   alias System.State.{CoreReport, RecentHistory, RecentHistory.RecentBlock, Ready, ServiceAccount}
@@ -485,13 +486,77 @@ defmodule Block.Extrinsic.GuaranteeTest do
     )
   end
 
+  describe "collect_prerequisites/1" do
+    setup do
+      base_struct = %{
+        work_report: %WorkReport{
+          refinement_context: %RefinementContext{
+            prerequisite: MapSet.new([Hash.one])
+          }
+        }
+      }
+
+      r2 = put_in(
+        base_struct.work_report.refinement_context.prerequisite,
+        MapSet.new([Hash.two])
+      )
+
+      r_nil = put_in(
+        base_struct.work_report.refinement_context.prerequisite,
+        MapSet.new()
+      )
+
+      {:ok, r1: base_struct, r2: r2, r_nil: r_nil}
+    end
+
+    test "returns empty MapSet for empty list" do
+      assert Guarantee.collect_prerequisites([]) == MapSet.new()
+    end
+
+    test "collects unique prerequisite hashes", %{r1: r1, r2: r2} do
+      assert Guarantee.collect_prerequisites([r1, r2, r1]) ==
+               MapSet.new([Hash.one, Hash.two])
+    end
+
+    test "handles nil items", %{r1: r1} do
+      assert Guarantee.collect_prerequisites([nil, r1, nil]) ==
+               MapSet.new([Hash.one])
+    end
+
+    test "filters out nil prerequisites", %{r1: r1, r_nil: r_nil} do
+      assert Guarantee.collect_prerequisites([r1, r_nil]) ==
+               MapSet.new([Hash.one])
+    end
+
+    test "combines multiple prerequisite hashes from different reports" do
+      r1 = %{
+        work_report: %WorkReport{
+          refinement_context: %RefinementContext{
+            prerequisite: MapSet.new([Hash.one, Hash.two, Hash.three])
+          }
+        }
+      }
+
+      r2 = %{
+        work_report: %WorkReport{
+          refinement_context: %RefinementContext{
+            prerequisite: MapSet.new([Hash.four, Hash.five])
+          }
+        }
+      }
+
+      assert Guarantee.collect_prerequisites([r1, r2]) ==
+        MapSet.new([Hash.one, Hash.two, Hash.three, Hash.four, Hash.five])
+    end
+  end
+
   describe "validate_new_work_packages/5" do
     setup do
       offending_work_report =
         put_in(
           build(:work_report),
           [Access.key(:refinement_context), Access.key(:prerequisite)],
-          "wrh"
+          MapSet.new(["wrh"])
         )
 
       work_reports = [
