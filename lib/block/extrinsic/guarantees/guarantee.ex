@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
-  alias System.State.{CoreReport, Ready, ServiceAccount}
+  alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
   alias System.{State, State.EntropyPool, State.RecentHistory}
   alias Util.{Collections, Crypto, Hash}
@@ -202,6 +202,20 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
+  # Formula (150) v0.4.5
+  # Formula (151) v0.4.5
+  @spec collect_prerequisites(
+          list(%{work_report: WorkReport.t()})
+          | list(list(%{work_report: WorkReport.t()}))
+        ) :: MapSet.t(Types.hash())
+  def collect_prerequisites(items) do
+    for item <- List.flatten(items),
+        item != nil,
+        reduce: MapSet.new() do
+      acc -> acc ++ item.work_report.refinement_context.prerequisite
+    end
+  end
+
   # Formula (152) v0.4.5
   mockable validate_new_work_packages(
              work_reports,
@@ -214,7 +228,9 @@ defmodule Block.Extrinsic.Guarantee do
 
     existing_packages =
       recent_block_hashes(blocks) ++
-        accumulated ++ Ready.q(ready_to_accumulate) ++ CoreReport.a(core_reports)
+        accumulated ++
+        collect_prerequisites(ready_to_accumulate) ++
+        collect_prerequisites(core_reports)
 
     if MapSet.disjoint?(p_set(work_reports), existing_packages) do
       :ok
