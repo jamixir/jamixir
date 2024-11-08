@@ -1,7 +1,7 @@
-defmodule TestnetBlockImporter do
+defmodule TestnetBlockImporterTest do
   alias System.State
   import TestVectorUtil
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   @traces_path "traces/safrole/"
 
