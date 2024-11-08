@@ -7,6 +7,7 @@ defmodule TestVectorUtil do
   @owner "w3f"
   @repo "jamtestvectors"
   @branch "master"
+  @headers [{"User-Agent", "Elixir"}]
 
   # ANSI color codes
   @blue IO.ANSI.blue()
@@ -43,21 +44,46 @@ defmodule TestVectorUtil do
   end
 
   def fetch_file(file_name, path, owner \\ @owner, repo \\ @repo, branch \\ @branch) do
-    url = "https://raw.githubusercontent.com/#{owner}/#{repo}/#{branch}/#{path}/#{file_name}"
+    local_root =
+      case System.get_env("JAM_PROJECTS_PATH") do
+        nil -> "../"
+        path -> path
+      end
 
-    headers = [{"User-Agent", "Elixir"}]
+    file_path = "#{local_root}#{repo}/#{path}/#{file_name}"
 
-    case HTTPoison.get(url, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+    case File.read(file_path) do
+      {:ok, content} ->
+        {:ok, content}
+
+      {:error, _} ->
+        url = "https://raw.githubusercontent.com/#{owner}/#{repo}/#{branch}/#{path}/#{file_name}"
+        fetch_from_url(url)
+    end
+  end
+
+  defp fetch_from_url(url) do
+    result =
+      case HTTPoison.get(url, @headers) do
+        {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+          {:ok, body}
+
+        {:ok, %HTTPoison.Response{status_code: status_code}} ->
+          IO.puts("Failed to fetch file #{url}: HTTP #{status_code}")
+          {:error, :failed_to_fetch}
+
+        {:error, %HTTPoison.Error{reason: reason}} ->
+          IO.puts("Failed to fetch file #{url}: #{reason}")
+          {:error, :failed_to_fetch}
+      end
+
+    case result do
+      {:ok, body} ->
         {:ok, body}
 
-      {:ok, %HTTPoison.Response{status_code: status_code}} ->
-        IO.puts("Failed to fetch file #{file_name}: HTTP #{status_code}")
-        {:error, :failed_to_fetch}
-
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        IO.puts("Failed to fetch file #{file_name}: #{reason}")
-        {:error, :failed_to_fetch}
+      # try to fetch files from local system when JAM_PROJECTS_PATH is set
+      {:error, e} ->
+        {:error, "#{e} cant read file or download it at #{url}"}
     end
   end
 
