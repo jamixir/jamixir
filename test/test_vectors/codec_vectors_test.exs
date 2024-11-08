@@ -5,7 +5,6 @@ defmodule CodecVectorsTest do
   use Codec.Encoder
   use ExUnit.Case
   import TestVectorUtil
-  import TestHelper
 
   # in v0.4.5 refinement_context.prerequisite type changed from Hash | nil to MapSet<Hash>
   # the test vectors block, extrinsic, refine_context, work_report are not updated yet
@@ -27,12 +26,6 @@ defmodule CodecVectorsTest do
     {"work_result_0", WorkResult},
     {"work_result_1", WorkResult}
   ]
-
-  setup_constants do
-    def core_count, do: 2
-    def validator_count, do: 6
-    def epoch_length, do: 12
-  end
 
   describe "encode vectors" do
     Enum.each(tests, fn {file_name, module_name} ->

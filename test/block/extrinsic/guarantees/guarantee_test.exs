@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   import Jamixir.Factory
   alias Block.Extrinsic.{Guarantee, Guarantor}
   alias System.State
-  alias System.State.{CoreReport, RecentHistory, RecentHistory.RecentBlock, Ready, ServiceAccount}
+  alias System.State.{CoreReport, Ready, RecentHistory, RecentHistory.RecentBlock, ServiceAccount}
   alias Util.{Crypto, Hash}
   import TestHelper
 
@@ -268,9 +268,6 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
   describe "reporters_set/6" do
     setup_constants do
-      def validator_count, do: 6
-      def core_count, do: 2
-      def rotation_period, do: 10
       def gas_accumulation, do: 1000
     end
 
@@ -284,7 +281,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         validators_and_ed25519_keys(6)
 
       offenders = MapSet.new()
-      timeslot = 3
+      timeslot = 2
 
       curr_guarantor =
         Guarantor.guarantors(
@@ -336,7 +333,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "uses previous guarantor when timeslot is in previous rotation period", context do
-      prev_timeslot = context.timeslot - ConstantsMock.rotation_period()
+      prev_timeslot = context.timeslot - Constants.rotation_period()
 
       guarantees =
         create_valid_guarantees(%{
@@ -393,7 +390,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error when guarantee timeslot is too old", context do
-      old_timeslot = context.timeslot - ConstantsMock.rotation_period() * 2
+      old_timeslot = context.timeslot - Constants.rotation_period() * 2
       guarantees = create_valid_guarantees(%{context | timeslot: old_timeslot})
 
       result =
@@ -454,7 +451,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   end
 
   defp create_valid_guarantees(context) do
-    for core_index <- 0..1 do
+    for core_index <- 0..(Constants.core_count() - 1) do
       create_valid_guarantee(build(:work_report, core_index: core_index), context)
     end
   end

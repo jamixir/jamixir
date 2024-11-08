@@ -65,7 +65,6 @@ defmodule System.State.CoreReport do
     use Codec.Encoder
     # Formula (321) v0.4.5
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
-    # TODO: fix missing NilDiscriminator
     def encode(%CoreReport{} = c) do
       e({c.work_report, e_le(c.timeslot, 4)})
     end

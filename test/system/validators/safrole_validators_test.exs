@@ -48,12 +48,12 @@ defmodule System.Validators.SafroleValidatorTest do
   describe "valid_winning_tickets_marker/3" do
     test "returns :ok when conditions are met and winning_tickets_marker is valid", ctx do
       header = %Header{
-        timeslot: 501,
+        timeslot: 11,
         winning_tickets_marker:
           System.State.Safrole.outside_in_sequencer(ctx.safrole.ticket_accumulator)
       }
 
-      assert :ok == Safrole.valid_winning_tickets_marker(header, 50, ctx.safrole)
+      assert :ok == Safrole.valid_winning_tickets_marker(header, 5, ctx.safrole)
     end
 
     test "returns error when conditions are met but winning_tickets_marker is invalid", ctx do

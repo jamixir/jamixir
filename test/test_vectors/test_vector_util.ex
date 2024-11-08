@@ -36,8 +36,8 @@ defmodule TestVectorUtil do
     end
   end
 
-  def fetch_binary(file_name, path) do
-    case fetch_file(file_name, path) do
+  def fetch_binary(file_name, path, owner \\ @owner, repo \\ @repo, branch \\ @branch) do
+    case fetch_file(file_name, path, owner, repo, branch) do
       {:ok, body} -> body
       e -> e
     end

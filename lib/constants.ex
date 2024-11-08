@@ -70,7 +70,7 @@ defmodule Constants do
   def erasure_coded_exported_segment_size, do: 6
 
   @doc "Y - The number of slots into an epoch at which ticket-submission ends."
-  defmockable(:ticket_submission_end, do: 500)
+  defmockable(:ticket_submission_end, do: Jamixir.config()[:ticket_submission_end])
 
   # 4104
   def wswe, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
