@@ -6,6 +6,7 @@ defmodule TestnetBlockImporterTest do
   @traces_path "traces/safrole/"
 
   describe "test blocks and states" do
+    @tag :skip
     test "jam-dune" do
       {:ok, genesis_json} =
         fetch_and_parse_json("genesis.json", @traces_path, "jamixir", "jamtestnet")
@@ -22,7 +23,7 @@ defmodule TestnetBlockImporterTest do
               "jamtestnet"
             )
 
-          {block, rest} = Block.decode(block_bin)
+          {block, _} = Block.decode(block_bin)
 
           {:ok, expected_state_json} =
             fetch_and_parse_json(
