@@ -24,7 +24,7 @@ defmodule System.Validators.SafroleValidatorTest do
     end
 
     test "returns :ok when it's not a new epoch and epoch_marker is nil", ctx do
-      header = %Header{timeslot: 44, epoch_mark: nil}
+      header = %Header{timeslot: 11, epoch_mark: nil}
 
       assert :ok ==
                Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
@@ -38,7 +38,7 @@ defmodule System.Validators.SafroleValidatorTest do
     end
 
     test "return error when it is not a new epoch and epoch_marker is not nil", ctx do
-      header = %Header{timeslot: 44, epoch_mark: {ctx.entropy_pool.n1, ctx.bandersnatch_keys}}
+      header = %Header{timeslot: 11, epoch_mark: {ctx.entropy_pool.n1, ctx.bandersnatch_keys}}
 
       assert {:error, "Invalid epoch marker"} ==
                Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
@@ -48,12 +48,12 @@ defmodule System.Validators.SafroleValidatorTest do
   describe "valid_winning_tickets_marker/3" do
     test "returns :ok when conditions are met and winning_tickets_marker is valid", ctx do
       header = %Header{
-        timeslot: 501,
+        timeslot: 11,
         winning_tickets_marker:
           System.State.Safrole.outside_in_sequencer(ctx.safrole.ticket_accumulator)
       }
 
-      assert :ok == Safrole.valid_winning_tickets_marker(header, 50, ctx.safrole)
+      assert :ok == Safrole.valid_winning_tickets_marker(header, 5, ctx.safrole)
     end
 
     test "returns error when conditions are met but winning_tickets_marker is invalid", ctx do

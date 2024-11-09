@@ -11,19 +11,19 @@ defmodule Block.Extrinsic.GuarantorTest do
     end
 
     test "rotate elements" do
-      assert Guarantor.rotate([1, 2, 3], 10) == [11, 12, 13]
-      assert Guarantor.rotate([300, 340, 1], 50) == [9, 49, 51]
+      assert Guarantor.rotate([1, 2, 3], 10) == [1, 0, 1]
+      assert Guarantor.rotate([300, 340, 1], 50) == [0, 0, 1]
     end
   end
 
   describe "permute/2" do
     test "permute when e is a list" do
-      p1 = Guarantor.permute(1..1100 |> Enum.to_list(), 2)
-      p2 = Guarantor.permute(1..1100 |> Enum.to_list(), 700)
+      p1 = Guarantor.permute(1..1100 |> Enum.to_list(), 3)
+      p2 = Guarantor.permute(1..1100 |> Enum.to_list(), 13)
       assert p1 !== p2
 
-      assert p1 |> Enum.take(10) == [0, 1, 1, 2, 3, 3, 4, 5, 5, 6]
-      assert p2 |> Enum.take(10) == [10, 11, 11, 12, 13, 13, 14, 15, 15, 16]
+      assert p1 == [1, 0, 0, 1, 0, 1]
+      assert p2 == [0, 1, 1, 0, 1, 0]
 
       assert {length(p1), length(p2)} ==
                {Constants.validator_count(), Constants.validator_count()}
@@ -31,7 +31,7 @@ defmodule Block.Extrinsic.GuarantorTest do
 
     test "permute when e is a hash" do
       p1 = Guarantor.permute(Hash.random(), 2)
-      p2 = Guarantor.permute(Hash.random(), 500)
+      p2 = Guarantor.permute(Hash.random(), 14)
       assert p1 !== p2
 
       assert {length(p1), length(p2)} ==
@@ -85,8 +85,8 @@ defmodule Block.Extrinsic.GuarantorTest do
       p = build_list(2, :validator)
       o = MapSet.new()
 
-      assert Guarantor.prev_guarantors(n2, n3, 605, k, p, o) ==
-               Guarantor.guarantors(n3, 605 - Constants.rotation_period(), p, o)
+      assert Guarantor.prev_guarantors(n2, n3, 13, k, p, o) ==
+               Guarantor.guarantors(n3, 13 - Constants.rotation_period(), p, o)
     end
   end
 end

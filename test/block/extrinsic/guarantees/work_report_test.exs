@@ -1,7 +1,6 @@
 defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
-  import TestHelper
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
   alias System.State.Ready
@@ -70,11 +69,6 @@ defmodule WorkReportTest do
   end
 
   describe "available_work_reports/2" do
-    setup_constants do
-      def validator_count, do: 6
-      def core_count, do: 2
-    end
-
     setup do
       # Create mock assurances using factory
       # 6 validators / 2 cores
@@ -128,7 +122,11 @@ defmodule WorkReportTest do
 
   describe "separate_work_reports/2" do
     test "separates work reports based on prerequisites and dependencies" do
-      w1 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
+      w1 =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new()},
+          segment_root_lookup: %{}
+        )
 
       w2 =
         build(:work_report,
@@ -136,7 +134,11 @@ defmodule WorkReportTest do
           segment_root_lookup: %{}
         )
 
-      w3 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
+      w3 =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new()},
+          segment_root_lookup: %{}
+        )
 
       w4 =
         build(:work_report,
@@ -182,8 +184,17 @@ defmodule WorkReportTest do
     end
 
     test "handles list with only non-prerequisites" do
-      w1 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
-      w2 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
+      w1 =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new()},
+          segment_root_lookup: %{}
+        )
+
+      w2 =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new()},
+          segment_root_lookup: %{}
+        )
 
       {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
 
@@ -198,7 +209,11 @@ defmodule WorkReportTest do
           segment_root_lookup: %{Hash.one() => Hash.two()}
         )
 
-      w2 = build(:work_report, refinement_context: %{prerequisite: MapSet.new()}, segment_root_lookup: %{})
+      w2 =
+        build(:work_report,
+          refinement_context: %{prerequisite: MapSet.new()},
+          segment_root_lookup: %{}
+        )
 
       {w_bang, w_q} = WorkReport.separate_work_reports([w1, w2], %{})
 

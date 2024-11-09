@@ -31,42 +31,42 @@ defmodule Util.TimeTest do
   end
 
   test "new epoch detection when crossing epoch boundary" do
-    previous_timeslot = 599
-    current_timeslot = 600
+    previous_timeslot = 11
+    current_timeslot = 12
     assert Time.new_epoch?(previous_timeslot, current_timeslot)
   end
 
   test "new epoch detection when within the same epoch" do
-    previous_timeslot = 100
-    current_timeslot = 200
+    previous_timeslot = 10
+    current_timeslot = 11
     assert !Time.new_epoch?(previous_timeslot, current_timeslot)
   end
 
   test "new epoch detection with large jump across epochs" do
-    previous_timeslot = 599
-    current_timeslot = 1200
+    previous_timeslot = 11
+    current_timeslot = 24
     assert Time.new_epoch?(previous_timeslot, current_timeslot)
   end
 
   test "epoch index calculation" do
-    timeslot = 1200
+    timeslot = 24
     assert Time.epoch_index(timeslot) == 2
 
-    timeslot = 599
+    timeslot = 11
     assert Time.epoch_index(timeslot) == 0
 
-    timeslot = 600
+    timeslot = 12
     assert Time.epoch_index(timeslot) == 1
   end
 
   test "epoch phase calculation" do
-    timeslot = 1200
+    timeslot = 12
     assert Time.epoch_phase(timeslot) == 0
 
-    timeslot = 599
-    assert Time.epoch_phase(timeslot) == 599
+    timeslot = 11
+    assert Time.epoch_phase(timeslot) == 11
 
-    timeslot = 601
+    timeslot = 13
     assert Time.epoch_phase(timeslot) == 1
   end
 end

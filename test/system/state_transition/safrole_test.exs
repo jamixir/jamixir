@@ -94,14 +94,14 @@ defmodule System.StateTransition.SafroleStateTest do
         | curr_validators: validators,
           prev_validators: [],
           next_validators: validators,
-          timeslot: 500
+          timeslot: 10
       }
 
-      block_author_key_index = rem(501, length(validators))
+      block_author_key_index = rem(11, length(validators))
 
       header =
         System.HeaderSeal.seal_header(
-          %Header{timeslot: 501, block_author_key_index: block_author_key_index},
+          %Header{timeslot: 11, block_author_key_index: block_author_key_index},
           state.safrole.current_epoch_slot_sealers,
           state.entropy_pool,
           Enum.at(key_pairs, block_author_key_index)
@@ -143,7 +143,7 @@ defmodule System.StateTransition.SafroleStateTest do
       # Seal the header with the expected outcomes
       header =
         System.HeaderSeal.seal_header(
-          %{header | timeslot: 601, block_author_key_index: block_auth_index},
+          %{header | timeslot: 13, block_author_key_index: block_auth_index},
           expected_sealers,
           state.entropy_pool,
           Enum.at(key_pairs, block_auth_index)

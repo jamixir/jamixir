@@ -104,12 +104,12 @@ defmodule System.State.SafroleTest do
     } do
       safrole = %{
         safrole
-        | current_epoch_slot_sealers: build_list(600, :seal_key_ticket),
-          ticket_accumulator: build_list(600, :seal_key_ticket)
+        | current_epoch_slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
+          ticket_accumulator: build_list(Constants.epoch_length(), :seal_key_ticket)
       }
 
-      header = build(:header, timeslot: 600)
-      timeslot = 599
+      header = build(:header, timeslot: Constants.epoch_length())
+      timeslot = Constants.epoch_length() - 1
 
       result =
         Safrole.get_epoch_slot_sealers_(header, timeslot, safrole, %EntropyPool{}, nil)

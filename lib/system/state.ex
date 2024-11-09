@@ -19,7 +19,7 @@ defmodule System.State do
     ServiceAccount,
     Validator,
     ValidatorStatistics,
-    Ready,
+    Ready
   }
 
   @type t :: %__MODULE__{
@@ -43,7 +43,7 @@ defmodule System.State do
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
           # Formula (162) v0.4.5
-          accumulation_history: list(MapSet.t(Types.hash)),
+          accumulation_history: list(MapSet.t(Types.hash())),
           # Formula (164) v0.4.5
           ready_to_accumulate: list(list(Ready.t()))
         }
@@ -380,8 +380,8 @@ defmodule System.State do
     struct(%System.State{}, decoded_fields)
   end
 
-  def from_genesis do
-    case File.read("genesis.json") do
+  def from_genesis(file \\ "genesis.json") do
+    case File.read(file) do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, json_data} ->
