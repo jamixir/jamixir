@@ -46,9 +46,8 @@ defmodule Block.Extrinsic do
   defimpl Encodable do
     use Codec.Encoder
 
-    def encode(%Block.Extrinsic{} = ex) do
-      e({vs(ex.tickets), ex.disputes, vs(ex.preimages), vs(ex.assurances), vs(ex.guarantees)})
-    end
+    def encode(%Block.Extrinsic{} = ex),
+      do: e({vs(ex.tickets), ex.disputes, vs(ex.preimages), vs(ex.assurances), vs(ex.guarantees)})
   end
 
   use JsonDecoder

@@ -14,11 +14,9 @@ defmodule Codec.VariableSize do
   defp size(_value), do: 0
 
   defimpl Encodable do
-    alias Codec.Encoder
+    use Codec.Encoder
     # Formula (303) v0.4.5
-    def encode(%Codec.VariableSize{value: value, size: size}) do
-      Encoder.encode(size) <> Encoder.encode(value)
-    end
+    def encode(%Codec.VariableSize{} = x), do: e(x.size) <> e(x.value)
   end
 
   use Sizes
