@@ -2,11 +2,11 @@ defmodule System.PVM do
   alias System.State.ServiceAccount
   alias System.PVM.RefineParams
   alias System.PVM.Host
-  alias System.PVM.Constants
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
   alias System.PVM.Memory
   use Codec.Encoder
+  use System.PVM.Constants
 
   # Formula (33) v0.4.5
   # Ψ: The whole-program pvm machine state-transition function.
@@ -40,10 +40,10 @@ defmodule System.PVM do
           {integer(), list(non_neg_integer()), Memory.t()}
   def authorized_f(n, gas, registers, memory) do
     # 0 -> gas
-    if n == 0 do
+    if n == @gas do
       Host.remaining_gas(gas, registers, memory)
     else
-      {gas - 10, [Constants.what(), Enum.at(registers, 7) | Enum.drop(registers, 2)], memory}
+      {gas - 10, Enum.take(registers, 7) ++ [@what | Enum.drop(registers, 8)], memory}
     end
   end
 
