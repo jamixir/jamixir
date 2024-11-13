@@ -1,18 +1,17 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
-  alias System.State.RecentHistory.RecentBlock
   alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
-  alias System.State.SealKeyTicket
+  alias System.State.{RecentHistory.RecentBlock, SealKeyTicket}
   alias Util.{Crypto, Hash, Time}
   use ExMachina
   use Sizes
 
-  @cores 2
-  @validator_count 6
+  @cores Constants.validator_count()
+  @validator_count Constants.validator_count()
   @max_authorizers_per_core 2
   @max_authorize_queue_items 4
 

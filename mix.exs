@@ -30,11 +30,11 @@ defmodule Jamixir.MixProject do
   defp deps do
     [
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:mox, "~> 1.2.0", only: :test, elixir: "~> 1.17"},
-      {:ex_machina, "~> 2.8.0", only: :test},
-      {:excoveralls, "~> 0.18.3", only: :test},
-      {:httpoison, "~> 2.2.1", only: :test},
+      {:credo, "~> 1.6", only: [:dev, :test, :full_test], runtime: false},
+      {:mox, "~> 1.2.0", only: [:test, :full_test], elixir: "~> 1.17"},
+      {:ex_machina, "~> 2.8.0", only: [:test, :full_test]},
+      {:excoveralls, "~> 0.18.3", only: [:test, :full_test]},
+      {:httpoison, "~> 2.2.1", only: [:test, :full_test]},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
@@ -46,5 +46,6 @@ defmodule Jamixir.MixProject do
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors"]
+  defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors"]
   defp elixirc_paths(_), do: ["lib"]
 end
