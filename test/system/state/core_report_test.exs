@@ -89,5 +89,21 @@ defmodule System.State.CoreReportTest do
                |> Enum.take(3) == i_core_reports
       end
     end
+
+    test "process availability when core reports are  nil returns nil" do
+      core_reports = [nil, nil, nil]
+      i_core_reports = build_list(3, :core_report)
+
+      with_original_modules([:process_availability]) do
+        assert CoreReport.process_availability(core_reports, i_core_reports, []) ==
+                 core_reports
+      end
+    end
+  end
+
+  describe "from_json/1" do
+    test "return nil when json is null" do
+      assert CoreReport.from_json(nil) == nil
+    end
   end
 end

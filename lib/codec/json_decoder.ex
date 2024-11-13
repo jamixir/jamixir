@@ -1,4 +1,6 @@
 defmodule JsonDecoder do
+  def from_json(nil), do: nil
+
   def from_json(map) when is_map(map) do
     for {key, value} <- map, do: {key, from_json(value)}, into: %{}
   end
@@ -6,8 +8,6 @@ defmodule JsonDecoder do
   def from_json(list) when is_list(list) do
     for a <- list, do: from_json(a)
   end
-
-  def from_json(nil), do: nil
 
   def from_json(value) when is_binary(value) do
     case Base.decode16(String.replace_prefix(value, "0x", ""), case: :lower) do
@@ -71,6 +71,8 @@ defmodule JsonDecoder do
 
   defmacro __using__(_) do
     quote do
+      def from_json(nil), do: nil
+
       def from_json(json) do
         JsonDecoder.to_struct(__MODULE__, json)
       end

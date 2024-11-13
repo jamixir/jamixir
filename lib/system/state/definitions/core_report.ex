@@ -39,7 +39,7 @@ defmodule System.State.CoreReport do
 
     # Formula (131) v0.4.5
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
-      if cr.work_report in w, do: nil, else: intermediate
+      if cr == nil, do: nil, else: if(cr.work_report in w, do: nil, else: intermediate)
     end
   end
 
