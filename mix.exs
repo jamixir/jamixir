@@ -39,7 +39,8 @@ defmodule Jamixir.MixProject do
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
       {:dotenv, "~> 3.1.0"},
-      {:temp, "~> 0.4"}
+      {:temp, "~> 0.4"},
+      {:jamixir_vm, git: "https://github.com/jamixir/jamixir-vm.git"}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
