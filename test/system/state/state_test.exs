@@ -7,6 +7,7 @@ defmodule System.StateTest do
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.NilDiscriminator
+  alias IO.ANSI
   alias System.{State, State.ValidatorStatistics}
   alias Util.Hash
 
@@ -82,6 +83,14 @@ defmodule System.StateTest do
 
     test "validator statistics serialization - C(13)", %{state: state} do
       assert state_keys(state)[13] == e(state.validator_statistics)
+    end
+
+    test "validator accumulation history serialization - C(14)", %{state: state} do
+      assert state_keys(state)[14] == e(for a <- state.accumulation_history, do: vs(a))
+    end
+
+    test "validator ready to accumulate serialization - C(15)", %{state: state} do
+      assert state_keys(state)[15] == e(for a <- state.ready_to_accumulate, do: vs(a))
     end
 
     test "service accounts serialization", %{state: state} do
@@ -294,16 +303,30 @@ defmodule System.StateTest do
     end
   end
 
-  # describe "from_json/1" do
-  #   test "from_json smoke test" do
-  #     assert State.from_json(%{"x" => 1}).timeslot == 0
-  #   end
-  # end
-
   describe "from_genesis/0" do
     test "from_genesis smoke test" do
       {:ok, state} = State.from_genesis()
       assert state.timeslot == 0
+    end
+
+    test "genesis matches key vals" do
+      {:ok, state} = State.from_genesis()
+      {:ok, content} = File.read("test/genesis-keyvals.json")
+      {:ok, json} = Jason.decode(content)
+      state_hex = State.serialize_hex(state)
+
+      for [k, v] <- json["keyvals"] do
+        my_k = String.replace(k, "0x", "") |> String.upcase()
+        my_v = String.replace(v, "0x", "") |> String.upcase()
+
+        if state_hex[my_k] == my_v do
+          # IO.puts("#{ANSI.green()} #{my_k} => #{my_v}\n")
+        else
+          IO.puts("#{ANSI.red()}> #{my_k} => #{my_v}")
+          IO.puts("#{ANSI.red()}< #{state_hex[my_k]}\n")
+          assert state_hex[my_k] == my_v
+        end
+      end
     end
   end
 end

@@ -83,9 +83,15 @@ defmodule Block.Header do
 
   # Formula (43) v0.4.5
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
-    if Merklization.merkelize_state(State.serialize(state)) == r,
+    state_root = Merklization.merkelize_state(State.serialize(state))
+
+    if state_root == r,
       do: :ok,
-      else: {:error, "Invalid state root"}
+      else:
+        {:error,
+         "Invalid state root. \nHeader: #{Base.encode16(r)}, \nState: #{Base.encode16(state_root)}"}
+
+    # :ok
   end
 
   use MapUnion

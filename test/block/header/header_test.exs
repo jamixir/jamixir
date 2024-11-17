@@ -133,7 +133,8 @@ defmodule Block.HeaderTest do
 
     test "returns error when state root is invalid", %{state: state} do
       header = %Header{timeslot: 100, prior_state_root: "invalid"}
-      assert {:error, "Invalid state root"} = Header.validate(header, state)
+      assert {:error, message} = Header.validate(header, state)
+      assert String.starts_with?(message, "Invalid state root.")
     end
   end
 

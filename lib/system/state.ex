@@ -6,21 +6,10 @@ defmodule System.State do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Constants
   alias System.State
-
-  alias System.State.{
-    AuthorizerPool,
-    CoreReport,
-    EntropyPool,
-    Judgements,
-    PrivilegedServices,
-    RecentHistory,
-    RotateKeys,
-    Safrole,
-    ServiceAccount,
-    Validator,
-    ValidatorStatistics,
-    Ready
-  }
+  alias System.State.{AuthorizerPool, CoreReport, EntropyPool, Judgements}
+  alias System.State.{PrivilegedServices, Ready, RecentHistory, RotateKeys, Safrole}
+  alias System.State.{ServiceAccount, Validator, ValidatorStatistics}
+  alias Util.Hash
 
   @type t :: %__MODULE__{
           # Formula (85) v0.4.5
@@ -51,7 +40,7 @@ defmodule System.State do
   # Formula (15) v0.4.5 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
   defstruct [
     # α: Authorization requirement for work done on the core
-    authorizer_pool: [[]],
+    authorizer_pool: List.duplicate([], Constants.core_count()),
     # β: Details of the most recent blocks
     recent_history: %RecentHistory{},
     # γ: State concerning the determination of validator keys
@@ -71,7 +60,11 @@ defmodule System.State do
     # τ: Details of the most recent timeslot
     timeslot: 0,
     # φ: Queue which fills the authorization requirement
-    authorizer_queue: [[]],
+    authorizer_queue:
+      List.duplicate(
+        List.duplicate(Hash.zero(), Constants.max_authorization_queue_items()),
+        Constants.core_count()
+      ),
     # χ: Identities of services with privileged status
     privileged_services: %PrivilegedServices{},
     # ψ: Judgements tracked
@@ -79,7 +72,7 @@ defmodule System.State do
     # π: Validator statistics
     validator_statistics: %ValidatorStatistics{},
     # ξ
-    accumulation_history: List.duplicate(%{}, Constants.epoch_length()),
+    accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length()),
     # ϑ
     ready_to_accumulate: Ready.initial_state()
   ]
@@ -304,7 +297,9 @@ defmodule System.State do
       # C(12) ↦ E4(χ)
       12 => e(s.privileged_services),
       # C(13) ↦ E4(π)
-      13 => e(s.validator_statistics)
+      13 => e(s.validator_statistics),
+      14 => e(for x <- s.accumulation_history, do: vs(x)),
+      15 => e(for x <- s.ready_to_accumulate, do: vs(x))
     }
     |> encode_accounts(s)
     |> encode_accounts_storage(s, :storage)
@@ -331,6 +326,10 @@ defmodule System.State do
 
   def serialize(state) do
     for {k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{}
+  end
+
+  def serialize_hex(state) do
+    for {k, v} <- serialize(state), do: {Base.encode16(k), Base.encode16(v)}, into: %{}
   end
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
@@ -407,6 +406,17 @@ defmodule System.State do
 
   defp decode_json_field(:iota, value),
     do: [{:next_validators, Enum.map(value, &Validator.from_json/1)}]
+
+  defp decode_json_field(:gamma, value),
+    do: [
+      {:safrole,
+       Safrole.from_json(%{
+         pending: value[:gamma_k],
+         epoch_root: value[:gamma_z],
+         current_epoch_slot_sealers: value[:gamma_s],
+         ticket_accumulator: value[:gamma_a]
+       })}
+    ]
 
   defp decode_json_field(:gamma_k, value), do: [{:safrole_pending, value}]
   defp decode_json_field(:gamma_z, value), do: [{:safrole_epoch_root, value}]

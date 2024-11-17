@@ -75,7 +75,8 @@ defmodule BlockTest do
 
     test "error when invalid state root", %{state: state, valid_block: valid_block} do
       invalid_block = put_in(valid_block.header.prior_state_root, Hash.zero())
-      assert {:error, "Invalid state root"} = Block.validate(invalid_block, state)
+      assert {:error, message} = Block.validate(invalid_block, state)
+      assert String.starts_with?(message, "Invalid state root.")
     end
 
     test "returns error when header validation fails", %{state: state} do

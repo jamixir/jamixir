@@ -152,10 +152,17 @@ defmodule System.State.Safrole do
           _ -> 1
         end
 
+      # correct
       e(
         {safrole.pending, safrole.epoch_root, sealer_type, safrole.current_epoch_slot_sealers,
          vs(safrole.ticket_accumulator)}
       )
+
+      # CN version
+      # e(
+      #   {vs(safrole.pending), <<0>>, sealer_type, safrole.current_epoch_slot_sealers,
+      #    safrole.ticket_accumulator, vs(safrole.epoch_root)}
+      # )
     end
   end
 
