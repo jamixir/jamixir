@@ -1,17 +1,11 @@
-defmodule ConstantsMock do
-  def epoch_length, do: 12
-  def ticket_submission_end, do: 10
-end
-
 defmodule SafroleTinyTestVectors do
   use ExUnit.Case, async: false
   import Mox
   setup :verify_on_exit!
 
   setup_all do
-    RingVrf.init_ring_context(6)
+    RingVrf.init_ring_context(Constants.validator_count())
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, Constants, ConstantsMock)
 
     Application.put_env(:jamixir, :original_modules, [
       System.State.Safrole,

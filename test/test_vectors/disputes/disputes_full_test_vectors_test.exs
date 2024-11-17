@@ -1,4 +1,4 @@
-defmodule VerdictsFullTestVectors do
+defmodule DisputesFullTestVectors do
   alias Util.Hash
   use ExUnit.Case, async: false
   import Mox
@@ -42,10 +42,10 @@ defmodule VerdictsFullTestVectors do
   end
 
   describe "vectors" do
-    Enum.each(VerdictsTestVectors.files_to_test(), fn file_name ->
+    Enum.each(DisputesTestVectors.files_to_test(), fn file_name ->
       @tag file_name: file_name
       test "verify full test vectors #{file_name}", %{file_name: file_name} do
-        VerdictsTestVectors.execute_test(file_name, "disputes/full")
+        DisputesTestVectors.execute_test(file_name, "disputes/full")
       end
     end)
   end

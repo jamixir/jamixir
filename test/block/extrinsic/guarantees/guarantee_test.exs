@@ -276,10 +276,10 @@ defmodule Block.Extrinsic.GuaranteeTest do
       entropy_pool = build(:entropy_pool)
 
       %{validators: curr_validators, key_pairs: curr_key_pairs} =
-        validators_and_ed25519_keys(6)
+        validators_and_ed25519_keys(Constants.validator_count())
 
       %{validators: prev_validators, key_pairs: prev_key_pairs} =
-        validators_and_ed25519_keys(6)
+        validators_and_ed25519_keys(Constants.validator_count())
 
       offenders = MapSet.new()
       timeslot = 2
@@ -488,20 +488,22 @@ defmodule Block.Extrinsic.GuaranteeTest do
       base_struct = %{
         work_report: %WorkReport{
           refinement_context: %RefinementContext{
-            prerequisite: MapSet.new([Hash.one])
+            prerequisite: MapSet.new([Hash.one()])
           }
         }
       }
 
-      r2 = put_in(
-        base_struct.work_report.refinement_context.prerequisite,
-        MapSet.new([Hash.two])
-      )
+      r2 =
+        put_in(
+          base_struct.work_report.refinement_context.prerequisite,
+          MapSet.new([Hash.two()])
+        )
 
-      r_nil = put_in(
-        base_struct.work_report.refinement_context.prerequisite,
-        MapSet.new()
-      )
+      r_nil =
+        put_in(
+          base_struct.work_report.refinement_context.prerequisite,
+          MapSet.new()
+        )
 
       {:ok, r1: base_struct, r2: r2, r_nil: r_nil}
     end
@@ -512,24 +514,24 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "collects unique prerequisite hashes", %{r1: r1, r2: r2} do
       assert Guarantee.collect_prerequisites([r1, r2, r1]) ==
-               MapSet.new([Hash.one, Hash.two])
+               MapSet.new([Hash.one(), Hash.two()])
     end
 
     test "handles nil items", %{r1: r1} do
       assert Guarantee.collect_prerequisites([nil, r1, nil]) ==
-               MapSet.new([Hash.one])
+               MapSet.new([Hash.one()])
     end
 
     test "filters out nil prerequisites", %{r1: r1, r_nil: r_nil} do
       assert Guarantee.collect_prerequisites([r1, r_nil]) ==
-               MapSet.new([Hash.one])
+               MapSet.new([Hash.one()])
     end
 
     test "combines multiple prerequisite hashes from different reports" do
       r1 = %{
         work_report: %WorkReport{
           refinement_context: %RefinementContext{
-            prerequisite: MapSet.new([Hash.one, Hash.two, Hash.three])
+            prerequisite: MapSet.new([Hash.one(), Hash.two(), Hash.three()])
           }
         }
       }
@@ -537,13 +539,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
       r2 = %{
         work_report: %WorkReport{
           refinement_context: %RefinementContext{
-            prerequisite: MapSet.new([Hash.four, Hash.five])
+            prerequisite: MapSet.new([Hash.four(), Hash.five()])
           }
         }
       }
 
       assert Guarantee.collect_prerequisites([r1, r2]) ==
-        MapSet.new([Hash.one, Hash.two, Hash.three, Hash.four, Hash.five])
+               MapSet.new([Hash.one(), Hash.two(), Hash.three(), Hash.four(), Hash.five()])
     end
   end
 

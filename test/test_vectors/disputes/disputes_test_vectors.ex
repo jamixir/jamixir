@@ -1,4 +1,4 @@
-defmodule VerdictsTestVectors do
+defmodule DisputesTestVectors do
   import TestVectorUtil
   alias Block.Extrinsic
 
@@ -37,7 +37,7 @@ defmodule VerdictsTestVectors do
 
     assert_expected_results(
       json_data,
-      VerdictsTestVectors.tested_keys(),
+      DisputesTestVectors.tested_keys(),
       file_name,
       extrinsic,
       header

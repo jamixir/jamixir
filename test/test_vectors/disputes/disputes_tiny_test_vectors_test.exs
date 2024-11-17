@@ -1,22 +1,16 @@
-defmodule VerdictsConstantsMock do
-  def epoch_length, do: 12
-  def ticket_submission_end, do: 10
-end
-
 defmodule TimeMock do
   def validate_timeslot_order(_, _), do: :ok
 end
 
-defmodule VerdictsTinyTestVectors do
+defmodule DisputesTinyTestVectors do
   use ExUnit.Case, async: false
   import Mox
   alias Util.Hash
   setup :verify_on_exit!
 
   setup_all do
-    RingVrf.init_ring_context(6)
+    RingVrf.init_ring_context(Constants.validator_count())
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, Constants, VerdictsConstantsMock)
     Application.put_env(:jamixir, Util.Time, TimeMock)
 
     Application.put_env(:jamixir, :original_modules, [
@@ -48,11 +42,11 @@ defmodule VerdictsTinyTestVectors do
       :ok
     end
 
-    Enum.each(VerdictsTestVectors.files_to_test(), fn file_name ->
+    Enum.each(DisputesTestVectors.files_to_test(), fn file_name ->
       @tag file_name: file_name
       @tag :tiny_test_vectors
       test "verify tiny test vectors #{file_name}", %{file_name: file_name} do
-        VerdictsTestVectors.execute_test(file_name, "disputes/tiny")
+        DisputesTestVectors.execute_test(file_name, "disputes/tiny")
       end
     end)
   end
