@@ -6,6 +6,7 @@ defmodule Block.Header do
   alias System.State.{SealKeyTicket, Validator}
   alias Util.{Hash, Time}
   use SelectiveMock
+
   use Codec.Encoder
 
   @type t :: %__MODULE__{
@@ -90,8 +91,6 @@ defmodule Block.Header do
       else:
         {:error,
          "Invalid state root. \nHeader: #{Base.encode16(r)}, \nState: #{Base.encode16(state_root)}"}
-
-    # :ok
   end
 
   use MapUnion

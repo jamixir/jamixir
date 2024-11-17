@@ -14,6 +14,7 @@ defmodule DisputesTinyTestVectors do
     Application.put_env(:jamixir, Util.Time, TimeMock)
 
     Application.put_env(:jamixir, :original_modules, [
+      :validate,
       System.State.Judgements,
       System.State.CoreReport,
       Block.Extrinsic.Disputes,
@@ -25,7 +26,6 @@ defmodule DisputesTinyTestVectors do
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.delete_env(:jamixir, Constants)
       Application.delete_env(:jamixir, Util.Time)
       Application.delete_env(:jamixir, :original_modules)
     end)

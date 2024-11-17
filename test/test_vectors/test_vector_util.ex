@@ -1,6 +1,6 @@
 defmodule TestVectorUtil do
-  alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
+  alias Block.Extrinsic.Disputes
   use ExUnit.Case
   Application.put_env(:elixir, :ansi_enabled, true)
 

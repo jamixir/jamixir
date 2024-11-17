@@ -27,7 +27,7 @@ defmodule Util.Time do
   Checks if the given block timeslot index is valid by multiplying it by the block duration and comparing to the current time.
   """
 
-  def validate_block_timeslot(block_timeslot) do
+  defmockable validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
     # Formula (42) v0.4.5

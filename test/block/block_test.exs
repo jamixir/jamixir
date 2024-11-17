@@ -134,7 +134,11 @@ defmodule BlockTest do
 
   describe "preimage validation" do
     setup do
-      Application.put_env(:jamixir, :original_modules, [Block.Extrinsic.Preimage])
+      Application.put_env(:jamixir, :original_modules, [
+        Util.Collections,
+        Block.Extrinsic.Preimage
+      ])
+
       on_exit(fn -> Application.delete_env(:jamixir, :original_modules) end)
     end
 

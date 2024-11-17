@@ -22,6 +22,6 @@ defmodule SafroleTestVectors do
       {:ok, %{vrf_signature_output: json_data[:input][:entropy] |> JsonDecoder.from_json()}}
     end)
 
-    assert_expected_results(json_data, SafroleTestVectors.tested_keys(), file_name)
+    assert_expected_results(json_data, tested_keys(), file_name)
   end
 end

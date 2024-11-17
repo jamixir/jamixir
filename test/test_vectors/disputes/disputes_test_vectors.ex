@@ -35,12 +35,6 @@ defmodule DisputesTestVectors do
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
       |> Map.put(:slot, json_data[:pre_state][:tau])
 
-    assert_expected_results(
-      json_data,
-      DisputesTestVectors.tested_keys(),
-      file_name,
-      extrinsic,
-      header
-    )
+    assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
 end

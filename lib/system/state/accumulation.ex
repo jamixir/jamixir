@@ -22,6 +22,13 @@ defmodule System.State.Accumulation do
               non_neg_integer()
             ) :: AccumulationResult.t()
 
+  @callback accumulate(
+              list(),
+              Header.t(),
+              State.t(),
+              any()
+            ) :: any()
+
   # Formula (174) v0.4.5
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)

@@ -191,7 +191,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (148) v0.4.5
-  def validate_refine_context_timeslot(guarantees, t) do
+  mockable validate_refine_context_timeslot(guarantees, t) do
     if Enum.all?(
          refinement_contexts(guarantees),
          &(&1.timeslot >= t - Constants.max_age_lookup_anchor())
@@ -392,6 +392,7 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:validate_new_work_packages, _), do: :ok
   def mock(:validate_prerequisites, _), do: :ok
   def mock(:validate_segment_root_lookups, _), do: :ok
+  def mock(:validate_refine_context_timeslot, _), do: :ok
 
   # Formula (155) v0.4.5
   @spec validate_segment_root_lookups(list(WorkReport.t()), RecentHistory.t()) ::

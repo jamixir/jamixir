@@ -1,4 +1,6 @@
 defmodule Util.Collections do
+  use SelectiveMock
+
   use MapUnion
 
   @doc """
@@ -47,7 +49,7 @@ defmodule Util.Collections do
   @spec validate_unique_and_ordered(list(), (any() -> any()), (any(), any() -> boolean())) ::
           :ok | {:error, :duplicates | :not_in_order}
 
-  def validate_unique_and_ordered(list, key_fn \\ & &1, comparator \\ &<=/2) do
+  mockable validate_unique_and_ordered(list, key_fn \\ & &1, comparator \\ &<=/2) do
     list
     |> Enum.reduce_while({:ok, nil, MapSet.new()}, fn item, {_, last, seen} ->
       current = key_fn.(item)
@@ -63,6 +65,8 @@ defmodule Util.Collections do
       error -> error
     end
   end
+
+  def mock(:validate_unique_and_ordered, _), do: :ok
 
   # Formula (11) v0.4.5
   @spec union([map()]) :: map()
