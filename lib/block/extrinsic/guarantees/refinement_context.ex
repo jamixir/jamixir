@@ -75,6 +75,11 @@ defmodule RefinementContext do
   use JsonDecoder
 
   def json_mapping do
-    %{state_root_: :state_root, beefy_root_: :beefy_root, timeslot: :lookup_anchor_slot}
+    %{
+      state_root_: :state_root,
+      beefy_root_: :beefy_root,
+      timeslot: :lookup_anchor_slot,
+      prerequisite: fn p -> if(p == nil, do: MapSet.new([]), else: p) end
+    }
   end
 end
