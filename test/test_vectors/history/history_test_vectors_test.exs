@@ -13,6 +13,7 @@ defmodule HistoryTestVectorsTest do
     # Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
     Application.put_env(:jamixir, Util.Time, TimeMock)
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
     Application.put_env(:jamixir, :original_modules, [])
 
     on_exit(fn ->
@@ -20,6 +21,7 @@ defmodule HistoryTestVectorsTest do
       Application.delete_env(:jamixir, Util.Time)
       Application.delete_env(:jamixir, :original_modules)
       Application.delete_env(:jamixir, :header_seal)
+      Application.delete_env(:jamixir, :accumulation)
     end)
 
     :ok

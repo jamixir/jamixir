@@ -1,7 +1,7 @@
 defmodule HistoryTestVectors do
-  alias Util.Hash
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
+  alias Util.Hash
   import TestVectorUtil
   use ExUnit.Case, async: false
   import Mox
@@ -10,7 +10,7 @@ defmodule HistoryTestVectors do
   @repo "jam-test-vectors"
   @branch "polkajam-vectors"
 
-  def files_to_test, do: [for(i <- 1..1, do: "progress_blocks_history-#{i}")] |> List.flatten()
+  def files_to_test, do: [for(i <- 1..4, do: "progress_blocks_history-#{i}")] |> List.flatten()
 
   def tested_keys, do: [:recent_history]
 
@@ -20,7 +20,8 @@ defmodule HistoryTestVectors do
 
     header = %{
       parent_state_root: json_data[:input][:parent_state_root],
-      slot: 5
+      slot: 5,
+      extrinsic_hash: json_data[:input][:header_hash]
     }
 
     guarantees =
@@ -39,8 +40,17 @@ defmodule HistoryTestVectors do
       |> Map.put(:disputes, Map.from_struct(%Disputes{}))
       |> Map.put(:guarantees, guarantees)
 
-    stub(MockAccumulation, :accumulate, fn _, _, _, _ ->
-      {:ok, %{beefy_commitment_map: json_data[:input][:accumulate_root]}}
+    stub(MockAccumulation, :do_accumulate, fn _, _, _, _ ->
+      {:ok,
+       %{
+         beefy_commitment_map: JsonDecoder.from_json(json_data[:input][:accumulate_root]),
+         authorizer_queue: [],
+         services: %{},
+         next_validators: [],
+         privileged_services: %{},
+         accumulation_history: %{},
+         ready_to_accumulate: %{}
+       }}
     end)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)

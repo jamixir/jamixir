@@ -8,6 +8,7 @@ defmodule System.State.RecentHistory do
   alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, MMR}
   use Codec.Encoder
+  use SelectiveMock
 
   @max_length 8
 
@@ -45,6 +46,11 @@ defmodule System.State.RecentHistory do
     })
   end
 
+  mockable(calculate_header_hash(header), do: h(e(header)))
+  # when we want to have a provided header hash, we take the value from header extrinsic_hash
+  def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
+  def mock(:get_well_balanced_merkle_root, context), do: context[:beefy_commitment_map]
+
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
   Formula (82) v0.4.5
@@ -80,7 +86,7 @@ defmodule System.State.RecentHistory do
       ) do
     # 32 bytes of zeros
     state_root_ = Hash.zero()
-    header_hash = Hash.default(e(header))
+    header_hash = calculate_header_hash(header)
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
     # Formula (83)
@@ -111,7 +117,7 @@ defmodule System.State.RecentHistory do
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
-  def get_well_balanced_merkle_root(beefy_commitment_map) do
+  mockable get_well_balanced_merkle_root(beefy_commitment_map) do
     case beefy_commitment_map do
       nil ->
         Hash.zero()
@@ -151,8 +157,9 @@ defmodule System.State.RecentHistory do
   end
 
   def from_json(json_data) do
-    %RecentHistory{
-      blocks: for(b <- json_data, do: RecentBlock.from_json(b))
-    }
+    case json_data do
+      nil -> %RecentHistory{}
+      _ -> %RecentHistory{blocks: for(b <- json_data, do: RecentBlock.from_json(b))}
+    end
   end
 end

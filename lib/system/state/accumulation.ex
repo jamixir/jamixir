@@ -6,28 +6,17 @@ defmodule System.State.Accumulation do
   alias System.State.BeefyCommitmentMap
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Header
-  alias System.{AccumulationResult, DeferredTransfer}
-  alias System.State
+  alias System.PVM.AccumulationOperand
+  alias System.{AccumulationResult, DeferredTransfer, State}
   alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator}
   alias Types
   alias Util.Collections
-  alias System.PVM.AccumulationOperand
 
   use MapUnion
 
-  @callback do_single_accumulation(
-              t(),
-              list(),
-              map(),
-              non_neg_integer()
-            ) :: AccumulationResult.t()
-
-  @callback accumulate(
-              list(),
-              Header.t(),
-              State.t(),
-              any()
-            ) :: any()
+  @callback do_single_accumulation(t(), list(), map(), non_neg_integer()) ::
+              AccumulationResult.t()
+  @callback do_accumulate(list(), Header.t(), State.t(), any()) :: any()
 
   # Formula (174) v0.4.5
   @type t :: %__MODULE__{
@@ -50,7 +39,12 @@ defmodule System.State.Accumulation do
   Handles the accumulation process as described in Formula (177) and (178).
   """
 
-  def accumulate(
+  def accumulate(w, h, s, si) do
+    module = Application.get_env(:jamixir, :accumulation, __MODULE__)
+    module.do_accumulate(w, h, s, si)
+  end
+
+  def do_accumulate(
         work_reports,
         %Header{timeslot: ht},
         %State{
