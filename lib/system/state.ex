@@ -395,6 +395,7 @@ defmodule System.State do
     end
   end
 
+  defp decode_json_field(:beta, value), do: [{:recent_history, RecentHistory.from_json(value)}]
   defp decode_json_field(:tau, value), do: [{:timeslot, value}]
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
 

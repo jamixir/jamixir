@@ -108,8 +108,8 @@ defmodule TestVectorUtil do
       {{:ok, state_}, nil} ->
         # No error expected, assert on the tested keys
         Enum.each(tested_keys, fn key ->
-          assert Map.get(state_, key) == Map.get(expected_state, key),
-                 "Mismatch for key: #{key} in test vector #{file_name}"
+          # "Mismatch for key: #{key} in test vector #{file_name}"
+          assert Map.get(state_, key) == Map.get(expected_state, key)
         end)
 
       {{:ok, _}, error_expected} ->

@@ -28,7 +28,8 @@ defmodule System.State.RecentHistory do
   @doc """
   Creates a new RecentBlock and adds it to the list, ensuring the max length is maintained.
   """
-  @spec add(t(), Types.hash(), Types.hash(), list(Types.hash()), %{Types.hash() => Types.hash()}) :: t()
+  @spec add(t(), Types.hash(), Types.hash(), list(Types.hash()), %{Types.hash() => Types.hash()}) ::
+          t()
   def add(
         %__MODULE__{} = self,
         header_hash,
@@ -147,5 +148,11 @@ defmodule System.State.RecentHistory do
         )
       )
     end
+  end
+
+  def from_json(json_data) do
+    %RecentHistory{
+      blocks: for(b <- json_data, do: RecentBlock.from_json(b))
+    }
   end
 end

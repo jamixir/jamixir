@@ -98,7 +98,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{ Hash.one => Hash.zero}
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.one() => Hash.zero()}
     end
 
     test "handles non-empty recent_history.blocks" do
@@ -114,13 +114,13 @@ defmodule RecentHistoryTest do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.four,
-            exports_root: Hash.five
+            work_package_hash: Hash.four(),
+            exports_root: Hash.five()
           }
         }
       }
 
-      beefy_commitment_map = BeefyCommitmentMap.new([{2, Hash.five}])
+      beefy_commitment_map = BeefyCommitmentMap.new([{2, Hash.five()}])
 
       result =
         RecentHistory.calculate_recent_history_(
@@ -131,15 +131,15 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 2
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.four => Hash.five}
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.four() => Hash.five()}
     end
 
     test "verifies work_package_hashes are extracted correctly" do
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.one,
-            exports_root: Hash.two
+            work_package_hash: Hash.one(),
+            exports_root: Hash.two()
           }
         }
       }
@@ -147,8 +147,8 @@ defmodule RecentHistoryTest do
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.two,
-            exports_root: Hash.three
+            work_package_hash: Hash.two(),
+            exports_root: Hash.three()
           }
         }
       }
@@ -165,9 +165,9 @@ defmodule RecentHistoryTest do
         )
 
       assert Enum.at(result.blocks, -1).work_report_hashes == %{
-        Hash.one => Hash.two,
-        Hash.two => Hash.three
-      }
+               Hash.one() => Hash.two(),
+               Hash.two() => Hash.three()
+             }
     end
 
     test "correctly updates RecentHistory when list is full" do
@@ -190,7 +190,7 @@ defmodule RecentHistoryTest do
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
             work_package_hash: <<9::256>>,
-            exports_root: Hash.five
+            exports_root: Hash.five()
           }
         }
       }
@@ -210,10 +210,10 @@ defmodule RecentHistoryTest do
       assert length(result.blocks) == 8
 
       # Verify that the oldest block was removed (i.e., the block with work_report_hashes == [Hash.one()])
-      assert Enum.at(result.blocks, 0).work_report_hashes == %{Hash.two => Hash.zero}
+      assert Enum.at(result.blocks, 0).work_report_hashes == %{Hash.two() => Hash.zero()}
 
       # Verify that the newest block was added (i.e., the block with work_report_hashes == [<<9::256>>])
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::256>> => Hash.five}
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::256>> => Hash.five()}
     end
 
     test "correctly links inputs to MMR and work_package_hashes" do
@@ -225,8 +225,8 @@ defmodule RecentHistoryTest do
       guarantee1 = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.one,
-            exports_root: Hash.two
+            work_package_hash: Hash.one(),
+            exports_root: Hash.two()
           }
         }
       }
@@ -234,8 +234,8 @@ defmodule RecentHistoryTest do
       guarantee2 = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.two,
-            exports_root: Hash.three
+            work_package_hash: Hash.two(),
+            exports_root: Hash.three()
           }
         }
       }
@@ -251,10 +251,11 @@ defmodule RecentHistoryTest do
 
       # Verify that the MMR and work_package_hashes are correctly linked
       assert length(result.blocks) == 1
+
       assert Enum.at(result.blocks, -1).work_report_hashes == %{
-        Hash.one => Hash.two,
-        Hash.two => Hash.three
-      }
+               Hash.one() => Hash.two(),
+               Hash.two() => Hash.three()
+             }
 
       # Construct the expected Merkle tree root from the beefy_commitment_map
       expected_merkle_root =
@@ -277,8 +278,8 @@ defmodule RecentHistoryTest do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: Hash.one,
-            exports_root: Hash.two
+            work_package_hash: Hash.one(),
+            exports_root: Hash.two()
           }
         }
       }
@@ -329,4 +330,73 @@ defmodule RecentHistoryTest do
       refute result == Hash.zero()
     end
   end
+
+  describe "from_json/1" do
+    test "import json correctly" do
+      {:ok, content} = File.read("test/system/state/recent_history.json")
+      {:ok, json} = Jason.decode(content)
+      json = Utils.atomize_keys(json)
+      result = RecentHistory.from_json(json)
+      assert %RecentHistory{blocks: [block1, block2]} = result
+
+      # Add assertions to verify the result
+      assert block1 == %RecentBlock{
+               header_hash:
+                 hex_to_binary(
+                   "0x530ef4636fedd498e99c7601581271894a53e965e901e8fa49581e525f165dae"
+                 ),
+               accumulated_result_mmr: [
+                 hex_to_binary(
+                   "0x8720b97ddd6acc0f6eb66e095524038675a4e4067adc10ec39939eaefc47d842"
+                 )
+               ],
+               state_root:
+                 hex_to_binary(
+                   "0x1831dde64e40bfd8639c2d122e5ac00fe133c48cd16e1621ca6d5cf0b8e10d3b"
+                 ),
+               work_report_hashes: %{
+                 hex_to_binary(
+                   "0x016cb55eb7b84e0d495d40832c7238965baeb468932c415dc2ceffe0afb039e5"
+                 ) =>
+                   hex_to_binary(
+                     "0x935f6dfef36fa06e10a9ba820f933611c05c06a207b07141fe8d87465870c11c"
+                   ),
+                 hex_to_binary(
+                   "0x76bcb24901299c331f0ca7342f4874f19b213ee72df613d50699e7e25edb82a6"
+                 ) =>
+                   hex_to_binary(
+                     "0xc825d16b7325ca90287123bd149d47843c999ce686ed51eaf8592dd2759272e3"
+                   )
+               }
+             }
+
+      # Check second block
+      assert block2 == %RecentBlock{
+               header_hash:
+                 hex_to_binary(
+                   "0x241d129c6edc2114e6dfba7d556f7f7c66399b55ceec3078a53d44c752ba7e9a"
+                 ),
+               accumulated_result_mmr: [
+                 nil,
+                 hex_to_binary(
+                   "0x7076c31882a5953e097aef8378969945e72807c4705e53a0c5aacc9176f0d56b"
+                 )
+               ],
+               state_root:
+                 hex_to_binary(
+                   "0x0000000000000000000000000000000000000000000000000000000000000000"
+                 ),
+               work_report_hashes: %{
+                 hex_to_binary(
+                   "0x3cc8d8c94e7b3ee01e678c63fd6b5db894fc807dff7fe10a11ab41e70194894d"
+                 ) =>
+                   hex_to_binary(
+                     "0xc0edfe377d20b9f4ed7d9df9511ef904c87e24467364f0f7f75f20cfe90dd8fb"
+                   )
+               }
+             }
+    end
+  end
+
+  defp hex_to_binary("0x" <> hex), do: Base.decode16!(hex, case: :mixed)
 end

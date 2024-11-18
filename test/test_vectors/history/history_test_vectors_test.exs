@@ -37,7 +37,7 @@ defmodule HistoryTestVectorsTest do
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name
       @tag :tiny_test_vectors
-      test "verify tiny test vectors #{file_name}", %{file_name: file_name} do
+      test "verify history vectors #{file_name}", %{file_name: file_name} do
         execute_test(file_name, "history/data")
       end
     end)

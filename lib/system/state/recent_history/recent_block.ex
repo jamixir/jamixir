@@ -15,4 +15,29 @@ defmodule System.State.RecentHistory.RecentBlock do
             accumulated_result_mmr: [nil],
             state_root: nil,
             work_report_hashes: %{}
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      header_hash: :hash,
+      # This maps json["mmr"]["peaks"] to accumulated_result_mmr
+      accumulated_result_mmr: [&mmr/1, :mmr],
+      work_report_hashes: [&map_reported_hashes/1, :reported]
+    }
+  end
+
+  defp mmr(json) do
+    JsonDecoder.from_json(json[:peaks])
+  end
+
+  defp map_reported_hashes(json) do
+    for report <- json,
+        into: %{} do
+      {
+        JsonDecoder.from_json(report[:hash]),
+        JsonDecoder.from_json(report[:exports_root])
+      }
+    end
+  end
 end
