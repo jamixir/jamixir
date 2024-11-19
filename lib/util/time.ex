@@ -1,5 +1,5 @@
 defmodule Util.Time do
-  use Mockable
+  use SelectiveMock
   @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
 
   @doc """
@@ -27,7 +27,7 @@ defmodule Util.Time do
   Checks if the given block timeslot index is valid by multiplying it by the block duration and comparing to the current time.
   """
 
-  defmockable validate_block_timeslot(block_timeslot) do
+  mockable validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
     # Formula (42) v0.4.5
@@ -38,9 +38,12 @@ defmodule Util.Time do
     end
   end
 
+  def mock(:validate_block_timeslot, _), do: :ok
+  def mock(:validate_timeslot_order, _), do: :ok
+
   def valid_block_timeslot?(block_timeslot), do: validate_block_timeslot(block_timeslot) == :ok
 
-  defmockable validate_timeslot_order(previous_timeslot, current_timeslot) do
+  mockable validate_timeslot_order(previous_timeslot, current_timeslot) do
     if previous_timeslot >= current_timeslot do
       {:error,
        "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}

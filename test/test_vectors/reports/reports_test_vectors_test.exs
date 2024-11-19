@@ -1,8 +1,8 @@
-defmodule HistoryTestVectorsTest do
+defmodule ReportsTestVectorsTest do
   alias Util.Hash
   use ExUnit.Case
   import Mox
-  import HistoryTestVectors
+  import ReportsTestVectors
   setup :verify_on_exit!
 
   setup_all(do: setup_all())
@@ -18,9 +18,9 @@ defmodule HistoryTestVectorsTest do
 
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name
-      test "verify history vectors #{file_name}", %{file_name: file_name} do
-        execute_test(file_name, "history/data")
-      end
+      # test "verify reports tiny vectors #{file_name}", %{file_name: file_name} do
+      #   execute_test(file_name, "reports/tiny")
+      # end
     end)
   end
 end

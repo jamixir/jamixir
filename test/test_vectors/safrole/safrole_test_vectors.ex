@@ -25,7 +25,8 @@ defmodule SafroleTestVectors do
       :validate,
       System.Validators.Safrole,
       Block.Extrinsic.TicketProof,
-      Util.Collections
+      Util.Collections,
+      Util.Time
     ])
 
     on_exit(fn ->

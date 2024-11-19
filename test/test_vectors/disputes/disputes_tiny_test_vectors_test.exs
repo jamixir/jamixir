@@ -1,7 +1,3 @@
-defmodule TimeMock do
-  def validate_timeslot_order(_, _), do: :ok
-end
-
 defmodule DisputesTinyTestVectors do
   use ExUnit.Case, async: false
   import Mox
