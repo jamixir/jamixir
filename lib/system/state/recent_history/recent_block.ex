@@ -20,7 +20,6 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def json_mapping,
     do: %{
-      header_hash: :hash,
       accumulated_result_mmr: [&mmr/1, :mmr],
       work_report_hashes: [&map_reported_hashes/1, :reported]
     }
