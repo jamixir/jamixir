@@ -97,13 +97,13 @@ defmodule System.State.RecentHistory do
     mmr_roots =
       case recent_history.blocks do
         [] ->
-          MMR.append(MMR.new(), well_balanced_merkle_root).roots
+          MMR.append(MMR.new(), well_balanced_merkle_root, &Hash.keccak_256/1).roots
 
         _ ->
           (for(b <- recent_history.blocks, do: b.accumulated_result_mmr)
            |> Enum.at(-1)
            |> MMR.from()
-           |> MMR.append(well_balanced_merkle_root)).roots
+           |> MMR.append(well_balanced_merkle_root, &Hash.keccak_256/1)).roots
       end
 
     # Work report hashes

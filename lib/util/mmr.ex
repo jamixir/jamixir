@@ -26,39 +26,30 @@ defmodule Util.MMR do
   @doc """
   Convert an MMR to a list of hashes.
   """
-  def to_list(%MMR{roots: roots}), do: roots
+  def to_list(%MMR{roots: r}), do: r
 
   @doc """
   Add a new element to the MMR.
   Formula (333) v0.4.5 - A
   """
-  def append(%MMR{roots: roots} = mmr, hash) do
-    new_roots = append_root(roots, hash)
-    %MMR{mmr | roots: new_roots}
+  def append(%MMR{roots: r} = mmr, l, h \\ &Hash.default/1) do
+    %MMR{mmr | roots: append_root(r, l, 0, h)}
   end
 
-  # Formula (333) v0.4.5 - A
-  defp append_root(roots, hash), do: append_root(roots, hash, 0)
-
   # Formula (333) v0.4.5 - P
-  defp append_root(roots, hash, n) do
-    if n >= length(roots) do
-      roots ++ [hash]
+  defp append_root(r, l, n, h) do
+    if n >= length(r) do
+      r ++ [l]
     else
-      current_root = Enum.at(roots, n)
-
-      if current_root == nil do
-        replace(roots, n, hash)
-      else
-        combined_hash = Hash.default(current_root <> hash)
-        updated_roots = replace(roots, n, nil)
-        append_root(updated_roots, combined_hash, n + 1)
+      case Enum.at(r, n) do
+        nil -> replace(r, n, l)
+        rn -> append_root(replace(r, n, nil), h.(rn <> l), n + 1, h)
       end
     end
   end
 
   # Formula (333) v0.4.5 - R
-  defp replace(roots, i, value) do
-    List.replace_at(roots, i, value)
+  defp replace(s, i, v) do
+    List.replace_at(s, i, v)
   end
 end

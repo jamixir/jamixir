@@ -1,6 +1,7 @@
 defmodule SafroleTestVectors do
   import TestVectorUtil
   import Mox
+  use ExUnit.Case
 
   def files,
     do:
@@ -14,6 +15,27 @@ defmodule SafroleTestVectors do
       |> List.flatten()
 
   def tested_keys, do: [:timeslot, :entropy_pool, :prev_validators, :curr_validators, :safrole]
+
+  def setup_all do
+    RingVrf.init_ring_context(Constants.validator_count())
+    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+
+    Application.put_env(:jamixir, :original_modules, [
+      System.State.Safrole,
+      :validate,
+      System.Validators.Safrole,
+      Block.Extrinsic.TicketProof,
+      Util.Collections
+    ])
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.delete_env(:jamixir, Constants)
+      Application.delete_env(:jamixir, :original_modules)
+    end)
+
+    :ok
+  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", path)
