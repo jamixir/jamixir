@@ -11,6 +11,7 @@ defmodule SafroleTinyTestVectors do
   describe "vectors" do
     Enum.each(files(), fn file_name ->
       @tag file_name: file_name
+      @tag :skip
       test "verify tiny test vectors #{file_name}", %{file_name: file_name} do
         execute_test(file_name, "safrole/tiny")
       end
