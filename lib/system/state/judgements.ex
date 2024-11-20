@@ -151,10 +151,10 @@ defmodule System.State.Judgements do
     decoder = &(JsonDecoder.from_json(&1) |> MapSet.new())
 
     %{
-      good: [decoder, :psi_g],
-      bad: [decoder, :psi_b],
-      wonky: [decoder, :psi_w],
-      punish: [decoder, :psi_o]
+      good: [decoder, :good],
+      bad: [decoder, :bad],
+      wonky: [decoder, :wonky],
+      punish: [decoder, :offenders]
     }
   end
 end
