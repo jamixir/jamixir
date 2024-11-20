@@ -131,10 +131,10 @@ defmodule System.StateTest do
 
     test "convert 255 and service id" do
       assert key_to_32_octet({255, 1}) == <<255>> <> <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 27)
-      assert key_to_32_octet({255, 1024}) == <<255>> <> <<0, 4, 0, 0>> <> :binary.copy(<<0>>, 27)
+      assert key_to_32_octet({255, 1024}) == <<255>> <> <<0, 0, 4, 0, 0,0,0,0>> <> :binary.copy(<<0>>, 23)
 
       assert key_to_32_octet({255, 4_294_967_295}) ==
-               <<255>> <> <<255, 255, 255, 255>> <> :binary.copy(<<0>>, 27)
+               <<255>> <> <<255, 0, 255, 0, 255, 0, 255, 0>> <> :binary.copy(<<0>>, 23)
     end
 
     test "error" do
