@@ -30,6 +30,7 @@ defmodule Block.Extrinsic.Assurance do
   mockable validate_assurances(
              assurances,
              parent_hash,
+             header_timeslot,
              curr_validators_,
              core_reports_intermediate_1
            ) do
@@ -39,8 +40,9 @@ defmodule Block.Extrinsic.Assurance do
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
          # Formula (127) v0.4.5
          :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
-         # Formula (129) v0.4.5
-         :ok <- validate_core_reports_bits(assurances, core_reports_intermediate_1) do
+         # Formula (11.14) v0.5
+         :ok <-
+           validate_core_reports_bits(assurances, core_reports_intermediate_1, header_timeslot) do
       :ok
     else
       false -> {:error, "Invalid assurance"}
@@ -50,13 +52,22 @@ defmodule Block.Extrinsic.Assurance do
 
   def mock(:validate_assurances, _), do: :ok
 
-  # Formula (129) v0.4.5
-  defp validate_core_reports_bits(assurances, core_reports_intermediate) do
+  # Formula (11.14) v0.5
+  defp validate_core_reports_bits(assurances, core_reports_intermediate, h_t) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
         Stream.with_index(for <<bit::1 <- assurance.bitfield>>, do: bit)
         |> Enum.all?(fn {bit, index} ->
-          bit == 0 or Enum.at(core_reports_intermediate, index) != nil
+          case bit do
+            0 ->
+              true
+
+            _ ->
+              Enum.at(core_reports_intermediate, index) != nil and
+                h_t <=
+                  Enum.at(core_reports_intermediate, index).timeslot +
+                    Constants.unavailability_period()
+          end
         end)
       end)
 

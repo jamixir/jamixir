@@ -162,6 +162,7 @@ defmodule System.State do
            Assurance.validate_assurances(
              e.assurances,
              h.parent_hash,
+             h.timeslot,
              curr_validators_,
              core_reports_intermediate_1
            ),
