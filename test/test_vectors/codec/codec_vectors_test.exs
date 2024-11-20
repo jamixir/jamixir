@@ -1,4 +1,5 @@
 defmodule CodecVectorsTest do
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage}
@@ -23,7 +24,7 @@ defmodule CodecVectorsTest do
     {"refine_context", RefinementContext},
     {"tickets_extrinsic", TicketProof},
     # {"work_item", WorkItem},
-    # {"work_report", WorkReport},
+    {"work_report", WorkReport},
     {"work_result_0", WorkResult},
     {"work_result_1", WorkResult}
   ]
@@ -42,7 +43,15 @@ defmodule CodecVectorsTest do
   end
 
   def assert_correctly_encoded(file_name, module) do
-    {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", "codec/data")
+    {:ok, json_data} =
+      fetch_and_parse_json(
+        file_name <> ".json",
+        "codec/data",
+        "davxy",
+        "jam-test-vectors",
+        "polkajam-vectors"
+      )
+
     expected = fetch_binary(file_name <> ".bin", "codec/data")
 
     case json_data do

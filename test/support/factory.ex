@@ -113,7 +113,7 @@ defmodule Jamixir.Factory do
       core_index: 1,
       authorizer_hash: Hash.two(),
       output: <<3>>,
-      segment_root_lookup: nil,
+      segment_root_lookup: %{},
       results: build_list(2, :work_result)
     }
   end
@@ -121,7 +121,7 @@ defmodule Jamixir.Factory do
   def availability_specification_factory do
     %Block.Extrinsic.AvailabilitySpecification{
       work_package_hash: sequence(:work_package_hash, fn n -> <<n::256>> end),
-      len: 2,
+      length: 2,
       erasure_root: Hash.three(),
       exports_root: <<4::256>>
     }

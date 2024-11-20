@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           # h: hash of the work-package
           work_package_hash: Types.hash(),
           # l: auditable work bundle length
-          len: Types.max_age_timeslot_lookup_anchor(),
+          length: Types.max_age_timeslot_lookup_anchor(),
           # u: erasure-root
           erasure_root: Types.hash(),
           # e: segment-root
@@ -18,7 +18,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   # h
   defstruct work_package_hash: Hash.zero(),
             # l
-            len: 0,
+            length: 0,
             # u
             erasure_root: Hash.zero(),
             # e
@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     # Formula (312) v0.4.5
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
-        e_le(availability.len, 4) <>
+        e_le(availability.length, 4) <>
         e({availability.erasure_root, availability.exports_root})
     end
   end
@@ -44,7 +44,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
     %__MODULE__{
       work_package_hash: work_package_hash,
-      len: length(export_segments),
+      length: length(export_segments),
       erasure_root: calculate_erasure_root(bundle_binary, export_segments),
       exports_root: MerkleTree.merkle_root(export_segments)
     }
@@ -80,13 +80,13 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   defp erasure_code_chunk(_binary, _n), do: []
 
   def decode(bin) do
-    <<work_package_hash::binary-size(@hash_size), len::binary-size(4),
+    <<work_package_hash::binary-size(@hash_size), length::binary-size(4),
       erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
       rest::binary>> = bin
 
     {%__MODULE__{
        work_package_hash: work_package_hash,
-       len: de_le(len, 4),
+       length: de_le(length, 4),
        erasure_root: erasure_root,
        exports_root: exports_root
      }, rest}

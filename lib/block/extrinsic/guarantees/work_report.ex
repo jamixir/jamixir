@@ -48,7 +48,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    if wr.segment_root_lookup == nil do
+    if wr.segment_root_lookup == %{} do
       true
     else
       map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <= 8 and
@@ -218,7 +218,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # s
           specification: specification,
           # l # TODO
-          # segment_root_lookup: %{Types.hash() => Types.hash()},
+          segment_root_lookup: %{},
           results: r
         }
     end
@@ -272,8 +272,21 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       specification: %{m: AvailabilitySpecification, f: :package_spec},
       refinement_context: %{m: RefinementContext, f: :context},
       output: :auth_output,
-      results: [WorkResult]
+      results: [WorkResult],
+      segment_root_lookup: &decode_segment_root_lookup/1
     }
+  end
+
+  def decode_segment_root_lookup(json) do
+    if json == nil do
+      %{}
+    else
+      for i <- json,
+          do:
+            {JsonDecoder.from_json(i[:work_package_hash]),
+             JsonDecoder.from_json(i[:segment_tree_root])},
+          into: %{}
+    end
   end
 
   defimpl Encodable do
@@ -285,10 +298,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         wr.specification,
         wr.refinement_context,
         wr.core_index,
-        case wr.segment_root_lookup do
-          nil -> <<0>>
-          a -> a
-        end,
+        wr.segment_root_lookup,
         wr.authorizer_hash,
         vs(wr.output),
         vs(wr.results)
@@ -304,14 +314,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {refinement_context, bin} = RefinementContext.decode(bin)
     <<core_index::8, bin::binary>> = bin
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
-
-    segment_root_lookup =
-      if segment_root_lookup == %{} do
-        nil
-      else
-        segment_root_lookup
-      end
-
     <<authorizer_hash::binary-size(@hash_size), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
     {results, rest} = VariableSize.decode(bin, WorkResult)

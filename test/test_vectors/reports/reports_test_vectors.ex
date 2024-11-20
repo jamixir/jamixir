@@ -4,10 +4,6 @@ defmodule ReportsTestVectors do
   alias Block.Extrinsic
   use ExUnit.Case
 
-  @owner "davxy"
-  @repo "jam-test-vectors"
-  @branch "disputes"
-
   def files_to_test,
     do:
       [
@@ -68,7 +64,7 @@ defmodule ReportsTestVectors do
 
   def execute_test(file_name, path) do
     {:ok, json_data} =
-      fetch_and_parse_json(file_name <> ".json", path, @owner, @repo, @branch)
+      fetch_and_parse_json(file_name <> ".json", path, "davxy", "jam-test-vectors", "disputes")
 
     extrinsic =
       Map.from_struct(%Extrinsic{})
