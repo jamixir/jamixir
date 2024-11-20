@@ -1,6 +1,7 @@
 defmodule System.State do
   alias Codec.NilDiscriminator
   use Codec.Encoder
+  import Bitwise
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -269,7 +270,7 @@ defmodule System.State do
     end
   end
 
-  # Formula (321) v0.4.5
+  # # Formula (D.2) v0.5
   def state_keys(s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
@@ -302,8 +303,8 @@ defmodule System.State do
       15 => e(for x <- s.ready_to_accumulate, do: vs(x))
     }
     |> encode_accounts(s)
-    |> encode_accounts_storage(s, :storage)
-    |> encode_accounts_storage(s, :preimage_storage_p)
+    |> encode_accounts_storage_s(s, :storage)
+    |> encode_accounts_storage_p(s, :preimage_storage_p)
     |> encode_accounts_preimage_storage_l(s)
   end
 
@@ -340,29 +341,37 @@ defmodule System.State do
       Map.put(ac, {255, id}, e(service))
     end)
   end
-
-  # ∀(s ↦ a) ∈ δ, (h ↦ v) ∈ as ∶ C(s, h) ↦ v
-  # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, h) ↦ p
-  defp encode_accounts_storage(state_keys, %State{} = state, property) do
+  # ∀(s ↦ a) ∈ δ, (k ↦ v) ∈ as ∶ C(s, E4 (2^32 − 1) ⌢ k0...28 ) ↦ v
+  defp encode_accounts_storage_s(state_keys, %State{} = state, property) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, h}, v)
+        Map.put(ac, {s, e_le((1 <<< 32) - 1, 4) <> binary_slice(h, 0, 28)}, v)
       end)
     end)
   end
 
-  # ∀(s ↦ a) ∈ δ, ((h, l) ↦ t) ∈ al ∶ C(s, E4(l) ⌢ (¬h4∶)) ↦ E(↕[E4(x) ∣ x <− t])
+
+  # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, E4 (2^32 − 2) ⌢ h1...29 ) ↦ p
+  defp encode_accounts_storage_p(state_keys, %State{} = state, property) do
+    state.services
+    |> Enum.reduce(state_keys, fn {s, a}, ac ->
+      Map.get(a, property)
+      |> Enum.reduce(ac, fn {h, v}, ac ->
+        Map.put(ac, {s, e_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 29)}, v)
+      end)
+    end)
+  end
+
+  # ∀(s ↦ a) ∈ δ, ((h, l) ↦ t) ∈ al ∶ C(s, E4 (l) ⌢ H(h)2...30 ) ↦ E(↕[E4 (x) ∣ x −< t])
   defp encode_accounts_preimage_storage_l(state_keys, %State{} = state) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value = e(vs(for x <- t, do: e_le(x, 4)))
-
-        <<_::binary-size(4), rest::binary>> = h
-        key = e_le(l, 4) <> Utils.invert_bits(rest)
+        key = e_le(l, 4) <> Hash.default(h) |> binary_slice(2, 30)
         Map.put(ac, {s, key}, value)
       end)
     end)
