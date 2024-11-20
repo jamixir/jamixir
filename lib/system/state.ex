@@ -320,10 +320,11 @@ defmodule System.State do
     |> encode_accounts_preimage_storage_l(s)
   end
 
-  # Formula (320) v0.4.5 - C constructor
-  # (i, s ∈ NS) ↦ [i, n0, n1, n2, n3, 0, 0, . . . ] where n = E4(s)
+  # Formula (D.1) v0.5 - C constructor
+  # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
-    <<i::8>> <> e_le(s, 4) <> <<0::216>>
+    <<n0, n1, n2, n3>> = e_le(s, 4)
+    <<i::8>> <> <<n0, 0, n1, 0, n2, 0, n3, 0>> <> <<0::208>>
   end
 
   # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
