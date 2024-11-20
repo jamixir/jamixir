@@ -33,7 +33,7 @@ defmodule Block.Extrinsic.AssuranceTest do
         signature: signature
       )
 
-    %{hp: hp, assurance: assurance, validators: validators, core_reports: [], s2: s2}
+    %{hp: hp, ht: 1, assurance: assurance, validators: validators, core_reports: [], s2: s2}
   end
 
   describe "Assurance encoding" do
@@ -59,49 +59,53 @@ defmodule Block.Extrinsic.AssuranceTest do
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       assurances = [assurance]
-      assert :ok == Assurance.validate_assurances(assurances, hp, validators, cr)
+      assert :ok == Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
     test "returns error when assurance hash doesn't match parent hash", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       d_assurance = %{assurance | hash: Hash.random()}
       assurances = [assurance, d_assurance]
 
       assert {:error, "Invalid assurance"} ==
-               Assurance.validate_assurances(assurances, hp, validators, cr)
+               Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
     test "returns error when validator index is out of bounds", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       d_assurance = %{assurance | validator_index: 5_000}
       assurances = [d_assurance]
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances(assurances, hp, validators, cr)
+               Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
-    test "returns :ok for empty list of assurances", %{hp: hp, validators: validators} do
-      assert :ok == Assurance.validate_assurances([], hp, validators, [])
+    test "returns :ok for empty list of assurances", %{hp: hp, validators: validators, ht: h_t} do
+      assert :ok == Assurance.validate_assurances([], hp, h_t, validators, [])
     end
 
     test "returns :ok for single valid assurance", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
-      assert :ok == Assurance.validate_assurances([assurance], hp, validators, cr)
+      assert :ok == Assurance.validate_assurances([assurance], hp, h_t, validators, cr)
     end
 
     # Uncomment this test if you implement the validator_index uniqueness check
@@ -109,61 +113,66 @@ defmodule Block.Extrinsic.AssuranceTest do
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       duplicate_assurance = %{assurance | validator_index: assurance.validator_index}
       assurances = [assurance, duplicate_assurance]
 
       assert {:error, :duplicates} =
-               Assurance.validate_assurances(assurances, hp, validators, cr)
+               Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
     test "error when validator_index is not ordered", %{
       assurance: assurance,
       hp: hp,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       higher_index = %{assurance | validator_index: assurance.validator_index + 1}
 
       assert {:error, :not_in_order} ==
-               Assurance.validate_assurances([higher_index, assurance], hp, validators, cr)
+               Assurance.validate_assurances([higher_index, assurance], hp, h_t, validators, cr)
     end
 
     test "returns :error for invalid signature assurances", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       invalid_assurance = %{assurance | signature: Crypto.random_sign()}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
+               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
     test "returns :error for invalid validator index", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       invalid_assurance = %{assurance | validator_index: 2}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
+               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
     test "returns :error for invalid bitfield", %{
       hp: hp,
       assurance: assurance,
       validators: validators,
-      core_reports: cr
+      core_reports: cr,
+      ht: h_t
     } do
       invalid_assurance = %{assurance | bitfield: "other"}
 
       assert {:error, :invalid_signature} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
+               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
     # Formula (129) v0.4.5
@@ -171,14 +180,50 @@ defmodule Block.Extrinsic.AssuranceTest do
       hp: hp,
       assurance: assurance,
       validators: validators,
-      s2: s2
+      s2: s2,
+      ht: h_t
     } do
       payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
       signature = Crypto.sign(payload, s2)
       invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
 
       assert {:error, "Invalid core reports bits"} ==
-               Assurance.validate_assurances([invalid_assurance], hp, validators, [nil])
+               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, [nil])
+    end
+
+    test "returns :error when assurance bit is set but core report is not null, but timeslot is too old",
+         %{
+           hp: hp,
+           assurance: assurance,
+           validators: validators,
+           s2: s2
+         } do
+      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
+      signature = Crypto.sign(payload, s2)
+      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
+
+      cr = [%{timeslot: 2, core_report: nil}]
+      h_t = 2 + Constants.unavailability_period() + 1
+
+      assert {:error, "Invalid core reports bits"} ==
+               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
+    end
+
+    test "returns :ok when assurance bit is set but core report is not null,and timeslot is not old",
+         %{
+           hp: hp,
+           assurance: assurance,
+           validators: validators,
+           s2: s2
+         } do
+      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
+      signature = Crypto.sign(payload, s2)
+      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
+
+      cr = [%{timeslot: 2, core_report: nil}]
+      h_t = 2 + Constants.unavailability_period() - 1
+
+      assert :ok == Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
   end
 end
