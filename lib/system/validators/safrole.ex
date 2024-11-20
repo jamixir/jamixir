@@ -1,20 +1,20 @@
 defmodule System.Validators.Safrole do
   use SelectiveMock
   alias Block.Header
-  alias System.State.Safrole
+  alias System.State.{EntropyPool, Safrole}
   alias Util.Time
 
-  # Formula (72) v0.4.5
+  # Formula (6.27) v0.5
   mockable valid_epoch_marker(
              %Header{timeslot: timeslot, epoch_mark: epoch_marker},
              state_timeslot,
-             n1_,
+             %EntropyPool{n1: n1_, n2: n2_},
              pending_
            ) do
     new_epoch? = Time.new_epoch?(state_timeslot, timeslot)
 
     cond do
-      new_epoch? and epoch_marker == {n1_, for(v <- pending_, do: v.bandersnatch)} ->
+      new_epoch? and epoch_marker == {n1_, n2_, for(v <- pending_, do: v.bandersnatch)} ->
         :ok
 
       not new_epoch? and is_nil(epoch_marker) ->

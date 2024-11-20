@@ -173,7 +173,7 @@ defmodule System.State do
            System.Validators.Safrole.valid_epoch_marker(
              h,
              state.timeslot,
-             rotated_history_entropy_pool.n1,
+             rotated_history_entropy_pool,
              pending_
            ),
          # Formula (69) v0.4.5

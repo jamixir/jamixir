@@ -17,31 +17,34 @@ defmodule System.Validators.SafroleValidatorTest do
 
   describe "valid_epoch_marker/4" do
     test "returns :ok when it's a new epoch and epoch_marker is valid", ctx do
-      header = %Header{timeslot: 600, epoch_mark: {ctx.entropy_pool.n1, ctx.bandersnatch_keys}}
+      header = %Header{
+        timeslot: 600,
+        epoch_mark: {ctx.entropy_pool.n1, ctx.entropy_pool.n2, ctx.bandersnatch_keys}
+      }
 
       assert :ok ==
-               Safrole.valid_epoch_marker(header, 599, ctx.entropy_pool.n1, ctx.safrole.pending)
+               Safrole.valid_epoch_marker(header, 599, ctx.entropy_pool, ctx.safrole.pending)
     end
 
     test "returns :ok when it's not a new epoch and epoch_marker is nil", ctx do
       header = %Header{timeslot: 11, epoch_mark: nil}
 
       assert :ok ==
-               Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
+               Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool, ctx.safrole.pending)
     end
 
     test "returns error when it's a new epoch but epoch_marker is invalid", ctx do
       header = %Header{timeslot: 900, epoch_mark: {Hash.one(), ctx.bandersnatch_keys}}
 
       assert {:error, "Invalid epoch marker"} ==
-               Safrole.valid_epoch_marker(header, 3, ctx.entropy_pool.n1, ctx.safrole.pending)
+               Safrole.valid_epoch_marker(header, 3, ctx.entropy_pool, ctx.safrole.pending)
     end
 
     test "return error when it is not a new epoch and epoch_marker is not nil", ctx do
       header = %Header{timeslot: 11, epoch_mark: {ctx.entropy_pool.n1, ctx.bandersnatch_keys}}
 
       assert {:error, "Invalid epoch marker"} ==
-               Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool.n1, ctx.safrole.pending)
+               Safrole.valid_epoch_marker(header, 1, ctx.entropy_pool, ctx.safrole.pending)
     end
   end
 
