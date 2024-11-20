@@ -11,10 +11,12 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           # u: erasure-root
           erasure_root: Types.hash(),
           # e: segment-root
-          exports_root: Types.hash()
+          exports_root: Types.hash(),
+          # n: segment-count
+          segment_count: non_neg_integer()
         }
 
-  # Formula (121) v0.4.5
+  # Formula (11.5) v0.5
   # h
   defstruct work_package_hash: Hash.zero(),
             # l
@@ -22,15 +24,18 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
             # u
             erasure_root: Hash.zero(),
             # e
-            exports_root: Hash.zero()
+            exports_root: Hash.zero(),
+            # n
+            segment_count: 0
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (312) v0.4.5
+    # Formula (C.22) v0.5
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
         e_le(availability.length, 4) <>
-        e({availability.erasure_root, availability.exports_root})
+        e({availability.erasure_root, availability.exports_root}) <>
+        e_le(availability.segment_count, 2)
     end
   end
 
@@ -82,13 +87,14 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   def decode(bin) do
     <<work_package_hash::binary-size(@hash_size), length::binary-size(4),
       erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
-      rest::binary>> = bin
+      segment_count::binary-size(2), rest::binary>> = bin
 
     {%__MODULE__{
        work_package_hash: work_package_hash,
        length: de_le(length, 4),
        erasure_root: erasure_root,
-       exports_root: exports_root
+       exports_root: exports_root,
+       segment_count: de_le(segment_count, 2)
      }, rest}
   end
 
