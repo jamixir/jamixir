@@ -94,7 +94,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
        length: de_le(length, 4),
        erasure_root: erasure_root,
        exports_root: exports_root,
-       segment_count: de_le(segment_count, 2)
+       segment_count: segment_count
      }, rest}
   end
 
