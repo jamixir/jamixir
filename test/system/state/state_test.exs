@@ -4,9 +4,10 @@ defmodule System.StateTest do
   import System.State
   import OriginalModules
   import Mox
+  import Bitwise
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.NilDiscriminator
+  alias Codec.{NilDiscriminator, Encoder}
   alias IO.ANSI
   alias System.{State, State.ValidatorStatistics}
   alias Util.Hash
@@ -74,7 +75,7 @@ defmodule System.StateTest do
     end
 
     test "timeslot serialization - C(11)", %{state: state} do
-      assert state_keys(state)[11] == Codec.Encoder.encode_le(state.timeslot, 4)
+      assert state_keys(state)[11] == Encoder.encode_le(state.timeslot, 4)
     end
 
     test "privileged services serialization - C(12)", %{state: state} do
@@ -93,15 +94,26 @@ defmodule System.StateTest do
       assert state_keys(state)[15] == e(for a <- state.ready_to_accumulate, do: vs(a))
     end
 
-    test "service accounts serialization", %{state: state} do
-      assert state_keys(state)[{255, 1}] == e(state.services[1])
+    test "service accounts storage serialization", %{state: state} do
+      # Test storage encoding (2^32 - 1 prefix)
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        Map.get(service_account, :storage)
+        |> Enum.each(fn {h, v} ->
+          key = {s, Encoder.encode_le((1 <<< 32) - 1, 4) <> binary_slice(h, 0, 28)}
+          assert state_keys(state)[key] == v
+        end)
+      end)
+    end
 
-      [:storage, :preimage_storage_p]
-      |> Enum.each(fn property ->
-        state.services
-        |> Enum.each(fn {s, service_account} ->
-          Map.get(service_account, property)
-          |> Enum.each(fn {h, v} -> assert state_keys(state)[{s, h}] == v end)
+    test "service accounts preimage_storage_p serialization", %{state: state} do
+      # Test preimage storage encoding (2^32 - 2 prefix)
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        Map.get(service_account, :preimage_storage_p)
+        |> Enum.each(fn {h, v} ->
+          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 29)}
+          assert state_keys(state)[key] == v
         end)
       end)
     end
@@ -111,9 +123,8 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          <<_::binary-size(4), rest::binary>> = h
-          key = e_le(l, 4) <> Utils.invert_bits(rest)
-          value = e(vs(for x <- t, do: e_le(x, 4)))
+          key = (Encoder.encode_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 30)
+          value = e(vs(for x <- t, do: Encoder.encode_le(x, 4)))
           assert state_keys(state)[{s, key}] == value
         end)
       end)
@@ -131,7 +142,9 @@ defmodule System.StateTest do
 
     test "convert 255 and service id" do
       assert key_to_32_octet({255, 1}) == <<255>> <> <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 27)
-      assert key_to_32_octet({255, 1024}) == <<255>> <> <<0, 0, 4, 0, 0,0,0,0>> <> :binary.copy(<<0>>, 23)
+
+      assert key_to_32_octet({255, 1024}) ==
+               <<255>> <> <<0, 0, 4, 0, 0, 0, 0, 0>> <> :binary.copy(<<0>>, 23)
 
       assert key_to_32_octet({255, 4_294_967_295}) ==
                <<255>> <> <<255, 0, 255, 0, 255, 0, 255, 0>> <> :binary.copy(<<0>>, 23)
