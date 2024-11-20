@@ -88,9 +88,6 @@ defmodule System.State do
          # β† Formula (17) v0.4.5
          initial_recent_history =
            RecentHistory.update_latest_state_root_(state.recent_history, h),
-         # δ† Formula (24) v0.4.5
-         services_intermediate =
-           State.Services.process_preimages(state.services, e.preimages, timeslot_),
          # ψ' Formula (23) v0.4.5
          {:ok, judgements_, bad_wonky_verdicts} <-
            Judgements.calculate_judgements_(h, e.disputes, state),
@@ -120,20 +117,36 @@ defmodule System.State do
            ),
          available_work_reports =
            WorkReport.available_work_reports(e.assurances, core_reports_intermediate_1),
-         # Formula (28) v0.4.5
-         # Formula (29) v0.4.5
-         {:ok, accumulation_result} <-
+         # Formula (4.16) v0.5
+         # Formula (4.17) v0.5
+         {:ok,
+          %{
+            services: services_intermediate_2,
+            next_validators: next_validators_,
+            authorizer_queue: authorizer_queue_,
+            ready_to_accumulate: ready_to_accumulate_,
+            privileged_services: privileged_services_,
+            accumulation_history: accumulation_history_,
+            beefy_commitment_map: beefy_commitment_map_
+          }} <-
            State.Accumulation.accumulate(
              available_work_reports,
              h,
              state,
-             services_intermediate
+             state.services
+           ),
+         # δ' Formula (4.18) v0.5
+         services_ =
+           State.Services.process_preimages(
+             services_intermediate_2,
+             e.preimages,
+             timeslot_
            ),
          # α' Formula (30) v0.4.5
          authorizer_pool_ =
            AuthorizerPool.calculate_authorizer_pool_(
              e.guarantees,
-             accumulation_result.authorizer_queue,
+             authorizer_queue_,
              state.authorizer_pool,
              h.timeslot
            ),
@@ -143,7 +156,7 @@ defmodule System.State do
              h,
              e.guarantees,
              initial_recent_history,
-             accumulation_result.beefy_commitment_map
+             beefy_commitment_map_
            ),
          # κ' Formula (21) v0.4.5
          # λ' Formula (22) v0.4.5
@@ -238,11 +251,11 @@ defmodule System.State do
          # γ'
          safrole: safrole_,
          # δ'
-         services: accumulation_result.services,
+         services: services_,
          # η'
          entropy_pool: entropy_pool_,
          # ι'
-         next_validators: accumulation_result.next_validators,
+         next_validators: next_validators_,
          # κ'
          curr_validators: curr_validators_,
          # λ'
@@ -252,17 +265,17 @@ defmodule System.State do
          # τ'
          timeslot: timeslot_,
          # φ'
-         authorizer_queue: accumulation_result.authorizer_queue,
+         authorizer_queue: authorizer_queue_,
          # χ'
-         privileged_services: accumulation_result.privileged_services,
+         privileged_services: privileged_services_,
          # ψ'
          judgements: judgements_,
          # π'
          validator_statistics: validator_statistics_,
          #  ξ'
-         accumulation_history: accumulation_result.accumulation_history,
+         accumulation_history: accumulation_history_,
          #  ϑ'
-         ready_to_accumulate: accumulation_result.ready_to_accumulate
+         ready_to_accumulate: ready_to_accumulate_
        }}
     else
       {:error, reason} -> {:error, state, reason}
