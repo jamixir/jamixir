@@ -55,7 +55,7 @@ defmodule System.State.Accumulation do
           authorizer_queue: authorizer_queue,
           timeslot: state_timeslot
         },
-        services_intermediate
+        services
       ) do
     # Formula (181) v0.4.5
     gas_limit =
@@ -75,7 +75,7 @@ defmodule System.State.Accumulation do
 
     initial_state = %__MODULE__{
       privileged_services: privileged_services,
-      services: services_intermediate,
+      services: services,
       next_validators: next_validators,
       authorizer_queue: authorizer_queue
     }
@@ -92,12 +92,12 @@ defmodule System.State.Accumulation do
        {n,
         %__MODULE__{
           privileged_services: privileged_services_,
-          services: services_intermediate_2,
+          services: services_intermediate,
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
         }, deferred_transfers, beefy_commitment_map}} ->
         # Formula (185) v0.4.5
-        services_ = calculate_posterior_services(services_intermediate_2, deferred_transfers)
+        services_intermediate_2 = calculate_posterior_services(services_intermediate, deferred_transfers)
         # Formula (186) v0.4.5
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
         # Formula (187) v0.4.5
@@ -116,7 +116,7 @@ defmodule System.State.Accumulation do
 
         {:ok,
          %{
-           services: services_,
+          services: services_intermediate_2,
            next_validators: next_validators_,
            authorizer_queue: authorizer_queue_,
            ready_to_accumulate: ready_to_accumulate_,

@@ -2,6 +2,7 @@ defmodule System.State.ServicesTest do
   use ExUnit.Case
   alias System.State.{ServiceAccount, Services}
   alias Block.Extrinsic.{Assurance, Preimage}
+  alias Util.Hash
   use Codec.Encoder
 
   import TestHelper
@@ -27,28 +28,54 @@ defmodule System.State.ServicesTest do
   end
 
   describe "process_preimages/3" do
-    test "processes preimages correctly" do
-      init_services = %{1 => %ServiceAccount{}, 2 => %ServiceAccount{}}
+    test "preserves all services when preimages are already provided" do
+      # Create a preimage and its hash
+      blob = <<1, 2, 3>>
+      preimage_hash = Hash.default(blob)
 
-      preimages = [
-        %Preimage{service: 1, blob: <<1, 2, 3>>},
-        %Preimage{service: 3, blob: <<4, 5, 6>>}
-      ]
+      # Setup services where the preimage is already stored
+      init_services = %{
+        1 => %ServiceAccount{
+          preimage_storage_p: %{preimage_hash => "existing_data"},
+          preimage_storage_l: %{{preimage_hash, 3} => [50]}
+        }
+      }
 
-      ts = 100
+      preimages = [%Preimage{service: 1, blob: blob}]
 
-      updated = Services.process_preimages(init_services, preimages, ts)
+      updated = Services.process_preimages(init_services, preimages, 100)
 
-      assert map_size(updated) == 3
-      # Service index 2 is not affected
+      # Verify nothing changed
+      assert updated == init_services
+    end
+
+    test "updates only services with new preimages while preserving other data" do
+      blob = <<1, 2, 3>>
+      blob2 = <<4, 5, 6>>
+      preimage_hash = Hash.default(blob)
+      preimage_hash2 = Hash.default(blob2)
+
+      # Setup services where preimage is NOT stored
+      init_services = %{
+        1 => %ServiceAccount{
+          preimage_storage_p: %{},  # Empty storage - preimage not provided
+          preimage_storage_l: %{}
+        },
+        2 => %ServiceAccount{
+          preimage_storage_p: %{preimage_hash2 => "keep_this"},
+          preimage_storage_l: %{{preimage_hash2, 3} => [75]}
+        }
+      }
+
+      preimages = [%Preimage{service: 1, blob: blob}, %Preimage{service: 2, blob: blob2}]
+
+      updated = Services.process_preimages(init_services, preimages, 100)
+
+      # Verify service 1 was updated with new preimage
+      assert Map.has_key?(updated[1].preimage_storage_p, preimage_hash)
+
+      # Verify service 2 remained completely unchanged
       assert updated[2] == init_services[2]
-
-      # Service index 1 and 3 are updated
-      for {idx, data} <- [{1, <<1, 2, 3>>}, {3, <<4, 5, 6>>}] do
-        hash = h(data)
-        assert updated[idx].preimage_storage_p[hash] == data
-        assert updated[idx].preimage_storage_l[{hash, 3}] == [ts]
-      end
     end
   end
 end

@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Preimage do
 
   def mock(:validate, _), do: :ok
 
-  # Formula (160) v0.4.5
+  # Formula (12.31) v0.5
   @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   defp check_all_preimages(preimages, services) do
@@ -45,9 +45,9 @@ defmodule Block.Extrinsic.Preimage do
     end)
   end
 
-  # Formula (160) v0.4.5
+  # Formula (12.30) v0.5
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
-  defp not_provided?(preimage, services) do
+  def not_provided?(preimage, services) do
     case services[preimage.service] do
       nil ->
         false
