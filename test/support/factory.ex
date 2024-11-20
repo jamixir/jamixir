@@ -341,7 +341,7 @@ defmodule Jamixir.Factory do
       good: MapSet.new([Hash.random()]),
       bad: MapSet.new([Hash.random()]),
       wonky: MapSet.new([Hash.random()]),
-      punish: MapSet.new([Hash.random()])
+      offenders: MapSet.new([Hash.random()])
     }
   end
 

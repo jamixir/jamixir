@@ -254,7 +254,7 @@ defmodule System.State.JudgementsTest do
       assert_updated_set(result, state, :wonky, wrh)
     end
 
-    test "updates punish set correctly", %{
+    test "updates offenders set correctly", %{
       state: state,
       header: header,
       work_report_hash: wrh,
@@ -280,7 +280,7 @@ defmodule System.State.JudgementsTest do
       {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
       {pub, _} = key_pair
       assert wrh in result.bad
-      assert pub in result.punish
+      assert pub in result.offenders
       assert result.good == state.judgements.good
       assert result.wonky == state.judgements.wonky
     end
@@ -292,7 +292,7 @@ defmodule System.State.JudgementsTest do
                good: MapSet.new([<<1>>, <<2>>]),
                bad: MapSet.new([<<2>>]),
                wonky: MapSet.new([<<3>>]),
-               punish: MapSet.new([<<4>>])
+               offenders: MapSet.new([<<4>>])
              }) == <<2, 1, 2, 1, 2, 1, 3, 1, 4>>
     end
   end

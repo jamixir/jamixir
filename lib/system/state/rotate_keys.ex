@@ -28,7 +28,7 @@ defmodule System.State.RotateKeys do
         curr_validators,
         next_validators,
         %Safrole{pending: pending, epoch_root: epoch_root},
-        %Judgements{punish: offenders}
+        %Judgements{offenders: offenders}
       ) do
     if Time.new_epoch?(timeslot, timeslot_) do
       # Formula (58) v0.4.5 -  new epoch - rotate keys

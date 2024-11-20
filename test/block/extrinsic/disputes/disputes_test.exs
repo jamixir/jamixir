@@ -273,19 +273,19 @@ defmodule Block.Extrinsic.Disputes.Test do
       end)
     end
 
-    test "returns error for culprit validator key in punish set", %{
+    test "returns error for culprit validator key in offender set", %{
       state: state,
       header: header,
       work_report_hash: wrh
     } do
-      {punished_pub, punished_priv} = :crypto.generate_key(:eddsa, :ed25519)
+      {offended_pub, offended_priv} = :crypto.generate_key(:eddsa, :ed25519)
 
       state = %{
         state
         | curr_validators: [
-            build(:validator, ed25519: punished_pub)
+            build(:validator, ed25519: offended_pub)
           ],
-          judgements: %{state.judgements | punish: MapSet.new([punished_pub])}
+          judgements: %{state.judgements | offenders: MapSet.new([offended_pub])}
       }
 
       disputes = %Disputes{
@@ -295,7 +295,7 @@ defmodule Block.Extrinsic.Disputes.Test do
             judgements: [
               build(:judgement,
                 vote: false,
-                key_pair: {punished_pub, punished_priv},
+                key_pair: {offended_pub, offended_priv},
                 work_report_hash: wrh
               )
             ]
@@ -304,7 +304,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         culprits: [
           build(:culprit,
             work_report_hash: wrh,
-            key_pair: {punished_pub, punished_priv}
+            key_pair: {offended_pub, offended_priv}
           )
         ]
       }

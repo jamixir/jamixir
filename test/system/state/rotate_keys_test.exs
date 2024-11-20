@@ -36,7 +36,7 @@ defmodule System.State.RotateKeysTest do
 
       {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
-          punish: offenders
+          offenders: offenders
         })
 
       assert Enum.all?(pending_, &TH.nullified?/1)
@@ -57,7 +57,7 @@ defmodule System.State.RotateKeysTest do
 
       {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
-          punish: offenders
+          offenders: offenders
         })
 
       assert pending_ == [v1, v2, v3]
@@ -78,7 +78,7 @@ defmodule System.State.RotateKeysTest do
 
       {pending_, current_, prev_, epoch_root_} =
         RotateKeys.rotate_keys(header, timeslot, [], [v2], [v1, v2, v3], safrole, %Judgements{
-          punish: offenders
+          offenders: offenders
         })
 
       assert Enum.count(pending_, &TH.nullified?/1) == 2
@@ -100,7 +100,7 @@ defmodule System.State.RotateKeysTest do
           [v2],
           [],
           safrole,
-          %Judgements{punish: MapSet.new()}
+          %Judgements{offenders: MapSet.new()}
         )
 
       assert result == {safrole.pending, [v2], [], safrole.epoch_root}
