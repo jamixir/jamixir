@@ -6,6 +6,8 @@ defmodule Block.Extrinsic.WorkItem do
   alias Block.Extrinsic.{Guarantee.WorkResult, WorkPackage}
   alias Util.{Hash, MerkleTree}
   use Codec.Encoder
+  use Codec.Decoder
+  use Sizes
 
   @type t :: %__MODULE__{
           # s
@@ -49,19 +51,18 @@ defmodule Block.Extrinsic.WorkItem do
     # Formula (316) v0.4.5
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
-        Encoder.encode_le(wi.service, 4),
+        e_le(wi.service, 4),
         wi.code_hash,
-        VariableSize.new(wi.payload),
-        Encoder.encode_le(wi.gas_limit, 8),
-        VariableSize.new(encode_import_segments(wi)),
-        VariableSize.new(encode_extrinsic(wi)),
-        Encoder.encode_le(wi.export_count, 2)
+        vs(wi.payload),
+        e_le(wi.gas_limit, 8),
+        vs(encode_import_segments(wi)),
+        vs(encode_extrinsic(wi)),
+        e_le(wi.export_count, 2)
       })
     end
 
     use Codec.Encoder
 
-    # TODO: align encoding with 0.4.5
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments, do: {h, e_le(i, 2)}
     end
@@ -69,6 +70,26 @@ defmodule Block.Extrinsic.WorkItem do
     defp encode_extrinsic(work_item) do
       for {h, i} <- work_item.extrinsic, do: {h, e_le(i, 4)}
     end
+  end
+
+  def decode(bin) do
+    <<service::binary-size(4), bin::binary>> = bin
+    <<code_hash::binary-size(@hash_size), bin::binary>> = bin
+    {payload, bin} = VariableSize.decode(bin, :binary)
+    <<gas_limit::binary-size(8), bin::binary>> = bin
+    {import_segments, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 2)
+    {extrinsic, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
+    <<export_count::binary-size(2), rest::binary>> = bin
+
+    {%__MODULE__{
+       service: de_le(service, 4),
+       code_hash: code_hash,
+       payload: payload,
+       gas_limit: de_le(gas_limit, 8),
+       import_segments: for({h, i} <- import_segments, do: {h, de_le(i, 2)}),
+       extrinsic: for({h, i} <- extrinsic, do: {h, de_le(i, 4)}),
+       export_count: de_le(export_count, 2)
+     }, rest}
   end
 
   # Formula (199) v0.4.5
@@ -105,4 +126,16 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   use JsonDecoder
+
+  def json_mapping do
+    %{extrinsic: &decode_extrinsic/1, import_segments: &decode_import_segments/1}
+  end
+
+  def decode_extrinsic(json) do
+    for(i <- json, do: {JsonDecoder.from_json(i[:hash]), JsonDecoder.from_json(i[:len])})
+  end
+
+  def decode_import_segments(json) do
+    for(i <- json, do: {JsonDecoder.from_json(i[:tree_root]), JsonDecoder.from_json(i[:index])})
+  end
 end

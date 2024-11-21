@@ -65,4 +65,13 @@ defmodule Codec.VariableSize do
       {Map.put(acc, key, value), rest}
     end)
   end
+
+  def decode(bin, :list_of_tuples, size0, size1) do
+    <<count::8, rest::binary>> = bin
+
+    Enum.reduce(from_0_to(count), {[], rest}, fn _, {acc, rest} ->
+      <<key::binary-size(size0), value::binary-size(size1), rest::binary>> = rest
+      {acc ++ [{key, value}], rest}
+    end)
+  end
 end

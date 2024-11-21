@@ -395,12 +395,18 @@ defmodule System.State do
     end
   end
 
+  defp decode_json_field(:recent_blocks, value), do: decode_json_field(:beta, value)
   defp decode_json_field(:beta, value), do: [{:recent_history, RecentHistory.from_json(value)}]
   defp decode_json_field(:tau, value), do: [{:timeslot, value}]
+  defp decode_json_field(:slot, value), do: [{:timeslot, value}]
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
+
+  defp decode_json_field(:prev_validators, value), do: decode_json_field(:lambda, value)
 
   defp decode_json_field(:lambda, value),
     do: [{:prev_validators, Enum.map(value, &Validator.from_json/1)}]
+
+  defp decode_json_field(:curr_validators, value), do: decode_json_field(:kappa, value)
 
   defp decode_json_field(:kappa, value),
     do: [{:curr_validators, Enum.map(value, &Validator.from_json/1)}]
