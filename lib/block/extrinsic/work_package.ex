@@ -5,6 +5,8 @@ defmodule Block.Extrinsic.WorkPackage do
   alias Block.Extrinsic.WorkItem
   alias System.State.ServiceAccount
   alias Util.Hash
+  use Codec.Encoder
+  use Codec.Decoder
 
   @type t :: %__MODULE__{
           # j
@@ -90,19 +92,55 @@ defmodule Block.Extrinsic.WorkPackage do
     exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
   end
 
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      authorization_token: :authorization,
+      service: :auth_code_host,
+      authorization_code_hash: [&extract_code_hash/1, :authorizer],
+      parameterization_blob: [&extract_params/1, :authorizer],
+      context: %{m: RefinementContext, f: :context},
+      work_items: [[WorkItem], :items]
+    }
+  end
+
+  defp extract_code_hash(%{code_hash: c}), do: JsonDecoder.from_json(c)
+  defp extract_params(%{params: p}), do: JsonDecoder.from_json(p)
+
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
-    alias Codec.{Encoder, VariableSize}
+    use Codec.Encoder
     # Formula (315) v0.4.5
     def encode(%WorkPackage{} = wp) do
-      Encoder.encode({
-        VariableSize.new(wp.authorization_token),
-        Encoder.encode_le(wp.service, 4),
+      e({
+        vs(wp.authorization_token),
+        e_le(wp.service, 4),
         wp.authorization_code_hash,
-        VariableSize.new(wp.parameterization_blob),
+        vs(wp.parameterization_blob),
         wp.context,
-        VariableSize.new(wp.work_items)
+        vs(wp.work_items)
       })
     end
+  end
+
+  use Sizes
+
+  def decode(bin) do
+    {authorization_token, bin} = VariableSize.decode(bin, :binary)
+    <<service::binary-size(4), bin::binary>> = bin
+    <<authorization_code_hash::binary-size(@hash_size), bin::binary>> = bin
+    {parameterization_blob, bin} = VariableSize.decode(bin, :binary)
+    {context, bin} = RefinementContext.decode(bin)
+    {work_items, rest} = VariableSize.decode(bin, WorkItem)
+
+    {%__MODULE__{
+       authorization_token: authorization_token,
+       service: de_le(service, 4),
+       authorization_code_hash: authorization_code_hash,
+       parameterization_blob: parameterization_blob,
+       context: context,
+       work_items: work_items
+     }, rest}
   end
 end
