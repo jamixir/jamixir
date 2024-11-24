@@ -42,8 +42,6 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_refine_context_timeslot(guarantees, timeslot),
          # Formula (156) v0.4.5
          :ok <- validate_work_result_cores(w, state.services),
-         # Formula (147) v0.4.5
-         :ok <- validate_anchor_block(guarantees, state.recent_history),
          # Formula (152) v0.4.5
          :ok <-
            validate_new_work_packages(
@@ -60,6 +58,8 @@ defmodule Block.Extrinsic.Guarantee do
          # Formula (137) v0.4.5
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
+         # Formula (147) v0.4.5
+         :ok <- validate_anchor_block(guarantees, state.recent_history),
          # Formula (139) v0.4.5
          true <-
            Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
@@ -68,7 +68,7 @@ defmodule Block.Extrinsic.Guarantee do
       :ok
     else
       {:error, error} -> {:error, error}
-      false -> {:error, "Invalid credentials in guarantees"}
+      false -> {:error, "insufficient_guarantees"}
     end
   end
 
@@ -163,14 +163,14 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (146) v0.4.5
-  @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicated_wp_hash}
+  @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicate_package}
   def validate_unique_wp_hash(guarantees) do
     wr = work_reports(guarantees)
 
     if length(wr) == MapSet.size(p_set(wr)) do
       :ok
     else
-      {:error, :duplicated_wp_hash}
+      {:error, :duplicate_package}
     end
   end
 

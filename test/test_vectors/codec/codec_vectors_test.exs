@@ -43,17 +43,15 @@ defmodule CodecVectorsTest do
     end)
   end
 
+  @user "davxy"
+  @repo "jam-test-vectors"
+  @branch "polkajam-vectors"
+
   def assert_correctly_encoded(file_name, module) do
     {:ok, json_data} =
-      fetch_and_parse_json(
-        file_name <> ".json",
-        "codec/data",
-        "davxy",
-        "jam-test-vectors",
-        "polkajam-vectors"
-      )
+      fetch_and_parse_json("#{file_name}.json", "codec/data", @user, @repo, @branch)
 
-    expected = fetch_binary(file_name <> ".bin", "codec/data")
+    expected = fetch_binary("#{file_name}.bin", "codec/data")
 
     case json_data do
       %{} ->

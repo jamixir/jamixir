@@ -113,4 +113,13 @@ defmodule System.State.ServiceAccount do
         Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      gas_limit_g: :min_item_gas,
+      gas_limit_m: :min_memo_gas
+    }
+  end
 end

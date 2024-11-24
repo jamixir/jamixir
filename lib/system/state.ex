@@ -400,7 +400,11 @@ defmodule System.State do
   defp decode_json_field(:tau, value), do: [{:timeslot, value}]
   defp decode_json_field(:slot, value), do: [{:timeslot, value}]
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
-  # defp decode_json_field(:services, value), do: [{:services, value}]
+
+  defp decode_json_field(:services, value),
+    do: [
+      {:services, for(s <- value, do: {s[:id], ServiceAccount.from_json(s[:info])}, into: %{})}
+    ]
 
   defp decode_json_field(:prev_validators, value), do: decode_json_field(:lambda, value)
 

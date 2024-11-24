@@ -85,21 +85,21 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "insufficient_guarantees"}
     end
 
     test "returns error for credentials not ordered by validator_index", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{2, <<1::512>>}, {1, <<2::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "insufficient_guarantees"}
     end
 
     test "returns error for duplicate validator_index in credentials", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}, {1, <<2::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "Invalid credentials in guarantees"}
+               {:error, "insufficient_guarantees"}
     end
 
     test "handles empty list of guarantees", context do
@@ -200,7 +200,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           g1.work_report.specification.work_package_hash
         )
 
-      assert Guarantee.validate([g1, updated_g2], state, 1) == {:error, :duplicated_wp_hash}
+      assert Guarantee.validate([g1, updated_g2], state, 1) == {:error, :duplicate_package}
     end
 
     test "returns error when refinement context timeslot is too old", %{g1: g1, state: state} do
