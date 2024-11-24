@@ -428,7 +428,7 @@ defmodule Jamixir.Factory do
       :header,
       Map.merge(attrs, %{
         prior_state_root: Hash.random(),
-        epoch_mark: {Hash.random(), [Hash.random()]},
+        epoch_mark: {Hash.random(), Hash.random(), [Hash.random()]},
         vrf_signature: Hash.random(96),
         block_seal: Hash.random(96)
       })

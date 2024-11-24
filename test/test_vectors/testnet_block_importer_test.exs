@@ -6,8 +6,8 @@ defmodule TestnetBlockImporterTest do
 
   @traces_path "traces/safrole/"
 
-  @last_epoch 349_449
-  @first_epoch 349_445
+  @first_epoch 392_930
+  @last_epoch 392_934
 
   setup_all do
     RingVrf.init_ring_context(Constants.validator_count())
@@ -18,13 +18,16 @@ defmodule TestnetBlockImporterTest do
     # waiting for correctnes of other party side
     @tag :skip
     test "jam-dune" do
-      {:ok, genesis_json} =
-        fetch_and_parse_json("genesis.json", @traces_path, "jamixir", "jamtestnet")
+      # {:ok, genesis_json} =
+      #   fetch_and_parse_json("genesis.json", @traces_path, "jamixir", "jamtestnet")
 
-      state = State.from_json(genesis_json)
+      # json(genesis_json)
+      state = State.from_genesis()
 
       for epoch <- @first_epoch..@last_epoch do
         for timeslot <- 0..11 do
+          timeslot = String.pad_leading("#{timeslot}", 3, "0")
+
           block_bin =
             fetch_binary(
               "#{epoch}_#{timeslot}.bin",

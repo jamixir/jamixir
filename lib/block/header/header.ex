@@ -128,12 +128,13 @@ defmodule Block.Header do
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       e_le(header.timeslot, 4) <>
-      e(
-        {NilDiscriminator.new(header.epoch_mark),
-         NilDiscriminator.new(header.winning_tickets_marker),
-         VariableSize.new(header.offenders_marker), e_le(header.block_author_key_index, 2),
-         header.vrf_signature}
-      )
+      e({
+        NilDiscriminator.new(header.epoch_mark),
+        NilDiscriminator.new(header.winning_tickets_marker),
+        vs(header.offenders_marker),
+        e_le(header.block_author_key_index, 2),
+        header.vrf_signature
+      })
   end
 
   defimpl Encodable do
@@ -155,7 +156,8 @@ defmodule Block.Header do
 
     {epoch_mark, bin} =
       NilDiscriminator.decode(bin, fn epoch_mark_bin ->
-        <<entropy::binary-size(@hash_size), rest::binary>> = epoch_mark_bin
+        <<entropy::binary-size(@hash_size), tickets_entropy::binary-size(@hash_size),
+          rest::binary>> = epoch_mark_bin
 
         {keys, cont} =
           Enum.reduce(1..Constants.validator_count(), {[], rest}, fn _, {list, b} ->
@@ -163,7 +165,7 @@ defmodule Block.Header do
             {list ++ [key], r}
           end)
 
-        {{entropy, keys}, cont}
+        {{entropy, tickets_entropy, keys}, cont}
       end)
 
     {winning_tickets_marker, bin} =
@@ -212,8 +214,16 @@ defmodule Block.Header do
     }
   end
 
-  defp parse_epoch_mark(%{entropy: entropy, validators: validators}) do
-    {JsonDecoder.from_json(entropy), JsonDecoder.from_json(validators)}
+  defp parse_epoch_mark(%{
+         entropy: entropy,
+         tickets_entropy: tickets_entropy,
+         validators: validators
+       }) do
+    {
+      JsonDecoder.from_json(entropy),
+      JsonDecoder.from_json(tickets_entropy),
+      JsonDecoder.from_json(validators)
+    }
   end
 
   defp parse_epoch_mark(_), do: nil
