@@ -1,4 +1,4 @@
-defmodule System.PVM.Host do
+defmodule PVM.Host do
   @moduledoc """
   Ω: Virtual machine host-call functions. See appendix B.
   ΩA: Assign-core host-call.
@@ -21,7 +21,7 @@ defmodule System.PVM.Host do
   ΩY : Import segment host-call.
   ΩZ: Export segment host-call.
   """
-  alias System.PVM.Memory
+  alias PVM.Memory
 
   # ΩG: Gas-remaining host-call.
   @callback remaining_gas(

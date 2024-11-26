@@ -2,7 +2,7 @@ defmodule System.State.AccumulationTest do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias System.{AccumulationResult, DeferredTransfer}
-  alias System.PVM.AccumulationOperand
+  alias PVM.AccumulationOperand
   alias System.State
   alias System.State.{Accumulation, PrivilegedServices, Ready, ServiceAccount}
   import Jamixir.Factory

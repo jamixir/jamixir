@@ -1,8 +1,8 @@
-defmodule System.PVM.CallParams do
+defmodule PVM.CallParams do
   @moduledoc """
   This module is responsible for handling the call parameters for the PVM.
   """
-  alias System.PVM.Memory
+  alias PVM.Memory
 
   # Formula (33) v0.4.5
   @type t :: %__MODULE__{
