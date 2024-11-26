@@ -48,12 +48,15 @@ defmodule System.StateTransition.SafroleStateTest do
           timeslot: 599
       }
 
+      h = %Header{timeslot: 600, block_author_key_index: 0}
+      entropy_pool_ = EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+
       # Sign the header with the appropriate key_pair (validator2 is the current validator)
       header =
         System.HeaderSeal.seal_header(
-          %Header{timeslot: 600, block_author_key_index: 0},
+          h,
           state.safrole.current_epoch_slot_sealers,
-          state.entropy_pool,
+          entropy_pool_,
           Enum.at(key_pairs, 0)
         )
 
@@ -99,9 +102,12 @@ defmodule System.StateTransition.SafroleStateTest do
 
       block_author_key_index = rem(11, length(validators))
 
+      h = %Header{timeslot: 11, block_author_key_index: block_author_key_index}
+      entropy_pool_ = EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+
       header =
         System.HeaderSeal.seal_header(
-          %Header{timeslot: 11, block_author_key_index: block_author_key_index},
+          h,
           state.safrole.current_epoch_slot_sealers,
           state.entropy_pool,
           Enum.at(key_pairs, block_author_key_index)
@@ -139,13 +145,16 @@ defmodule System.StateTransition.SafroleStateTest do
       # i am not sure how in actuall runtime the block author is supposed to know that
       # assuming we will find out when doing #99
       block_auth_index = length(key_pairs) - 1
+      header = %{header | timeslot: 13, block_author_key_index: block_auth_index}
+
+      entropy_pool_ = EntropyPool.rotate_history(header, state.timeslot, state.entropy_pool)
 
       # Seal the header with the expected outcomes
       header =
         System.HeaderSeal.seal_header(
-          %{header | timeslot: 13, block_author_key_index: block_auth_index},
+          header,
           expected_sealers,
-          state.entropy_pool,
+          entropy_pool_,
           Enum.at(key_pairs, block_auth_index)
         )
 
@@ -166,23 +175,8 @@ defmodule System.StateTransition.SafroleStateTest do
       state = %{state | timeslot: 499}
       header = build(:header, timeslot: 600)
 
-      entropy_pool_ =
-        EntropyPool.rotate_history(
-          header,
-          state.timeslot,
-          state.entropy_pool
-        )
-
-      {_, curr_validators_, _, _} =
-        RotateKeys.rotate_keys(
-          header,
-          state.timeslot,
-          state.prev_validators,
-          state.curr_validators,
-          state.next_validators,
-          state.safrole,
-          state.judgements
-        )
+      entropy_pool_ = EntropyPool.rotate_history(header, state.timeslot, state.entropy_pool)
+      {_, curr_validators_, _, _} = RotateKeys.rotate_keys(header, state)
 
       epoch_slot_sealers_ =
         Safrole.get_epoch_slot_sealers_(
@@ -205,7 +199,7 @@ defmodule System.StateTransition.SafroleStateTest do
         System.HeaderSeal.seal_header(
           %{header | block_author_key_index: block_auth_index},
           epoch_slot_sealers_,
-          state.entropy_pool,
+          entropy_pool_,
           Enum.at(key_pairs, block_auth_index)
         )
 

@@ -1,4 +1,5 @@
 defmodule System.State.RotateKeys do
+  alias System.State
   alias Block.Header
   alias System.State.{Judgements, Safrole, Validator}
   alias Util.Time
@@ -11,11 +12,7 @@ defmodule System.State.RotateKeys do
 
   @spec rotate_keys(
           Header.t(),
-          integer(),
-          list(Validator.t()),
-          list(Validator.t()),
-          list(Validator.t()),
-          Safrole.t(),
+          State.t(),
           Judgements.t()
         ) ::
           {list(Validator.t()), list(Validator.t()), list(Validator.t()),
@@ -23,11 +20,13 @@ defmodule System.State.RotateKeys do
 
   def rotate_keys(
         %Header{timeslot: timeslot_},
-        timeslot,
-        prev_validators,
-        curr_validators,
-        next_validators,
-        %Safrole{pending: pending, epoch_root: epoch_root},
+        %State{
+          timeslot: timeslot,
+          prev_validators: prev_validators,
+          curr_validators: curr_validators,
+          next_validators: next_validators,
+          safrole: %Safrole{pending: pending, epoch_root: epoch_root}
+        },
         %Judgements{punish: offenders}
       ) do
     if Time.new_epoch?(timeslot, timeslot_) do

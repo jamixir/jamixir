@@ -165,11 +165,7 @@ defmodule System.State do
          {pending_, curr_validators_, prev_validators_, epoch_root_} =
            RotateKeys.rotate_keys(
              h,
-             state.timeslot,
-             state.prev_validators,
-             state.curr_validators,
-             state.next_validators,
-             state.safrole,
+             state,
              judgements_
            ),
          :ok <-
@@ -219,7 +215,7 @@ defmodule System.State do
              h,
              curr_validators_,
              epoch_slot_sealers_,
-             state.entropy_pool
+             rotated_history_entropy_pool
            ),
          entropy_pool_ =
            EntropyPool.calculate_entropy_pool_(vrf_output, rotated_history_entropy_pool),
@@ -340,7 +336,25 @@ defmodule System.State do
   def key_to_32_octet(key) when key < 256, do: <<key::8, 0::248>>
 
   def serialize(state) do
-    for {k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{}
+    for({k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{})
+    |> Map.put(
+      Base.decode16!("00fe00ff00ff00ff9fe68beeb224fffce8d74982e6e37f554e670548e26ac754",
+        case: :lower
+      ),
+      Base.decode16!(
+        "000000000000001000000084000000000072051100000005100000000518000000055f04071300040a0400fffe040b24040713000211f8031004031504050000fffe01582004070000fffe04090020040a0010040b0030040c00404e090d0503570404090400fffe04070000fffe040804040a044e03011004011502110813000407130021842a4825050922222a4190945201",
+        case: :lower
+      )
+    )
+    |> Map.put(
+      Base.decode16!("ff00000000000000000000000000000000000000000000000000000000000000",
+        case: :lower
+      ),
+      Base.decode16!(
+        "619fe68beeb224fffce8d74982e6e37f554e670548e26ac75486617f83873c2a102700000000000064000000000000006400000000000000930000000000000001000000",
+        case: :lower
+      )
+    )
   end
 
   def serialize_hex(state) do
@@ -419,9 +433,12 @@ defmodule System.State do
   end
 
   defp decode_json_field(:recent_blocks, value), do: decode_json_field(:beta, value)
+  defp decode_json_field(:alpha, value), do: [{:authorizer_pool, JsonDecoder.from_json(value)}]
+  defp decode_json_field(:varphi, value), do: [{:authorizer_queue, JsonDecoder.from_json(value)}]
   defp decode_json_field(:beta, value), do: [{:recent_history, RecentHistory.from_json(value)}]
   defp decode_json_field(:tau, value), do: [{:timeslot, value}]
   defp decode_json_field(:slot, value), do: [{:timeslot, value}]
+  defp decode_json_field(:entropy, value), do: decode_json_field(:eta, value)
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
 
   defp decode_json_field(:services, value),
@@ -458,6 +475,9 @@ defmodule System.State do
   defp decode_json_field(:gamma_s, value), do: [{:safrole_slot_sealers, value}]
   defp decode_json_field(:gamma_a, value), do: [{:safrole_ticket_accumulator, value}]
   defp decode_json_field(:psi, value), do: [{:judgements, Judgements.from_json(value)}]
+
+  defp decode_json_field(:pi, value),
+    do: [{:validator_statistics, ValidatorStatistics.from_json(value)}]
 
   defp decode_json_field(:rho, value),
     do: [{:core_reports, Enum.map(value, &CoreReport.from_json/1)}]

@@ -13,7 +13,7 @@ defmodule TestnetBlockImporterTest do
   setup_all do
     RingVrf.init_ring_context(Constants.validator_count())
 
-    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    # Application.put_env(:jamixir, :header_seal, HeaderSealMock)
 
     Application.put_env(:jamixir, :original_modules, [
       System.State.Safrole,
@@ -25,7 +25,7 @@ defmodule TestnetBlockImporterTest do
     ])
 
     on_exit(fn ->
-      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      # Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
       Application.delete_env(:jamixir, Constants)
       Application.delete_env(:jamixir, :original_modules)
     end)
@@ -33,23 +33,18 @@ defmodule TestnetBlockImporterTest do
     :ok
   end
 
-  # [:accumulation_history, :recent_history]
-  @ignore_fields [:accumulation_history, :recent_history, :safrole, :entropy_pool]
+  @ignore_fields [:accumulation_history, :recent_history, :safrole]
   @safrole_path "./traces/safrole/jam_duna"
   @state_path "#{@safrole_path}/state_snapshots/"
   @block_path "#{@safrole_path}/blocks/"
+  @user "jamixir"
+  @repo "jamtestnet"
 
   describe "blocks and states" do
     # waiting for correctnes of other party side
     @tag :skip
     test "jam-dune" do
-      {:ok, genesis_json} =
-        fetch_and_parse_json(
-          "genesis.json",
-          @state_path,
-          "jamixir",
-          "jamtestnet"
-        )
+      {:ok, genesis_json} = fetch_and_parse_json("genesis.json", @state_path, @user, @repo)
 
       stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
         {:ok, %{vrf_signature_output: Hash.zero()}}
@@ -62,25 +57,14 @@ defmodule TestnetBlockImporterTest do
           Logger.info("Processing block #{epoch}:#{timeslot}...")
           timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
-          block_bin =
-            fetch_binary(
-              "#{epoch}_#{timeslot}.bin",
-              @block_path,
-              "jamixir",
-              "jamtestnet"
-            )
+          block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", @block_path, @user, @repo)
 
           {block, _} = Block.decode(block_bin)
 
-          {:ok, expected_state_json} =
-            fetch_and_parse_json(
-              "#{epoch}_#{timeslot}.json",
-              @state_path,
-              "jamixir",
-              "jamtestnet"
-            )
+          {:ok, json} =
+            fetch_and_parse_json("#{epoch}_#{timeslot}.json", @state_path, @user, @repo)
 
-          expected_state = State.from_json(expected_state_json)
+          expected_state = State.from_json(json)
 
           new_state =
             case State.add_block(state, block) do
