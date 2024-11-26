@@ -1,6 +1,6 @@
-defmodule System.PVM.CallResult do
-  alias System.PVM.ExitReason
-  alias System.PVM.Memory
+defmodule PVM.CallResult do
+  alias PVM.ExitReason
+  alias PVM.Memory
 
   @type t :: %__MODULE__{
           exit_reason: ExitReason.t(),

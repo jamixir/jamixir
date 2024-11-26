@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
-  alias System.{PVM, PVM.RefineParams}
+  alias PVM.RefineParams
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
@@ -187,7 +187,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # TODO
     s = []
 
-    case System.PVM.authorized(wp, core, services) do
+    case PVM.authorized(wp, core, services) do
       error when is_integer(error) ->
         error
 

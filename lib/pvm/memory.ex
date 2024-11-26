@@ -1,4 +1,4 @@
-defmodule System.PVM.Memory do
+defmodule PVM.Memory do
   # Formula (35) v0.4.5
   @type t :: %__MODULE__{
           # V

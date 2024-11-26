@@ -1,4 +1,4 @@
-defmodule System.PVM.ExitReason do
+defmodule PVM.ExitReason do
   @type t :: %__MODULE__{
           # {∎,☇,∞} ∪ { F , h̵} x NR
           reason:

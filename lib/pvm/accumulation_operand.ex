@@ -1,4 +1,4 @@
-defmodule System.PVM.AccumulationOperand do
+defmodule PVM.AccumulationOperand do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
 

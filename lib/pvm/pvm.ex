@@ -1,16 +1,16 @@
-defmodule System.PVM do
+defmodule PVM do
   alias System.State.ServiceAccount
-  alias System.PVM.RefineParams
-  alias System.PVM.Host
+  alias PVM.RefineParams
+  alias PVM.Host
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
-  alias System.PVM.Memory
+  alias PVM.Memory
   use Codec.Encoder
-  use System.PVM.Constants
+  use PVM.Constants
 
   # Formula (33) v0.4.5
   # Ψ: The whole-program pvm machine state-transition function.
-  @spec call(System.PVM.CallParams.t()) :: System.PVM.CallResult.t()
+  @spec call(PVM.CallParams.t()) :: PVM.CallResult.t()
   def call(_call_params) do
     # ...
   end

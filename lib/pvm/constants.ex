@@ -1,4 +1,4 @@
-defmodule System.PVM.Constants do
+defmodule PVM.Constants do
   # Apendix B.1
   defmacro __using__(_) do
     quote do
