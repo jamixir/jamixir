@@ -5,6 +5,8 @@ config :jamixir, Jamixir,
   core_count: 2,
   # E
   epoch_length: 12,
+  # N
+  tickets_per_validator: 3,
   # P
   slot_period: 6,
   # R

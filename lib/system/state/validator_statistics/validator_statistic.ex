@@ -35,4 +35,17 @@ defmodule System.State.ValidatorStatistic do
       ]
     end
   end
+
+  use JsonDecoder
+
+  def json_mapping do
+    %{
+      blocks_produced: :block_number,
+      tickets_introduced: :ticket_number,
+      preimages_introduced: :preimage_number,
+      data_size: :octets_number,
+      reports_guaranteed: :report_number,
+      availability_assurances: :availability_number
+    }
+  end
 end

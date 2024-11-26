@@ -82,8 +82,7 @@ defmodule ReportsTestVectors do
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
-    json_data = put_in(json_data[:pre_state][:eta], json_data[:input][:entropy])
-    json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot] - 1)
+    # json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot] - 1)
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
 end

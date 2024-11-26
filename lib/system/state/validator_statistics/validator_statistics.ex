@@ -133,6 +133,13 @@ defmodule System.State.ValidatorStatistics do
     end
   end
 
+  def from_json(json_data) do
+    %__MODULE__{
+      current_epoch_statistics: Enum.map(Enum.at(json_data, 0), &ValidatorStatistic.from_json/1),
+      previous_epoch_statistics: Enum.map(Enum.at(json_data, 1), &ValidatorStatistic.from_json/1)
+    }
+  end
+
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
     use Codec.Encoder

@@ -24,7 +24,7 @@ defmodule Block.Header do
           timeslot: integer(),
           # Formula (45) v0.4.5
           # He
-          epoch_mark: {Types.hash(), list(Validator.t())} | nil,
+          epoch_mark: {Types.hash(), Types.hash(), list(Validator.t())} | nil,
           # Hw
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Ho

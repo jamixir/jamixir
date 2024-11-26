@@ -112,7 +112,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     test "fails with invalid entry index", %{state: state} do
       assert {:error, "Invalid entry index"} =
                TicketProof.validate(
-                 [%TicketProof{attempt: 2, signature: <<1, 2, 3>>}],
+                 [%TicketProof{attempt: 3, signature: <<1, 2, 3>>}],
                  499,
                  400,
                  state.entropy_pool,

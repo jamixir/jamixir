@@ -42,6 +42,8 @@ defmodule Constants do
   @doc "L = 14, 400: The maximum age in timeslots of the lookup anchor."
   def max_age_lookup_anchor, do: 14_400
 
+  defmockable(:tickets_per_validator, do: Jamixir.config()[:tickets_per_validator])
+
   @doc "O - The maximum number of items in the authorizations pool."
   def max_authorizations_items, do: 8
 
