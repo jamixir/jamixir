@@ -17,7 +17,7 @@ defmodule PVM.RefineParams do
           # a
           authorizer_hash: binary(),
           # o
-          output: list(Types.export_segment()),
+          output: binary(),
           # i
           import_segments: list(Types.export_segment()),
           # x
@@ -41,7 +41,7 @@ defmodule PVM.RefineParams do
     # a
     authorizer_hash: <<>>,
     # o
-    output: [],
+    output: Hash.zero(),
     # i
     import_segments: [],
     # x

@@ -58,9 +58,12 @@ defmodule PVM do
   """
   @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
-  def refine(_params = %RefineParams{}, _services) do
-    # TODO
-    {<<>>, []}
+  def refine(params = %RefineParams{}, services) do
+    if !Map.has_key?(services, params.service), do: {:big, []}
+    service = Map.fetch!(services, params.service)
+    lookup = ServiceAccount.historical_lookup(service, params.refinement_context.timeslot, params.service_code)
+    if lookup == nil, do: {:big, []}
+    if byte_size(lookup) > Constants.max_service_code_size(), do: {:big, []}
   end
 
   # Formula (238) v0.4.5
