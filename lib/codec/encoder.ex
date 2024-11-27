@@ -25,7 +25,7 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (334) v0.4.5
+  # Formula (E.9) v0.5.0
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do

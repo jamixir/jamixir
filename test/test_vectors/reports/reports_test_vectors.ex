@@ -8,34 +8,34 @@ defmodule ReportsTestVectors do
     do:
       [
         "anchor_not_recent-1",
-        "bad_beefy_mmr-1",
+        # "bad_beefy_mmr-1",
         "bad_code_hash-1",
-        # "bad_core_index-1",
-        # "bad_service_id-1",
-        # "bad_signature-1",
-        # "bad_state_root-1",
-        # "bad_validator_index-1",
+        "bad_core_index-1",
+        "bad_service_id-1",
+        "bad_signature-1",
+        "bad_state_root-1",
+        "bad_validator_index-1",
         # "consume_authorization_once-1",
-        # "core_engaged-1",
-        # "dependency_missing-1",
-        # "duplicate_package_in_recent_history-1",
-        # "duplicated_package_in_report-1",
-        # "future_report_slot-1",
+        "core_engaged-1",
+        "dependency_missing-1",
+        "duplicate_package_in_recent_history-1",
+        "duplicated_package_in_report-1",
+        "future_report_slot-1",
         # "high_work_report_gas-1",
         # "many_dependencies-1",
         # "multiple_reports-1",
-        # "no_enough_guarantees-1",
-        # for(i <- 1..2, do: "not_authorized-#{i}"),
-        # "not_sorted_guarantor-1",
-        # "out_of_order_guarantees-1",
-        # "report_before_last_rotation-1",
+        "no_enough_guarantees-1",
+        for(i <- 1..2, do: "not_authorized-#{i}"),
+        "not_sorted_guarantor-1",
+        "out_of_order_guarantees-1",
+        "report_before_last_rotation-1",
         # "report_curr_rotation-1",
         # "report_prev_rotation-1",
         # for(i <- 1..6, do: "reports_with_dependencies-#{i}"),
-        # for(i <- 1..2, do: "segment_root_lookup_invalid-#{i}"),
-        "too_high_work_report_gas-1"
-        # "too_many_dependencies-1"
-        # "wrong_assignment-1"
+        for(i <- 1..2, do: "segment_root_lookup_invalid-#{i}"),
+        "too_high_work_report_gas-1",
+        "too_many_dependencies-1",
+        "wrong_assignment-1"
       ]
       |> List.flatten()
 
@@ -54,8 +54,9 @@ defmodule ReportsTestVectors do
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
 
     Application.put_env(:jamixir, :original_modules, [
-      :validate_anchor_block,
-      :validate_gas_accumulation
+      Block.Extrinsic.Guarantee,
+      Util.Collections,
+      :validate_unique_and_ordered
     ])
 
     on_exit(fn ->

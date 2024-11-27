@@ -1,4 +1,5 @@
 defmodule RefinementContext do
+  alias Codec.JsonEncoder
   alias Util.Hash
 
   @type t :: %__MODULE__{
@@ -79,7 +80,11 @@ defmodule RefinementContext do
       state_root_: :state_root,
       beefy_root_: :beefy_root,
       timeslot: :lookup_anchor_slot,
-      prerequisite: fn p -> if(p == nil, do: MapSet.new([]), else: p) end
+      prerequisite: [&process_prerequisite/1, :prerequisites]
     }
+  end
+
+  def process_prerequisite(p) do
+    if(p == nil, do: [], else: p) |> MapSet.new()
   end
 end

@@ -55,8 +55,8 @@ defmodule Util.Collections do
       current = key_fn.(item)
 
       cond do
-        current in seen -> {:halt, {:error, :duplicates}}
         last != nil and not comparator.(last, current) -> {:halt, {:error, :not_in_order}}
+        current in seen -> {:halt, {:error, :duplicates}}
         true -> {:cont, {:ok, current, MapSet.put(seen, current)}}
       end
     end)

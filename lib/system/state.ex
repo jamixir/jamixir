@@ -368,6 +368,7 @@ defmodule System.State do
       Map.put(ac, {255, id}, e(service))
     end)
   end
+
   # ∀(s ↦ a) ∈ δ, (k ↦ v) ∈ as ∶ C(s, E4 (2^32 − 1) ⌢ k0...28 ) ↦ v
   defp encode_accounts_storage_s(state_keys, %State{} = state, property) do
     state.services
@@ -378,7 +379,6 @@ defmodule System.State do
       end)
     end)
   end
-
 
   # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, E4 (2^32 − 2) ⌢ h1...29 ) ↦ p
   defp encode_accounts_storage_p(state_keys, %State{} = state, property) do
@@ -398,7 +398,7 @@ defmodule System.State do
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value = e(vs(for x <- t, do: e_le(x, 4)))
-        key = e_le(l, 4) <> Hash.default(h) |> binary_slice(2, 30)
+        key = (e_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 30)
         Map.put(ac, {s, key}, value)
       end)
     end)

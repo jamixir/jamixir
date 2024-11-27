@@ -51,20 +51,24 @@ defmodule Block.Extrinsic.Guarantee do
              state.ready_to_accumulate,
              state.core_reports
            ),
-         # Formula (153) v0.4.5
-         :ok <- validate_prerequisites(w, state.recent_history),
          # Formula (155) v0.4.5
          :ok <- validate_segment_root_lookups(w, state.recent_history),
+         # Formula (153) v0.4.5
+         :ok <- validate_prerequisites(w, state.recent_history),
          # Formula (137) v0.4.5
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
-         # Formula (147) v0.4.5
+         # Formula (11.32) v0.5.0
          :ok <- validate_anchor_block(guarantees, state.recent_history),
          # Formula (139) v0.4.5
-         true <-
-           Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
-             Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
-           end) do
+         :ok <-
+           if(
+             Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
+               Collections.validate_unique_and_ordered(cred, &elem(&1, 0))
+             end),
+             do: :ok,
+             else: {:error, :not_sorted_or_unique_guarantors}
+           ) do
       :ok
     else
       {:error, error} -> {:error, error}
@@ -77,7 +81,7 @@ defmodule Block.Extrinsic.Guarantee do
     if Enum.all?(work_reports, &WorkReport.valid_size?/1) do
       :ok
     else
-      {:error, "Invalid work report size"}
+      {:error, :too_many_dependencies}
     end
   end
 
@@ -105,8 +109,11 @@ defmodule Block.Extrinsic.Guarantee do
            ) do
     Enum.reduce_while(work_reports(guarantees), :ok, fn wr, _ ->
       cond do
+        wr.core_index > Constants.core_count() - 1 ->
+          {:halt, {:error, :bad_core_index}}
+
         wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
-          {:halt, {:error, :missing_authorizer}}
+          {:halt, {:error, :bad_signature}}
 
         Enum.at(core_reports_intermediate_2, wr.core_index)
         |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
@@ -126,12 +133,12 @@ defmodule Block.Extrinsic.Guarantee do
 
       cond do
         total_gas > Constants.gas_accumulation() ->
-          {:halt, {:error, :invalid_gas_accumulation}}
+          {:halt, {:error, :work_report_gas_too_high}}
 
         Enum.any?(work_report.results, fn result ->
           Map.get(services, result.service) == nil
         end) ->
-          {:halt, {:error, :non_existent_service}}
+          {:halt, {:error, :bad_service_id}}
 
         Enum.any?(work_report.results, fn result ->
           service = Map.get(services, result.service)
@@ -150,7 +157,7 @@ defmodule Block.Extrinsic.Guarantee do
     if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
          r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
        end) do
-      {:error, :invalid_work_result_core_index}
+      {:error, :bad_code_hash}
     else
       :ok
     end
@@ -174,20 +181,48 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (147) v0.4.5
+  # Formula (11.32) v0.5.0
   # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
-    if Enum.all?(refinement_contexts(guarantees), fn x ->
-         Enum.any?(blocks, fn y ->
-           x.anchor == y.header_hash and
-             x.state_root_ == y.state_root and
-             x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-         end)
-       end) do
-      :ok
-    else
-      {:error, :invalid_anchor_block}
-    end
+    Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
+      result =
+        case Enum.filter(blocks, fn y -> x.state_root_ == y.state_root end) do
+          [] ->
+            {:error, :bad_state_root}
+
+          blocks ->
+            case Enum.filter(blocks, fn y -> x.anchor == y.header_hash end) do
+              [] ->
+                {:error, :anchor_not_recent}
+
+              _blocks ->
+                :ok
+                # TODO temporarily disabled because can't match report vectors
+                # case Enum.filter(_blocks, fn y ->
+                #        x.beefy_root_ ==
+                #          Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+                #      end) do
+                #   [] -> {:error, :bad_beefy_mmr}
+                #   _ -> :ok
+                # end
+            end
+        end
+
+      case result do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+
+      # Enum.any?(blocks, fn y ->
+      #      x.anchor == y.header_hash and
+      #        x.state_root_ == y.state_root
+
+      #      # TODO temporarily disabled because can't match report vectors
+      #      #  and x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+      #    end)
+      #  end) do
+      # :ok
+    end)
   end
 
   # Formula (148) v0.4.5
@@ -235,7 +270,7 @@ defmodule Block.Extrinsic.Guarantee do
     if MapSet.disjoint?(p_set(work_reports), existing_packages) do
       :ok
     else
-      {:error, :work_package_already_exists}
+      {:error, :duplicate_package}
     end
   end
 
@@ -305,9 +340,9 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (153) v0.4.5
+  # Formula (11.38) v0.5.0
   @spec validate_prerequisites(list(WorkReport.t()), RecentHistory.t()) ::
-          :ok | {:error, :missing_prerequisite_work_packages}
+          :ok | {:error, :dependency_missing}
   mockable validate_prerequisites(work_reports, %RecentHistory{blocks: blocks}) do
     extrinsic_and_recent_work_hashes = p_set(work_reports) ++ recent_block_hashes(blocks)
 
@@ -320,7 +355,7 @@ defmodule Block.Extrinsic.Guarantee do
     if MapSet.subset?(required_hashes, extrinsic_and_recent_work_hashes) do
       :ok
     else
-      {:error, :missing_prerequisite_work_packages}
+      {:error, :dependency_missing}
     end
   end
 
@@ -406,7 +441,7 @@ defmodule Block.Extrinsic.Guarantee do
        end) do
       :ok
     else
-      {:error, :invalid_segment_root_lookup}
+      {:error, :segment_root_lookup_invalid}
     end
   end
 

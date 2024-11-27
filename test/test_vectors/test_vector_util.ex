@@ -121,7 +121,7 @@ defmodule TestVectorUtil do
         flunk("Expected no error, but received error: '#{reason}'")
 
       {{:error, returned_state, _reason}, _error_expected} ->
-        # print_error(file_name, error_expected, reason, :pass)
+        print_error(file_name, _error_expected, _reason, :pass)
 
         Enum.each(tested_keys, fn key ->
           assert Map.get(returned_state, key) == Map.get(pre_state, key),
