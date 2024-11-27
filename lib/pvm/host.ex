@@ -27,13 +27,19 @@ defmodule PVM.Host do
   @callback remaining_gas(
               gas :: non_neg_integer(),
               registers :: list(non_neg_integer()),
-              memory :: Memory.t()
+              args :: term()
             ) :: any()
-  def remaining_gas(g, [w0, w1, w2, w3, w4, w5, w6, _w7, _w8 | rest], memory) do
-    g_ = g - 10
-    w7_ = rem(g_, 4_294_967_296)
-    w8_ = div(g_, 4_294_967_296)
-    {g, [w0, w1, w2, w3, w4, w5, w6, w7_, w8_ | rest], memory}
+  def remaining_gas(gas, registers, args \\ []) do
+    g = 10
+
+    if gas < g do
+      {:out_of_gas, 0, registers, args}
+    else
+      #  place gas-g on registers[7]
+      registers = List.update_at(registers, 7, fn _ -> gas - g end)
+
+      {:continue, gas - g, registers, args}
+    end
   end
 
   # ΩL: Lookup-preimage host-call.
