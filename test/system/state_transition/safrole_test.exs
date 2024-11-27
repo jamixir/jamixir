@@ -41,20 +41,28 @@ defmodule System.StateTransition.SafroleStateTest do
         | judgements: %Judgements{
             punish: MapSet.new([Enum.at(validators, 0).ed25519, Enum.at(validators, 2).ed25519])
           },
-          timeslot: 10,
+          timeslot: 11,
           curr_validators: validators,
           prev_validators: [],
           next_validators: validators
       }
 
-      h = %Header{timeslot: 11}
+      h = %Header{timeslot: 12}
       entropy_pool_ = EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+      new_tickets = seal_key_ticket_factory(key_pairs, entropy_pool_)
+      new_safrole = %{state.safrole | ticket_accumulator: new_tickets, current_epoch_slot_sealers: new_tickets}
 
+      state = %{
+        state
+        | safrole: new_safrole
+      }
+
+      expected_sealers = Safrole.outside_in_sequencer(new_tickets)
       # Sign the header with the appropriate key_pair (validator2 is the current validator)
       header =
         System.HeaderSeal.seal_header(
           %{h | block_author_key_index: 0},
-          state.safrole.current_epoch_slot_sealers,
+          expected_sealers,
           entropy_pool_,
           Enum.at(key_pairs, 0)
         )
@@ -63,8 +71,6 @@ defmodule System.StateTransition.SafroleStateTest do
     end
 
     @tag :slow
-    # TODO FIX
-    @tag :skip
     test "correctly updates safrole state", %{
       state: state,
       header: header,
@@ -130,8 +136,6 @@ defmodule System.StateTransition.SafroleStateTest do
     end
 
     @tag :slow
-    # TODO FIX
-    @tag :skip
     test "reorders current_epoch_slot_sealers when epoch advances and submission ends", %{
       state: state,
       block: block,
@@ -141,9 +145,6 @@ defmodule System.StateTransition.SafroleStateTest do
       # Simulate the expected outcome of rotate_keys (current_ = pending)
       expected_current_validators = state.safrole.pending
 
-      # Simulate the expected outcome of get_epoch_slot_sealers_
-      expected_sealers = Safrole.outside_in_sequencer(state.safrole.current_epoch_slot_sealers)
-
       # because of the outside in sequencer
       # i am not sure how in actuall runtime the block author is supposed to know that
       # assuming we will find out when doing #99
@@ -151,6 +152,19 @@ defmodule System.StateTransition.SafroleStateTest do
       header = %{header | timeslot: 13, block_author_key_index: block_auth_index}
 
       entropy_pool_ = EntropyPool.rotate_history(header, state.timeslot, state.entropy_pool)
+      new_tickets = seal_key_ticket_factory(key_pairs, entropy_pool_)
+
+      state = %{
+        state
+        | safrole: %{
+            state.safrole
+            | ticket_accumulator: new_tickets,
+              current_epoch_slot_sealers: new_tickets
+          }
+      }
+
+      # Simulate the expected outcome of get_epoch_slot_sealers_
+      expected_sealers = Safrole.outside_in_sequencer(state.safrole.current_epoch_slot_sealers)
 
       # Seal the header with the expected outcomes
       header =
