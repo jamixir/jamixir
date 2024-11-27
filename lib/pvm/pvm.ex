@@ -1,19 +1,10 @@
 defmodule PVM do
   alias System.State.ServiceAccount
-  alias PVM.RefineParams
-  alias PVM.Host
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
-  alias PVM.Memory
+  alias PVM.{ArgInvoc, Host, Memory, RefineParams, Types}
   use Codec.Encoder
-  use PVM.Constants
-
-  # Formula (33) v0.4.5
-  # Ψ: The whole-program pvm machine state-transition function.
-  @spec call(PVM.CallParams.t()) :: PVM.CallResult.t()
-  def call(_call_params) do
-    # ...
-  end
+  import PVM.Constants.{HostCallId, HostCallResult}
 
   @doc """
     Ψ1: The single-step (pvm) machine state-transition function.
@@ -29,31 +20,29 @@ defmodule PVM do
           binary() | WorkExecutionError.t()
   def authorized(p = %WorkPackage{}, core, services) do
     pc = WorkPackage.authorization_code(p, services)
-    # TODO: get_gas
-    gi = 0
-    {_g, r, nil} = __MODULE__.marshalling_call(pc, 0, e({p, core}), gi, &authorized_f/4, nil)
+
+    {_g, r, nil} =
+      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), e({p, core}), &authorized_f/3, nil)
+
     r
   end
 
   # Formula (274) v0.4.5
-  @spec authorized_f(non_neg_integer(), non_neg_integer(), list(non_neg_integer()), Memory.t()) ::
-          {integer(), list(non_neg_integer()), Memory.t()}
-  def authorized_f(n, gas, registers, memory) do
-    # 0 -> gas
-    if n == @gas do
-      Host.remaining_gas(gas, registers, memory)
-    else
-      {gas - 10, Enum.take(registers, 7) ++ [@what | Enum.drop(registers, 8)], memory}
-    end
-  end
+  @spec authorized_f(non_neg_integer(), Types.host_call_state(), Types.context()) ::
+          {Types.exit_reason(), Types.host_call_state(), Types.context()}
+  def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
 
-  # ΨM : The marshalling whole-program pvm machine state-transition function.
-  # (Y, N, NG, Y∶ZI, Ω⟨X⟩, X) → (NG, Y ∪ {☇,∞}, X)
-  @spec marshalling_call(binary(), non_neg_integer(), binary(), binary(), binary(), binary()) ::
-          binary() | WorkExecutionError.t()
-  def marshalling_call(_p, _i, _q, _a, _f, _context) do
-    # ...
-    # TODO
+    if n == gas() do
+      {exit_reason, gas_, registers_, _} = Host.remaining_gas(gas, registers, memory)
+      {exit_reason, {gas_, registers_, memory}, nil}
+    else
+      {:continue,
+       %{
+         gas: gas - 10,
+         registers: Enum.take(registers, 7) ++ [what() | Enum.drop(registers, 8)],
+         memory: memory
+       }, nil}
+    end
   end
 
   @doc """
