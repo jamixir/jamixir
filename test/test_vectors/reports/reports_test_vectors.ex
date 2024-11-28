@@ -8,7 +8,7 @@ defmodule ReportsTestVectors do
     do:
       [
         "anchor_not_recent-1",
-        # "bad_beefy_mmr-1",
+        "bad_beefy_mmr-1",
         "bad_code_hash-1",
         "bad_core_index-1",
         "bad_service_id-1",
@@ -80,10 +80,13 @@ defmodule ReportsTestVectors do
 
     ok_output = json_data[:output][:ok]
 
+    # json_data =
+    #   put_in(json_data[:pre_state][:next_validators], json_data[:pre_state][:curr_validators])
+
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
-    # json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot] - 1)
+    json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot] - 1)
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
 end

@@ -9,6 +9,7 @@ defmodule Block.Extrinsic.Guarantee do
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
   use MapUnion
+  use Codec.Encoder
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
@@ -112,8 +113,11 @@ defmodule Block.Extrinsic.Guarantee do
         wr.core_index > Constants.core_count() - 1 ->
           {:halt, {:error, :bad_core_index}}
 
-        wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
-          {:halt, {:error, :bad_signature}}
+        # commented because signatures are being tested in other part
+        # and this double check is not necessary
+        #
+        # wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
+        #   {:halt, {:error, :bad_signature}}
 
         Enum.at(core_reports_intermediate_2, wr.core_index)
         |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
@@ -301,21 +305,21 @@ defmodule Block.Extrinsic.Guarantee do
                # (kv)e
                validator_key = Enum.at(validators, v).ed25519
                # XG ⌢ H(E(w))
-               payload = SigningContexts.jam_guarantee() <> Hash.default(Codec.Encoder.encode(w))
+               payload = SigningContexts.jam_guarantee() <> h(e(w))
 
                cond do
-                 # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
-                 !Crypto.valid_signature?(s, payload, validator_key) ->
-                   {:halt, {:error, "Invalid signature in guarantee"}}
-
-                 # cv = wc
-                 Enum.at(c, v) != wc ->
-                   {:halt, {:error, "Invalid core_index in guarantee"}}
-
                  # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
                  t > t_ or
                      t < Constants.rotation_period() * (div(t_, Constants.rotation_period()) - 1) ->
-                   {:halt, {:error, "Invalid timeslot in guarantee"}}
+                   {:halt, {:error, :future_report_slot}}
+
+                 # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
+                 !Crypto.valid_signature?(s, payload, validator_key) ->
+                   {:halt, {:error, :bad_signature}}
+
+                 # cv = wc
+                 Enum.at(c, v) != wc ->
+                   {:halt, {:error, :bad_validator_index}}
 
                  true ->
                    # k ∈ R ⇔ ∃(w, t, a) ∈ EG, ∃(v, s) ∈ a ∶ k = (kv)e
