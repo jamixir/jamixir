@@ -189,43 +189,27 @@ defmodule Block.Extrinsic.Guarantee do
   # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
     Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
-      result =
-        case Enum.filter(blocks, fn y -> x.state_root_ == y.state_root end) do
-          [] ->
-            {:error, :bad_state_root}
+      case for(y <- blocks, x.state_root_ == y.state_root, do: y) do
+        [] ->
+          {:halt, {:error, :bad_state_root}}
 
-          blocks ->
-            case Enum.filter(blocks, fn y -> x.anchor == y.header_hash end) do
-              [] ->
-                {:error, :anchor_not_recent}
+        blocks ->
+          case for(y <- blocks, x.anchor == y.header_hash, do: y) do
+            [] ->
+              {:halt, {:error, :anchor_not_recent}}
 
-              _blocks ->
-                :ok
-                # TODO temporarily disabled because can't match report vectors
-                # case Enum.filter(_blocks, fn y ->
-                #        x.beefy_root_ ==
-                #          Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-                #      end) do
-                #   [] -> {:error, :bad_beefy_mmr}
-                #   _ -> :ok
-                # end
-            end
-        end
-
-      case result do
-        :ok -> {:cont, :ok}
-        {:error, reason} -> {:halt, {:error, reason}}
+            _blocks ->
+              {:cont, :ok}
+              # TODO temporarily disabled because can't match report vectors
+              # case Enum.filter(_blocks, fn y ->
+              #        x.beefy_root_ ==
+              #          Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
+              #      end) do
+              #   [] -> {:error, :bad_beefy_mmr}
+              #   _ -> {:cont, :ok}
+              # end
+          end
       end
-
-      # Enum.any?(blocks, fn y ->
-      #      x.anchor == y.header_hash and
-      #        x.state_root_ == y.state_root
-
-      #      # TODO temporarily disabled because can't match report vectors
-      #      #  and x.beefy_root_ == Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-      #    end)
-      #  end) do
-      # :ok
     end)
   end
 
