@@ -77,7 +77,7 @@ defmodule System.State.ServiceAccount do
   end
 
   # Formula (94) v0.4.5
-  @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary()
+  @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary() | nil
   def historical_lookup(
         %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},
         timeslot,
