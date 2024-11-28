@@ -31,7 +31,6 @@ defmodule PVM do
   @spec authorized_f(non_neg_integer(), Types.host_call_state(), Types.context()) ::
           {Types.exit_reason(), Types.host_call_state(), Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
-
     if n == gas() do
       {exit_reason, gas_, registers_, _} = Host.remaining_gas(gas, registers, memory)
       {exit_reason, {gas_, registers_, memory}, nil}
@@ -58,30 +57,41 @@ defmodule PVM do
   """
   @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
-  def refine(params = %RefineParams{}, services) do
-    if !Map.has_key?(services, params.service), do: {:big, []}
-    service = Map.fetch!(services, params.service)
-    lookup = ServiceAccount.historical_lookup(service, params.refinement_context.timeslot, params.service_code)
-    if lookup == nil, do: {:big, []}
+  def refine(
+        %RefineParams{
+          service_code: c,
+          gas: g,
+          service: s,
+          work_package_hash: p,
+          payload: y,
+          refinement_context: rc,
+          authorizer_hash: a,
+          output: o,
+          import_segments: i,
+          extrinsic_data: x,
+          export_offset: eo
+        },
+        services
+      ) do
+    if !Map.has_key?(services, s), do: {:bad, []}
+    service = Map.fetch!(services, s)
+
+    lookup =
+      ServiceAccount.historical_lookup(
+        service,
+        rc.timeslot,
+        c
+      )
+
+    if lookup == nil, do: {:bad, []}
     if byte_size(lookup) > Constants.max_service_code_size(), do: {:big, []}
-  end
+    a = e({s, y, p, rc, a, o, vs(Enum.map(x, &vs/1))})
+    {gas, result, {m, e}} = ArgInvoc.execute(lookup, 0, g, a, nil, {nil, []})
 
-  # Formula (238) v0.4.5
-  @spec skip(non_neg_integer(), bitstring()) :: non_neg_integer()
-  def skip(i, k) when is_integer(i) and is_bitstring(k) do
-    case k do
-      <<_::size(i + 1), rest::bitstring>> -> find_next_one(0, rest, 0)
-      # i is beyond bitstring length, implicit 1 found
-      _ -> 0
+    if result in [:out_of_gas, :panic] do
+      {result, []}
     end
+
+    {result, e}
   end
-
-  defp find_next_one(_i, <<>>, count) when count < 24, do: count
-  defp find_next_one(_i, <<1::1, _::bitstring>>, count), do: count
-
-  defp find_next_one(i, <<0::1, rest::bitstring>>, count) when count < 24 do
-    find_next_one(i + 1, rest, count + 1)
-  end
-
-  defp find_next_one(_i, _k, _count), do: 24
 end
