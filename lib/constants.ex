@@ -74,6 +74,9 @@ defmodule Constants do
   @doc "Wc - The maximum size of service code in octets"
   def max_service_code_size, do: 4_000_000
 
+  @doc "Wm - The maximum number of entries in a work-package manifest"
+  def max_manifest_size, do: 2048
+
   @doc "Y - The number of slots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config()[:ticket_submission_end])
 
