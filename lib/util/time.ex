@@ -45,8 +45,7 @@ defmodule Util.Time do
 
   mockable validate_timeslot_order(previous_timeslot, current_timeslot) do
     if previous_timeslot >= current_timeslot do
-      {:error,
-       "Invalid timeslot order: previous_timeslot (#{previous_timeslot}) is not less than current_timeslot (#{current_timeslot})"}
+      {:error, :bad_slot}
     else
       :ok
     end

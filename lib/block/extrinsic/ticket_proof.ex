@@ -43,7 +43,11 @@ defmodule Block.Extrinsic.TicketProof do
              safrole.epoch_root
            ),
          # Formula (77) v0.4.5
-         :ok <- Collections.validate_unique_and_ordered(n, & &1.id) do
+         :ok <-
+           (case Collections.validate_unique_and_ordered(n, & &1.id) do
+              {:error, :not_in_order} -> {:error, :bad_ticket_order}
+              r -> r
+            end) do
       # Formula (78) v0.4.5
       Safrole.validate_new_tickets(safrole, MapSet.new(n, & &1.id))
     end
@@ -65,7 +69,7 @@ defmodule Block.Extrinsic.TicketProof do
         :ok
 
       true ->
-        {:error, "Invalid number of tickets for the current epoch phase"}
+        {:error, :unexpected_ticket}
     end
   end
 
@@ -96,7 +100,7 @@ defmodule Block.Extrinsic.TicketProof do
           {:cont, {:ok, acc ++ [%SealKeyTicket{id: output_hash, attempt: r}]}}
 
         _ ->
-          {:halt, {:error, "Invalid ticket validity proof"}}
+          {:halt, {:error, :bad_ticket_proof}}
       end
     end)
   end

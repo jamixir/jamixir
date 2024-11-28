@@ -173,7 +173,7 @@ defmodule System.State.Safrole do
     if MapSet.disjoint?(accumulator_set, new_ticket_hashes) do
       :ok
     else
-      {:error, "Ticket hash overlap with existing tickets"}
+      {:error, :duplicate_ticket}
     end
   end
 

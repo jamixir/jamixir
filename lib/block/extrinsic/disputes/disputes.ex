@@ -65,7 +65,7 @@ defmodule Block.Extrinsic.Disputes do
     cond do
       # Formula (98) v0.4.5 - epoch index
       !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
-        {:error, Error.invalid_epoch()}
+        {:error, Error.bad_judgement_age()}
 
       # Formula (98) v0.4.5 - required length ⌊2/3V⌋+1
       !Enum.all?(verdicts, fn %Verdict{judgements: judgements, epoch_index: epoch_index} ->
@@ -74,7 +74,7 @@ defmodule Block.Extrinsic.Disputes do
 
         length(judgements) == div(2 * length(validator_set), 3) + 1
       end) ->
-        {:error, Error.invalid_vote_count()}
+        {:error, Error.bad_vote_split()}
 
       # Formula (103) v0.4.5
       !match?(
@@ -123,7 +123,7 @@ defmodule Block.Extrinsic.Disputes do
           div(2 * validator_count, 3) + 1
         ]
       end) ->
-        {:error, Error.invalid_vote_count()}
+        {:error, Error.bad_vote_split()}
 
       true ->
         :ok
@@ -206,7 +206,7 @@ defmodule Block.Extrinsic.Disputes do
              _ -> false
            end
          end) do
-        {:error, Error.invalid_fault_vote()}
+        {:error, Error.fault_verdict_wrong()}
       else
         :ok
       end

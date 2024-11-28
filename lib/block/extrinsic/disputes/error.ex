@@ -7,10 +7,10 @@ defmodule Block.Extrinsic.Disputes.Error do
 
   # Validation errors
   def already_judged, do: :already_judged
-  def invalid_epoch, do: :invalid_epoch
+  def bad_judgement_age, do: :bad_judgement_age
   def invalid_signature, do: :invalid_signature
-  def invalid_vote_count, do: :invalid_vote_count
-  def invalid_fault_vote, do: :invalid_fault_vote
+  def bad_vote_split, do: :bad_vote_split
+  def fault_verdict_wrong, do: :fault_verdict_wrong
   def invalid_validator, do: :invalid_validator
   def offender_already_reported, do: :offender_already_reported
 
@@ -18,5 +18,5 @@ defmodule Block.Extrinsic.Disputes.Error do
   def not_enough_culprits, do: :not_enough_culprits
   def not_enough_faults, do: :not_enough_faults
   def invalid_header_markers, do: :invalid_header_markers
-  def culprit_verdict_not_bad, do: :culprit_verdict_not_bad
+  def culprit_verdict_not_bad, do: :culprits_verdict_not_bad
 end

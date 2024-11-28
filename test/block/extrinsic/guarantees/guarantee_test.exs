@@ -73,7 +73,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error for guarantees not ordered by core_index", %{state: state, g1: g1, g2: g2} do
-      assert Guarantee.validate([g2, g1], state, 1) == {:error, :not_in_order}
+      assert Guarantee.validate([g2, g1], state, 1) == {:error, :out_of_order_guarantee}
     end
 
     test "returns error for duplicate core_index in guarantees", %{state: state, g1: g1} do
@@ -84,7 +84,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}])
 
       assert Guarantee.validate([invalid_g1], state, 1) ==
-               {:error, "insufficient_guarantees"}
+               {:error, :insufficient_guarantees}
     end
 
     test "returns error for credentials not ordered by validator_index", %{g1: g1, state: state} do

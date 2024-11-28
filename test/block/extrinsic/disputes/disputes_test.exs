@@ -26,11 +26,10 @@ defmodule Block.Extrinsic.Disputes.Test do
     }
 
     {:ok,
-      work_report_hash: Hash.random(),
-      state: state,
-      header: build(:header),
-      sorted_key_pairs: key_pairs
-    }
+     work_report_hash: Hash.random(),
+     state: state,
+     header: build(:header),
+     sorted_key_pairs: key_pairs}
   end
 
   defp validate(disputes, state, header) do
@@ -51,15 +50,15 @@ defmodule Block.Extrinsic.Disputes.Test do
     } do
       error_cases = [
         {
-          Error.invalid_epoch,
+          Error.bad_judgement_age(),
           %Disputes{verdicts: [build(:verdict, epoch_index: 100)]}
         },
         {
-          Error.invalid_vote_count,
+          Error.bad_vote_split(),
           %Disputes{verdicts: [build(:verdict, judgements: [])]}
         },
         {
-          Error.unsorted_verdicts,
+          Error.unsorted_verdicts(),
           %Disputes{
             verdicts: [
               build(:verdict, work_report_hash: wrh),
@@ -68,7 +67,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.unsorted_verdicts,
+          Error.unsorted_verdicts(),
           %Disputes{
             verdicts: [
               build(:verdict, work_report_hash: <<0xCC::256>>),
@@ -78,14 +77,14 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.already_judged,
+          Error.already_judged(),
           %Disputes{verdicts: [build(:verdict, work_report_hash: wrh)]},
           fn state ->
             %{state | judgements: %{state.judgements | good: MapSet.new([wrh])}}
           end
         },
         {
-          Error.invalid_signature,
+          Error.invalid_signature(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -147,7 +146,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      expected_error = Error.unsorted_judgements
+      expected_error = Error.unsorted_judgements()
       assert {:error, ^expected_error} = validate(disputes, state, header)
     end
 
@@ -170,7 +169,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         build(:judgement, vote: false, key_pair: k4, work_report_hash: wrh, validator_index: 3)
       ]
 
-      expected_error = Error.invalid_vote_count
+      expected_error = Error.bad_vote_split()
 
       assert {:error, ^expected_error} =
                validate(
@@ -194,7 +193,7 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       error_cases = [
         {
-          Error.unsorted_culprits,
+          Error.unsorted_culprits(),
           %Disputes{
             culprits: [
               %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
@@ -203,7 +202,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.unsorted_culprits,
+          Error.unsorted_culprits(),
           %Disputes{
             culprits: [
               %{build(:culprit) | work_report_hash: wrh, key: Hash.two()},
@@ -212,7 +211,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.not_enough_faults,
+          Error.not_enough_faults(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -226,7 +225,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.not_enough_culprits,
+          Error.not_enough_culprits(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -245,7 +244,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           }
         },
         {
-          Error.not_enough_culprits,
+          Error.not_enough_culprits(),
           %Disputes{
             verdicts: [
               build(:verdict,
@@ -309,7 +308,7 @@ defmodule Block.Extrinsic.Disputes.Test do
         ]
       }
 
-      expected_error = Error.not_enough_culprits
+      expected_error = Error.not_enough_culprits()
       assert {:error, ^expected_error} = validate(disputes, state, header)
     end
   end
@@ -350,8 +349,6 @@ defmodule Block.Extrinsic.Disputes.Test do
     } do
       {pub1, priv1} = k1
       {pub2, priv2} = k2
-
-
 
       state = %{
         state
@@ -609,7 +606,9 @@ defmodule Block.Extrinsic.Disputes.Test do
 
       state = %{
         state
-        | curr_validators: [build(:validator, ed25519: :crypto.generate_key(:eddsa, :ed25519) |> elem(0))],
+        | curr_validators: [
+            build(:validator, ed25519: :crypto.generate_key(:eddsa, :ed25519) |> elem(0))
+          ],
           prev_validators: [
             build(:validator, ed25519: prev_pub1),
             build(:validator, ed25519: prev_pub2)

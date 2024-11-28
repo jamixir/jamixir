@@ -120,8 +120,14 @@ defmodule TestVectorUtil do
         print_error(file_name, "none", reason, :fail)
         flunk("Expected no error, but received error: '#{reason}'")
 
-      {{:error, returned_state, _reason}, _error_expected} ->
-        print_error(file_name, _error_expected, _reason, :pass)
+      {{:error, returned_state, reason}, error_expected} ->
+        if System.get_env("FAIL_ON_WRONG_ERROR") do
+          assert String.to_atom(error_expected) == reason
+        end
+
+        if System.get_env("PRINT_ERROR") do
+          print_error(file_name, error_expected, reason, :pass)
+        end
 
         Enum.each(tested_keys, fn key ->
           assert Map.get(returned_state, key) == Map.get(pre_state, key),

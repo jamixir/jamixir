@@ -99,7 +99,7 @@ defmodule Block.Extrinsic.TicketProofTest do
 
   describe "validate/5 - failing cases" do
     test "fails with too many tickets", %{state: state} do
-      assert {:error, "Invalid number of tickets for the current epoch phase"} =
+      assert {:error, :unexpected_ticket} =
                TicketProof.validate(
                  List.duplicate(%TicketProof{}, Constants.max_tickets() + 1),
                  Constants.ticket_submission_end() - 1,
@@ -125,7 +125,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       <<first_byte, rest::binary>> = valid_proof
       invalid_proof = <<first_byte + 1>> <> rest
 
-      assert {:error, "Invalid ticket validity proof"} =
+      assert {:error, :bad_ticket_proof} =
                TicketProof.validate(
                  [%TicketProof{attempt: 0, signature: invalid_proof}],
                  1,
@@ -170,7 +170,7 @@ defmodule Block.Extrinsic.TicketProofTest do
           ]
       }
 
-      assert {:error, "Ticket hash overlap with existing tickets"} ==
+      assert {:error, :duplicate_ticket} ==
                TicketProof.validate(
                  [ticket],
                  header_timeslot,
