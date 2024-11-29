@@ -5,7 +5,7 @@ defmodule TestVectorUtil do
   Application.put_env(:elixir, :ansi_enabled, true)
 
   @owner "w3f"
-  @repo "jamtestvectors"
+  @repo "jam-test-vectors"
   @branch "master"
   @headers [{"User-Agent", "Elixir"}]
 
@@ -108,8 +108,10 @@ defmodule TestVectorUtil do
       {{:ok, state_}, nil} ->
         # No error expected, assert on the tested keys
         Enum.each(tested_keys, fn key ->
-          # "Mismatch for key: #{key} in test vector #{file_name}"
-          assert Map.get(state_, key) == Map.get(expected_state, key)
+          our_result = fetch_key_from_state(state_, key)
+          expected_result = fetch_key_from_state(expected_state, key)
+
+          assert our_result == expected_result
         end)
 
       {{:ok, _}, error_expected} ->
@@ -130,12 +132,21 @@ defmodule TestVectorUtil do
         end
 
         Enum.each(tested_keys, fn key ->
-          assert Map.get(returned_state, key) == Map.get(pre_state, key),
-                 "State changed unexpectedly for key: #{key}"
+          our_result = fetch_key_from_state(returned_state, key)
+          expected_result = fetch_key_from_state(pre_state, key)
+          assert our_result == expected_result,
+                 "State changed unexpectedly for key: #{format_key(key)}"
         end)
     end
 
     :ok
+  end
+
+  defp fetch_key_from_state(state, key) do
+    case key do
+      {namespace, subkey} -> Map.get(Map.get(state, namespace), subkey)
+      simple_key -> Map.get(state, simple_key)
+    end
   end
 
   defp default_build_extrinsic(json_data) do
@@ -143,4 +154,7 @@ defmodule TestVectorUtil do
     |> Map.put(:tickets, json_data[:input][:extrinsic])
     |> Map.put(:disputes, Map.from_struct(%Disputes{}))
   end
+
+  defp format_key({namespace, subkey}), do: "#{namespace}.#{subkey}"
+  defp format_key(key), do: "#{key}"
 end
