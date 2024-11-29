@@ -8,9 +8,7 @@ defmodule SafroleTinyTestVectors do
 
   setup_all(do: setup_all())
 
-  @failing [
-    "publish-tickets-no-mark-1"
-  ]
+  @failing []
   describe "vectors" do
     Enum.each(files(), fn file_name ->
       @tag file_name: file_name
