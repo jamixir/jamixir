@@ -14,7 +14,17 @@ defmodule SafroleTestVectors do
       ]
       |> List.flatten()
 
-  def tested_keys, do: [:timeslot, :entropy_pool, :prev_validators, :curr_validators, :safrole]
+  def tested_keys,
+    do: [
+      :timeslot,
+      :entropy_pool,
+      :prev_validators,
+      :curr_validators,
+      {:safrole, :current_epoch_slot_sealers},
+      {:safrole, :pending},
+      {:safrole, :epoch_root},
+      {:safrole, :ticket_accumulator}
+    ]
 
   def setup_all do
     RingVrf.init_ring_context(Constants.validator_count())
