@@ -2,7 +2,7 @@
 name = "bandersnatch_ring_vrf"
 version = "0.1.0"
 edition = "2021"
-authors = [ "Baruch Fishman" ]
+authors = ["Baruch Fishman"]
 
 [lib]
 name = "bandersnatch_ring_vrf"
@@ -11,15 +11,15 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-ark-ec-vrfs = { git = "https://github.com/jamixir/ark-ec-vrfs", features = [
+ark-ec-vrfs = { git = "https://github.com/daiagi/ark-ec-vrfs", rev = "cd3a196", features = [
     "bandersnatch",
     "ring",
-    "parallel",
-    "test-vectors",
 ] }
-ring-proof = { package = "ring", git = "https://github.com/jamixir/ring-proof", branch = "extended", default-features = false }
+ring-proof = { package = "ring", git = "https://github.com/daiagi/ring-proof", rev = "3866416", default-features = false }
 ark-ec = { version = "0.4", default-features = false }
-ark-serialize = { version = "0.4", default-features = false, features = ["derive"] }
+ark-serialize = { version = "0.4", default-features = false, features = [
+    "derive",
+] }
 hex = "0.4.3"
 rustler = "0.34.0"
 rand_chacha = { version = "0.3", default-features = false }
