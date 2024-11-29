@@ -9,12 +9,7 @@ defmodule SafroleTinyTestVectors do
   setup_all(do: setup_all())
 
   @failing [
-    "enact-epoch-change-with-no-tickets-4",
-    "skip-epochs-1",
-    "skip-epoch-tail-1",
-    "publish-tickets-with-mark-5",
-    "publish-tickets-no-mark-1",
-    "publish-tickets-no-mark-9"
+    "publish-tickets-no-mark-1"
   ]
   describe "vectors" do
     Enum.each(files(), fn file_name ->
