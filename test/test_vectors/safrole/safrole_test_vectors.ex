@@ -27,12 +27,6 @@ defmodule SafroleTestVectors do
     ]
 
   def setup_all do
-    previous_config = Application.get_env(:jamixir, Jamixir)
-
-    # Load dev config
-    dev_config = Config.Reader.read!("config/dev.exs", env: Mix.env())[:jamixir][Jamixir]
-    Application.put_env(:jamixir, Jamixir, dev_config)
-
     RingVrf.init_ring_context(Constants.validator_count())
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
 
@@ -49,8 +43,6 @@ defmodule SafroleTestVectors do
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
       Application.delete_env(:jamixir, Constants)
       Application.delete_env(:jamixir, :original_modules)
-      # Restore original config
-      Application.put_env(:jamixir, Jamixir, previous_config)
     end)
 
     :ok

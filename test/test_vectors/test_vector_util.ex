@@ -134,6 +134,7 @@ defmodule TestVectorUtil do
         Enum.each(tested_keys, fn key ->
           our_result = fetch_key_from_state(returned_state, key)
           expected_result = fetch_key_from_state(pre_state, key)
+
           assert our_result == expected_result,
                  "State changed unexpectedly for key: #{format_key(key)}"
         end)
