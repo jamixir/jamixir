@@ -369,6 +369,7 @@ defmodule Block.Extrinsic.Guarantee do
     use Codec.Encoder
     alias Block.Extrinsic.Guarantee
 
+    # Formula (C.16) v0.5.0
     def encode(g = %Guarantee{}) do
       e({
         g.work_report,

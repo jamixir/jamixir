@@ -4,9 +4,9 @@ defmodule Block.Extrinsic.Disputes do
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
-  alias Codec.VariableSize
   alias Block.Extrinsic.Disputes
-  alias Block.Extrinsic.Disputes.{Culprit, Fault, Judgement, Verdict, Error}
+  alias Codec.VariableSize
+  alias Block.Extrinsic.Disputes.{Culprit, Error, Fault, Judgement, Verdict}
   alias System.State.{Judgements, Validator}
   alias Util.{Collections, Crypto, Time}
   use MapUnion
@@ -234,7 +234,8 @@ defmodule Block.Extrinsic.Disputes do
   defimpl Encodable do
     use Codec.Encoder
 
-    def encode(d = %Disputes{}) do
+    # Formula (C.18) v0.5.0
+    def encode(%Disputes{} = d) do
       e({vs(d.verdicts), vs(d.culprits), vs(d.faults)})
     end
   end

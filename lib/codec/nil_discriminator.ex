@@ -8,7 +8,7 @@ defmodule Codec.NilDiscriminator do
   defimpl Encodable do
     alias Codec.Encoder
 
-    # Formula (304) v0.4.5
+    # Formula (C.9) v0.5.0
     def encode(%Codec.NilDiscriminator{value: value}) do
       case value do
         nil -> <<0>>

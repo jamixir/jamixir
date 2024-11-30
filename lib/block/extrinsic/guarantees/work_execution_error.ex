@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   # Formula (123) v0.4.5
   @type t :: :infinite | :halt | :bad | :big
 
-  # Formula (318) v0.4.5
+  # Formula (C.28) v0.5.0
   @codes %{infinite: 1, halt: 2, bad: 3, big: 4}
 
   def code(error) do

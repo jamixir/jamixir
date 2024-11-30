@@ -46,18 +46,31 @@ defmodule Block.Extrinsic do
   defimpl Encodable do
     use Codec.Encoder
 
+    # Formula (C.13) v0.5.0
     def encode(%Block.Extrinsic{} = ex),
-      do: e({vs(ex.tickets), ex.disputes, vs(ex.preimages), vs(ex.assurances), vs(ex.guarantees)})
+      do:
+        e({
+          # Formula (C.14) v0.5.0
+          vs(ex.tickets),
+          # Formula (C.15) v0.5.0
+          vs(ex.preimages),
+          # Formula (C.16) v0.5.0
+          vs(ex.guarantees),
+          # Formula (C.17) v0.5.0
+          vs(ex.assurances),
+          # Formula (C.18) v0.5.0
+          ex.disputes
+        })
   end
 
   use JsonDecoder
 
   def decode(bin) do
     {tickets, bin} = VariableSize.decode(bin, TicketProof)
-    {disputes, bin} = Disputes.decode(bin)
     {preimages, bin} = VariableSize.decode(bin, Preimage)
+    {guarantees, bin} = VariableSize.decode(bin, Guarantee)
     {assurances, bin} = VariableSize.decode(bin, Assurance)
-    {guarantees, rest} = VariableSize.decode(bin, Guarantee)
+    {disputes, bin} = Disputes.decode(bin)
 
     {%__MODULE__{
        tickets: tickets,
@@ -65,7 +78,7 @@ defmodule Block.Extrinsic do
        preimages: preimages,
        assurances: assurances,
        guarantees: guarantees
-     }, rest}
+     }, bin}
   end
 
   def json_mapping,

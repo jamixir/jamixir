@@ -54,24 +54,23 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
-    alias Codec.{Encoder, VariableSize}
-
-    # Formula (313) v0.4.5
+    use Codec.Encoder
+    # Formula (C.23) v0.5.0
     def encode(%WorkResult{} = wr) do
-      Encoder.encode_le(wr.service, 4) <>
-        Encoder.encode({wr.code_hash, wr.payload_hash}) <>
-        Encoder.encode_le(wr.gas_ratio, 8) <>
+      e_le(wr.service, 4) <>
+        e({wr.code_hash, wr.payload_hash}) <>
+        e_le(wr.gas_ratio, 8) <>
         do_encode(wr.result)
     end
 
-    # Formula (318) v0.4.5
+    # Formula (C.28) v0.5.0
     defp do_encode({:ok, b}) do
-      Encoder.encode({0, VariableSize.new(b)})
+      e({0, vs(b)})
     end
 
-    # Formula (318) v0.4.5
+    # Formula (C.28) v0.5.0
     defp do_encode({:error, e}) do
-      Encoder.encode(WorkExecutionError.code(e))
+      e(WorkExecutionError.code(e))
     end
   end
 

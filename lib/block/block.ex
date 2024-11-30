@@ -55,7 +55,7 @@ defmodule Block do
   defimpl Encodable do
     use Codec.Encoder
 
-    # Formula (308) v0.4.5
+    # Formula (C.13) v0.5.0
     def encode(%Block{extrinsic: e, header: h}), do: e({h, e})
   end
 

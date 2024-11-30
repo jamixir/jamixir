@@ -15,7 +15,7 @@ defmodule Codec.VariableSize do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (303) v0.4.5
+    # Formula (C.8) v0.5.0
     def encode(%Codec.VariableSize{} = x), do: e(x.size) <> e(x.value)
   end
 
