@@ -291,16 +291,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (314) v0.4.5
+    # Formula (C.24) v0.5.0
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       e({
         wr.specification,
         wr.refinement_context,
-        wr.core_index,
-        wr.segment_root_lookup,
+        e_le(wr.core_index, 2),
         wr.authorizer_hash,
         vs(wr.output),
+        wr.segment_root_lookup,
         vs(wr.results)
       })
     end
@@ -312,16 +312,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def decode(bin) do
     {specification, bin} = AvailabilitySpecification.decode(bin)
     {refinement_context, bin} = RefinementContext.decode(bin)
-    <<core_index::8, bin::binary>> = bin
-    {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
+    <<core_index::binary-size(2), bin::binary>> = bin
     <<authorizer_hash::binary-size(@hash_size), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
+    {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
     {results, rest} = VariableSize.decode(bin, WorkResult)
 
     {%__MODULE__{
        specification: specification,
        refinement_context: refinement_context,
-       core_index: core_index,
+       core_index: de_le(core_index, 2),
        segment_root_lookup: segment_root_lookup,
        authorizer_hash: authorizer_hash,
        output: output,

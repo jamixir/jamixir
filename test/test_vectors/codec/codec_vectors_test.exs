@@ -14,13 +14,11 @@ defmodule CodecVectorsTest do
 
   tests = [
     {"assurances_extrinsic", Assurance},
-    # Commented because vectors do not comply with tickets_entropy n epoch mark
-    # {"block", Block},
+    {"block", Block},
     {"disputes_extrinsic", Disputes},
     {"extrinsic", Extrinsic},
     {"guarantees_extrinsic", Guarantee},
-    # Commented because vectors do not comply with tickets_entropy n epoch mark
-    # {"header_0", Header},
+    {"header_0", Header},
     {"header_1", Header},
     {"preimages_extrinsic", Preimage},
     {"refine_context", RefinementContext},

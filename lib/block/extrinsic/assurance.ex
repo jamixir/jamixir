@@ -104,6 +104,7 @@ defmodule Block.Extrinsic.Assurance do
       Utils.pad_binary(value, size)
     end
 
+    # Formula (C.17) v0.5.0
     def encode(%Assurance{} = a) do
       e(a.hash) <>
         e(pad(a.bitfield, Sizes.bitfield())) <>
