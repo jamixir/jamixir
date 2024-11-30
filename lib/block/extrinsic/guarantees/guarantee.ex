@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Guarantee do
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
   alias System.{State, State.EntropyPool, State.RecentHistory}
-  alias Util.{Collections, Crypto, Hash}
+  alias Util.{Collections, Crypto}
   use SelectiveMock
   use MapUnion
   use Codec.Encoder

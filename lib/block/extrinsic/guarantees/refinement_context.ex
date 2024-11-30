@@ -1,5 +1,4 @@
 defmodule RefinementContext do
-  alias Codec.JsonEncoder
   alias Util.Hash
 
   @type t :: %__MODULE__{
