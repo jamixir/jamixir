@@ -165,8 +165,7 @@ defmodule PVM.HostInternal do
 
         # Success case - append to export segments and update register
         true ->
-          {set_r7(registers, length(export_segments) + export_offset),
-           export_segments ++ [x]}
+          {set_r7(registers, length(export_segments) + export_offset), export_segments ++ [x]}
       end
 
     {new_registers, memory, {m, new_export_segments}}
@@ -292,26 +291,25 @@ defmodule PVM.HostInternal do
     {new_registers, memory, new_context}
   end
 
-  def zero_pure(registers, memory, {m, e} = context) do
-    # Extract registers[7..10] for [n, p, c]
+  def zero_pure(registers, %Memory{page_size: zp} = memory, {m, e} = context) do
     [n, p, c] = Enum.slice(registers, 7, 3)
 
-    machine = Map.get(m, n, :error)
-    {prog, u, i} = machine
+    cond do
+      p < 16 or p + c > 0x1000_00000 / zp ->
+        {set_r7(registers, oob()), memory, context}
 
-    if u == :error do
-      {set_r7(registers, who()), memory, context}
+      not Map.has_key?(m, n) ->
+        {set_r7(registers, who()), memory, context}
+
+      true ->
+        {prog, u, i} = Map.get(m, n)
+
+        u_ =
+          Memory.set_access(u, p * zp, c * zp, :write)
+          |> Memory.write(p * zp, <<0::size(c * zp)>>)
+
+        m_ = Map.put(m, n, {prog, u_, i})
+        {set_r7(registers, ok()), memory, {m_, e}}
     end
-
-    u_ =
-      Memory.set_access(u, p * u.page_size, c * u.page_size, :write)
-      |> Memory.write(p * u.page_size, <<0::size(c * u.page_size)>>)
-
-    if p < 16 or p + c > 0x1000_00000 / u.page_size do
-      {set_r7(registers, oob()), memory, context}
-    end
-
-    m_ = Map.put(m, n, {prog, u_, i})
-    {set_r7(registers, ok()), memory, {m_, e}}
   end
 end
