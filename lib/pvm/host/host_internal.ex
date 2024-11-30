@@ -29,6 +29,8 @@ defmodule PVM.HostInternal do
   """
   alias PVM.Memory
 
+  defp set_r7(registers, value), do: List.replace_at(registers, 7, value)
+
   # ΩG: Gas-remaining host-call.
   @callback remaining_gas(
               gas :: non_neg_integer(),
@@ -99,16 +101,14 @@ defmodule PVM.HostInternal do
       end
 
     # Set register 7 based on conditions
-    new_registers =
-      List.update_at(registers, 7, fn _ ->
-        cond do
-          !is_writable -> oob()
-          v == nil -> none()
-          true -> ok()
-        end
-      end)
+    r7_value =
+      cond do
+        !is_writable -> oob()
+        v == nil -> none()
+        true -> ok()
+      end
 
-    {new_registers, updated_memory, context}
+    {set_r7(registers, r7_value), updated_memory, context}
   end
 
   def import_pure(registers, memory, context, import_segments) do
@@ -130,16 +130,14 @@ defmodule PVM.HostInternal do
       end
 
     # Update register 7 with result
-    new_registers =
-      List.update_at(registers, 7, fn _ ->
-        cond do
-          !write_check -> oob()
-          v == nil -> none()
-          true -> ok()
-        end
-      end)
+    r7_value =
+      cond do
+        !write_check -> oob()
+        v == nil -> none()
+        true -> ok()
+      end
 
-    {new_registers, updated_memory, context}
+    {set_r7(registers, r7_value), updated_memory, context}
   end
 
   def export_pure(registers, memory, {m, export_segments}, export_offset) do
@@ -159,15 +157,15 @@ defmodule PVM.HostInternal do
       cond do
         # Memory read failed
         x == :error ->
-          {List.replace_at(registers, 7, oob()), export_segments}
+          {set_r7(registers, oob()), export_segments}
 
         # Export segments would exceed max size
         length(export_segments) + export_offset >= Constants.max_manifest_size() ->
-          {List.replace_at(registers, 7, full()), export_segments}
+          {set_r7(registers, full()), export_segments}
 
         # Success case - append to export segments and update register
         true ->
-          {List.replace_at(registers, 7, length(export_segments) + export_offset),
+          {set_r7(registers, length(export_segments) + export_offset),
            export_segments ++ [x]}
       end
 
@@ -201,16 +199,16 @@ defmodule PVM.HostInternal do
       cond do
         p == :error ->
           # Invalid memory access
-          {List.replace_at(registers, 7, oob()), context}
+          {set_r7(registers, oob()), context}
 
         n == nil ->
           # No available machine IDs
-          {List.replace_at(registers, 7, oob()), context}
+          {set_r7(registers, oob()), context}
 
         true ->
           # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
           new_m = Map.put(m, n, {p, u, i})
-          {List.replace_at(registers, 7, n), {new_m, e}}
+          {set_r7(registers, n), {new_m, e}}
       end
 
     {new_registers, memory, new_context}
@@ -240,14 +238,14 @@ defmodule PVM.HostInternal do
     {new_registers, new_memory} =
       case s do
         :error ->
-          {List.replace_at(registers, 7, oob()), memory}
+          {set_r7(registers, oob()), memory}
 
         nil ->
-          {List.replace_at(registers, 7, who()), memory}
+          {set_r7(registers, who()), memory}
 
         data ->
           {:ok, new_memory} = Memory.write(memory, o, data)
-          {List.replace_at(registers, 7, ok()), new_memory}
+          {set_r7(registers, ok()), new_memory}
       end
 
     {new_registers, new_memory, context}
@@ -279,16 +277,16 @@ defmodule PVM.HostInternal do
     {new_registers, new_context} =
       case s do
         :error ->
-          {List.replace_at(registers, 7, oob()), context}
+          {set_r7(registers, oob()), context}
 
         nil ->
-          {List.replace_at(registers, 7, who()), context}
+          {set_r7(registers, who()), context}
 
         data ->
           {p, machine_memory, i} = m[n]
           {:ok, new_machine_memory} = Memory.write(machine_memory, o, data)
           new_m = Map.put(m, n, {p, new_machine_memory, i})
-          {List.replace_at(registers, 7, ok()), {new_m, e}}
+          {set_r7(registers, ok()), {new_m, e}}
       end
 
     {new_registers, memory, new_context}
@@ -302,7 +300,7 @@ defmodule PVM.HostInternal do
     {prog, u, i} = machine
 
     if u == :error do
-      {List.replace_at(registers, 7, who()), memory, context}
+      {set_r7(registers, who()), memory, context}
     end
 
     u_ =
@@ -310,10 +308,10 @@ defmodule PVM.HostInternal do
       |> Memory.write(p * u.page_size, <<0::size(c * u.page_size)>>)
 
     if p < 16 or p + c > 0x1000_00000 / u.page_size do
-      {List.replace_at(registers, 7, oob()), memory, context}
+      {set_r7(registers, oob()), memory, context}
     end
 
     m_ = Map.put(m, n, {prog, u_, i})
-    {List.replace_at(registers, 7, ok()), memory, {m_, e}}
+    {set_r7(registers, ok()), memory, {m_, e}}
   end
 end
