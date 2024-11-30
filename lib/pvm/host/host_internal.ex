@@ -312,4 +312,40 @@ defmodule PVM.HostInternal do
         {set_r7(registers, ok()), memory, {m_, e}}
     end
   end
+
+  def void_pure(registers, %Memory{page_size: zp} = memory, {m, e} = context) do
+    [n, p, c] = Enum.slice(registers, 7, 3)
+
+    cond do
+      # Check if p + c >= 2^32
+      p + c >= 0x1_0000_0000 ->
+        {set_r7(registers, oob()), memory, context}
+
+      # Check if machine exists
+      not Map.has_key?(m, n) ->
+        {set_r7(registers, who()), memory, context}
+
+      true ->
+        {prog, u, i} = Map.get(m, n)
+        readable_pages = Memory.readable_indices(u)
+
+        # Check if ANY page in range p..p+c-1 is NOT readable
+        has_unreadable =
+          Enum.any?(p..(p + c - 1), fn page ->
+            not MapSet.member?(readable_pages, page)
+          end)
+
+        if has_unreadable do
+          {set_r7(registers, oob()), memory, context}
+        else
+          # All pages are readable, proceed with voiding
+          u_ =
+            Memory.write(u, p * zp, <<0::size(c * zp)>>)
+            |> Memory.set_access(p * zp, c * zp, nil)
+
+          m_ = Map.put(m, n, {prog, u_, i})
+          {set_r7(registers, ok()), memory, {m_, e}}
+        end
+    end
+  end
 end
