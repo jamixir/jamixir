@@ -1,4 +1,4 @@
-defmodule PVM.Host do
+defmodule PVM.HostInternal do
   alias Util.Hash
   import PVM.Constants.HostCallResult
   alias System.State.ServiceAccount
@@ -47,7 +47,7 @@ defmodule PVM.Host do
   # ΩW : Write-storage host-call.
   # ΩI: Information-on-servicehost-call.
 
-  defp historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
+  def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
     w7 = Enum.at(registers, 7)
 
     # Pure logic that only returns new registers, memory and context
@@ -111,7 +111,7 @@ defmodule PVM.Host do
     {new_registers, updated_memory, context}
   end
 
-  defp import_pure(registers, memory, context, import_segments) do
+  def import_pure(registers, memory, context, import_segments) do
     w7 = Enum.at(registers, 7)
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
     o = Enum.at(registers, 8)
@@ -142,7 +142,7 @@ defmodule PVM.Host do
     {new_registers, updated_memory, context}
   end
 
-  defp export_pure(registers, memory, {m, export_segments}, export_offset) do
+  def export_pure(registers, memory, {m, export_segments}, export_offset) do
     p = Enum.at(registers, 7)
     # size, capped by WE WS
     z = min(Enum.at(registers, 8), Constants.wswe())
@@ -150,7 +150,7 @@ defmodule PVM.Host do
     # Try to read memory segment
     x =
       case PVM.Memory.read(memory, p, z) do
-        {:ok, data} -> Utils.pad_right(data, Constants.wswe())
+        {:ok, data} -> Utils.pad_binary_right(data, Constants.wswe())
         _ -> :error
       end
 
@@ -174,14 +174,14 @@ defmodule PVM.Host do
     {new_registers, memory, {m, new_export_segments}}
   end
 
-  defp machine_pure(registers, memory, {m, e} = context) do
+  def machine_pure(registers, memory, {m, e} = context) do
     # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Enum.slice(registers, 7, 3)
 
     p =
       case Memory.read(memory, p0, pz) do
         {:ok, data} -> data
-        {:error, _} -> nil
+        {:error, _} -> :error
       end
 
     # Create empty machine state
@@ -199,7 +199,7 @@ defmodule PVM.Host do
     # Update register 7 and memory based on conditions
     {new_registers, new_context} =
       cond do
-        p == nil ->
+        p == :error ->
           # Invalid memory access
           {List.replace_at(registers, 7, oob()), context}
 
@@ -216,37 +216,7 @@ defmodule PVM.Host do
     {new_registers, memory, new_context}
   end
 
-  def historical_lookup(gas, registers, memory, context, index, service_accounts, timeslot) do
-    wrap_host_call(
-      gas,
-      registers,
-      memory,
-      context,
-      &historical_lookup_pure/6,
-      [index, service_accounts, timeslot]
-    )
-  end
-
-  def gas(gas, registers, memory, context, args \\ []) do
-    wrap_host_call(gas, registers, memory, context, &gas_pure/4, args)
-  end
-
-  def import(gas, registers, memory, context, import_segments) do
-    wrap_host_call(gas, registers, memory, context, &import_pure/4, [import_segments])
-  end
-
-  def export(gas, registers, memory, context, {m, export_segments}, export_offset) do
-    wrap_host_call(gas, registers, memory, context, &export_pure/4, [
-      {m, export_segments},
-      export_offset
-    ])
-  end
-
-  def machine(gas, registers, memory, context) do
-    wrap_host_call(gas, registers, memory, context, &machine_pure/3, [])
-  end
-
-  defp peek_pure(registers, memory, {m, _e} = context) do
+  def peek_pure(registers, memory, {m, _e} = context) do
     # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Enum.slice(registers, 7, 4)
 
@@ -283,7 +253,7 @@ defmodule PVM.Host do
     {new_registers, new_memory, context}
   end
 
-  defp poke_pure(registers, memory, {m, e} = context) do
+  def poke_pure(registers, memory, {m, e} = context) do
     # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Enum.slice(registers, 7, 4)
 
@@ -324,7 +294,7 @@ defmodule PVM.Host do
     {new_registers, memory, new_context}
   end
 
-  defp zero_pure(registers, memory, {m, e} = context) do
+  def zero_pure(registers, memory, {m, e} = context) do
     # Extract registers[7..10] for [n, p, c]
     [n, p, c] = Enum.slice(registers, 7, 3)
 
@@ -345,17 +315,5 @@ defmodule PVM.Host do
 
     m_ = Map.put(m, n, {prog, u_, i})
     {List.replace_at(registers, 7, ok()), memory, {m_, e}}
-  end
-
-  def peek(gas, registers, memory, context) do
-    wrap_host_call(gas, registers, memory, context, &peek_pure/3, [])
-  end
-
-  def poke(gas, registers, memory, context) do
-    wrap_host_call(gas, registers, memory, context, &poke_pure/3, [])
-  end
-
-  def zero(gas, registers, memory, context) do
-    wrap_host_call(gas, registers, memory, context, &zero_pure/3, [])
   end
 end
