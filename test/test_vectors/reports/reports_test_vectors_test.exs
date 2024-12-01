@@ -5,7 +5,7 @@ defmodule ReportsTestVectorsTest do
   import ReportsTestVectors
   setup :verify_on_exit!
 
-  setup_all(do: setup_all())
+  setup(do: setup_all())
 
   describe "vectors" do
     setup do
