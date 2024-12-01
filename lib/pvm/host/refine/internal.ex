@@ -3,7 +3,7 @@ defmodule PVM.Host.Refine.Internal do
   alias Util.Hash
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   alias System.State.ServiceAccount
-  alias PVM.{Memory, RefineContext}
+  alias PVM.{Memory, RefineContext, Registers}
   use Codec.{Decoder, Encoder}
 
   @moduledoc """
@@ -30,10 +30,8 @@ defmodule PVM.Host.Refine.Internal do
   """
   alias PVM.Memory
 
-  defp set_r7(registers, value), do: List.replace_at(registers, 7, value)
-
   def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
-    w7 = Enum.at(registers, 7)
+    w7 = registers.r7
 
     a =
       cond do
@@ -48,7 +46,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Extract registers[8..11] for [ho, bo, bz]
-    [ho, bo, bz] = Enum.slice(registers, 8, 3)
+    [ho, bo, bz] = Registers.get(registers, [8, 9, 10])
 
     # Calculate hash if memory segment is valid
     h =
@@ -82,21 +80,23 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Set register 7 based on conditions
-    r7_value =
+    w7_ =
       cond do
         !is_writable or h == :error -> oob()
         v == nil -> none()
-        true -> ok()
+        true -> byte_size(v)
       end
 
-    {set_r7(registers, r7_value), updated_memory, context}
+    registers_ = Registers.set(registers, :r7, w7_)
+
+    {registers_, updated_memory, context}
   end
 
   def import_pure(registers, memory, context, import_segments) do
-    w7 = Enum.at(registers, 7)
+    w7 = registers.r7
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
-    o = Enum.at(registers, 8)
-    l = min(Enum.at(registers, 9), Constants.wswe())
+    o = registers.r8
+    l = min(registers.r9, Constants.wswe())
 
     write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
@@ -111,20 +111,20 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Update register 7 with result
-    r7_value =
+    w7_ =
       cond do
         !write_check -> oob()
         v == nil -> none()
         true -> ok()
       end
 
-    {set_r7(registers, r7_value), updated_memory, context}
+    {Registers.set(registers, :r7, w7_), updated_memory, context}
   end
 
   def export_pure(registers, memory, %RefineContext{e: e} = context, export_offset) do
-    p = Enum.at(registers, 7)
+    p = registers.r7
     # size, capped by WE WS
-    z = min(Enum.at(registers, 8), Constants.wswe())
+    z = min(registers.r8, Constants.wswe())
 
     # Try to read memory segment
     x =
@@ -138,15 +138,15 @@ defmodule PVM.Host.Refine.Internal do
       cond do
         # Memory read failed
         x == :error ->
-          {set_r7(registers, oob()), e}
+          {Registers.set(registers, :r7, oob()), e}
 
         # Export segments would exceed max size
         length(e) + export_offset >= Constants.max_manifest_size() ->
-          {set_r7(registers, full()), e}
+          {Registers.set(registers, :r7, full()), e}
 
         # Success case - append to export segments and update register
         true ->
-          {set_r7(registers, length(e) + export_offset), e ++ [x]}
+          {Registers.set(registers, :r7, length(e) + export_offset), e ++ [x]}
       end
 
     {new_registers, memory, %{context | e: new_export_segments}}
@@ -154,7 +154,7 @@ defmodule PVM.Host.Refine.Internal do
 
   def machine_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..10] for [p0, pz, i]
-    [p0, pz, i] = Enum.slice(registers, 7, 3)
+    [p0, pz, i] = Registers.get(registers, [7, 8, 9])
 
     p =
       case Memory.read(memory, p0, pz) do
@@ -179,16 +179,16 @@ defmodule PVM.Host.Refine.Internal do
       cond do
         p == :error ->
           # Invalid memory access
-          {set_r7(registers, oob()), context}
+          {Registers.set(registers, :r7, oob()), context}
 
         n == nil ->
           # No available machine IDs
-          {set_r7(registers, oob()), context}
+          {Registers.set(registers, :r7, oob()), context}
 
         true ->
           # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
           machine = %Integrated{program: p, memory: u, counter: i}
-          {set_r7(registers, n), %{context | m: Map.put(m, n, machine)}}
+          {Registers.set(registers, :r7, n), %{context | m: Map.put(m, n, machine)}}
       end
 
     {new_registers, memory, new_context}
@@ -196,7 +196,7 @@ defmodule PVM.Host.Refine.Internal do
 
   def peek_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..11] for [n, o, s, z]
-    [n, o, s, z] = Enum.slice(registers, 7, 4)
+    [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
 
     # Get machine state if n exists in m
     data =
@@ -217,14 +217,14 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, new_memory} =
       case data do
         :error ->
-          {set_r7(registers, oob()), memory}
+          {Registers.set(registers, :r7, oob()), memory}
 
         nil ->
-          {set_r7(registers, who()), memory}
+          {Registers.set(registers, :r7, who()), memory}
 
         s ->
-          {:ok, new_memory} = Memory.write(memory, o, data)
-          {set_r7(registers, ok()), new_memory}
+          {:ok, new_memory} = Memory.write(memory, o, s)
+          {Registers.set(registers, :r7, ok()), new_memory}
       end
 
     {new_registers, new_memory, context}
@@ -232,7 +232,7 @@ defmodule PVM.Host.Refine.Internal do
 
   def poke_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..11] for [n, s, o, z]
-    [n, s, o, z] = Enum.slice(registers, 7, 4)
+    [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
 
     # Get source data if memory access is valid
     s =
@@ -255,29 +255,29 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, new_context} =
       case s do
         :error ->
-          {set_r7(registers, oob()), context}
+          {Registers.set(registers, :r7, oob()), context}
 
         nil ->
-          {set_r7(registers, who()), context}
+          {Registers.set(registers, :r7, who()), context}
 
         s ->
           machine = Map.get(m, n)
           machine_ = %{machine | memory: Memory.write(machine.memory, o, s) |> elem(1)}
-          {set_r7(registers, ok()), %{context | m: Map.put(m, n, machine_)}}
+          {Registers.set(registers, :r7, ok()), %{context | m: Map.put(m, n, machine_)}}
       end
 
     {new_registers, memory, new_context}
   end
 
   def zero_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
-    [n, p, c] = Enum.slice(registers, 7, 3)
+    [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
       p < 16 or p + c > 0x1000_00000 / zp ->
-        {set_r7(registers, oob()), memory, context}
+        {Registers.set(registers, :r7, oob()), memory, context}
 
       not Map.has_key?(m, n) ->
-        {set_r7(registers, who()), memory, context}
+        {Registers.set(registers, :r7, who()), memory, context}
 
       true ->
         machine = Map.get(m, n)
@@ -288,34 +288,34 @@ defmodule PVM.Host.Refine.Internal do
           |> elem(1)
 
         m_ = Map.put(m, n, %{machine | memory: u_})
-        {set_r7(registers, ok()), memory, %{context | m: m_}}
+        {Registers.set(registers, :r7, ok()), memory, %{context | m: m_}}
     end
   end
 
   def void_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
-    [n, p, c] = Enum.slice(registers, 7, 3)
+    [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
       p + c >= 0x1_0000_0000 ->
-        {set_r7(registers, oob()), memory, context}
+        {Registers.set(registers, :r7, oob()), memory, context}
 
       not Map.has_key?(m, n) ->
-        {set_r7(registers, who()), memory, context}
+        {Registers.set(registers, :r7, who()), memory, context}
 
       true ->
         machine = Map.get(m, n)
 
-        case Memory.check_pages_access(machine.memory, p, c, :read) do
-          {:error, _} ->
-            {set_r7(registers, oob()), memory, context}
+        case Memory.check_pages_access?(machine.memory, p, c, :read) do
+          false ->
+            {Registers.set(registers, :r7, oob()), memory, context}
 
-          :ok ->
+          true ->
             u_ =
               Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
               |> elem(1)
               |> Memory.set_access_by_page(p, c, nil)
 
-            {set_r7(registers, ok()), memory,
+            {Registers.set(registers, :r7, ok()), memory,
              %{context | m: Map.put(m, n, %{machine | memory: u_})}}
         end
     end
@@ -325,12 +325,12 @@ defmodule PVM.Host.Refine.Internal do
     # Extract registers and validate initial conditions
     case validate_invoke_params(registers, memory) do
       {:error, _} ->
-        {set_r7(registers, oob()), memory, context}
+        {Registers.set(registers, :r7, oob()), memory, context}
 
       {:ok, {n, o, gas, vm_registers}} ->
         case Map.get(m, n) do
           nil ->
-            {set_r7(registers, who()), memory, context}
+            {Registers.set(registers, :r7, who()), memory, context}
 
           machine ->
             %Integrated{counter: i, memory: u, program: p} = machine
@@ -366,18 +366,13 @@ defmodule PVM.Host.Refine.Internal do
                 :continue -> {ok(), o}
               end
 
-            registers_ =
-              registers
-              |> List.replace_at(7, w7_)
-              |> List.replace_at(8, w8_)
-
-            {registers_, memory_, context_}
+            {Registers.set(registers, %{r7: w7_, r8: w8_}), memory_, context_}
         end
     end
   end
 
   defp validate_invoke_params(registers, memory) do
-    with [n, o] <- Enum.slice(registers, 7, 2),
+    with [n, o] <- Registers.get(registers, [7, 8]),
          # Check if memory range is writable
          true <- Memory.check_range_access?(memory, o, 60, :write),
          # Read gas and register values
@@ -404,10 +399,10 @@ defmodule PVM.Host.Refine.Internal do
 
     case Map.get(m, n) do
       nil ->
-        {set_r7(registers, who()), memory, context}
+        {Registers.set(registers, :r7, who()), memory, context}
 
       %Integrated{counter: i} ->
-        {set_r7(registers, i), memory, %{context | m: Map.delete(m, n)}}
+        {Registers.set(registers, :r7, i), memory, %{context | m: Map.delete(m, n)}}
     end
   end
 end
