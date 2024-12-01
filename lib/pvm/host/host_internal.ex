@@ -1,11 +1,11 @@
 defmodule PVM.HostInternal do
   alias PVM.Integrated
   alias Util.Hash
-  import PVM.Constants.HostCallResult
+  import PVM.Constants.{HostCallResult, InnerPVMResult}
   alias System.State.ServiceAccount
   alias PVM.{Memory, RefineContext}
   import PVM.Host.Wrapper
-  use Codec.Decoder
+  use Codec.{Decoder, Encoder}
 
   @moduledoc """
   Ω: Virtual machine host-call functions. See appendix B.
@@ -300,10 +300,12 @@ defmodule PVM.HostInternal do
 
       true ->
         machine = Map.get(m, n)
+
         u_ =
           Memory.set_access_by_page(machine.memory, p, c, :write)
           |> Memory.write(p * zp, <<0::size(c * zp)>>)
           |> elem(1)
+
         m_ = Map.put(m, n, %{machine | memory: u_})
         {set_r7(registers, ok()), memory, %{context | m: m_}}
     end
@@ -321,9 +323,11 @@ defmodule PVM.HostInternal do
 
       true ->
         machine = Map.get(m, n)
+
         case Memory.check_pages_access(machine.memory, p, c, :read) do
           {:error, _} ->
             {set_r7(registers, oob()), memory, context}
+
           :ok ->
             u_ =
               Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
@@ -336,9 +340,63 @@ defmodule PVM.HostInternal do
     end
   end
 
-  def invoke_pure(registers, memory, {m, e} = context) do
-    with [o, n] <- Enum.slice(registers, 7, 2),
+  def invoke_pure(registers, memory, %RefineContext{m: m} = context) do
+    # Extract registers and validate initial conditions
+    case validate_invoke_params(registers, memory) do
+      {:error, _} ->
+        {set_r7(registers, oob()), memory, context}
 
+      {:ok, {n, o, gas, vm_registers}} ->
+        case Map.get(m, n) do
+          nil ->
+            {set_r7(registers, who()), memory, context}
+
+          machine ->
+            %Integrated{counter: i, memory: u, program: p} = machine
+            vm_state = %PVM.State{counter: i, gas: gas, registers: vm_registers, memory: u}
+
+            # Execute the VM
+            {exit_reason, %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
+              PVM.VM.execute(p, vm_state)
+
+            # Write results back to memory
+            write_value = (e_le(gas_, 8) <> Enum.map(w_, &e_le(&1, 4))) |> Enum.join(<<>>)
+            {:ok, memory_} = Memory.write(memory, o, write_value)
+
+            machine_ = %{
+              machine
+              | memory: u_,
+                counter:
+                  case exit_reason do
+                    {:ecall, _} -> i_ + 1
+                    _ -> i_
+                  end
+            }
+
+            context_ = %{context | m: Map.put(m, n, machine_)}
+
+            {w7_, w8_} =
+              case exit_reason do
+                {:ecall, h} -> {host(), h}
+                {:fault, x} -> {fault(), x}
+                :out_of_gas -> {oog(), o}
+                :panic -> {panic(), o}
+                :halt -> {halt(), o}
+                :continue -> {ok(), o}
+              end
+
+            registers_ =
+              registers
+              |> List.replace_at(7, w7_)
+              |> List.replace_at(8, w8_)
+
+            {registers_, memory_, context_}
+        end
+    end
+  end
+
+  defp validate_invoke_params(registers, memory) do
+    with [n, o] <- Enum.slice(registers, 7, 2),
          # Check if memory range is writable
          :ok <- Memory.check_range_access(memory, o, 60, :write),
          # Read gas and register values
@@ -347,16 +405,16 @@ defmodule PVM.HostInternal do
       # Decode gas (8 bytes) and registers (13 x 4 bytes)
       gas = de_le(gas_bytes, 8)
 
-      registers =
+      vm_registers =
         register_bytes
         |> :binary.bin_to_list()
         |> Enum.chunk_every(4)
         |> Enum.map(&:binary.list_to_bin/1)
         |> Enum.map(&de_le(&1, 4))
 
-      {set_r7(registers, ok()), memory, context}
+      {:ok, {n, o, gas, vm_registers}}
     else
-      _ -> {set_r7(registers, oob()), memory, context}
+      _ -> {:error, :invalid_params}
     end
   end
 end
