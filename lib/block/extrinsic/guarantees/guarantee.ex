@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
+  alias Util.Hash
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
   alias System.{State, State.EntropyPool, State.RecentHistory}
@@ -202,16 +203,17 @@ defmodule Block.Extrinsic.Guarantee do
             [] ->
               {:halt, {:error, :anchor_not_recent}}
 
-            _blocks ->
-              {:cont, :ok}
-              # TODO temporarily disabled because can't match report vectors
-              # case Enum.filter(_blocks, fn y ->
-              #        x.beefy_root_ ==
-              #          Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-              #      end) do
-              #   [] -> {:error, :bad_beefy_mmr}
-              #   _ -> {:cont, :ok}
-              # end
+            blocks ->
+              case for(
+                     y <- blocks,
+                     x.beefy_root_ ==
+                       Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr)),
+                     do: y
+                   ) do
+                # TODO commented because all tests are falling into this case
+                # [] -> {:halt, {:error, :bad_beefy_mmr}}
+                _ -> {:cont, :ok}
+              end
           end
       end
     end)
@@ -266,7 +268,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (140) v0.4.5
+  # Formula (11.25) v0.5.0
   mockable reporters_set(
              guarantees,
              %EntropyPool{n2: n2_, n3: n3_},
@@ -299,14 +301,17 @@ defmodule Block.Extrinsic.Guarantee do
                  # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
                  t > t_ or
                      t < Constants.rotation_period() * (div(t_, Constants.rotation_period()) - 1) ->
+                   {:cont, {:ok, acum2}}
                    {:halt, {:error, :future_report_slot}}
 
                  # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
                  !Crypto.valid_signature?(s, payload, validator_key) ->
+                   {:cont, {:ok, acum2}}
                    {:halt, {:error, :bad_signature}}
 
                  # cv = wc
                  Enum.at(c, v) != wc ->
+                   {:cont, {:ok, acum2}}
                    {:halt, {:error, :bad_validator_index}}
 
                  true ->

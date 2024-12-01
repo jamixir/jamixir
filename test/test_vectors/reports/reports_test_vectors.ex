@@ -3,6 +3,7 @@ defmodule ReportsTestVectors do
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
   use ExUnit.Case
+  import Mox
 
   def files_to_test,
     do:
@@ -52,6 +53,7 @@ defmodule ReportsTestVectors do
   def setup_all do
     RingVrf.init_ring_context(Constants.validator_count())
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
       Block.Extrinsic.Guarantee,
@@ -61,6 +63,7 @@ defmodule ReportsTestVectors do
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
     end)
 
@@ -82,6 +85,11 @@ defmodule ReportsTestVectors do
 
     # json_data =
     #   put_in(json_data[:pre_state][:next_validators], json_data[:pre_state][:curr_validators])
+
+    ValidatorStatisticsMock
+    |> stub(:do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+      {:ok, "mockvalue"}
+    end)
 
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])

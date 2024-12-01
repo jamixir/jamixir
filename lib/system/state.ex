@@ -480,6 +480,8 @@ defmodule System.State do
   defp decode_json_field(:pi, value),
     do: [{:validator_statistics, ValidatorStatistics.from_json(value)}]
 
+  defp decode_json_field(:avail_assignments, value), do: decode_json_field(:rho, value)
+
   defp decode_json_field(:rho, value),
     do: [{:core_reports, Enum.map(value, &CoreReport.from_json/1)}]
 
