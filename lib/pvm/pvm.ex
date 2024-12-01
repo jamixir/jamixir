@@ -2,7 +2,7 @@ defmodule PVM do
   alias System.State.ServiceAccount
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
-  alias PVM.{ArgInvoc, Host, RefineParams, Types}
+  alias PVM.{ArgInvoc, Host, RefineParams, Types, Registers}
   use Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
 
@@ -38,7 +38,7 @@ defmodule PVM do
       {:continue,
        %{
          gas: gas - 10,
-         registers: Enum.take(registers, 7) ++ [what() | Enum.drop(registers, 8)],
+         registers: Registers.set(registers, 7, what()),
          memory: memory
        }, nil}
     end

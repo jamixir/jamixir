@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext}
+  alias PVM.{Memory, RefineContext, Registers}
   alias System.State.ServiceAccount
   import PVM.Constants.HostCallResult
   alias Util.Hash
@@ -11,8 +11,7 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       # Setup basic test data
       memory = %Memory{}
       context = %RefineContext{}
-      # Initialize 13 registers with zeros
-      registers = List.duplicate(0, 13) |> List.replace_at(7, 1)
+
       test_value = Hash.two()
       test_hash = Hash.default(test_value)
 
@@ -31,7 +30,6 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       {:ok,
        memory: memory,
        context: context,
-       registers: registers,
        service_accounts: service_accounts,
        timeslot: 123,
        test_hash: test_hash,
@@ -41,17 +39,16 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
     test "returns WHO when service account doesn't exist", %{
       memory: memory,
       context: context,
-      registers: registers,
       service_accounts: service_accounts,
       timeslot: timeslot
     } do
       # Set w7 to non-existent service account ID
-      registers = List.replace_at(registers, 7, 999)
+      registers = %Registers{r7: 999}
 
       {new_registers, new_memory, new_context} =
         Internal.historical_lookup_pure(registers, memory, context, 1, service_accounts, timeslot)
 
-      assert new_registers == List.replace_at(registers, 7, none())
+      assert new_registers == Registers.set(registers, 7, none())
       assert new_memory == memory
       assert new_context == context
     end
@@ -59,13 +56,11 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
     test "returns OOB when memory is not readable", %{
       memory: memory,
       context: context,
-      registers: registers,
       service_accounts: service_accounts,
       timeslot: timeslot
     } do
       # 1 is the start address in memory
-      registers =
-        List.replace_at(registers, 8, 1)
+      registers = %Registers{r8: 1}
 
       # Memory is not readable
       memory = Memory.set_access(memory, 1, 1, nil)
@@ -75,7 +70,7 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       {new_registers, new_memory, new_context} =
         Internal.historical_lookup_pure(registers, memory, context, 1, service_accounts, timeslot)
 
-      assert Enum.at(new_registers, 7) == oob()
+      assert new_registers.r7 == oob()
       assert new_memory == memory
       assert new_context == context
     end
@@ -83,14 +78,10 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
     test "return oob when memory is not writable", %{
       memory: memory,
       context: context,
-      registers: registers,
       service_accounts: service_accounts,
       timeslot: timeslot
     } do
-      registers =
-        List.replace_at(registers, 8, 1)
-        |> List.replace_at(9, 64)
-        |> List.replace_at(10, 32)
+      registers = %Registers{r8: 1, r9: 64, r10: 32}
 
       # Memory is not writable
       # bo...+bz is not all writable
@@ -99,7 +90,7 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       {new_registers, new_memory, new_context} =
         Internal.historical_lookup_pure(registers, memory, context, 1, service_accounts, timeslot)
 
-      assert Enum.at(new_registers, 7) == oob()
+      assert new_registers.r7 == oob()
       assert new_memory == memory
       assert new_context == context
     end
@@ -107,7 +98,6 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
     test "successful lookup with valid parameters", %{
       memory: memory,
       context: context,
-      registers: registers,
       service_accounts: service_accounts,
       timeslot: timeslot,
       test_hash: test_hash,
@@ -117,23 +107,15 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       {:ok, memory} = Memory.write(memory, 0, test_value)
 
       # Setup registers
-      registers =
-        registers
-        # hash offset
-        |> List.replace_at(8, 0)
-        # buffer offset
-        |> List.replace_at(9, 100)
-        # buffer size
-        |> List.replace_at(10, byte_size(test_value))
+      registers = %Registers{r7: 1,r8: 0, r9: 100, r10: byte_size(test_value)}
 
       {new_registers, new_memory, new_context} =
         Internal.historical_lookup_pure(registers, memory, context, 1, service_accounts, timeslot)
 
-      assert Enum.at(new_registers, 7) == ok()
+      assert new_registers.r7 == byte_size(test_value)
 
       # Verify the value was written to memory
-      {:ok, written_value} = Memory.read(new_memory, 100, byte_size(test_value))
-      assert written_value == test_value
+      {:ok, ^test_value} = Memory.read(new_memory, 100, byte_size(test_value))
 
       assert new_context == context
     end
