@@ -1,9 +1,11 @@
 defmodule PVM.HostInternal do
+  alias PVM.Integrated
   alias Util.Hash
   import PVM.Constants.HostCallResult
   alias System.State.ServiceAccount
-  alias PVM.Memory
+  alias PVM.{Memory, RefineContext}
   import PVM.Host.Wrapper
+  use Codec.Decoder
 
   @moduledoc """
   Ω: Virtual machine host-call functions. See appendix B.
@@ -52,15 +54,13 @@ defmodule PVM.HostInternal do
   def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
     w7 = Enum.at(registers, 7)
 
-    # Pure logic that only returns new registers, memory and context
-    # No need to handle gas accounting here
     a =
       cond do
         w7 == 0xFFFF_FFFF_FFFF_FFFF and Map.has_key?(service_accounts, index) ->
-          service_accounts[index]
+          Map.get(service_accounts, index)
 
         Map.has_key?(service_accounts, w7) ->
-          service_accounts[w7]
+          Map.get(service_accounts, w7)
 
         true ->
           nil
@@ -103,7 +103,7 @@ defmodule PVM.HostInternal do
     # Set register 7 based on conditions
     r7_value =
       cond do
-        !is_writable -> oob()
+        !is_writable or h == :error -> oob()
         v == nil -> none()
         true -> ok()
       end
@@ -140,7 +140,7 @@ defmodule PVM.HostInternal do
     {set_r7(registers, r7_value), updated_memory, context}
   end
 
-  def export_pure(registers, memory, {m, export_segments}, export_offset) do
+  def export_pure(registers, memory, %RefineContext{e: e} = context, export_offset) do
     p = Enum.at(registers, 7)
     # size, capped by WE WS
     z = min(Enum.at(registers, 8), Constants.wswe())
@@ -157,21 +157,21 @@ defmodule PVM.HostInternal do
       cond do
         # Memory read failed
         x == :error ->
-          {set_r7(registers, oob()), export_segments}
+          {set_r7(registers, oob()), e}
 
         # Export segments would exceed max size
-        length(export_segments) + export_offset >= Constants.max_manifest_size() ->
-          {set_r7(registers, full()), export_segments}
+        length(e) + export_offset >= Constants.max_manifest_size() ->
+          {set_r7(registers, full()), e}
 
         # Success case - append to export segments and update register
         true ->
-          {set_r7(registers, length(export_segments) + export_offset), export_segments ++ [x]}
+          {set_r7(registers, length(e) + export_offset), e ++ [x]}
       end
 
-    {new_registers, memory, {m, new_export_segments}}
+    {new_registers, memory, %{context | e: new_export_segments}}
   end
 
-  def machine_pure(registers, memory, {m, e} = context) do
+  def machine_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Enum.slice(registers, 7, 3)
 
@@ -206,14 +206,14 @@ defmodule PVM.HostInternal do
 
         true ->
           # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
-          new_m = Map.put(m, n, {p, u, i})
-          {set_r7(registers, n), {new_m, e}}
+          machine = %Integrated{program: p, memory: u, counter: i}
+          {set_r7(registers, n), %{context | m: Map.put(m, n, machine)}}
       end
 
     {new_registers, memory, new_context}
   end
 
-  def peek_pure(registers, memory, {m, _e} = context) do
+  def peek_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Enum.slice(registers, 7, 4)
 
@@ -224,10 +224,9 @@ defmodule PVM.HostInternal do
           nil
 
         true ->
-          {_p, machine_memory, _i} = m[n]
+          %Integrated{memory: u} = Map.get(m, n)
           # Try to read from machine memory
-          case {Memory.read(machine_memory, s, z),
-                Memory.check_range_access(machine_memory, o, z, :write)} do
+          case {Memory.read(u, s, z), Memory.check_range_access(u, o, z, :write)} do
             {{:ok, data}, :ok} -> data
             _ -> :error
           end
@@ -242,15 +241,15 @@ defmodule PVM.HostInternal do
         nil ->
           {set_r7(registers, who()), memory}
 
-        data ->
-          {:ok, new_memory} = Memory.write(memory, o, data)
+        s ->
+          {:ok, new_memory} = Memory.write(memory, o, s)
           {set_r7(registers, ok()), new_memory}
       end
 
     {new_registers, new_memory, context}
   end
 
-  def poke_pure(registers, memory, {m, e} = context) do
+  def poke_pure(registers, memory, %RefineContext{m: m} = context) do
     # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Enum.slice(registers, 7, 4)
 
@@ -261,10 +260,9 @@ defmodule PVM.HostInternal do
           nil
 
         true ->
-          {_p, machine_memory, _i} = m[n]
+          %Integrated{memory: u} = Map.get(m, n)
           # Check both read from memory and write to machine memory
-          case {Memory.read(memory, s, z),
-                Memory.check_range_access(machine_memory, o, z, :write)} do
+          case {Memory.read(u, s, z), Memory.check_range_access(u, o, z, :write)} do
             # Both read and write permissions OK
             {{:ok, data}, :ok} -> data
             # Either read or write failed
@@ -281,17 +279,16 @@ defmodule PVM.HostInternal do
         nil ->
           {set_r7(registers, who()), context}
 
-        data ->
-          {p, machine_memory, i} = m[n]
-          {:ok, new_machine_memory} = Memory.write(machine_memory, o, data)
-          new_m = Map.put(m, n, {p, new_machine_memory, i})
-          {set_r7(registers, ok()), {new_m, e}}
+        s ->
+          machine = Map.get(m, n)
+          machine_ = %{machine | memory: Memory.write(machine.memory, o, s) |> elem(1)}
+          {set_r7(registers, ok()), %{context | m: Map.put(m, n, machine_)}}
       end
 
     {new_registers, memory, new_context}
   end
 
-  def zero_pure(registers, %Memory{page_size: zp} = memory, {m, e} = context) do
+  def zero_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
     [n, p, c] = Enum.slice(registers, 7, 3)
 
     cond do
@@ -302,50 +299,64 @@ defmodule PVM.HostInternal do
         {set_r7(registers, who()), memory, context}
 
       true ->
-        {prog, u, i} = Map.get(m, n)
-
+        machine = Map.get(m, n)
         u_ =
-          Memory.set_access(u, p * zp, c * zp, :write)
+          Memory.set_access_by_page(machine.memory, p, c, :write)
           |> Memory.write(p * zp, <<0::size(c * zp)>>)
-
-        m_ = Map.put(m, n, {prog, u_, i})
-        {set_r7(registers, ok()), memory, {m_, e}}
+          |> elem(1)
+        m_ = Map.put(m, n, %{machine | memory: u_})
+        {set_r7(registers, ok()), memory, %{context | m: m_}}
     end
   end
 
-  def void_pure(registers, %Memory{page_size: zp} = memory, {m, e} = context) do
+  def void_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
     [n, p, c] = Enum.slice(registers, 7, 3)
 
     cond do
-      # Check if p + c >= 2^32
       p + c >= 0x1_0000_0000 ->
         {set_r7(registers, oob()), memory, context}
 
-      # Check if machine exists
       not Map.has_key?(m, n) ->
         {set_r7(registers, who()), memory, context}
 
       true ->
-        {prog, u, i} = Map.get(m, n)
-        readable_pages = Memory.readable_indices(u)
+        machine = Map.get(m, n)
+        case Memory.check_pages_access(machine.memory, p, c, :read) do
+          {:error, _} ->
+            {set_r7(registers, oob()), memory, context}
+          :ok ->
+            u_ =
+              Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
+              |> elem(1)
+              |> Memory.set_access_by_page(p, c, nil)
 
-        # Check if ANY page in range p..p+c-1 is NOT readable
-        has_unreadable =
-          Enum.any?(p..(p + c - 1), fn page ->
-            not MapSet.member?(readable_pages, page)
-          end)
-
-        if has_unreadable do
-          {set_r7(registers, oob()), memory, context}
-        else
-          # All pages are readable, proceed with voiding
-          u_ =
-            Memory.write(u, p * zp, <<0::size(c * zp)>>)
-            |> Memory.set_access(p * zp, c * zp, nil)
-
-          m_ = Map.put(m, n, {prog, u_, i})
-          {set_r7(registers, ok()), memory, {m_, e}}
+            {set_r7(registers, ok()), memory,
+             %{context | m: Map.put(m, n, %{machine | memory: u_})}}
         end
+    end
+  end
+
+  def invoke_pure(registers, memory, {m, e} = context) do
+    with [o, n] <- Enum.slice(registers, 7, 2),
+
+         # Check if memory range is writable
+         :ok <- Memory.check_range_access(memory, o, 60, :write),
+         # Read gas and register values
+         {:ok, gas_bytes} <- Memory.read(memory, o, 8),
+         {:ok, register_bytes} <- Memory.read(memory, o + 8, 13 * 4) do
+      # Decode gas (8 bytes) and registers (13 x 4 bytes)
+      gas = de_le(gas_bytes, 8)
+
+      registers =
+        register_bytes
+        |> :binary.bin_to_list()
+        |> Enum.chunk_every(4)
+        |> Enum.map(&:binary.list_to_bin/1)
+        |> Enum.map(&de_le(&1, 4))
+
+      {set_r7(registers, ok()), memory, context}
+    else
+      _ -> {set_r7(registers, oob()), memory, context}
     end
   end
 end
