@@ -199,7 +199,7 @@ defmodule PVM.Host.Refine.Internal do
     [n, o, s, z] = Enum.slice(registers, 7, 4)
 
     # Get machine state if n exists in m
-    s =
+    data =
       cond do
         not Map.has_key?(m, n) ->
           nil
@@ -207,7 +207,7 @@ defmodule PVM.Host.Refine.Internal do
         true ->
           %Integrated{memory: u} = Map.get(m, n)
           # Try to read from machine memory
-          case {Memory.read(u, s, z), Memory.check_range_access?(u, o, z, :write)} do
+          case {Memory.read(u, s, z), Memory.check_range_access?(memory, o, z, :write)} do
             {{:ok, data}, true} -> data
             _ -> :error
           end
@@ -215,7 +215,7 @@ defmodule PVM.Host.Refine.Internal do
 
     # Update registers and memory based on conditions
     {new_registers, new_memory} =
-      case s do
+      case data do
         :error ->
           {set_r7(registers, oob()), memory}
 
@@ -223,7 +223,7 @@ defmodule PVM.Host.Refine.Internal do
           {set_r7(registers, who()), memory}
 
         s ->
-          {:ok, new_memory} = Memory.write(memory, o, s)
+          {:ok, new_memory} = Memory.write(memory, o, data)
           {set_r7(registers, ok()), new_memory}
       end
 
@@ -243,7 +243,7 @@ defmodule PVM.Host.Refine.Internal do
         true ->
           %Integrated{memory: u} = Map.get(m, n)
           # Check both read from memory and write to machine memory
-          case {Memory.read(u, s, z), Memory.check_range_access?(u, o, z, :write)} do
+          case {Memory.read(memory, s, z), Memory.check_range_access?(u, o, z, :write)} do
             # Both read and write permissions OK
             {{:ok, data}, true} -> data
             # Either read or write failed
