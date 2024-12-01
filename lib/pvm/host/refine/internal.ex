@@ -1,10 +1,9 @@
-defmodule PVM.HostInternal do
+defmodule PVM.Host.Refine.Internal do
   alias PVM.Integrated
   alias Util.Hash
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   alias System.State.ServiceAccount
   alias PVM.{Memory, RefineContext}
-  import PVM.Host.Wrapper
   use Codec.{Decoder, Encoder}
 
   @moduledoc """
@@ -32,24 +31,6 @@ defmodule PVM.HostInternal do
   alias PVM.Memory
 
   defp set_r7(registers, value), do: List.replace_at(registers, 7, value)
-
-  # ΩG: Gas-remaining host-call.
-  @callback remaining_gas(
-              gas :: non_neg_integer(),
-              registers :: list(non_neg_integer()),
-              args :: term()
-            ) :: any()
-  def gas_pure(gas, registers, memory, context, _args \\ []) do
-    #  place gas-g on registers[7]
-    registers = List.replace_at(registers, 7, gas - default_gas())
-
-    {registers, memory, context}
-  end
-
-  # ΩL: Lookup-preimage host-call.
-  # ΩR: Read-storage host-call.
-  # ΩW : Write-storage host-call.
-  # ΩI: Information-on-servicehost-call.
 
   def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
     w7 = Enum.at(registers, 7)
@@ -86,7 +67,7 @@ defmodule PVM.HostInternal do
       end
 
     # Update memory if value exists
-    is_writable = Memory.check_range_access(memory, bo, bz, :write)
+    is_writable = Memory.check_range_access?(memory, bo, bz, :write)
 
     updated_memory =
       if v != nil and is_writable do
@@ -117,7 +98,7 @@ defmodule PVM.HostInternal do
     o = Enum.at(registers, 8)
     l = min(Enum.at(registers, 9), Constants.wswe())
 
-    write_check = PVM.Memory.check_range_access(memory, o, l, :write)
+    write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
     updated_memory =
       if v != nil and write_check do
@@ -226,8 +207,8 @@ defmodule PVM.HostInternal do
         true ->
           %Integrated{memory: u} = Map.get(m, n)
           # Try to read from machine memory
-          case {Memory.read(u, s, z), Memory.check_range_access(u, o, z, :write)} do
-            {{:ok, data}, :ok} -> data
+          case {Memory.read(u, s, z), Memory.check_range_access?(u, o, z, :write)} do
+            {{:ok, data}, true} -> data
             _ -> :error
           end
       end
@@ -262,9 +243,9 @@ defmodule PVM.HostInternal do
         true ->
           %Integrated{memory: u} = Map.get(m, n)
           # Check both read from memory and write to machine memory
-          case {Memory.read(u, s, z), Memory.check_range_access(u, o, z, :write)} do
+          case {Memory.read(u, s, z), Memory.check_range_access?(u, o, z, :write)} do
             # Both read and write permissions OK
-            {{:ok, data}, :ok} -> data
+            {{:ok, data}, true} -> data
             # Either read or write failed
             _ -> :error
           end
@@ -398,7 +379,7 @@ defmodule PVM.HostInternal do
   defp validate_invoke_params(registers, memory) do
     with [n, o] <- Enum.slice(registers, 7, 2),
          # Check if memory range is writable
-         :ok <- Memory.check_range_access(memory, o, 60, :write),
+         true <- Memory.check_range_access?(memory, o, 60, :write),
          # Read gas and register values
          {:ok, gas_bytes} <- Memory.read(memory, o, 8),
          {:ok, register_bytes} <- Memory.read(memory, o + 8, 13 * 4) do
@@ -415,6 +396,18 @@ defmodule PVM.HostInternal do
       {:ok, {n, o, gas, vm_registers}}
     else
       _ -> {:error, :invalid_params}
+    end
+  end
+
+  def expunge_pure(registers, memory, %RefineContext{m: m} = context) do
+    n = Enum.at(registers, 7)
+
+    case Map.get(m, n) do
+      nil ->
+        {set_r7(registers, who()), memory, context}
+
+      %Integrated{counter: i} ->
+        {set_r7(registers, i), memory, %{context | m: Map.delete(m, n)}}
     end
   end
 end

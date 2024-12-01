@@ -2,7 +2,7 @@ defmodule PVM do
   alias System.State.ServiceAccount
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
-  alias PVM.{ArgInvoc, Host, Memory, RefineParams, Types}
+  alias PVM.{ArgInvoc, Host, RefineParams, Types}
   use Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
 
@@ -32,7 +32,7 @@ defmodule PVM do
           {Types.exit_reason(), Types.host_call_state(), Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
     if n == gas() do
-      {exit_reason, gas_, registers_, _} = Host.remaining_gas(gas, registers, memory)
+      {exit_reason, gas_, registers_, _} = Host.gas(gas, registers, memory, nil)
       {exit_reason, {gas_, registers_, memory}, nil}
     else
       {:continue,
@@ -67,9 +67,9 @@ defmodule PVM do
           refinement_context: rc,
           authorizer_hash: a,
           output: o,
-          import_segments: i,
+          import_segments: _i,
           extrinsic_data: x,
-          export_offset: eo
+          export_offset: _eo
         },
         services
       ) do
@@ -86,7 +86,7 @@ defmodule PVM do
     if lookup == nil, do: {:bad, []}
     if byte_size(lookup) > Constants.max_service_code_size(), do: {:big, []}
     a = e({s, y, p, rc, a, o, vs(Enum.map(x, &vs/1))})
-    {gas, result, {m, e}} = ArgInvoc.execute(lookup, 0, g, a, nil, {nil, []})
+    {_gas, result, {_m, e}} = ArgInvoc.execute(lookup, 0, g, a, nil, {nil, []})
 
     if result in [:out_of_gas, :panic] do
       {result, []}
