@@ -16,6 +16,16 @@ defmodule ReportsTestVectorsTest do
       :ok
     end
 
+    test "verify reports tiny vectors" do
+      Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+      end)
+
+      execute_test("not_authorized-1", "reports/tiny")
+    end
+
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name
       test "verify reports tiny vectors #{file_name}", %{file_name: file_name} do

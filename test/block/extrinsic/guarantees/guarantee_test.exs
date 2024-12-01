@@ -375,6 +375,23 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert result == {:error, :bad_signature}
     end
 
+    test "returns error when validator index is invalid", context do
+      [valid_guarantee | _] = create_valid_guarantees(context)
+      invalid_guarantee = %{valid_guarantee | credentials: [{99, <<1::512>>}, {100, <<2::512>>}]}
+
+      result =
+        Guarantee.reporters_set(
+          [invalid_guarantee],
+          context.entropy_pool,
+          context.timeslot,
+          context.curr_validators,
+          context.prev_validators,
+          context.offenders
+        )
+
+      assert result == {:error, :bad_validator_index}
+    end
+
     test "returns error when guarantee timeslot is greater than current timeslot", context do
       [valid_guarantee | _] = create_valid_guarantees(context)
       invalid_guarantee = %{valid_guarantee | timeslot: context.timeslot + 1}
@@ -434,14 +451,14 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert result == {:error, :bad_signature}
     end
 
-    test "returns :pending_work when there's pending work", %{guarantees: guarantees} do
+    test "returns :core_engaged when there's pending work", %{guarantees: guarantees} do
       core_reports = [%{timeslot: 94}, %{timeslot: 80}]
       authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
 
       result =
         Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
 
-      assert result == {:error, :pending_work}
+      assert result == {:error, :core_engaged}
     end
 
     test "returns :ok when all conditions are met", %{guarantees: guarantees} do

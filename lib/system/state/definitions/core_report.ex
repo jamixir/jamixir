@@ -4,10 +4,9 @@ defmodule System.State.CoreReport do
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
-  alias Block.Extrinsic.AvailabilitySpecification
-  alias System.State.CoreReport
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
+  alias System.State.CoreReport
   alias Util.Hash
   use SelectiveMock
 
