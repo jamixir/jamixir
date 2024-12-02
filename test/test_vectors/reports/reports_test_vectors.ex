@@ -82,9 +82,6 @@ defmodule ReportsTestVectors do
 
     ok_output = json_data[:output][:ok]
 
-    # json_data =
-    #   put_in(json_data[:pre_state][:next_validators], json_data[:pre_state][:curr_validators])
-
     ValidatorStatisticsMock
     |> stub(:do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
       {:ok, "mockvalue"}

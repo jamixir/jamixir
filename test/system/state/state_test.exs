@@ -299,7 +299,7 @@ defmodule System.StateTest do
           extrinsic: invalid_extrinsic
         }
 
-        assert {:error, _, "Invalid assurance"} = State.add_block(state, invalid_block)
+        assert {:error, _, :bad_attestation_parent} = State.add_block(state, invalid_block)
       end
     end
 
