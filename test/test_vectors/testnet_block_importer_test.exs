@@ -42,13 +42,13 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     # waiting for correctnes of other party side
-    @tag :skip
+    # @tag :skip
     test "jam-dune" do
       {:ok, genesis_json} = fetch_and_parse_json("genesis.json", @state_path, @user, @repo)
 
-      stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-        {:ok, %{vrf_signature_output: Hash.zero()}}
-      end)
+      # stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      #   {:ok, %{vrf_signature_output: Hash.zero()}}
+      # end)
 
       state = State.from_json(genesis_json)
 
