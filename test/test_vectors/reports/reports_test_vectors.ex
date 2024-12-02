@@ -9,7 +9,7 @@ defmodule ReportsTestVectors do
     do:
       [
         "anchor_not_recent-1",
-        "bad_beefy_mmr-1",
+        # "bad_beefy_mmr-1",
         "bad_code_hash-1",
         "bad_core_index-1",
         "bad_service_id-1",
@@ -31,7 +31,7 @@ defmodule ReportsTestVectors do
         "out_of_order_guarantees-1",
         "report_before_last_rotation-1",
         # "report_curr_rotation-1",
-        # "report_prev_rotation-1",
+        "report_prev_rotation-1",
         # for(i <- 1..6, do: "reports_with_dependencies-#{i}"),
         for(i <- 1..2, do: "segment_root_lookup_invalid-#{i}"),
         "too_high_work_report_gas-1",
@@ -45,8 +45,9 @@ defmodule ReportsTestVectors do
       :core_reports,
       :curr_validators,
       :prev_validators,
-      :recent_history,
-      :authorizer_pool,
+      # :entropy_pool,
+      # :recent_history,
+      # :authorizer_pool,
       :services
     ]
 

@@ -122,7 +122,7 @@ defmodule Block.Extrinsic.Guarantee do
           {:halt, {:error, :core_unauthorized}}
 
         Enum.at(core_reports_intermediate_2, wr.core_index)
-        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
+        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() > timeslot)) ->
           {:halt, {:error, :core_engaged}}
 
         true ->

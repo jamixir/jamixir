@@ -452,11 +452,11 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns :core_engaged when there's pending work", %{guarantees: guarantees} do
-      core_reports = [%{timeslot: 94}, %{timeslot: 80}]
+      core_reports = [%{timeslot: 94}, %{timeslot: 90}]
       authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
 
       result =
-        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+        Guarantee.validate_availability(guarantees, core_reports, 90, authorizer_pool)
 
       assert result == {:error, :core_engaged}
     end
@@ -466,7 +466,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
 
       result =
-        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+        Guarantee.validate_availability(guarantees, core_reports, 120, authorizer_pool)
 
       assert result == :ok
     end
