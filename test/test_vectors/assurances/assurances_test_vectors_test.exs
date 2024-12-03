@@ -34,8 +34,16 @@ defmodule AssurancesTestVectorsTest do
 
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name
-      test "verify reports tiny vectors #{file_name}", %{file_name: file_name} do
+      test "verify assurances tiny vectors #{file_name}", %{file_name: file_name} do
         execute_test(file_name, "assurances/tiny")
+      end
+    end)
+
+    Enum.each(files_to_test(), fn file_name ->
+      @tag file_name: file_name
+      @tag :full_vectors
+      test "verify assurances full vectors #{file_name}", %{file_name: file_name} do
+        execute_test(file_name, "assurances/full")
       end
     end)
   end
