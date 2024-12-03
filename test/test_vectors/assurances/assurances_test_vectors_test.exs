@@ -21,7 +21,7 @@ defmodule AssurancesTestVectorsTest do
       end)
 
       on_exit(fn ->
-        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+        Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
         Application.delete_env(:jamixir, :accumulation)
       end)
 

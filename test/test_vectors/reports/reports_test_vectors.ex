@@ -64,7 +64,7 @@ defmodule ReportsTestVectors do
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
     end)
 

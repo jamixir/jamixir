@@ -7,9 +7,9 @@ defmodule System.StateTest do
   import Bitwise
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{NilDiscriminator, Encoder}
+  alias Codec.{Encoder, NilDiscriminator}
   alias IO.ANSI
-  alias System.{State, State.ValidatorStatistics}
+  alias System.State
   alias Util.Hash
 
   setup :verify_on_exit!
@@ -213,7 +213,7 @@ defmodule System.StateTest do
 
       on_exit(fn ->
         # Reset to the actual implementation after the test
-        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+        Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       end)
 
       ValidatorStatisticsMock
@@ -232,7 +232,7 @@ defmodule System.StateTest do
 
       on_exit(fn ->
         # Reset to the actual implementation after the test
-        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+        Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       end)
 
       ValidatorStatisticsMock
