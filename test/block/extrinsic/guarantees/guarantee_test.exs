@@ -437,9 +437,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       {:ok, guarantees: guarantees}
     end
 
-    # we skip this test because signature is already being validated somewhere else
-    @tag :skip
-    test "returns :bad_signature when authorizer is not in the pool", %{
+    test "returns :core_unauthorized when authorizer is not in the pool", %{
       guarantees: guarantees
     } do
       core_reports = [nil, nil]
@@ -448,7 +446,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       result =
         Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
 
-      assert result == {:error, :bad_signature}
+      assert result == {:error, :core_unauthorized}
     end
 
     test "returns :core_engaged when there's pending work", %{guarantees: guarantees} do
