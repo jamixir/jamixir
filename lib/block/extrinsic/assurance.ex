@@ -59,17 +59,16 @@ defmodule Block.Extrinsic.Assurance do
   defp validate_core_reports_bits(assurances, core_reports_intermediate, h_t) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
-        Stream.with_index(for <<bit::1 <- assurance.bitfield>>, do: bit)
-        |> Enum.all?(fn {bit, index} ->
-          case bit do
+        bits = core_bits(assurance)
+
+        Enum.all?(0..(Constants.core_count() - 1), fn c ->
+          case Enum.at(bits, c) do
             0 ->
               true
 
             _ ->
-              Enum.at(core_reports_intermediate, index) != nil and
-                h_t <=
-                  Enum.at(core_reports_intermediate, index).timeslot +
-                    Constants.unavailability_period()
+              r = Enum.at(core_reports_intermediate, c)
+              r != nil and h_t <= r.timeslot + Constants.unavailability_period()
           end
         end)
       end)
@@ -148,4 +147,8 @@ defmodule Block.Extrinsic.Assurance do
   use JsonDecoder
 
   def json_mapping, do: %{hash: :anchor}
+
+  def core_bits(%__MODULE__{bitfield: b}) do
+    Util.Merklization.bits(b) |> Enum.take(Constants.core_count())
+  end
 end

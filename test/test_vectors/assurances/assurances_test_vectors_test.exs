@@ -13,23 +13,24 @@ defmodule AssurancesTestVectorsTest do
         {:ok, %{vrf_signature_output: Hash.zero()}}
       end)
 
+      Application.put_env(:jamixir, :accumulation, MockAccumulation)
       Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
-      ValidatorStatisticsMock
-      |> stub(:do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+      stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
         {:ok, "mockvalue"}
       end)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
+        Application.delete_env(:jamixir, :accumulation)
       end)
 
       :ok
     end
 
-    test "smoke tiny vectors" do
-      execute_test("assurance_for_not_engaged_core-1", "assurances/tiny")
-    end
+    # test "smoke tiny vectors" do
+    #   execute_test("no_assurances_with_stale_report-1", "assurances/tiny")
+    # end
 
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name

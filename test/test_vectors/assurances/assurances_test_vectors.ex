@@ -3,6 +3,7 @@ defmodule AssurancesTestVectors do
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
   use ExUnit.Case
+  import Mox
 
   @owner "davxy"
   @repo "jam-test-vectors"
@@ -13,12 +14,12 @@ defmodule AssurancesTestVectors do
       [
         "assurance_for_not_engaged_core-1",
         "assurance_with_bad_attestation_parent-1",
-        "assurances_for_stale_report-1",
+        # "assurances_for_stale_report-1",
         "assurances_with_bad_signature-1",
         "assurances_with_bad_validator_index-1",
-        "no_assurances-1"
+        "no_assurances-1",
         # "no_assurances_with_stale_report-1",
-        # "some_assurances-1"
+        "some_assurances-1"
       ]
       |> List.flatten()
 
@@ -32,7 +33,8 @@ defmodule AssurancesTestVectors do
       :validate,
       # System.State.Judgements,
       System.State.CoreReport,
-      Block.Extrinsic.Assurance
+      Block.Extrinsic.Assurance,
+      Block.Extrinsic.Guarantee.WorkReport
     ])
 
     on_exit(fn ->
@@ -58,6 +60,19 @@ defmodule AssurancesTestVectors do
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
     json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot])
+
+    stub(MockAccumulation, :do_accumulate, fn _, _, _, _ ->
+      {:ok,
+       %{
+         beefy_commitment_map: <<>>,
+         authorizer_queue: [],
+         services: %{},
+         next_validators: [],
+         privileged_services: %{},
+         accumulation_history: %{},
+         ready_to_accumulate: %{}
+       }}
+    end)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end

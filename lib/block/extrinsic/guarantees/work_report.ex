@@ -56,18 +56,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (130) v0.4.5 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  @threadhold 2 * Constants.validator_count() / 3
+  # Formula (11.15) v0.5.0 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
-    threshold = 2 * Constants.validator_count() / 3
-
-    0..(Constants.core_count() - 1)
-    |> Stream.filter(fn c ->
-      Stream.map(assurances, &Utils.get_bit(&1.bitfield, c))
-      |> Enum.sum() > threshold
-    end)
-    |> Stream.map(&Enum.at(core_reports_intermediate_1, &1).work_report)
-    |> Enum.to_list()
+    for c <- 0..(Constants.core_count() - 1),
+        Enum.sum(for(a <- assurances, bits = Assurance.core_bits(a), do: Enum.at(bits, c))) >
+          @threadhold do
+      case Enum.at(core_reports_intermediate_1, c) do
+        nil -> nil
+        cr -> cr.work_report
+      end
+    end
   end
 
   def mock(:available_work_reports, _) do

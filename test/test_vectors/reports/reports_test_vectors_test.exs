@@ -5,18 +5,12 @@ defmodule ReportsTestVectorsTest do
   import ReportsTestVectors
   setup :verify_on_exit!
 
-  setup(do: setup_all())
+  setup_all(do: setup_all())
 
   describe "vectors" do
     setup do
       stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
         {:ok, %{vrf_signature_output: Hash.zero()}}
-      end)
-
-      Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :validator_statistics, ValidatorStatistics)
       end)
 
       :ok
