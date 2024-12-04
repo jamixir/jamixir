@@ -18,10 +18,7 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
       {:ok, context: context, machine: machine}
     end
 
-    test "returns WHO when machine doesn't exist", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns WHO when machine doesn't exist", %{context: context} do
       registers = %Registers{r7: 999, r8: 0, r9: 32, r10: 100}
 
       {new_registers, new_memory, new_context} =
@@ -50,10 +47,7 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
       assert new_context == context
     end
 
-    test "returns OOB when destination memory write fails", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns OOB when destination memory write fails", %{context: context} do
       # Make destination memory unwritable
       memory = Memory.set_access(%Memory{}, 100, 32, :read)
 

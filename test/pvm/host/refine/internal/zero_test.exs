@@ -18,16 +18,10 @@ defmodule PVM.Host.Refine.Internal.ZeroTest do
 
       context = %RefineContext{m: %{1 => machine}}
 
-
-      {:ok,
-       context: context,
-       machine: machine}
+      {:ok, context: context, machine: machine}
     end
 
-    test "returns WHO when machine doesn't exist", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns WHO when machine doesn't exist", %{context: context} do
       registers = %Registers{r7: 999, r8: 16, r9: 1}
 
       {new_registers, new_memory, new_context} =
@@ -38,12 +32,8 @@ defmodule PVM.Host.Refine.Internal.ZeroTest do
       assert new_context == context
     end
 
-    test "returns OOB when page number is too small", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns OOB when page number is too small", %{context: context} do
       registers = %Registers{r7: 1, r8: 15, r9: 1}
-
 
       {new_registers, new_memory, new_context} =
         Internal.zero_pure(registers, %Memory{}, context)
@@ -53,10 +43,7 @@ defmodule PVM.Host.Refine.Internal.ZeroTest do
       assert new_context == context
     end
 
-    test "returns OOB when page range is too large", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns OOB when page range is too large", %{context: context} do
       registers = %Registers{r7: 1, r8: 16, r9: trunc(:math.pow(2, 32) / 64)}
 
       {new_registers, new_memory, new_context} =
@@ -67,15 +54,11 @@ defmodule PVM.Host.Refine.Internal.ZeroTest do
       assert new_context == context
     end
 
-    test "successful zero with valid parameters", %{
-      context: context,
-      machine: machine
-    } do
+    test "successful zero with valid parameters", %{context: context} do
       page = 16
       count = 2
 
       registers = %Registers{r7: 1, r8: page, r9: count}
-
 
       {new_registers, new_memory, new_context} =
         Internal.zero_pure(registers, %Memory{}, context)

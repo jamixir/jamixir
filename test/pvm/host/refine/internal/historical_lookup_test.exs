@@ -100,14 +100,13 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      test_hash: test_hash,
       test_value: test_value
     } do
       # Write hash to memory
       {:ok, memory} = Memory.write(memory, 0, test_value)
 
       # Setup registers
-      registers = %Registers{r7: 1,r8: 0, r9: 100, r10: byte_size(test_value)}
+      registers = %Registers{r7: 1, r8: 0, r9: 100, r10: byte_size(test_value)}
 
       {new_registers, new_memory, new_context} =
         Internal.historical_lookup_pure(registers, memory, context, 1, service_accounts, timeslot)

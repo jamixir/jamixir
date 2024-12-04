@@ -15,16 +15,10 @@ defmodule PVM.Host.Refine.Internal.VoidTest do
 
       context = %RefineContext{m: %{1 => machine}}
 
-
-      {:ok,
-       context: context,
-       machine: machine}
+      {:ok, context: context, machine: machine}
     end
 
-    test "returns WHO when machine doesn't exist", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns WHO when machine doesn't exist", %{context: context} do
       registers = %Registers{r7: 999, r8: 0, r9: 1}
 
       {new_registers, new_memory, new_context} =
@@ -35,10 +29,7 @@ defmodule PVM.Host.Refine.Internal.VoidTest do
       assert new_context == context
     end
 
-    test "returns OOB when page range is too large", %{
-      context: context,
-      machine: machine
-    } do
+    test "returns OOB when page range is too large", %{context: context} do
       registers = %Registers{r7: 1, r8: 0, r9: trunc(:math.pow(2, 32))}
 
       {new_registers, new_memory, new_context} =
@@ -68,11 +59,9 @@ defmodule PVM.Host.Refine.Internal.VoidTest do
     end
 
     test "successful void with valid parameters", %{
-      context: context,
-      machine: machine
+      context: context
     } do
       registers = %Registers{r7: 1, r8: 0, r9: 1}
-
 
       {new_registers, new_memory, new_context} =
         Internal.void_pure(registers, %Memory{}, context)
@@ -83,12 +72,9 @@ defmodule PVM.Host.Refine.Internal.VoidTest do
       # Get updated machine
       machine = Map.get(new_context.m, 1)
 
-
-
       # Verify access permissions are empty
       refute Memory.check_pages_access?(machine.memory, 0, 1, :read)
       assert Memory.check_pages_access?(machine.memory, 1, 1, :write)
-
     end
   end
 end

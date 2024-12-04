@@ -5,8 +5,6 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
   import PVM.Constants.HostCallResult
 
   describe "machine_pure/3" do
-
-
     test "returns OOB when memory read fails" do
       registers = %Registers{r7: 100, r8: 32, r9: 0}
 
@@ -49,8 +47,8 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
       # Create context with machines 2 and 3
       context = %RefineContext{
         m: %{
-            2 => %Integrated{program: "prog2"},
-            3 => %Integrated{program: "prog3"}
+          2 => %Integrated{program: "prog2"},
+          3 => %Integrated{program: "prog3"}
         }
       }
 
@@ -59,7 +57,7 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
 
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 0}
 
-      {new_registers, new_memory, new_context} =
+      {new_registers, _new_memory, new_context} =
         Internal.machine_pure(registers, memory, context)
 
       # Should return ID 1 (lowest available)
