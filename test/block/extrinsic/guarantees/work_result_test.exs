@@ -15,7 +15,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
     end
 
     test "encode when output is an error", %{wr: wr} do
-      wr = Map.put(wr, :result, {:error, :infinite})
+      wr = Map.put(wr, :result, {:error, :out_of_gas})
 
       assert Encodable.encode(wr) ==
                "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\x01"
@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
     end
 
     test "decodes a work result with error", %{wr: wr} do
-      wr = put_in(wr.result, {:error, :halt})
+      wr = put_in(wr.result, {:error, :panic})
       encoded = Encodable.encode(wr)
       {decoded, _} = WorkResult.decode(encoded)
       assert decoded == wr

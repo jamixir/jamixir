@@ -57,41 +57,49 @@ defmodule PVM do
   """
   @spec refine(RefineParams.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
-  def refine(
-        %RefineParams{
-          service_code: c,
-          gas: g,
-          service: s,
-          work_package_hash: p,
-          payload: y,
-          refinement_context: rc,
-          authorizer_hash: a,
-          output: o,
-          import_segments: _i,
-          extrinsic_data: x,
-          export_offset: _eo
-        },
-        services
-      ) do
-    if !Map.has_key?(services, s), do: {:bad, []}
-    service = Map.fetch!(services, s)
+  def refine(%RefineParams{} = params, services) do
+    with {:ok, service} <- fetch_service(services, params.service),
+         {:ok, lookup} <- fetch_lookup(service, params.refinement_context.timeslot, params.service_code),
+         :ok <- validate_code_size(lookup) do
 
-    lookup =
-      ServiceAccount.historical_lookup(
-        service,
-        rc.timeslot,
-        c
-      )
+      args = e({params.service, params.payload, params.work_package_hash,
+                params.refinement_context, params.authorizer_hash, params.output,
+                vs(Enum.map(params.extrinsic_data, &vs/1))})
 
-    if lookup == nil, do: {:bad, []}
-    if byte_size(lookup) > Constants.max_service_code_size(), do: {:big, []}
-    a = e({s, y, p, rc, a, o, vs(Enum.map(x, &vs/1))})
-    {_gas, result, {_m, e}} = ArgInvoc.execute(lookup, 0, g, a, nil, {nil, []})
+      {_gas, result, {_m, exports}} = ArgInvoc.execute(lookup, 0, params.gas, args, nil, {nil, []})
 
-    if result in [:out_of_gas, :panic] do
-      {result, []}
+      if result in [:out_of_gas, :panic] do
+        {result, []}
+      else
+        {result, exports}
+      end
+    else
+      {:error, :service_not_found} -> {:bad, []}
+      {:error, :invalid_lookup} -> {:bad, []}
+      {:error, :code_too_large} -> {:big, []}
     end
+  end
 
-    {result, e}
+  defp fetch_service(services, service_id) do
+    if Map.has_key?(services, service_id) do
+      {:ok, Map.get(services, service_id)}
+    else
+      {:error, :service_not_found}
+    end
+  end
+
+  defp fetch_lookup(service, timeslot, code) do
+    case ServiceAccount.historical_lookup(service, timeslot, code) do
+      nil -> {:error, :invalid_lookup}
+      lookup -> {:ok, lookup}
+    end
+  end
+
+  defp validate_code_size(lookup) do
+    if byte_size(lookup) <= Constants.max_service_code_size() do
+      :ok
+    else
+      {:error, :code_too_large}
+    end
   end
 end
