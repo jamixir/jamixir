@@ -101,7 +101,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     test "fails with too many tickets", %{state: state} do
       assert {:error, :unexpected_ticket} =
                TicketProof.validate(
-                 List.duplicate(%TicketProof{}, Constants.max_tickets() + 1),
+                 List.duplicate(%TicketProof{}, Constants.max_tickets_pre_extrinsic() + 1),
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
                  state.entropy_pool,

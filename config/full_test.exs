@@ -5,6 +5,8 @@ config :jamixir, Jamixir,
   core_count: 341,
   # E
   epoch_length: 600,
+  # K
+  max_tickets_pre_extrinsic: 16,
   # N
   tickets_per_validator: 2,
   # P

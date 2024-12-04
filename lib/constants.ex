@@ -37,7 +37,7 @@ defmodule Constants do
   defmockable(:gas_total_accumulation, do: 341_000_000)
 
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
-  def max_tickets, do: 16
+  defmockable(:max_tickets_pre_extrinsic, do: Jamixir.config()[:max_tickets_pre_extrinsic])
 
   @doc "L = 14, 400: The maximum age in timeslots of the lookup anchor."
   def max_age_lookup_anchor, do: 14_400

@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.TicketProof do
     cond do
       # m' < Y
       epoch_phase < Constants.ticket_submission_end() and
-          length(tickets) <= Constants.max_tickets() ->
+          length(tickets) <= Constants.max_tickets_pre_extrinsic() ->
         # |ET| <= K
         :ok
 
