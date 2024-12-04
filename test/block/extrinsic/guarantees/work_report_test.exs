@@ -384,7 +384,7 @@ defmodule WorkReportTest do
   describe "process_item/3" do
     test "processes a work item smoke test", %{wp: wp, state: state} do
       wp = %WorkPackage{wp | work_items: [build(:work_item)]}
-      assert WorkReport.process_item(wp, 0, <<>>, state.services) == {"", []}
+      assert WorkReport.process_item(wp, 0, <<>>, state.services) == {:bad, []}
     end
   end
 end
