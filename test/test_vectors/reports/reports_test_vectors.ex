@@ -1,7 +1,7 @@
 defmodule ReportsTestVectors do
   import TestVectorUtil
-  alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
+  alias Block.Extrinsic.Disputes
   use ExUnit.Case
   import Mox
 

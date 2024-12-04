@@ -3,7 +3,7 @@ defmodule SafroleTestVectors do
   import Mox
   use ExUnit.Case
 
-  def files,
+  def files_to_test,
     do:
       [
         for(i <- 1..4, do: "enact-epoch-change-with-no-tickets-#{i}"),

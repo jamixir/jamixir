@@ -62,6 +62,24 @@ defmodule TestVectorUtil do
     end
   end
 
+  defmacro define_vector_tests(type) do
+    quote do
+      for vector_type <- [:tiny, :full] do
+        for file_name <- files_to_test() do
+          @tag file_name: file_name
+          @tag vector_type: vector_type
+          @tag :"#{vector_type}_vectors"
+          test "verify #{unquote(type)} #{vector_type} vectors #{file_name}", %{
+            file_name: file_name,
+            vector_type: vector_type
+          } do
+            execute_test(file_name, "#{unquote(type)}/#{vector_type}")
+          end
+        end
+      end
+    end
+  end
+
   defp fetch_from_url(url) do
     result =
       case HTTPoison.get(url, @headers) do

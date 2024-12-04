@@ -1,7 +1,9 @@
 defmodule DisputesTestVectors do
-  import TestVectorUtil
   alias Block.Extrinsic
+  alias Util.Hash
   use ExUnit.Case
+  import Mox
+  import TestVectorUtil
 
   @owner "davxy"
   @repo "jam-test-vectors"
@@ -36,6 +38,10 @@ defmodule DisputesTestVectors do
       Block.Extrinsic.Disputes.Judgement,
       Block.Extrinsic.Disputes.Verdict
     ])
+
+    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      {:ok, %{vrf_signature_output: Hash.zero()}}
+    end)
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)

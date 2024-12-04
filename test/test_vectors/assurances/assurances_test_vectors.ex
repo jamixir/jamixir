@@ -1,5 +1,6 @@
 defmodule AssurancesTestVectors do
   import TestVectorUtil
+  alias Util.Hash
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
   use ExUnit.Case
@@ -27,7 +28,10 @@ defmodule AssurancesTestVectors do
 
   def setup_all do
     RingVrf.init_ring_context(Constants.validator_count())
+
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
+    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
       :validate,
@@ -37,8 +41,18 @@ defmodule AssurancesTestVectors do
       Block.Extrinsic.Guarantee.WorkReport
     ])
 
+    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      {:ok, %{vrf_signature_output: Hash.zero()}}
+    end)
+
+    stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+      {:ok, "mockvalue"}
+    end)
+
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
+      Application.delete_env(:jamixir, :accumulation)
       Application.delete_env(:jamixir, :original_modules)
     end)
 
