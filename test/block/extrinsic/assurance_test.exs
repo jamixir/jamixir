@@ -76,7 +76,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       d_assurance = %{assurance | hash: Hash.random()}
       assurances = [assurance, d_assurance]
 
-      assert {:error, "Invalid assurance"} ==
+      assert {:error, :bad_attestation_parent} ==
                Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
@@ -90,7 +90,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       d_assurance = %{assurance | validator_index: 5_000}
       assurances = [d_assurance]
 
-      assert {:error, :invalid_signature} ==
+      assert {:error, :bad_validator_index} ==
                Assurance.validate_assurances(assurances, hp, h_t, validators, cr)
     end
 
@@ -145,7 +145,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       invalid_assurance = %{assurance | signature: Crypto.random_sign()}
 
-      assert {:error, :invalid_signature} ==
+      assert {:error, :bad_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
@@ -158,7 +158,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       invalid_assurance = %{assurance | validator_index: 2}
 
-      assert {:error, :invalid_signature} ==
+      assert {:error, :bad_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
@@ -171,7 +171,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       invalid_assurance = %{assurance | bitfield: "other"}
 
-      assert {:error, :invalid_signature} ==
+      assert {:error, :bad_signature} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
@@ -183,11 +183,11 @@ defmodule Block.Extrinsic.AssuranceTest do
       s2: s2,
       ht: h_t
     } do
-      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
+      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::7, 1::1>>)
       signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
+      invalid_assurance = %{assurance | signature: signature, bitfield: <<0::7, 1::1>>}
 
-      assert {:error, "Invalid core reports bits"} ==
+      assert {:error, :core_not_engaged_or_timeout} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, [nil])
     end
 
@@ -198,14 +198,14 @@ defmodule Block.Extrinsic.AssuranceTest do
            validators: validators,
            s2: s2
          } do
-      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
+      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::7, 1::1>>)
       signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
+      invalid_assurance = %{assurance | signature: signature, bitfield: <<0::7, 1::1>>}
 
       cr = [%{timeslot: 2, core_report: nil}]
       h_t = 2 + Constants.unavailability_period() + 1
 
-      assert {:error, "Invalid core reports bits"} ==
+      assert {:error, :core_not_engaged_or_timeout} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 

@@ -5,7 +5,8 @@ defmodule System.State.EntropyPool do
   """
 
   alias System.State.EntropyPool
-  alias Util.{Hash, Time}
+  alias Util.Time
+  use Codec.Encoder
 
   @type t :: %__MODULE__{n0: Types.hash(), n1: Types.hash(), n2: Types.hash(), n3: Types.hash()}
 
@@ -25,7 +26,7 @@ defmodule System.State.EntropyPool do
 
   # Formula (67) v0.4.5
   def calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
-    %EntropyPool{pool | n0: Hash.default(n0 <> vrf_output)}
+    %EntropyPool{pool | n0: h(n0 <> vrf_output)}
   end
 
   defimpl Encodable do

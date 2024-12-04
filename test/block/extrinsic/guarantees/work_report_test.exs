@@ -73,12 +73,12 @@ defmodule WorkReportTest do
       # Create mock assurances using factory
       # 6 validators / 2 cores
       assurances = [
-        build(:assurance, bitfield: <<0b10::2>>),
-        build(:assurance, bitfield: <<0b10::2>>),
-        build(:assurance, bitfield: <<0b10::2>>),
-        build(:assurance, bitfield: <<0b11::2>>),
-        build(:assurance, bitfield: <<0b11::2>>),
-        build(:assurance, bitfield: <<0b00::2>>)
+        build(:assurance, bitfield: <<0::6, 10::2>>),
+        build(:assurance, bitfield: <<0::6, 10::2>>),
+        build(:assurance, bitfield: <<0::6, 10::2>>),
+        build(:assurance, bitfield: <<0::6, 11::2>>),
+        build(:assurance, bitfield: <<0::6, 11::2>>),
+        build(:assurance, bitfield: <<00::6, 00::2>>)
       ]
 
       # Create mock core reports using factory
@@ -97,17 +97,17 @@ defmodule WorkReportTest do
       result = WorkReport.available_work_reports(assurances, core_reports)
 
       assert length(result) == 1
-      assert for(x <- result, do: x.core_index) == [0]
+      assert for(x <- result, do: x.core_index) == [1]
     end
 
     test "returns empty list when no cores have sufficient assurances" do
-      assurances = for _ <- 1..6, do: build(:assurance, bitfield: <<0b00::2>>)
+      assurances = for _ <- 1..6, do: build(:assurance, bitfield: <<0>>)
       result = WorkReport.available_work_reports(assurances, [])
       assert result == []
     end
 
     test "handles case when all cores have sufficient assurances", %{core_reports: core_reports} do
-      assurances = for _ <- 1..6, do: build(:assurance, bitfield: <<0b11::2>>)
+      assurances = for _ <- 1..6, do: build(:assurance, bitfield: <<0::6, 11::2>>)
       result = WorkReport.available_work_reports(assurances, core_reports)
       assert length(result) == 2
       assert for(x <- result, do: x.core_index) == [0, 1]

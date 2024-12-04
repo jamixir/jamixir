@@ -149,9 +149,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 99_900)
-      wr2 = build(:work_result, service: 2, gas_ratio: 60_000)
-      wr3 = build(:work_result, service: 1, gas_ratio: 40_100)
+      wr1 = build(:work_result, service: 1, gas_ratio: 999_000)
+      wr2 = build(:work_result, service: 2, gas_ratio: 600_000)
+      wr3 = build(:work_result, service: 1, gas_ratio: 401_000)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -160,8 +160,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 30_000, code_hash: Hash.one()},
-          2 => %ServiceAccount{gas_limit_g: 20_000, code_hash: Hash.one()}
+          1 => %ServiceAccount{gas_limit_g: 300_000, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 200_000, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :work_report_gas_too_high}
@@ -375,6 +375,23 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert result == {:error, :bad_signature}
     end
 
+    test "returns error when validator index is invalid", context do
+      [valid_guarantee | _] = create_valid_guarantees(context)
+      invalid_guarantee = %{valid_guarantee | credentials: [{99, <<1::512>>}, {100, <<2::512>>}]}
+
+      result =
+        Guarantee.reporters_set(
+          [invalid_guarantee],
+          context.entropy_pool,
+          context.timeslot,
+          context.curr_validators,
+          context.prev_validators,
+          context.offenders
+        )
+
+      assert result == {:error, :bad_validator_index}
+    end
+
     test "returns error when guarantee timeslot is greater than current timeslot", context do
       [valid_guarantee | _] = create_valid_guarantees(context)
       invalid_guarantee = %{valid_guarantee | timeslot: context.timeslot + 1}
@@ -420,9 +437,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       {:ok, guarantees: guarantees}
     end
 
-    # we skip this test because signature is already being validated somewhere else
-    @tag :skip
-    test "returns :bad_signature when authorizer is not in the pool", %{
+    test "returns :core_unauthorized when authorizer is not in the pool", %{
       guarantees: guarantees
     } do
       core_reports = [nil, nil]
@@ -431,17 +446,17 @@ defmodule Block.Extrinsic.GuaranteeTest do
       result =
         Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
 
-      assert result == {:error, :bad_signature}
+      assert result == {:error, :core_unauthorized}
     end
 
-    test "returns :pending_work when there's pending work", %{guarantees: guarantees} do
-      core_reports = [%{timeslot: 94}, %{timeslot: 80}]
+    test "returns :core_engaged when there's pending work", %{guarantees: guarantees} do
+      core_reports = [%{timeslot: 94}, %{timeslot: 90}]
       authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
 
       result =
-        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+        Guarantee.validate_availability(guarantees, core_reports, 90, authorizer_pool)
 
-      assert result == {:error, :pending_work}
+      assert result == {:error, :core_engaged}
     end
 
     test "returns :ok when all conditions are met", %{guarantees: guarantees} do
@@ -449,7 +464,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       authorizer_pool = [MapSet.new([<<1>>]), MapSet.new([<<2>>])]
 
       result =
-        Guarantee.validate_availability(guarantees, core_reports, 100, authorizer_pool)
+        Guarantee.validate_availability(guarantees, core_reports, 120, authorizer_pool)
 
       assert result == :ok
     end

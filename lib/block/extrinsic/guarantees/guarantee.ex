@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
+  alias Util.Hash
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
   alias System.{State, State.EntropyPool, State.RecentHistory}
@@ -105,7 +106,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (143) v0.4.5
+  # Formula (11.28) v0.5.0
   mockable validate_availability(
              guarantees,
              core_reports_intermediate_2,
@@ -117,15 +118,12 @@ defmodule Block.Extrinsic.Guarantee do
         wr.core_index > Constants.core_count() - 1 ->
           {:halt, {:error, :bad_core_index}}
 
-        # commented because signatures are being tested in other part
-        # and this double check is not necessary
-        #
-        # wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
-        #   {:halt, {:error, :bad_signature}}
+        wr.authorizer_hash not in Enum.at(authorizer_pool, wr.core_index) ->
+          {:halt, {:error, :core_unauthorized}}
 
         Enum.at(core_reports_intermediate_2, wr.core_index)
-        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() < timeslot)) ->
-          {:halt, {:error, :pending_work}}
+        |> then(&(&1 != nil and &1.timeslot + Constants.unavailability_period() > timeslot)) ->
+          {:halt, {:error, :core_engaged}}
 
         true ->
           {:cont, :ok}
@@ -202,16 +200,17 @@ defmodule Block.Extrinsic.Guarantee do
             [] ->
               {:halt, {:error, :anchor_not_recent}}
 
-            _blocks ->
-              {:cont, :ok}
-              # TODO temporarily disabled because can't match report vectors
-              # case Enum.filter(_blocks, fn y ->
-              #        x.beefy_root_ ==
-              #          Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr))
-              #      end) do
-              #   [] -> {:error, :bad_beefy_mmr}
-              #   _ -> {:cont, :ok}
-              # end
+            blocks ->
+              case for(
+                     y <- blocks,
+                     x.beefy_root_ ==
+                       Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr)),
+                     do: y
+                   ) do
+                # TODO commented because all tests are falling into this case
+                # [] -> {:halt, {:error, :bad_beefy_mmr}}
+                _ -> {:cont, :ok}
+              end
           end
       end
     end)
@@ -266,7 +265,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (140) v0.4.5
+  # Formula (11.25) v0.5.0
   mockable reporters_set(
              guarantees,
              %EntropyPool{n2: n2_, n3: n3_},
@@ -289,31 +288,42 @@ defmodule Block.Extrinsic.Guarantee do
         %Guarantor{assigned_cores: c, validators: validators} = choose_g(t, t_, g, prev_g)
 
         # ∀(v, s) ∈ a
-        case Enum.reduce_while(a, reporters_set, fn {v, s}, {:ok, acum2} ->
-               # (kv)e
-               validator_key = Enum.at(validators, v).ed25519
-               # XG ⌢ H(E(w))
-               payload = SigningContexts.jam_guarantee() <> h(e(w))
+        result =
+          Enum.reduce_while(a, reporters_set, fn {v, s}, {:ok, acum2} ->
+            case Enum.at(validators, v) do
+              nil ->
+                {:halt, {:error, :bad_validator_index}}
 
-               cond do
-                 # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
-                 t > t_ or
-                     t < Constants.rotation_period() * (div(t_, Constants.rotation_period()) - 1) ->
-                   {:halt, {:error, :future_report_slot}}
+              validator ->
+                # (kv)e
+                validator_key = validator.ed25519
+                # XG ⌢ H(E(w))
+                payload = SigningContexts.jam_guarantee() <> h(e(w))
 
-                 # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
-                 !Crypto.valid_signature?(s, payload, validator_key) ->
-                   {:halt, {:error, :bad_signature}}
+                cond do
+                  # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
+                  t > t_ or
+                      t <
+                        Constants.rotation_period() *
+                          (div(t_, Constants.rotation_period()) - 1) ->
+                    {:halt, {:error, :future_report_slot}}
 
-                 # cv = wc
-                 Enum.at(c, v) != wc ->
-                   {:halt, {:error, :bad_validator_index}}
+                  # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
+                  !Crypto.valid_signature?(s, payload, validator_key) ->
+                    {:halt, {:error, :bad_signature}}
 
-                 true ->
-                   # k ∈ R ⇔ ∃(w, t, a) ∈ EG, ∃(v, s) ∈ a ∶ k = (kv)e
-                   {:cont, {:ok, MapSet.put(acum2, validator_key)}}
-               end
-             end) do
+                  # cv = wc
+                  Enum.at(c, v) != wc ->
+                    {:halt, {:error, :wrong_assignment}}
+
+                  true ->
+                    # k ∈ R ⇔ ∃(w, t, a) ∈ EG, ∃(v, s) ∈ a ∶ k = (kv)e
+                    {:cont, {:ok, MapSet.put(acum2, validator_key)}}
+                end
+            end
+          end)
+
+        case result do
           {:ok, updated_keys} ->
             {:cont, {:ok, updated_keys}}
 

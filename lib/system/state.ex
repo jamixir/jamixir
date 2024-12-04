@@ -434,6 +434,7 @@ defmodule System.State do
   end
 
   defp decode_json_field(:recent_blocks, value), do: decode_json_field(:beta, value)
+  defp decode_json_field(:auth_pools, value), do: decode_json_field(:alpha, value)
   defp decode_json_field(:alpha, value), do: [{:authorizer_pool, JsonDecoder.from_json(value)}]
   defp decode_json_field(:varphi, value), do: [{:authorizer_queue, JsonDecoder.from_json(value)}]
   defp decode_json_field(:beta, value), do: [{:recent_history, RecentHistory.from_json(value)}]
@@ -479,6 +480,8 @@ defmodule System.State do
 
   defp decode_json_field(:pi, value),
     do: [{:validator_statistics, ValidatorStatistics.from_json(value)}]
+
+  defp decode_json_field(:avail_assignments, value), do: decode_json_field(:rho, value)
 
   defp decode_json_field(:rho, value),
     do: [{:core_reports, Enum.map(value, &CoreReport.from_json/1)}]

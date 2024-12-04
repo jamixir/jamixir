@@ -35,7 +35,11 @@ defmodule Block.Extrinsic.Assurance do
              core_reports_intermediate_1
            ) do
     # Formula (125) v0.4.5
-    with true <- Enum.all?(assurances, &(&1.hash == parent_hash)),
+    with :ok <-
+           if(Enum.all?(assurances, &(&1.hash == parent_hash)),
+             do: :ok,
+             else: {:error, :bad_attestation_parent}
+           ),
          # Formula (126) v0.4.5
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
          # Formula (127) v0.4.5
@@ -45,7 +49,6 @@ defmodule Block.Extrinsic.Assurance do
            validate_core_reports_bits(assurances, core_reports_intermediate_1, header_timeslot) do
       :ok
     else
-      false -> {:error, "Invalid assurance"}
       {:error, e} -> {:error, e}
     end
   end
@@ -56,32 +59,36 @@ defmodule Block.Extrinsic.Assurance do
   defp validate_core_reports_bits(assurances, core_reports_intermediate, h_t) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
-        Stream.with_index(for <<bit::1 <- assurance.bitfield>>, do: bit)
-        |> Enum.all?(fn {bit, index} ->
-          case bit do
+        bits = core_bits(assurance)
+
+        Enum.all?(0..(Constants.core_count() - 1), fn c ->
+          case Enum.at(bits, c) do
             0 ->
               true
 
             _ ->
-              Enum.at(core_reports_intermediate, index) != nil and
-                h_t <=
-                  Enum.at(core_reports_intermediate, index).timeslot +
-                    Constants.unavailability_period()
+              r = Enum.at(core_reports_intermediate, c)
+              r != nil and h_t <= r.timeslot + Constants.unavailability_period()
           end
         end)
       end)
 
-    if all_ok, do: :ok, else: {:error, "Invalid core reports bits"}
+    if all_ok, do: :ok, else: {:error, :core_not_engaged_or_timeout}
   end
 
   defp validate_signatures(assurances, parent_hash, curr_validators_) do
-    if(
-      Enum.all?(assurances, fn a ->
-        valid_signature?(a, parent_hash, Enum.at(curr_validators_, a.validator_index))
-      end),
-      do: :ok,
-      else: {:error, :invalid_signature}
-    )
+    Enum.reduce_while(assurances, :ok, fn a, _ ->
+      case Enum.at(curr_validators_, a.validator_index) do
+        nil ->
+          {:halt, {:error, :bad_validator_index}}
+
+        v ->
+          case valid_signature?(a, parent_hash, v) do
+            true -> {:cont, :ok}
+            false -> {:halt, {:error, :bad_signature}}
+          end
+      end
+    end)
   end
 
   defp valid_signature?(_, _, nil), do: false
@@ -140,4 +147,8 @@ defmodule Block.Extrinsic.Assurance do
   use JsonDecoder
 
   def json_mapping, do: %{hash: :anchor}
+
+  def core_bits(%__MODULE__{bitfield: b}) do
+    Util.Merklization.bits(b) |> Enum.take(Constants.core_count())
+  end
 end

@@ -4,10 +4,9 @@ defmodule System.State.CoreReport do
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
-  alias Block.Extrinsic.AvailabilitySpecification
-  alias System.State.CoreReport
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.Encoder
+  alias System.State.CoreReport
   alias Util.Hash
   use SelectiveMock
 
@@ -33,11 +32,11 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (26) v0.4.5
+  # ρ‡ Formula (4.14) v0.5.0
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
-    # Formula (131) v0.4.5
+    # Formula (11.16) v0.5.0
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil, do: nil, else: if(cr.work_report in w, do: nil, else: intermediate)
     end
@@ -51,7 +50,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def calculate_core_reports_(core_reports_2, guarantees, timeslot_) do
-    # Formula (157) v0.4.5
+    # Formula (11.42) v0.5.0
     Enum.with_index(core_reports_2, fn cr, index ->
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> cr
@@ -63,7 +62,7 @@ defmodule System.State.CoreReport do
   defimpl Encodable do
     alias System.State.CoreReport
     use Codec.Encoder
-    # Formula (321) v0.4.5
+    # Formula (D.2) v0.5.0
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     def encode(%CoreReport{} = c) do
       e({c.work_report, e_le(c.timeslot, 4)})
@@ -74,18 +73,7 @@ defmodule System.State.CoreReport do
 
   def json_mapping do
     %{
-      work_report: [
-        fn wph ->
-          hash = JsonDecoder.from_json(wph)
-
-          %WorkReport{
-            specification: %AvailabilitySpecification{
-              work_package_hash: hash
-            }
-          }
-        end,
-        :dummy_work_report
-      ],
+      work_report: %{m: WorkReport, f: :report},
       timeslot: :timeout
     }
   end
