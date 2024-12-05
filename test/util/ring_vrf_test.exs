@@ -169,13 +169,18 @@ defmodule RingVrfTest do
 
       # Verify the signature
       result =
-        RingVrf.ietf_vrf_verify(
-          keys,
-          "context",
-          "message",
-          signature,
-          signer_key_index
-        )
+        RingVrf.ietf_vrf_verify(keys, "context", "message", signature, signer_key_index)
+
+      assert {:ok, vrf_output_hash} = result
+      assert byte_size(vrf_output_hash) == @hash_size
+    end
+
+    test "verify key" do
+      {keys, secret} = init_ring_context_and_gen_keys(2, 7)
+      {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
+
+      result =
+        RingVrf.ietf_vrf_verify_key(Enum.at(keys, 2), "context", "message", signature)
 
       assert {:ok, vrf_output_hash} = result
       assert byte_size(vrf_output_hash) == @hash_size
@@ -207,13 +212,7 @@ defmodule RingVrfTest do
       altered_key_index = 1
 
       result =
-        RingVrf.ietf_vrf_verify(
-          keys,
-          "context",
-          "message",
-          signature,
-          altered_key_index
-        )
+        RingVrf.ietf_vrf_verify(keys, "context", "message", signature, altered_key_index)
 
       assert {:error, :verification_failed} = result
     end
@@ -223,13 +222,7 @@ defmodule RingVrfTest do
       {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
 
       result =
-        RingVrf.ietf_vrf_verify(
-          keys,
-          "altered context",
-          "message",
-          signature,
-          0
-        )
+        RingVrf.ietf_vrf_verify(keys, "altered context", "message", signature, 0)
 
       assert {:error, :verification_failed} = result
     end
@@ -239,13 +232,7 @@ defmodule RingVrfTest do
       {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
 
       result =
-        RingVrf.ietf_vrf_verify(
-          keys,
-          "context",
-          "altered message",
-          signature,
-          0
-        )
+        RingVrf.ietf_vrf_verify(keys, "context", "altered message", signature, 0)
 
       assert {:error, :verification_failed} = result
     end

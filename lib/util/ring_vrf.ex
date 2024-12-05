@@ -61,6 +61,9 @@ defmodule RingVrf do
   def ietf_vrf_verify(_ring, _context, _message, _signature, _signer_key_index),
     do: :erlang.nif_error(:nif_not_loaded)
 
+  def ietf_vrf_verify_key(_key, _context, _message, _signature),
+    do: :erlang.nif_error(:nif_not_loaded)
+
   def ietf_vrf_output(secret, context), do: ietf_vrf_sign(secret, context, <<>>) |> elem(1)
 
   def ring_vrf_output(ring, secret, prover_idx, context),
