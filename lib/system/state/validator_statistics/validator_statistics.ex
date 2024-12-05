@@ -134,9 +134,11 @@ defmodule System.State.ValidatorStatistics do
   end
 
   def from_json(json_data) do
+    IO.inspect(json_data)
+
     %__MODULE__{
-      current_epoch_statistics: Enum.map(Enum.at(json_data, 0), &ValidatorStatistic.from_json/1),
-      previous_epoch_statistics: Enum.map(Enum.at(json_data, 1), &ValidatorStatistic.from_json/1)
+      current_epoch_statistics: Enum.map(json_data[:current], &ValidatorStatistic.from_json/1),
+      previous_epoch_statistics: Enum.map(json_data[:last], &ValidatorStatistic.from_json/1)
     }
   end
 
