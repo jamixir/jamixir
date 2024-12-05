@@ -40,11 +40,8 @@ defmodule PVM.Host.Refine do
     wrap_host_call(gas, registers, memory, context, &import_pure/4, [import_segments])
   end
 
-  def export(gas, registers, memory, context, {m, export_segments}, export_offset) do
-    wrap_host_call(gas, registers, memory, context, &export_pure/4, [
-      {m, export_segments},
-      export_offset
-    ])
+  def export(gas, registers, memory, context, export_offset) do
+    wrap_host_call(gas, registers, memory, context, &export_pure/4, [export_offset])
   end
 
   def machine(gas, registers, memory, context) do
@@ -61,5 +58,17 @@ defmodule PVM.Host.Refine do
 
   def zero(gas, registers, memory, context) do
     wrap_host_call(gas, registers, memory, context, &zero_pure/3, [])
+  end
+
+  def void(gas, registers, memory, context) do
+    wrap_host_call(gas, registers, memory, context, &void_pure/3, [])
+  end
+
+  def invoke(gas, registers, memory, context) do
+    wrap_host_call(gas, registers, memory, context, &invoke_pure/3, [])
+  end
+
+  def expunge(gas, registers, memory, context) do
+    wrap_host_call(gas, registers, memory, context, &expunge_pure/3, [])
   end
 end
