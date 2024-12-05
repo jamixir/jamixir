@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.InvokeTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers, State}
+  alias PVM.{Memory, RefineContext, Integrated, Registers}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
 
@@ -58,7 +58,7 @@ defmodule PVM.Host.Refine.Internal.InvokeTest do
       assert new_registers.r7 == halt()
 
       # Read the execution results from memory
-      {:ok, gas_bytes} = Memory.read(new_memory, 0, 8)
+      {:ok, _gas_bytes} = Memory.read(new_memory, 0, 8)
       {:ok, register_bytes} = Memory.read(new_memory, 8, 13 * 4)
 
       # Decode registers from memory

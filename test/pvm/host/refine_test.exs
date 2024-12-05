@@ -37,12 +37,11 @@ defmodule PVM.Host.RefineTest do
         extra_args = unquote(Macro.escape(extra_args))
 
         # Call with sufficient gas
-        {exit_reason, new_state, new_context} =
+        {exit_reason, %{gas: new_gas}, _new_context} =
           apply(Refine, function, [gas, registers, memory, context] ++ extra_args)
 
         # Basic verification that the call went through
         assert exit_reason == :continue
-        %{gas: new_gas, registers: new_registers, memory: new_memory} = new_state
         assert new_gas == gas - Wrapper.default_gas()
 
         # Call with insufficient gas
