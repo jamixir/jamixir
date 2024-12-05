@@ -173,13 +173,12 @@ fn ietf_vrf_sign<'a>(
 }
 
 #[rustler::nif]
-fn ietf_vrf_verify<'a>(
+pub fn ietf_vrf_verify<'a>(
     env: Env<'a>,
-    ring: Vec<PublicBridge<S>>,
+    key: PublicBridge<S>,
     vrf_input_data: Binary,
     aux_data: Binary,
     signature: Binary,
-    signer_key_index: usize,
 ) -> NifResult<(Atom, Binary<'a>)> {
     use ark_ec_vrfs::ietf::Verifier as _;
 
@@ -189,7 +188,7 @@ fn ietf_vrf_verify<'a>(
     let input = vrf_input_point(&vrf_input_data);
     let output = signature.output;
 
-    let public: Public = ring[signer_key_index].into();
+    let public: Public = key.into();
 
     // Attempt to verify the signature
     public

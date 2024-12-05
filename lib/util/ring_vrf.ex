@@ -58,7 +58,7 @@ defmodule RingVrf do
   #  Non-Anonymous VRF signature verification.
   #  Used for ticket claim verification during block import.
   #  Not used with Safrole test vectors.
-  def ietf_vrf_verify(_ring, _context, _message, _signature, _signer_key_index),
+  def ietf_vrf_verify(_key, _context, _message, _signature),
     do: :erlang.nif_error(:nif_not_loaded)
 
   def ietf_vrf_output(secret, context), do: ietf_vrf_sign(secret, context, <<>>) |> elem(1)
