@@ -65,7 +65,7 @@ defmodule System.HeaderSeal do
 
     # verify that the block seal is a valid signature
     with {:ok, block_seal_output} <-
-           RingVrf.ietf_vrf_verify_key(
+           RingVrf.ietf_vrf_verify(
              Enum.at(bandersnatch_public_keys, header.block_author_key_index),
              construct_seal_context(expected_slot_sealer, entropy_pool),
              Header.unsigned_encode(header),
@@ -83,11 +83,10 @@ defmodule System.HeaderSeal do
          # Formula (62) v0.4.5
          {:ok, vrf_signature_output} <-
            RingVrf.ietf_vrf_verify(
-             bandersnatch_public_keys,
+             Enum.at(bandersnatch_public_keys, header.block_author_key_index),
              SigningContexts.jam_entropy() <> block_seal_output,
              <<>>,
-             header.vrf_signature,
-             header.block_author_key_index
+             header.vrf_signature
            ) do
       {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
