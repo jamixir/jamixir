@@ -1,10 +1,13 @@
 defmodule PVM do
+  alias PVM.RefineContext
   alias System.State.ServiceAccount
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
   alias PVM.{ArgInvoc, Host, RefineParams, Types, Registers}
   use Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
+  alias PVM.Host.Refine
+  alias PVM.Host
 
   @doc """
     Ψ1: The single-step (pvm) machine state-transition function.
@@ -31,7 +34,7 @@ defmodule PVM do
   @spec authorized_f(non_neg_integer(), Types.host_call_state(), Types.context()) ::
           {Types.exit_reason(), Types.host_call_state(), Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
-    if n == gas() do
+    if host(n) == :gas do
       {exit_reason, gas_, registers_, _} = Host.gas(gas, registers, memory, nil)
       {exit_reason, {gas_, registers_, memory}, nil}
     else
@@ -59,17 +62,67 @@ defmodule PVM do
           {binary() | WorkExecutionError.t(), list(binary())}
   def refine(%RefineParams{} = params, services) do
     with {:ok, service} <- fetch_service(services, params.service),
-         {:ok, lookup} <-
+         {:ok, program} <-
            fetch_lookup(service, params.refinement_context.timeslot, params.service_code),
-         :ok <- validate_code_size(lookup) do
+         :ok <- validate_code_size(program) do
       args =
         e(
           {params.service, params.payload, params.work_package_hash, params.refinement_context,
            params.authorizer_hash, params.output, vs(Enum.map(params.extrinsic_data, &vs/1))}
         )
 
+      f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
+        case host(n) do
+          :historical_lookup ->
+            Refine.historical_lookup(
+              gas,
+              registers,
+              memory,
+              context,
+              params.service,
+              services,
+              params.refinement_context.timeslot
+            )
+
+          :import ->
+            Refine.import(gas, registers, memory, context, params.import_segments)
+
+          :export ->
+            Refine.export(gas, registers, memory, context, params.export_offset)
+
+          :gas ->
+            Host.gas(gas, registers, memory, context)
+
+          :machine ->
+            Refine.machine(gas, registers, memory, context)
+
+          :peek ->
+            Refine.peek(gas, registers, memory, context)
+
+          :zero ->
+            Refine.zero(gas, registers, memory, context)
+
+          :poke ->
+            Refine.poke(gas, registers, memory, context)
+
+          :void ->
+            Refine.void(gas, registers, memory, context)
+
+          :invoke ->
+            Refine.invoke(gas, registers, memory, context)
+
+          :expunge ->
+            Refine.expunge(gas, registers, memory, context)
+
+          _ ->
+            {:continue,
+             %{gas: gas - 10, registers: Registers.set(registers, 7, what()), memory: memory},
+             nil}
+        end
+      end
+
       {_gas, result, {_m, exports}} =
-        ArgInvoc.execute(lookup, 0, params.gas, args, nil, {nil, []})
+        ArgInvoc.execute(program, 0, params.gas, args, f, %RefineContext{})
 
       if result in [:out_of_gas, :panic] do
         {result, []}
