@@ -1,11 +1,43 @@
 defmodule AssurancesTestVectorsTest do
   use ExUnit.Case
+  alias Util.Hash
   import Mox
   import AssurancesTestVectors
   import TestVectorUtil
   setup :verify_on_exit!
 
-  setup(do: setup_all())
+  setup do
+    RingVrf.init_ring_context(Constants.validator_count())
+
+    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
+    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+
+    Application.put_env(:jamixir, :original_modules, [
+      :validate,
+      # System.State.Judgements,
+      System.State.CoreReport,
+      Block.Extrinsic.Assurance,
+      Block.Extrinsic.Guarantee.WorkReport
+    ])
+
+    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      {:ok, %{vrf_signature_output: Hash.zero()}}
+    end)
+
+    stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+      {:ok, "mockvalue"}
+    end)
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
+      Application.delete_env(:jamixir, :accumulation)
+      Application.delete_env(:jamixir, :original_modules)
+    end)
+
+    :ok
+  end
 
   describe "vectors" do
     define_vector_tests("assurances")

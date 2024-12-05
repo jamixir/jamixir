@@ -1,8 +1,7 @@
 defmodule AssurancesTestVectors do
   import TestVectorUtil
-  alias Util.Hash
-  alias Block.Extrinsic.Disputes
   alias Block.Extrinsic
+  alias Block.Extrinsic.Disputes
   use ExUnit.Case
   import Mox
 
@@ -15,49 +14,18 @@ defmodule AssurancesTestVectors do
       [
         "assurance_for_not_engaged_core-1",
         "assurance_with_bad_attestation_parent-1",
+        # supposed error on vector
         # "assurances_for_stale_report-1",
         "assurances_with_bad_signature-1",
         "assurances_with_bad_validator_index-1",
         "no_assurances-1",
+        # supposed error on vector
         # "no_assurances_with_stale_report-1",
         "some_assurances-1"
       ]
       |> List.flatten()
 
   def tested_keys, do: [:core_reports, :curr_validators]
-
-  def setup_all do
-    RingVrf.init_ring_context(Constants.validator_count())
-
-    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, :accumulation, MockAccumulation)
-    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
-
-    Application.put_env(:jamixir, :original_modules, [
-      :validate,
-      # System.State.Judgements,
-      System.State.CoreReport,
-      Block.Extrinsic.Assurance,
-      Block.Extrinsic.Guarantee.WorkReport
-    ])
-
-    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-      {:ok, %{vrf_signature_output: Hash.zero()}}
-    end)
-
-    stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
-      {:ok, "mockvalue"}
-    end)
-
-    on_exit(fn ->
-      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
-      Application.delete_env(:jamixir, :accumulation)
-      Application.delete_env(:jamixir, :original_modules)
-    end)
-
-    :ok
-  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} =
