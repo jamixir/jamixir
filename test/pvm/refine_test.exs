@@ -1,9 +1,8 @@
 defmodule PVM.RefineIntegrationTest do
   use ExUnit.Case
-  alias PVM.RefineContext
   alias System.State.ServiceAccount
   alias Util.Hash
-  alias PVM.{RefineParams, InitProgram, Memory, Registers}
+  alias PVM.RefineParams
   import Mox
 
   setup :verify_on_exit!
