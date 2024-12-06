@@ -71,8 +71,8 @@ defmodule System.State.ValidatorStatistics do
         %Header{} = header,
         reporters_set
       ) do
-    # Formula (190) v0.4.5
-    # Formula (191) v0.4.5
+    # Formula (13.2) v0.5.0
+    # Formula (13.3) v0.5.0
     {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
         {empty_epoc_stats(), validator_statistics.current_epoch_statistics}
@@ -83,7 +83,7 @@ defmodule System.State.ValidatorStatistics do
 
     case get_author_stats(current_epoc_stats_, header.block_author_key_index) do
       {:ok, author_stats} ->
-        # Formula (192) v0.4.5
+        # Formula (13.4) v0.5.0
         author_stats_ = %{
           author_stats
           | blocks_produced: author_stats.blocks_produced + 1,
@@ -134,8 +134,6 @@ defmodule System.State.ValidatorStatistics do
   end
 
   def from_json(json_data) do
-    IO.inspect(json_data)
-
     %__MODULE__{
       current_epoch_statistics: Enum.map(json_data[:current], &ValidatorStatistic.from_json/1),
       previous_epoch_statistics: Enum.map(json_data[:last], &ValidatorStatistic.from_json/1)

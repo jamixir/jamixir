@@ -1,6 +1,5 @@
 defmodule AssurancesTestVectorsTest do
   use ExUnit.Case
-  alias Util.Hash
   import Mox
   import AssurancesTestVectors
   import TestVectorUtil
@@ -21,9 +20,8 @@ defmodule AssurancesTestVectorsTest do
       Block.Extrinsic.Guarantee.WorkReport
     ])
 
-    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-      {:ok, %{vrf_signature_output: Hash.zero()}}
-    end)
+    mock_header_seal()
+    mock_accumulate()
 
     stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
       {:ok, "mockvalue"}

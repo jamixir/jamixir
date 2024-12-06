@@ -1,5 +1,4 @@
 defmodule ReportsTestVectorsTest do
-  alias Util.Hash
   use ExUnit.Case
   import Mox
   import ReportsTestVectors
@@ -11,9 +10,7 @@ defmodule ReportsTestVectorsTest do
 
   describe "vectors" do
     setup do
-      stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-        {:ok, %{vrf_signature_output: Hash.zero()}}
-      end)
+      mock_header_seal()
 
       :ok
     end

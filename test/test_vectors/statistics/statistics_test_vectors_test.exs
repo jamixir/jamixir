@@ -1,6 +1,5 @@
 defmodule StatisticsTestVectorsTest do
   use ExUnit.Case
-  alias Util.Hash
   import Mox
   import StatisticsTestVectors
   import TestVectorUtil
@@ -16,9 +15,8 @@ defmodule StatisticsTestVectorsTest do
       System.State.ValidatorStatistics
     ])
 
-    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-      {:ok, %{vrf_signature_output: Hash.zero()}}
-    end)
+    mock_header_seal()
+    mock_accumulate()
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
