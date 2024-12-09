@@ -1,34 +1,29 @@
 defmodule Shuffle do
   use Codec.Encoder
-  # Formula (335) v0.4.5
+  # Formula (F.1) v0.5.2
   @spec shuffle(list(any()), list(integer()) | Types.hash()) :: list(any())
   def shuffle([], _), do: []
 
-  def shuffle(list, numeric_sequence)
-      when is_list(numeric_sequence) and length(numeric_sequence) >= length(list) do
-    i = rem(Enum.at(numeric_sequence, 0), length(list))
-    {element, new_list} = List.pop_at(list, i)
-    [element | shuffle(new_list, Enum.drop(numeric_sequence, 1))]
+  def shuffle(list, r)
+      when is_list(r) and length(r) >= length(list) do
+    l = length(list)
+    i = rem(Enum.at(r, 0), l)
+    element = Enum.at(list, i)
+    new_list = List.replace_at(list, i, Enum.at(list, l - 1))
+    [element | shuffle(Enum.take(new_list, l - 1), Enum.drop(r, 1))]
   end
 
-  # Formula (337) v0.4.5
+  # Formula (F.3) v0.5.2
   def shuffle(list, hash) when is_binary(hash) and bit_size(hash) == 256 do
-    shuffle(list, transform_hash_into_sequence(hash, length(list)))
+    shuffle(list, hash_to_sequence(hash, length(list)))
   end
 
   use Codec.Decoder
 
-  # Formula (336) v0.4.5
-  defp transform_hash_into_sequence(hash, sequence_length) do
-    numeric_sequence =
-      Enum.reduce(0..(sequence_length - 1), [], fn i, acc ->
-        encoded_chunk = e_le(div(i, 8), 4)
-        new_hash = h(hash <> encoded_chunk)
-        encoded_numeric_position = :binary.part(new_hash, rem(4 * i, 32), 4)
-        decoded_numeric_position = de_le(encoded_numeric_position, 4)
-        acc ++ [decoded_numeric_position]
-      end)
-
-    numeric_sequence
+  # Formula (F.2) v0.5.2
+  defp hash_to_sequence(hash, l) do
+    for i <- 0..l do
+      de_le(:binary.part(h(hash <> e_le(div(i, 8), 4)), rem(4 * i, 32), 4), 4)
+    end
   end
 end
