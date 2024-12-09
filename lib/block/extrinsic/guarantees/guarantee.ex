@@ -61,7 +61,7 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_segment_root_lookups(w, state.recent_history),
          # Formula (153) v0.4.5
          :ok <- validate_prerequisites(w, state.recent_history),
-         # Formula (137) v0.4.5
+         # Formula (11.22) v0.5.0
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (11.32) v0.5.0
