@@ -14,13 +14,11 @@ defmodule AssurancesTestVectors do
       [
         "assurance_for_not_engaged_core-1",
         "assurance_with_bad_attestation_parent-1",
-        # supposed error on vector
-        # "assurances_for_stale_report-1",
+        "assurances_for_stale_report-1",
         "assurances_with_bad_signature-1",
         "assurances_with_bad_validator_index-1",
         "no_assurances-1",
-        # supposed error on vector
-        # "no_assurances_with_stale_report-1",
+        "no_assurances_with_stale_report-1",
         "some_assurances-1"
       ]
       |> List.flatten()
