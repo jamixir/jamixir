@@ -187,26 +187,8 @@ defmodule Block.Extrinsic.AssuranceTest do
       signature = Crypto.sign(payload, s2)
       invalid_assurance = %{assurance | signature: signature, bitfield: <<0::7, 1::1>>}
 
-      assert {:error, :core_not_engaged_or_timeout} ==
+      assert {:error, :core_not_engaged} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, [nil])
-    end
-
-    test "returns :error when assurance bit is set but core report is not null, but timeslot is too old",
-         %{
-           hp: hp,
-           assurance: assurance,
-           validators: validators,
-           s2: s2
-         } do
-      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::7, 1::1>>)
-      signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, bitfield: <<0::7, 1::1>>}
-
-      cr = [%{timeslot: 2, core_report: nil}]
-      h_t = 2 + Constants.unavailability_period() + 1
-
-      assert {:error, :core_not_engaged_or_timeout} ==
-               Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, cr)
     end
 
     test "returns :ok when assurance bit is set but core report is not null,and timeslot is not old",

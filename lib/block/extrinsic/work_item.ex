@@ -17,7 +17,9 @@ defmodule Block.Extrinsic.WorkItem do
           # y
           payload: binary(),
           # g
-          gas_limit: non_neg_integer(),
+          refine_gas_limit: non_neg_integer(),
+          # a
+          accumulate_gas_limit: non_neg_integer(),
           # e
           export_count: non_neg_integer(),
           # i
@@ -35,8 +37,10 @@ defmodule Block.Extrinsic.WorkItem do
     code_hash: Hash.zero(),
     # y: A payload blob
     payload: <<>>,
-    # g: A gas limit
-    gas_limit: 0,
+    # g: Refinement gas limit
+    refine_gas_limit: 0,
+    # a: Accumulated gas limit
+    accumulate_gas_limit: 0,
     # e: The number of data segments exported by this work item
     export_count: 0,
     # i: A sequence of imported data segments identified by the root of the segments tree
@@ -54,7 +58,8 @@ defmodule Block.Extrinsic.WorkItem do
         e_le(wi.service, 4),
         wi.code_hash,
         vs(wi.payload),
-        e_le(wi.gas_limit, 8),
+        e_le(wi.refine_gas_limit, 8),
+        e_le(wi.accumulate_gas_limit, 8),
         vs(encode_import_segments(wi)),
         vs(encode_extrinsic(wi)),
         e_le(wi.export_count, 2)
@@ -76,7 +81,8 @@ defmodule Block.Extrinsic.WorkItem do
     <<service::binary-size(4), bin::binary>> = bin
     <<code_hash::binary-size(@hash_size), bin::binary>> = bin
     {payload, bin} = VariableSize.decode(bin, :binary)
-    <<gas_limit::binary-size(8), bin::binary>> = bin
+    <<refine_gas_limit::binary-size(8), bin::binary>> = bin
+    <<accumulate_gas_limit::binary-size(8), bin::binary>> = bin
     {import_segments, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 2)
     {extrinsic, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
     <<export_count::binary-size(2), rest::binary>> = bin
@@ -85,7 +91,8 @@ defmodule Block.Extrinsic.WorkItem do
        service: de_le(service, 4),
        code_hash: code_hash,
        payload: payload,
-       gas_limit: de_le(gas_limit, 8),
+       refine_gas_limit: de_le(refine_gas_limit, 8),
+       accumulate_gas_limit: de_le(accumulate_gas_limit, 8),
        import_segments: for({h, i} <- import_segments, do: {h, de_le(i, 2)}),
        extrinsic: for({h, i} <- extrinsic, do: {h, de_le(i, 4)}),
        export_count: de_le(export_count, 2)
@@ -98,7 +105,7 @@ defmodule Block.Extrinsic.WorkItem do
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: Hash.default(wi.payload),
-      gas_ratio: wi.gas_limit,
+      gas_ratio: wi.refine_gas_limit,
       result: output
     }
   end

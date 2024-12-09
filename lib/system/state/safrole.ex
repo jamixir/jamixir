@@ -35,7 +35,7 @@ defmodule System.State.Safrole do
           ticket_accumulator: ta,
           current_epoch_slot_sealers: slot_sealers
         },
-        %EntropyPool{n2: n2},
+        %EntropyPool{n2: n2_},
         curr_validators
       ) do
     # Formula (69) v0.4.5 - second arm
@@ -48,7 +48,7 @@ defmodule System.State.Safrole do
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
         outside_in_sequencer(ta)
       else
-        fallback_key_sequence(n2, curr_validators)
+        fallback_key_sequence(n2_, curr_validators)
       end
     end
   end
