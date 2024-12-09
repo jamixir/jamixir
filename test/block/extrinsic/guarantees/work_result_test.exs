@@ -45,7 +45,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
       assert wr.service == wi.service
       assert wr.code_hash == wi.code_hash
       assert wr.payload_hash == Hash.default(wi.payload)
-      assert wr.gas_ratio == wi.gas_limit
+      assert wr.gas_ratio == wi.refine_gas_limit
       assert wr.result == output
     end
   end

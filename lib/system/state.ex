@@ -100,7 +100,8 @@ defmodule System.State do
            State.CoreReport.process_availability(
              state.core_reports,
              core_reports_intermediate_1,
-             e.assurances
+             e.assurances,
+             h.timeslot
            ),
          :ok <-
            Guarantee.validate_availability(

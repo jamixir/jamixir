@@ -236,7 +236,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     PVM.refine(
       %RefineParams{
         service_code: w.code_hash,
-        gas: w.gas_limit,
+        gas: w.refine_gas_limit,
         service: w.service,
         work_package_hash: h,
         payload: w.payload,

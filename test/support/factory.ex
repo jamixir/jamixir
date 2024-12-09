@@ -153,7 +153,7 @@ defmodule Jamixir.Factory do
       service: 1,
       code_hash: Hash.one(),
       payload: <<2>>,
-      gas_limit: 3,
+      refine_gas_limit: 3,
       import_segments: [{<<4::256>>, 5}],
       extrinsic: [{<<6::256>>, 7}],
       export_count: 8

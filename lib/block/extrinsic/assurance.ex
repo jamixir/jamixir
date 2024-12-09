@@ -46,7 +46,7 @@ defmodule Block.Extrinsic.Assurance do
          :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
          # Formula (11.14) v0.5
          :ok <-
-           validate_core_reports_bits(assurances, core_reports_intermediate_1, header_timeslot) do
+           validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
     else
       {:error, e} -> {:error, e}
@@ -56,24 +56,20 @@ defmodule Block.Extrinsic.Assurance do
   def mock(:validate_assurances, _), do: :ok
 
   # Formula (11.14) v0.5
-  defp validate_core_reports_bits(assurances, core_reports_intermediate, h_t) do
+  defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
         bits = core_bits(assurance)
 
         Enum.all?(0..(Constants.core_count() - 1), fn c ->
           case Enum.at(bits, c) do
-            0 ->
-              true
-
-            _ ->
-              r = Enum.at(core_reports_intermediate, c)
-              r != nil and h_t <= r.timeslot + Constants.unavailability_period()
+            0 -> true
+            _ -> Enum.at(core_reports_intermediate, c) != nil
           end
         end)
       end)
 
-    if all_ok, do: :ok, else: {:error, :core_not_engaged_or_timeout}
+    if all_ok, do: :ok, else: {:error, :core_not_engaged}
   end
 
   defp validate_signatures(assurances, parent_hash, curr_validators_) do

@@ -77,16 +77,45 @@ defmodule System.State.CoreReportTest do
     end
   end
 
-  describe "process_availability/3" do
+  describe "process_availability/4" do
     test "use core reports intermediate when no core reports is member of W" do
-      # random core reports
       core_reports = build_list(3, :core_report)
-      # random core reports intermediate
-      i_core_reports = build_list(3, :core_report)
+      i_core_reports = build_list(3, :core_report, timeslot: 0)
+
+      limit_timelot = Constants.unavailability_period() - 1
 
       with_original_modules([:process_availability]) do
-        assert CoreReport.process_availability(core_reports, i_core_reports, [])
+        assert CoreReport.process_availability(core_reports, i_core_reports, [], limit_timelot)
                |> Enum.take(3) == i_core_reports
+      end
+    end
+
+    test "core reports nil when member of W" do
+      core_reports = build_list(2, :core_report)
+      assurances = build_list(6, :assurance, bitfield: <<255>>)
+
+      with_original_modules([:process_availability, :available_work_reports]) do
+        assert CoreReport.process_availability(core_reports, core_reports, assurances, 0) ==
+                 [nil, nil]
+      end
+    end
+
+    test "core reports nil when expired" do
+      core_reports = build_list(2, :core_report, timeslot: 0)
+      expired_time = 0 + Constants.unavailability_period()
+
+      with_original_modules([:process_availability, :available_work_reports]) do
+        assert CoreReport.process_availability(core_reports, core_reports, [], expired_time) ==
+                 [nil, nil]
+      end
+    end
+
+    test "core reports nil when intermediate are nil" do
+      core_reports = build_list(2, :core_report, timeslot: 0)
+
+      with_original_modules([:process_availability, :available_work_reports]) do
+        assert CoreReport.process_availability(core_reports, [nil, nil], [], 0) ==
+                 [nil, nil]
       end
     end
 
@@ -95,7 +124,7 @@ defmodule System.State.CoreReportTest do
       i_core_reports = build_list(3, :core_report)
 
       with_original_modules([:process_availability]) do
-        assert CoreReport.process_availability(core_reports, i_core_reports, []) ==
+        assert CoreReport.process_availability(core_reports, i_core_reports, [], 0) ==
                  core_reports
       end
     end
