@@ -3,9 +3,7 @@ defmodule DisputesTestVectors do
   use ExUnit.Case
   import TestVectorUtil
 
-  @owner "davxy"
-  @repo "jam-test-vectors"
-  @branch "disputes"
+  define_repo_variables()
 
   def files_to_test,
     do:

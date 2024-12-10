@@ -51,31 +51,10 @@ defmodule ReportsTestVectors do
       :services
     ]
 
-  def setup_all do
-    RingVrf.init_ring_context()
-    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+  define_repo_variables()
 
-    Application.put_env(:jamixir, :original_modules, [
-      Block.Extrinsic.Guarantee,
-      Util.Collections,
-      :validate_unique_and_ordered
-    ])
-
-    on_exit(fn ->
-      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
-      Application.delete_env(:jamixir, :original_modules)
-    end)
-
-    :ok
-  end
-
-  @user "davxy"
-  @repo "jam-test-vectors"
-  @branch "polkajam-vectors"
   def execute_test(file_name, path) do
-    {:ok, json_data} = fetch_and_parse_json("#{file_name}.json", path, @user, @repo, @branch)
+    {:ok, json_data} = fetch_and_parse_json("#{file_name}.json", path, @owner, @repo, @branch)
 
     extrinsic =
       Map.from_struct(%Extrinsic{})

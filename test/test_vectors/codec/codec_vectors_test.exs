@@ -8,6 +8,8 @@ defmodule CodecVectorsTest do
   use ExUnit.Case
   import TestVectorUtil
 
+  define_repo_variables()
+
   tests = [
     {"assurances_extrinsic", Assurance},
     {"block", Block},
@@ -39,13 +41,9 @@ defmodule CodecVectorsTest do
     end)
   end
 
-  @user "davxy"
-  @repo "jam-test-vectors"
-  @branch "polkajam-vectors"
-
   def assert_correctly_encoded(file_name, module) do
     {:ok, json_data} =
-      fetch_and_parse_json("#{file_name}.json", "codec/data", @user, @repo, @branch)
+      fetch_and_parse_json("#{file_name}.json", "codec/data", @owner, @repo, @branch)
 
     expected = fetch_binary("#{file_name}.bin", "codec/data")
 

@@ -65,6 +65,14 @@ defmodule TestVectorUtil do
     end
   end
 
+  defmacro define_repo_variables do
+    quote do
+      @owner "davxy"
+      @repo "jam-test-vectors"
+      @branch "polkajam-vectors"
+    end
+  end
+
   defmacro define_vector_tests(type) do
     quote do
       for vector_type <- [:tiny, :full] do

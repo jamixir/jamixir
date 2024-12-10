@@ -6,7 +6,19 @@ defmodule HistoryTestVectorsTest do
 
   setup :verify_on_exit!
 
-  setup_all(do: setup_all())
+  setup_all do
+    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
+    Application.put_env(:jamixir, :original_modules, [])
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :original_modules)
+      Application.delete_env(:jamixir, :header_seal)
+      Application.delete_env(:jamixir, :accumulation)
+    end)
+
+    :ok
+  end
 
   describe "vectors" do
     setup do

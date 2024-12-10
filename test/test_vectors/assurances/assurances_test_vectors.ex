@@ -4,9 +4,7 @@ defmodule AssurancesTestVectors do
   alias Block.Extrinsic.Disputes
   use ExUnit.Case
 
-  @owner "davxy"
-  @repo "jam-test-vectors"
-  @branch "assurances"
+  define_repo_variables()
 
   def files_to_test,
     do:

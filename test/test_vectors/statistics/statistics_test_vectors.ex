@@ -2,9 +2,7 @@ defmodule StatisticsTestVectors do
   import TestVectorUtil
   use ExUnit.Case
 
-  @owner "davxy"
-  @repo "jam-test-vectors"
-  @branch "statistics"
+  define_repo_variables()
 
   def files_to_test,
     do: [

@@ -6,27 +6,11 @@ defmodule HistoryTestVectors do
   use ExUnit.Case
   import Mox
 
-  @owner "davxy"
-  @repo "jam-test-vectors"
-  @branch "polkajam-vectors"
+  define_repo_variables()
 
   def files_to_test, do: [for(i <- 1..4, do: "progress_blocks_history-#{i}")] |> List.flatten()
 
   def tested_keys, do: [:recent_history]
-
-  def setup_all do
-    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, :accumulation, MockAccumulation)
-    Application.put_env(:jamixir, :original_modules, [])
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, :original_modules)
-      Application.delete_env(:jamixir, :header_seal)
-      Application.delete_env(:jamixir, :accumulation)
-    end)
-
-    :ok
-  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} =
