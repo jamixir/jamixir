@@ -9,7 +9,7 @@ defmodule ReportsTestVectors do
     do:
       [
         "anchor_not_recent-1",
-        # "bad_beefy_mmr-1",
+        "bad_beefy_mmr-1",
         "bad_code_hash-1",
         "bad_core_index-1",
         "bad_service_id-1",

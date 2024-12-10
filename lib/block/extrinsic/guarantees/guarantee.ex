@@ -3,10 +3,8 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
-  alias Util.Hash
-  alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
-  alias System.{State, State.EntropyPool, State.RecentHistory}
+  alias System.{State, State.EntropyPool, State.RecentHistory, State.ServiceAccount}
   alias Util.{Collections, Crypto}
   use SelectiveMock
   use MapUnion
@@ -187,8 +185,8 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.32) v0.5.0
-  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
+  # Formula (11.34) v0.5.2
+  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = MR(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
     Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
       case for(y <- blocks, x.state_root_ == y.state_root, do: y) do
@@ -204,11 +202,10 @@ defmodule Block.Extrinsic.Guarantee do
               case for(
                      y <- blocks,
                      x.beefy_root_ ==
-                       Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr)),
+                       Codec.Encoder.super_peak_mmr(y.accumulated_result_mmr),
                      do: y
                    ) do
-                # TODO commented because all tests are falling into this case
-                # [] -> {:halt, {:error, :bad_beefy_mmr}}
+                [] -> {:halt, {:error, :bad_beefy_mmr}}
                 _ -> {:cont, :ok}
               end
           end

@@ -49,11 +49,6 @@ defmodule Codec.Encoder do
     end
   end
 
-  def super_peak_mmr([hash]), do: hash
-
-  def super_peak_mmr(hash) do
-  end
-
   # Private Functions
 
   defp bit_list?([]), do: true

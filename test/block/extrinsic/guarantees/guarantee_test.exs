@@ -14,7 +14,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         build(:refinement_context,
           anchor: <<99>>,
           state_root_: <<77>>,
-          beefy_root_: Hash.keccak_256(Codec.Encoder.encode_mmr([<<1>>, <<2>>]))
+          beefy_root_: Codec.Encoder.super_peak_mmr([<<1>>, <<2>>])
         )
 
       g1 =
