@@ -21,8 +21,8 @@ defmodule Block.Extrinsic.GuarantorTest do
       p1 = Guarantor.permute(1..1100 |> Enum.to_list(), 3)
       p2 = Guarantor.permute(1..1100 |> Enum.to_list(), 4)
 
-      assert p1 == [0, 1, 1, 0, 1, 0]
-      assert p2 == [1, 0, 0, 1, 0, 1]
+      assert p1 == [0, 0, 1, 1, 1, 0]
+      assert p2 == [1, 1, 0, 0, 0, 1]
 
       assert {length(p1), length(p2)} ==
                {Constants.validator_count(), Constants.validator_count()}
