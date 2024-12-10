@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.Guarantee do
             credentials: [{0, Crypto.zero_sign()}]
 
   @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
-  def validate(guarantees, state, timeslot) do
+  mockable validate(guarantees, state, timeslot) do
     w = work_reports(guarantees)
 
     # Formula (138) v0.4.5
@@ -431,6 +431,7 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:validate_prerequisites, _), do: :ok
   def mock(:validate_segment_root_lookups, _), do: :ok
   def mock(:validate_refine_context_timeslot, _), do: :ok
+  def mock(:validate, _), do: :ok
 
   # Formula (155) v0.4.5
   @spec validate_segment_root_lookups(list(WorkReport.t()), RecentHistory.t()) ::

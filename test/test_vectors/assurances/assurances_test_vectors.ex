@@ -3,7 +3,6 @@ defmodule AssurancesTestVectors do
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   use ExUnit.Case
-  import Mox
 
   @owner "davxy"
   @repo "jam-test-vectors"
@@ -42,19 +41,6 @@ defmodule AssurancesTestVectors do
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
     json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot])
-
-    stub(MockAccumulation, :do_accumulate, fn _, _, _, _ ->
-      {:ok,
-       %{
-         beefy_commitment_map: <<>>,
-         authorizer_queue: [],
-         services: %{},
-         next_validators: [],
-         privileged_services: %{},
-         accumulation_history: %{},
-         ready_to_accumulate: %{}
-       }}
-    end)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end

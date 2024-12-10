@@ -1,7 +1,7 @@
-defmodule AssurancesTestVectorsTest do
+defmodule StatisticsTestVectorsTest do
   use ExUnit.Case
   import Mox
-  import AssurancesTestVectors
+  import StatisticsTestVectors
   import TestVectorUtil
   setup :verify_on_exit!
 
@@ -10,26 +10,16 @@ defmodule AssurancesTestVectorsTest do
 
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :accumulation, MockAccumulation)
-    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
-      :validate,
-      # System.State.Judgements,
-      System.State.CoreReport,
-      Block.Extrinsic.Assurance,
-      Block.Extrinsic.Guarantee.WorkReport
+      System.State.ValidatorStatistics
     ])
 
     mock_header_seal()
     mock_accumulate()
 
-    stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
-      {:ok, "mockvalue"}
-    end)
-
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :accumulation)
       Application.delete_env(:jamixir, :original_modules)
     end)
@@ -38,6 +28,6 @@ defmodule AssurancesTestVectorsTest do
   end
 
   describe "vectors" do
-    define_vector_tests("assurances")
+    define_vector_tests("statistics")
   end
 end

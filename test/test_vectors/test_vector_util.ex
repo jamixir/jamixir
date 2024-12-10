@@ -1,7 +1,10 @@
 defmodule TestVectorUtil do
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
+  alias Util.Hash
   use ExUnit.Case
+  import Mox
+
   Application.put_env(:elixir, :ansi_enabled, true)
 
   @owner "w3f"
@@ -103,6 +106,27 @@ defmodule TestVectorUtil do
       {:error, e} ->
         {:error, "#{e} cant read file or download it at #{url}"}
     end
+  end
+
+  def mock_header_seal do
+    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      {:ok, %{vrf_signature_output: Hash.zero()}}
+    end)
+  end
+
+  def mock_accumulate do
+    stub(MockAccumulation, :do_accumulate, fn _, _, _, _ ->
+      {:ok,
+       %{
+         beefy_commitment_map: <<>>,
+         authorizer_queue: [],
+         services: %{},
+         next_validators: [],
+         privileged_services: %{},
+         accumulation_history: %{},
+         ready_to_accumulate: %{}
+       }}
+    end)
   end
 
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do

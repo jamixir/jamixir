@@ -40,12 +40,12 @@ defmodule System.State.ValidatorStatistic do
 
   def json_mapping do
     %{
-      blocks_produced: :block_number,
-      tickets_introduced: :ticket_number,
-      preimages_introduced: :preimage_number,
-      data_size: :octets_number,
-      reports_guaranteed: :report_number,
-      availability_assurances: :availability_number
+      blocks_produced: :blocks,
+      tickets_introduced: :tickets,
+      preimages_introduced: :pre_images,
+      data_size: :pre_images_size,
+      reports_guaranteed: :guarantees,
+      availability_assurances: :assurances
     }
   end
 end
