@@ -25,11 +25,33 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (E.9) v0.5.0
+  # Formula (E.9) v0.5.2
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
     do_encode(VariableSize.new(for b <- mmr, do: NilDiscriminator.new(b)))
+  end
+
+  use Sizes
+
+  # Formula (E.10) v0.5.2
+  def super_peak_mmr(b) do
+    case for h <- b, h != nil, do: h do
+      [] ->
+        Hash.zero()
+
+      [h0] ->
+        h0
+
+      h ->
+        last = Enum.at(h, -1)
+        Hash.keccak_256("node" <> super_peak_mmr(Enum.take(h, length(h) - 1)) <> last)
+    end
+  end
+
+  def super_peak_mmr([hash]), do: hash
+
+  def super_peak_mmr(hash) do
   end
 
   # Private Functions
