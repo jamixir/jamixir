@@ -25,7 +25,7 @@ defmodule Constants do
   defmockable(:epoch_length, do: Jamixir.config()[:epoch_length])
 
   @doc "GA - The total gas allocated to a core for Accumulation."
-  defmockable(:gas_accumulation, do: 1_000_000)
+  defmockable(:gas_accumulation, do: 10_000_000)
 
   @doc "GI : The gas allocated to invoke a work-package's Is-Authorized logic."
   defmockable(:gas_is_authorized, do: 1_000_000)
@@ -34,7 +34,7 @@ defmodule Constants do
   defmockable(:gas_refine, do: 500_000_000)
 
   @doc "GT: The total gas allocated across all cores for Accumulation."
-  defmockable(:gas_total_accumulation, do: 341_000_000)
+  defmockable(:gas_total_accumulation, do: 35_000_000)
 
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
   defmockable(:max_tickets_pre_extrinsic, do: Jamixir.config()[:max_tickets_pre_extrinsic])

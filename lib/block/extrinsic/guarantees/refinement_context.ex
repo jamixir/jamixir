@@ -84,6 +84,6 @@ defmodule RefinementContext do
   end
 
   def process_prerequisite(p) do
-    if(p == nil, do: [], else: p) |> MapSet.new()
+    if(p == nil, do: [], else: JsonDecoder.from_json(p)) |> MapSet.new()
   end
 end
