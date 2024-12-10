@@ -1,8 +1,6 @@
 defmodule DisputesTestVectors do
   alias Block.Extrinsic
-  alias Util.Hash
   use ExUnit.Case
-  import Mox
   import TestVectorUtil
 
   @owner "davxy"
@@ -23,33 +21,6 @@ defmodule DisputesTestVectors do
       |> List.flatten()
 
   def tested_keys, do: [:judgements, :core_reports, :timeslot, :curr_validators, :prev_validators]
-
-  def setup_all do
-    RingVrf.init_ring_context(Constants.validator_count())
-    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-
-    Application.put_env(:jamixir, :original_modules, [
-      :validate,
-      System.State.Judgements,
-      System.State.CoreReport,
-      Block.Extrinsic.Disputes,
-      Block.Extrinsic.Disputes.Culprit,
-      Block.Extrinsic.Disputes.Fault,
-      Block.Extrinsic.Disputes.Judgement,
-      Block.Extrinsic.Disputes.Verdict
-    ])
-
-    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-      {:ok, %{vrf_signature_output: Hash.zero()}}
-    end)
-
-    on_exit(fn ->
-      Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.delete_env(:jamixir, :original_modules)
-    end)
-
-    :ok
-  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} =

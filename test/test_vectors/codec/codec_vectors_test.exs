@@ -8,10 +8,6 @@ defmodule CodecVectorsTest do
   use ExUnit.Case
   import TestVectorUtil
 
-  # in v0.4.5 refinement_context.prerequisite type changed from Hash | nil to MapSet<Hash>
-  # the test vectors block, extrinsic, refine_context, work_report are not updated yet
-  # so they are temporarily excluded from the test (03.11.2024)
-
   tests = [
     {"assurances_extrinsic", Assurance},
     {"block", Block},

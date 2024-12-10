@@ -29,8 +29,18 @@ defmodule Block.Extrinsic.GuarantorTest do
     end
 
     test "permute when e is a hash" do
-      p1 = Guarantor.permute(Hash.random(), 2)
-      p2 = Guarantor.permute(Hash.random(), 14)
+      h1 =
+        JsonDecoder.from_json(
+          "0x11da6d1f761ddf9bdb4c9d6e5303ebd41f61858d0a5647a1a7bfe089bf921be9"
+        )
+
+      h2 =
+        JsonDecoder.from_json(
+          "0xe12c22d4f162d9a012c9319233da5d3e923cc5e1029b8f90e47249c9ab256b35"
+        )
+
+      p1 = Guarantor.permute(h1, 2)
+      p2 = Guarantor.permute(h2, 14)
       assert p1 !== p2
 
       assert {length(p1), length(p2)} ==

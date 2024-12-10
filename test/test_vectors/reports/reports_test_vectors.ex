@@ -52,7 +52,7 @@ defmodule ReportsTestVectors do
     ]
 
   def setup_all do
-    RingVrf.init_ring_context(Constants.validator_count())
+    RingVrf.init_ring_context()
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 

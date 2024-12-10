@@ -11,7 +11,6 @@ defmodule HistoryTestVectorsTest do
   describe "vectors" do
     setup do
       mock_header_seal()
-
       :ok
     end
 

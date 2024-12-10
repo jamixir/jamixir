@@ -5,6 +5,8 @@ defmodule RingVrf do
   # following the example https://github.com/davxy/bandersnatch-vrfs-spec/blob/main/example/src/main.rs
   def create_ring_context(_filename, _ring_size), do: :erlang.nif_error(:nif_not_loaded)
 
+  def init_ring_context, do: init_ring_context(Constants.validator_count())
+
   def init_ring_context(ring_size) do
     current_dir = File.cwd!()
 
