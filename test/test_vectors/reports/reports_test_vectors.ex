@@ -45,7 +45,7 @@ defmodule ReportsTestVectors do
       :core_reports,
       :curr_validators,
       :prev_validators,
-      # :entropy_pool,
+      :entropy_pool,
       # :recent_history,
       # :authorizer_pool,
       :services
@@ -71,7 +71,7 @@ defmodule ReportsTestVectors do
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
-    json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot] - 1)
+    json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot])
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
 end

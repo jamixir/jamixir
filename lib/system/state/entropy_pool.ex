@@ -7,6 +7,7 @@ defmodule System.State.EntropyPool do
   alias System.State.EntropyPool
   alias Util.Time
   use Codec.Encoder
+  import SelectiveMock
 
   @type t :: %__MODULE__{n0: Types.hash(), n1: Types.hash(), n2: Types.hash(), n3: Types.hash()}
 
@@ -24,10 +25,12 @@ defmodule System.State.EntropyPool do
     end
   end
 
-  # Formula (67) v0.4.5
-  def calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
+  # Formula (6.22) v0.5.2
+  mockable calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
     %EntropyPool{pool | n0: h(n0 <> vrf_output)}
   end
+
+  def mock(:calculate_entropy_pool_, context), do: context[:pool]
 
   defimpl Encodable do
     use Codec.Encoder

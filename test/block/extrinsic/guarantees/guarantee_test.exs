@@ -149,9 +149,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 999_000)
-      wr2 = build(:work_result, service: 2, gas_ratio: 600_000)
-      wr3 = build(:work_result, service: 1, gas_ratio: 401_000)
+      wr1 = build(:work_result, service: 1, gas_ratio: 9_999_000)
+      wr2 = build(:work_result, service: 2, gas_ratio: 6_000_000)
+      wr3 = build(:work_result, service: 1, gas_ratio: 4_001_000)
 
       guarantees = [
         put_in(g1.work_report.results, [wr1]),
@@ -160,8 +160,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       s =
         put_in(state.services, %{
-          1 => %ServiceAccount{gas_limit_g: 300_000, code_hash: Hash.one()},
-          2 => %ServiceAccount{gas_limit_g: 200_000, code_hash: Hash.one()}
+          1 => %ServiceAccount{gas_limit_g: 3_000_000, code_hash: Hash.one()},
+          2 => %ServiceAccount{gas_limit_g: 2_000_000, code_hash: Hash.one()}
         })
 
       assert Guarantee.validate(guarantees, s, 1) == {:error, :work_report_gas_too_high}

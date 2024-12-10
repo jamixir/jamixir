@@ -1,4 +1,5 @@
 defmodule SafroleTinyTestVectors do
+  alias System.State.EntropyPool
   use ExUnit.Case
   import Mox
   import SafroleTestVectors
@@ -16,7 +17,8 @@ defmodule SafroleTinyTestVectors do
       System.Validators.Safrole,
       Block.Extrinsic.TicketProof,
       Util.Collections,
-      Util.Time
+      Util.Time,
+      EntropyPool
     ])
 
     on_exit(fn ->
