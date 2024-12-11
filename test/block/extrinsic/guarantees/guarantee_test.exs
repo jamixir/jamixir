@@ -227,9 +227,6 @@ defmodule Block.Extrinsic.GuaranteeTest do
       assert Guarantee.validate([g1], invalid_state, 1) == {:error, :bad_state_root}
     end
 
-    # TODO skip for now because all vectors are falling into this case
-    # we need to fix the vectors before enabling this feature again
-    @tag :skip
     test "error when recent history does not have accumulated_result_mmr", %{g1: g1, state: state} do
       invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb])

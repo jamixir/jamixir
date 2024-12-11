@@ -46,7 +46,6 @@ defmodule ReportsTestVectors do
       :curr_validators,
       :prev_validators,
       :entropy_pool,
-      # :recent_history,
       # :authorizer_pool,
       :services
     ]

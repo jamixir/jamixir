@@ -18,7 +18,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_accumulate(list(), Header.t(), State.t(), any()) :: any()
 
-  # Formula (174) v0.4.5
+  # Formula (12.3) v0.5.2 - U
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -36,7 +36,7 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (177) and (178).
+  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.2
   """
 
   def accumulate(w, h, s, si) do
@@ -57,7 +57,7 @@ defmodule System.State.Accumulation do
         },
         services
       ) do
-    # Formula (181) v0.4.5
+    # Formula (12.20) v0.5.2
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -66,7 +66,7 @@ defmodule System.State.Accumulation do
       )
 
     accumulatable_reports =
-      Block.Extrinsic.Guarantee.WorkReport.accumulatable_work_reports(
+      WorkReport.accumulatable_work_reports(
         work_reports,
         ht,
         accumulation_history,
@@ -80,8 +80,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (182) v0.4.5
-    # Formula (183) v0.4.5
+    # Formula (12.21) v0.5.2
+    # Formula (12.22) v0.5.2
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,
@@ -96,14 +96,16 @@ defmodule System.State.Accumulation do
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
         }, deferred_transfers, beefy_commitment_map}} ->
-        # Formula (185) v0.4.5
-        services_intermediate_2 = calculate_posterior_services(services_intermediate, deferred_transfers)
-        # Formula (186) v0.4.5
+        # Formula (12.24) v0.5.2
+        services_intermediate_2 =
+          calculate_posterior_services(services_intermediate, deferred_transfers)
+
+        # Formula (12.25) v0.5.2
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-        # Formula (187) v0.4.5
+        # Formula (12.26) v0.5.2
         accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
         {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-        # Formula (188) v0.4.5
+        # Formula (12.27) v0.5.2
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
@@ -116,7 +118,7 @@ defmodule System.State.Accumulation do
 
         {:ok,
          %{
-          services: services_intermediate_2,
+           services: services_intermediate_2,
            next_validators: next_validators_,
            authorizer_queue: authorizer_queue_,
            ready_to_accumulate: ready_to_accumulate_,
@@ -130,7 +132,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (177) v0.4.5
+  # Formula (12.16) v0.5.2
   @spec outer_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
@@ -296,7 +298,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (185) v0.4.5
+  # Formula (12.24) v0.5.2
   def calculate_posterior_services(services_intermediate_2, transfers) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
@@ -334,7 +336,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (188) v0.4.5
+  # Formula (12.27) v0.5.2
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),

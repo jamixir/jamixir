@@ -5,17 +5,16 @@ defmodule System.State.CoreReport do
   """
 
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.Encoder
   alias System.State.CoreReport
-  alias Util.Hash
   use SelectiveMock
+  use Codec.Encoder
 
   @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
 
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
-  # Formula (111) v0.4.5
+  # Formula (10.15) v0.5.2
   def process_disputes(core_reports, bad_wonky_verdicts) do
     for c <- core_reports do
       process_report(c, MapSet.new(bad_wonky_verdicts))
@@ -25,7 +24,7 @@ defmodule System.State.CoreReport do
   defp process_report(nil, _bad_wonky_set), do: nil
 
   defp process_report(core_report, bad_wonky_set) do
-    work_results_hash = Hash.default(Encoder.encode(core_report.work_report))
+    work_results_hash = h(e(core_report.work_report))
     if work_results_hash in bad_wonky_set, do: nil, else: core_report
   end
 

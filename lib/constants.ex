@@ -24,6 +24,9 @@ defmodule Constants do
   @doc "E - The length of an epoch in timeslots."
   defmockable(:epoch_length, do: Jamixir.config()[:epoch_length])
 
+  @doc "H - The size of recent history, in blocks."
+  defmockable(:recent_history_size, do: 8)
+
   @doc "GA - The total gas allocated to a core for Accumulation."
   defmockable(:gas_accumulation, do: 10_000_000)
 

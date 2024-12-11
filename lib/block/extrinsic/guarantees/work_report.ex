@@ -124,7 +124,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (170) v0.4.5
+  # Formula (12.9) v0.5.2
   def work_package_hashes(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
@@ -142,28 +142,29 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (163) v0.4.5
+    # Formula (12.2) v0.5.2
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (165) v0.4.5
-    # Formula (166) v0.4.5
+    # Formula (12.4) v0.5.2
+    # Formula (12.5) v0.5.2
     {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
-    # Formula (171) v0.4.5
+    # Formula (12.10) v0.5.2
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (173) v0.4.5
+    # Formula (12.12) v0.5.2
     q =
       edit_queue(
         for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ w_q,
         work_package_hashes(w_bang)
       )
 
-    # Formula (172) v0.4.5
+    # Formula (12.11) v0.5.2
     w_bang ++ accumulation_priority_queue(q)
   end
 
   # Formula (201) v0.4.5
+  # TODO review to 0.5.2
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)

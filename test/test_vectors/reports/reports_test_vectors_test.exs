@@ -1,4 +1,6 @@
 defmodule ReportsTestVectorsTest do
+  alias System.State.CoreReport
+  alias Block.Extrinsic.Guarantee.WorkReport
   use ExUnit.Case
   import Mox
   import ReportsTestVectors
@@ -14,7 +16,9 @@ defmodule ReportsTestVectorsTest do
     Application.put_env(:jamixir, :original_modules, [
       Block.Extrinsic.Guarantee,
       Util.Collections,
-      :validate_unique_and_ordered
+      :validate_unique_and_ordered,
+      CoreReport,
+      WorkReport
     ])
 
     on_exit(fn ->
@@ -31,10 +35,6 @@ defmodule ReportsTestVectorsTest do
       mock_header_seal()
 
       :ok
-    end
-
-    test "smoke" do
-      # execute_test("high_work_report_gas-1", "reports/tiny")
     end
 
     define_vector_tests("reports")

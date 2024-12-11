@@ -10,7 +10,7 @@ defmodule System.State.RecentHistory do
   use Codec.Encoder
   use SelectiveMock
 
-  @max_length 8
+  @max_length Constants.recent_history_size()
 
   @type t :: %__MODULE__{
           blocks: list(RecentBlock.t())
@@ -47,13 +47,14 @@ defmodule System.State.RecentHistory do
   end
 
   mockable(calculate_header_hash(header), do: h(e(header)))
+
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
   def mock(:get_well_balanced_merkle_root, context), do: context[:beefy_commitment_map]
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
-  Formula (82) v0.4.5
+  Formula (7.2) v0.5.2
   """
   def update_latest_state_root_(nil, %Header{}) do
     %__MODULE__{}
@@ -76,7 +77,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  Formula (83) v0.4.5
+  Formula (7.3) v0.5.2
   """
   def calculate_recent_history_(
         %Header{} = header,
@@ -89,11 +90,13 @@ defmodule System.State.RecentHistory do
     header_hash = calculate_header_hash(header)
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
-    # Formula (83)
+    # Formula (7.3) v0.5.2
+
     well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment_map)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # Formula (83) v0.4.5
+    # Formula (7.3) v0.5.2
+
     mmr_roots =
       case recent_history.blocks do
         [] ->
@@ -113,7 +116,7 @@ defmodule System.State.RecentHistory do
           do: {spec.work_package_hash, spec.exports_root},
           into: %{}
 
-    # Formula (84) v0.4.5
+    # Formula (7.4) v0.5.2
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
