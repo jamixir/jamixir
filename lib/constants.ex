@@ -27,6 +27,9 @@ defmodule Constants do
   @doc "H - The size of recent history, in blocks."
   defmockable(:recent_history_size, do: 8)
 
+  @doc "J - The maximum sum of dependency items in a work-report."
+  defmockable(:max_work_report_dep_sum, do: 8)
+
   @doc "GA - The total gas allocated to a core for Accumulation."
   defmockable(:gas_accumulation, do: 10_000_000)
 
@@ -69,7 +72,7 @@ defmodule Constants do
   def erasure_coded_piece_size, do: 684
 
   @doc "WR - The maximum size of an encoded work-report in octets."
-  def max_work_report_size, do: 96 * 2 ** 10
+  def max_work_report_size, do: 48 * 2 ** 10
 
   @doc "WS - The size of an exported segment in erasure-coded pieces"
   def erasure_coded_exported_segment_size, do: 6

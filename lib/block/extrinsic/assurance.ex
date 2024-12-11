@@ -34,17 +34,17 @@ defmodule Block.Extrinsic.Assurance do
              curr_validators_,
              core_reports_intermediate_1
            ) do
-    # Formula (125) v0.4.5
+    # Formula (11.11) v0.5.2
     with :ok <-
            if(Enum.all?(assurances, &(&1.hash == parent_hash)),
              do: :ok,
              else: {:error, :bad_attestation_parent}
            ),
-         # Formula (126) v0.4.5
+         # Formula (11.12) v0.5.2
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
-         # Formula (127) v0.4.5
+         # Formula (11.13) v0.5.2
          :ok <- validate_signatures(assurances, parent_hash, curr_validators_),
-         # Formula (11.14) v0.5
+         # Formula (11.16) v0.5.2
          :ok <-
            validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok

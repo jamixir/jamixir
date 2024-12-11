@@ -36,7 +36,7 @@ defmodule Block.Extrinsic.Guarantee do
               {:error, :not_in_order} -> {:error, :out_of_order_guarantee}
               result -> result
             end),
-         # Formula (119) v0.4.5
+         # Formula (11.3) v0.5.2
          :ok <- validate_work_report_sizes(w),
          # Formula (144) v0.4.5
          :ok <- validate_gas_accumulation(w, state.services),

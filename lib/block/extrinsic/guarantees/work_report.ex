@@ -44,16 +44,20 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (119) v0.4.5
-  # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
+  # Formula (11.3) v0.5.2
+  # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    if wr.segment_root_lookup == %{} do
-      true
-    else
-      map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <= 8 and
-        byte_size(e(wr)) <= Constants.max_work_report_size()
-    end
+    # Formula (11.3) v0.5.2
+    # Formula (11.8) v0.5.2
+    map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
+      Constants.max_work_report_dep_sum() and
+      byte_size(wr.output) +
+        Enum.sum(
+          for %WorkResult{result: {_, o}} <- wr.results,
+              do: byte_size(o)
+        ) <=
+        Constants.max_work_report_size()
   end
 
   @threadhold 2 * Constants.validator_count() / 3

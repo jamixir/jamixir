@@ -16,7 +16,7 @@ defmodule ReportsTestVectors do
         "bad_signature-1",
         "bad_state_root-1",
         "bad_validator_index-1",
-        "consume_authorization_once-1",
+        "big_work_report_output-1",
         "core_engaged-1",
         "dependency_missing-1",
         "duplicate_package_in_recent_history-1",
@@ -34,6 +34,7 @@ defmodule ReportsTestVectors do
         "report_prev_rotation-1",
         for(i <- 1..6, do: "reports_with_dependencies-#{i}"),
         for(i <- 1..2, do: "segment_root_lookup_invalid-#{i}"),
+        "too_big_work_report_output-1",
         "too_high_work_report_gas-1",
         "too_many_dependencies-1",
         "wrong_assignment-1"
@@ -46,7 +47,6 @@ defmodule ReportsTestVectors do
       :curr_validators,
       :prev_validators,
       :entropy_pool,
-      # :authorizer_pool,
       :services
     ]
 
