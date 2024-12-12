@@ -10,7 +10,7 @@ defmodule System.State.ValidatorStatisticsTest do
     end
   end
 
-  describe "calculate_validator_statistics_/5" do
+  describe "transition/5" do
     setup do
       {:ok,
        %{
@@ -47,7 +47,7 @@ defmodule System.State.ValidatorStatisticsTest do
       }
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           build(:extrinsic),
           500,
           validator_statistics,
@@ -69,7 +69,7 @@ defmodule System.State.ValidatorStatisticsTest do
       }
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           build(:extrinsic),
           1,
           validator_statistics,
@@ -89,7 +89,7 @@ defmodule System.State.ValidatorStatisticsTest do
         for s <- validator_statistics.current_epoch_statistics, do: s.blocks_produced
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           build(:extrinsic),
           1,
           validator_statistics,
@@ -118,7 +118,7 @@ defmodule System.State.ValidatorStatisticsTest do
         for s <- validator_statistics.current_epoch_statistics, do: s.tickets_introduced
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -146,7 +146,7 @@ defmodule System.State.ValidatorStatisticsTest do
         for s <- validator_statistics.current_epoch_statistics, do: s.preimages_introduced
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -173,7 +173,7 @@ defmodule System.State.ValidatorStatisticsTest do
       initial_data_size = for s <- validator_statistics.current_epoch_statistics, do: s.data_size
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -201,7 +201,7 @@ defmodule System.State.ValidatorStatisticsTest do
         for s <- validator_statistics.current_epoch_statistics, do: s.availability_assurances
 
       {:ok, validator_stats_} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
           validator_statistics,
@@ -224,7 +224,7 @@ defmodule System.State.ValidatorStatisticsTest do
       validator_statistics = build(:validator_statistics)
 
       {:error, msg} =
-        ValidatorStatistics.calculate_validator_statistics_(
+        ValidatorStatistics.transition(
           build(:extrinsic),
           0,
           validator_statistics,

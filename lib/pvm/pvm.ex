@@ -59,14 +59,17 @@ defmodule PVM do
           {binary() | WorkExecutionError.t(), list(binary())}
   def refine(%RefineParams{} = params, services) do
     with {:ok, service} <- fetch_service(services, params.service),
-         {:ok, lookup} <- fetch_lookup(service, params.refinement_context.timeslot, params.service_code),
+         {:ok, lookup} <-
+           fetch_lookup(service, params.refinement_context.timeslot, params.service_code),
          :ok <- validate_code_size(lookup) do
+      args =
+        e(
+          {params.service, params.payload, params.work_package_hash, params.refinement_context,
+           params.authorizer_hash, params.output, vs(Enum.map(params.extrinsic_data, &vs/1))}
+        )
 
-      args = e({params.service, params.payload, params.work_package_hash,
-                params.refinement_context, params.authorizer_hash, params.output,
-                vs(Enum.map(params.extrinsic_data, &vs/1))})
-
-      {_gas, result, {_m, exports}} = ArgInvoc.execute(lookup, 0, params.gas, args, nil, {nil, []})
+      {_gas, result, {_m, exports}} =
+        ArgInvoc.execute(lookup, 0, params.gas, args, nil, {nil, []})
 
       if result in [:out_of_gas, :panic] do
         {result, []}

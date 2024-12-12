@@ -27,7 +27,7 @@ defmodule System.State.ServicesTest do
     {:ok, assurances: assurances}
   end
 
-  describe "process_preimages/3" do
+  describe "transition/3" do
     test "preserves all services when preimages are already provided" do
       # Create a preimage and its hash
       blob = <<1, 2, 3>>
@@ -43,7 +43,7 @@ defmodule System.State.ServicesTest do
 
       preimages = [%Preimage{service: 1, blob: blob}]
 
-      updated = Services.process_preimages(init_services, preimages, 100)
+      updated = Services.transition(init_services, preimages, 100)
 
       # Verify nothing changed
       assert updated == init_services
@@ -58,7 +58,8 @@ defmodule System.State.ServicesTest do
       # Setup services where preimage is NOT stored
       init_services = %{
         1 => %ServiceAccount{
-          preimage_storage_p: %{},  # Empty storage - preimage not provided
+          # Empty storage - preimage not provided
+          preimage_storage_p: %{},
           preimage_storage_l: %{}
         },
         2 => %ServiceAccount{
@@ -69,7 +70,7 @@ defmodule System.State.ServicesTest do
 
       preimages = [%Preimage{service: 1, blob: blob}, %Preimage{service: 2, blob: blob2}]
 
-      updated = Services.process_preimages(init_services, preimages, 100)
+      updated = Services.transition(init_services, preimages, 100)
 
       # Verify service 1 was updated with new preimage
       assert Map.has_key?(updated[1].preimage_storage_p, preimage_hash)

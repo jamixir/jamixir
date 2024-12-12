@@ -1,9 +1,9 @@
 defmodule TestnetBlockImporterTest do
-  alias Util.Hash
   alias IO.ANSI
   alias System.State
+  alias Util.Hash
   import TestVectorUtil
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   require Logger
   import Mox
 

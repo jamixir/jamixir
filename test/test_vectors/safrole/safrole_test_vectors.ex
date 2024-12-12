@@ -17,11 +17,11 @@ defmodule SafroleTestVectors do
 
   def tested_keys,
     do: [
-      :timeslot,
+      :slot,
       :entropy_pool,
       :prev_validators,
       :curr_validators,
-      {:safrole, :current_epoch_slot_sealers},
+      {:safrole, :slot_sealers},
       {:safrole, :pending},
       {:safrole, :epoch_root},
       {:safrole, :ticket_accumulator}

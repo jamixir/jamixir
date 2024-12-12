@@ -42,7 +42,7 @@ defmodule System.State.JudgementsTest do
   describe "header validation" do
     test "passes when validation succeeds", %{state: state, header: h} do
       assert {:ok, _, _} =
-               Judgements.calculate_judgements_(
+               Judgements.transition(
                  %{h | offenders_marker: []},
                  %Disputes{
                    verdicts: [],
@@ -54,10 +54,10 @@ defmodule System.State.JudgementsTest do
     end
 
     test "fails because of verdicts mismatch", %{state: state, work_report_hash: wrh, header: h} do
-      expected_error = Error.invalid_header_markers
+      expected_error = Error.invalid_header_markers()
 
       assert {:error, ^expected_error} =
-               Judgements.calculate_judgements_(
+               Judgements.transition(
                  %{h | offenders_marker: [wrh]},
                  %Disputes{
                    verdicts: [build(:verdict, work_report_hash: wrh, judgements: [])],
@@ -73,10 +73,10 @@ defmodule System.State.JudgementsTest do
       current_key: {pub, _},
       header: header
     } do
-      expected_error = Error.invalid_header_markers
+      expected_error = Error.invalid_header_markers()
 
       assert {:error, ^expected_error} =
-               Judgements.calculate_judgements_(
+               Judgements.transition(
                  %{header | offenders_marker: []},
                  %Disputes{
                    verdicts: [],
@@ -90,10 +90,10 @@ defmodule System.State.JudgementsTest do
     test "fails because of order mismatch", %{state: state, work_report_hash: wrh, header: header} do
       wrh2 = Hash.random()
 
-      expected_error = Error.invalid_header_markers
+      expected_error = Error.invalid_header_markers()
 
       assert {:error, ^expected_error} =
-               Judgements.calculate_judgements_(
+               Judgements.transition(
                  %{header | offenders_marker: [wrh2, wrh]},
                  %Disputes{
                    verdicts: [
@@ -110,10 +110,10 @@ defmodule System.State.JudgementsTest do
     end
   end
 
-  describe "calculate_judgements_/3" do
+  describe "transition/3" do
     setup do
-      # Exclude calculate_judgements_ from being mocked
-      Application.put_env(:jamixir, :original_modules, [:calculate_judgements_])
+      # Exclude transition from being mocked
+      Application.put_env(:jamixir, :original_modules, [:transition])
 
       on_exit(fn ->
         Application.delete_env(:jamixir, :original_modules)
@@ -139,7 +139,7 @@ defmodule System.State.JudgementsTest do
         faults: [build(:fault, %{work_report_hash: wrh})]
       }
 
-      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
+      {:ok, result, _} = Judgements.transition(header, disputes, state)
       assert_updated_set(result, state, :good, wrh)
     end
 
@@ -162,7 +162,7 @@ defmodule System.State.JudgementsTest do
         culprits: build_list(2, :culprit, %{work_report_hash: wrh, key_pair: key_pair})
       }
 
-      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
+      {:ok, result, _} = Judgements.transition(header, disputes, state)
       assert_updated_set(result, state, :bad, wrh)
     end
 
@@ -184,10 +184,10 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      expected_error = Error.not_enough_culprits
+      expected_error = Error.not_enough_culprits()
 
       assert {:error, ^expected_error} =
-               Judgements.calculate_judgements_(header, disputes, state)
+               Judgements.transition(header, disputes, state)
     end
 
     test "invalid v_set - not enough faults", %{
@@ -206,10 +206,10 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      expected_error = Error.not_enough_faults
+      expected_error = Error.not_enough_faults()
 
       assert {:error, ^expected_error} =
-               Judgements.calculate_judgements_(header, disputes, state)
+               Judgements.transition(header, disputes, state)
     end
 
     test "updates wonky set correctly", %{
@@ -250,7 +250,7 @@ defmodule System.State.JudgementsTest do
         ]
       }
 
-      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
+      {:ok, result, _} = Judgements.transition(header, disputes, state)
       assert_updated_set(result, state, :wonky, wrh)
     end
 
@@ -277,7 +277,7 @@ defmodule System.State.JudgementsTest do
         culprits: build_list(2, :culprit, %{work_report_hash: wrh, key_pair: key_pair})
       }
 
-      {:ok, result, _} = Judgements.calculate_judgements_(header, disputes, state)
+      {:ok, result, _} = Judgements.transition(header, disputes, state)
       {pub, _} = key_pair
       assert wrh in result.bad
       assert pub in result.punish

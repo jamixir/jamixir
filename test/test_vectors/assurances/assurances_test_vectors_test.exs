@@ -25,7 +25,7 @@ defmodule AssurancesTestVectorsTest do
     mock_header_seal()
     mock_accumulate()
 
-    stub(ValidatorStatisticsMock, :do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+    stub(ValidatorStatisticsMock, :do_transition, fn _, _, _, _, _, _ ->
       {:ok, "mockvalue"}
     end)
 

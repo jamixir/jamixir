@@ -85,7 +85,7 @@ defmodule Jamixir.Factory do
     safrole_state = %System.State.Safrole{
       pending: validators,
       epoch_root: RingVrf.create_commitment(public_keys),
-      current_epoch_slot_sealers: tickets,
+      slot_sealers: tickets,
       ticket_accumulator: tickets
     }
 
@@ -203,7 +203,7 @@ defmodule Jamixir.Factory do
       pending: build_list(@validator_count, :validator),
       # Placeholder for epoch root
       epoch_root: :crypto.strong_rand_bytes(144),
-      current_epoch_slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
+      slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
       ticket_accumulator: build_list(Constants.epoch_length(), :seal_key_ticket)
     }
   end
@@ -382,7 +382,7 @@ defmodule Jamixir.Factory do
     header =
       System.HeaderSeal.seal_header(
         build(:header, timeslot: timeslot, block_author_key_index: block_author_key_index),
-        state.safrole.current_epoch_slot_sealers,
+        state.safrole.slot_sealers,
         state.entropy_pool,
         block_author_key_pair
       )

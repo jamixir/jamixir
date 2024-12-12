@@ -36,8 +36,6 @@ defmodule PVM.Host.Refine do
     )
   end
 
-
-
   def import(gas, registers, memory, context, import_segments) do
     wrap_host_call(gas, registers, memory, context, &import_pure/4, [import_segments])
   end

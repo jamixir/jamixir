@@ -105,12 +105,7 @@ defmodule System.HeaderSealTest do
         )
 
       {:ok, _} =
-        HeaderSeal.validate_header_seals(
-          sealed_header,
-          validators,
-          [fallback_sealer],
-          ep
-        )
+        HeaderSeal.validate_header_seals(sealed_header, validators, [fallback_sealer], ep)
     end
   end
 
@@ -122,7 +117,8 @@ defmodule System.HeaderSealTest do
       validators: validators,
       header: h
     } do
-      sealed_header = HeaderSeal.seal_header(h, epoch_slot_sealers, ep, Enum.at(kp, h.timeslot))
+      sealed_header =
+        HeaderSeal.seal_header(h, epoch_slot_sealers, ep, Enum.at(kp, h.timeslot))
 
       assert {:ok, _} =
                HeaderSeal.validate_header_seals(sealed_header, validators, epoch_slot_sealers, ep)
@@ -186,12 +182,7 @@ defmodule System.HeaderSealTest do
       tampered_sealers = [%{hd(epoch_slot_sealers) | id: Hash.zero()}]
 
       assert {:error, :ticket_id_mismatch} =
-               HeaderSeal.validate_header_seals(
-                 sealed_header,
-                 validators,
-                 tampered_sealers,
-                 ep
-               )
+               HeaderSeal.validate_header_seals(sealed_header, validators, tampered_sealers, ep)
     end
   end
 end

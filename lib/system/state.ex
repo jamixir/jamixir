@@ -1,4 +1,6 @@
 defmodule System.State do
+  alias System.State.Services
+  alias System.State.Accumulation
   alias Codec.NilDiscriminator
   use Codec.Encoder
   import Bitwise
@@ -8,7 +10,7 @@ defmodule System.State do
   alias Constants
   alias System.State
   alias System.State.{AuthorizerPool, CoreReport, EntropyPool, Judgements}
-  alias System.State.{PrivilegedServices, Ready, RecentHistory, RotateKeys, Safrole}
+  alias System.State.{PrivilegedServices, Ready, RecentHistory, Safrole}
   alias System.State.{ServiceAccount, Validator, ValidatorStatistics}
   alias Util.Hash
 
@@ -86,39 +88,28 @@ defmodule System.State do
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
-         # β† Formula (17) v0.4.5
-         initial_recent_history =
-           RecentHistory.update_latest_state_root_(state.recent_history, h),
          # ψ' Formula (23) v0.4.5
-         {:ok, judgements_, bad_wonky_verdicts} <-
-           Judgements.calculate_judgements_(h, e.disputes, state),
+         {:ok, judgements_, bad_wonky_verdicts} <- Judgements.transition(h, e.disputes, state),
          # ρ† Formula (25) v0.4.5
-         core_reports_intermediate_1 =
-           State.CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
+         core_reports_1 = CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
          # ρ‡ Formula (26) v0.4.5
-         core_reports_intermediate_2 =
-           State.CoreReport.process_availability(
+         core_reports_2 =
+           CoreReport.process_availability(
              state.core_reports,
-             core_reports_intermediate_1,
+             core_reports_1,
              e.assurances,
              h.timeslot
            ),
          :ok <-
            Guarantee.validate_availability(
              e.guarantees,
-             core_reports_intermediate_2,
+             core_reports_2,
              h.timeslot,
              state.authorizer_pool
            ),
          # ρ' Formula (27) v0.4.5
-         core_reports_ =
-           State.CoreReport.calculate_core_reports_(
-             core_reports_intermediate_2,
-             e.guarantees,
-             timeslot_
-           ),
-         available_work_reports =
-           WorkReport.available_work_reports(e.assurances, core_reports_intermediate_1),
+         core_reports_ = CoreReport.transition(core_reports_2, e.guarantees, timeslot_),
+         available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
          # Formula (4.16) v0.5
          # Formula (4.17) v0.5
          {:ok,
@@ -129,98 +120,43 @@ defmodule System.State do
             ready_to_accumulate: ready_to_accumulate_,
             privileged_services: privileged_services_,
             accumulation_history: accumulation_history_,
-            beefy_commitment_map: beefy_commitment_map_
+            beefy_commitment: beefy_commitment_
           }} <-
-           State.Accumulation.accumulate(
-             available_work_reports,
-             h,
-             state,
-             state.services
-           ),
+           Accumulation.transition(available_work_reports, h, state, state.services),
          # δ' Formula (4.18) v0.5
-         services_ =
-           State.Services.process_preimages(
-             services_intermediate_2,
-             e.preimages,
-             timeslot_
-           ),
+         services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
          # α' Formula (30) v0.4.5
          authorizer_pool_ =
-           AuthorizerPool.calculate_authorizer_pool_(
+           AuthorizerPool.transition(
              e.guarantees,
              authorizer_queue_,
              state.authorizer_pool,
              h.timeslot
            ),
+         # η' Formula (20) v0.4.5
+         rotated_entropy_pool = EntropyPool.rotate(h, state.timeslot, state.entropy_pool),
          # β' Formula (18) v0.4.5
          recent_history_ =
-           RecentHistory.calculate_recent_history_(
-             h,
-             e.guarantees,
-             initial_recent_history,
-             beefy_commitment_map_
-           ),
-         # κ' Formula (21) v0.4.5
-         # λ' Formula (22) v0.4.5
-         # γ'(gamma_k, gamma_z) Formula (19) v0.4.5
-         {pending_, curr_validators_, prev_validators_, epoch_root_} =
-           RotateKeys.rotate_keys(
-             h,
-             state,
-             judgements_
-           ),
+           RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
+         {curr_validators_, prev_validators_, safrole_} <-
+           Safrole.transition(block, state, judgements_, rotated_entropy_pool),
          :ok <-
            Assurance.validate_assurances(
              e.assurances,
              h.parent_hash,
              h.timeslot,
              curr_validators_,
-             core_reports_intermediate_1
+             core_reports_1
            ),
-
-         # η' Formula (20) v0.4.5
-         rotated_history_entropy_pool =
-           EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool),
-         :ok <-
-           System.Validators.Safrole.valid_epoch_marker(
-             h,
-             state.timeslot,
-             rotated_history_entropy_pool,
-             pending_
-           ),
-         # Formula (69) v0.4.5
-         epoch_slot_sealers_ =
-           Safrole.get_epoch_slot_sealers_(
-             h,
-             state.timeslot,
-             state.safrole,
-             rotated_history_entropy_pool,
-             curr_validators_
-           ),
-         # Formula (79) v0.4.5
-         {:ok, ticket_accumulator_} <-
-           Safrole.calculate_ticket_accumulator_(
-             h.timeslot,
-             state.timeslot,
-             e.tickets,
-             state.safrole,
-             rotated_history_entropy_pool
-           ),
-         safrole_ = %Safrole{
-           pending: pending_,
-           epoch_root: epoch_root_,
-           current_epoch_slot_sealers: epoch_slot_sealers_,
-           ticket_accumulator: ticket_accumulator_
-         },
          {:ok, %{vrf_signature_output: vrf_output}} <-
            System.HeaderSeal.validate_header_seals(
              h,
              curr_validators_,
-             epoch_slot_sealers_,
-             rotated_history_entropy_pool
+             safrole_.slot_sealers,
+             rotated_entropy_pool
            ),
          entropy_pool_ =
-           EntropyPool.calculate_entropy_pool_(vrf_output, rotated_history_entropy_pool),
+           EntropyPool.transition(vrf_output, rotated_entropy_pool),
          {:ok, reporters_set} <-
            Guarantee.reporters_set(
              e.guarantees,
@@ -233,7 +169,7 @@ defmodule System.State do
          # π' Formula (31) v0.4.5
          # π' ≺ (EG,EP,EA, ET,τ,κ',π,H)
          {:ok, validator_statistics_} <-
-           ValidatorStatistics.calculate_validator_statistics_(
+           ValidatorStatistics.transition(
              e,
              state.timeslot,
              state.validator_statistics,
@@ -468,7 +404,7 @@ defmodule System.State do
        Safrole.from_json(%{
          pending: value[:gamma_k],
          epoch_root: value[:gamma_z],
-         current_epoch_slot_sealers: value[:gamma_s],
+         slot_sealers: value[:gamma_s],
          ticket_accumulator: value[:gamma_a]
        })}
     ]
@@ -496,7 +432,7 @@ defmodule System.State do
         Safrole.from_json(%{
           pending: fields[:safrole_pending],
           epoch_root: fields[:safrole_epoch_root],
-          current_epoch_slot_sealers: fields[:safrole_slot_sealers],
+          slot_sealers: fields[:safrole_slot_sealers],
           ticket_accumulator: fields[:safrole_ticket_accumulator]
         })
 

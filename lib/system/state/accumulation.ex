@@ -16,7 +16,7 @@ defmodule System.State.Accumulation do
 
   @callback do_single_accumulation(t(), list(), map(), non_neg_integer()) ::
               AccumulationResult.t()
-  @callback do_accumulate(list(), Header.t(), State.t(), any()) :: any()
+  @callback do_transition(list(), Header.t(), State.t(), any()) :: any()
 
   # Formula (12.3) v0.5.2 - U
   @type t :: %__MODULE__{
@@ -39,12 +39,12 @@ defmodule System.State.Accumulation do
   Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.2
   """
 
-  def accumulate(w, h, s, si) do
+  def transition(w, h, s, si) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
-    module.do_accumulate(w, h, s, si)
+    module.do_transition(w, h, s, si)
   end
 
-  def do_accumulate(
+  def do_transition(
         work_reports,
         %Header{timeslot: ht},
         %State{
@@ -95,7 +95,7 @@ defmodule System.State.Accumulation do
           services: services_intermediate,
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
-        }, deferred_transfers, beefy_commitment_map}} ->
+        }, deferred_transfers, beefy_commitment}} ->
         # Formula (12.24) v0.5.2
         services_intermediate_2 =
           calculate_posterior_services(services_intermediate, deferred_transfers)
@@ -124,7 +124,7 @@ defmodule System.State.Accumulation do
            ready_to_accumulate: ready_to_accumulate_,
            privileged_services: privileged_services_,
            accumulation_history: accumulation_history_,
-           beefy_commitment_map: beefy_commitment_map
+           beefy_commitment: beefy_commitment
          }}
 
       {:error, reason} ->

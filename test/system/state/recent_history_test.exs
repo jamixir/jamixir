@@ -40,24 +40,24 @@ defmodule RecentHistoryTest do
     end
   end
 
-  describe "calculate_recent_history_" do
+  describe "transition" do
     test "handles empty guarantees list" do
       recent_history = %RecentHistory{}
-      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
+      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [],
           recent_history,
-          beefy_commitment_map
+          [],
+          beefy_commitment
         )
 
       assert length(result.blocks) == 1
       assert Enum.at(result.blocks, -1).work_report_hashes == %{}
     end
 
-    test "handles nil beefy_commitment_map" do
+    test "handles nil beefy_commitment" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
@@ -65,14 +65,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment_map = nil
+      beefy_commitment = nil
 
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee],
           recent_history,
-          beefy_commitment_map
+          [guarantee],
+          beefy_commitment
         )
 
       assert length(result.blocks) == 1
@@ -87,14 +87,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
+      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee],
           recent_history,
-          beefy_commitment_map
+          [guarantee],
+          beefy_commitment
         )
 
       assert length(result.blocks) == 1
@@ -120,14 +120,14 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment_map = BeefyCommitmentMap.new([{2, Hash.five()}])
+      beefy_commitment = BeefyCommitmentMap.new([{2, Hash.five()}])
 
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee],
           recent_history,
-          beefy_commitment_map
+          [guarantee],
+          beefy_commitment
         )
 
       assert length(result.blocks) == 2
@@ -154,14 +154,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment_map = BeefyCommitmentMap.new([{3, Hash.three()}])
+      beefy_commitment = BeefyCommitmentMap.new([{3, Hash.three()}])
 
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee1, guarantee2],
           recent_history,
-          beefy_commitment_map
+          [guarantee1, guarantee2],
+          beefy_commitment
         )
 
       assert Enum.at(result.blocks, -1).work_report_hashes == %{
@@ -195,15 +195,15 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment_map = BeefyCommitmentMap.new([{1, Hash.one()}])
+      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
 
       # Call the function to add a new block
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee],
           recent_history,
-          beefy_commitment_map
+          [guarantee],
+          beefy_commitment
         )
 
       # Check that the length remains 8
@@ -218,7 +218,7 @@ defmodule RecentHistoryTest do
 
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
-      beefy_commitment_map =
+      beefy_commitment =
         BeefyCommitmentMap.new([{1, <<11::256>>}, {2, <<22::256>>}])
 
       # Create guarantees with specific work_package_hashes
@@ -242,11 +242,11 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee1, guarantee2],
           %RecentHistory{},
-          beefy_commitment_map
+          [guarantee1, guarantee2],
+          beefy_commitment
         )
 
       # Verify that the MMR and work_package_hashes are correctly linked
@@ -257,9 +257,9 @@ defmodule RecentHistoryTest do
                Hash.two() => Hash.three()
              }
 
-      # Construct the expected Merkle tree root from the beefy_commitment_map
+      # Construct the expected Merkle tree root from the beefy_commitment
       expected_merkle_root =
-        MapSet.to_list(beefy_commitment_map)
+        MapSet.to_list(beefy_commitment)
         |> Enum.sort_by(&elem(&1, 0))
         |> Enum.map(fn {service, hash} ->
           encoded_index = Codec.Encoder.encode_little_endian(service, 4)
@@ -286,10 +286,10 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.calculate_recent_history_(
+        RecentHistory.transition(
           %Header{},
-          [guarantee],
           %RecentHistory{},
+          [guarantee],
           BeefyCommitmentMap.new([{2, <<5::256>>}])
         )
 
@@ -302,7 +302,7 @@ defmodule RecentHistoryTest do
 
       # Call the function to update recent history
       result =
-        RecentHistory.calculate_recent_history_(header, [], %RecentHistory{}, nil)
+        RecentHistory.transition(header, %RecentHistory{}, [], nil)
 
       # Verify that the state root in the newly added block is all zeros
       assert Enum.at(result.blocks, -1).header_hash == h(e(header))

@@ -217,7 +217,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _, _ ->
+      |> expect(:do_transition, 1, fn _, _, _, _, _, _ ->
         {:ok, "mockvalue"}
       end)
 
@@ -236,7 +236,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_calculate_validator_statistics_, 1, fn _, _, _, _, _, _ ->
+      |> expect(:do_transition, 1, fn _, _, _, _, _, _ ->
         {:error, "message"}
       end)
 
@@ -247,7 +247,7 @@ defmodule System.StateTest do
     end
 
     test "state transition with core report update", %{state: state, key_pairs: key_pairs} do
-      with_original_modules([:calculate_judgements_]) do
+      with_original_modules([:transition]) do
         new_core_report = build(:core_report)
         state = %{state | core_reports: [new_core_report | tl(state.core_reports)]}
 

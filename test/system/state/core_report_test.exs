@@ -46,13 +46,13 @@ defmodule System.State.CoreReportTest do
     end
   end
 
-  describe "calculate_core_reports_/4" do
-    test "calculate_core_reports_ smoke test" do
+  describe "transition/4" do
+    test "transition smoke test" do
       core_reports = [build(:core_report)]
       guarantees = [build(:guarantee)]
 
       assert core_reports ==
-               CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
+               CoreReport.transition(core_reports, guarantees, 0)
     end
 
     test "add new work report in guarantees to core reports" do
@@ -61,7 +61,7 @@ defmodule System.State.CoreReportTest do
       guarantees = [build(:guarantee, work_report: w)]
 
       assert [c0, c1] =
-               CoreReport.calculate_core_reports_(core_reports, guarantees, 7)
+               CoreReport.transition(core_reports, guarantees, 7)
 
       assert c0.work_report == w
       assert c0.timeslot == 7
@@ -73,7 +73,7 @@ defmodule System.State.CoreReportTest do
       guarantees = []
 
       assert core_reports ==
-               CoreReport.calculate_core_reports_(core_reports, guarantees, 0)
+               CoreReport.transition(core_reports, guarantees, 0)
     end
   end
 

@@ -34,7 +34,7 @@ defmodule System.State.ValidatorStatistics do
   defstruct current_epoch_statistics: @empty_epoch_stats,
             previous_epoch_statistics: @empty_epoch_stats
 
-  @callback do_calculate_validator_statistics_(
+  @callback do_transition(
               Extrinsic.t(),
               integer(),
               __MODULE__.t(),
@@ -43,7 +43,7 @@ defmodule System.State.ValidatorStatistics do
               list(Types.ed25519_key())
             ) :: {:ok | :error, __MODULE__.t()}
 
-  def calculate_validator_statistics_(
+  def transition(
         %Extrinsic{} = extrinsic,
         timeslot,
         %__MODULE__{} = validator_statistics,
@@ -53,7 +53,7 @@ defmodule System.State.ValidatorStatistics do
       ) do
     module = Application.get_env(:jamixir, :validator_statistics, __MODULE__)
 
-    module.do_calculate_validator_statistics_(
+    module.do_transition(
       extrinsic,
       timeslot,
       validator_statistics,
@@ -63,7 +63,7 @@ defmodule System.State.ValidatorStatistics do
     )
   end
 
-  def do_calculate_validator_statistics_(
+  def do_transition(
         %Extrinsic{} = extrinsic,
         timeslot,
         %__MODULE__{} = validator_statistics,

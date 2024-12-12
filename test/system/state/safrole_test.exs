@@ -89,14 +89,14 @@ defmodule System.State.SafroleTest do
       %{safrole: safrole, entropy_pool: entropy_pool, validators: validators}
     end
 
-    test "same epoch index, returns current_epoch_slot_sealers", %{safrole: safrole} do
+    test "same epoch index, returns slot_sealers", %{safrole: safrole} do
       header = build(:header, timeslot: 2)
       timeslot = 1
 
       result =
         Safrole.get_epoch_slot_sealers_(header, timeslot, safrole, %EntropyPool{}, nil)
 
-      assert result == safrole.current_epoch_slot_sealers
+      assert result == safrole.slot_sealers
     end
 
     test "epoch advances, submission ended, accumulator full, reorders sealers", %{
@@ -104,7 +104,7 @@ defmodule System.State.SafroleTest do
     } do
       safrole = %{
         safrole
-        | current_epoch_slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
+        | slot_sealers: build_list(Constants.epoch_length(), :seal_key_ticket),
           ticket_accumulator: build_list(Constants.epoch_length(), :seal_key_ticket)
       }
 
@@ -125,7 +125,7 @@ defmodule System.State.SafroleTest do
     } do
       safrole = %{
         safrole
-        | current_epoch_slot_sealers: build_list(600, :seal_key_ticket)
+        | slot_sealers: build_list(600, :seal_key_ticket)
       }
 
       header = build(:header, timeslot: 600)
@@ -144,12 +144,12 @@ defmodule System.State.SafroleTest do
       assert result == expected_result
     end
 
-    test "handles empty current_epoch_slot_sealers", %{
+    test "handles empty slot_sealers", %{
       safrole: safrole,
       entropy_pool: entropy_pool,
       validators: validators
     } do
-      safrole = %{safrole | current_epoch_slot_sealers: []}
+      safrole = %{safrole | slot_sealers: []}
       header = build(:header, timeslot: 600)
 
       result =
@@ -171,7 +171,7 @@ defmodule System.State.SafroleTest do
         build(:safrole,
           pending: [],
           epoch_root: <<0>>,
-          current_epoch_slot_sealers: [<<2>>],
+          slot_sealers: [<<2>>],
           ticket_accumulator: []
         )
 

@@ -9,7 +9,7 @@ defmodule System.State.Services do
   @doc """
   Formula (12.33) v0.5
   """
-  def process_preimages(services_intermediate_2, preimages, timeslot_) do
+  def transition(services_intermediate_2, preimages, timeslot_) do
     # Formula (12.32) v0.5
     not_provided_preimages =
       Enum.filter(preimages, fn p -> Preimage.not_provided?(p, services_intermediate_2) end)

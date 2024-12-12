@@ -48,9 +48,14 @@ defmodule System.StateTransition.SafroleStateTest do
       }
 
       h = %Header{timeslot: 12}
-      entropy_pool_ = EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+      entropy_pool_ = EntropyPool.rotate(h, state.timeslot, state.entropy_pool)
       new_tickets = seal_key_ticket_factory(key_pairs, entropy_pool_)
-      new_safrole = %{state.safrole | ticket_accumulator: new_tickets, current_epoch_slot_sealers: new_tickets}
+
+      new_safrole = %{
+        state.safrole
+        | ticket_accumulator: new_tickets,
+          slot_sealers: new_tickets
+      }
 
       state = %{
         state
@@ -95,7 +100,7 @@ defmodule System.StateTransition.SafroleStateTest do
     :ok
   end
 
-  describe "updates state.safrole.current_epoch_slot_sealers" do
+  describe "updates state.safrole.slot_sealers" do
     setup do
       %{state: state, validators: validators, key_pairs: key_pairs} = genesis_state()
 
@@ -110,12 +115,12 @@ defmodule System.StateTransition.SafroleStateTest do
       block_author_key_index = rem(11, length(validators))
 
       h = %Header{timeslot: 11, block_author_key_index: block_author_key_index}
-      entropy_pool_ = EntropyPool.rotate_history(h, state.timeslot, state.entropy_pool)
+      entropy_pool_ = EntropyPool.rotate(h, state.timeslot, state.entropy_pool)
 
       header =
         System.HeaderSeal.seal_header(
           h,
-          state.safrole.current_epoch_slot_sealers,
+          state.safrole.slot_sealers,
           entropy_pool_,
           Enum.at(key_pairs, block_author_key_index)
         )
@@ -125,18 +130,18 @@ defmodule System.StateTransition.SafroleStateTest do
     end
 
     @tag :slow
-    test "maintains current_epoch_slot_sealers when epoch does not advance", %{
+    test "maintains slot_sealers when epoch does not advance", %{
       state: state,
       block: block
     } do
       {:ok, state_} = State.add_block(state, block)
 
-      assert state_.safrole.current_epoch_slot_sealers ==
-               state.safrole.current_epoch_slot_sealers
+      assert state_.safrole.slot_sealers ==
+               state.safrole.slot_sealers
     end
 
     @tag :slow
-    test "reorders current_epoch_slot_sealers when epoch advances and submission ends", %{
+    test "reorders slot_sealers when epoch advances and submission ends", %{
       state: state,
       block: block,
       header: header,
@@ -151,7 +156,7 @@ defmodule System.StateTransition.SafroleStateTest do
       block_auth_index = length(key_pairs) - 1
       header = %{header | timeslot: 13, block_author_key_index: block_auth_index}
 
-      entropy_pool_ = EntropyPool.rotate_history(header, state.timeslot, state.entropy_pool)
+      entropy_pool_ = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
       new_tickets = seal_key_ticket_factory(key_pairs, entropy_pool_)
 
       state = %{
@@ -159,12 +164,12 @@ defmodule System.StateTransition.SafroleStateTest do
         | safrole: %{
             state.safrole
             | ticket_accumulator: new_tickets,
-              current_epoch_slot_sealers: new_tickets
+              slot_sealers: new_tickets
           }
       }
 
       # Simulate the expected outcome of get_epoch_slot_sealers_
-      expected_sealers = Safrole.outside_in_sequencer(state.safrole.current_epoch_slot_sealers)
+      expected_sealers = Safrole.outside_in_sequencer(state.safrole.slot_sealers)
 
       # Seal the header with the expected outcomes
       header =
@@ -179,18 +184,18 @@ defmodule System.StateTransition.SafroleStateTest do
       {:ok, state_} = State.add_block(state, %{block | header: header})
 
       # Assertions
-      assert state_.safrole.current_epoch_slot_sealers == expected_sealers
+      assert state_.safrole.slot_sealers == expected_sealers
       assert state_.curr_validators == expected_current_validators
     end
 
     @tag :slow
-    test "replaces current_epoch_slot_sealers when fallback_key_sequence is used", %{} do
+    test "replaces slot_sealers when fallback_key_sequence is used", %{} do
       %{state: state, key_pairs: key_pairs} = genesis_state()
 
       state = %{state | timeslot: 499}
       header = build(:header, timeslot: 600)
 
-      entropy_pool_ = EntropyPool.rotate_history(header, state.timeslot, state.entropy_pool)
+      entropy_pool_ = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
       {_, curr_validators_, _, _} = RotateKeys.rotate_keys(header, state, state.judgements)
 
       epoch_slot_sealers_ =
@@ -225,7 +230,7 @@ defmodule System.StateTransition.SafroleStateTest do
         Safrole.fallback_key_sequence(entropy_pool_.n2, expected_current_validators)
 
       {:ok, state_} = State.add_block(state, build(:block, header: header))
-      assert state_.safrole.current_epoch_slot_sealers == expected_sealers
+      assert state_.safrole.slot_sealers == expected_sealers
       assert state_.curr_validators == expected_current_validators
     end
   end

@@ -64,7 +64,7 @@ defmodule ReportsTestVectors do
     ok_output = json_data[:output][:ok]
 
     ValidatorStatisticsMock
-    |> stub(:do_calculate_validator_statistics_, fn _, _, _, _, _, _ ->
+    |> stub(:do_transition, fn _, _, _, _, _, _ ->
       {:ok, "mockvalue"}
     end)
 

@@ -23,7 +23,7 @@ defmodule System.StateTransition.EntropyPoolTest do
   test "updates entropy with new VRF output" do
     initial_state = %EntropyPool{n0: "initial_entropy", n1: "eta1", n2: "eta2", n3: "eta3"}
 
-    updated_state = EntropyPool.calculate_entropy_pool_("vrf_output", initial_state)
+    updated_state = EntropyPool.transition("vrf_output", initial_state)
 
     assert updated_state.n0 == Hash.default("initial_entropy" <> "vrf_output")
     assert updated_state.n1 == initial_state.n1
@@ -36,7 +36,7 @@ defmodule System.StateTransition.EntropyPoolTest do
     initial_state = %EntropyPool{n0: "initial_entropy", n1: "eta1", n2: "eta2", n3: "eta3"}
     timeslot = 599
 
-    updated_state = EntropyPool.rotate_history(header, timeslot, initial_state)
+    updated_state = EntropyPool.rotate(header, timeslot, initial_state)
 
     # Check that the history has been updated correctly
     assert updated_state.n1 == initial_state.n0
@@ -49,7 +49,7 @@ defmodule System.StateTransition.EntropyPoolTest do
     initial_state = %EntropyPool{n0: "initial_entropy", n1: "eta1", n2: "eta2", n3: "eta3"}
     timeslot = 601
 
-    updated_state = EntropyPool.rotate_history(header, timeslot, initial_state)
+    updated_state = EntropyPool.rotate(header, timeslot, initial_state)
 
     assert updated_state.n1 == initial_state.n1
     assert updated_state.n2 == initial_state.n2
@@ -67,7 +67,7 @@ defmodule System.StateTransition.EntropyPoolTest do
       block = build(:safrole_block, state: state, key_pairs: key_pairs)
 
       expected_slot_sealer =
-        Enum.at(state.safrole.current_epoch_slot_sealers, block.header.timeslot)
+        Enum.at(state.safrole.slot_sealers, block.header.timeslot)
 
       {secret, _} = Enum.at(key_pairs, block.header.block_author_key_index)
 

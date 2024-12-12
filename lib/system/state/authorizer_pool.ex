@@ -2,7 +2,7 @@ defmodule System.State.AuthorizerPool do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   # Formula (86) v0.4.5
-  def calculate_authorizer_pool_(
+  def transition(
         guarantees,
         authorizer_queue_,
         authorizer_pools,

@@ -39,7 +39,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
     guarantees = []
 
     result =
-      AuthorizerPool.calculate_authorizer_pool_(
+      AuthorizerPool.transition(
         guarantees,
         authorizer_queue_,
         authorizer_pools,
@@ -74,7 +74,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end
 
     result =
-      AuthorizerPool.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
+      AuthorizerPool.transition(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       for i <- 1..Constants.core_count() do
@@ -105,7 +105,7 @@ defmodule System.StateTransition.AuthorizerPoolTest do
       end
 
     result =
-      AuthorizerPool.calculate_authorizer_pool_(guarantees, authorizer_queue_, authorizer_pools, timeslot)
+      AuthorizerPool.transition(guarantees, authorizer_queue_, authorizer_pools, timeslot)
 
     expected_result =
       for i <- 1..Constants.core_count() do

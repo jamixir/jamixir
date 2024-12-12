@@ -1,5 +1,5 @@
 defmodule CheckVectorsCountTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import TestVectorUtil
 
   @moduletag :check_vectors_count

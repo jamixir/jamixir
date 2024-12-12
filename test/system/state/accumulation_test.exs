@@ -700,7 +700,7 @@ defmodule System.State.AccumulationTest do
         %AccumulationResult{}
       end)
 
-      result = Accumulation.accumulate(work_reports, header, state, services_intermediate)
+      result = Accumulation.transition(work_reports, header, state, services_intermediate)
 
       assert {:ok, _accumulated_state} = result
     end
@@ -717,7 +717,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       assert {:error, :invalid_service} =
-               Accumulation.accumulate(work_reports, header, state, services_intermediate)
+               Accumulation.transition(work_reports, header, state, services_intermediate)
     end
   end
 end

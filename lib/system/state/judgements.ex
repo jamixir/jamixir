@@ -26,7 +26,7 @@ defmodule System.State.Judgements do
             wonky: MapSet.new(),
             punish: MapSet.new()
 
-  mockable calculate_judgements_(%Header{} = header, disputes, state) do
+  mockable transition(%Header{} = header, disputes, state) do
     # Formula (107) v0.4.5
     # Formula (108) v0.4.5
     case calculate_v(disputes, state) do
@@ -128,7 +128,7 @@ defmodule System.State.Judgements do
     g ++ b ++ w
   end
 
-  def mock(:calculate_judgements_, context),
+  def mock(:transition, context),
     do: {:ok, Keyword.get(context, :state).judgements, []}
 
   def mock(:valid_header_markers?, _), do: true

@@ -131,10 +131,10 @@ defmodule TestVectorUtil do
   end
 
   def mock_accumulate do
-    stub(MockAccumulation, :do_accumulate, fn _, _, _, _ ->
+    stub(MockAccumulation, :do_transition, fn _, _, _, _ ->
       {:ok,
        %{
-         beefy_commitment_map: <<>>,
+         beefy_commitment: <<>>,
          authorizer_queue: [],
          services: %{},
          next_validators: [],

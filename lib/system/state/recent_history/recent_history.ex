@@ -50,8 +50,8 @@ defmodule System.State.RecentHistory do
 
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
-  def mock(:get_well_balanced_merkle_root, context), do: context[:beefy_commitment_map]
-  def mock(:calculate_recent_history_, context), do: context[:recent_history]
+  def mock(:get_well_balanced_merkle_root, context), do: context[:beefy_commitment]
+  def mock(:transition, context), do: context[:recent_history]
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
@@ -80,12 +80,16 @@ defmodule System.State.RecentHistory do
   Adds a new block to the recent history.
   Formula (7.3) v0.5.2
   """
-  mockable calculate_recent_history_(
+  mockable transition(
              %Header{} = header,
-             guarantees,
              %RecentHistory{} = recent_history,
-             beefy_commitment_map
+             guarantees,
+             beefy_commitment
            ) do
+    # β† Formula (17) v0.4.5
+    recent_history =
+      RecentHistory.update_latest_state_root_(recent_history, header)
+
     # 32 bytes of zeros
     state_root_ = Hash.zero()
     header_hash = calculate_header_hash(header)
@@ -93,7 +97,7 @@ defmodule System.State.RecentHistory do
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
     # Formula (7.3) v0.5.2
 
-    well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment_map)
+    well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
     # Formula (7.3) v0.5.2
@@ -121,8 +125,8 @@ defmodule System.State.RecentHistory do
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
-  mockable get_well_balanced_merkle_root(beefy_commitment_map) do
-    case beefy_commitment_map do
+  mockable get_well_balanced_merkle_root(beefy_commitment) do
+    case beefy_commitment do
       nil ->
         Hash.zero()
 

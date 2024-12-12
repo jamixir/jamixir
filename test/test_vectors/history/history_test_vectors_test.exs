@@ -11,7 +11,7 @@ defmodule HistoryTestVectorsTest do
     Application.put_env(:jamixir, :accumulation, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
-      :calculate_recent_history_
+      :transition
     ])
 
     on_exit(fn ->

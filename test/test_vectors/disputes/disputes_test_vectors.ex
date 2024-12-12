@@ -18,7 +18,7 @@ defmodule DisputesTestVectors do
       ]
       |> List.flatten()
 
-  def tested_keys, do: [:judgements, :core_reports, :timeslot, :curr_validators, :prev_validators]
+  def tested_keys, do: [:judgements, :core_reports, :slot, :curr_validators, :prev_validators]
 
   def execute_test(file_name, path) do
     {:ok, json_data} =

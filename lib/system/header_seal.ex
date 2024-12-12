@@ -34,7 +34,9 @@ defmodule System.HeaderSeal do
       ) do
     # associated with formula (60, 61) v0.4.5
     # let i = γs′ [Ht ]↺
-    expected_slot_sealer = Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
+    expected_slot_sealer =
+      Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
+
     seal_context = construct_seal_context(expected_slot_sealer, entropy_pool)
     block_seal_output = RingVrf.ietf_vrf_output(secret, seal_context)
 

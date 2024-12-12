@@ -1,4 +1,3 @@
-
 defmodule TestHelper do
   alias System.State.Validator
   alias Util.Hash

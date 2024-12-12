@@ -2,6 +2,7 @@ defmodule System.State.Safrole do
   @moduledoc """
   Safrole  state, as specified in section 6.1 of the GP.
   """
+  alias System.State.RotateKeys
   alias Block.Extrinsic.TicketProof
   alias Block.Header
   alias Codec.{Decoder, Encoder}
@@ -18,14 +19,60 @@ defmodule System.State.Safrole do
           epoch_root: Types.bandersnatch_ring_root(),
           # Formula (50) v0.4.5
           # gamma_s
-          current_epoch_slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
+          slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
           # Formula (50) v0.4.5
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
 
   # Formula (48) v0.4.5
-  defstruct pending: [], epoch_root: <<>>, current_epoch_slot_sealers: [], ticket_accumulator: []
+  defstruct pending: [], epoch_root: <<>>, slot_sealers: [], ticket_accumulator: []
+
+  def transition(
+        %Block{header: h, extrinsic: e},
+        state,
+        judgements_,
+        rotated_history_entropy_pool
+      ) do
+    # κ' Formula (21) v0.4.5
+    # λ' Formula (22) v0.4.5
+    # γ'(gamma_k, gamma_z) Formula (19) v0.4.5
+    with {pending_, curr_validators_, prev_validators_, epoch_root_} <-
+           RotateKeys.rotate_keys(h, state, judgements_),
+         :ok <-
+           System.Validators.Safrole.valid_epoch_marker(
+             h,
+             state.timeslot,
+             rotated_history_entropy_pool,
+             pending_
+           ),
+         # Formula (69) v0.4.5
+         epoch_slot_sealers_ =
+           Safrole.get_epoch_slot_sealers_(
+             h,
+             state.timeslot,
+             state.safrole,
+             rotated_history_entropy_pool,
+             curr_validators_
+           ),
+         # Formula (79) v0.4.5
+         {:ok, ticket_accumulator_} <-
+           Safrole.calculate_ticket_accumulator_(
+             h.timeslot,
+             state.timeslot,
+             e.tickets,
+             state.safrole,
+             rotated_history_entropy_pool
+           ) do
+      {curr_validators_, prev_validators_,
+       %Safrole{
+         pending: pending_,
+         epoch_root: epoch_root_,
+         slot_sealers: epoch_slot_sealers_,
+         ticket_accumulator: ticket_accumulator_
+       }}
+    end
+  end
 
   # Formula (69) v0.4.5
   def get_epoch_slot_sealers_(
@@ -33,7 +80,7 @@ defmodule System.State.Safrole do
         timeslot,
         %Safrole{
           ticket_accumulator: ta,
-          current_epoch_slot_sealers: slot_sealers
+          slot_sealers: slot_sealers
         },
         %EntropyPool{n2: n2_},
         curr_validators
@@ -146,7 +193,7 @@ defmodule System.State.Safrole do
     # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
     def encode(safrole) do
       sealer_type =
-        case safrole.current_epoch_slot_sealers do
+        case safrole.slot_sealers do
           [] -> 0
           [%SealKeyTicket{} | _] -> 0
           _ -> 1
@@ -154,13 +201,13 @@ defmodule System.State.Safrole do
 
       # correct
       e(
-        {safrole.pending, safrole.epoch_root, sealer_type, safrole.current_epoch_slot_sealers,
+        {safrole.pending, safrole.epoch_root, sealer_type, safrole.slot_sealers,
          vs(safrole.ticket_accumulator)}
       )
 
       # CN version
       # e(
-      #   {vs(safrole.pending), <<0>>, sealer_type, safrole.current_epoch_slot_sealers,
+      #   {vs(safrole.pending), <<0>>, sealer_type, safrole.slot_sealers,
       #    safrole.ticket_accumulator, vs(safrole.epoch_root)}
       # )
     end
@@ -182,16 +229,16 @@ defmodule System.State.Safrole do
   def json_mapping do
     %{
       pending: [Validator],
-      current_epoch_slot_sealers: &parse_current_epoch_slot_sealers/1,
+      slot_sealers: &parse_slot_sealers/1,
       ticket_accumulator: [SealKeyTicket]
     }
   end
 
-  defp parse_current_epoch_slot_sealers(%{keys: keys}) do
+  defp parse_slot_sealers(%{keys: keys}) do
     keys |> Enum.map(&JsonDecoder.from_json/1)
   end
 
-  defp parse_current_epoch_slot_sealers(%{tickets: tickets}) do
+  defp parse_slot_sealers(%{tickets: tickets}) do
     tickets |> Enum.map(&SealKeyTicket.from_json/1)
   end
 end

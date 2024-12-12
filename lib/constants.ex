@@ -53,7 +53,7 @@ defmodule Constants do
   @doc "O - The maximum number of items in the authorizations pool."
   def max_authorizations_items, do: 8
 
-  @doc "P - The slot period, in seconds."
+  @doc "P - The timeslot period, in seconds."
   def slot_period, do: 6
 
   @doc "Q - The maximum number of items in the authorization queue."
@@ -83,7 +83,7 @@ defmodule Constants do
   @doc "Wm - The maximum number of entries in a work-package manifest"
   def max_manifest_size, do: 2048
 
-  @doc "Y - The number of slots into an epoch at which ticket-submission ends."
+  @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config()[:ticket_submission_end])
 
   # 4104

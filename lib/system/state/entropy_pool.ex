@@ -15,9 +15,9 @@ defmodule System.State.EntropyPool do
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
   # Formula (68) v0.4.5
-  @spec rotate_history(Block.Header.t(), non_neg_integer(), t()) ::
+  @spec rotate(Block.Header.t(), non_neg_integer(), t()) ::
           t()
-  def rotate_history(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
+  def rotate(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
     if Time.new_epoch?(timeslot, header.timeslot) do
       %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
     else
@@ -26,11 +26,11 @@ defmodule System.State.EntropyPool do
   end
 
   # Formula (6.22) v0.5.2
-  mockable calculate_entropy_pool_(vrf_output, %EntropyPool{n0: n0} = pool) do
+  mockable transition(vrf_output, %EntropyPool{n0: n0} = pool) do
     %EntropyPool{pool | n0: h(n0 <> vrf_output)}
   end
 
-  def mock(:calculate_entropy_pool_, context), do: context[:pool]
+  def mock(:transition, context), do: context[:pool]
 
   defimpl Encodable do
     use Codec.Encoder
