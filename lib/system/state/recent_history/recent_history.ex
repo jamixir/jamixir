@@ -51,6 +51,7 @@ defmodule System.State.RecentHistory do
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
   def mock(:get_well_balanced_merkle_root, context), do: context[:beefy_commitment_map]
+  def mock(:calculate_recent_history_, context), do: context[:recent_history]
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
@@ -79,12 +80,12 @@ defmodule System.State.RecentHistory do
   Adds a new block to the recent history.
   Formula (7.3) v0.5.2
   """
-  def calculate_recent_history_(
-        %Header{} = header,
-        guarantees,
-        %RecentHistory{} = recent_history,
-        beefy_commitment_map
-      ) do
+  mockable calculate_recent_history_(
+             %Header{} = header,
+             guarantees,
+             %RecentHistory{} = recent_history,
+             beefy_commitment_map
+           ) do
     # 32 bytes of zeros
     state_root_ = Hash.zero()
     header_hash = calculate_header_hash(header)
