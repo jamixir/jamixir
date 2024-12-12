@@ -14,6 +14,8 @@ defmodule AssurancesTestVectors do
         "assurances_for_stale_report-1",
         "assurances_with_bad_signature-1",
         "assurances_with_bad_validator_index-1",
+        "assurers_not_sorted_or_unique-1",
+        "assurers_not_sorted_or_unique-2",
         "no_assurances-1",
         "no_assurances_with_stale_report-1",
         "some_assurances-1"

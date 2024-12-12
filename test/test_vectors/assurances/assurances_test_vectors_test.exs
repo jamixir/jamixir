@@ -1,4 +1,5 @@
 defmodule AssurancesTestVectorsTest do
+  alias Util.Collections
   use ExUnit.Case
   import Mox
   import AssurancesTestVectors
@@ -15,6 +16,7 @@ defmodule AssurancesTestVectorsTest do
     Application.put_env(:jamixir, :original_modules, [
       :validate,
       # System.State.Judgements,
+      Collections,
       System.State.CoreReport,
       Block.Extrinsic.Assurance,
       Block.Extrinsic.Guarantee.WorkReport

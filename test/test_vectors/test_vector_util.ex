@@ -46,14 +46,22 @@ defmodule TestVectorUtil do
     end
   end
 
-  def fetch_file(file_name, path, owner \\ @owner, repo \\ @repo, branch \\ @branch) do
-    local_root =
-      case System.get_env("JAM_PROJECTS_PATH") do
-        nil -> "../"
-        path -> path
-      end
+  def local_vectors_dir do
+    case System.get_env("JAM_PROJECTS_PATH") do
+      nil -> "../"
+      path -> path
+    end
+  end
 
-    file_path = "#{local_root}#{repo}/#{path}/#{file_name}"
+  def list_test_files(path) do
+    for f <- File.ls!(Path.join("#{local_vectors_dir()}/#{@repo}", path)),
+        String.ends_with?(f, ".json") do
+      String.replace(f, ".json", "")
+    end
+  end
+
+  def fetch_file(file_name, path, owner \\ @owner, repo \\ @repo, branch \\ @branch) do
+    file_path = "#{local_vectors_dir()}#{repo}/#{path}/#{file_name}"
 
     case File.read(file_path) do
       {:ok, content} ->

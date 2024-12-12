@@ -34,6 +34,7 @@ defmodule ReportsTestVectors do
         "report_prev_rotation-1",
         for(i <- 1..6, do: "reports_with_dependencies-#{i}"),
         for(i <- 1..2, do: "segment_root_lookup_invalid-#{i}"),
+        "service_item_gas_too_low-1",
         "too_big_work_report_output-1",
         "too_high_work_report_gas-1",
         "too_many_dependencies-1",
