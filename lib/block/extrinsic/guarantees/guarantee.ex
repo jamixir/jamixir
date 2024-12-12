@@ -3,10 +3,8 @@ defmodule Block.Extrinsic.Guarantee do
   Work report guarantee.
   11.4
   """
-  alias Util.Hash
-  alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
-  alias System.{State, State.EntropyPool, State.RecentHistory}
+  alias System.{State, State.EntropyPool, State.RecentHistory, State.ServiceAccount}
   alias Util.{Collections, Crypto}
   use SelectiveMock
   use MapUnion
@@ -38,7 +36,7 @@ defmodule Block.Extrinsic.Guarantee do
               {:error, :not_in_order} -> {:error, :out_of_order_guarantee}
               result -> result
             end),
-         # Formula (119) v0.4.5
+         # Formula (11.3) v0.5.2
          :ok <- validate_work_report_sizes(w),
          # Formula (144) v0.4.5
          :ok <- validate_gas_accumulation(w, state.services),
@@ -57,9 +55,9 @@ defmodule Block.Extrinsic.Guarantee do
              state.ready_to_accumulate,
              state.core_reports
            ),
-         # Formula (155) v0.4.5
+         # Formula (11.42) v0.5.2
          :ok <- validate_segment_root_lookups(w, state.recent_history),
-         # Formula (153) v0.4.5
+         # Formula (11.40) v0.5.2
          :ok <- validate_prerequisites(w, state.recent_history),
          # Formula (11.22) v0.5.0
          true <-
@@ -106,7 +104,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.28) v0.5.0
+  # Formula (11.30) v0.5.2
   mockable validate_availability(
              guarantees,
              core_reports_intermediate_2,
@@ -131,7 +129,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (144) v0.4.5
+  # Formula (11.31) v0.5.2
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
@@ -158,7 +156,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (156) v0.4.5
+  # Formula (11.43) v0.5.2
   mockable validate_work_result_cores(w, services) do
     if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
          r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
@@ -169,13 +167,13 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (145) v0.4.5
+  # Formula (11.32) v0.5.2
   @spec p_set(list(WorkReport.t())) :: MapSet.t(Types.hash())
   defp p_set(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
 
-  # Formula (146) v0.4.5
+  # Formula (11.33) v0.5.2
   @spec validate_unique_wp_hash(list(t())) :: :ok | {:error, :duplicate_package}
   def validate_unique_wp_hash(guarantees) do
     wr = work_reports(guarantees)
@@ -187,8 +185,8 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.32) v0.5.0
-  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = HK(EM(yb))
+  # Formula (11.34) v0.5.2
+  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = MR(yb))
   mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
     Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
       case for(y <- blocks, x.state_root_ == y.state_root, do: y) do
@@ -204,11 +202,10 @@ defmodule Block.Extrinsic.Guarantee do
               case for(
                      y <- blocks,
                      x.beefy_root_ ==
-                       Hash.keccak_256(Codec.Encoder.encode_mmr(y.accumulated_result_mmr)),
+                       Codec.Encoder.super_peak_mmr(y.accumulated_result_mmr),
                      do: y
                    ) do
-                # TODO commented because all tests are falling into this case
-                # [] -> {:halt, {:error, :bad_beefy_mmr}}
+                [] -> {:halt, {:error, :bad_beefy_mmr}}
                 _ -> {:cont, :ok}
               end
           end
@@ -342,7 +339,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.38) v0.5.0
+  # Formula (11.40) v0.5.2
   @spec validate_prerequisites(list(WorkReport.t()), RecentHistory.t()) ::
           :ok | {:error, :dependency_missing}
   mockable validate_prerequisites(work_reports, %RecentHistory{blocks: blocks}) do
@@ -433,7 +430,7 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:validate_refine_context_timeslot, _), do: :ok
   def mock(:validate, _), do: :ok
 
-  # Formula (155) v0.4.5
+  # Formula (11.42) v0.5.2
   @spec validate_segment_root_lookups(list(WorkReport.t()), RecentHistory.t()) ::
           :ok | {:error, String.t()}
   mockable validate_segment_root_lookups(work_reports, %RecentHistory{blocks: blocks}) do

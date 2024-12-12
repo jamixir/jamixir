@@ -1,6 +1,7 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
 
+  alias Util.Hash
   alias Codec.Encoder
 
   describe "encode_integer/1" do
@@ -108,6 +109,41 @@ defmodule CodecEncoderTest do
       assert Encoder.encode_mmr([2, 3]) == <<2, 1, 2, 1, 3>>
       assert Encoder.encode_mmr([nil, 3]) == <<2, 0, 1, 3>>
       assert Encoder.encode_mmr([nil, nil]) == <<2, 0, 0>>
+    end
+  end
+
+  describe "super_peak_mmr/1" do
+    setup do
+      h1 = Hash.random()
+      {:ok, h1: h1}
+    end
+
+    test "empty array" do
+      assert Encoder.super_peak_mmr([]) == <<0::256>>
+      assert Encoder.super_peak_mmr([nil]) == <<0::256>>
+      assert Encoder.super_peak_mmr([nil, nil, nil]) == <<0::256>>
+    end
+
+    test "one element", %{h1: h1} do
+      assert Encoder.super_peak_mmr([h1]) == h1
+      assert Encoder.super_peak_mmr([nil, nil, h1]) == h1
+      assert Encoder.super_peak_mmr([nil, h1, nil]) == h1
+    end
+
+    test "two elements", %{h1: h1} do
+      h2 = Hash.random()
+      assert Encoder.super_peak_mmr([h1, h2]) == Hash.keccak_256("node" <> h1 <> h2)
+    end
+
+    test "three elements", %{h1: h1} do
+      h2 = Hash.random()
+      h3 = Hash.random()
+
+      assert Encoder.super_peak_mmr([h1, h2, h3]) ==
+               Hash.keccak_256(
+                 "node" <>
+                   Encoder.super_peak_mmr([h1, h2]) <> h3
+               )
     end
   end
 end

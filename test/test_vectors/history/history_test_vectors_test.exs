@@ -9,7 +9,10 @@ defmodule HistoryTestVectorsTest do
   setup_all do
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :accumulation, MockAccumulation)
-    Application.put_env(:jamixir, :original_modules, [])
+
+    Application.put_env(:jamixir, :original_modules, [
+      :calculate_recent_history_
+    ])
 
     on_exit(fn ->
       Application.delete_env(:jamixir, :original_modules)

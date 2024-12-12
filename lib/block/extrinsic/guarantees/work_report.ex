@@ -44,16 +44,20 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (119) v0.4.5
-  # ∀w ∈ W ∶ ∣wl ∣ ≤ 8 and ∣E(w)∣ ≤ WR
+  # Formula (11.3) v0.5.2
+  # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    if wr.segment_root_lookup == %{} do
-      true
-    else
-      map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <= 8 and
-        byte_size(e(wr)) <= Constants.max_work_report_size()
-    end
+    # Formula (11.3) v0.5.2
+    # Formula (11.8) v0.5.2
+    map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
+      Constants.max_work_report_dep_sum() and
+      byte_size(wr.output) +
+        Enum.sum(
+          for %WorkResult{result: {_, o}} <- wr.results,
+              do: byte_size(o)
+        ) <=
+        Constants.max_work_report_size()
   end
 
   @threadhold 2 * Constants.validator_count() / 3
@@ -124,7 +128,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (170) v0.4.5
+  # Formula (12.9) v0.5.2
   def work_package_hashes(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
@@ -142,28 +146,29 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (163) v0.4.5
+    # Formula (12.2) v0.5.2
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (165) v0.4.5
-    # Formula (166) v0.4.5
+    # Formula (12.4) v0.5.2
+    # Formula (12.5) v0.5.2
     {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
-    # Formula (171) v0.4.5
+    # Formula (12.10) v0.5.2
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (173) v0.4.5
+    # Formula (12.12) v0.5.2
     q =
       edit_queue(
         for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ w_q,
         work_package_hashes(w_bang)
       )
 
-    # Formula (172) v0.4.5
+    # Formula (12.11) v0.5.2
     w_bang ++ accumulation_priority_queue(q)
   end
 
   # Formula (201) v0.4.5
+  # TODO review to 0.5.2
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
