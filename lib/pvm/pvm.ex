@@ -1,13 +1,11 @@
 defmodule PVM do
-  alias PVM.RefineContext
   alias System.State.ServiceAccount
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.WorkPackage
-  alias PVM.{ArgInvoc, Host, RefineParams, Types, Registers}
+  alias PVM.{ArgInvoc, Host, RefineParams, Types, Registers, Host, RefineContext}
   use Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
   alias PVM.Host.Refine
-  alias PVM.Host
 
   @doc """
     Ψ1: The single-step (pvm) machine state-transition function.
@@ -121,7 +119,7 @@ defmodule PVM do
         end
       end
 
-      {_gas, result, {_m, exports}} =
+      {_gas, result, %RefineContext{e: exports}} =
         ArgInvoc.execute(program, 0, params.gas, args, f, %RefineContext{})
 
       if result in [:out_of_gas, :panic] do
