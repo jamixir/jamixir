@@ -11,9 +11,7 @@ pub fn create_commitment(
         .filter_map(|OptionalPublicBridge(maybe_pk)| maybe_pk.map(|pk| pk.0))
         .collect();
 
-    let ring_ctx: ark_ec_vrfs::ring::RingContext<Bandersnatch> = ring_context()?;
-
-    let commitment = ring_ctx.verifier_key(&pts).commitment();
+    let commitment = ring_context()?.verifier_key(&pts).commitment();
 
     Ok(commitment.into())
 }
