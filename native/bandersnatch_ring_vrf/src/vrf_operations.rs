@@ -7,7 +7,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bandersnatch::{Input, Output, Public, RingProof};
 use rustler::{Atom, Binary, Env, Error, NifResult, OwnedBinary};
 
-use crate::ring_context::ring_context;
+use crate::{ring_context::ring_context, types::Bandersnatch};
 use crate::rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge};
 
 type S = bandersnatch::BandersnatchSha512Ell2;
@@ -46,7 +46,7 @@ fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
 #[rustler::nif]
 pub fn ring_vrf_verify<'a>(
     env: Env<'a>,
-    commitment: FixedColumnsCommittedBridge<S>,
+    commitment: FixedColumnsCommittedBridge<Bandersnatch>,
     vrf_input_data: Binary,
     aux_data: Binary,
     signature: Binary,

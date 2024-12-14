@@ -2,7 +2,6 @@ pub mod public;
 pub mod secret;
 pub mod kzg_commitment;
 pub mod fixed_columns_commited;
-pub mod types;
 
 pub use public::PublicBridge;
 pub use secret::SecretBridge;
