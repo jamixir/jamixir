@@ -1,6 +1,10 @@
 use ark_ec_vrfs::{AffinePoint, Codec, Public, Suite};
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
 
+use crate::ring_context::ring_context;
+use ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig;
+use ark_ec::twisted_edwards::Affine;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PublicBridge<S: Suite>(pub AffinePoint<S>);
 
@@ -27,15 +31,22 @@ impl<'a, S: Suite + 'a> Decoder<'a> for PublicBridge<S> {
     }
 }
 
-impl<'a, S: Suite + 'a> Decoder<'a> for OptionalPublicBridge<S> {
+impl<'a, S: Suite + 'a> Decoder<'a> for OptionalPublicBridge<S>
+    where S: Suite<Affine = Affine<BandersnatchConfig>>
+
+{
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let binary: rustler::Binary = term.decode()?;
 
         let point = S::Codec::point_decode(binary.as_slice())
-            .ok()
-            .map(PublicBridge);
+            .ok();
+        
+        let new_point: Option<PublicBridge<S>> = match point {
+            None => Some(PublicBridge(ring_context()?.padding_point())),
+            Some(p)=> Some(PublicBridge(p)),
+        };
 
-        Ok(OptionalPublicBridge(point))
+        Ok(OptionalPublicBridge(new_point))
     }
 }
 

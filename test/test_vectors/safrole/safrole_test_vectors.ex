@@ -7,7 +7,7 @@ defmodule SafroleTestVectors do
     do:
       [
         for(i <- 1..4, do: "enact-epoch-change-with-no-tickets-#{i}"),
-        # "enact-epoch-change-with-padding-1",
+        "enact-epoch-change-with-padding-1",
         for(i <- 1..9, do: "publish-tickets-no-mark-#{i}"),
         for(i <- 1..5, do: "publish-tickets-with-mark-#{i}"),
         "skip-epoch-tail-1",
@@ -23,12 +23,16 @@ defmodule SafroleTestVectors do
       :curr_validators,
       {:safrole, :slot_sealers},
       {:safrole, :pending},
-      {:safrole, :epoch_root},
-      {:safrole, :ticket_accumulator}
+      {:safrole, :ticket_accumulator},
+      {:safrole, :epoch_root}
     ]
 
   def execute_test(file_name, path) do
     {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", path)
+
+    psi = %{good: [], bad: [], wonky: [], offenders: json_data[:pre_state][:post_offenders]}
+    json_data = put_in(json_data[:pre_state][:psi], psi)
+    json_data = put_in(json_data[:post_state][:psi], psi)
 
     stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
       {:ok, %{vrf_signature_output: json_data[:input][:entropy] |> JsonDecoder.from_json()}}
