@@ -1,22 +1,20 @@
-use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
 use rustler::NifResult;
-
 use crate::ring_context::ring_context;
-use crate::rustler_bridges::public::OptionalPublicBridge;
-use crate::rustler_bridges::FixedColumnsCommittedBridge;
+use crate::rustler_bridges::{public::OptionalPublicBridge, types::{Bandersnatch, VerifierKey}, FixedColumnsCommittedBridge};
 
-type S = bandersnatch::BandersnatchSha512Ell2;
 
 #[rustler::nif]
-pub fn create_commitment(
-    ring: Vec<OptionalPublicBridge<S>>,
-) -> NifResult<FixedColumnsCommittedBridge> {
+pub fn create_commitment_bandersnatch(
+    ring: Vec<OptionalPublicBridge<Bandersnatch>>,
+) -> NifResult<FixedColumnsCommittedBridge<Bandersnatch>> {
     let pts: Vec<_> = ring
         .into_iter()
         .filter_map(|OptionalPublicBridge(maybe_pk)| maybe_pk.map(|pk| pk.0))
         .collect();
 
-    let verifier_key = ring_context()?.verifier_key(&pts);
+    let ring_ctx: ark_ec_vrfs::ring::RingContext<Bandersnatch> = ring_context()?;
+
+    let verifier_key: VerifierKey<Bandersnatch> = ring_ctx.verifier_key(&pts);
 
     let commitment = verifier_key.commitment();
 

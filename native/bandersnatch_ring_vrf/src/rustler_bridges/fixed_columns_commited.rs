@@ -1,23 +1,29 @@
 use ark_ec::pairing::Pairing as PairingTrait;
+use ark_ec::AffineRepr;
+use ark_ec_vrfs::prelude::ark_ff::PrimeField;
 use ark_ec_vrfs::prelude::ark_serialize;
-use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
+use ark_ec_vrfs::ring::RingSuite;
+use ark_ec_vrfs::ring::RingCommitment;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
 
 use crate::rustler_bridges::KzgCommitmentBridge;
+pub type Pairing<S> = <S as RingSuite>::Pairing;
+// pub type RingCommitment<S> =
+//     ring_proof::FixedColumnsCommitted<ark_ec_vrfs::BaseField<S>, PcsCommitment<S>>;
 
-type S = bandersnatch::BandersnatchSha512Ell2;
-type Pairing = <S as ark_ec_vrfs::ring::RingSuite>::Pairing;
-type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
+// type S = bandersnatch::BandersnatchSha512Ell2;
+
+// type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
 
 #[derive(Clone, CanonicalSerialize, CanonicalDeserialize, PartialEq, Eq, Debug)]
-pub struct FixedColumnsCommittedBridge {
-    pub points: Vec<KzgCommitmentBridge<Pairing>>,
-    pub ring_selector: KzgCommitmentBridge<Pairing>,
+pub struct FixedColumnsCommittedBridge<S: RingSuite> {
+    pub points: Vec<KzgCommitmentBridge<S>>,
+    pub ring_selector: KzgCommitmentBridge<S>,
 }
 
-impl Encoder for FixedColumnsCommittedBridge {
-    fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
+impl<S: RingSuite> Encoder for FixedColumnsCommittedBridge<S> {
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
         let mut points_buf = Vec::new();
         for point in &self.points {
             point.0.serialize_compressed(&mut points_buf).unwrap();
@@ -40,7 +46,7 @@ impl Encoder for FixedColumnsCommittedBridge {
     }
 }
 
-impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
+impl<'a, S: RingSuite + 'a> Decoder<'a> for FixedColumnsCommittedBridge<S> {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let binary: rustler::Binary = term.decode()?;
         let mut reader = std::io::Cursor::new(binary.as_slice());
@@ -48,14 +54,15 @@ impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
         // Deserialize points
         let mut points = Vec::new();
         for _ in 0..2 {
-            let point = <<Pairing as PairingTrait>::G1Affine>::deserialize_compressed(&mut reader)
-                .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
+            let point =
+                <<Pairing<S> as PairingTrait>::G1Affine>::deserialize_compressed(&mut reader)
+                    .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
             points.push(KzgCommitmentBridge(point));
         }
 
         // Deserialize ring_selector
         let ring_selector =
-            <<Pairing as PairingTrait>::G1Affine>::deserialize_compressed(&mut reader)
+            <<Pairing<S> as PairingTrait>::G1Affine>::deserialize_compressed(&mut reader)
                 .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
 
         Ok(FixedColumnsCommittedBridge {
@@ -65,24 +72,29 @@ impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
     }
 }
 
-impl From<FixedColumnsCommittedBridge> for RingCommitment {
-    fn from(bridge: FixedColumnsCommittedBridge) -> Self {
-        Self {
-            points: bridge
-                .points
-                .into_iter()
-                .map(|point| point.into())
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("Conversion failed"),
-            ring_selector: bridge.ring_selector.into(),
+impl<S: RingSuite> From<FixedColumnsCommittedBridge<S>> for RingCommitment<S>
+where
+    <<S as RingSuite>::Pairing as PairingTrait>::G1Affine: AffineRepr,
+    ark_ec_vrfs::BaseField<S>: PrimeField,
+{
+    fn from(bridge: FixedColumnsCommittedBridge<S>) -> Self {
+        ring_proof::FixedColumnsCommitted {
+            points: [
+                ring_proof::pcs::kzg::commitment::KzgCommitment(bridge.points[0].0),
+                ring_proof::pcs::kzg::commitment::KzgCommitment(bridge.points[1].0),
+            ],
+            ring_selector: ring_proof::pcs::kzg::commitment::KzgCommitment(bridge.ring_selector.0),
             phantom: Default::default(),
         }
     }
 }
 
-impl From<RingCommitment> for FixedColumnsCommittedBridge {
-    fn from(commitment: RingCommitment) -> Self {
+impl<S: RingSuite> From<RingCommitment<S>> for FixedColumnsCommittedBridge<S>
+where
+    <<S as RingSuite>::Pairing as PairingTrait>::G1Affine: AffineRepr,
+    ark_ec_vrfs::BaseField<S>: PrimeField,
+{
+    fn from(commitment: RingCommitment<S>) -> Self {
         Self {
             points: commitment
                 .points
