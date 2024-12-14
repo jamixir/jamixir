@@ -19,7 +19,7 @@ defmodule System.Validators.SafroleValidatorTest do
     test "returns :ok when it's a new epoch and epoch_marker is valid", ctx do
       header = %Header{
         timeslot: 600,
-        epoch_mark: {ctx.entropy_pool.n1, ctx.entropy_pool.n2, ctx.bandersnatch_keys}
+        epoch_mark: {ctx.entropy_pool.n0, ctx.entropy_pool.n1, ctx.bandersnatch_keys}
       }
 
       assert :ok ==

@@ -43,10 +43,10 @@ defmodule System.State.Safrole do
            System.Validators.Safrole.valid_epoch_marker(
              h,
              state.timeslot,
-             rotated_history_entropy_pool,
+             state.entropy_pool,
              pending_
            ),
-         # Formula (69) v0.4.5
+         # Formula (6.24) v0.5.2
          epoch_slot_sealers_ =
            Safrole.get_epoch_slot_sealers_(
              h,

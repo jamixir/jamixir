@@ -155,8 +155,7 @@ defmodule System.State do
              safrole_.slot_sealers,
              rotated_entropy_pool
            ),
-         entropy_pool_ =
-           EntropyPool.transition(vrf_output, rotated_entropy_pool),
+         entropy_pool_ = EntropyPool.transition(vrf_output, rotated_entropy_pool),
          {:ok, reporters_set} <-
            Guarantee.reporters_set(
              e.guarantees,

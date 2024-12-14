@@ -4,17 +4,17 @@ defmodule System.Validators.Safrole do
   alias System.State.{EntropyPool, Safrole}
   alias Util.Time
 
-  # Formula (6.27) v0.5
+  # Formula (6.27) v0.5.2
   mockable valid_epoch_marker(
              %Header{timeslot: timeslot, epoch_mark: epoch_marker},
              state_timeslot,
-             %EntropyPool{n1: n1_, n2: n2_},
+             %EntropyPool{n0: n0, n1: n1},
              pending_
            ) do
     new_epoch? = Time.new_epoch?(state_timeslot, timeslot)
 
     cond do
-      new_epoch? and epoch_marker == {n1_, n2_, for(v <- pending_, do: v.bandersnatch)} ->
+      new_epoch? and epoch_marker == {n0, n1, for(v <- pending_, do: v.bandersnatch)} ->
         :ok
 
       not new_epoch? and is_nil(epoch_marker) ->

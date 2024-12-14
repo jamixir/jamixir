@@ -168,7 +168,7 @@ defmodule TestVectorUtil do
         Enum.each(tested_keys, fn key ->
           our_result = fetch_key_from_state(state_, key)
           expected_result = fetch_key_from_state(expected_state, key)
-
+          if our_result != expected_result, do: IO.inspect(key)
           assert our_result == expected_result
         end)
 
