@@ -1,4 +1,4 @@
-defmodule PVM.RefineContext do
+defmodule PVM.Refine.Context do
   @type t :: %__MODULE__{
           # m
           m: %{non_neg_integer() => PVM.Integrated.t()},

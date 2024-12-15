@@ -6,7 +6,7 @@ defmodule System.State.Accumulation do
   alias System.State.BeefyCommitmentMap
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Header
-  alias PVM.AccumulationOperand
+  alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
   alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator}
   alias Types
@@ -292,7 +292,7 @@ defmodule System.State.Accumulation do
         |> Enum.filter(&(&1.service == service))
         |> Enum.reduce({acc_g, acc_p}, fn
           %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl}, {g, p} ->
-            new_p = %AccumulationOperand{o: ro, l: rl, a: wo, k: ws.work_package_hash}
+            new_p = %Accumulate.Operand{o: ro, l: rl, a: wo, k: ws.work_package_hash}
             {g + gr, [new_p | p]}
         end)
     end)

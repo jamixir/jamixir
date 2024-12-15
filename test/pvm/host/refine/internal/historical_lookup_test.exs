@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Registers}
+  alias PVM.{Memory, Refine, Registers}
   alias System.State.ServiceAccount
   import PVM.Constants.HostCallResult
   alias Util.Hash
@@ -10,7 +10,7 @@ defmodule PVM.Host.Refine.Internal.HistoricalLookupTest do
     setup do
       # Setup basic test data
       memory = %Memory{}
-      context = %RefineContext{}
+      context = %Refine.Context{}
 
       test_value = Hash.two()
       test_hash = Hash.default(test_value)

@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.ExportTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Registers}
+  alias PVM.{Memory, Refine, Registers}
   import PVM.Constants.HostCallResult
 
   describe "export_pure/4" do
@@ -25,11 +25,11 @@ defmodule PVM.Host.Refine.Internal.ExportTest do
       memory = Memory.set_access(memory, 100, 32, nil)
 
       {new_registers, new_memory, new_context} =
-        Internal.export_pure(registers, memory, %RefineContext{}, export_offset)
+        Internal.export_pure(registers, memory, %Refine.Context{}, export_offset)
 
       assert new_registers == Registers.set(registers, 7, oob())
       assert new_memory == memory
-      assert new_context == %RefineContext{}
+      assert new_context == %Refine.Context{}
     end
 
     test "returns FULL when manifest size limit would be exceeded", %{
@@ -38,7 +38,7 @@ defmodule PVM.Host.Refine.Internal.ExportTest do
     } do
       # Fill context with max_manifest_size - 1 segments
       max_size = Constants.max_manifest_size()
-      context = %RefineContext{e: List.duplicate("", max_size + 1)}
+      context = %Refine.Context{e: List.duplicate("", max_size + 1)}
 
       registers = %Registers{r7: 0, r8: 32}
 
@@ -63,7 +63,7 @@ defmodule PVM.Host.Refine.Internal.ExportTest do
       registers = %Registers{r7: 0, r8: byte_size(test_data)}
 
       {new_registers, new_memory, new_context} =
-        Internal.export_pure(registers, memory, %RefineContext{}, export_offset)
+        Internal.export_pure(registers, memory, %Refine.Context{}, export_offset)
 
       # Should return current export list length
       assert new_registers == Registers.set(registers, 7, export_offset)

@@ -1,4 +1,4 @@
-defmodule PVM.RefineParams do
+defmodule PVM.Refine.Params do
   alias Util.Hash
 
   @type t :: %__MODULE__{

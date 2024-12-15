@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.{Memory, Refine, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
   describe "machine_pure/3" do
@@ -12,11 +12,11 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
       memory = Memory.set_access(%Memory{}, 100, 32, nil)
 
       {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %RefineContext{})
+        Internal.machine_pure(registers, memory, %Refine.Context{})
 
       assert new_registers.r7 == oob()
       assert new_memory == memory
-      assert new_context == %RefineContext{}
+      assert new_context == %Refine.Context{}
     end
 
     test "successful machine creation with valid parameters" do
@@ -26,7 +26,7 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 42}
 
       {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %RefineContext{})
+        Internal.machine_pure(registers, memory, %Refine.Context{})
 
       # Should return machine ID 0 since context is empty
       assert new_registers.r7 == 0
@@ -45,7 +45,7 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
 
     test "assigns lowest available ID when machines exist" do
       # Create context with machines 2 and 3
-      context = %RefineContext{
+      context = %Refine.Context{
         m: %{
           2 => %Integrated{program: "prog2"},
           3 => %Integrated{program: "prog3"}

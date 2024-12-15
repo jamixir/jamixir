@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Internal.VoidTest do
   use ExUnit.Case
   alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.{Memory, Refine, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
   describe "void_pure/3" do
@@ -13,7 +13,7 @@ defmodule PVM.Host.Refine.Internal.VoidTest do
         program: "program"
       }
 
-      context = %RefineContext{m: %{1 => machine}}
+      context = %Refine.Context{m: %{1 => machine}}
 
       {:ok, context: context, machine: machine}
     end

@@ -2,7 +2,7 @@ defmodule System.State.AccumulationTest do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias System.{AccumulationResult, DeferredTransfer}
-  alias PVM.AccumulationOperand
+  alias PVM.Accumulate
   alias System.State
   alias System.State.{Accumulation, PrivilegedServices, Ready, ServiceAccount}
   import Jamixir.Factory
@@ -183,9 +183,9 @@ defmodule System.State.AccumulationTest do
       assert Enum.all?(p, fn %{o: _, l: _, a: _, k: _} -> true end)
 
       assert p == [
-               %AccumulationOperand{o: "result3", l: "hash3", a: "output2", k: "wph2"},
-               %AccumulationOperand{o: "result2", l: "hash2", a: "output1", k: "wph1"},
-               %AccumulationOperand{o: "result1", l: "hash1", a: "output1", k: "wph1"}
+               %Accumulate.Operand{o: "result3", l: "hash3", a: "output2", k: "wph2"},
+               %Accumulate.Operand{o: "result2", l: "hash2", a: "output1", k: "wph1"},
+               %Accumulate.Operand{o: "result1", l: "hash1", a: "output1", k: "wph1"}
              ]
     end
 
