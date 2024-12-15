@@ -3,6 +3,8 @@ defmodule SafroleTestVectors do
   import Mox
   use ExUnit.Case
 
+  define_repo_variables()
+
   def files_to_test,
     do:
       [
@@ -28,7 +30,7 @@ defmodule SafroleTestVectors do
     ]
 
   def execute_test(file_name, path) do
-    {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", path)
+    {:ok, json_data} = fetch_and_parse_json(file_name <> ".json", path, @owner, @repo, @branch)
 
     psi = %{good: [], bad: [], wonky: [], offenders: json_data[:pre_state][:post_offenders]}
     json_data = put_in(json_data[:pre_state][:psi], psi)

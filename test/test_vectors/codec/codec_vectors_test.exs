@@ -22,7 +22,7 @@ defmodule CodecVectorsTest do
     {:ok, json_data} =
       fetch_and_parse_json("#{file_name}.json", "codec/data", @owner, @repo, @branch)
 
-    expected = fetch_binary("#{file_name}.bin", "codec/data")
+    expected = fetch_binary("#{file_name}.bin", "codec/data", @owner, @repo, @branch)
 
     case json_data do
       %{} ->
