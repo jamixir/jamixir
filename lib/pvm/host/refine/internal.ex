@@ -1,10 +1,12 @@
-defmodule PVM.Host.Refine.Internal do
+defmodule PVM.Host.Refine do
   alias PVM.Integrated
   alias Util.Hash
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   alias System.State.ServiceAccount
   alias PVM.{Memory, Refine.Context, Registers}
   use Codec.{Decoder, Encoder}
+  # use PVM.Host.Wrapper
+  import PVM.Host.Wrapper
 
   @moduledoc """
   Ω: Virtual machine host-call functions. See appendix B.
@@ -30,7 +32,7 @@ defmodule PVM.Host.Refine.Internal do
   """
   alias PVM.Memory
 
-  def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
+  defpure historical_lookup(gas, registers, memory, context, index, service_accounts, timeslot) do
     w7 = registers.r7
 
     a =
@@ -92,7 +94,7 @@ defmodule PVM.Host.Refine.Internal do
     {registers_, updated_memory, context}
   end
 
-  def import_pure(registers, memory, context, import_segments) do
+  defpure import_pure(gas, registers, memory, context, import_segments) do
     w7 = registers.r7
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
     o = registers.r8
@@ -121,7 +123,7 @@ defmodule PVM.Host.Refine.Internal do
     {Registers.set(registers, :r7, w7_), updated_memory, context}
   end
 
-  def export_pure(registers, memory, %Context{e: e} = context, export_offset) do
+  defpure export_pure(gas,registers, memory, %Context{e: e} = context, export_offset) do
     p = registers.r7
     # size, capped by WE WS
     z = min(registers.r8, Constants.wswe())
@@ -152,7 +154,7 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, memory, %{context | e: new_export_segments}}
   end
 
-  def machine_pure(registers, memory, %Context{m: m} = context) do
+  defpure machine_pure(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Registers.get(registers, [7, 8, 9])
 
@@ -194,7 +196,7 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, memory, new_context}
   end
 
-  def peek_pure(registers, memory, %Context{m: m} = context) do
+  defpure peek_pure(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -230,7 +232,7 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, new_memory, context}
   end
 
-  def poke_pure(registers, memory, %Context{m: m} = context) do
+  defpure poke_pure(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -269,7 +271,7 @@ defmodule PVM.Host.Refine.Internal do
     {new_registers, memory, new_context}
   end
 
-  def zero_pure(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+  defpure zero_pure(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
@@ -292,7 +294,7 @@ defmodule PVM.Host.Refine.Internal do
     end
   end
 
-  def void_pure(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+  defpure void_pure(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
@@ -321,7 +323,7 @@ defmodule PVM.Host.Refine.Internal do
     end
   end
 
-  def invoke_pure(registers, memory, %Context{m: m} = context) do
+  defpure invoke_pure(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers and validate initial conditions
     case validate_invoke_params(registers, memory) do
       {:error, _} ->
@@ -400,7 +402,7 @@ defmodule PVM.Host.Refine.Internal do
     end
   end
 
-  def expunge_pure(registers, memory, %Context{m: m} = context) do
+  defpure expunge_pure(gas, registers, memory, %Context{m: m} = context) do
     n = registers.r7
 
     case Map.get(m, n) do
