@@ -5,31 +5,8 @@ defmodule PVM.Host.Refine do
   alias System.State.ServiceAccount
   alias PVM.{Memory, Refine.Context, Registers}
   use Codec.{Decoder, Encoder}
-  # use PVM.Host.Wrapper
   import PVM.Host.Wrapper
 
-  @moduledoc """
-  Ω: Virtual machine host-call functions. See appendix B.
-  ΩA: Assign-core host-call.
-  ΩC: Checkpoint host-call.
-  ΩD: Designate-validators host-call.
-  ΩE: Empower-service host-call.
-  ΩF : Forget-preimage host-call.
-  ΩG: Gas-remaining host-call.
-  ΩH: Historical-lookup-preimagehost-call.
-  ΩK: Kickoff-pvm host-call.
-  ΩM : Make-pvm host-call.
-  ΩN : New-service host-call.
-  ΩO: Poke-pvm host-call.
-  ΩP : Peek-pvm host-call.
-  ΩQ: Quit-service host-call.
-  ΩS: Solicit-preimage host-call.
-  ΩT : Transfer host-call.
-  ΩU : Upgrade-service host-call.
-  ΩX: Expunge-pvmhost-call.
-  ΩY : Import segment host-call.
-  ΩZ: Export segment host-call.
-  """
   alias PVM.Memory
 
   defpure historical_lookup(gas, registers, memory, context, index, service_accounts, timeslot) do
@@ -94,7 +71,7 @@ defmodule PVM.Host.Refine do
     {registers_, updated_memory, context}
   end
 
-  defpure import_pure(gas, registers, memory, context, import_segments) do
+  defpure import(gas, registers, memory, context, import_segments) do
     w7 = registers.r7
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
     o = registers.r8
@@ -123,7 +100,7 @@ defmodule PVM.Host.Refine do
     {Registers.set(registers, :r7, w7_), updated_memory, context}
   end
 
-  defpure export_pure(gas,registers, memory, %Context{e: e} = context, export_offset) do
+  defpure export(gas, registers, memory, %Context{e: e} = context, export_offset) do
     p = registers.r7
     # size, capped by WE WS
     z = min(registers.r8, Constants.wswe())
@@ -154,7 +131,7 @@ defmodule PVM.Host.Refine do
     {new_registers, memory, %{context | e: new_export_segments}}
   end
 
-  defpure machine_pure(gas, registers, memory, %Context{m: m} = context) do
+  defpure machine(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Registers.get(registers, [7, 8, 9])
 
@@ -196,7 +173,7 @@ defmodule PVM.Host.Refine do
     {new_registers, memory, new_context}
   end
 
-  defpure peek_pure(gas, registers, memory, %Context{m: m} = context) do
+  defpure peek(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -232,7 +209,7 @@ defmodule PVM.Host.Refine do
     {new_registers, new_memory, context}
   end
 
-  defpure poke_pure(gas, registers, memory, %Context{m: m} = context) do
+  defpure poke(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -271,7 +248,7 @@ defmodule PVM.Host.Refine do
     {new_registers, memory, new_context}
   end
 
-  defpure zero_pure(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+  defpure zero(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
@@ -294,7 +271,7 @@ defmodule PVM.Host.Refine do
     end
   end
 
-  defpure void_pure(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+  defpure void(gas, registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     cond do
@@ -323,7 +300,7 @@ defmodule PVM.Host.Refine do
     end
   end
 
-  defpure invoke_pure(gas, registers, memory, %Context{m: m} = context) do
+  defpure invoke(gas, registers, memory, %Context{m: m} = context) do
     # Extract registers and validate initial conditions
     case validate_invoke_params(registers, memory) do
       {:error, _} ->
@@ -347,7 +324,7 @@ defmodule PVM.Host.Refine do
             write_value = e_le(gas_, 8) <> (w_list |> Enum.map(&e_le(&1, 4)) |> Enum.join())
             {:ok, memory_} = Memory.write(memory, o, write_value)
 
-            #post execution memory goes into machine (in context)
+            # post execution memory goes into machine (in context)
             machine_ = %{
               machine
               | memory: u_,
@@ -402,7 +379,7 @@ defmodule PVM.Host.Refine do
     end
   end
 
-  defpure expunge_pure(gas, registers, memory, %Context{m: m} = context) do
+  defpure expunge(gas, registers, memory, %Context{m: m} = context) do
     n = registers.r7
 
     case Map.get(m, n) do

@@ -1,32 +1,33 @@
-defmodule PVM.Host.Refine.Internal.MachineTest do
+defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, Refine, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
   describe "machine_pure/3" do
     test "returns OOB when memory read fails" do
       registers = %Registers{r7: 100, r8: 32, r9: 0}
+      gas = 100
 
       # Make memory unreadable
       memory = Memory.set_access(%Memory{}, 100, 32, nil)
 
-      {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %Refine.Context{})
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.machine(gas, registers, memory, %Context{})
 
       assert new_registers.r7 == oob()
       assert new_memory == memory
-      assert new_context == %Refine.Context{}
+      assert new_context == %Context{}
     end
 
     test "successful machine creation with valid parameters" do
       test_program = "test_program"
       {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-
+      gas = 100
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 42}
 
-      {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %Refine.Context{})
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.machine(gas, registers, memory, %Context{})
 
       # Should return machine ID 0 since context is empty
       assert new_registers.r7 == 0
@@ -45,7 +46,7 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
 
     test "assigns lowest available ID when machines exist" do
       # Create context with machines 2 and 3
-      context = %Refine.Context{
+      context = %Context{
         m: %{
           2 => %Integrated{program: "prog2"},
           3 => %Integrated{program: "prog3"}
@@ -54,11 +55,11 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
 
       test_program = "new_program"
       {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-
+      gas = 100
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 0}
 
-      {new_registers, _new_memory, new_context} =
-        Internal.machine_pure(registers, memory, context)
+      {_exit_reason, %{registers: new_registers}, new_context} =
+        Refine.machine(gas, registers, memory, context)
 
       # Should return ID 1 (lowest available)
       assert new_registers.r7 == 1

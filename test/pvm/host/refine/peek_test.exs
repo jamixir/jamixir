@@ -1,7 +1,7 @@
-defmodule PVM.Host.Refine.Internal.PeekTest do
+defmodule PVM.Host.Refine.PeekTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, Refine, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
   describe "peek_pure/3" do
@@ -13,16 +13,17 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
         program: "program"
       }
 
-      context = %Refine.Context{m: %{1 => machine}}
+      context = %Context{m: %{1 => machine}}
+      gas = 100
 
-      {:ok, context: context, machine: machine}
+      {:ok, context: context, machine: machine, gas: gas}
     end
 
-    test "returns WHO when machine doesn't exist", %{context: context} do
+    test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0, r9: 32, r10: 100}
 
-      {new_registers, new_memory, new_context} =
-        Internal.peek_pure(registers, %Memory{}, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.peek(gas, registers, %Memory{}, context)
 
       assert new_registers.r7 == who()
       assert new_memory == %Memory{}
@@ -31,7 +32,8 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
 
     test "returns OOB when source memory read fails", %{
       context: context,
-      machine: machine
+      machine: machine,
+      gas: gas
     } do
       # Make source memory unreadable
       machine = %{machine | memory: Memory.set_access(machine.memory, 0, 32, nil)}
@@ -39,22 +41,25 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
 
       registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
 
-      {new_registers, new_memory, new_context} =
-        Internal.peek_pure(registers, %Memory{}, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.peek(gas, registers, %Memory{}, context)
 
       assert new_registers.r7 == oob()
       assert new_memory == %Memory{}
       assert new_context == context
     end
 
-    test "returns OOB when destination memory write fails", %{context: context} do
+    test "returns OOB when destination memory write fails", %{
+      context: context,
+      gas: gas
+    } do
       # Make destination memory unwritable
       memory = Memory.set_access(%Memory{}, 100, 32, :read)
 
       registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
 
-      {new_registers, new_memory, new_context} =
-        Internal.peek_pure(registers, memory, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.peek(gas, registers, memory, context)
 
       assert new_registers.r7 == oob()
       assert new_memory == memory
@@ -63,7 +68,8 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
 
     test "successful peek with valid parameters", %{
       context: context,
-      machine: machine
+      machine: machine,
+      gas: gas
     } do
       test_data = "test_data"
 
@@ -72,8 +78,8 @@ defmodule PVM.Host.Refine.Internal.PeekTest do
       machine = %{machine | memory: Memory.write(machine.memory, 0, test_data) |> elem(1)}
       context = %{context | m: %{1 => machine}}
 
-      {new_registers, new_memory, new_context} =
-        Internal.peek_pure(registers, %Memory{}, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.peek(gas, registers, %Memory{}, context)
 
       assert new_registers.r7 == ok()
 

@@ -1,10 +1,10 @@
-defmodule PVM.Host.Refine.Internal.ExpungeTest do
+defmodule PVM.Host.Refine.ExpungeTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
-  describe "expunge_pure/3" do
+  describe "expunge/4" do
     setup do
       machine = %Integrated{
         memory: %Memory{},
@@ -12,30 +12,31 @@ defmodule PVM.Host.Refine.Internal.ExpungeTest do
         counter: 42
       }
 
-      context = %RefineContext{m: %{1 => machine}}
+      context = %Context{m: %{1 => machine}}
+      gas = 100
 
-      {:ok, context: context, machine: machine}
+      {:ok, context: context, machine: machine, gas: gas}
     end
 
-    test "returns WHO when machine doesn't exist", %{context: context} do
+    test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999}
 
-      {new_registers, new_memory, new_context} =
-        Internal.expunge_pure(registers, %Memory{}, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.expunge(gas, registers, %Memory{}, context)
 
       assert new_registers.r7 == who()
       assert new_memory == %Memory{}
       assert new_context == context
     end
 
-    test "successful expunge with valid machine ID", %{context: context, machine: machine} do
+    test "successful expunge with valid machine ID", %{context: context, machine: machine, gas: gas} do
       registers = %Registers{r7: 1}
       # add another machine to the context
       machine2 = %Integrated{program: "program2"}
       context = %{context | m: Map.put(context.m, 2, machine2)}
 
-      {new_registers, new_memory, new_context} =
-        Internal.expunge_pure(registers, %Memory{}, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.expunge(gas, registers, %Memory{}, context)
 
       # Should return the machine's counter value
       assert new_registers.r7 == machine.counter

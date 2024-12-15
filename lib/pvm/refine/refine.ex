@@ -17,7 +17,7 @@ defmodule PVM.Refine do
   data blobs as dictated by the work-item, i and x. It results in either some error J or a pair of the
   refinement output blob and the export sequence.
   """
-  @spec execute(RefineParams.t(), %{integer() => ServiceAccount.t()}) ::
+  @spec execute(Params.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
   def execute(%Params{} = params, services) do
     with {:ok, service} <- fetch_service(services, params.service),

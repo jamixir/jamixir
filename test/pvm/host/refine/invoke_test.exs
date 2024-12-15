@@ -1,11 +1,11 @@
-defmodule PVM.Host.Refine.Internal.InvokeTest do
+defmodule PVM.Host.Refine.InvokeTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Refine.Context, Integrated, Registers}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
 
-  describe "invoke_pure/3" do
+  describe "invoke/4" do
     setup do
       # Program that sets registers [1,2,3] to [30,11,10] and halts
       {:ok, program} =
@@ -18,41 +18,42 @@ defmodule PVM.Host.Refine.Internal.InvokeTest do
         program: program
       }
 
-      context = %RefineContext{m: %{1 => machine}}
+      context = %Context{m: %{1 => machine}}
       memory = %Memory{}
+      gas = 100
 
-      {:ok, context: context, memory: memory, machine: machine}
+      {:ok, context: context, memory: memory, machine: machine, gas: gas}
     end
 
-    test "returns OOB when memory is not readable", %{context: context} do
+    test "returns OOB when memory is not readable", %{context: context, gas: gas} do
       registers = %Registers{r7: 1, r8: 0}
       memory = %Memory{} |> Memory.set_default_access(nil)
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.invoke(gas, registers, memory, context)
 
       assert new_registers.r7 == oob()
       assert new_memory == memory
       assert new_context == context
     end
 
-    test "returns WHO when machine doesn't exist", %{memory: memory, context: context} do
+    test "returns WHO when machine doesn't exist", %{memory: memory, context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0}
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.invoke(gas, registers, memory, context)
 
       assert new_registers.r7 == who()
       assert new_memory == memory
       assert new_context == context
     end
 
-    test "executes program successfully", %{context: context, memory: memory} do
+    test "executes program successfully", %{context: context, memory: memory, gas: gas} do
       # Set up registers with machine ID (1) and output offset (0)
       registers = %Registers{r7: 1, r8: 0}
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+        Refine.invoke(gas, registers, memory, context)
 
       # Check that execution halted successfully
       assert new_registers.r7 == halt()
