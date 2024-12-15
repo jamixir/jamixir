@@ -1,27 +1,32 @@
 defmodule PVM.Constants.HostCallId do
-  def gas, do: 1
-  def lookup, do: 2
-  def read, do: 3
-  def write, do: 4
-  def info, do: 5
-  def bless, do: 6
-  def assign, do: 7
-  def designate, do: 8
-  def checkpoint, do: 9
-  def new_work, do: 10
-  def upgrade, do: 11
-  def transfer, do: 12
-  def quit, do: 13
-  def solicit, do: 14
-  def forge, do: 14
-  def historical_lookup, do: 15
-  def import, do: 16
-  def export, do: 17
-  def machine, do: 18
-  def peek, do: 19
-  def poke, do: 20
-  def zero, do: 21
-  def void, do: 22
-  def invoke, do: 23
-  def expunge, do: 24
+  @host_call_map %{
+    1 => :gas,
+    2 => :lookup,
+    3 => :read,
+    4 => :write,
+    5 => :info,
+    6 => :bless,
+    7 => :assign,
+    8 => :designate,
+    9 => :checkpoint,
+    10 => :new_work,
+    11 => :upgrade,
+    12 => :transfer,
+    13 => :quit,
+    14 => :solicit,
+    15 => :historical_lookup,
+    16 => :import,
+    17 => :export,
+    18 => :machine,
+    19 => :peek,
+    20 => :poke,
+    21 => :zero,
+    22 => :void,
+    23 => :invoke,
+    24 => :expunge
+  }
+
+  def host(code) do
+    Map.get(@host_call_map, code)
+  end
 end

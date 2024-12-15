@@ -340,10 +340,12 @@ defmodule PVM.Host.Refine.Internal do
             {exit_reason, %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
               PVM.VM.execute(p, vm_state)
 
-            # Write results back to memory
-            write_value = (e_le(gas_, 8) <> Enum.map(w_, &e_le(&1, 4))) |> Enum.join(<<>>)
+            # gas_ and registers_ go into output memory
+            w_list = Registers.get(w_, Enum.to_list(0..12))
+            write_value = e_le(gas_, 8) <> (w_list |> Enum.map(&e_le(&1, 4)) |> Enum.join())
             {:ok, memory_} = Memory.write(memory, o, write_value)
 
+            #post execution memory goes into machine (in context)
             machine_ = %{
               machine
               | memory: u_,
@@ -381,12 +383,16 @@ defmodule PVM.Host.Refine.Internal do
       # Decode gas (8 bytes) and registers (13 x 4 bytes)
       gas = de_le(gas_bytes, 8)
 
+      # Convert register values to a Registers struct in one pass
       vm_registers =
         register_bytes
         |> :binary.bin_to_list()
         |> Enum.chunk_every(4)
-        |> Enum.map(&:binary.list_to_bin/1)
-        |> Enum.map(&de_le(&1, 4))
+        |> Enum.with_index()
+        |> Enum.into(%{}, fn {bytes, index} ->
+          {index, de_le(:binary.list_to_bin(bytes), 4)}
+        end)
+        |> then(&struct(Registers, &1))
 
       {:ok, {n, o, gas, vm_registers}}
     else
@@ -395,7 +401,7 @@ defmodule PVM.Host.Refine.Internal do
   end
 
   def expunge_pure(registers, memory, %RefineContext{m: m} = context) do
-    n = Enum.at(registers, 7)
+    n = registers.r7
 
     case Map.get(m, n) do
       nil ->
