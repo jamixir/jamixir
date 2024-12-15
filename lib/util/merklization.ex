@@ -120,8 +120,7 @@ defmodule Util.Merklization do
     binary
     |> :binary.bin_to_list()
     |> Enum.flat_map(fn byte ->
-      bits = for <<(bit::1 <- <<byte>>)>>, do: bit
-      Enum.reverse(bits)
+      for <<(bit::1 <- <<byte>>)>>, do: bit
     end)
   end
 
@@ -131,7 +130,7 @@ defmodule Util.Merklization do
 
   def bits_to_bytes(bits) do
     for chunk <- Enum.chunk_every(bits, 8) do
-      Enum.with_index(chunk)
+      Enum.with_index(chunk |> Enum.reverse())
       |> Enum.reduce(0, fn {bit, index}, acc ->
         acc + bit * :math.pow(2, index)
       end)
