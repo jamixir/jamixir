@@ -20,7 +20,6 @@ ark-ec = { version = "0.4", default-features = false }
 ark-serialize = { version = "0.4", default-features = false, features = [
     "derive",
 ] }
-ark-ed-on-bls12-381-bandersnatch = "0.4"  # Or the version you need
 
 hex = "0.4.3"
 rustler = "0.34.0"

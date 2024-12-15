@@ -1,15 +1,9 @@
+use crate::{ring_context::ring_context, types::Bandersnatch};
 use ark_ec_vrfs::{AffinePoint, Codec, Public, Suite};
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
 
-use crate::ring_context::ring_context;
-use ark_ed_on_bls12_381_bandersnatch::BandersnatchConfig;
-use ark_ec::twisted_edwards::Affine;
-
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PublicBridge<S: Suite>(pub AffinePoint<S>);
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct OptionalPublicBridge<S: Suite>(pub Option<PublicBridge<S>>);
 
 impl<S: Suite> Encoder for PublicBridge<S> {
     fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
@@ -22,31 +16,16 @@ impl<S: Suite> Encoder for PublicBridge<S> {
         point_bin.release(env).encode(env)
     }
 }
-impl<'a, S: Suite + 'a> Decoder<'a> for PublicBridge<S> {
-    fn decode(term: Term<'a>) -> NifResult<Self> {
-        let binary: rustler::Binary = term.decode()?;
-        let point = S::Codec::point_decode(binary.as_slice())
-            .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
-        Ok(PublicBridge(point))
-    }
-}
-
-impl<'a, S: Suite + 'a> Decoder<'a> for OptionalPublicBridge<S>
-    where S: Suite<Affine = Affine<BandersnatchConfig>>
-
+impl<'a, S: Suite + 'a> Decoder<'a> for PublicBridge<S>
+where
+    S: Suite<Affine = AffinePoint<Bandersnatch>>,
 {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let binary: rustler::Binary = term.decode()?;
-
         let point = S::Codec::point_decode(binary.as_slice())
-            .ok();
-        
-        let new_point: Option<PublicBridge<S>> = match point {
-            None => Some(PublicBridge(ring_context()?.padding_point())),
-            Some(p)=> Some(PublicBridge(p)),
-        };
+            .or(Ok(ring_context()?.padding_point()))?;
 
-        Ok(OptionalPublicBridge(new_point))
+        Ok(PublicBridge(point))
     }
 }
 

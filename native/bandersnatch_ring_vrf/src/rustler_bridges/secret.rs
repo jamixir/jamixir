@@ -1,5 +1,7 @@
-use ark_ec_vrfs::{Codec, ScalarField, Secret, Suite};
+use ark_ec_vrfs::{AffinePoint, Codec, ScalarField, Secret, Suite};
 use rustler::{Decoder, Encoder, NifResult, Term};
+
+use crate::types::Bandersnatch;
 
 use super::PublicBridge;
 
@@ -24,7 +26,8 @@ impl<S: Suite> Encoder for SecretBridge<S> {
     }
 }
 
-impl<'a, S: Suite + 'a> Decoder<'a> for SecretBridge<S> {
+impl<'a, S: Suite + 'a> Decoder<'a> for SecretBridge<S>
+where S: Suite<Affine = AffinePoint<Bandersnatch>> {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let (scalar_bin, public_term): (rustler::Binary, Term<'a>) = term.decode()?;
 
