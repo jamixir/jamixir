@@ -2,8 +2,9 @@ defmodule PVM.Refine do
   alias PVM.Registers
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError}
-  alias PVM.{ArgInvoc, Refine.Params, Refine.Context, Host, Host.Refine}
+  alias PVM.{ArgInvoc, Refine.Params, Refine.Context, Host.Refine, Host.General}
   import PVM.Constants.{HostCallResult, HostCallId}
+  import PVM.Host.Gas
   use Codec.{Encoder, Decoder}
 
   @doc """
@@ -50,7 +51,7 @@ defmodule PVM.Refine do
             Refine.export(gas, registers, memory, context, params.export_offset)
 
           :gas ->
-            Host.gas(gas, registers, memory, context)
+            General.gas(gas, registers, memory, context)
 
           :machine ->
             Refine.machine(gas, registers, memory, context)
@@ -75,7 +76,7 @@ defmodule PVM.Refine do
 
           _ ->
             {:continue,
-             %{gas: gas - 10, registers: Registers.set(registers, 7, what()), memory: memory},
+             %{gas: gas - default_gas(), registers: Registers.set(registers, 7, what()), memory: memory},
              nil}
         end
       end

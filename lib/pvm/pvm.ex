@@ -5,6 +5,7 @@ defmodule PVM do
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
+  import PVM.Host.Gas
 
   @doc """
     Ψ1: The single-step (pvm) machine state-transition function.
@@ -32,12 +33,12 @@ defmodule PVM do
           {PVM.Types.exit_reason(), PVM.Types.host_call_state(), PVM.Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
     if host(n) == :gas do
-      {exit_reason, gas_, registers_, _} = Host.gas(gas, registers, memory, nil)
+      {exit_reason, gas_, registers_, _} = Host.General.gas(gas, registers, memory, nil)
       {exit_reason, {gas_, registers_, memory}, nil}
     else
       {:continue,
        %{
-         gas: gas - 10,
+         gas: gas - default_gas(),
          registers: Registers.set(registers, 7, what()),
          memory: memory
        }, nil}
