@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.VoidTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "void_pure/3" do
@@ -22,23 +22,23 @@ defmodule PVM.Host.Refine.VoidTest do
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0, r9: 1}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.void(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == who()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, who())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when page range is too large", %{context: context, gas: gas} do
       registers = %Registers{r7: 1, r8: 0, r9: trunc(:math.pow(2, 32))}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.void(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when page has empty access", %{
@@ -52,12 +52,12 @@ defmodule PVM.Host.Refine.VoidTest do
 
       registers = %Registers{r7: 1, r8: 1, r9: 1}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.void(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "successful void with valid parameters", %{
@@ -66,14 +66,14 @@ defmodule PVM.Host.Refine.VoidTest do
     } do
       registers = %Registers{r7: 1, r8: 0, r9: 1}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.void(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == ok()
-      assert new_memory == %Memory{}
+      assert registers_.r7 == ok()
+      assert memory_ == %Memory{}
 
       # Get updated machine
-      machine = Map.get(new_context.m, 1)
+      machine = Map.get(context_.m, 1)
 
       # Verify access permissions are empty
       refute Memory.check_pages_access?(machine.memory, 0, 1, :read)

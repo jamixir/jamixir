@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.PeekTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "peek_pure/3" do
@@ -22,12 +22,12 @@ defmodule PVM.Host.Refine.PeekTest do
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0, r9: 32, r10: 100}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.peek(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == who()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, who())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when source memory read fails", %{
@@ -41,12 +41,12 @@ defmodule PVM.Host.Refine.PeekTest do
 
       registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.peek(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when destination memory write fails", %{
@@ -58,12 +58,12 @@ defmodule PVM.Host.Refine.PeekTest do
 
       registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.peek(gas, registers, memory, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
     end
 
     test "successful peek with valid parameters", %{
@@ -78,15 +78,15 @@ defmodule PVM.Host.Refine.PeekTest do
       machine = %{machine | memory: Memory.write(machine.memory, 0, test_data) |> elem(1)}
       context = %{context | m: %{1 => machine}}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.peek(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == ok()
+      assert registers_ == Registers.set(registers, 7, ok())
 
       # Verify data was copied correctly
-      {:ok, ^test_data} = Memory.read(new_memory, 100, byte_size(test_data))
+      {:ok, ^test_data} = Memory.read(memory_, 100, byte_size(test_data))
 
-      assert new_context == context
+      assert context_ == context
     end
   end
 end

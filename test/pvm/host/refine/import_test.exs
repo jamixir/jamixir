@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.ImportTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Refine.Context, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "import/4" do
@@ -26,12 +26,12 @@ defmodule PVM.Host.Refine.ImportTest do
       # Make memory read-only
       memory = Memory.set_access(memory, 100, 32, :read)
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.import(gas, registers, memory, %Context{}, import_segments)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == %Context{}
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == %Context{}
     end
 
     test "returns NONE when segment index is out of bounds", %{
@@ -41,12 +41,12 @@ defmodule PVM.Host.Refine.ImportTest do
     } do
       registers = %Registers{r7: 999, r8: 0, r9: 32}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.import(gas, registers, memory, %Context{}, import_segments)
 
-      assert new_registers.r7 == none()
-      assert new_memory == memory
-      assert new_context == %Context{}
+      assert registers_ == Registers.set(registers, 7, none())
+      assert memory_ == memory
+      assert context_ == %Context{}
     end
 
     test "successful import with valid parameters", %{
@@ -56,16 +56,16 @@ defmodule PVM.Host.Refine.ImportTest do
     } do
       registers = %Registers{r7: 0, r8: 100, r9: 32}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.import(gas, registers, memory, %Context{}, import_segments)
 
-      assert new_registers.r7 == ok()
+      assert registers_ == Registers.set(registers, 7, ok())
 
       # Verify the segment was written to memory
-      {:ok, written_value} = Memory.read(new_memory, 100, String.length(Enum.at(import_segments, 0)))
+      {:ok, written_value} = Memory.read(memory_, 100, String.length(Enum.at(import_segments, 0)))
       assert written_value == Enum.at(import_segments, 0)
 
-      assert new_context == %Context{}
+      assert context_ == %Context{}
     end
   end
 end

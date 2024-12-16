@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.HistoricalLookupTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Refine.Context, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Registers, Host.Refine.Result}
   alias System.State.ServiceAccount
   import PVM.Constants.HostCallResult
   alias Util.Hash
@@ -48,12 +48,12 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       # Set w7 to non-existent service account ID
       registers = %Registers{r7: 999}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
 
-      assert new_registers == Registers.set(registers, 7, none())
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, none())
+      assert memory_ == memory
+      assert context_ == context
     end
 
     test "returns OOB when memory is not readable", %{
@@ -71,12 +71,12 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
 
       # h will be :error => expectig oob
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
     end
 
     test "return oob when memory is not writable", %{
@@ -92,12 +92,12 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       # bo...+bz is not all writable
       memory = Memory.set_access(memory, 100, 1, :read)
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
     end
 
     test "successful lookup with valid parameters", %{
@@ -114,15 +114,15 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       # Setup registers
       registers = %Registers{r7: 1, r8: 0, r9: 100, r10: byte_size(test_value)}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
 
-      assert new_registers.r7 == byte_size(test_value)
+      assert registers_ == Registers.set(registers, 7, byte_size(test_value))
 
       # Verify the value was written to memory
-      {:ok, ^test_value} = Memory.read(new_memory, 100, byte_size(test_value))
+      {:ok, ^test_value} = Memory.read(memory_, 100, byte_size(test_value))
 
-      assert new_context == context
+      assert context_ == context
     end
   end
 end

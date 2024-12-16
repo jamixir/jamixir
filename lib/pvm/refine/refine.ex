@@ -2,21 +2,14 @@ defmodule PVM.Refine do
   alias PVM.Registers
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError}
-  alias PVM.{ArgInvoc, Refine.Params, Refine.Context, Host.Refine, Host.General}
+  alias PVM.{ArgInvoc, Refine.Params, Host.Refine, Host.General}
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
+  import PVM.Types
   use Codec.{Encoder, Decoder}
 
   @doc """
   ΨR: The Refine pvm invocation function.
-  Unlike the other invocation functions, the Refine invocation function implicitly draws upon some recent
-  service account state item δ. The specific block from which this comes is not important, as long as it is no
-  earlier than its work-package’s lookup-anchor block. It explicitly accepts the work payload, y, together
-  with the service index which is the subject of refinement s, the prediction of the hash of that service’s
-  code c at the time of reporting, the hash of the containing work-package p, the refinement context c,
-  the authorizer hash a and its output o, and an export segment offset ς, the import segments and extrinsic
-  data blobs as dictated by the work-item, i and x. It results in either some error J or a pair of the
-  refinement output blob and the export sequence.
   """
   @spec execute(Params.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
@@ -32,8 +25,9 @@ defmodule PVM.Refine do
         )
 
       f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
-        case host(n) do
-          :historical_lookup ->
+        host_call_result =
+          case host(n) do
+            :historical_lookup ->
             Refine.historical_lookup(
               gas,
               registers,
@@ -75,14 +69,27 @@ defmodule PVM.Refine do
             Refine.expunge(gas, registers, memory, context)
 
           _ ->
-            {:continue,
-             %{gas: gas - default_gas(), registers: Registers.set(registers, 7, what()), memory: memory},
-             nil}
+            %Refine.Result{
+              exit_reason: :continue,
+              gas: gas - default_gas(),
+              registers: Registers.set(registers, 7, what()),
+              memory: memory,
+              context: context
+            }
         end
+        %Refine.Result{
+          exit_reason: exit_reason,
+          gas: gas,
+          registers: registers,
+          memory: memory,
+          context: context
+        } = host_call_result
+        {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
+
       end
 
-      {_gas, result, %Context{e: exports}} =
-        ArgInvoc.execute(program, 0, params.gas, args, f, %Context{})
+      {_gas, result, %Refine.Context{e: exports}} =
+        ArgInvoc.execute(program, 0, params.gas, args, f, %Refine.Context{})
 
       if result in [:out_of_gas, :panic] do
         {result, []}

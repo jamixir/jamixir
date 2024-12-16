@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.ExportTest do
   use ExUnit.Case
   alias PVM.Host
-  alias PVM.{Memory, Refine.Context, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "export/5" do
@@ -23,12 +23,12 @@ defmodule PVM.Host.Refine.ExportTest do
       # Make memory unreadable
       memory = Memory.set_access(memory, 100, 32, nil)
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Host.Refine.export(gas, registers, memory, %Context{}, export_offset)
 
-      assert new_registers == Registers.set(registers, 7, oob())
-      assert new_memory == memory
-      assert new_context == %Context{}
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == %Context{}
     end
 
     test "returns FULL when manifest size limit would be exceeded", %{
@@ -45,12 +45,12 @@ defmodule PVM.Host.Refine.ExportTest do
       # Write some valid data to memory
       {:ok, memory} = Memory.write(memory, 0, String.duplicate("a", 32))
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Host.Refine.export(gas, registers, memory, context, export_offset)
 
-      assert new_registers == Registers.set(registers, 7, full())
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, full())
+      assert memory_ == memory
+      assert context_ == context
     end
 
     test "successful export with valid parameters", %{
@@ -63,19 +63,19 @@ defmodule PVM.Host.Refine.ExportTest do
 
       registers = %Registers{r7: 0, r8: byte_size(test_data)}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Host.Refine.export(gas, registers, memory, %Context{}, export_offset)
 
       # Should return current export list length
-      assert new_registers == Registers.set(registers, 7, export_offset)
+      assert registers_ == Registers.set(registers, 7, export_offset)
 
       # Memory should be unchanged
-      assert new_memory == memory
+      assert memory_ == memory
 
       # Context should have new segment added
-      assert length(new_context.e) == 1
+      assert length(context_.e) == 1
       # Verify the exported segment is padded correctly
-      assert List.last(new_context.e) == Utils.pad_binary_right(test_data, Constants.wswe())
+      assert List.last(context_.e) == Utils.pad_binary_right(test_data, Constants.wswe())
     end
   end
 end

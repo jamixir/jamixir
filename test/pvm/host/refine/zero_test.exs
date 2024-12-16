@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.ZeroTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "zero/4" do
@@ -25,34 +25,34 @@ defmodule PVM.Host.Refine.ZeroTest do
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 16, r9: 1}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.zero(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == who()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, who())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when page number is too small", %{context: context, gas: gas} do
       registers = %Registers{r7: 1, r8: 15, r9: 1}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.zero(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "returns OOB when page range is too large", %{context: context, gas: gas} do
       registers = %Registers{r7: 1, r8: 16, r9: trunc(:math.pow(2, 32) / 64)}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.zero(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == %Memory{}
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == %Memory{}
+      assert context_ == context
     end
 
     test "successful zero with valid parameters", %{context: context, gas: gas} do
@@ -61,14 +61,14 @@ defmodule PVM.Host.Refine.ZeroTest do
 
       registers = %Registers{r7: 1, r8: page, r9: count}
 
-      {_exit_reason, %{registers: new_registers, memory: new_memory}, new_context} =
+      %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.zero(gas, registers, %Memory{}, context)
 
-      assert new_registers.r7 == ok()
-      assert new_memory == %Memory{}
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == %Memory{}
 
       # Get updated machine
-      %Integrated{memory: u_} = Map.get(new_context.m, 1)
+        %Integrated{memory: u_} = Map.get(context_.m, 1)
       page_size = u_.page_size
 
       # Verify pages are zeroed
