@@ -2,7 +2,7 @@ defmodule PVM.Accumulate.Utils do
   alias System.State.ServiceAccount
   alias System.DeferredTransfer
   alias System.State.Accumulation
-  alias PVM.Accumulate.Context
+  alias PVM.Host.Accumulate.Context
   alias Util.Hash
   use Codec.{Encoder, Decoder}
 
@@ -22,7 +22,7 @@ defmodule PVM.Accumulate.Utils do
       |> de_le(4)
       |> rem(0xFFFFFE00)
       |> Kernel.+(0x100)
-      |> check(Map.keys(service_state.services))
+      |> check(accumulation_state)
 
     %Context{
       services: remaining_services,
@@ -34,15 +34,22 @@ defmodule PVM.Accumulate.Utils do
   end
 
   @dialyzer {:no_return, check: 2}
-  @spec check(non_neg_integer(), list(non_neg_integer())) :: non_neg_integer()
-  def check(i, keys) do
-    if i not in keys do
+
+  @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
+  def check(i, %Accumulation{services: services} = accumulation) do
+    if i not in Map.keys(services) do
       i
     else
       # check((i - 2^8 + 1) mod (2^32 - 2^9) + 2^8)
       new_i = rem(i - 0x100 + 1, 0xFFFFFE00) + 0x100
-      check(new_i, keys)
+      check(new_i, accumulation)
     end
+  end
+
+  # bump(i) = 2^8 + (i - 2^8 + 42) mod (2^32 - 2^9)
+  @spec bump(non_neg_integer()) :: non_neg_integer()
+  def bump(i) do
+    256 + rem(i - 256 + 42, 0xFFFFFE00)
   end
 
   # Formula (B.12) v0.5.2

@@ -10,9 +10,13 @@ defmodule System.State.PrivilegedServices do
   """
 
   @type t :: %__MODULE__{
+          # m
           manager_service: non_neg_integer(),
+          # a
           alter_authorizer_service: non_neg_integer(),
+          # v
           alter_validator_service: non_neg_integer(),
+          # g
           services_gas: %{non_neg_integer() => non_neg_integer()}
         }
 
