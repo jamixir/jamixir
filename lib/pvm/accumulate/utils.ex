@@ -9,28 +9,30 @@ defmodule PVM.Accumulate.Utils do
   @hash_size 32
 
   # Formula (B.9) v0.5.2
-  @spec initializer(Accumulation.t(), non_neg_integer(), Types.hash(), non_neg_integer()) ::
-          Context.t()
-  def initializer(accumulation_state, service_index, n0_, header_timeslot) do
-    {service_state, remaining_services} = Map.pop(accumulation_state.services, service_index)
+  @spec initializer(Types.hash(), non_neg_integer()) ::
+          (Accumulation.t(), non_neg_integer() -> Context.t())
+  def initializer(n0_, header_timeslot) do
+    fn accumulation_state, service_index ->
+      {service_state, remaining_services} = Map.pop(accumulation_state.services, service_index)
 
-    new_accumulation = %{accumulation_state | services: %{service_index => service_state}}
+      new_accumulation = %{accumulation_state | services: %{service_index => service_state}}
 
-    computed_service_index =
-      e({service_index, n0_, header_timeslot})
-      |> Hash.default()
-      |> de_le(4)
-      |> rem(0xFFFFFE00)
-      |> Kernel.+(0x100)
-      |> check(accumulation_state)
+      computed_service_index =
+        e({service_index, n0_, header_timeslot})
+        |> Hash.default()
+        |> de_le(4)
+        |> rem(0xFFFFFE00)
+        |> Kernel.+(0x100)
+        |> check(accumulation_state)
 
-    %Context{
-      services: remaining_services,
-      service: service_index,
-      accumulation: new_accumulation,
-      computed_service: computed_service_index,
-      transfers: []
-    }
+      %Context{
+        services: remaining_services,
+        service: service_index,
+        accumulation: new_accumulation,
+        computed_service: computed_service_index,
+        transfers: []
+      }
+    end
   end
 
   @dialyzer {:no_return, check: 2}
