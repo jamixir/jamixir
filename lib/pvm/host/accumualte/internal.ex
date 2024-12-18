@@ -1,3 +1,5 @@
+# Formula (B.20) v0.5.2
+
 defmodule PVM.Host.Accumulate.Internal do
   alias System.DeferredTransfer
   alias System.State.PrivilegedServices

@@ -1,5 +1,4 @@
 defmodule PVM.Accumulate.Utils do
-  alias System.State.ServiceAccount
   alias System.DeferredTransfer
   alias System.State.Accumulation
   alias PVM.Host
@@ -10,6 +9,10 @@ defmodule PVM.Accumulate.Utils do
   @hash_size 32
 
   # Formula (B.9) v0.5.2
+  # first part of the initializer function is expected to be called in the context that calls
+  # the accumulate inocation, this is where n0_, and header_timeslot are known
+  # the second part is called internally in accumulate.execute
+  # n0_ and timeslot are needed to calculate i (computed_service_index)
   @spec initializer(Types.hash(), non_neg_integer()) ::
           (Accumulation.t(), non_neg_integer() -> Context.t())
   def initializer(n0_, header_timeslot) do
@@ -38,6 +41,7 @@ defmodule PVM.Accumulate.Utils do
 
   @dialyzer {:no_return, check: 2}
 
+  # Formula (B.9) v0.5.2
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
     if i not in Map.keys(services) do
@@ -48,6 +52,8 @@ defmodule PVM.Accumulate.Utils do
       check(new_i, accumulation)
     end
   end
+
+  # Formula (B.20) v0.5.2 / new = 9 host function
 
   # bump(i) = 2^8 + (i - 2^8 + 42) mod (2^32 - 2^9)
   @spec bump(non_neg_integer()) :: non_neg_integer()
@@ -67,6 +73,7 @@ defmodule PVM.Accumulate.Utils do
   def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
     do: {y.accumulation, y.transfers, nil, gas}
 
+  # Formula (B.11) v0.5.2
   @spec replace_service(
           Host.General.Result.t(),
           {Context.t(), Context.t()}

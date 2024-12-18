@@ -29,8 +29,9 @@ defmodule PVM.Accumulate do
           non_neg_integer()
         }
   def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn) do
-    # Initialize context using the provided init function
+    # Formula (B.9) v0.5.2
     x = init_fn.(accumulation_state, service_index)
+    # Formula (B.10) v0.5.2
     d = get_in(x, [:accumulation, :services]) |> Map.merge(x.services)
     s = Context.accumulating_service(x)
 
