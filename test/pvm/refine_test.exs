@@ -16,35 +16,11 @@ defmodule PVM.RefineIntegrationTest do
       # Mock ServiceAccount.historical_lookup to return a valid binary
 
       # Create a valid program binary with an ecall instruction
-      page_size = 32
-      # 10 is the opcode for ecall, 19 is the opcode for peek
+      # 10 is the opcode for ecall, 18 is the opcode for machine
       program = <<op(:ecalli), 18, op(:fallthrough)>>
 
       bitmask = <<1, 0, 1>>
-      {program, bitmask} = ProgramUtils.append_halt(program, bitmask)
-      z = 1
-      jump_table = []
-      p = <<length(jump_table), z, byte_size(program)>> <> program <> bitmask
-      test_pattern = :binary.copy(<<65>>, page_size)
-
-      binary = <<
-        # o_size
-        page_size::little-size(24),
-        # w_size
-        page_size::little-size(24),
-        # z
-        1::little-size(16),
-        # s
-        1::little-size(24),
-        # o
-        test_pattern::binary,
-        # w
-        test_pattern::binary,
-        # c_size
-        byte_size(p)::little-size(32),
-        # c
-        p::binary
-      >>
+      binary = PVM.Helper.init(program, bitmask)
 
       hash = Hash.default(binary)
 
