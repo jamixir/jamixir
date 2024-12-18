@@ -2,6 +2,7 @@ defmodule PVM.Accumulate.Utils do
   alias System.State.ServiceAccount
   alias System.DeferredTransfer
   alias System.State.Accumulation
+  alias PVM.Host
   alias PVM.Host.Accumulate.Context
   alias Util.Hash
   use Codec.{Encoder, Decoder}
@@ -67,11 +68,11 @@ defmodule PVM.Accumulate.Utils do
     do: {y.accumulation, y.transfers, nil, gas}
 
   @spec replace_service(
-          {PVM.Types.exit_reason(), PVM.Types.host_call_state(), ServiceAccount.t()},
+          Host.General.Result.t(),
           {Context.t(), Context.t()}
-        ) :: {PVM.Types.exit_reason(), PVM.Types.host_call_state(), ServiceAccount.t()}
-  def replace_service({exit_reason, state, service_account}, {x, y}) do
+        ) :: Host.Accumulate.Result.t()
+  def replace_service(%Host.General.Result{context: service_account} = general_result, {x, y}) do
     new_x = put_in(x, [:accumulation, :services, x.service], service_account)
-    {exit_reason, state, {new_x, y}}
+    %{struct(Host.Accumulate.Result, Map.from_struct(general_result)) | context: {new_x, y}}
   end
 end
