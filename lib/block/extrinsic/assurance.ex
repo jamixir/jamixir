@@ -145,6 +145,6 @@ defmodule Block.Extrinsic.Assurance do
   def json_mapping, do: %{hash: :anchor}
 
   def core_bits(%__MODULE__{bitfield: b}) do
-    Util.Merklization.bits(b) |> Enum.take(Constants.core_count())
+    Util.Merklization.bits(b) |> Enum.reverse() |> Enum.take(Constants.core_count())
   end
 end

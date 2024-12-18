@@ -50,7 +50,7 @@ defmodule Util.MerklizationTest do
 
       assert Enum.slice(result, 0, 2) == [1, 0]
 
-      assert Enum.slice(result, 2, 6) == [0, 0, 0, 0, 1, 0]
+      assert Enum.slice(result, 2, 6) == [0, 0, 0, 1, 0, 0]
     end
 
     test "encode_leaf when byte_size(value) == 32" do
@@ -84,14 +84,20 @@ defmodule Util.MerklizationTest do
     test "bits function with single byte" do
       # Binary representation: 00101010
       input = <<42>>
-      expected = [0, 1, 0, 1, 0, 1, 0, 0]
+      expected = [0, 0, 1, 0, 1, 0, 1, 0]
+      assert Merklization.bits(input) == expected
+    end
+
+    test "bits function most significant first" do
+      input = <<160, 0>>
+      expected = [1, 0, 1] ++ List.duplicate(0, 13)
       assert Merklization.bits(input) == expected
     end
 
     test "bits for multiple octets(bytes)" do
       octets = <<5, 0, 5>>
       # 505 in binary
-      expected_bits = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0]
+      expected_bits = [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
 
       assert Merklization.bits(octets) == expected_bits
     end
@@ -117,12 +123,12 @@ defmodule Util.MerklizationTest do
 
     test "bits_to_bytes with single byte" do
       bits = [1, 0, 1, 0, 1, 0, 1, 0]
-      assert Merklization.bits_to_bytes(bits) == <<85>>
+      assert Merklization.bits_to_bytes(bits) == <<170>>
     end
 
     test "bits_to_bytes with multiple bytes" do
       bits = [1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1]
-      assert Merklization.bits_to_bytes(bits) == <<85, 170>>
+      assert Merklization.bits_to_bytes(bits) == <<170, 85>>
     end
 
     test "bits_to_bytes with partial byte" do
@@ -143,8 +149,8 @@ defmodule Util.MerklizationTest do
       dict = %{<<1>> => "a", <<2>> => "b"}
 
       transformed_dict = %{
-        [1, 0, 0, 0, 0, 0, 0, 0] => {<<1>>, "a"},
-        [0, 1, 0, 0, 0, 0, 0, 0] => {<<2>>, "b"}
+        [0, 0, 0, 0, 0, 0, 0, 1] => {<<1>>, "a"},
+        [0, 0, 0, 0, 0, 0, 1, 0] => {<<2>>, "b"}
       }
 
       assert Merklization.merkelize_state(dict) == Merklization.merkelize(transformed_dict)
