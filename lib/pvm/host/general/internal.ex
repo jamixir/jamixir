@@ -30,7 +30,7 @@ defmodule PVM.Host.General.Internal do
 
     v =
       if a != nil and h in Map.keys(Map.get(a, :preimage_storage_p)),
-        do: Map.get(a, :preimage_storage_p, h),
+        do: get_in(a, [:preimage_storage_p, h]),
         else: nil
 
     is_writable = Memory.check_range_access?(memory, bo, bz, :write)
@@ -38,11 +38,7 @@ defmodule PVM.Host.General.Internal do
     memory_ =
       if v != nil and is_writable do
         write_value = binary_part(v, 0, min(byte_size(v), bz))
-
-        case Memory.write(memory, bo, write_value) do
-          {:ok, memory_} -> memory_
-          _ -> memory
-        end
+        Memory.write(memory, bo, write_value) |> elem(1)
       else
         memory
       end
@@ -121,47 +117,60 @@ defmodule PVM.Host.General.Internal do
   def write_internal(registers, memory, service_account, service_index) do
     [ko, kz, vo, vz] = Registers.get(registers, [8, 9, 10, 11])
 
-    k =
-      with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-        Hash.default(e_le(service_index, 4) <> mem_segment)
-      else
-        _ -> :error
-      end
+    k = read_storage_key(memory, ko, kz, service_index)
+    l = current_value_length(k, service_account)
+    value_result = Memory.read(memory, vo, vz)
 
-    a =
-      case Memory.read(memory, vo, vz) do
-        {:ok, value} ->
-          if vo == 0 do
-            put_in(service_account, [:storage], Map.drop(Map.get(service_account, :storage), k))
-          else
-            put_in(service_account, [:storage, k], value)
-          end
+    updated_account =
+      case {k, value_result, vo} do
+        {k, {:ok, _}, 0} when k != :error ->
+          put_in(service_account, [:storage], Map.drop(Map.get(service_account, :storage), [k]))
+
+        {k, {:ok, value}, _} when k != :error ->
+          put_in(service_account, [:storage, k], value)
 
         _ ->
-          :error
+          service_account
       end
 
-    l =
-      if k in Map.keys(Map.get(service_account, :storage)),
-        do: byte_size(get_in(service_account, [:storage, k])),
-        else: none()
+    cond do
+      ServiceAccount.threshold_balance(updated_account) > updated_account.balance ->
+        %Result.Internal{
+          registers: Registers.set(registers, :r7, full()),
+          memory: memory,
+          context: service_account
+        }
 
-    at = ServiceAccount.threshold_balance(a)
-    ab = Map.get(a, :balance)
+      k != :error and match?({:ok, _}, value_result) ->
+        %Result.Internal{
+          registers: Registers.set(registers, :r7, l),
+          memory: memory,
+          context: updated_account
+        }
 
-    {registers_, context_} =
-      cond do
-        k != :error and a != :error and at <= ab ->
-          {Registers.set(registers, :r7, l), a}
+      true ->
+        %Result.Internal{
+          registers: Registers.set(registers, :r7, oob()),
+          memory: memory,
+          context: service_account
+        }
+    end
+  end
 
-        at > ab ->
-          {Registers.set(registers, :r7, full()), service_account}
+  defp read_storage_key(memory, ko, kz, service_index) do
+    with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
+      Hash.default(e_le(service_index, 4) <> mem_segment)
+    else
+      _ -> :error
+    end
+  end
 
-        true ->
-          {Registers.set(registers, :r7, oob()), service_account}
-      end
+  defp current_value_length(:error, _service_account), do: none()
 
-    %Result.Internal{registers: registers_, memory: memory, context: context_}
+  defp current_value_length(k, service_account) do
+    if k in Map.keys(service_account.storage),
+      do: byte_size(get_in(service_account, [:storage, k])),
+      else: none()
   end
 
   @spec info_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), services()) ::

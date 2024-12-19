@@ -5,7 +5,6 @@ defmodule PVM.RefineIntegrationTest do
   alias PVM.Refine.Params
   import Mox
   use PVM.Instructions
-  alias PVM.Utils.ProgramUtils
 
   setup :verify_on_exit!
 

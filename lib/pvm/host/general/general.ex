@@ -13,7 +13,7 @@ defmodule PVM.Host.General do
 
     result = %Result{
       exit_reason: exit_reason,
-      gas: gas,
+      gas: remaining_gas,
       registers: registers,
       memory: memory,
       context: context
