@@ -35,6 +35,8 @@ defmodule Jamixir.MixProject do
       {:ex_machina, "~> 2.8.0", only: [:test, :full_test]},
       {:excoveralls, "~> 0.18.3", only: [:test, :full_test]},
       {:httpoison, "~> 2.2.1", only: [:test, :full_test]},
+      {:quicer, github: "emqx/quic", tag: "0.1.0"},
+      {:x509, "~> 0.8.10"},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
