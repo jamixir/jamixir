@@ -3,6 +3,8 @@
     "lib/codec/scale_native.ex",
     "lib/cli.ex",
     "lib/mix/tasks/mix.jam.ex",
+    "lib/mix/tasks/mix.cli.ex",
+    "lib/mix/tasks/mix.generate_keypair.ex",
     "lib/mock_macros/mockable.ex",
     "lib/tcp_server.ex",
     "lib/util/ring_vrf.ex",
