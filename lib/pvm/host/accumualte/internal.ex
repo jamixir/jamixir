@@ -72,11 +72,14 @@ defmodule PVM.Host.Accumulate.Internal do
         c == :error ->
           {Registers.set(registers, :r7, oob()), context_pair}
 
-        registers.r7 > Constants.core_count() ->
+        registers.r7 >= Constants.core_count() ->
           {Registers.set(registers, :r7, core()), context_pair}
 
         true ->
-          x_ = put_in(x, [:accumulation, :authorizer_queue, registers.r7], c)
+          queue_ =
+            get_in(x, [:accumulation, :authorizer_queue]) |> List.insert_at(registers.r7, c)
+
+          x_ = put_in(x, [:accumulation, :authorizer_queue], queue_)
           {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
       end
 
@@ -156,22 +159,22 @@ defmodule PVM.Host.Accumulate.Internal do
         _ -> :error
       end
 
-    a_t = ServiceAccount.threshold_balance(%ServiceAccount{})
-
     a =
       if c == :error do
         :error
       else
-        %ServiceAccount{
+        a = %ServiceAccount{
           preimage_storage_l: %{{c, l} => []},
           code_hash: c,
-          balance: a_t,
           gas_limit_g: g,
           gas_limit_m: m
         }
+
+        %{a | balance: ServiceAccount.threshold_balance(a)}
       end
 
     x_s = Context.accumulating_service(x)
+    a_t = if a == :error, do: 0, else: ServiceAccount.threshold_balance(a)
 
     s = Map.put(x_s, :balance, Map.get(x_s, :balance) - a_t)
 
