@@ -77,7 +77,7 @@ defmodule PVM.Refine do
               context: context
             }
         end
-        %Refine.Result{
+        %{
           exit_reason: exit_reason,
           gas: gas,
           registers: registers,

@@ -51,11 +51,7 @@ defmodule PVM.Host.Refine.Internal do
     memory_ =
       if v != nil and is_writable do
         write_value = binary_part(v, 0, min(byte_size(v), bz))
-
-        case PVM.Memory.write(memory, bo, write_value) do
-          {:ok, new_memory} -> new_memory
-          _ -> memory
-        end
+        PVM.Memory.write(memory, bo, write_value) |> elem(1)
       else
         memory
       end
@@ -82,10 +78,7 @@ defmodule PVM.Host.Refine.Internal do
 
     memory_ =
       if v != nil and write_check do
-        case PVM.Memory.write(memory, o, v) do
-          {:ok, new_memory} -> new_memory
-          _ -> memory
-        end
+        PVM.Memory.write(memory, o, v) |> elem(1)
       else
         memory
       end

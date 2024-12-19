@@ -87,7 +87,7 @@ defmodule PVM.Accumulate do
             Accumulate.forget(gas, registers, memory, context, timeslot)
 
           _ ->
-            %Accumulate.Result{
+            %{
               exit_reason: :continue,
               gas: gas - default_gas(),
               registers: registers,
