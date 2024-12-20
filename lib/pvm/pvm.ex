@@ -30,7 +30,7 @@ defmodule PVM do
       %{exit_reason: exit_reason, gas: gas_, registers: registers_, memory: memory} =
         Host.General.gas(gas, registers, memory, nil)
 
-      {exit_reason, {gas_, registers_, memory}, nil}
+      {exit_reason, %{gas: gas_, registers: registers_, memory: memory}, nil}
     else
       {:continue,
        %{
