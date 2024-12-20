@@ -18,8 +18,8 @@ defmodule PVM.Helper do
 
     read = if read_only_memory, do: read_only_memory, else: test_pattern
 
-    e_le(page_size, 3) <>
-      e_le(byte_size(read), 3) <>
+    e_le(byte_size(read), 3) <>
+      e_le(byte_size(test_pattern), 3) <>
       e_le(z, 2) <>
       e_le(s, 3) <>
       read <>

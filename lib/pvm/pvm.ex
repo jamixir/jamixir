@@ -71,7 +71,6 @@ defmodule PVM do
           transfers :: list(DeferredTransfer.t())
         ) :: ServiceAccount.t()
   def on_transfer(services, timeslot, service_index, transfers) do
-
     # Formula (B.16) v0.5.2
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
@@ -116,13 +115,23 @@ defmodule PVM do
         end
       )
 
-    sc = Map.get(service, :code_hash)
+    code = ServiceAccount.code(service)
 
-    if sc == nil or sc == Hash.zero() do
+    if code == nil or length(transfers) == 0 do
       service
     else
       gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))
-      {_, _, service_} = ArgInvoc.execute(sc, 10, gas_limit, e({timeslot, service_index, vs(transfers)}), f, service)
+
+      {_, _, service_} =
+        ArgInvoc.execute(
+          code,
+          10,
+          gas_limit,
+          e({timeslot, service_index, vs(transfers)}),
+          f,
+          service
+        )
+
       service_
     end
   end
