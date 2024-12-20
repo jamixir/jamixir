@@ -122,6 +122,7 @@ defmodule PVM do
     else
       gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))
 
+      #https://github.com/gavofyork/graypaper/pull/170
       {_, _, service_} =
         ArgInvoc.execute(
           code,
