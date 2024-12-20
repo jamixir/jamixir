@@ -1,4 +1,4 @@
-defmodule PVM.Host.General.GeneralTest do
+defmodule PVM.Host.GeneralTest do
   use ExUnit.Case
   alias PVM.Host.General
   alias PVM.{Memory, Registers}

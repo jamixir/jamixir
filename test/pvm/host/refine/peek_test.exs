@@ -19,7 +19,7 @@ defmodule PVM.Host.Refine.PeekTest do
       {:ok, context: context, machine: machine, gas: gas}
     end
 
-    test "out of gas", %{context: context, machine: machine} do
+    test "out of gas", %{context: context, machine: _machine} do
       registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
       result = Refine.peek(8, registers, %Memory{}, context)
       assert result.exit_reason == :out_of_gas

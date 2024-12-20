@@ -44,4 +44,14 @@ defmodule PVM.Host.Accumulate.Result do
         context: internal.context
     }
   end
+
+  def new(%__MODULE__{} = self, {exit_reason, %Internal{} = internal}) do
+    %__MODULE__{
+      self
+      | registers: internal.registers,
+        memory: internal.memory,
+        context: internal.context,
+        exit_reason: exit_reason
+    }
+  end
 end

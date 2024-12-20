@@ -357,36 +357,38 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, registers_, x_} =
-      x_u_d = get_in(x, [:accumulation, :services])
+      (
+        x_u_d = get_in(x, [:accumulation, :services])
 
-    x_s = x.service
+        x_s = x.service
 
-    cond do
-      # if t = ∅
-      t == nil ->
-        {:halt, Registers.set(registers, :r7, ok()),
-         put_in(x, [:accumulation, :services], Map.delete(x_u_d, x_s))}
+        cond do
+          # if t = ∅
+          t == nil ->
+            {:halt, Registers.set(registers, :r7, ok()),
+             put_in(x, [:accumulation, :services], Map.delete(x_u_d, x_s))}
 
-      # otherwise if t = ∇
-      t == :error ->
-        {:continue, Registers.set(registers, :r7, oob()), x}
+          # otherwise if t = ∇
+          t == :error ->
+            {:continue, Registers.set(registers, :r7, oob()), x}
 
-      # otherwise if d ∉ K(d)
-      not Map.has_key?(all_services, d) ->
-        {:continue, Registers.set(registers, :r7, who()), x}
+          # otherwise if d ∉ K(d)
+          not Map.has_key?(all_services, d) ->
+            {:continue, Registers.set(registers, :r7, who()), x}
 
-      # otherwise if g < d[d]m
-      gas < get_in(all_services, [d, :gas_limit_m]) ->
-        {:continue, Registers.set(registers, :r7, low()), x}
+          # otherwise if g < d[d]m
+          gas < get_in(all_services, [d, :gas_limit_m]) ->
+            {:continue, Registers.set(registers, :r7, low()), x}
 
-      # otherwise (OK case)
-      true ->
-        x_ =
-          update_in(x, [:transfers], &(&1 ++ [t]))
-          |> put_in([:accumulation, :services], Map.delete(x_u_d, x_s))
+          # otherwise (OK case)
+          true ->
+            x_ =
+              update_in(x, [:transfers], &(&1 ++ [t]))
+              |> put_in([:accumulation, :services], Map.delete(x_u_d, x_s))
 
-        {:halt, Registers.set(registers, :r7, ok()), x_}
-    end
+            {:halt, Registers.set(registers, :r7, ok()), x_}
+        end
+      )
 
     {exit_reason,
      %Result.Internal{
@@ -414,8 +416,11 @@ defmodule PVM.Host.Accumulate.Internal do
 
     a =
       cond do
+        h == :error ->
+          :error
+
         # if h ≠ ∇ ∧ (h,z) ∉ (xs)l
-        h != :error and at_h_z == nil ->
+        at_h_z == nil ->
           put_in(xs, [:preimage_storage_l, {h, z}], [])
 
         # if (xs)l[(h,z)] = [x,y]

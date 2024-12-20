@@ -1,4 +1,4 @@
-defmodule PVM.Host.Accumulate.BlessTest do
+defmodule PVM.Host.AccumulateTest do
   use ExUnit.Case
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount, PrivilegedServices}
@@ -406,7 +406,9 @@ defmodule PVM.Host.Accumulate.BlessTest do
 
       # Old service should have reduced balance
       assert new_service.balance == ServiceAccount.threshold_balance(new_service)
-      assert prev_service.balance == initial_balance - ServiceAccount.threshold_balance(new_service)
+
+      assert prev_service.balance ==
+               initial_balance - ServiceAccount.threshold_balance(new_service)
 
       # New service should be created with correct values
       assert new_service.code_hash == Hash.one()
@@ -425,9 +427,12 @@ defmodule PVM.Host.Accumulate.BlessTest do
 
       # Initial service account
       service_account = %ServiceAccount{
-        code_hash: <<0::256>>,  # Different from new code hash
-        gas_limit_g: 50,        # Different from new gas limit
-        gas_limit_m: 100        # Different from new gas limit
+        # Different from new code hash
+        code_hash: <<0::256>>,
+        # Different from new gas limit
+        gas_limit_g: 50,
+        # Different from new gas limit
+        gas_limit_m: 100
       }
 
       context = %Context{
@@ -437,17 +442,17 @@ defmodule PVM.Host.Accumulate.BlessTest do
         }
       }
 
-      {:ok,
-        memory: memory,
-        context: {context, context},
-        gas: 100}
+      {:ok, memory: memory, context: {context, context}, gas: 100}
     end
 
     test "returns OOB when memory is not readable", %{context: context, gas: gas} do
       registers = %Registers{
-        r7: 0,    # offset
-        r8: 200,  # g
-        r9: 300   # m
+        # offset
+        r7: 0,
+        # g
+        r8: 200,
+        # m
+        r9: 300
       }
 
       # Make memory unreadable
@@ -467,9 +472,12 @@ defmodule PVM.Host.Accumulate.BlessTest do
       gas: gas
     } do
       registers = %Registers{
-        r7: 0,    # offset
-        r8: 200,  # new gas limit g
-        r9: 300   # new gas limit m
+        # offset
+        r7: 0,
+        # new gas limit g
+        r8: 200,
+        # new gas limit m
+        r9: 300
       }
 
       %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
@@ -490,16 +498,20 @@ defmodule PVM.Host.Accumulate.BlessTest do
   describe "transfer/4" do
     setup do
       memory = %Memory{}
-      memo = <<1::256>>  # 32-byte memo
+      # 32-byte memo
+      memo = <<1::Constants.memo_size()*8>>
       {:ok, memory} = Memory.write(memory, 0, memo)
 
       # Create service accounts
       sender = %ServiceAccount{
-        balance: 500,  # Enough for transfer
+        # Enough for transfer
+        balance: 500,
         gas_limit_m: 100
       }
+
       receiver = %ServiceAccount{
-        gas_limit_m: 200  # Higher than sender
+        # Higher than sender
+        gas_limit_m: 200
       }
 
       context = %Context{
@@ -516,18 +528,19 @@ defmodule PVM.Host.Accumulate.BlessTest do
       # Gas calculation: g = 10 + ω8 + 2^32 · ω9
       gas = (10 + 8 + 0x100000000 * 9) * 2
 
-      {:ok,
-        memory: memory,
-        context: {context, context},
-        gas: gas}
+      {:ok, memory: memory, context: {context, context}, gas: gas}
     end
 
     test "returns OOB when memory is not readable", %{context: context, gas: gas} do
       registers = %Registers{
-        r7: 456,  # destination
-        r8: 100,  # amount
-        r9: 150,  # gas limit
-        r10: 0    # memo offset
+        # destination
+        r7: 456,
+        # amount
+        r8: 100,
+        # gas limit
+        r9: 150,
+        # memo offset
+        r10: 0
       }
 
       # Make memory unreadable
@@ -547,10 +560,14 @@ defmodule PVM.Host.Accumulate.BlessTest do
       gas: gas
     } do
       registers = %Registers{
-        r7: 999,  # non-existent service
-        r8: 100,  # amount
-        r9: 150,  # gas limit
-        r10: 0    # memo offset
+        # non-existent service
+        r7: 999,
+        # amount
+        r8: 100,
+        # gas limit
+        r9: 150,
+        # memo offset
+        r10: 0
       }
 
       %Result{registers: registers_, memory: memory_, context: context_} =
@@ -567,10 +584,14 @@ defmodule PVM.Host.Accumulate.BlessTest do
       gas: gas
     } do
       registers = %Registers{
-        r7: 456,  # destination
-        r8: 100,  # amount
-        r9: 150,  # gas limit < receiver.gas_limit_m (200)
-        r10: 0    # memo offset
+        # destination
+        r7: 456,
+        # amount
+        r8: 100,
+        # gas limit < receiver.gas_limit_m (200)
+        r9: 150,
+        # memo offset
+        r10: 0
       }
 
       %Result{registers: registers_, memory: memory_, context: context_} =
@@ -587,12 +608,15 @@ defmodule PVM.Host.Accumulate.BlessTest do
       gas: gas
     } do
       registers = %Registers{
-        r7: 456,  # destination
-        r8: 100,  # amount
-        r9: gas * 2,  # gas limit
-        r10: 0    # memo offset
+        # destination
+        r7: 456,
+        # amount
+        r8: 100,
+        # gas limit
+        r9: gas * 2,
+        # memo offset
+        r10: 0
       }
-
 
       %Result{registers: registers_, memory: memory_, context: context_} =
         Accumulate.transfer(gas, registers, memory, context)
@@ -613,10 +637,14 @@ defmodule PVM.Host.Accumulate.BlessTest do
       x = put_in(x, [:accumulation, :services, x.service], sender)
 
       registers = %Registers{
-        r7: 456,  # destination
-        r8: 100,  # amount (would put balance below threshold)
-        r9: 250,  # gas limit
-        r10: 0    # memo offset
+        # destination
+        r7: 456,
+        # amount (would put balance below threshold)
+        r8: 100,
+        # gas limit
+        r9: 250,
+        # memo offset
+        r10: 0
       }
 
       %Result{registers: registers_, memory: memory_, context: context_} =
@@ -633,15 +661,20 @@ defmodule PVM.Host.Accumulate.BlessTest do
       gas: gas
     } do
       amount = 300
+
       registers = %Registers{
-        r7: 456,    # destination
-        r8: amount, # amount
-        r9: 250,    # gas limit
-        r10: 0      # memo offset
+        # destination
+        r7: 456,
+        # amount
+        r8: amount,
+        # gas limit
+        r9: gas,
+        # memo offset
+        r10: 0
       }
 
       %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
-        Accumulate.transfer(gas, registers, memory, {x, y})
+        Accumulate.transfer(gas * 3, registers, memory, {x, y})
 
       assert registers_ == Registers.set(registers, 7, ok())
       assert memory_ == memory
@@ -653,13 +686,572 @@ defmodule PVM.Host.Accumulate.BlessTest do
 
       # Check transfer was added
       [transfer] = x_.transfers
+
       assert transfer == %DeferredTransfer{
-        sender: x.service,
-        receiver: 456,
-        amount: amount,
-        memo: <<1::256>>,
-        gas_limit: gas
+               sender: x.service,
+               receiver: 456,
+               amount: amount,
+               memo: <<1::Constants.memo_size()*8>>,
+               gas_limit: gas * 3
+             }
+    end
+  end
+
+  describe "quit/4" do
+    setup do
+      memory = %Memory{}
+      # 32-byte memo
+      memo = <<1::Constants.memo_size()*8>>
+      {:ok, memory} = Memory.write(memory, 0, memo)
+
+      # Create service accounts
+      sender = %ServiceAccount{
+        # Enough for transfer + threshold
+        balance: 1000,
+        gas_limit_m: 100
       }
+
+      receiver = %ServiceAccount{
+        # Higher than sender
+        gas_limit_m: 200
+      }
+
+      context = %Context{
+        service: 123,
+        transfers: [],
+        computed_service: 256,
+        accumulation: %Accumulation{
+          services: %{
+            123 => sender,
+            456 => receiver
+          }
+        }
+      }
+
+      {:ok, memory: memory, context: {context, context}, gas: 100}
+    end
+
+    test "returns {:halt, ok()} when destination is self", %{
+      memory: memory,
+      context: {x, y},
+      gas: gas
+    } do
+      registers = %Registers{
+        # destination = self
+        r7: x.service,
+        # memo offset
+        r8: 0
+      }
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.quit(gas, registers, memory, {x, y})
+
+      assert exit_reason == :halt
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+      # Service should be removed from accumulation services
+      assert x_.accumulation.services == Map.delete(x.accumulation.services, x.service)
+      # No transfer should be created
+      assert x_.transfers == x.transfers
+    end
+
+    test "returns {:halt, ok()} when destination is max uint64", %{
+      memory: memory,
+      context: {x, y},
+      gas: gas
+    } do
+      registers = %Registers{
+        # destination = max uint64
+        r7: 0xFFFFFFFFFFFFFFFF,
+        # memo offset
+        r8: 0
+      }
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.quit(gas, registers, memory, {x, y})
+
+      assert exit_reason == :halt
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+      # Service should be removed from accumulation services
+      assert x_.accumulation.services == Map.delete(x.accumulation.services, x.service)
+      # No transfer should be created
+      assert x_.transfers == x.transfers
+    end
+
+    test "returns {:continue, oob()} when memory is not readable", %{
+      context: context,
+      gas: gas
+    } do
+      registers = %Registers{
+        # destination
+        r7: 456,
+        # memo offset
+        r8: 0
+      }
+
+      # Make memory unreadable
+      memory = Memory.set_access(%Memory{}, 0, Constants.memo_size(), nil)
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: context_} =
+        Accumulate.quit(gas, registers, memory, context)
+
+      assert exit_reason == :continue
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "returns {:continue, who()} when destination service doesn't exist", %{
+      memory: memory,
+      context: context,
+      gas: gas
+    } do
+      registers = %Registers{
+        # non-existent service
+        r7: 999,
+        # memo offset
+        r8: 0
+      }
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: context_} =
+        Accumulate.quit(gas, registers, memory, context)
+
+      assert exit_reason == :continue
+      assert registers_ == Registers.set(registers, 7, who())
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "returns {:continue, low()} when gas limit is less than receiver minimum", %{
+      memory: memory,
+      context: {x, y}
+    } do
+      registers = %Registers{
+        # destination (has gas_limit_m of 200)
+        r7: 456,
+        # memo offset
+        r8: 0
+      }
+
+      # Use gas less than receiver's minimum
+      low_gas = 150
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: context_} =
+        Accumulate.quit(low_gas, registers, memory, {x, y})
+
+      assert exit_reason == :continue
+      assert registers_ == Registers.set(registers, 7, low())
+      assert memory_ == memory
+      assert context_ == {x, y}
+    end
+
+    test "returns {:continue, out_of_gas()} when gas is less than 10", %{
+      memory: memory,
+      context: context
+    } do
+      registers = %Registers{
+        # destination
+        r7: 456,
+        # memo offset
+        r8: 0
+      }
+
+      # Use gas less than base cost of 10
+      insufficient_gas = 9
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: context_} =
+        Accumulate.quit(insufficient_gas, registers, memory, context)
+
+      assert exit_reason == :out_of_gas
+      assert registers_ == registers
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "successful quit with valid parameters", %{
+      memory: memory,
+      context: {x, y}
+    } do
+      registers = %Registers{
+        # destination
+        r7: 456,
+        # memo offset
+        r8: 0
+      }
+
+      %Result{exit_reason: exit_reason, registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.quit(300, registers, memory, {x, y})
+
+      assert exit_reason == :halt
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+      # Check service was removed from accumulation services
+      assert x_.accumulation.services == Map.delete(x.accumulation.services, x.service)
+
+      # Check transfer was added with correct amount
+      [transfer] = x_.transfers
+
+      expected_amount =
+        x.accumulation.services[x.service].balance -
+          ServiceAccount.threshold_balance(x.accumulation.services[x.service]) +
+          Constants.service_minimum_balance()
+
+      assert transfer == %DeferredTransfer{
+               sender: x.service,
+               receiver: 456,
+               amount: expected_amount,
+               memo: <<1::Constants.memo_size()*8>>,
+               gas_limit: 300
+             }
+    end
+  end
+
+  describe "solicit/4" do
+    setup do
+      memory = %Memory{}
+      hash = Hash.one()
+      {:ok, memory} = Memory.write(memory, 0, hash)
+
+      service_account = %ServiceAccount{
+        balance: 1000,
+        preimage_storage_l: %{
+          # Valid entry with length 2
+          {hash, 1} => [1, 2],
+          # Invalid entry with length 1
+          {hash, 2} => [1],
+          # Invalid entry with length 3
+          {hash, 3} => [1, 2, 3]
+        }
+      }
+
+      context = %Context{
+        service: 123,
+        accumulation: %Accumulation{
+          services: %{
+            123 => service_account
+          }
+        }
+      }
+
+      {:ok, memory: memory, context: {context, context}, hash: hash, timeslot: 42, gas: 100}
+    end
+
+    test "returns oob() when memory is not readable", %{
+      context: context,
+      gas: gas,
+      timeslot: timeslot
+    } do
+      registers = %Registers{
+        # offset
+        r7: 0,
+        # z value
+        r8: 1
+      }
+
+      # Make memory unreadable
+      memory = Memory.set_access(%Memory{}, 0, 32, nil)
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Accumulate.solicit(gas, registers, memory, context, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "returns huh() when entry exists but not length 2", %{
+      memory: memory,
+      context: context,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Test with entry of length 1
+      registers = %Registers{
+        # offset
+        r7: 0,
+        # z value pointing to entry with length 1
+        r8: 2
+      }
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Accumulate.solicit(gas, registers, memory, context, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, huh())
+      assert memory_ == memory
+      assert context_ == context
+
+      # Test with entry of length 3
+      registers = %Registers{r7: 0, r8: 3}
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Accumulate.solicit(gas, registers, memory, context, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, huh())
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "returns ok() and creates new empty entry when hash,z pair doesn't exist", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      registers = %Registers{
+        # offset
+        r7: 0,
+        # z value not in storage
+        r8: 4
+      }
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.solicit(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+
+      # Verify new empty entry was created
+      service = get_in(x_, [:accumulation, :services, x.service])
+      assert get_in(service, [:preimage_storage_l, {hash, 4}]) == []
+    end
+
+    test "returns ok() and appends timeslot for valid entry", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      registers = %Registers{
+        # offset
+        r7: 0,
+        # z value pointing to valid entry
+        r8: 1
+      }
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.solicit(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+
+      # Verify timeslot was appended
+      service = get_in(x_, [:accumulation, :services, x.service])
+      assert get_in(service, [:preimage_storage_l, {hash, 1}]) == [1, 2, timeslot]
+    end
+
+    test "returns full() when service balance is below threshold", %{
+      memory: memory,
+      context: {x, y},
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Update service account to have low balance
+      service_account = %ServiceAccount{
+        # Very low balance
+        balance: 1,
+        preimage_storage_l: %{}
+      }
+
+      x = put_in(x, [:accumulation, :services, x.service], service_account)
+
+      registers = %Registers{
+        # offset
+        r7: 0,
+        # z value
+        r8: 1
+      }
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Accumulate.solicit(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, full())
+      assert memory_ == memory
+      assert context_ == {x, y}
+    end
+  end
+
+  describe "forget/4" do
+    setup do
+      memory = %Memory{}
+      # 32-byte hash
+      hash = <<1::256>>
+      {:ok, memory} = Memory.write(memory, 0, hash)
+
+      delay = Constants.forget_delay()
+      timeslot = delay + 100
+
+      # Create service account with various test cases in preimage_storage
+      service_account = %ServiceAccount{
+        balance: 1000,
+        preimage_storage_l: %{
+          # Empty list case
+          {hash, 1} => [],
+          # [x,y] case where y < t-D
+          {hash, 2} => [10, 20],
+          # Single element case
+          {hash, 3} => [30],
+          # [x,y] case where y >= t-D
+          {hash, 4} => [40, timeslot - 1],
+          # [x,y,w] case where y < t-D
+          {hash, 5} => [50, 60, 70],
+          # [x,y,w] case where y >= t-D
+          {hash, 6} => [80, timeslot, 90]
+        },
+        preimage_storage_p: %{
+          hash => "some_preimage"
+        }
+      }
+
+      context = %Context{
+        service: 123,
+        accumulation: %Accumulation{
+          services: %{
+            123 => service_account
+          }
+        }
+      }
+
+      {:ok,
+       memory: memory,
+       context: {context, context},
+       hash: hash,
+       timeslot: timeslot,
+       delay: delay,
+       gas: 100}
+    end
+
+    test "returns oob() when memory is not readable", %{
+      context: context,
+      gas: gas,
+      timeslot: timeslot
+    } do
+      registers = %Registers{r7: 0, r8: 1}
+      memory = Memory.set_access(%Memory{}, 0, 32, nil)
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Accumulate.forget(gas, registers, memory, context, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
+    end
+
+    test "deletes entry and preimage for empty list", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Points to empty list case
+      registers = %Registers{r7: 0, r8: 1}
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+
+      service = get_in(x_, [:accumulation, :services, x.service])
+      refute Map.has_key?(service.preimage_storage_l, {hash, 1})
+      refute Map.has_key?(service.preimage_storage_p, hash)
+    end
+
+    test "deletes entry and preimage for [x,y] when y < t-D", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Points to [x,y] case
+      registers = %Registers{r7: 0, r8: 2}
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert y_ == y
+      assert memory_ == memory
+
+      assert registers_ == Registers.set(registers, 7, ok())
+      service = get_in(x_, [:accumulation, :services, x.service])
+      refute Map.has_key?(service.preimage_storage_l, {hash, 2})
+      refute Map.has_key?(service.preimage_storage_p, hash)
+    end
+
+    test "updates entry to [x,t] for single element list", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Points to single element case
+      registers = %Registers{r7: 0, r8: 3}
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert memory_ == memory
+      assert y_ == y
+      assert registers_ == Registers.set(registers, 7, ok())
+      service = get_in(x_, [:accumulation, :services, x.service])
+      assert get_in(service, [:preimage_storage_l, {hash, 3}]) == [30, timeslot]
+    end
+
+    test "updates entry to [w,t] for [x,y,w] when y < t-D", %{
+      memory: memory,
+      context: {x, y},
+      hash: hash,
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Points to [x,y,w] case where y < t-D
+      registers = %Registers{r7: 0, r8: 5}
+
+      %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, ok())
+      assert memory_ == memory
+      assert y_ == y
+
+      service = get_in(x_, [:accumulation, :services, x.service])
+      assert get_in(service, [:preimage_storage_l, {hash, 5}]) == [70, timeslot]
+    end
+
+    test "returns huh() for invalid cases", %{
+      memory: memory,
+      context: {x, y},
+      timeslot: timeslot,
+      gas: gas
+    } do
+      # Test with [x,y] where y >= t-D
+      registers = %Registers{r7: 0, r8: 4}
+
+      %Result{registers: registers_, context: context_} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, huh())
+      assert context_ == {x, y}
+
+      # Test with [x,y,w] where y >= t-D
+      registers = %Registers{r7: 0, r8: 6}
+
+      %Result{registers: registers_, context: context_} =
+        Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, huh())
+      assert context_ == {x, y}
     end
   end
 end
