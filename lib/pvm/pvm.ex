@@ -1,5 +1,4 @@
 defmodule PVM do
-  alias Util.Hash
   alias PVM.Host.General
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}

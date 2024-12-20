@@ -33,12 +33,7 @@ defmodule System.DeferredTransfer do
     use Codec.Encoder
     alias System.DeferredTransfer
 
-    # Note, this is not specified anywhere, i have made this up (Luke, 2024-12-20)
-    # Looking at C.23  we learn that Ns is encoded as 4 bytes
-    # and that Ng is encoded as 8 bytes
-    # balance is also 64 bytes number (4.21 v0.5.2)  and naturally of the same type as gas
-    # therefore also encoded as 8 bytes (again, not specified anywhere, just common sense)
-    # it is required in order to implement on-transfer invocation (B.14 v0.5.2)
+    # https://github.com/gavofyork/graypaper/pull/171
     def encode(t = %DeferredTransfer{}) do
       e({e_le(t.sender, 4), e_le(t.receiver, 4), e_le(t.amount, 8), t.memo, e_le(t.gas_limit, 8)})
     end
