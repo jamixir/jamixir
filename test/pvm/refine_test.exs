@@ -10,10 +10,6 @@ defmodule PVM.RefineIntegrationTest do
 
   describe "refine/2" do
     test "successfully processes a valid program" do
-      # Mock ServiceAccount.historical_lookup to return a valid binary
-
-      # Create a valid program binary with an ecall instruction
-      # 10 is the opcode for ecall, 18 is the opcode for machine
       program = <<op(:ecalli), 18, op(:fallthrough)>>
 
       bitmask = <<1, 0, 1>>
@@ -41,14 +37,10 @@ defmodule PVM.RefineIntegrationTest do
 
       services = %{1 => service_account}
 
-      assert {<<>>, []} = PVM.Refine.execute(params, services)
+      assert {<<>>, []} = PVM.refine(params, services)
     end
 
     test "test-ecall-1" do
-      # Mock ServiceAccount.historical_lookup to return a valid binary
-
-      # Create a valid program binary with an ecall instruction
-      # 10 is the opcode for ecall, 18 is the opcode for machine
       program = <<op(:ecalli), 18, op(:fallthrough), op(:ecalli), 1, op(:fallthrough)>>
 
       bitmask = <<1, 0, 1, 1, 0, 1>>
@@ -75,7 +67,7 @@ defmodule PVM.RefineIntegrationTest do
       }
 
       services = %{1 => service_account}
-      r = PVM.Refine.execute(params, services)
+      r = PVM.refine(params, services)
 
       assert r == {<<>>, []}
     end
