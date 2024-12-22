@@ -138,7 +138,7 @@ defmodule PVM.Host.Accumulate.Internal do
           {Context.t(), Context.t()}
         ) ::
           Result.t()
-  def checkpoint_internal(gas, registers, memory, {x, _y}) do
+  def checkpoint_internal(registers, memory, {x, _y}, gas) do
     {_exit_reason, remaining_gas} = PVM.Host.Gas.check_gas(gas)
 
     %Result.Internal{
@@ -250,7 +250,7 @@ defmodule PVM.Host.Accumulate.Internal do
           {Context.t(), Context.t()}
         ) ::
           Result.Internal.t()
-  def transfer_internal(gas, registers, memory, {x, _y} = context_pair) do
+  def transfer_internal(registers, memory, {x, _y} = context_pair, gas) do
     # let [d,a,g,o] = ω7..11
     [d, a, g, o] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -323,7 +323,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
   @spec quit_internal(non_neg_integer(), Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           {:halt | :continue, Result.Internal.t()}
-  def quit_internal(gas, registers, memory, {x, _y} = context_pair) do
+  def quit_internal(registers, memory, {x, _y} = context_pair, gas) do
     # let [d,o] = ω7..8
     [d, o] = Registers.get(registers, [7, 8])
 
