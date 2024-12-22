@@ -54,27 +54,27 @@ defmodule PVM.OnTransferTest do
           <<
             # gas
             op(:ecalli),
-            1,
+            0,
             op(:fallthrough),
             # lookup
             op(:ecalli),
-            2,
+            1,
             op(:fallthrough),
             # read
             op(:ecalli),
-            3,
+            2,
             op(:fallthrough),
             # write
             op(:ecalli),
-            4,
+            3,
             op(:fallthrough),
             # info
             op(:ecalli),
-            5,
+            4,
             op(:fallthrough),
             # fallback case
             op(:ecalli),
-            7,
+            5,
             op(:fallthrough)
           >>
 

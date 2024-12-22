@@ -82,9 +82,9 @@ defmodule System.State.ServiceAccount do
   end
 
   # Formula (91) v0.4.5
-  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
-    p[hash]
-  end
+  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}), do: p[hash]
+
+  def code(nil), do: nil
 
   # Formula (92) v0.4.5
   # Formula (93) v0.4.5

@@ -45,7 +45,7 @@ defmodule PVM.AuthorizedTest do
             # Call gas host function
             # gas host call
             op(:ecalli),
-            1,
+            0,
             op(:fallthrough)
           >>
 

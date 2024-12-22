@@ -1,4 +1,5 @@
 defmodule PVM.Accumulate do
+  alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.Context
   alias PVM.Host.{Accumulate, General}
   alias System.DeferredTransfer
@@ -101,11 +102,13 @@ defmodule PVM.Accumulate do
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
-    if get_in(accumulation_state, [:services, service_index, :code_hash]) == nil do
+    service_code = ServiceAccount.code(get_in(accumulation_state, [:services, service_index]))
+
+    if service_code == nil do
       {x.accumulation, [], nil, 0}
     else
       ArgInvoc.execute(
-        x.accumulation.code_hash,
+        service_code,
         5,
         gas,
         e({timeslot, service_index, vs(operands)}),
