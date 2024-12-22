@@ -1,51 +1,52 @@
-defmodule PVM.Host.Refine.Internal.MachineTest do
+defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.HostCallResult
 
   describe "machine_pure/3" do
     test "returns OOB when memory read fails" do
       registers = %Registers{r7: 100, r8: 32, r9: 0}
+      gas = 100
 
       # Make memory unreadable
       memory = Memory.set_access(%Memory{}, 100, 32, nil)
 
-      {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %RefineContext{})
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.machine(gas, registers, memory, %Context{})
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == %RefineContext{}
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == %Context{}
     end
 
     test "successful machine creation with valid parameters" do
       test_program = "test_program"
       {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-
+      gas = 100
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 42}
 
-      {new_registers, new_memory, new_context} =
-        Internal.machine_pure(registers, memory, %RefineContext{})
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.machine(gas, registers, memory, %Context{})
 
       # Should return machine ID 0 since context is empty
-      assert new_registers.r7 == 0
+      assert registers_ == Registers.set(registers, 7, 0)
 
       # Memory should be unchanged
-      assert new_memory == memory
+      assert memory_ == memory
 
       # Context should have new machine
-      assert map_size(new_context.m) == 1
-      assert Map.has_key?(new_context.m, 0)
+      assert map_size(context_.m) == 1
+      assert Map.has_key?(context_.m, 0)
 
       # Verify machine state
       assert %Integrated{program: ^test_program, counter: 42, memory: %Memory{}} =
-               Map.get(new_context.m, 0)
+               Map.get(context_.m, 0)
     end
 
     test "assigns lowest available ID when machines exist" do
       # Create context with machines 2 and 3
-      context = %RefineContext{
+      context = %Context{
         m: %{
           2 => %Integrated{program: "prog2"},
           3 => %Integrated{program: "prog3"}
@@ -54,19 +55,18 @@ defmodule PVM.Host.Refine.Internal.MachineTest do
 
       test_program = "new_program"
       {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-
+      gas = 100
       registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 0}
 
-      {new_registers, _new_memory, new_context} =
-        Internal.machine_pure(registers, memory, context)
+      %Result{registers: registers_, context: context_} =
+        Refine.machine(gas, registers, memory, context)
 
       # Should return ID 1 (lowest available)
-      assert new_registers.r7 == 1
-      assert map_size(new_context.m) == 3
+      assert registers_ == Registers.set(registers, 7, 1)
+      assert map_size(context_.m) == 3
 
       # Verify machine state
-      assert %Integrated{program: ^test_program} =
-               Map.get(new_context.m, 1)
+      assert %Integrated{program: ^test_program} = Map.get(context_.m, 1)
     end
   end
 end

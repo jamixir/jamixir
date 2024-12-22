@@ -1,11 +1,11 @@
-defmodule PVM.Host.Refine.Internal.InvokeTest do
+defmodule PVM.Host.Refine.InvokeTest do
   use ExUnit.Case
-  alias PVM.Host.Refine.Internal
-  alias PVM.{Memory, RefineContext, Integrated, Registers}
+  alias PVM.Host.Refine
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
 
-  describe "invoke_pure/3" do
+  describe "invoke/4" do
     setup do
       # Program that sets registers [1,2,3] to [30,11,10] and halts
       {:ok, program} =
@@ -18,48 +18,49 @@ defmodule PVM.Host.Refine.Internal.InvokeTest do
         program: program
       }
 
-      context = %RefineContext{m: %{1 => machine}}
+      context = %Context{m: %{1 => machine}}
       memory = %Memory{}
+      gas = 100
 
-      {:ok, context: context, memory: memory, machine: machine}
+      {:ok, context: context, memory: memory, machine: machine, gas: gas}
     end
 
-    test "returns OOB when memory is not readable", %{context: context} do
+    test "returns OOB when memory is not readable", %{context: context, gas: gas} do
       registers = %Registers{r7: 1, r8: 0}
       memory = %Memory{} |> Memory.set_default_access(nil)
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.invoke(gas, registers, memory, context)
 
-      assert new_registers.r7 == oob()
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, oob())
+      assert memory_ == memory
+      assert context_ == context
     end
 
-    test "returns WHO when machine doesn't exist", %{memory: memory, context: context} do
+    test "returns WHO when machine doesn't exist", %{memory: memory, context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0}
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.invoke(gas, registers, memory, context)
 
-      assert new_registers.r7 == who()
-      assert new_memory == memory
-      assert new_context == context
+      assert registers_ == Registers.set(registers, 7, who())
+      assert memory_ == memory
+      assert context_ == context
     end
 
-    test "executes program successfully", %{context: context, memory: memory} do
+    test "executes program successfully", %{context: context, memory: memory, gas: gas} do
       # Set up registers with machine ID (1) and output offset (0)
       registers = %Registers{r7: 1, r8: 0}
 
-      {new_registers, new_memory, new_context} =
-        Internal.invoke_pure(registers, memory, context)
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.invoke(gas, registers, memory, context)
 
       # Check that execution halted successfully
-      assert new_registers.r7 == halt()
+      assert registers_ == Registers.set(registers, 7, halt())
 
       # Read the execution results from memory
-      {:ok, _gas_bytes} = Memory.read(new_memory, 0, 8)
-      {:ok, register_bytes} = Memory.read(new_memory, 8, 13 * 4)
+      {:ok, _gas_bytes} = Memory.read(memory_, 0, 8)
+      {:ok, register_bytes} = Memory.read(memory_, 8, 13 * 4)
 
       # Decode registers from memory
       internal_vm_registers =
@@ -78,7 +79,7 @@ defmodule PVM.Host.Refine.Internal.InvokeTest do
       assert Registers.get(internal_vm_registers, [1, 2, 3]) == [30, 11, 10]
 
       # Verify machine state in context
-      machine = Map.get(new_context.m, 1)
+      machine = Map.get(context_.m, 1)
       # Should be at position 0 after halt
       assert machine.counter == 0
       assert {:ok, <<30>>} = Memory.read(machine.memory, 3, 1)

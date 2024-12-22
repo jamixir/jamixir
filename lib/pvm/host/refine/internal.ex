@@ -1,36 +1,21 @@
+# Formula (B.22) v0.5.2
 defmodule PVM.Host.Refine.Internal do
-  alias PVM.Integrated
   alias Util.Hash
-  import PVM.Constants.{HostCallResult, InnerPVMResult}
   alias System.State.ServiceAccount
-  alias PVM.{Memory, RefineContext, Registers}
+  alias PVM.{Memory, Integrated, Registers, Host.Refine.Context, Host.Refine.Result.Internal}
   use Codec.{Decoder, Encoder}
+  import PVM.{Constants.HostCallResult, Constants.InnerPVMResult}
+  @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
-  @moduledoc """
-  Ω: Virtual machine host-call functions. See appendix B.
-  ΩA: Assign-core host-call.
-  ΩC: Checkpoint host-call.
-  ΩD: Designate-validators host-call.
-  ΩE: Empower-service host-call.
-  ΩF : Forget-preimage host-call.
-  ΩG: Gas-remaining host-call.
-  ΩH: Historical-lookup-preimagehost-call.
-  ΩK: Kickoff-pvm host-call.
-  ΩM : Make-pvm host-call.
-  ΩN : New-service host-call.
-  ΩO: Poke-pvm host-call.
-  ΩP : Peek-pvm host-call.
-  ΩQ: Quit-service host-call.
-  ΩS: Solicit-preimage host-call.
-  ΩT : Transfer host-call.
-  ΩU : Upgrade-service host-call.
-  ΩX: Expunge-pvmhost-call.
-  ΩY : Import segment host-call.
-  ΩZ: Export segment host-call.
-  """
-  alias PVM.Memory
-
-  def historical_lookup_pure(registers, memory, context, index, service_accounts, timeslot) do
+  @spec historical_lookup_internal(
+          Registers.t(),
+          Memory.t(),
+          Context.t(),
+          non_neg_integer(),
+          services(),
+          non_neg_integer()
+        ) :: Internal.t()
+  def historical_lookup_internal(registers, memory, context, index, service_accounts, timeslot) do
     w7 = registers.r7
 
     a =
@@ -45,10 +30,8 @@ defmodule PVM.Host.Refine.Internal do
           nil
       end
 
-    # Extract registers[8..11] for [ho, bo, bz]
     [ho, bo, bz] = Registers.get(registers, [8, 9, 10])
 
-    # Calculate hash if memory segment is valid
     h =
       with {:ok, mem_segment} <- PVM.Memory.read(memory, ho, 32) do
         Hash.default(mem_segment)
@@ -56,7 +39,6 @@ defmodule PVM.Host.Refine.Internal do
         _ -> :error
       end
 
-    # Lookup value using service account's historical lookup
     v =
       if a != nil and h != :error do
         ServiceAccount.historical_lookup(a, timeslot, h)
@@ -64,10 +46,9 @@ defmodule PVM.Host.Refine.Internal do
         nil
       end
 
-    # Update memory if value exists
     is_writable = Memory.check_range_access?(memory, bo, bz, :write)
 
-    updated_memory =
+    memory_ =
       if v != nil and is_writable do
         write_value = binary_part(v, 0, min(byte_size(v), bz))
 
@@ -79,7 +60,6 @@ defmodule PVM.Host.Refine.Internal do
         memory
       end
 
-    # Set register 7 based on conditions
     w7_ =
       cond do
         !is_writable or h == :error -> oob()
@@ -88,11 +68,11 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     registers_ = Registers.set(registers, :r7, w7_)
-
-    {registers_, updated_memory, context}
+    %Internal{registers: registers_, memory: memory_, context: context}
   end
 
-  def import_pure(registers, memory, context, import_segments) do
+  @spec import_internal(Registers.t(), Memory.t(), Context.t(), [binary()]) :: Internal.t()
+  def import_internal(registers, memory, context, import_segments) do
     w7 = registers.r7
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
     o = registers.r8
@@ -100,7 +80,7 @@ defmodule PVM.Host.Refine.Internal do
 
     write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
-    updated_memory =
+    memory_ =
       if v != nil and write_check do
         case PVM.Memory.write(memory, o, v) do
           {:ok, new_memory} -> new_memory
@@ -118,12 +98,13 @@ defmodule PVM.Host.Refine.Internal do
         true -> ok()
       end
 
-    {Registers.set(registers, :r7, w7_), updated_memory, context}
+    registers_ = Registers.set(registers, :r7, w7_)
+    %Internal{registers: registers_, memory: memory_, context: context}
   end
 
-  def export_pure(registers, memory, %RefineContext{e: e} = context, export_offset) do
+  @spec export_internal(Registers.t(), Memory.t(), Context.t(), non_neg_integer()) :: Internal.t()
+  def export_internal(registers, memory, %Context{e: e} = context, export_offset) do
     p = registers.r7
-    # size, capped by WE WS
     z = min(registers.r8, Constants.wswe())
 
     # Try to read memory segment
@@ -134,7 +115,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Update register 7 and export segments based on conditions
-    {new_registers, new_export_segments} =
+    {registers_, export_segments_} =
       cond do
         # Memory read failed
         x == :error ->
@@ -149,10 +130,11 @@ defmodule PVM.Host.Refine.Internal do
           {Registers.set(registers, :r7, length(e) + export_offset), e ++ [x]}
       end
 
-    {new_registers, memory, %{context | e: new_export_segments}}
+    %Internal{registers: registers_, memory: memory, context: %{context | e: export_segments_}}
   end
 
-  def machine_pure(registers, memory, %RefineContext{m: m} = context) do
+  @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def machine_internal(registers, memory, %Context{m: m} = context) do
     # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Registers.get(registers, [7, 8, 9])
 
@@ -175,7 +157,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Update register 7 and memory based on conditions
-    {new_registers, new_context} =
+    {registers_, context_} =
       cond do
         p == :error ->
           # Invalid memory access
@@ -191,10 +173,11 @@ defmodule PVM.Host.Refine.Internal do
           {Registers.set(registers, :r7, n), %{context | m: Map.put(m, n, machine)}}
       end
 
-    {new_registers, memory, new_context}
+    %Internal{registers: registers_, memory: memory, context: context_}
   end
 
-  def peek_pure(registers, memory, %RefineContext{m: m} = context) do
+  @spec peek_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def peek_internal(registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -214,7 +197,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Update registers and memory based on conditions
-    {new_registers, new_memory} =
+    {registers_, memory_} =
       case data do
         :error ->
           {Registers.set(registers, :r7, oob()), memory}
@@ -227,10 +210,11 @@ defmodule PVM.Host.Refine.Internal do
           {Registers.set(registers, :r7, ok()), new_memory}
       end
 
-    {new_registers, new_memory, context}
+    %Internal{registers: registers_, memory: memory_, context: context}
   end
 
-  def poke_pure(registers, memory, %RefineContext{m: m} = context) do
+  @spec poke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def poke_internal(registers, memory, %Context{m: m} = context) do
     # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
 
@@ -252,7 +236,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     # Update registers and machine memory based on conditions
-    {new_registers, new_context} =
+    {registers_, context_} =
       case s do
         :error ->
           {Registers.set(registers, :r7, oob()), context}
@@ -266,110 +250,133 @@ defmodule PVM.Host.Refine.Internal do
           {Registers.set(registers, :r7, ok()), %{context | m: Map.put(m, n, machine_)}}
       end
 
-    {new_registers, memory, new_context}
+    %Internal{registers: registers_, memory: memory, context: context_}
   end
 
-  def zero_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
+  @spec zero_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def zero_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
-    cond do
-      p < 16 or p + c > 0x1000_00000 / zp ->
-        {Registers.set(registers, :r7, oob()), memory, context}
+    {registers_, context_} =
+      cond do
+        p < 16 or p + c > 0x1000_00000 / zp ->
+          {Registers.set(registers, :r7, oob()), context}
 
-      not Map.has_key?(m, n) ->
-        {Registers.set(registers, :r7, who()), memory, context}
+        not Map.has_key?(m, n) ->
+          {Registers.set(registers, :r7, who()), context}
 
-      true ->
-        machine = Map.get(m, n)
+        true ->
+          machine = Map.get(m, n)
 
-        u_ =
-          Memory.set_access_by_page(machine.memory, p, c, :write)
-          |> Memory.write(p * zp, <<0::size(c * zp)>>)
-          |> elem(1)
+          u_ =
+            Memory.set_access_by_page(machine.memory, p, c, :write)
+            |> Memory.write(p * zp, <<0::size(c * zp)>>)
+            |> elem(1)
 
-        m_ = Map.put(m, n, %{machine | memory: u_})
-        {Registers.set(registers, :r7, ok()), memory, %{context | m: m_}}
-    end
+          m_ = Map.put(m, n, %{machine | memory: u_})
+          {Registers.set(registers, :r7, ok()), %{context | m: m_}}
+      end
+
+    %Internal{registers: registers_, memory: memory, context: context_}
   end
 
-  def void_pure(registers, %Memory{page_size: zp} = memory, %RefineContext{m: m} = context) do
+  @spec void_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def void_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
-    cond do
-      p + c >= 0x1_0000_0000 ->
-        {Registers.set(registers, :r7, oob()), memory, context}
+    {registers_, context_} =
+      cond do
+        p + c >= 0x1_0000_0000 ->
+          {Registers.set(registers, :r7, oob()), context}
 
-      not Map.has_key?(m, n) ->
-        {Registers.set(registers, :r7, who()), memory, context}
+        not Map.has_key?(m, n) ->
+          {Registers.set(registers, :r7, who()), context}
 
-      true ->
-        machine = Map.get(m, n)
+        true ->
+          machine = Map.get(m, n)
 
-        case Memory.check_pages_access?(machine.memory, p, c, :read) do
-          false ->
-            {Registers.set(registers, :r7, oob()), memory, context}
+          case Memory.check_pages_access?(machine.memory, p, c, :read) do
+            false ->
+              {Registers.set(registers, :r7, oob()), context}
 
-          true ->
-            u_ =
-              Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
-              |> elem(1)
-              |> Memory.set_access_by_page(p, c, nil)
+            true ->
+              u_ =
+                Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
+                |> elem(1)
+                |> Memory.set_access_by_page(p, c, nil)
 
-            {Registers.set(registers, :r7, ok()), memory,
-             %{context | m: Map.put(m, n, %{machine | memory: u_})}}
-        end
-    end
+              {Registers.set(registers, :r7, ok()),
+               %{context | m: Map.put(m, n, %{machine | memory: u_})}}
+          end
+      end
+
+    %Internal{registers: registers_, memory: memory, context: context_}
   end
 
-  def invoke_pure(registers, memory, %RefineContext{m: m} = context) do
+  @spec invoke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def invoke_internal(registers, memory, %Context{m: m} = context) do
     # Extract registers and validate initial conditions
+
     case validate_invoke_params(registers, memory) do
       {:error, _} ->
-        {Registers.set(registers, :r7, oob()), memory, context}
+        %Internal{
+          registers: Registers.set(registers, :r7, oob()),
+          memory: memory,
+          context: context
+        }
 
-      {:ok, {n, o, gas, vm_registers}} ->
-        case Map.get(m, n) do
-          nil ->
-            {Registers.set(registers, :r7, who()), memory, context}
+      {:ok, {n, o, gas_internal, vm_registers}} ->
+        {registers_, memory_, context_} =
+          case Map.get(m, n) do
+            nil ->
+              {Registers.set(registers, :r7, who()), memory, context}
 
-          machine ->
-            %Integrated{counter: i, memory: u, program: p} = machine
-            vm_state = %PVM.State{counter: i, gas: gas, registers: vm_registers, memory: u}
+            machine ->
+              %Integrated{counter: i, memory: u, program: p} = machine
 
-            # Execute the VM
-            {exit_reason, %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
-              PVM.VM.execute(p, vm_state)
+              vm_state = %PVM.State{
+                counter: i,
+                gas: gas_internal,
+                registers: vm_registers,
+                memory: u
+              }
 
-            # gas_ and registers_ go into output memory
-            w_list = Registers.get(w_, Enum.to_list(0..12))
-            write_value = e_le(gas_, 8) <> (w_list |> Enum.map(&e_le(&1, 4)) |> Enum.join())
-            {:ok, memory_} = Memory.write(memory, o, write_value)
+              # Execute the VM
+              {exit_reason, %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
+                PVM.VM.execute(p, vm_state)
 
-            #post execution memory goes into machine (in context)
-            machine_ = %{
-              machine
-              | memory: u_,
-                counter:
-                  case exit_reason do
-                    {:ecall, _} -> i_ + 1
-                    _ -> i_
-                  end
-            }
+              # gas_ and registers_ go into output memory
+              w_list = Registers.get(w_, Enum.to_list(0..12))
+              write_value = e_le(gas_, 8) <> (w_list |> Enum.map(&e_le(&1, 4)) |> Enum.join())
+              {:ok, memory_} = Memory.write(memory, o, write_value)
 
-            context_ = %{context | m: Map.put(m, n, machine_)}
+              # post execution memory goes into machine (in context)
+              machine_ = %{
+                machine
+                | memory: u_,
+                  counter:
+                    case exit_reason do
+                      {:ecall, _} -> i_ + 1
+                      _ -> i_
+                    end
+              }
 
-            {w7_, w8_} =
-              case exit_reason do
-                {:ecall, h} -> {host(), h}
-                {:fault, x} -> {fault(), x}
-                :out_of_gas -> {oog(), o}
-                :panic -> {panic(), o}
-                :halt -> {halt(), o}
-                :continue -> {ok(), o}
-              end
+              context_ = %{context | m: Map.put(m, n, machine_)}
 
-            {Registers.set(registers, %{r7: w7_, r8: w8_}), memory_, context_}
-        end
+              {w7_, w8_} =
+                case exit_reason do
+                  {:ecall, h} -> {host(), h}
+                  {:fault, x} -> {fault(), x}
+                  :out_of_gas -> {oog(), o}
+                  :panic -> {panic(), o}
+                  :halt -> {halt(), o}
+                  :continue -> {ok(), o}
+                end
+
+              {Registers.set(registers, %{r7: w7_, r8: w8_}), memory_, context_}
+          end
+
+        %Internal{registers: registers_, memory: memory_, context: context_}
     end
   end
 
@@ -400,15 +407,24 @@ defmodule PVM.Host.Refine.Internal do
     end
   end
 
-  def expunge_pure(registers, memory, %RefineContext{m: m} = context) do
+  @spec expunge_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def expunge_internal(registers, memory, %Context{m: m} = context) do
     n = registers.r7
 
     case Map.get(m, n) do
       nil ->
-        {Registers.set(registers, :r7, who()), memory, context}
+        %Internal{
+          registers: Registers.set(registers, :r7, who()),
+          memory: memory,
+          context: context
+        }
 
       %Integrated{counter: i} ->
-        {Registers.set(registers, :r7, i), memory, %{context | m: Map.delete(m, n)}}
+        %Internal{
+          registers: Registers.set(registers, :r7, i),
+          memory: memory,
+          context: %{context | m: Map.delete(m, n)}
+        }
     end
   end
 end

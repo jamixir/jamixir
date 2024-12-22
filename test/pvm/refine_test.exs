@@ -2,7 +2,7 @@ defmodule PVM.RefineIntegrationTest do
   use ExUnit.Case
   alias System.State.ServiceAccount
   alias Util.Hash
-  alias PVM.RefineParams
+  alias PVM.Refine.Params
   import Mox
   use PVM.Instructions
   alias PVM.Utils.ProgramUtils
@@ -54,7 +54,7 @@ defmodule PVM.RefineIntegrationTest do
       }
 
       # Define parameters for refine
-      params = %RefineParams{
+      params = %Params{
         service: 1,
         gas: 1000,
         service_code: hash,
@@ -68,7 +68,7 @@ defmodule PVM.RefineIntegrationTest do
 
       services = %{1 => service_account}
 
-      assert {<<>>, []} = PVM.refine(params, services)
+      assert {<<>>, []} = PVM.Refine.execute(params, services)
     end
   end
 end

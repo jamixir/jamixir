@@ -21,6 +21,9 @@ defmodule Constants do
   @doc "C - total number of cores"
   defmockable(:core_count, do: Jamixir.config()[:core_count])
 
+  @doc "D - The period in timeslots after which an unreferenced preimage may be expunged"
+  defmockable(:forget_delay, do: 28_800)
+
   @doc "E - The length of an epoch in timeslots."
   defmockable(:epoch_length, do: Jamixir.config()[:epoch_length])
 

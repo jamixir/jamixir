@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
-  alias PVM.RefineParams
+  alias PVM.Refine
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
@@ -238,8 +238,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
     pa = WorkPackage.implied_authorizer(p, services)
 
-    PVM.refine(
-      %RefineParams{
+    Refine.execute(
+      %Refine.Params{
         service_code: w.code_hash,
         gas: w.refine_gas_limit,
         service: w.service,
@@ -256,8 +256,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       },
       services
     )
-
-    # ...
   end
 
   defp calculate_segments(%WorkPackage{} = _wp) do
