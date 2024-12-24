@@ -8,8 +8,7 @@ defmodule PVM.Constants.HostCallResult do
   @core 0xFFFFFFFFFFFFFFFA
   @cash 0xFFFFFFFFFFFFFFF9
   @low 0xFFFFFFFFFFFFFFF8
-  @high 0xFFFFFFFFFFFFFFF7
-  @huh 0xFFFFFFFFFFFFFFF6
+  @huh 0xFFFFFFFFFFFFFFF7
   @ok 0
 
   def none, do: @none
@@ -20,7 +19,6 @@ defmodule PVM.Constants.HostCallResult do
   def core, do: @core
   def cash, do: @cash
   def low, do: @low
-  def high, do: @high
   def huh, do: @huh
   def ok, do: @ok
 end

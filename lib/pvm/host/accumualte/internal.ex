@@ -246,37 +246,31 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec transfer_internal(
           Registers.t(),
           Memory.t(),
-          {Context.t(), Context.t()},
-          non_neg_integer()
+          {Context.t(), Context.t()}
         ) ::
           Result.Internal.t()
-  def transfer_internal(registers, memory, {x, _y} = context_pair, gas) do
-    # let [d,a,g,o] = ω7..11
-    [d, a, g, o] = Registers.get(registers, [7, 8, 9, 10])
+  def transfer_internal(registers, memory, {x, _y} = context_pair) do
+    # let [d,a,l,o] = ω7..11
+    [d, a, l, o] = Registers.get(registers, [7, 8, 9, 10])
 
     # let d = xd ∪ (xu)d
     all_services = Map.merge(x.services, get_in(x, [:accumulation, :services]))
 
     # Read transfer data for memo
+    # otherwise if No...+WT ∈ Vμ
     t =
-      if d in [x.service, 0xFFFFFFFFFFFFFFFF] do
-        # if d ∈ {xs, 2^64 - 1}
-        nil
-      else
-        # otherwise if No...+WT ∈ Vμ
-        case Memory.read(memory, o, Constants.memo_size()) do
-          {:ok, memo} ->
-            %DeferredTransfer{
-              sender: x.service,
-              receiver: d,
-              amount: a,
-              memo: memo,
-              gas_limit: gas
-            }
+      case Memory.read(memory, o, Constants.memo_size()) do
+        {:ok, memo} ->
+          %DeferredTransfer{
+            sender: x.service,
+            receiver: d,
+            amount: a,
+            memo: memo,
+            gas_limit: l
+          }
 
-          _ ->
-            :error
-        end
+        _ ->
+          :error
       end
 
     # let b = (xs)b - a
@@ -294,12 +288,8 @@ defmodule PVM.Host.Accumulate.Internal do
           {Registers.set(registers, :r7, who()), context_pair}
 
         # otherwise if g < d[d]m
-        g < get_in(all_services, [d, :gas_limit_m]) ->
+        l < get_in(all_services, [d, :gas_limit_m]) ->
           {Registers.set(registers, :r7, low()), context_pair}
-
-        # otherwise if ϱ < g
-        gas < g ->
-          {Registers.set(registers, :r7, high()), context_pair}
 
         # otherwise if b < (xs)t
         b < ServiceAccount.threshold_balance(xs) ->

@@ -56,18 +56,14 @@ defmodule PVM.Host.Accumulate do
   end
 
   def transfer(gas, registers, memory, context_pair) do
-    # disregard gas cost for now, and use the default gas = 10
-    # since this purutcular gas cost is non-sensical and anyway the gas model
-    # is not yet complete
-    # https://matrix.to/#/!ddsEwXlCWnreEGuqXZ:polkadot.io/$QapeS2oxrt0qA7h79GrDpzMGXqcTyonTXH1S1VG3X0Y?via=polkadot.io&via=matrix.org&via=parity.io
-    # https://matrix.to/#/!ddsEwXlCWnreEGuqXZ:polkadot.io/$MTfPZqDA9zO3ybSPc13zrA8vWf2H9wiJt6AmpT3n5Sg?via=polkadot.io&via=matrix.org&via=parity.io
+    gas_cost = 10 + registers.r9
 
-    # gas_cost = 10 + registers.r8 + registers.r9 * 0x1000_0000
     with_gas(
       Result,
       {gas, registers, memory, context_pair},
-      &transfer_internal/4,
-      [gas]
+      &transfer_internal/3,
+      [],
+      gas_cost
     )
   end
 

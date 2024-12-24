@@ -602,30 +602,6 @@ defmodule PVM.Host.AccumulateTest do
       assert context_ == context
     end
 
-    test "returns HIGH when gas limit exceeds available gas", %{
-      memory: memory,
-      context: context,
-      gas: gas
-    } do
-      registers = %Registers{
-        # destination
-        r7: 456,
-        # amount
-        r8: 100,
-        # gas limit
-        r9: gas * 2,
-        # memo offset
-        r10: 0
-      }
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Accumulate.transfer(gas, registers, memory, context)
-
-      assert registers_ == Registers.set(registers, 7, high())
-      assert memory_ == memory
-      assert context_ == context
-    end
-
     test "returns CASH when balance would fall below threshold", %{
       memory: memory,
       context: {x, y},
@@ -674,7 +650,7 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
-        Accumulate.transfer(gas * 3, registers, memory, {x, y})
+        Accumulate.transfer(gas  + 20, registers, memory, {x, y})
 
       assert registers_ == Registers.set(registers, 7, ok())
       assert memory_ == memory
@@ -692,7 +668,7 @@ defmodule PVM.Host.AccumulateTest do
                receiver: 456,
                amount: amount,
                memo: <<1::Constants.memo_size()*8>>,
-               gas_limit: gas * 3
+               gas_limit: gas 
              }
     end
   end
