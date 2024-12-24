@@ -37,5 +37,5 @@
   "temp": {:hex, :temp, "0.4.9", "eb6355bfa7925a568b3d9eb3bb57e89aa6d2b78bfe8dfb6b698e090631b7f41f", [:mix], [], "hexpm", "bc8bf7b27d9105bef933ef4bf4ba37ac6b899dbeba329deaa88c60b62d6b4b6d"},
   "toml": {:hex, :toml, "0.7.0", "fbcd773caa937d0c7a02c301a1feea25612720ac3fa1ccb8bfd9d30d822911de", [:mix], [], "hexpm", "0690246a2478c1defd100b0c9b89b4ea280a22be9a7b313a8a058a2408a2fa70"},
   "unicode_util_compat": {:hex, :unicode_util_compat, "0.7.0", "bc84380c9ab48177092f43ac89e4dfa2c6d62b40b8bd132b1059ecc7232f9a78", [:rebar3], [], "hexpm", "25eee6d67df61960cf6a794239566599b09e17e668d3700247bc498638152521"},
-  "x509": {:hex, :x509, "0.8.10", "5d1ec6d5f4db31982f9dc34e6a1eebd631d04599e0b6c1c259f1dadd4495e11f", [:mix], [], "hexpm", "a191221665af28b9bdfff0c986ef55f80e126d8ce751bbdf6cefa846410140c0"},
+  "x509": {:git, "https://github.com/jamixir/x509.git", "c3cf9e725a59a6141fa088f4caf0e17e207aff9e", [branch: "master"]},
 }

@@ -36,7 +36,7 @@ defmodule Jamixir.MixProject do
       {:excoveralls, "~> 0.18.3", only: [:test, :full_test]},
       {:httpoison, "~> 2.2.1", only: [:test, :full_test]},
       {:quicer, github: "emqx/quic", tag: "0.1.0"},
-      {:x509, "~> 0.8.10"},
+      {:x509, git: "https://github.com/jamixir/x509.git", branch: "master"},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
