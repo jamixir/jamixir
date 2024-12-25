@@ -1,12 +1,12 @@
-defmodule System.Network.NodeTest do
+defmodule System.Network.ServerTest do
   use ExUnit.Case
 
   alias System.Network.CertUtils
-  alias System.Network.Node
+  alias System.Network.Server
 
   setup_all do
     opts =
-      Node.fixed_opts() ++
+      Server.fixed_opts() ++
         [
           certfile: ~c"./test/system/network/alice_cert.pem",
           keyfile: ~c"./test/system/network/alice_key.pem"
@@ -17,7 +17,7 @@ defmodule System.Network.NodeTest do
 
   describe "run a node" do
     test "smoke test", %{server_options: server_options} do
-      {:ok, _} = Node.start_server(9999, server_options)
+      {:ok, _} = Server.start_server(9999, server_options)
     end
 
     test "run a node with custom certificate", %{server_options: server_options} do
@@ -30,7 +30,7 @@ defmodule System.Network.NodeTest do
 
       opts = server_options ++ [certfile: ~c"priv/j_cert.pem", keyfile: ~c"priv/j.pem"]
 
-      {:ok, _} = Node.start_server(9999, opts)
+      {:ok, _} = Server.start_server(9999, opts)
     end
   end
 end
