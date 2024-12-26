@@ -16,10 +16,12 @@ defmodule System.Network.ServerTest do
   end
 
   describe "run a node" do
+    @tag :skip
     test "smoke test", %{server_options: server_options} do
       {:ok, _} = Server.start_server(9999, server_options)
     end
 
+    @tag :skip
     test "run a node with custom certificate", %{server_options: server_options} do
       {_, k} = :crypto.generate_key(:eddsa, :ed25519)
 

@@ -1,5 +1,6 @@
 defmodule System.Network.Server do
   alias System.Network.CertUtils
+  alias System.Network.Calls
   require Logger
 
   @doc """
@@ -80,8 +81,11 @@ defmodule System.Network.Server do
 
     receive do
       {:quic, message, ^stream, _props} ->
-        Logger.info("Message #{message} received on stream: #{inspect(stream)}")
-        :quicer.send(stream, "pong")
+        <<code::8, bin::binary>> = message
+        Logger.info("Executing call #{code}")
+        result = Calls.call(code, bin)
+        Logger.info("Sending response: #{inspect(result)} of size #{byte_size(result)}")
+        :quicer.send(stream, result)
         handle_stream(stream)
 
       other ->
