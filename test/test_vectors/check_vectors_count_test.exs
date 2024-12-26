@@ -21,6 +21,10 @@ defmodule CheckVectorsCountTest do
       assert_count(HistoryTestVectors, "./history/data")
     end
 
+    test "preimages" do
+      assert_count(PreimagesTestVectors, "./preimages/data")
+    end
+
     test "reports" do
       assert_count(ReportsTestVectors, "./reports/tiny")
     end

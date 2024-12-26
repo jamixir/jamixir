@@ -22,4 +22,10 @@ defmodule System.State.Services do
       Map.put(acc_services, preimage.service, updated_service_account)
     end)
   end
+
+  def from_json(json_data) do
+    for service <- json_data, into: %{} do
+      {service[:id], ServiceAccount.from_json(service[:info])}
+    end
+  end
 end
