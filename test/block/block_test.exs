@@ -26,12 +26,16 @@ defmodule BlockTest do
     extrinsic = build(:extrinsic)
     extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
 
+    parent = build(:decodable_header, timeslot: 99)
+    Storage.put(parent)
+
     valid_block = %Block{
       header:
         build(:header,
           timeslot: 100,
           prior_state_root: state_root,
-          extrinsic_hash: extrinsic_hash
+          extrinsic_hash: extrinsic_hash,
+          parent_hash: h(e(parent))
         ),
       extrinsic: extrinsic
     }
@@ -102,34 +106,16 @@ defmodule BlockTest do
       assert {:error, _} = Block.validate(invalid_block, state)
     end
 
-    test "returns error when extrinsic hash is invalid", %{state: state, state_root: state_root} do
-      extrinsic = build(:extrinsic)
+    test "returns error when extrinsic hash is invalid", %{
+      state: state,
+      valid_block: valid_block
+    } do
 
-      header =
-        build(:header, extrinsic_hash: Hash.one(), timeslot: 100, prior_state_root: state_root)
 
-      block = %Block{header: header, extrinsic: extrinsic}
+      block = put_in(valid_block.header.extrinsic_hash, Hash.one())
       assert {:error, "Invalid extrinsic hash"} = Block.validate(block, state)
     end
 
-    test "validates successfully with correct extrinsic hash", %{
-      state: state,
-      state_root: state_root
-    } do
-      extrinsic = build(:extrinsic)
-      extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
-
-      header =
-        build(:header,
-          extrinsic_hash: extrinsic_hash,
-          timeslot: 100,
-          prior_state_root: state_root
-        )
-
-      block = %Block{header: header, extrinsic: extrinsic}
-
-      assert :ok = Block.validate(block, state)
-    end
   end
 
   describe "preimage validation" do

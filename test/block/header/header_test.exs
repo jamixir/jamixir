@@ -13,47 +13,30 @@ defmodule Block.HeaderTest do
 
   setup_validators(1)
 
-  describe "valid_header?/1" do
-    test "valid_header?/1 returns true when parent_hash is nil" do
-      header = build(:decodable_header, parent_hash: nil, timeslot: past_timeslot())
-      assert Header.valid_header?(header)
+  describe "valid_parent/1" do
+    test "valid_parent/1 returns true when parent_hash is nil and timeslot is 0" do
+      header = build(:decodable_header, parent_hash: nil, timeslot: 0)
+      assert Header.valid_parent(header) == :ok
     end
 
-    test "valid_header?/1 returns false when parent header is not found" do
+    test "valid_parent/1 returns error when parent header is not found" do
       header = %Header{parent_hash: "parent_hash", timeslot: past_timeslot()}
 
-      refute Header.valid_header?(header)
+      assert Header.valid_parent(header) == {:error, ":no_parent"}
     end
 
-    test "valid_header?/1 returns false when timeslot is not greater than parent header's timeslot" do
+    test "valid_parent/1 returns error when timeslot is not greater than parent header's timeslot" do
       parent = build(:decodable_header, timeslot: 1)
 
       header =
-        build(:decodable_header, parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 2)
+        build(:decodable_header, parent_hash: Hash.default(Encodable.encode(parent)), timeslot: 1)
 
       Storage.put(parent)
-      Storage.put(header)
 
-      assert Header.valid_header?(header)
+
+      assert Header.valid_parent(header) == {:error, ":invalid_parent_timeslot"}
     end
 
-    test "valid_header?/1 returns false when timeslot is in the future" do
-      parent = build(:decodable_header, timeslot: 3)
-
-      header =
-        build(:decodable_header, parent_hash: h(e(parent)), timeslot: 2)
-
-      Storage.put(parent)
-      Storage.put(header)
-
-      assert !Header.valid_header?(header)
-    end
-
-    test "valid_header?/1 returns false if timeslot is bigger now" do
-      header = %Header{parent_hash: nil, timeslot: future_timeslot()}
-
-      assert !Header.valid_header?(header)
-    end
   end
 
   describe "valid_extrinsic_hash?/2" do
@@ -109,8 +92,9 @@ defmodule Block.HeaderTest do
     setup do
       state = %State{timeslot: 99}
       state_root = Merklization.merkelize_state(State.serialize(state))
-
-      {:ok, header: %Header{timeslot: 100, prior_state_root: state_root}, state: state}
+      parent = build(:decodable_header, timeslot: 99)
+      Storage.put(parent)
+      {:ok, header: %Header{timeslot: 100, prior_state_root: state_root, parent_hash: h(e(parent))}, state: state}
     end
 
     test "returns :ok when all conditions are met", %{header: header, state: state} do
@@ -131,8 +115,8 @@ defmodule Block.HeaderTest do
       assert String.starts_with?(message, "Invalid block time: block_time")
     end
 
-    test "returns error when state root is invalid", %{state: state} do
-      header = %Header{timeslot: 100, prior_state_root: "invalid"}
+    test "returns error when state root is invalid", %{state: state, header: header} do
+      header = put_in(header.prior_state_root, Hash.zero())
       assert {:error, message} = Header.validate(header, state)
       assert String.starts_with?(message, "Invalid state root.")
     end
