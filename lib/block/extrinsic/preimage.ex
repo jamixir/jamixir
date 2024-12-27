@@ -1,18 +1,20 @@
 defmodule Block.Extrinsic.Preimage do
   alias Codec.VariableSize
-  alias Util.{Collections, Hash}
+  alias Util.Collections
   import SelectiveMock
+  use Codec.Encoder
+
   # Formula (12.28) v0.5.2
   @type t :: %__MODULE__{
-          # i
+          # s
           service: non_neg_integer(),
-          # d
+          # p
           blob: binary()
         }
 
-  # i
+  # s
   defstruct service: 0,
-            # d
+            # p
             blob: <<>>
 
   # Formula (12.29) v0.5.2
@@ -52,7 +54,7 @@ defmodule Block.Extrinsic.Preimage do
         false
 
       service_account ->
-        preimage_hash = Hash.default(preimage.blob)
+        preimage_hash = h(preimage.blob)
         preimage_size = byte_size(preimage.blob)
 
         not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and

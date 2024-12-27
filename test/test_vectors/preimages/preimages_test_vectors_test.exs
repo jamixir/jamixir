@@ -29,15 +29,15 @@ defmodule PreimagesTestVectorsTest do
       :ok
     end
 
-    # test "verify preimages vectors " do
-    #   execute_test("preimage_not_needed-1", "preimages/data")
-    # end
+    test "verify preimages vectors " do
+      execute_test("preimage_not_needed-1", "preimages/data")
+    end
 
-    Enum.each(files_to_test(), fn file_name ->
-      @tag file_name: file_name
-      test "verify preimages vectors #{file_name}", %{file_name: file_name} do
-        execute_test(file_name, "preimages/data")
-      end
-    end)
+    # Enum.each(files_to_test(), fn file_name ->
+    #   @tag file_name: file_name
+    #   test "verify preimages vectors #{file_name}", %{file_name: file_name} do
+    #     execute_test(file_name, "preimages/data")
+    #   end
+    # end)
   end
 end

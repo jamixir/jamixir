@@ -12,7 +12,7 @@ defmodule PreimagesTestVectors do
     do: [
       "preimage_needed-1",
       "preimage_needed-2",
-      # "preimage_not_needed-1",
+      "preimage_not_needed-1",
       "preimage_not_needed-2"
     ]
 
@@ -34,16 +34,7 @@ defmodule PreimagesTestVectors do
     pre_services = Services.from_json(json_data[:pre_state][:accounts] || [])
 
     stub(MockAccumulation, :do_transition, fn _, _, _, _ ->
-      {:ok,
-       %{
-         beefy_commitment: <<>>,
-         authorizer_queue: [],
-         services: pre_services,
-         next_validators: [],
-         privileged_services: %{},
-         accumulation_history: %{},
-         ready_to_accumulate: %{}
-       }}
+      {:ok, %{accumulate_mock_return() | services: pre_services}}
     end)
 
     json_data = put_in(json_data[:pre_state][:tau], json_data[:input][:slot])

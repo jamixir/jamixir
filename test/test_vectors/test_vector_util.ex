@@ -130,19 +130,20 @@ defmodule TestVectorUtil do
     end)
   end
 
+  def accumulate_mock_return do
+    %{
+      beefy_commitment: <<>>,
+      authorizer_queue: [],
+      services: %{},
+      next_validators: [],
+      privileged_services: %{},
+      accumulation_history: %{},
+      ready_to_accumulate: %{}
+    }
+  end
+
   def mock_accumulate do
-    stub(MockAccumulation, :do_transition, fn _, _, _, _ ->
-      {:ok,
-       %{
-         beefy_commitment: <<>>,
-         authorizer_queue: [],
-         services: %{},
-         next_validators: [],
-         privileged_services: %{},
-         accumulation_history: %{},
-         ready_to_accumulate: %{}
-       }}
-    end)
+    stub(MockAccumulation, :do_transition, fn _, _, _, _ -> {:ok, accumulate_mock_return()} end)
   end
 
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do
