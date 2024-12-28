@@ -22,6 +22,7 @@ defmodule Jamixir.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {Jamixir, []},
       extra_applications: [:logger, :mnesia]
     ]
   end
