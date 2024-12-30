@@ -41,26 +41,20 @@ defmodule System.Network.Client do
 
   @spec ask_block(binary, integer, integer) :: list(Block.t())
   def ask_block(hash, direction \\ 0, max_blocks) do
-    message = <<128>> <> hash <> <<direction::8>> <> <<max_blocks::32>>
+    message = hash <> <<direction::8>> <> <<max_blocks::32>>
 
     send_message([],
       do: fn stream ->
-        :quicer.send(stream, message)
+        :quicer.send(stream, <<128>>)
+        Server.send_message(stream, message)
 
         receive do
           {:quic, :dgram_state_changed, _, _} -> nil
         end
 
-        receive do
-          {:quic, bin, ^stream, _} ->
-            Logger.info("Received #{byte_size(bin)} bytes: #{inspect(bin)}")
-            {:ok, Block.decode_list(bin)}
-
-          x ->
-            Logger.error("Unexpected message: #{inspect(x)}")
-            {:error, :unknown_message}
-        after
-          10_000 -> {:error, :timeout}
+        case Server.receive_message(stream) do
+          {:ok, bin} -> Block.decode_list(bin)
+          {:error, _} -> []
         end
       end
     )
