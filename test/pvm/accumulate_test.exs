@@ -58,6 +58,7 @@ defmodule PVM.AccumulateTest do
       }
 
       accumulation = %{accumulation | services: %{256 => service_with_code}}
+
       operands = [
         %Operand{
           o: :big,
@@ -102,11 +103,7 @@ defmodule PVM.AccumulateTest do
           >>
 
       bitmask =
-        e_le(0, 5) <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>>
+        e_le(0, 5) <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>>
 
       binary = PVM.Helper.init(program, bitmask)
       hash = Hash.default(binary)
@@ -121,14 +118,8 @@ defmodule PVM.AccumulateTest do
       accumulation = %Accumulation{
         services: %{256 => service_account}
       }
-      operands = [
-        %Operand{
-          o: <<>>,
-          l: <<0::256>>,
-          k: <<0::256>>,
-          a: <<>>
-        }
-      ]
+
+      operands = [%Operand{o: <<>>, l: <<0::256>>, k: <<0::256>>, a: <<>>}]
 
       {result_acc, transfers, result_hash, gas} =
         Accumulate.execute(accumulation, 0, 256, 1000, operands, init_fn)

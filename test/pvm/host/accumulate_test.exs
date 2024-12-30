@@ -608,7 +608,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas
     } do
       # Update sender balance to be just above threshold
-      sender = get_in(x, [:accumulation, :services, x.service])
+      sender = x.accumulation.services[x.service]
       sender = %{sender | balance: ServiceAccount.threshold_balance(sender) + 50}
       x = put_in(x, [:accumulation, :services, x.service], sender)
 
@@ -650,7 +650,7 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       %Result{registers: registers_, memory: memory_, context: {x_, y_}} =
-        Accumulate.transfer(gas  + 20, registers, memory, {x, y})
+        Accumulate.transfer(gas + 20, registers, memory, {x, y})
 
       assert registers_ == Registers.set(registers, 7, ok())
       assert memory_ == memory
@@ -668,7 +668,7 @@ defmodule PVM.Host.AccumulateTest do
                receiver: 456,
                amount: amount,
                memo: <<1::Constants.memo_size()*8>>,
-               gas_limit: gas 
+               gas_limit: gas
              }
     end
   end

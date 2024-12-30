@@ -18,10 +18,7 @@ defmodule PVM.Accumulate.Operand do
     def encode_o(o), do: e(WorkExecutionError.code(o))
 
     def encode(%PVM.Accumulate.Operand{} = o) do
-      encode_o(o.o) <>
-        e(o.l) <>
-        e(o.k) <>
-        e(o.a)
+      encode_o(o.o) <> e(o.l) <> e(o.k) <> e(o.a)
     end
   end
 end

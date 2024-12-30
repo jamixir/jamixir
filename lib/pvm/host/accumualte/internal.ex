@@ -77,9 +77,9 @@ defmodule PVM.Host.Accumulate.Internal do
 
         true ->
           queue_ =
-            get_in(x, [:accumulation, :authorizer_queue]) |> List.insert_at(registers.r7, c)
+            x.accumulation.authorizer_queue |> List.insert_at(registers.r7, c)
 
-          x_ = put_in(x, [:accumulation, :authorizer_queue], queue_)
+          x_ = put_in(x.accumulation.authorizer_queue, queue_)
           {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
       end
 
@@ -181,7 +181,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {w7_, computed_service, accumulation_services_} =
       (
         x_i = x.computed_service
-        xu_d = get_in(x, [:accumulation, :services])
+        xu_d = x.accumulation.services
 
         cond do
           c == :error ->
@@ -254,7 +254,7 @@ defmodule PVM.Host.Accumulate.Internal do
     [d, a, l, o] = Registers.get(registers, [7, 8, 9, 10])
 
     # let d = xd ∪ (xu)d
-    all_services = Map.merge(x.services, get_in(x, [:accumulation, :services]))
+    all_services = Map.merge(x.services, x.accumulation.services)
 
     # Read transfer data for memo
     # otherwise if No...+WT ∈ Vμ
@@ -284,11 +284,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {Registers.set(registers, :r7, oob()), context_pair}
 
         # otherwise if d ∉ K(d)
-        not Map.has_key?(all_services, d) ->
+        all_services[d] == nil ->
           {Registers.set(registers, :r7, who()), context_pair}
 
         # otherwise if g < d[d]m
-        l < get_in(all_services, [d, :gas_limit_m]) ->
+        l < all_services[d][:gas_limit_m] ->
           {Registers.set(registers, :r7, low()), context_pair}
 
         # otherwise if b < (xs)t
@@ -322,7 +322,7 @@ defmodule PVM.Host.Accumulate.Internal do
     a = xs.balance - ServiceAccount.threshold_balance(xs) + Constants.service_minimum_balance()
 
     # let d = xd ∪ (xu)d
-    all_services = Map.merge(x.services, get_in(x, [:accumulation, :services]))
+    all_services = Map.merge(x.services, x.accumulation.services)
 
     # Read transfer data for memo
     t =
@@ -348,7 +348,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, registers_, x_} =
       (
-        x_u_d = get_in(x, [:accumulation, :services])
+        x_u_d = x.accumulation.services
 
         x_s = x.service
 
