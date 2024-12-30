@@ -1,5 +1,4 @@
 defmodule PVM.Host.Gas do
-
   @default_gas 10
   def default_gas, do: @default_gas
 

@@ -6,12 +6,11 @@ defmodule PVM.Host.Refine.PokeTest do
 
   describe "poke_pure/3" do
     setup do
-
       {:ok, machine_memory} = Memory.write(%Memory{}, 0, "initial_data")
 
       machine = %Integrated{
         memory: machine_memory,
-        program: "program",
+        program: "program"
       }
 
       context = %Context{m: %{1 => machine}}
@@ -81,7 +80,6 @@ defmodule PVM.Host.Refine.PokeTest do
       {:ok, memory} = Memory.write(%Memory{}, 100, test_data)
 
       registers = %Registers{r7: 1, r8: 100, r9: 0, r10: 32}
-
 
       %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.poke(gas, registers, memory, context)
