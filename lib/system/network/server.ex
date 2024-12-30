@@ -13,8 +13,8 @@ defmodule System.Network.Server do
   """
   @fixed_opts [
     alpn: [~c"jamnp-s/V/H"],
-    peer_bidi_stream_count: 10,
-    peer_unidi_stream_count: 1,
+    peer_bidi_stream_count: 5,
+    peer_unidi_stream_count: 5,
     versions: [:"tlsv1.3"],
     verify: :none
   ]
@@ -69,8 +69,9 @@ defmodule System.Network.Server do
     case :quicer.accept_stream(conn, [], :infinity) do
       {:ok, stream} ->
         Logger.info("New stream accepted: #{inspect(stream)}")
-        spawn(fn -> handle_connection_loop(conn) end)
+        # spawn(fn -> handle_connection_loop(conn) end)
         handle_stream(stream)
+        handle_connection_loop(conn)
 
       {:error, reason} ->
         Logger.error("Error accepting stream: #{inspect(reason)}")
@@ -86,21 +87,30 @@ defmodule System.Network.Server do
           Logger.info("Executing call #{stream_kind}")
           stream_kind
 
+        {:quic, :peer_send_shutdown, ^stream, _props} ->
+          :peer_shutdown
+
         other ->
           Logger.info("unexpected message Received: #{inspect(other)}")
           :invalid
       end
 
-    if code == :invalid do
-      Logger.info("Invalid code received: #{code}. Closing stream.")
-      :quicer.shutdown_stream(stream)
-    else
-      {:ok, bin} = receive_message(stream)
-      Logger.info("Executing call #{code}")
-      result = Calls.call(code, bin)
-      Logger.info("Sending response: #{inspect(result)} of size #{byte_size(result)}")
-      send_message(stream, result)
-      handle_stream(stream)
+    case code do
+      :peer_shutdown ->
+        Logger.info("Peer send shutdown. Closing stream.")
+        :quicer.shutdown_stream(stream)
+
+      :invalid ->
+        Logger.info("Invalid code received: #{code}. Closing stream.")
+        :quicer.close_stream(stream)
+
+      code ->
+        {:ok, bin} = receive_message(stream)
+        Logger.info("Executing call #{code}")
+        result = Calls.call(code, bin)
+        Logger.info("Sending response: #{inspect(result)} of size #{byte_size(result)}")
+        send_message(stream, result)
+        handle_stream(stream)
     end
   end
 
@@ -147,7 +157,7 @@ defmodule System.Network.Server do
   rescue
     error ->
       Logger.error("Error receiving message: #{inspect(error)}")
-      :quicer.shutdown_stream(stream)
+      :quicer.close_stream(stream)
       error
   end
 end
