@@ -13,16 +13,16 @@ defmodule Block.HeaderTest do
 
   setup_validators(1)
 
-  describe "valid_parent/1" do
-    test "valid_parent/1 returns true when parent_hash is nil and timeslot is 0" do
+  describe "validate_parent/1" do
+    test "validate_parent/1 returns true when parent_hash is nil and timeslot is 0" do
       header = build(:decodable_header, parent_hash: nil, timeslot: 0)
-      assert Header.valid_parent(header) == :ok
+      assert Header.validate_parent(header) == :ok
     end
 
     test "valid_parent/1 returns error when parent header is not found" do
       header = %Header{parent_hash: "parent_hash", timeslot: past_timeslot()}
 
-      assert Header.valid_parent(header) == {:error, ":no_parent"}
+      assert Header.validate_parent(header) == {:error, :no_parent}
     end
 
     test "valid_parent/1 returns error when timeslot is not greater than parent header's timeslot" do
@@ -34,7 +34,7 @@ defmodule Block.HeaderTest do
       Storage.put(parent)
 
 
-      assert Header.valid_parent(header) == {:error, ":invalid_parent_timeslot"}
+      assert Header.validate_parent(header) == {:error, :invalid_parent_timeslot}
     end
 
   end

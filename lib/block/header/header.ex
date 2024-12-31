@@ -66,7 +66,7 @@ defmodule Block.Header do
   def validate(%__MODULE__{timeslot: current_timeslot} = header, %System.State{} = state) do
     with :ok <- Time.validate_timeslot_order(state.timeslot, current_timeslot),
          :ok <- Time.validate_block_timeslot(current_timeslot),
-         :ok <- valid_parent(header),
+         :ok <- validate_parent(header),
          :ok <- validate_state_root(header, state),
          :ok <-
            Validators.Safrole.valid_winning_tickets_marker(
@@ -109,22 +109,22 @@ defmodule Block.Header do
   end
 
   def mock(:validate_state_root, _), do: :ok
-  def mock(:valid_parent, _), do: :ok
+  def mock(:validate_parent, _), do: :ok
 
 
-  mockable valid_parent(header) do
+  mockable validate_parent(header) do
     if header.parent_hash == nil and header.timeslot == 0 do
       :ok
     else
       case Storage.get(header.parent_hash, Header) do
         nil ->
-          {:error, ":no_parent"}
+          {:error, :no_parent}
 
       parent_header ->
         if parent_header.timeslot < header.timeslot do
           :ok
         else
-          {:error, ":invalid_parent_timeslot"}
+          {:error, :invalid_parent_timeslot}
         end
     end
   end
