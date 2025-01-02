@@ -4,8 +4,8 @@ defmodule Jamixir.Node do
          app_state <- Storage.get_state() do
       case System.State.add_block(app_state, block) do
         {:ok, new_app_state} ->
-          Storage.put_state(new_app_state)
-          Storage.put_header(block.header)
+          Storage.put(new_app_state)
+          Storage.put(block.header)
           :ok
         {:error, _pre_state, reason} ->
           {:error, reason}
@@ -22,6 +22,7 @@ defmodule Jamixir.Node do
     end
   end
 
+  @spec inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
   def inspect_state(key) do
     case Storage.get_state() do
       nil ->
@@ -41,7 +42,7 @@ defmodule Jamixir.Node do
         case Jason.decode(contents) do
           {:ok, json_data} ->
             state = System.State.from_json(json_data |> Utils.atomize_keys())
-            Storage.put_state(state)
+            Storage.put(state)
             :ok
           error -> error
         end

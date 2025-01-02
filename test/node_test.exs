@@ -31,7 +31,7 @@ defmodule Jamixir.NodeTest do
     assert :ok = Jamixir.Node.load_state("genesis.json")
     parent = build(:decodable_header)
     parent_hash = Hash.default(Encodable.encode(parent))
-    Storage.put_header(parent)
+    Storage.put(parent)
     block = build(:block)
     block = put_in(block.header.parent_hash, parent_hash)
     block_binary = Encodable.encode(block)
