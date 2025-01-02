@@ -13,15 +13,43 @@ defmodule Storage do
       :ok ->
         # Initialize with zero header
         zero_hash = Hash.zero()
+
         :mnesia.transaction(fn ->
           :mnesia.write({@table_name, zero_hash, nil})
           :mnesia.write({@table_name, "t:0", nil})
           :mnesia.write({@table_name, :latest_timeslot, 0})
         end)
-        {:ok, self()}  # Return format that matches OTP expectations
+
+        # Return format that matches OTP expectations
+        {:ok, self()}
+
       error ->
         error
     end
+  end
+
+  def put(%Header{} = header) do
+    encoded_header = Encodable.encode(header)
+    hash = Hash.default(encoded_header)
+
+    :mnesia.transaction(fn ->
+      :mnesia.write({@table_name, hash, encoded_header})
+      :mnesia.write({@table_name, "t:#{header.timeslot}", encoded_header})
+      :mnesia.write({@table_name, :latest_timeslot, header.timeslot})
+    end)
+
+    :ok
+  end
+
+  def put(%State{} = state) do
+    state_root = Merklization.merkelize_state(State.serialize(state))
+
+    :mnesia.transaction(fn ->
+      :mnesia.write({@table_name, @state_key, state})
+      :mnesia.write({@table_name, @state_root_key, state_root})
+    end)
+
+    :ok
   end
 
   def put(object) when is_struct(object), do: put_direct(Encodable.encode(object))
@@ -29,8 +57,13 @@ defmodule Storage do
 
   def put(list) when is_list(list) do
     Enum.map(list, fn
-      blob when is_binary(blob) -> put_direct(blob)
-      struct when is_struct(struct) -> put_direct(Encodable.encode(struct))
+      blob when is_binary(blob) ->
+        put_direct(blob)
+
+      struct when is_struct(struct) ->
+        if encodable?(struct),
+          do: put_direct(Encodable.encode(struct)),
+          else: raise("Struct does not implement Encodable protocol")
     end)
   end
 
@@ -51,17 +84,6 @@ defmodule Storage do
     :mnesia.transaction(fn -> :mnesia.delete({@table_name, hash}) end)
   end
 
-  def put_header(%Header{} = header) do
-    encoded_header = Encodable.encode(header)
-    hash = Hash.default(encoded_header)
-
-    :mnesia.transaction(fn ->
-      :mnesia.write({@table_name, hash, encoded_header})
-      :mnesia.write({@table_name, "t:#{header.timeslot}", encoded_header})
-      :mnesia.write({@table_name, :latest_timeslot, header.timeslot})
-    end)
-  end
-
   def get_header(hash) do
     case get_direct(hash) do
       nil ->
@@ -72,8 +94,6 @@ defmodule Storage do
         h
     end
   end
-
-  def header_exists?(hash), do: get_direct(hash) != nil
 
   def get_latest_header do
     case get_direct(:latest_timeslot) do
@@ -86,15 +106,6 @@ defmodule Storage do
           header -> {slot, header}
         end
     end
-  end
-
-  def put_state(%State{} = state) do
-    state_root = Merklization.merkelize_state(State.serialize(state))
-
-    :mnesia.transaction(fn ->
-      :mnesia.write({@table_name, @state_key, state})
-      :mnesia.write({@table_name, @state_root_key, state_root})
-    end)
   end
 
   def get_state, do: get_direct(@state_key)
@@ -117,6 +128,7 @@ defmodule Storage do
 
   defp put_direct(blob) when is_binary(blob) do
     hash = Hash.default(blob)
+
     case :mnesia.transaction(fn -> :mnesia.write({@table_name, hash, blob}) end) do
       {:atomic, :ok} -> :ok
       error -> {:error, error}
@@ -131,4 +143,6 @@ defmodule Storage do
       _ -> nil
     end
   end
+
+  defp encodable?(data), do: not is_nil(Encodable.impl_for(data))
 end
