@@ -124,5 +124,35 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
 
       assert context_ == context
     end
+
+    test "handles max_64_bit w7 value with valid index", %{
+      memory: memory,
+      context: context,
+      service_accounts: service_accounts,
+      timeslot: timeslot,
+      test_value: test_value,
+      gas: gas
+    } do
+      # Write hash to memory
+      {:ok, memory} = Memory.write(memory, 0, test_value)
+
+      # Setup registers with max 64-bit value (0xFFFF_FFFF_FFFF_FFFF)
+      registers = %Registers{
+        r7: 0xFFFF_FFFF_FFFF_FFFF,
+        r8: 0,
+        r9: 100,
+        r10: byte_size(test_value)
+      }
+
+      %Result{registers: registers_, memory: memory_, context: context_} =
+        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
+
+      assert registers_ == Registers.set(registers, 7, byte_size(test_value))
+
+      # Verify the value was written to memory
+      {:ok, ^test_value} = Memory.read(memory_, 100, byte_size(test_value))
+
+      assert context_ == context
+    end
   end
 end

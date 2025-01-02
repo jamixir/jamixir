@@ -28,64 +28,65 @@ defmodule PVM.Refine do
         host_call_result =
           case host(n) do
             :historical_lookup ->
-            Refine.historical_lookup(
-              gas,
-              registers,
-              memory,
-              context,
-              params.service,
-              services,
-              params.refinement_context.timeslot
-            )
+              Refine.historical_lookup(
+                gas,
+                registers,
+                memory,
+                context,
+                params.service,
+                services,
+                params.refinement_context.timeslot
+              )
 
-          :import ->
-            Refine.import(gas, registers, memory, context, params.import_segments)
+            :import ->
+              Refine.import(gas, registers, memory, context, params.import_segments)
 
-          :export ->
-            Refine.export(gas, registers, memory, context, params.export_offset)
+            :export ->
+              Refine.export(gas, registers, memory, context, params.export_offset)
 
-          :gas ->
-            General.gas(gas, registers, memory, context)
+            :gas ->
+              General.gas(gas, registers, memory, context)
 
-          :machine ->
-            Refine.machine(gas, registers, memory, context)
+            :machine ->
+              Refine.machine(gas, registers, memory, context)
 
-          :peek ->
-            Refine.peek(gas, registers, memory, context)
+            :peek ->
+              Refine.peek(gas, registers, memory, context)
 
-          :zero ->
-            Refine.zero(gas, registers, memory, context)
+            :zero ->
+              Refine.zero(gas, registers, memory, context)
 
-          :poke ->
-            Refine.poke(gas, registers, memory, context)
+            :poke ->
+              Refine.poke(gas, registers, memory, context)
 
-          :void ->
-            Refine.void(gas, registers, memory, context)
+            :void ->
+              Refine.void(gas, registers, memory, context)
 
-          :invoke ->
-            Refine.invoke(gas, registers, memory, context)
+            :invoke ->
+              Refine.invoke(gas, registers, memory, context)
 
-          :expunge ->
-            Refine.expunge(gas, registers, memory, context)
+            :expunge ->
+              Refine.expunge(gas, registers, memory, context)
 
-          _ ->
-            %Refine.Result{
-              exit_reason: :continue,
-              gas: gas - default_gas(),
-              registers: Registers.set(registers, 7, what()),
-              memory: memory,
-              context: context
-            }
-        end
-        %Refine.Result{
+            _ ->
+              %Refine.Result{
+                exit_reason: :continue,
+                gas: gas - default_gas(),
+                registers: Registers.set(registers, 7, what()),
+                memory: memory,
+                context: context
+              }
+          end
+
+        %{
           exit_reason: exit_reason,
           gas: gas,
           registers: registers,
           memory: memory,
           context: context
         } = host_call_result
-        {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
 
+        {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
       end
 
       {_gas, result, %Refine.Context{e: exports}} =

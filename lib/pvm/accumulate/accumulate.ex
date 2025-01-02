@@ -1,4 +1,5 @@
 defmodule PVM.Accumulate do
+  alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.Context
   alias PVM.Host.{Accumulate, General}
   alias System.DeferredTransfer
@@ -32,7 +33,7 @@ defmodule PVM.Accumulate do
     # Formula (B.9) v0.5.2
     x = init_fn.(accumulation_state, service_index)
     # Formula (B.10) v0.5.2
-    d = get_in(x, [:accumulation, :services]) |> Map.merge(x.services)
+    d = Map.merge(x.accumulation.services, x.services)
     s = Context.accumulating_service(x)
 
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
@@ -101,11 +102,13 @@ defmodule PVM.Accumulate do
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
-    if get_in(accumulation_state, [:services, service_index, :code_hash]) == nil do
+    service_code = ServiceAccount.code(accumulation_state.services[service_index])
+
+    if service_code == nil do
       {x.accumulation, [], nil, 0}
     else
       ArgInvoc.execute(
-        x.accumulation.code_hash,
+        service_code,
         5,
         gas,
         e({timeslot, service_index, vs(operands)}),

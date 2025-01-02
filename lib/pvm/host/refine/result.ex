@@ -18,6 +18,7 @@ end
 defmodule PVM.Host.Refine.Result do
   alias PVM.Host.Refine.Result.Internal
   alias PVM.{Memory, Registers}
+  alias PVM.Host.Refine.Context
 
   @type t() :: %__MODULE__{
           exit_reason: :continue | :out_of_gas | :panic,

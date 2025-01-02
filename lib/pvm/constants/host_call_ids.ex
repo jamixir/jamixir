@@ -1,32 +1,35 @@
 defmodule PVM.Constants.HostCallId do
-  @host_call_map %{
-    1 => :gas,
-    2 => :lookup,
-    3 => :read,
-    4 => :write,
-    5 => :info,
-    6 => :bless,
-    7 => :assign,
-    8 => :designate,
-    9 => :checkpoint,
-    10 => :new_work,
-    11 => :upgrade,
-    12 => :transfer,
-    13 => :quit,
-    14 => :solicit,
-    15 => :historical_lookup,
-    16 => :import,
-    17 => :export,
-    18 => :machine,
-    19 => :peek,
-    20 => :poke,
-    21 => :zero,
-    22 => :void,
-    23 => :invoke,
-    24 => :expunge
+  @host_calls {
+    :gas,
+    :lookup,
+    :read,
+    :write,
+    :info,
+    :bless,
+    :assign,
+    :designate,
+    :checkpoint,
+    :new,
+    :upgrade,
+    :transfer,
+    :quit,
+    :solicit,
+    :forget,
+    :historical_lookup,
+    :import,
+    :export,
+    :machine,
+    :peek,
+    :poke,
+    :zero,
+    :void,
+    :invoke,
+    :expunge
   }
 
-  def host(code) do
-    Map.get(@host_call_map, code)
+  def host(code) when code >= 0 and code < tuple_size(@host_calls) do
+    elem(@host_calls, code)
   end
+
+  def host(_), do: nil
 end

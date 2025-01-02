@@ -28,4 +28,14 @@ defmodule System.DeferredTransfer do
     |> Enum.sort_by(fn {t, index} -> {t.sender, index} end)
     |> Enum.map(fn {t, _} -> t end)
   end
+
+  defimpl Encodable do
+    use Codec.Encoder
+    alias System.DeferredTransfer
+
+    # https://github.com/gavofyork/graypaper/pull/171
+    def encode(t = %DeferredTransfer{}) do
+      e({e_le(t.sender, 4), e_le(t.receiver, 4), e_le(t.amount, 8), t.memo, e_le(t.gas_limit, 8)})
+    end
+  end
 end

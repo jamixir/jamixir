@@ -15,18 +15,15 @@ defmodule PVM.Host.Accumulate.Context do
           transfers: list(System.DeferredTransfer.t())
         }
 
-  defstruct [
-    :services,
-    :service,
-    :accumulation,
-    :computed_service,
-    transfers: []
-  ]
+  defstruct services: %{},
+            service: nil,
+            accumulation: %Accumulation{},
+            computed_service: nil,
+            transfers: []
 
   # Formula (B.7) v0.5.2
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
-  def accumulating_service(%__MODULE__{} = x),
-    do: get_in(x, [:accumulation, :services, x.service])
+  def accumulating_service(%__MODULE__{} = x), do: x.accumulation.services[x.service]
 
   @spec update_accumulating_service(
           PVM.Host.Accumulate.Context.t(),
@@ -36,5 +33,26 @@ defmodule PVM.Host.Accumulate.Context do
           PVM.Host.Accumulate.Context.t()
   def update_accumulating_service(x, path, value) do
     put_in(x, [:accumulation, :services, x.service] ++ path, value)
+  end
+
+  # Implement Access behaviour
+  @behaviour Access
+
+  @impl Access
+  def fetch(container, key) do
+    Map.fetch(Map.from_struct(container), key)
+  end
+
+  @impl Access
+  def get_and_update(container, key, fun) do
+    value = Map.get(container, key)
+    {get, update} = fun.(value)
+    {get, Map.put(container, key, update)}
+  end
+
+  @impl Access
+  def pop(container, key) do
+    value = Map.get(container, key)
+    {value, Map.put(container, key, nil)}
   end
 end

@@ -42,6 +42,25 @@ defmodule System.State.ServiceAccount do
             gas_limit_g: 0,
             gas_limit_m: 0
 
+  @behaviour Access
+
+  @impl Access
+  def fetch(%__MODULE__{} = sa, key) when is_atom(key) do
+    Map.fetch(Map.from_struct(sa), key)
+  end
+
+  @impl Access
+  def get_and_update(%__MODULE__{} = sa, key, fun) when is_atom(key) do
+    {get, update} = fun.(Map.get(sa, key))
+    {get, %{sa | key => update}}
+  end
+
+  @impl Access
+  def pop(%__MODULE__{} = sa, key) when is_atom(key) do
+    {value, new_map} = Map.pop(Map.from_struct(sa), key)
+    {value, struct!(ServiceAccount, new_map)}
+  end
+
   # Formula (95) v0.4.5
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
@@ -63,9 +82,9 @@ defmodule System.State.ServiceAccount do
   end
 
   # Formula (91) v0.4.5
-  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
-    p[hash]
-  end
+  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}), do: p[hash]
+
+  def code(nil), do: nil
 
   # Formula (92) v0.4.5
   # Formula (93) v0.4.5

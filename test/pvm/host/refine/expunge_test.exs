@@ -29,7 +29,11 @@ defmodule PVM.Host.Refine.ExpungeTest do
       assert context_ == context
     end
 
-    test "successful expunge with valid machine ID", %{context: context, machine: machine, gas: gas} do
+    test "successful expunge with valid machine ID", %{
+      context: context,
+      machine: machine,
+      gas: gas
+    } do
       registers = %Registers{r7: 1}
       # add another machine to the context
       machine2 = %Integrated{program: "program2"}

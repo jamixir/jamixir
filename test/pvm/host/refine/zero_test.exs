@@ -68,7 +68,7 @@ defmodule PVM.Host.Refine.ZeroTest do
       assert memory_ == %Memory{}
 
       # Get updated machine
-        %Integrated{memory: u_} = Map.get(context_.m, 1)
+      %Integrated{memory: u_} = Map.get(context_.m, 1)
       page_size = u_.page_size
 
       # Verify pages are zeroed

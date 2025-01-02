@@ -19,7 +19,12 @@ defmodule PVM.Accumulate.Utils do
     fn accumulation_state, service_index ->
       {service_state, remaining_services} = Map.pop(accumulation_state.services, service_index)
 
-      new_accumulation = %{accumulation_state | services: %{service_index => service_state}}
+      new_accumulation =
+        if service_state do
+          %{accumulation_state | services: %{service_index => service_state}}
+        else
+          %{accumulation_state | services: %{}}
+        end
 
       computed_service_index =
         e({service_index, n0_, header_timeslot})

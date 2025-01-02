@@ -10,10 +10,7 @@ defmodule PVM.Host.Refine.ImportTest do
       import_segments = ["segment1", "segment2", "segment3"]
       gas = 100
 
-      {:ok,
-       memory: memory,
-       import_segments: import_segments,
-       gas: gas}
+      {:ok, memory: memory, import_segments: import_segments, gas: gas}
     end
 
     test "returns OOB when memory is not writable", %{

@@ -11,4 +11,14 @@ defmodule PVM.Accumulate.Operand do
         }
 
   defstruct [:o, :l, :k, :a]
+
+  defimpl Encodable do
+    use Codec.Encoder
+    def encode_o(o) when is_binary(o), do: e(o)
+    def encode_o(o), do: e(WorkExecutionError.code(o))
+
+    def encode(%PVM.Accumulate.Operand{} = o) do
+      encode_o(o.o) <> e(o.l) <> e(o.k) <> e(o.a)
+    end
+  end
 end

@@ -19,6 +19,16 @@ defmodule PVM.Host.Refine.PeekTest do
       {:ok, context: context, machine: machine, gas: gas}
     end
 
+    test "out of gas", %{context: context, machine: _machine} do
+      registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
+      result = Refine.peek(8, registers, %Memory{}, context)
+      assert result.exit_reason == :out_of_gas
+      assert result.registers == registers
+      assert result.memory == %Memory{}
+      assert result.context == context
+      assert result.gas == 0
+    end
+
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = %Registers{r7: 999, r8: 0, r9: 32, r10: 100}
 
