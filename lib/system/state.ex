@@ -81,7 +81,8 @@ defmodule System.State do
   ]
 
   # Formula (12) v0.4.5
-  @spec add_block(System.State.t(), Block.t()) :: {:error, System.State.t(), <<_::64, _::_*8>>}
+  @spec add_block(System.State.t(), Block.t()) ::
+          {:error, System.State.t(), :atom | String.t()} | {:ok, System.State.t()}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
     # Formula (16) v0.4.5
     # Formula (46) v0.4.5

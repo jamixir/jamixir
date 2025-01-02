@@ -85,7 +85,7 @@ defmodule Block.Header do
 
   # Formula (43) v0.4.5
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
-    state_root = Merklization.merkelize_state(State.serialize(state))
+    state_root = Storage.get_state_root() || Merklization.merkelize_state(State.serialize(state))
 
     if state_root == r,
       do: :ok,

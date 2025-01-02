@@ -7,7 +7,8 @@ defmodule Jamixir do
       # Define workers and child supervisors to be supervised
       # {YourWorker, arg},
       # {YourSupervisor, arg}
-      Jamixir.Node
+      # Jamixir.Node
+      Jamixir.NodeCLIServer
     ]
 
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
