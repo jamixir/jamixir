@@ -9,10 +9,7 @@ defmodule System.Network.Client do
 
     {:ok, conn} = :quicer.connect(conf[:host], conf[:port], Server.default_opts(), conf[:timeout])
 
-    receive do
-      {:quic, :streams_available, c, opts} ->
-        Logger.info("Streams available: #{inspect(c)} - #{inspect(opts)}")
-    end
+    empty_mailbox()
 
     {:ok, stream} = :quicer.start_stream(conn, start_flag: 1)
 
@@ -21,36 +18,41 @@ defmodule System.Network.Client do
 
   def send_message(code, message, client_config \\ []) do
     {conn, stream} = start_client(client_config)
+    Logger.info("Connecting: #{inspect(conn)} to stream #{inspect(stream)}")
+    send_message(conn, stream, code, message)
+  end
 
-    receive do
-      {:quic, :dgram_state_changed, _, _} -> nil
-    end
+  def send_message(conn, stream, code, message) do
+    empty_mailbox()
 
     :quicer.send(stream, <<code::8>>)
     Server.send_message(stream, message)
-
+    Logger.info("Message sent: #{inspect(message)}. Waiting for response...")
     result = Server.receive_message(stream)
 
-    :quicer.shutdown_stream(stream)
+    :quicer.shutdown_stream(stream, 100)
     :quicer.close_connection(conn)
     empty_mailbox()
     result
   end
 
-  defp empty_mailbox do
+  def empty_mailbox do
     receive do
       {:quic, _, _, _} -> empty_mailbox()
     after
-      0 -> :ok
+      100 -> :ok
     end
   end
 
   def ask_block(hash, direction \\ 0, max_blocks) do
     message = hash <> <<direction::8>> <> <<max_blocks::32>>
+    empty_mailbox()
 
     pid = async_operation(fn -> send_message(128, message) end)
 
-    case await_result(pid) do
+    result = await_result(pid)
+
+    case result do
       {:ok, {:ok, bin}} ->
         blocks = Block.decode_list(bin)
         Logger.info("Received blocks: #{inspect(blocks)}")
@@ -62,7 +64,7 @@ defmodule System.Network.Client do
     end
   end
 
-  def await_result(pid, timeout \\ 1_000) do
+  def await_result(pid, timeout \\ 5_000) do
     ref = Process.monitor(pid)
 
     receive do
@@ -71,10 +73,16 @@ defmodule System.Network.Client do
         {:ok, result}
 
       {:DOWN, ^ref, :process, _pid, :normal} ->
+        Logger.warning("Process died before sending results to parent")
         {:ok, nil}
 
       {:DOWN, ^ref, :process, _pid, reason} ->
+        Logger.warning("Process died before sending results to parent")
         {:error, reason}
+
+      n ->
+        Logger.info("Unexpected message: #{inspect(n)}")
+        await_result(pid, timeout)
     after
       timeout ->
         Process.demonitor(ref, [:flush])
@@ -89,6 +97,7 @@ defmodule System.Network.Client do
     spawn(fn ->
       result = fun.()
       send(parent, {:result, result})
+      Process.sleep(1000)
     end)
   end
 end

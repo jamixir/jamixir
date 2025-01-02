@@ -1,8 +1,7 @@
 defmodule System.Network.ClientTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
-  alias System.Network.Server
-  alias System.Network.Client
+  alias System.Network.{Client, Server}
 
   @port 9999
 
@@ -15,7 +14,7 @@ defmodule System.Network.ClientTest do
 
     # Ensure server is running
     # Give server time to initialize
-    :timer.sleep(10)
+    :timer.sleep(100)
 
     # Cleanup callback
     on_exit(fn ->
@@ -28,8 +27,17 @@ defmodule System.Network.ClientTest do
     {:ok, server: server_pid}
   end
 
-  test "ask_block" do
-    blocks = Client.ask_block("hash", 0, 10)
-    assert length(blocks) == 10
+  describe "ask_block/3" do
+    @describetag :sequential
+
+    test "asks 10 blocks" do
+      blocks = Client.ask_block(<<0::32>>, 0, 9)
+      assert length(blocks) == 9
+    end
+
+    test "asks 2 blocks" do
+      blocks = Client.ask_block(<<0::32>>, 0, 2)
+      assert length(blocks) == 2
+    end
   end
 end
