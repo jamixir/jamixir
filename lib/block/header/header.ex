@@ -178,7 +178,9 @@ end
     {winning_tickets_marker, bin} =
       NilDiscriminator.decode(
         bin,
-        &VariableSize.decode(&1, SealKeyTicket, Constants.epoch_length())
+        fn bin ->
+          VariableSize.decode(bin, SealKeyTicket, Constants.epoch_length())
+        end
       )
 
     {offenders_marker, bin} = VariableSize.decode(bin, :hash)

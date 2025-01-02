@@ -1,57 +1,122 @@
 defmodule StorageTest do
-  alias Block.Header
-  alias Util.Hash
   use ExUnit.Case
   use Codec.Encoder
+  alias Util.Merklization
+  alias CubDB.State
+  alias Block.Header
+  alias System.State
+  alias Util.Hash
   import Jamixir.Factory
 
-  describe "binary storage" do
-    test "store/2 stores the value in the storage" do
-      :ok = Storage.put(<<1, 2, 3, 4>>)
-      assert Storage.get(h(<<1, 2, 3, 4>>)) == <<1, 2, 3, 4>>
-    end
-
-    test "store/2 overwrites the existing value in the storage" do
-      :ok = Storage.put(<<1, 2, 3, 4>>)
-      :ok = Storage.put(<<1, 2, 3, 4>>)
-      assert Storage.get(h(<<1, 2, 3, 4>>)) == <<1, 2, 3, 4>>
-    end
-
-    test "get/2 returns nil if the key does not exist in the storage" do
-      assert Storage.get(Hash.random()) == nil
-    end
-
-    test "delete/2 removes the key and its associated value from the storage" do
-      hash = h(<<1, 2, 3, 4>>)
-      Storage.put(<<1, 2, 3, 4>>)
-      Storage.delete(hash)
-      assert Storage.get(hash) == nil
-    end
-
-    test "put a list of blobs" do
-      [b1, b2] = [<<1, 2, 3, 4>>, <<5, 6, 7, 8>>]
-      [h1, h2] = for b <- [b1, b2], do: h(b)
-      Storage.put([b1, b2])
-      assert Storage.get(h1) == b1
-      assert Storage.get(h2) == b2
-    end
+  setup do
+    on_exit(fn ->
+      :mnesia.clear_table(:jam_objects)
+    end)
   end
 
-  import TestHelper
+  describe "KVStorage" do
+    test "put/get basic operations" do
+      assert :ok = KVStorage.put("key1", "value1")
+      assert KVStorage.get("key1") == "value1"
+    end
 
-  describe "objects storage" do
-    setup_validators(1)
+    test "put with map" do
+      entries = %{
+        "key1" => "value1",
+        "key2" => "value2",
+        "key3" => "value3"
+      }
 
-    test "store header" do
+      assert :ok = KVStorage.put(entries)
+
+      assert KVStorage.get("key1") == "value1"
+      assert KVStorage.get("key2") == "value2"
+      assert KVStorage.get("key3") == "value3"
+    end
+
+    test "put binary blob" do
+      blob = <<1, 2, 3, 4>>
+      assert :ok = KVStorage.put(blob)
+
+      blob_hash = Util.Hash.default(blob)
+      assert KVStorage.get(blob_hash) == blob
+    end
+
+    test "get with module decoding" do
       header = build(:decodable_header)
-      :ok = Storage.put(header)
-      hash = h(Encodable.encode(header))
-      assert Storage.get(hash, Header) == header
+      encoded = Encodable.encode(header)
+      hash = Util.Hash.default(encoded)
+
+      KVStorage.put(hash, encoded)
+      assert KVStorage.get(hash, Header) == header
     end
 
-    test "get inexistent header" do
-      assert Storage.get(Hash.random(), Header) == nil
+    test "remove key" do
+      KVStorage.put("key1", "value1")
+      assert :ok = KVStorage.remove("key1")
+      assert KVStorage.get("key1") == nil
     end
   end
 
+  describe "Storage" do
+    test "initialization" do
+      assert {:ok, _pid} = Storage.start_link()
+      assert KVStorage.get("t:0") == nil
+      assert KVStorage.get(:latest_timeslot) == 0
+    end
+
+    test "store and retrieve single header" do
+      parent = build(:decodable_header, timeslot: 99)
+      Storage.put(parent)
+      header = %Header{parent | timeslot: 100, parent_hash: h(e(parent))}
+      assert :ok = Storage.put(header)
+
+      r = Header.decode(e(header))
+
+      encoded = Encodable.encode(header)
+      hash = Hash.default(encoded)
+      header = Header.decode(e(parent))
+
+      assert Storage.get(hash, Header) == header
+      assert {1, ^header} = Storage.get_latest_header()
+    end
+
+    test "store and retrieve multiple headers" do
+      headers = [
+        build(:decodable_header, timeslot: 1),
+        build(:decodable_header, timeslot: 2),
+        build(:decodable_header, timeslot: 3)
+      ]
+
+      assert :ok = Storage.put(headers)
+
+      # Verify latest header
+      assert {3, last_header} = Storage.get_latest_header()
+      assert last_header == List.last(headers)
+
+      # Verify all headers are stored
+      Enum.each(headers, fn header ->
+        encoded = Encodable.encode(header)
+        hash = Hash.default(encoded)
+        assert Storage.get_header(hash) == header
+      end)
+    end
+
+    test "store and retrieve state" do
+      state = build(:state)
+      assert :ok = Storage.put(state)
+      assert Storage.get_state() == state
+      assert is_binary(Storage.get_state_root())
+    end
+
+    test "get non-existent header" do
+      assert Storage.get_header(Hash.random()) == nil
+    end
+
+    test "get latest header when storage is empty" do
+      # Clear any existing data
+      :mnesia.clear_table(:jam_objects)
+      assert Storage.get_latest_header() == nil
+    end
+  end
 end
