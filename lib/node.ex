@@ -1,4 +1,7 @@
 defmodule Jamixir.Node do
+  @behaviour Jamixir.NodeAPI
+
+  @impl true
   def add_block(block_binary) when is_binary(block_binary) do
     with {block, _rest} <- Block.decode(block_binary),
          app_state <- Storage.get_state() do
@@ -7,14 +10,17 @@ defmodule Jamixir.Node do
           Storage.put(new_app_state)
           Storage.put(block.header)
           :ok
+
         {:error, _pre_state, reason} ->
           {:error, reason}
+
         {:error, reason} ->
           {:error, reason}
       end
     end
   end
 
+  @impl true
   def inspect_state do
     case Storage.get_state() do
       nil -> {:ok, :no_state}
@@ -22,13 +28,16 @@ defmodule Jamixir.Node do
     end
   end
 
+  @impl true
   @spec inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
   def inspect_state(key) do
     case Storage.get_state() do
       nil ->
         {:error, :no_state}
+
       state ->
         key_atom = String.to_existing_atom(key)
+
         case Map.fetch(state, key_atom) do
           {:ok, value} -> {:ok, value}
           :error -> {:error, :key_not_found}
@@ -44,9 +53,32 @@ defmodule Jamixir.Node do
             state = System.State.from_json(json_data |> Utils.atomize_keys())
             Storage.put(state)
             :ok
-          error -> error
+
+          error ->
+            error
         end
-      error -> error
+
+      error ->
+        error
     end
+  end
+
+  @impl true
+  def add_ticket(_epoch, _attempt, _proof) do
+    # TODO
+    # Implement the function logic here
+    :ok
+  end
+
+  @impl true
+  def add_work_package(_core, _wp, _extrinsic) do
+    # TODO
+    :ok
+  end
+
+  @impl true
+  def get_blocks(_hash, _order, _count) do
+    # TODO
+    {:ok, []}
   end
 end
