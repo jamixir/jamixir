@@ -33,10 +33,8 @@ defmodule Block.HeaderTest do
 
       Storage.put(parent)
 
-
       assert Header.validate_parent(header) == {:error, :invalid_parent_timeslot}
     end
-
   end
 
   describe "valid_extrinsic_hash?/2" do
@@ -94,7 +92,10 @@ defmodule Block.HeaderTest do
       state_root = Merklization.merkelize_state(State.serialize(state))
       parent = build(:decodable_header, timeslot: 99)
       Storage.put(parent)
-      {:ok, header: %Header{timeslot: 100, prior_state_root: state_root, parent_hash: h(e(parent))}, state: state}
+
+      {:ok,
+       header: %Header{timeslot: 100, prior_state_root: state_root, parent_hash: h(e(parent))},
+       state: state}
     end
 
     test "returns :ok when all conditions are met", %{header: header, state: state} do

@@ -2,7 +2,7 @@
 
 ExUnit.start()
 ExUnit.configure(exclude: [:full_vectors, :check_vectors_count])
-Storage.start_link()
+# Storage.start_link([persist: false])
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)

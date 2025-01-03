@@ -9,14 +9,15 @@ defmodule Storage do
   @state_root_key "state_root"
   @latest_timeslot "latest_timeslot"
 
-  def start_link do
-    case KVStorage.start_link() do
+  def state_key, do: @state_key
+  def state_root_key, do: @state_root_key
+  def latest_timeslot, do: @latest_timeslot
+
+  def start_link(opts) do
+    case KVStorage.start_link(opts) do
       {:ok, pid} ->
         # Initialize with zero header
-        zero_hash = Hash.zero()
-        KVStorage.put(zero_hash, nil)
-        KVStorage.put("t:0", nil)
-        KVStorage.put(:latest_timeslot, 0)
+        KVStorage.put(%{Hash.zero() => nil, "t:0" => nil, :latest_timeslot => 0})
         {:ok, pid}
 
       error ->
@@ -25,12 +26,11 @@ defmodule Storage do
   end
 
   def put(%Header{} = header) do
-    encoded_header = Encodable.encode(header)
-    hash = Hash.default(encoded_header)
+    hash = h(e(header))
 
     KVStorage.put(%{
-      hash => encoded_header,
-      "t:#{header.timeslot}" => encoded_header,
+      hash => header,
+      "t:#{header.timeslot}" => header,
       @latest_timeslot => header.timeslot
     })
 
@@ -52,12 +52,12 @@ defmodule Storage do
 
   def put(object) when is_struct(object) do
     case encodable?(object) do
-      true -> KVStorage.put(Encodable.encode(object))
+      true -> KVStorage.put(h(e(object)), object)
       false -> raise "Struct does not implement Encodable protocol"
     end
   end
 
-  def put(blob) when is_binary(blob), do: KVStorage.put(blob)
+  def put(blob) when is_binary(blob), do: KVStorage.put(h(blob), blob)
 
   def put(items) when is_list(items) do
     # First convert items to {key, value} pairs, stopping if we hit an error
@@ -75,6 +75,8 @@ defmodule Storage do
     end
   end
 
+  def put(key, value), do: KVStorage.put(key, value)
+
   defp prepare_entry({key, value}), do: {:ok, {key, value}}
 
   defp prepare_entry(blob) when is_binary(blob) do
@@ -82,26 +84,14 @@ defmodule Storage do
   end
 
   defp prepare_entry(struct) when is_struct(struct) do
-    if Encodable.impl_for(struct) do
-      blob = Encodable.encode(struct)
-      {:ok, {h(blob), blob}}
+    if encodable?(struct) do
+      {:ok, {h(e(struct)), struct}}
     else
       {:error, "Struct #{struct.__struct__} does not implement Encodable protocol"}
     end
   end
 
   def get(hash), do: KVStorage.get(hash)
-
-  def get(hash, module) do
-    case KVStorage.get(hash) do
-      nil ->
-        nil
-
-      blob ->
-        {h, _rest} = module.decode(blob)
-        h
-    end
-  end
 
   def remove(key), do: KVStorage.remove(key)
   def remove_all, do: KVStorage.remove_all()
@@ -112,7 +102,7 @@ defmodule Storage do
         nil
 
       slot ->
-        case KVStorage.get("t:#{slot}", Header) do
+        case KVStorage.get("t:#{slot}") do
           nil -> nil
           header -> {slot, header}
         end
@@ -134,16 +124,30 @@ defmodule Storage do
 
       map =
         Enum.reduce(headers, %{}, fn header, acc ->
-          blob = Encodable.encode(header)
           acc
-          |> Map.put(h(blob), blob)
-          |> Map.put("t:#{header.timeslot}", blob)
+          |> Map.put(h(e(header)), header)
+          |> Map.put("t:#{header.timeslot}", header)
           |> Map.put(@latest_timeslot, latest_timeslot)
         end)
 
       KVStorage.put(map)
     else
       {:error, "All items must be Header structs"}
+    end
+  end
+
+  def stop do
+    # Stop Mnesia
+    :mnesia.stop()
+
+    # Stop PersistStorage (which is a GenServer)
+    if pid = Process.whereis(PersistStorage) do
+      GenServer.stop(pid)
+    end
+
+    # Stop CubDB
+    if pid = Process.whereis(:cubdb) do
+      GenServer.stop(pid)
     end
   end
 end

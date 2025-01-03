@@ -1,23 +1,19 @@
 defmodule KVStorage do
   @table_name JamObjects
-  use Codec.Encoder
 
-  def start_link do
-    case init_mnesia() do
-      :ok ->
-        {:ok, self()}
-
-      error ->
-        error
+  def start_link(opts \\ []) do
+    with :ok <- init_mnesia(),
+         {:ok, _pid} <- PersistStorage.start_link(opts) do
+      {:ok, self()}
     end
   end
-
 
   def put(key, value) do
     :mnesia.transaction(fn ->
       :mnesia.write({@table_name, key, value})
     end)
 
+    PersistStorage.put(key, value)
     {:ok, key}
   end
 
@@ -26,53 +22,59 @@ defmodule KVStorage do
       Enum.each(map, fn {key, value} -> :mnesia.write({@table_name, key, value}) end)
     end)
 
+    PersistStorage.put(map)
     {:ok, Map.keys(map)}
-  end
-
-  def put(data) when is_binary(data) do
-    put(Util.Hash.default(data), data)
   end
 
   def get(key) do
     case :mnesia.transaction(fn -> :mnesia.read({@table_name, key}) end) do
-      {:atomic, [{@table_name, _key, value}]} -> value
-      {:atomic, []} -> nil
-      {:aborted, {:no_exists, _}} -> nil
-      _ -> nil
-    end
-  end
+      {:atomic, [{@table_name, _key, value}]} ->
+        value
 
-  def get(key, module) do
-    case get(key) do
-      nil ->
-        nil
+      _ ->
+        # Not in memory, try disk
+        case PersistStorage.get(key) do
+          nil ->
+            nil
 
-      blob ->
-        {decoded, _rest} = module.decode(blob)
-        decoded
+          value ->
+            # Async update to memory
+            Task.start(fn ->
+              :mnesia.transaction(fn ->
+                :mnesia.write({@table_name, key, value})
+              end)
+            end)
+
+            value
+        end
     end
   end
 
   def remove(key) do
     case :mnesia.transaction(fn -> :mnesia.delete({@table_name, key}) end) do
-      {:atomic, :ok} -> :ok
-      {:aborted, {:no_exists, _}} -> :ok
-      error -> {:error, error}
+      {:atomic, :ok} ->
+        PersistStorage.delete(key)
+        :ok
+
+      {:aborted, {:no_exists, _}} ->
+        :ok
+
+      error ->
+        {:error, error}
     end
   end
 
   def remove_all do
     :mnesia.clear_table(@table_name)
+    PersistStorage.clear()
   end
 
-  # Private Functions
-  # Private Functions
   defp init_mnesia do
     :mnesia.create_schema([node()])
     :mnesia.start()
 
     case :mnesia.create_table(@table_name,
-           attributes: [:hash, :blob],
+           attributes: [:key, :value],
            record_name: @table_name
          ) do
       {:atomic, :ok} -> :ok
