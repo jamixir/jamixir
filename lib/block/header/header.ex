@@ -8,6 +8,7 @@ defmodule Block.Header do
   use SelectiveMock
 
   use Codec.Encoder
+  import Codec.Decoder
 
   @type t :: %__MODULE__{
           # Formula (39) v0.4.5
@@ -111,7 +112,6 @@ defmodule Block.Header do
   def mock(:validate_state_root, _), do: :ok
   def mock(:validate_parent, _), do: :ok
 
-
   mockable validate_parent(header) do
     if header.parent_hash == nil and header.timeslot == 0 do
       :ok
@@ -120,16 +120,15 @@ defmodule Block.Header do
         nil ->
           {:error, :no_parent}
 
-      parent_header ->
-        if parent_header.timeslot < header.timeslot do
-          :ok
-        else
-          {:error, :invalid_parent_timeslot}
-        end
+        parent_header ->
+          if parent_header.timeslot < header.timeslot do
+            :ok
+          else
+            {:error, :invalid_parent_timeslot}
+          end
+      end
     end
   end
-end
-
 
   # Formula (C.20) v0.5.0
   def unsigned_encode(%Block.Header{} = header) do
@@ -166,11 +165,7 @@ end
         <<entropy::binary-size(@hash_size), tickets_entropy::binary-size(@hash_size),
           rest::binary>> = epoch_mark_bin
 
-        {keys, cont} =
-          Enum.reduce(1..Constants.validator_count(), {[], rest}, fn _, {list, b} ->
-            <<key::binary-size(@hash_size), r::binary>> = b
-            {list ++ [key], r}
-          end)
+        {keys, cont} = decode_list(rest, :hash, Constants.validator_count())
 
         {{entropy, tickets_entropy, keys}, cont}
       end)
@@ -178,9 +173,7 @@ end
     {winning_tickets_marker, bin} =
       NilDiscriminator.decode(
         bin,
-        fn bin ->
-          VariableSize.decode(bin, SealKeyTicket, Constants.epoch_length())
-        end
+        &decode_list(&1, Constants.epoch_length(), SealKeyTicket)
       )
 
     {offenders_marker, bin} = VariableSize.decode(bin, :hash)

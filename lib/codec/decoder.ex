@@ -2,6 +2,8 @@ defmodule Codec.Decoder do
   @moduledoc """
   A module for decoding binary data into data structures.
   """
+
+  use Sizes
   defp decode_little_endian(<<>>, _), do: 0
 
   defp decode_little_endian(<<byte::size(8), rest::binary>>, l),
@@ -54,6 +56,37 @@ defmodule Codec.Decoder do
         {1, 128}
     end
   end
+
+  def decode_list(bin, :hash), do: do_decode_hashes(bin, [])
+
+  def decode_list(bin, :hash, list_length), do: do_decode_hashes(bin, :hash, list_length)
+
+  def decode_list(bin, list_length, decoder_cb) when is_function(decoder_cb, 1) do
+    Enum.reduce(1..list_length, {[], bin}, fn _, {acc, remaining} ->
+      {value, rest} = decoder_cb.(remaining)
+      {acc ++ [value], rest}
+    end)
+  end
+
+  def decode_list(bin, list_length, module) do
+    Enum.reduce(1..list_length, {[], bin}, fn _, {acc, remaining} ->
+      {value, rest} = module.decode(remaining)
+      {acc ++ [value], rest}
+    end)
+  end
+
+  defp do_decode_hashes(bin, :hash, list_length) do
+    Enum.reduce(1..list_length, {[], bin}, fn _, {acc, remaining} ->
+      <<value::binary-size(@hash_size), rest::binary>> = remaining
+      {acc ++ [value], rest}
+    end)
+  end
+
+  defp do_decode_hashes(<<hash::binary-size(@hash_size), rest::binary>>, acc) do
+    do_decode_hashes(rest, acc ++ [hash])
+  end
+
+  defp do_decode_hashes(_, acc), do: acc
 
   defmacro __using__(_) do
     quote do
