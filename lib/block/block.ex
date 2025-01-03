@@ -65,6 +65,13 @@ defmodule Block do
     {%__MODULE__{header: header, extrinsic: extrinsic}, bin}
   end
 
+  def decode_list(<<>>), do: []
+
+  def decode_list(bin) do
+    {block, rest} = decode(bin)
+    [block | decode_list(rest)]
+  end
+
   use JsonDecoder
   def json_mapping, do: %{header: Header, extrinsic: Extrinsic}
 end
