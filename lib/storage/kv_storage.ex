@@ -12,12 +12,13 @@ defmodule KVStorage do
     end
   end
 
+
   def put(key, value) do
     :mnesia.transaction(fn ->
       :mnesia.write({@table_name, key, value})
     end)
 
-    :ok
+    {:ok, key}
   end
 
   def put(map) when is_map(map) do
@@ -25,7 +26,7 @@ defmodule KVStorage do
       Enum.each(map, fn {key, value} -> :mnesia.write({@table_name, key, value}) end)
     end)
 
-    :ok
+    {:ok, Map.keys(map)}
   end
 
   def put(data) when is_binary(data) do
@@ -58,6 +59,10 @@ defmodule KVStorage do
       {:aborted, {:no_exists, _}} -> :ok
       error -> {:error, error}
     end
+  end
+
+  def remove_all do
+    :mnesia.clear_table(@table_name)
   end
 
   # Private Functions

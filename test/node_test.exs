@@ -5,19 +5,13 @@ defmodule Jamixir.NodeTest do
   import Jamixir.Factory
 
   setup do
-    # Clean everything
-    :mnesia.stop()
-    :mnesia.delete_schema([node()])
-
-    # Start fresh
-    {:ok, _} = Storage.start_link()
-
-    # Clear any existing state
-    # Storage.put_state(nil)
-    :ok
+    on_exit(fn ->
+      Storage.remove_all()
+    end)
   end
 
   test "inspect_state with empty state" do
+    Storage.remove("state")
     assert {:ok, :no_state} = Jamixir.Node.inspect_state()
   end
 
