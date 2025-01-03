@@ -5,7 +5,6 @@ defmodule Storage do
   alias Util.Hash
   use Codec.Encoder
 
-  @table_name JamObjects
   @state_key "state"
   @state_root_key "state_root"
   @latest_timeslot "latest_timeslot"
@@ -35,7 +34,7 @@ defmodule Storage do
       @latest_timeslot => header.timeslot
     })
 
-    :ok
+    {:ok, hash}
   end
 
   def put(headers) when is_list(headers), do: put_headers(headers)
@@ -73,7 +72,6 @@ defmodule Storage do
 
       entries ->
         KVStorage.put(entries)
-        :ok
     end
   end
 
@@ -105,12 +103,11 @@ defmodule Storage do
     end
   end
 
-  def delete(hash) do
-    :mnesia.transaction(fn -> :mnesia.delete({@table_name, hash}) end)
-  end
+  def remove(key), do: KVStorage.remove(key)
+  def remove_all, do: KVStorage.remove_all()
 
   def get_latest_header do
-    case KVStorage.get(:latest_timeslot) do
+    case KVStorage.get(@latest_timeslot) do
       nil ->
         nil
 
@@ -129,6 +126,7 @@ defmodule Storage do
 
   defp encodable?(data), do: not is_nil(Encodable.impl_for(data))
 
+  @spec put_headers(list(Header.t())) :: {:ok, list(String.t())}
   defp put_headers(headers) do
     if Enum.all?(headers, &is_struct(&1, Header)) do
       # find the latest timeslot

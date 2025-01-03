@@ -1,8 +1,6 @@
 defmodule StorageTest do
   use ExUnit.Case
   use Codec.Encoder
-  alias Util.Merklization
-  alias CubDB.State
   alias Block.Header
   alias System.State
   alias Util.Hash
@@ -10,13 +8,13 @@ defmodule StorageTest do
 
   setup do
     on_exit(fn ->
-      :mnesia.clear_table(:jam_objects)
+      Storage.remove_all()
     end)
   end
 
   describe "KVStorage" do
     test "put/get basic operations" do
-      assert :ok = KVStorage.put("key1", "value1")
+      assert {:ok, _} = KVStorage.put("key1", "value1")
       assert KVStorage.get("key1") == "value1"
     end
 
@@ -27,7 +25,7 @@ defmodule StorageTest do
         "key3" => "value3"
       }
 
-      assert :ok = KVStorage.put(entries)
+      assert {:ok, ["key1", "key2", "key3"]} = KVStorage.put(entries)
 
       assert KVStorage.get("key1") == "value1"
       assert KVStorage.get("key2") == "value2"
@@ -36,9 +34,9 @@ defmodule StorageTest do
 
     test "put binary blob" do
       blob = <<1, 2, 3, 4>>
-      assert :ok = KVStorage.put(blob)
-
       blob_hash = Util.Hash.default(blob)
+      assert {:ok, ^blob_hash} = KVStorage.put(blob)
+
       assert KVStorage.get(blob_hash) == blob
     end
 
@@ -66,19 +64,10 @@ defmodule StorageTest do
     end
 
     test "store and retrieve single header" do
-      parent = build(:decodable_header, timeslot: 99)
-      Storage.put(parent)
-      header = %Header{parent | timeslot: 100, parent_hash: h(e(parent))}
-      assert :ok = Storage.put(header)
-
-      r = Header.decode(e(header))
-
-      encoded = Encodable.encode(header)
-      hash = Hash.default(encoded)
-      header = Header.decode(e(parent))
-
+      header = build(:decodable_header)
+      assert {:ok, hash} = Storage.put(header)
       assert Storage.get(hash, Header) == header
-      assert {1, ^header} = Storage.get_latest_header()
+      assert {5, ^header} = Storage.get_latest_header()
     end
 
     test "store and retrieve multiple headers" do
@@ -88,7 +77,7 @@ defmodule StorageTest do
         build(:decodable_header, timeslot: 3)
       ]
 
-      assert :ok = Storage.put(headers)
+      assert {:ok, _hashes} = Storage.put(headers)
 
       # Verify latest header
       assert {3, last_header} = Storage.get_latest_header()
@@ -98,24 +87,23 @@ defmodule StorageTest do
       Enum.each(headers, fn header ->
         encoded = Encodable.encode(header)
         hash = Hash.default(encoded)
-        assert Storage.get_header(hash) == header
+        assert Storage.get(hash, Header) == header
       end)
     end
 
     test "store and retrieve state" do
-      state = build(:state)
+      state = %State{}
       assert :ok = Storage.put(state)
       assert Storage.get_state() == state
       assert is_binary(Storage.get_state_root())
     end
 
     test "get non-existent header" do
-      assert Storage.get_header(Hash.random()) == nil
+      assert Storage.get(Hash.random(), Header) == nil
     end
 
-    test "get latest header when storage is empty" do
-      # Clear any existing data
-      :mnesia.clear_table(:jam_objects)
+    test "get latest header when key is empty" do
+      Storage.remove("latest_timeslot")
       assert Storage.get_latest_header() == nil
     end
   end
