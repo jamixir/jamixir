@@ -86,7 +86,10 @@ defmodule Block.Header do
 
   # Formula (43) v0.4.5
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
-    state_root = Storage.get_state_root() || Merklization.merkelize_state(State.serialize(state))
+    state_root = case Storage.get_state_root() do
+      nil -> Merklization.merkelize_state(State.serialize(state))
+      root -> root
+    end
 
     if state_root == r,
       do: :ok,
@@ -105,7 +108,7 @@ defmodule Block.Header do
     Stream.unfold(h, fn
       nil -> nil
       %__MODULE__{parent_hash: nil} = current -> {current, nil}
-      %__MODULE__{parent_hash: ph} = current -> {current, Storage.get(ph, Header)}
+      %__MODULE__{parent_hash: ph} = current -> {current, Storage.get(ph)}
     end)
   end
 
@@ -116,7 +119,7 @@ defmodule Block.Header do
     if header.parent_hash == nil and header.timeslot == 0 do
       :ok
     else
-      case Storage.get(header.parent_hash, Header) do
+      case Storage.get(header.parent_hash) do
         nil ->
           {:error, :no_parent}
 

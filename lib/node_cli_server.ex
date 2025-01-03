@@ -16,7 +16,7 @@ defmodule Jamixir.NodeCLIServer do
   # Server Callbacks
   @impl true
   def init(_) do
-    case Storage.start_link() do
+    case Storage.start_link([persist: true]) do
       {:ok, _} ->
         Logger.info("Storage initialized")
         {:ok, nil}
