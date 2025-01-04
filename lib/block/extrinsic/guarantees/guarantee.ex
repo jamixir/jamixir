@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Guarantee do
   11.4
   """
   alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
+  alias Block.Header
   alias System.{State, State.EntropyPool, State.RecentHistory, State.ServiceAccount}
   alias Util.{Collections, Crypto}
   use SelectiveMock
@@ -26,8 +27,8 @@ defmodule Block.Extrinsic.Guarantee do
             timeslot: 0,
             credentials: [{0, Crypto.zero_sign()}]
 
-  @spec validate(list(t()), State.t(), integer()) :: :ok | {:error, String.t()}
-  mockable validate(guarantees, state, timeslot) do
+  @spec validate(list(t()), State.t(), Header.t()) :: :ok | {:error, String.t()}
+  mockable validate(guarantees, state, %Header{timeslot: t, prior_state_root: s}) do
     w = work_reports(guarantees)
 
     # Formula (138) v0.4.5
@@ -43,7 +44,7 @@ defmodule Block.Extrinsic.Guarantee do
          # Formula (146) v0.4.5
          :ok <- validate_unique_wp_hash(guarantees),
          # Formula (148) v0.4.5
-         :ok <- validate_refine_context_timeslot(guarantees, timeslot),
+         :ok <- validate_refine_context_timeslot(guarantees, t),
          # Formula (156) v0.4.5
          :ok <- validate_work_result_cores(w, state.services),
          # Formula (152) v0.4.5
@@ -63,7 +64,7 @@ defmodule Block.Extrinsic.Guarantee do
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (11.32) v0.5.0
-         :ok <- validate_anchor_block(guarantees, state.recent_history),
+         :ok <- validate_anchor_block(guarantees, state.recent_history, s),
          # Formula (139) v0.4.5
          :ok <-
            if(
@@ -185,11 +186,12 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.34) v0.5.2
+  # Formula (11.33) v0.5.3
   # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = MR(yb))
-  mockable validate_anchor_block(guarantees, %RecentHistory{blocks: blocks}) do
+  mockable validate_anchor_block(guarantees, %RecentHistory{} = beta, prior_state_root) do
+    beta_dagger = RecentHistory.update_latest_state_root(beta, prior_state_root)
     Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
-      case for(y <- blocks, x.state_root_ == y.state_root, do: y) do
+      case for(y <- beta_dagger.blocks, x.state_root_ == y.state_root, do: y) do
         [] ->
           {:halt, {:error, :bad_state_root}}
 

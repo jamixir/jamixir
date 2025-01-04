@@ -10,16 +10,16 @@ defmodule RecentHistoryTest do
   import Jamixir.Factory
   use Codec.Encoder
 
-  describe "update_latest_state_root_/2" do
+  describe "update_latest_state_root/2" do
     test "returns empty list when given nil" do
       header = %Header{prior_state_root: "s"}
-      assert RecentHistory.update_latest_state_root_(nil, header).blocks === []
+      assert RecentHistory.update_latest_state_root(nil, header).blocks === []
     end
 
     test "returns empty list when given empty list" do
       header = %Header{prior_state_root: "s"}
 
-      assert RecentHistory.update_latest_state_root_(%RecentHistory{}, header).blocks ===
+      assert RecentHistory.update_latest_state_root(%RecentHistory{}, header).blocks ===
                []
     end
 
@@ -35,7 +35,7 @@ defmodule RecentHistoryTest do
 
       expected = [most_recent_block1, %RecentBlock{state_root: "s"}]
 
-      assert RecentHistory.update_latest_state_root_(block_history, header).blocks ===
+      assert RecentHistory.update_latest_state_root(block_history, header.prior_state_root).blocks ===
                expected
     end
   end
