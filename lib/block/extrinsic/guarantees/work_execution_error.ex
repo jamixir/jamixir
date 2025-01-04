@@ -1,10 +1,10 @@
 defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   alias Util.Collections
   # Formula (123) v0.4.5
-  @type t :: :out_of_gas | :panic | :bad | :big
+  @type t :: :out_of_gas | :panic | :bad_exports | :bad | :big
 
   # Formula (C.28) v0.5.0
-  @codes %{out_of_gas: 1, panic: 2, bad: 3, big: 4}
+  @codes %{out_of_gas: 1, panic: 2, bad_exports: 3, bad: 4, big: 5}
 
   def code(error) do
     @codes[error]
