@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
+  alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.{Guarantee.WorkResult, WorkPackage}
   alias Util.{Hash, MerkleTree}
   use Codec.Encoder
@@ -99,14 +100,21 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (199) v0.4.5
+  # Formula (14.8) v0.5.3
+  @spec to_work_result(Block.Extrinsic.WorkItem.t(), binary() | WorkExecutionError.t()) ::
+          Block.Extrinsic.Guarantee.WorkResult.t()
   def to_work_result(%__MODULE__{} = wi, output) do
     %WorkResult{
+      # s
       service: wi.service,
+      # c
       code_hash: wi.code_hash,
+      # H(y)
       payload_hash: Hash.default(wi.payload),
-      gas_ratio: wi.refine_gas_limit,
-      result: output
+      # a
+      gas_ratio: wi.accumulate_gas_limit,
+      # o
+      result: if(is_binary(output), do: {:ok, output}, else: {:error, output})
     }
   end
 

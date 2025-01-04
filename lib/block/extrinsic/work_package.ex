@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_exported_items 2048
   def maximum_exported_items, do: @maximum_exported_items
 
-  # Formula (198) v0.4.5
+  # Formula (14.6) v0.5.3
   # 12 * 2 ** 20
   @maximum_size 12_582_912
 
@@ -51,20 +51,29 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp)
   end
 
-  # Formula (200) v0.4.5
+  # Formula (14.9) v0.5.3
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
-    ServiceAccount.historical_lookup(
-      services[wp.service],
-      wp.context.timeslot,
-      wp.authorization_code_hash
-    )
+    code =
+      ServiceAccount.historical_lookup(
+        services[wp.service],
+        wp.context.timeslot,
+        wp.authorization_code_hash
+      )
+
+    if code == nil, do: {:error, :preimage_not_available}, else: code
   end
 
-  # Formula (200) v0.4.5
+  # Formula (14.9) v0.5.3
   # pa
   def implied_authorizer(%__MODULE__{} = wp, services) do
-    Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
+    case authorization_code(wp, services) do
+      {:error, :preimage_not_available} ->
+        {:error, :preimage_not_available}
+
+      code ->
+        Hash.default(code <> wp.parameterization_blob)
+    end
   end
 
   # Formula (203) v0.4.5
@@ -73,13 +82,22 @@ defmodule Block.Extrinsic.WorkPackage do
     r
   end
 
-  # Formula (197) v0.4.5
-  defp valid_size?(%__MODULE__{work_items: work_items}) do
-    Enum.reduce(work_items, 0, fn i, acc ->
-      part1 = length(i.import_segments) * Constants.wswe()
-      part2 = Enum.sum(for {_, e} <- i.extrinsic, do: e)
-      acc + part1 + part2
-    end) <= @maximum_size
+  # Formula (14.5) v0.5.3
+  defp valid_size?(%__MODULE__{
+         work_items: work_items,
+         authorization_token: auth_token,
+         parameterization_blob: param_blob
+       }) do
+    base_size = byte_size(auth_token) + byte_size(param_blob)
+
+    items_size =
+      for %WorkItem{payload: p, import_segments: i, extrinsic: x} <- work_items do
+        byte_size(p) +
+          length(i) * Constants.wswe() +
+          Enum.sum(for {_, size} <- x, do: size)
+      end
+
+    base_size + Enum.sum(items_size) <= @maximum_size
   end
 
   # Formula (196) v0.4.5
@@ -90,6 +108,17 @@ defmodule Block.Extrinsic.WorkPackage do
       end)
 
     exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
+  end
+
+  # Formula (14.7) v0.5.3
+  defp valid_gas?(%__MODULE__{work_items: work_items}) do
+    {acc_sum, refine_sum} =
+      for %WorkItem{accumulate_gas_limit: wa, refine_gas_limit: wr} <- work_items,
+          reduce: {0, 0} do
+        {acc, ref} -> {acc + wa, ref + wr}
+      end
+
+    acc_sum < Constants.gas_accumulation() and refine_sum < Constants.gas_refine()
   end
 
   use JsonDecoder

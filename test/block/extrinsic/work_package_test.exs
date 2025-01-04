@@ -101,7 +101,8 @@ defmodule WorkPackageTest do
     end
 
     test "return nil authorization code when it is not available", %{state: state} do
-      assert WorkPackage.authorization_code(build(:work_package), state.services) == nil
+      assert WorkPackage.authorization_code(build(:work_package), state.services) ==
+               {:error, :preimage_not_available}
     end
   end
 

@@ -17,22 +17,24 @@ defmodule WorkItemTest do
 
   describe "to_work_result/2" do
     test "transform work report in work result" do
-      output = {:ok, "output"}
+      output = "output"
 
       work_report =
         build(:work_item,
           service: 1,
           code_hash: <<1, 2, 3>>,
           payload: <<4, 5>>,
-          refine_gas_limit: 6
+          refine_gas_limit: 6,
+          accumulate_gas_limit: 7000
+
         )
 
       result = WorkItem.to_work_result(work_report, output)
       assert result.service == 1
       assert result.code_hash == <<1, 2, 3>>
       assert result.payload_hash == Hash.default(<<4, 5>>)
-      assert result.gas_ratio == 6
-      assert result.result == output
+      assert result.gas_ratio == 7000
+      assert result.result == {:ok, output}
     end
   end
 end

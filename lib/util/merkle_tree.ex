@@ -40,23 +40,34 @@ defmodule Util.MerkleTree do
   def trace(_, _i, _hash_func), do: []
 
   # Formula (330) v0.4.5
+  def justification(v, i), do: justification(v, i, &Hash.default/1)
   @spec justification([binary()], integer(), (binary() -> Types.hash())) :: [binary()]
   def justification(v, i, hash_func) when is_function(hash_func, 1) do
     trace(c_preprocess(v, hash_func), i, hash_func)
   end
 
-  def justification(v, i, x) when is_integer(x), do: justification(v, i, &Hash.default/1, x)
-
-  def justification(v, i), do: justification(v, i, &Hash.default/1)
-
   # Formula (331) v0.4.5
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
+  def justification(v, i, x) when is_integer(x), do: justification(v, i, &Hash.default/1, x)
+
   @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification([], _, hash_func, _) when is_function(hash_func, 1), do: []
 
   def justification(v, i, hash_func, x) when x >= 0 and is_function(hash_func, 1) do
     size = max(0, ceil(:math.log2(max(1, length(v))) - x))
     justification(v, i, hash_func) |> Enum.take(size)
+  end
+
+   # Formula (E.6) v0.5.3
+  # (v, i, H) ↦ [H($leaf ⌢ l) S l <− v2xi... min(2xi+2x,SvS)]
+  # note as of 0.5.3, the justification_l is not used anywhere
+  def justification_l(v, i, x), do: justification_l(v, i, &Hash.default/1, x)
+
+  @spec justification_l([binary()], integer(), (binary() -> Types.hash()), number()) :: list(Types.hash())
+  def justification_l(v, i, hash_func, x) do
+    start_idx = trunc(:math.pow(2, x * i))
+    end_idx = min(trunc(:math.pow(2, x * i) + :math.pow(2, x)), length(v))
+    for l <- Enum.slice(v, start_idx..(end_idx - 1)), do: hash_func.("leaf" <> l)
   end
 
   @spec pi(list(), integer()) :: integer()
