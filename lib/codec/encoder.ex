@@ -34,18 +34,14 @@ defmodule Codec.Encoder do
 
   use Sizes
 
-  # Formula (E.10) v0.5.2
+  # Formula (E.10) v0.5.3
   def super_peak_mmr(b) do
     case for h <- b, h != nil, do: h do
-      [] ->
-        Hash.zero()
-
-      [h0] ->
-        h0
-
+      [] -> Hash.zero()
+      [h0] -> h0
       h ->
-        last = Enum.at(h, -1)
-        Hash.keccak_256("node" <> super_peak_mmr(Enum.take(h, length(h) - 1)) <> last)
+        {init, [last]} = Enum.split(h, -1)
+        Hash.keccak_256("node" <> super_peak_mmr(init) <> last)
     end
   end
 
