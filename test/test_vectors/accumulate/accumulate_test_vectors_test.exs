@@ -1,11 +1,8 @@
-defmodule ReportsTestVectorsTest do
-  alias Block.Extrinsic.Guarantee.WorkReport
-  alias System.State.CoreReport
+defmodule AccumulateTestVectorsTest do
   use ExUnit.Case
   import Mox
-  import ReportsTestVectors
+  import AccumulateTestVectors
   import TestVectorUtil
-
   setup :verify_on_exit!
 
   setup_all do
@@ -14,11 +11,7 @@ defmodule ReportsTestVectorsTest do
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
-      Block.Extrinsic.Guarantee,
-      Util.Collections,
-      :validate_unique_and_ordered,
-      CoreReport,
-      WorkReport
+      Accumulation
     ])
 
     on_exit(fn ->
@@ -26,17 +19,18 @@ defmodule ReportsTestVectorsTest do
       Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
     end)
-
-    :ok
   end
 
   describe "vectors" do
     setup do
       mock_header_seal()
-
       :ok
     end
 
-    define_vector_tests("reports")
+    # test "smoke" do
+    #   execute_test("enqueue_and_unlock_chain-1", "accumulate/tiny")
+    # end
+
+    define_vector_tests("accumulate")
   end
 end
