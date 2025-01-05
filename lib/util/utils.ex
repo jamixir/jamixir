@@ -76,5 +76,20 @@ defmodule Utils do
     |> Enum.map(&:binary.list_to_bin/1)
   end
 
+  @spec transpose(list(tuple())) :: list(tuple())
+  def transpose(list) when is_list(list) and is_tuple(hd(list)) do
+    list
+    |> Enum.map(list, &Tuple.to_list/1)
+    |> Enum.zip()
+    |> Enum.map(&List.to_tuple/1)
+  end
+
+  @spec transpose(list(list())) :: list(list())
+  def transpose(list) do
+    list
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+  end
+
   def keys_set(map), do: MapSet.new(Map.keys(map))
 end

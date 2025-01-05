@@ -43,15 +43,16 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  # Formula (207) v0.4.5
+  # Formula (14.16) v0.5.3
   @spec from_package_execution(Types.hash(), binary(), list(Types.export_segment())) ::
-          Block.Extrinsic.t()
+          Block.Extrinsic.AvailabilitySpecification.t()
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
     %__MODULE__{
       work_package_hash: work_package_hash,
       length: length(export_segments),
       erasure_root: calculate_erasure_root(bundle_binary, export_segments),
-      exports_root: MerkleTree.merkle_root(export_segments)
+      exports_root: MerkleTree.merkle_root(export_segments),
+      segment_count: length(export_segments)
     }
   end
 
@@ -77,7 +78,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           do: Hash.default(x)
 
     MerkleTree.well_balanced_merkle_root(
-      Collections.union(for x <- Utils.transpose_binaries([b_clubs, s_clubs]), do: x)
+      Collections.union(Utils.transpose_binaries([b_clubs, s_clubs]))
     )
   end
 

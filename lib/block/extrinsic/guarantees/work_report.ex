@@ -207,6 +207,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             {result, exports} = process_item(wp, j, o, services)
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
+          |> Utils.transpose()
+          |> List.to_tuple()
 
         # Formula (206) v0.4.5
         specification =
@@ -228,7 +230,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # guaranteed to return a hash (otherwise PVM.authorized would return an error)
           authorizer_hash: WorkPackage.implied_authorizer(wp, services),
           output: o,
-          # l # TODO  
+          # l # TODO
           segment_root_lookup: %{},
           results: r
         }
@@ -238,6 +240,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # Formula (14.11) v0.5.3
   # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
+  @spec process_item(Block.Extrinsic.WorkPackage.t(), integer(), binary(), %{
+          integer() => System.State.ServiceAccount.t()
+        }) :: {:bad | :bad_exports | :big | :out_of_gas | :panic | binary(), list(binary())}
   def process_item(%WorkPackage{} = p, j, o, services) do
     w = Enum.at(p.work_items, j)
     h = Hash.default(e(p))

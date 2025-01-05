@@ -134,6 +134,8 @@ defmodule Block.Extrinsic.WorkItem do
 
   # Formula (205) v0.4.5
   # J ( w ∈ I ) ≡ [ ↕ J ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
+
+  # TOD use jatifiaction_l after https://github.com/jamixir/jamixir/pull/289 merged
   def segment_justification(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,
         MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
