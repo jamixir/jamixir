@@ -13,12 +13,23 @@ defmodule PVM do
   @spec authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
           binary() | WorkExecutionError.t()
   def authorized(p = %WorkPackage{}, core, services) do
-    pc = WorkPackage.authorization_code(p, services)
+    case WorkPackage.authorization_code(p, services) do
+      {:error, error} ->
+        error
 
-    {_g, r, nil} =
-      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), e({p, core}), &authorized_f/3, nil)
+      pc ->
+        {_g, r, nil} =
+          ArgInvoc.execute(
+            pc,
+            0,
+            Constants.gas_is_authorized(),
+            e({p, core}),
+            &authorized_f/3,
+            nil
+          )
 
-    r
+        r
+    end
   end
 
   # Formula (B.2) v0.5.2

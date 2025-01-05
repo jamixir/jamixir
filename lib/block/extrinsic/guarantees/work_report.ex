@@ -185,8 +185,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (202) v0.4.5
-  def compute_work_result(%WorkPackage{} = wp, core, services) do
+  # Formula (14.11) v0.5.3
+  @spec compute_work_report(Block.Extrinsic.WorkPackage.t(), non_neg_integer(), %{
+          optional(integer()) => System.State.ServiceAccount.t()
+        }) :: :out_of_gas | :panic
+  def compute_work_report(%WorkPackage{} = wp, core, services) do
     _l = calculate_segments(wp)
     # TODO
     d = %{}
@@ -194,7 +197,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     s = []
 
     case PVM.authorized(wp, core, services) do
-      error when is_integer(error) ->
+      error when is_atom(error) ->
         error
 
       o ->
@@ -218,45 +221,63 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           )
 
         %__MODULE__{
-          authorizer_hash: WorkPackage.implied_authorizer(wp, services),
-          output: o,
-          refinement_context: nil,
           # s
           specification: specification,
-          # l # TODO
+          refinement_context: wp.context,
+          core_index: core,
+          # guaranteed to return a hash (otherwise PVM.authorized would return an error)
+          authorizer_hash: WorkPackage.implied_authorizer(wp, services),
+          output: o,
+          # l # TODO  
           segment_root_lookup: %{},
           results: r
         }
     end
   end
 
-  # Formula (202) v0.4.5
+  # Formula (14.11) v0.5.3
   # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
   def process_item(%WorkPackage{} = p, j, o, services) do
     w = Enum.at(p.work_items, j)
     h = Hash.default(e(p))
     l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
-    pa = WorkPackage.implied_authorizer(p, services)
 
-    Refine.execute(
-      %Refine.Params{
-        service_code: w.code_hash,
-        gas: w.refine_gas_limit,
-        service: w.service,
-        work_package_hash: h,
-        payload: w.payload,
-        refinement_context: p.context,
-        authorizer_hash: pa,
-        output: o,
-        # TODO
-        import_segments: [],
-        # TODO
-        extrinsic_data: [],
-        export_offset: l
-      },
-      services
-    )
+    with pa <- WorkPackage.implied_authorizer(p, services) do
+      {r, e} =
+        Refine.execute(
+          %Refine.Params{
+            service_code: w.code_hash,
+            gas: w.refine_gas_limit,
+            service: w.service,
+            work_package_hash: h,
+            payload: w.payload,
+            refinement_context: p.context,
+            authorizer_hash: pa,
+            output: o,
+            # TODO
+            import_segments: [],
+            # TODO
+            extrinsic_data: [],
+            export_offset: l
+          },
+          services
+        )
+
+      zero_export_segment = List.duplicate(<<0>>, Constants.wswe())
+      zero_segments = List.duplicate(zero_export_segment, w.export_count)
+
+      cond do
+        length(e) == w.export_count ->
+          {r, e}
+
+        is_binary(r) ->
+          {r, zero_segments}
+
+        true ->
+          {:bad_exports, zero_segments}
+      end
+    end
   end
 
   defp calculate_segments(%WorkPackage{} = _wp) do

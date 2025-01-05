@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @moduledoc """
   Defines a WorkPackage struct and its types.
   """
-  alias Block.Extrinsic.WorkItem
+  alias Block.Extrinsic.{WorkItem, Guarantees.WorkReport}
   alias System.State.ServiceAccount
   alias Util.Hash
   use Codec.Encoder
@@ -77,7 +77,8 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   # Formula (203) v0.4.5
-  def segment_root(r) do
+  @spec segment_root(Types.hash(), %{Types.hash() => Types.hash()}) :: Types.hash()
+  def segment_root(r, _segment_root_dictionary) do
     # TODO ⊞ part
     r
   end
@@ -171,5 +172,19 @@ defmodule Block.Extrinsic.WorkPackage do
        context: context,
        work_items: work_items
      }, rest}
+  end
+
+  @doc """
+  Formula (14.11) v0.5.3
+  Computes work results for a given work package and core.
+  Must be evaluated within 8 epochs of a recently finalized block.
+  """
+  @spec compute_work_result(t(), non_neg_integer()) ::
+          {:error, :not_in_set} | WorkReport.t()
+  def compute_work_result(%__MODULE__{} = work_package, core) do
+    # TODO: Implement work result computation
+    # - Check if o ∈ Y
+    # - If not, return {:error, :not_in_set}
+    # - If yes, return WorkResult with (s, x: px, c, a: pa, o, l, r)
   end
 end
