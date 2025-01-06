@@ -187,14 +187,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (14.11) v0.5.3
   @spec compute_work_report(Block.Extrinsic.WorkPackage.t(), non_neg_integer(), %{
-          optional(integer()) => System.State.ServiceAccount.t()
-        }) :: :out_of_gas | :panic
+         integer() => System.State.ServiceAccount.t()
+        }) :: (:out_of_gas | :panic) | t()
   def compute_work_report(%WorkPackage{} = wp, core, services) do
-    _l = calculate_segments(wp)
+
     # TODO
     d = %{}
-    # TODO
-    s = []
+
 
     case PVM.authorized(wp, core, services) do
       error when is_atom(error) ->
@@ -216,11 +215,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             Hash.default(e(wp)),
             e(
               {wp, for(w <- wp, do: WorkItem.extrinsic_data(w, d)),
-               for(w <- wp, do: WorkItem.import_segment_data(w, s)),
-               for(w <- wp, do: WorkItem.segment_justification(w, s))}
+               for(w <- wp, do: WorkItem.import_segment_data(w)),
+               for(w <- wp, do: WorkItem.segment_justification(w))}
             ),
             e
           )
+           _l = calculate_segments(wp)
 
         %__MODULE__{
           # s
@@ -285,8 +285,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  defp calculate_segments(%WorkPackage{} = _wp) do
-    # for w <- wp.work_items, do:
+
+  defp calculate_segments(%WorkPackage{work_items: work_items}) do
+    work_items
+    |> Stream.flat_map(fn wi ->
+      for {h, _} <- wi.import_segments,
+          Types.is_tagged?(h),
+          do: {Types.hash(h), nil}
+    end)
+    |> Stream.take(8)
+    |> Enum.into(%{})
   end
 
   use JsonDecoder

@@ -52,4 +52,16 @@ defmodule Types do
 
   # Formula (193) v0.4.5 - G ≡ Y WS*WE ≡ Y_4104
   @type export_segment :: <<_::32_832>>
+
+  @type segment_ref ::
+          hash() |
+          {:tagged_hash, hash()}
+
+  @spec is_tagged?(segment_ref()) :: boolean()
+  def is_tagged?(hash) when is_binary(hash), do: false
+  def is_tagged?({:tagged_hash, _}), do: true
+
+  @spec hash(segment_ref()) :: hash()
+  def hash(hash) when is_binary(hash), do: hash
+  def hash({:tagged_hash, hash}), do: hash
 end
