@@ -63,6 +63,28 @@ defmodule ErasureCodingTest do
     end
   end
 
+  describe "lace/2" do
+    test "laces empty list data" do
+      assert ErasureCoding.lace([], 2) == <<>>
+      assert ErasureCoding.lace([], 200) == <<>>
+    end
+
+    test "laces binary data" do
+      assert ErasureCoding.lace([<<1, 4>>, <<2, 5>>, <<3, 6>>], 2) == <<1, 2, 3, 4, 5, 6>>
+      assert ErasureCoding.lace([<<1, 3, 5>>, <<2, 4, 6>>], 3) == <<1, 2, 3, 4, 5, 6>>
+    end
+
+    test "laces invalid data size" do
+      assert_raise ArgumentError, fn ->
+        ErasureCoding.lace([<<1, 4>>, <<2, 5>>, <<3, 6>>], 4)
+      end
+
+      assert_raise ArgumentError, fn ->
+        ErasureCoding.lace([<<1, 4>>, <<2, 5>>, <<3, 6, 7>>], 2)
+      end
+    end
+  end
+
   describe "encode/1" do
     test "returns error for empty binary" do
     end
