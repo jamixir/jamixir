@@ -1,7 +1,12 @@
 defmodule BasicQuicClient do
   use GenServer
   import Quic.Basic.Flags
+  require Logger
+
   @call_default_config [host: ~c"localhost", port: 9999, timeout: 5_000]
+  @log_context "[QUIC_CLIENT]"
+
+  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
 
   defmodule State do
     @initial_stream_id 128
@@ -23,7 +28,7 @@ defmodule BasicQuicClient do
   end
 
   def init(conf) do
-    IO.puts("Client connecting...")
+    log(:info, "Client connecting...")
 
     case :quicer.connect(
            conf[:host],
@@ -32,18 +37,18 @@ defmodule BasicQuicClient do
            conf[:timeout]
          ) do
       {:ok, conn} ->
-        IO.puts("Client connected")
+        log(:info, "Client connected")
         {:ok, %State{conn: conn}}
 
       error ->
-        IO.puts("Client connection failed: #{inspect(error)}")
+        log(:error, "Client connection failed: #{inspect(error)}")
         {:stop, error}
     end
   end
 
   def handle_call({:send_and_wait, message}, from, %State{} = state) do
     stream_id = state.next_stream_id
-    IO.puts("Starting stream with ID: #{stream_id}")
+    log(:debug, "Starting stream with ID: #{stream_id}")
 
     stream_opts = %{
       active: 10000,
@@ -74,14 +79,15 @@ defmodule BasicQuicClient do
          %{status: :success, is_peer_accepted: true, stream_id: stream_id} = props},
         state
       ) do
-    IO.puts("Stream start completed: #{inspect(props)}")
+    log(:debug, "Stream start completed: #{inspect(props)}")
+    log(:info, "Stream start completed: #{inspect(props)}")
 
     case Map.get(state.streams, stream) do
       %{message: message} ->
         length = byte_size(message)
         {:ok, _} = :quicer.send(stream, <<stream_id::8>>, send_flag(:none))
-        {:ok, _} = :quicer.send(stream, <<length::32-little>>, send_flag(:none))
-        {:ok, _} = :quicer.send(stream, message, send_flag(:fin))
+        # {:ok, _} = :quicer.send(stream, <<length::32-little>>, send_flag(:none))
+        {:ok, _} = :quicer.send(stream, <<length::32-little>> <> message, send_flag(:fin))
         {:noreply, state}
 
       nil ->
@@ -90,12 +96,20 @@ defmodule BasicQuicClient do
   end
 
   def handle_info({:quic, :start_completed, _stream, %{status: status} = props}, state) do
-    IO.puts("Stream start completed with status: #{inspect(status)}, props: #{inspect(props)}")
+    log(
+      :debug,
+      "Stream start completed with status: #{inspect(status)}, props: #{inspect(props)}"
+    )
+
+    log(:info, "Stream start completed with status: #{inspect(status)}, props: #{inspect(props)}")
+
     {:noreply, state}
   end
 
   def handle_info({:quic, data, stream, _props}, %State{streams: streams} = state)
       when is_binary(data) do
+    log(:info, "Data received on stream: #{inspect(stream)}")
+
     case Map.get(streams, stream) do
       nil ->
         {:noreply, state}
@@ -109,6 +123,8 @@ defmodule BasicQuicClient do
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, %State{} = state) do
+    log(:info, "Stream closed: #{inspect(stream)}")
+
     case Map.get(state.streams, stream) do
       nil ->
         {:noreply, state}
@@ -124,6 +140,8 @@ defmodule BasicQuicClient do
   end
 
   def handle_info({:stream_timeout, stream}, %State{} = state) do
+    log(:info, "Stream timeout: #{inspect(stream)}")
+
     case Map.get(state.streams, stream) do
       nil ->
         {:noreply, state}
@@ -135,35 +153,32 @@ defmodule BasicQuicClient do
     end
   end
 
-  # Handle other QUIC events
-  def handle_info({:quic, :peer_send_shutdown, stream, _undefined}, state) do
-    # Just log for now
-    IO.puts("Stream #{inspect(stream)} peer send shutdown")
-    {:noreply, state}
-  end
+  # def handle_info({:quic, :peer_send_aborted, stream, error_code}, %State{} = state) do
+  #   Logger.debug("#{@log_context} Stream #{inspect(stream)} peer send aborted")
+  #   Logger.info("#{@log_context} Stream #{inspect(stream)} peer send aborted")
 
-  def handle_info({:quic, :peer_send_aborted, stream, error_code}, %State{} = state) do
-    case Map.get(state.streams, stream) do
-      nil ->
-        {:noreply, state}
+  #   case Map.get(state.streams, stream) do
+  #     nil ->
+  #       {:noreply, state}
 
-      %{from: from, timer_ref: timer_ref} ->
-        Process.cancel_timer(timer_ref)
-        GenServer.reply(from, {:error, {:aborted, error_code}})
-        new_state = %State{state | streams: Map.delete(state.streams, stream)}
-        {:noreply, new_state}
-    end
-  end
+  #     %{from: from, timer_ref: timer_ref} ->
+  #       Process.cancel_timer(timer_ref)
+  #       GenServer.reply(from, {:error, {:aborted, error_code}})
+  #       new_state = %State{state | streams: Map.delete(state.streams, stream)}
+  #       {:noreply, new_state}
+  #   end
+  # end
 
   # Catch-all for unhandled QUIC events
   def handle_info({:quic, event_name, _resource, _props} = msg, state) do
-    IO.puts("BasicQuicClient received unhandled QUIC event: #{inspect(event_name)}")
+    log(:debug, "BasicQuicClient received unhandled QUIC event: #{inspect(event_name)}")
+
     {:noreply, state}
   end
 
   # Super catch-all for any other messages
   def handle_info(msg, state) do
-    IO.puts("BasicQuicClient received unknown message: #{inspect(msg)}")
+    log(:debug, "BasicQuicClient received unknown message: #{inspect(msg)}")
     {:noreply, state}
   end
 end
