@@ -46,105 +46,60 @@ defmodule BasicQuicClient do
     IO.puts("Starting stream with ID: #{stream_id}")
 
     stream_opts = %{
-      active: true,
+      active: 10000,
       stream_id: stream_id,
       start_flag: stream_start_flag(:indicate_peer_accept),
+      # QUICER_STREAM_EVENT_MASK_START_COMPLETE
+      quic_event_mask: 0x00000001,
       open_flag: stream_open_flag(:none)
     }
 
     {:ok, stream} =
       :quicer.start_stream(state.conn, stream_opts)
 
-    IO.puts("Stream started: #{inspect(stream)}")
-
-    length = byte_size(message)
-
-    payload = <<stream_id::8, length::32-little, message::binary>>
-
-    # case :quicer.send(stream, <<random_number>>) do
-    #   {:ok, _} -> IO.puts("Sent random number")
-    #   err -> IO.puts("Error sending random number: #{inspect(err)}")
-    # end
-
-    case :quicer.send(stream, payload) do
-      {:ok, _} -> IO.puts("Sent payload")
-      err -> IO.puts("Error sending payload: #{inspect(err)}")
-    end
-
     timer_ref = Process.send_after(self(), {:stream_timeout, stream}, 5_000)
-    IO.puts("Set up timeout for stream: #{inspect(stream)}")
 
     new_state = %State{
       state
       | next_stream_id: stream_id + 4,
-        streams: Map.put(state.streams, stream, {from, timer_ref})
+        streams:
+          Map.put(state.streams, stream, %{from: from, timer_ref: timer_ref, message: message})
     }
 
     {:noreply, new_state}
   end
 
-  # def handle_call({:send_and_wait, message}, from, %State{} = state) do
-  #   stream_id = state.next_stream_id
+  def handle_info(
+        {:quic, :start_completed, stream,
+         %{status: :success, is_peer_accepted: true, stream_id: stream_id} = props},
+        state
+      ) do
+    IO.puts("Stream start completed: #{inspect(props)}")
 
-  #   stream_opts = %{
-  #     active: true,
-  #     stream_id: stream_id,
-  #     start_flag: stream_start_flag(:indicate_peer_accept),
-  #     open_flag: stream_open_flag(:none)
-  #   }
-
-  #   case :quicer.start_stream(state.conn, stream_opts) do
-  #     {:ok, stream} ->
-  #       new_state = %{
-  #         state
-  #         | next_stream_id: stream_id + 1,
-  #           streams:
-  #             Map.put(state.streams, stream, %{from: from, message: message, stream_id: stream_id})
-  #       }
-  #       IO.puts("Client started stream #{stream_id}")
-
-  #       {:noreply, new_state}
-
-  #     error ->
-  #       IO.puts("Client failed to start stream #{stream_id}: #{inspect(error)}")
-  #       {:reply, error, state}
-  #   end
-  # end
-
-  # def handle_info({:quic, :peer_accepted, stream, _}, %State{streams: streams} = state) do
-  #   IO.puts("Client received peer accepted")
-  #   case Map.get(streams, stream) do
-  #     %{from: _from, message: message, stream_id: stream_id} ->
-
-  #       length = byte_size(message)
-  #       payload = <<stream_id::8, length::32-little, message::binary>>
-  #       {:ok, _} = :quicer.send(stream, payload)
-  #       IO.puts("Client sent payload")
-  #       {:noreply, state}
-
-  #     nil ->
-  #       {:noreply, state}
-  #   end
-  # end
-
-  # def handle_info({:quic, data, stream, _props}, %State{streams: streams} = state)
-  #     when is_binary(data) do
-  #   case Map.get(streams, stream) do
-  #     %{from: from, message: _message} ->
-  #       GenServer.reply(from, {:ok, data})
-  #       {:noreply, %{state | streams: Map.delete(streams, stream)}}
-
-  #     nil ->
-  #       {:noreply, state}
-  #   end
-  # end
-
-  def handle_info({:quic, data, stream, _props}, %State{} = state) when is_binary(data) do
     case Map.get(state.streams, stream) do
+      %{message: message} ->
+        length = byte_size(message)
+        payload = <<stream_id::8, length::32-little, message::binary>>
+        {:ok, _} = :quicer.send(stream, payload)
+        {:noreply, state}
+
+      nil ->
+        {:noreply, state}
+    end
+  end
+
+  def handle_info({:quic, :start_completed, _stream, %{status: status} = props}, state) do
+    IO.puts("Stream start completed with status: #{inspect(status)}, props: #{inspect(props)}")
+    {:noreply, state}
+  end
+
+  def handle_info({:quic, data, stream, _props}, %State{streams: streams} = state)
+      when is_binary(data) do
+    case Map.get(streams, stream) do
       nil ->
         {:noreply, state}
 
-      {from, timer_ref} ->
+      %{from: from, timer_ref: timer_ref} ->
         Process.cancel_timer(timer_ref)
         GenServer.reply(from, {:ok, {:ok, data}})
         new_state = %State{state | streams: Map.delete(state.streams, stream)}
@@ -157,7 +112,7 @@ defmodule BasicQuicClient do
       nil ->
         {:noreply, state}
 
-      {from, timer_ref} ->
+      %{from: from, timer_ref: timer_ref} ->
         Process.cancel_timer(timer_ref)
         # GenServer.reply(from, :ok)
         if Process.alive?(from), do: GenServer.reply(from, :ok)
@@ -172,7 +127,7 @@ defmodule BasicQuicClient do
       nil ->
         {:noreply, state}
 
-      {from, _timer_ref} ->
+      %{from: from} ->
         GenServer.reply(from, {:error, :timeout})
         new_state = %State{state | streams: Map.delete(state.streams, stream)}
         {:noreply, new_state}
@@ -191,7 +146,7 @@ defmodule BasicQuicClient do
       nil ->
         {:noreply, state}
 
-      {from, timer_ref} ->
+      %{from: from, timer_ref: timer_ref} ->
         Process.cancel_timer(timer_ref)
         GenServer.reply(from, {:error, {:aborted, error_code}})
         new_state = %State{state | streams: Map.delete(state.streams, stream)}

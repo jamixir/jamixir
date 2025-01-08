@@ -43,7 +43,7 @@ defmodule QuicTest do
     Process.sleep(100)
 
     {:ok, response} = BasicQuicClient.send_and_wait(client_pid, "Hello, server!")
-    Process.sleep(10)
+    # Process.sleep(10)
     {:ok, response2} = BasicQuicClient.send_and_wait(client_pid, "Hello, server2!")
     IO.puts("Test received response: #{inspect(response)}")
     IO.puts("Test received response2: #{inspect(response2)}")
