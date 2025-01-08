@@ -85,6 +85,33 @@ defmodule ErasureCodingTest do
     end
   end
 
+  describe "transpose/1" do
+    test "transposes empty list" do
+      assert ErasureCoding.transpose([]) == []
+    end
+
+    test "transposes list" do
+      assert ErasureCoding.transpose([[1, 2, 3], [4, 5, 6], [7, 8, 9]]) == [
+               [1, 4, 7],
+               [2, 5, 8],
+               [3, 6, 9]
+             ]
+    end
+
+    test "transposes list 1 element" do
+      assert ErasureCoding.transpose([[1]]) == [[1]]
+      assert ErasureCoding.transpose([[1, 2, 3]]) == [[1], [2], [3]]
+    end
+
+    test "transposes a list of binaries" do
+      assert ErasureCoding.transpose([<<1, 2, 3>>, <<4, 5, 6>>, <<7, 8, 9>>]) == [
+               <<1, 4, 7>>,
+               <<2, 5, 8>>,
+               <<3, 6, 9>>
+             ]
+    end
+  end
+
   describe "encode/1" do
     test "returns error for empty binary" do
     end
