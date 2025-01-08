@@ -1,8 +1,6 @@
 defmodule BasicQuicServer do
   use GenServer
-  alias Quic.Basic.Flags
   alias System.Network.CertUtils
-  import Bitwise
   require Logger
 
   @log_context "[QUIC_SERVER]"
@@ -79,17 +77,16 @@ defmodule BasicQuicServer do
     new_buffer = buffer <> data
     log(:debug, "new_buffer: #{inspect(new_buffer)}")
 
-    if (flags &&& Flags.receive_flag(:fin)) != 0 do
-      log(:debug, "FIN flag is set")
-      <<_stream_id::8, length::32-little, message::binary-size(length)>> = new_buffer
+    case process_message(new_buffer) do
+      {:complete, message, _stream_id} ->
+        {:ok, _} = :quicer.send(stream, message)
+        log(:debug, "sent}")
+        {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
 
-      {:ok, _} = :quicer.send(stream, message)
-      log(:debug, "sent}")
-      {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
-    else
-      # More data coming, keep buffering
-      log(:debug, "More data coming, keep buffering")
-      {:noreply, %{state | streams: Map.put(state.streams, stream, new_buffer)}}
+      {:incomplete, partial_buffer} ->
+        # Keep buffering until we have the complete message
+        log(:debug, "Incomplete message, keep buffering")
+        {:noreply, %{state | streams: Map.put(state.streams, stream, partial_buffer)}}
     end
   end
 
@@ -102,11 +99,18 @@ defmodule BasicQuicServer do
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
-  defp process_message(<<stream_id::8, length::32-little, message::binary-size(length)>>) do
-    {:complete, message, stream_id}
-  end
+  defp process_message(buffer) do
+    if byte_size(buffer) >= 5 do
+      <<stream_id::8, length::32-little, rest::binary>> = buffer
 
-  defp process_message(rest) do
-    {:incomplete, rest}
+      if byte_size(rest) >= length do
+        <<message::binary-size(length), _::binary>> = rest
+        {:complete, message, stream_id}
+      else
+        {:incomplete, buffer}
+      end
+    else
+      {:incomplete, buffer}
+    end
   end
 end

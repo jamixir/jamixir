@@ -85,9 +85,9 @@ defmodule BasicQuicClient do
     case Map.get(state.streams, stream) do
       %{message: message} ->
         length = byte_size(message)
-        {:ok, _} = :quicer.send(stream, <<stream_id::8>>, send_flag(:none))
+        {:ok, _} = :quicer.send(stream, <<stream_id::8>>)
         # {:ok, _} = :quicer.send(stream, <<length::32-little>>, send_flag(:none))
-        {:ok, _} = :quicer.send(stream, <<length::32-little>> <> message, send_flag(:fin))
+        {:ok, _} = :quicer.send(stream, <<length::32-little>> <> message)
         {:noreply, state}
 
       nil ->
