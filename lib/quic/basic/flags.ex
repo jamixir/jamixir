@@ -1,4 +1,4 @@
-defmodule Quic.Basic.Flags do
+defmodule Quic.Flags do
   # Stream Start Flags
   def stream_start_flag(:none), do: 0x0000
   def stream_start_flag(:immediate), do: 0x0001

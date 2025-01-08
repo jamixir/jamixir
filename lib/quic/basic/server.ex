@@ -1,4 +1,4 @@
-defmodule BasicQuicServer do
+defmodule Quic.Server do
   use GenServer
   alias System.Network.CertUtils
   require Logger
@@ -28,6 +28,8 @@ defmodule BasicQuicServer do
                   certfile: ~c"#{CertUtils.certfile()}",
                   keyfile: ~c"#{CertUtils.keyfile()}"
                 ] ++ @fixed_opts
+
+  def default_opts, do: @default_opts
 
   def start_link(port \\ 9999) do
     GenServer.start_link(__MODULE__, port, name: __MODULE__)
@@ -78,7 +80,7 @@ defmodule BasicQuicServer do
     log(:debug, "new_buffer: #{inspect(new_buffer)}")
 
     case process_message(new_buffer) do
-      {:complete, message, _stream_id} ->
+      {:complete, message, protocol_id} ->
         {:ok, _} = :quicer.send(stream, message)
         log(:debug, "sent}")
         {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
@@ -99,13 +101,35 @@ defmodule BasicQuicServer do
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
+  # defp process_message(buffer) do
+  #   if byte_size(buffer) >= 5 do
+  #     <<stream_id::8, length::32-little, rest::binary>> = buffer
+
+  #     if byte_size(rest) >= length do
+  #       <<message::binary-size(length), _::binary>> = rest
+  #       {:complete, message, stream_id}
+  #     else
+  #       {:incomplete, buffer}
+  #     end
+  #   else
+  #     {:incomplete, buffer}
+  #   end
+  # end
+
   defp process_message(buffer) do
     if byte_size(buffer) >= 5 do
-      <<stream_id::8, length::32-little, rest::binary>> = buffer
+      <<protocol_id::8, length::32-little, rest::binary>> = buffer
 
       if byte_size(rest) >= length do
         <<message::binary-size(length), _::binary>> = rest
-        {:complete, message, stream_id}
+
+        response =
+          case protocol_id do
+            128 -> System.Network.Calls.call(128, message)
+            _ -> message
+          end
+
+        {:complete, response, protocol_id}
       else
         {:incomplete, buffer}
       end
