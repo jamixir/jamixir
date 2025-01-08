@@ -9,7 +9,6 @@ defmodule QuicTest do
   alias QuicClient
   use ExUnit.Case
 
-
   # test "basic connection" do
   #   # Start server
   #   {:ok, _} = QuicServer.start_link(9999)
@@ -27,7 +26,6 @@ defmodule QuicTest do
   # test "send ce message" do
   #   {:ok, _server} = QuicServer.start_link(9999)
   #   Process.sleep(100)
-
 
   #   {:ok, _client} = QuicClient.start_link()
   #   result = QuicClient.send_ce("ping")
@@ -51,5 +49,4 @@ defmodule QuicTest do
     assert response == {:ok, "Hello, server!"}
     assert response2 == {:ok, "Hello, server2!"}
   end
-
 end
