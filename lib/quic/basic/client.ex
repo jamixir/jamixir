@@ -1,6 +1,6 @@
-defmodule BasicQuicClient do
+defmodule Quic.Client do
   use GenServer
-  import Quic.Basic.Flags
+  import Quic.Flags
   require Logger
 
   @call_default_config [host: ~c"localhost", port: 9999, timeout: 5_000]
@@ -9,10 +9,8 @@ defmodule BasicQuicClient do
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
 
   defmodule State do
-    @initial_stream_id 128
     defstruct [
       :conn,
-      next_stream_id: @initial_stream_id,
       # Map of stream -> {from, timer_ref}
       streams: %{}
     ]
@@ -23,8 +21,13 @@ defmodule BasicQuicClient do
     GenServer.start_link(__MODULE__, conf, name: __MODULE__)
   end
 
-  def send_and_wait(pid, message) do
-    GenServer.call(pid, {:send_and_wait, message}, 5_000)
+  def send(pid, protocol_id, message) when is_integer(protocol_id) do
+    GenServer.call(pid, {:send, protocol_id, message}, 5_000)
+  end
+
+  def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
+    message = hash <> <<direction::8>> <> <<max_blocks::32>>
+    send(pid, 128, message)
   end
 
   def init(conf) do
@@ -33,7 +36,7 @@ defmodule BasicQuicClient do
     case :quicer.connect(
            conf[:host],
            conf[:port],
-           QuicServer.default_opts(),
+           Quic.Server.default_opts(),
            conf[:timeout]
          ) do
       {:ok, conn} ->
@@ -46,13 +49,9 @@ defmodule BasicQuicClient do
     end
   end
 
-  def handle_call({:send_and_wait, message}, from, %State{} = state) do
-    stream_id = state.next_stream_id
-    log(:debug, "Starting stream with ID: #{stream_id}")
-
+  def handle_call({:send, protocol_id, message}, from, %State{} = state) do
     stream_opts = %{
       active: 10000,
-      stream_id: stream_id,
       start_flag: stream_start_flag(:indicate_peer_accept),
       # QUICER_STREAM_EVENT_MASK_START_COMPLETE
       quic_event_mask: 0x00000001,
@@ -66,17 +65,19 @@ defmodule BasicQuicClient do
 
     new_state = %State{
       state
-      | next_stream_id: stream_id + 4,
-        streams:
-          Map.put(state.streams, stream, %{from: from, timer_ref: timer_ref, message: message})
+      | streams:
+          Map.put(state.streams, stream, %{
+            from: from,
+            timer_ref: timer_ref,
+            message: <<protocol_id::8>> <> message
+          })
     }
 
     {:noreply, new_state}
   end
 
   def handle_info(
-        {:quic, :start_completed, stream,
-         %{status: :success, is_peer_accepted: true, stream_id: stream_id} = props},
+        {:quic, :start_completed, stream, %{status: :success, is_peer_accepted: true} = props},
         state
       ) do
     log(:debug, "Stream start completed: #{inspect(props)}")
@@ -84,10 +85,11 @@ defmodule BasicQuicClient do
 
     case Map.get(state.streams, stream) do
       %{message: message} ->
+        <<protocol_id::8>> <> message = message
         length = byte_size(message)
-        {:ok, _} = :quicer.send(stream, <<stream_id::8>>)
+        {:ok, _} = :quicer.send(stream, <<protocol_id::8>>)
         # {:ok, _} = :quicer.send(stream, <<length::32-little>>, send_flag(:none))
-        {:ok, _} = :quicer.send(stream, <<length::32-little>> <> message)
+        {:ok, _} = :quicer.send(stream, <<length::32-little>> <> message, send_flag(:fin))
         {:noreply, state}
 
       nil ->
@@ -114,9 +116,20 @@ defmodule BasicQuicClient do
       nil ->
         {:noreply, state}
 
-      %{from: from, timer_ref: timer_ref} ->
+      %{from: from, timer_ref: timer_ref, message: <<protocol_id::8, _rest::binary>>} ->
         Process.cancel_timer(timer_ref)
-        GenServer.reply(from, {:ok, {:ok, data}})
+
+        response =
+          case protocol_id do
+            128 ->
+              blocks = Block.decode_list(data)
+              {:ok, blocks}
+
+            _ ->
+              {:ok, data}
+          end
+
+        GenServer.reply(from, response)
         new_state = %State{state | streams: Map.delete(state.streams, stream)}
         {:noreply, new_state}
     end
