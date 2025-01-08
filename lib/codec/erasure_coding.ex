@@ -1,5 +1,10 @@
 defmodule ErasureCoding do
-  # Formula (314) v0.3.4
+  # Formula (H.1) v0.5.3
+
+  def split(data, n) when is_binary(data) and rem(byte_size(data), n) != 0 do
+    raise ArgumentError, "Invalid data size"
+  end
+
   def split(data, n) when is_binary(data) do
     data |> :binary.bin_to_list() |> split(n)
   end
@@ -10,13 +15,35 @@ defmodule ErasureCoding do
     |> Enum.map(&:binary.list_to_bin/1)
   end
 
-  # Formula (315) v0.3.4
-  defp join(chunks) when is_list(chunks) do
-    chunks
-    |> Enum.reduce(<<>>, fn chunk, acc -> acc <> chunk end)
+  # Formula (H.2) v0.5.3
+  def join(chunks, n) when is_list(chunks) do
+    Enum.reduce(chunks, <<>>, fn chunk, acc ->
+      if byte_size(chunk) != n do
+        raise ArgumentError, "Invalid data size"
+      end
+
+      acc <> chunk
+    end)
   end
 
-  # Formula (316) v0.3.4
+  def unzip(<<>>, _), do: []
+
+  def unzip(data, n) when rem(byte_size(data), n) != 0 do
+    raise ArgumentError, "Invalid data size"
+  end
+
+  def unzip(data, n) when is_binary(data) do
+    k = div(byte_size(data), n)
+
+    for i <- 0..(k - 1) do
+      for j <- 0..(n - 1) do
+        :binary.at(data, i + j * k)
+      end
+      |> :binary.list_to_bin()
+    end
+  end
+
+  # Formula (H.5) v0.5.3
   defp transpose(matrix) when is_list(matrix) do
     matrix
     |> List.zip()
@@ -30,7 +57,7 @@ defmodule ErasureCoding do
     |> split(n)
     |> Enum.map(&c(:binary.bin_to_list(&1)))
     |> transpose()
-    |> Enum.map(&join/1)
+    |> Enum.map(&join(&1, n))
   end
 
   def c(data) do
