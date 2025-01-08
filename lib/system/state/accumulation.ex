@@ -105,7 +105,8 @@ defmodule System.State.Accumulation do
            gas_limit,
            accumulatable_reports,
            initial_state,
-           privileged_services.services_gas
+           privileged_services.services_gas,
+           state_timeslot
          ) do
       {:ok,
        {n,
@@ -117,7 +118,7 @@ defmodule System.State.Accumulation do
         }, deferred_transfers, beefy_commitment}} ->
         # Formula (12.24) v0.5.2
         services_intermediate_2 =
-          calculate_posterior_services(services_intermediate, deferred_transfers)
+          calculate_posterior_services(services_intermediate, deferred_transfers, state_timeslot)
 
         # Formula (12.25) v0.5.2
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
@@ -156,11 +157,12 @@ defmodule System.State.Accumulation do
           non_neg_integer(),
           list(WorkReport.t()),
           t(),
-          %{non_neg_integer() => non_neg_integer()}
+          %{non_neg_integer() => non_neg_integer()},
+          Types.timeslot()
         ) ::
           {:ok, {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}}
           | {:error, atom()}
-  def outer_accumulation(gas_limit, work_reports, acc_state, always_acc_services) do
+  def outer_accumulation(gas_limit, work_reports, acc_state, always_acc_services, timeslot) do
     i = calculate_i(work_reports, gas_limit)
 
     if i == 0 do
@@ -173,7 +175,8 @@ defmodule System.State.Accumulation do
                gas_limit - g_star,
                Enum.drop(work_reports, i),
                o_star,
-               Map.new()
+               Map.new(),
+               timeslot
              ) do
         {:ok, {i + j, o_prime, t_star ++ t, b_star ++ b}}
       else
@@ -318,10 +321,10 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (12.24) v0.5.2
-  def calculate_posterior_services(services_intermediate_2, transfers) do
+  def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-      apply_transfers(services, s, selected_transfers)
+      %{services | s => PVM.on_transfer(services, timeslot, s, selected_transfers)}
     end)
   end
 

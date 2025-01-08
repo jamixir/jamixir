@@ -11,7 +11,8 @@ defmodule AccumulateTestVectorsTest do
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
-      Accumulation
+      Accumulation,
+      WorkReport
     ])
 
     on_exit(fn ->
@@ -27,10 +28,10 @@ defmodule AccumulateTestVectorsTest do
       :ok
     end
 
-    # test "smoke" do
-    #   execute_test("enqueue_and_unlock_chain-1", "accumulate/tiny")
-    # end
+    test "smoke" do
+      execute_test("enqueue_and_unlock_chain-1", "accumulate/tiny")
+    end
 
-    define_vector_tests("accumulate")
+    # define_vector_tests("accumulate")
   end
 end

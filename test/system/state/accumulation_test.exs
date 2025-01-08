@@ -465,7 +465,8 @@ defmodule System.State.AccumulationTest do
           gas_limit,
           work_reports,
           initial_state,
-          always_acc_services
+          always_acc_services,
+          0
         )
 
       assert {:ok, {total_i, final_state, all_transfers, all_outputs}} = result
@@ -506,7 +507,8 @@ defmodule System.State.AccumulationTest do
           gas_limit,
           work_reports,
           initial_state,
-          always_acc_services
+          always_acc_services,
+          0
         )
 
       assert {:error, :invalid_service} = result
@@ -527,7 +529,7 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
       assert result[1].balance == 150
       assert result[2].balance == 175
       assert result[3].balance == 275
@@ -535,26 +537,26 @@ defmodule System.State.AccumulationTest do
 
     test "handles empty transfers" do
       services_intermediate_2 = %{
-        1 => %{balance: 100},
-        2 => %{balance: 200}
+        1 => %ServiceAccount{balance: 100},
+        2 => %ServiceAccount{balance: 200}
       }
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, [])
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, [], 0)
 
       assert result == services_intermediate_2
     end
 
     test "transfers to non-existent services is a noop" do
       services_intermediate_2 = %{
-        1 => %{balance: 100},
-        2 => %{balance: 200}
+        1 => %ServiceAccount{balance: 100},
+        2 => %ServiceAccount{balance: 200}
       }
 
       transfers = [
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
 
       assert result == services_intermediate_2
     end
