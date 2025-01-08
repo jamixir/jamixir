@@ -9,6 +9,21 @@ defmodule QuicTest do
   alias QuicClient
   use ExUnit.Case
 
+  setup do
+    Logger.configure(
+      level: :info,
+      sync: false
+    )
+
+    # Add filter for QUIC client logs
+    # :logger.add_primary_filter(
+    #   :quic_client_filter,
+    #   {&QuicLogFilter.filter/2, []}
+    # )
+
+    :ok
+  end
+
   # test "basic connection" do
   #   # Start server
   #   {:ok, _} = QuicServer.start_link(9999)
@@ -34,19 +49,19 @@ defmodule QuicTest do
   # end
 
   test "basic client" do
+    Logger.info("[QUIC_TEST] Starting QUIC test")
     BasicQuicServer.start_link(9999)
     Process.sleep(100)
 
     {:ok, client_pid} = BasicQuicClient.start_link()
     Process.sleep(100)
 
-    {:ok, response} = BasicQuicClient.send_and_wait(client_pid, "Hello, server!")
-    # Process.sleep(10)
-    {:ok, response2} = BasicQuicClient.send_and_wait(client_pid, "Hello, server2!")
-    IO.puts("Test received response: #{inspect(response)}")
-    IO.puts("Test received response2: #{inspect(response2)}")
-
-    assert response == {:ok, "Hello, server!"}
-    assert response2 == {:ok, "Hello, server2!"}
+    for i <- 1..3 do
+      message = "Hello, server#{i}!"
+      {:ok, response} = BasicQuicClient.send_and_wait(client_pid, message)
+      Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
+      assert response == {:ok, message}
+      Process.sleep(50)
+    end
   end
 end

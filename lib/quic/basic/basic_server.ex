@@ -3,6 +3,11 @@ defmodule BasicQuicServer do
   alias Quic.Basic.Flags
   alias System.Network.CertUtils
   import Bitwise
+  require Logger
+
+  @log_context "[QUIC_SERVER]"
+
+  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
 
   defmodule State do
     defstruct [
@@ -31,8 +36,8 @@ defmodule BasicQuicServer do
   end
 
   def init(port) do
+    log(:info, "Starting on port #{port}")
     {:ok, socket} = :quicer.listen(port, @default_opts)
-    IO.puts("Server listening on port #{port}")
     send(self(), :accept_connection)
     {:ok, %State{socket: socket}}
   end
@@ -40,14 +45,14 @@ defmodule BasicQuicServer do
   def handle_info(:accept_connection, %{socket: socket} = state) do
     case :quicer.accept(socket, [], :infinity) do
       {:ok, conn} ->
-        IO.puts("Server - Connection accepted")
+        log(:info, "Connection accepted")
         {:ok, conn} = :quicer.handshake(conn)
-        IO.puts("Server - Handshake completed")
+        log(:info, "Handshake completed")
         send(self(), :accept_stream)
         {:noreply, %{state | connection: conn}}
 
       error ->
-        IO.puts("Server - Accept error: #{inspect(error)}")
+        log(:error, "Accept error: #{inspect(error)}")
         send(self(), :accept_connection)
         {:noreply, state}
     end
@@ -56,70 +61,44 @@ defmodule BasicQuicServer do
   def handle_info(:accept_stream, %{connection: conn} = state) do
     case :quicer.accept_stream(conn, [{:active, true}], :infinity) do
       {:ok, stream} ->
-        IO.puts("Server - Stream accepted: #{inspect(stream)}")
+        log(:debug, "Stream accepted: #{inspect(stream)}")
         send(self(), :accept_stream)
         {:noreply, state}
 
       error ->
-        IO.puts("Server - Stream accept error: #{inspect(error)}")
+        log(:error, "Stream accept error: #{inspect(error)}")
         {:noreply, state}
     end
   end
 
-  # def handle_info({:quic, data, stream, _props}, %{streams: streams} = state) do
-  #   buffer = Map.get(streams, stream, <<>>)
-  #   new_buffer = buffer <> data
-
-  #   case process_message(new_buffer) do
-  #     {:complete, message, _stream_id} ->
-  #       IO.puts("Server received complete message: #{inspect(message)}")
-  #       send_result = :quicer.send(stream, message)
-  #       IO.puts("Server - Send result: #{inspect(send_result)}")
-  #       # :quicer.shutdown_stream(stream, :send)
-  #       {:noreply, %{state | streams: Map.delete(streams, stream)}}
-
-  #     {:incomplete, partial_buffer} ->
-  #       IO.puts("Server - stream: #{inspect(stream)}")
-  #       IO.puts("Server - partial_buffer: #{inspect(partial_buffer)}")
-  #       {:noreply, %{state | streams: Map.put(streams, stream, partial_buffer)}}
-  #   end
-
-  #   {:noreply, state}
-  # end
-
   def handle_info({:quic, data, stream, %{flags: flags} = props}, state) when is_binary(data) do
-    IO.puts("Server - props: #{inspect(props)}")
-    # inspect data
-    IO.puts("Server - data: #{inspect(data)}")
+    log(:debug, "Props: #{inspect(props)}")
+    log(:debug, "Data: #{inspect(data)}")
 
     buffer = Map.get(state.streams, stream, <<>>)
     new_buffer = buffer <> data
-    IO.puts("Server - new_buffer: #{inspect(new_buffer)}")
+    log(:debug, "new_buffer: #{inspect(new_buffer)}")
 
     if (flags &&& Flags.receive_flag(:fin)) != 0 do
-      IO.puts("Server - FIN flag is set")
-      # take only the message from the buffer
-      # first bytes is stream_id, second is length, rest is message
-      <<stream_id::8, length::32-little, message::binary-size(length)>> = new_buffer
+      log(:debug, "FIN flag is set")
+      <<_stream_id::8, length::32-little, message::binary-size(length)>> = new_buffer
 
       {:ok, _} = :quicer.send(stream, message)
-      IO.puts("Server - sent}")
+      log(:debug, "sent}")
       {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
     else
       # More data coming, keep buffering
-      IO.puts("Server - More data coming, keep buffering")
+      log(:debug, "More data coming, keep buffering")
       {:noreply, %{state | streams: Map.put(state.streams, stream, new_buffer)}}
     end
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    IO.puts("Server - Stream #{inspect(stream)} closed")
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
   # handler for :peer_send_shutdown
   def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
-    IO.puts("Server - Stream #{inspect(stream)} peer send shutdown")
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
