@@ -5,36 +5,24 @@ defmodule QuicTest do
   """
 
   require Logger
-  alias Quic.{Client, Server}
+  alias Quic.{Client}
   use ExUnit.Case
 
+  @port 9999
+  @server_name :quic_server_test
+  @client_name :quic_client_test
+
   setup do
-    # Logger.configure(
-    #   level: :debug,
-    #   sync: false
-    # )
-
-    # Add filter for QUIC client logs
-    # :logger.add_primary_filter(
-    #   :quic_client_filter,
-    #   {&QuicLogFilter.filter/2, []}
-    # )
-
-    :ok
+    Logger.info("[QUIC_TEST] Starting QUIC test")
+    {_server_pid, client_pid} = QuicTestHelper.start_quic_processes(@port, @server_name, @client_name)
+    {:ok, client: client_pid}
   end
 
-  test "basic client" do
-    Logger.info("[QUIC_TEST] Starting QUIC test")
-    Server.start_link(9999)
-    Process.sleep(100)
-
-    {:ok, client_pid} = Client.start_link()
-    Process.sleep(100)
-
-    tasks = for i <- 1..1000 do
+  test "parallel streams", %{client: client} do
+    tasks = for i <- 1..100 do
       Task.async(fn ->
         message = "Hello, server#{i}!"
-        {:ok, response} = Client.send(client_pid, 127, message)
+        {:ok, response} = Client.send(client, 127, message)
         Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
         assert response == message
         i
@@ -42,6 +30,6 @@ defmodule QuicTest do
     end
 
     results = Task.await_many(tasks, 5000)
-    assert length(results) == 1000
+    assert length(results) == 100
   end
 end

@@ -1,25 +1,17 @@
 defmodule BasicQuicClientTest do
   use ExUnit.Case, async: false
   import Mox
-  alias Quic.{Client, Server}
+  alias Quic.{Client}
   require Logger
 
-  @port 9999
+  @port 8999
+  @server_name :quic_server_blocks_test
+  @client_name :quic_client_blocks_test
 
   setup do
-    # Start server and client for each test
-    {:ok, server} = Server.start_link(@port)
-    {:ok, client} = Client.start_link(port: @port)
-    Process.sleep(100)
-
-    # Cleanup after each test
-    on_exit(fn ->
-      if Process.alive?(server), do: Process.exit(server, :normal)
-      if Process.alive?(client), do: Process.exit(client, :normal)
-    end)
-
+    {_server_pid, client_pid} = QuicTestHelper.start_quic_processes(@port, @server_name, @client_name)
     blocks = for _ <- 1..3, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
-    {:ok, client: client, blocks: blocks}
+    {:ok, client: client_pid, blocks: blocks}
   end
 
   setup :set_mox_from_context
