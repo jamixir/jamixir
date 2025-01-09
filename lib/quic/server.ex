@@ -2,6 +2,7 @@ defmodule Quic.Server do
   use GenServer
   alias System.Network.CertUtils
   require Logger
+  alias Quic.Flags
 
   @log_context "[QUIC_SERVER]"
 
@@ -71,70 +72,41 @@ defmodule Quic.Server do
     end
   end
 
-  def handle_info({:quic, data, stream, %{flags: flags} = props}, state) when is_binary(data) do
-    log(:debug, "Props: #{inspect(props)}")
-    log(:debug, "Data: #{inspect(data)}")
-
-    buffer = Map.get(state.streams, stream, <<>>)
-    new_buffer = buffer <> data
-    log(:debug, "new_buffer: #{inspect(new_buffer)}")
-
-    case process_message(new_buffer) do
-      {:complete, message, protocol_id} ->
-        {:ok, _} = :quicer.send(stream, message)
-        log(:debug, "sent}")
+  def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
+    Quic.MessageHandler.handle_stream_data(
+      data,
+      stream,
+      props,
+      state,
+      log_tag: "[QUIC_SERVER]",
+      on_complete: fn protocol_id, message, stream ->
+        response = case protocol_id do
+          128 -> System.Network.Calls.call(128, message)
+          _ -> Quic.MessageHandler.encode_message(protocol_id, message)
+        end
+        {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
         {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+      end
+    )
+  end
 
-      {:incomplete, partial_buffer} ->
-        # Keep buffering until we have the complete message
-        log(:debug, "Incomplete message, keep buffering")
-        {:noreply, %{state | streams: Map.put(state.streams, stream, partial_buffer)}}
-    end
+  def handle_info({:quic, :new_stream, stream, props}, state) do
+    log(:debug, "New stream notification: #{inspect(stream)}, props: #{inspect(props)}")
+    {:noreply, state}
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+    log(:debug, "Stream closed: #{inspect(stream)}")
+    {:noreply, state}
   end
 
-  # handler for :peer_send_shutdown
   def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
-    {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+    log(:debug, "Peer send shutdown for stream: #{inspect(stream)}")
+    {:noreply, state}
   end
 
-  # defp process_message(buffer) do
-  #   if byte_size(buffer) >= 5 do
-  #     <<stream_id::8, length::32-little, rest::binary>> = buffer
-
-  #     if byte_size(rest) >= length do
-  #       <<message::binary-size(length), _::binary>> = rest
-  #       {:complete, message, stream_id}
-  #     else
-  #       {:incomplete, buffer}
-  #     end
-  #   else
-  #     {:incomplete, buffer}
-  #   end
-  # end
-
-  defp process_message(buffer) do
-    if byte_size(buffer) >= 5 do
-      <<protocol_id::8, length::32-little, rest::binary>> = buffer
-
-      if byte_size(rest) >= length do
-        <<message::binary-size(length), _::binary>> = rest
-
-        response =
-          case protocol_id do
-            128 -> System.Network.Calls.call(128, message)
-            _ -> message
-          end
-
-        {:complete, response, protocol_id}
-      else
-        {:incomplete, buffer}
-      end
-    else
-      {:incomplete, buffer}
-    end
+  def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
+    log(:debug, "Send shutdown complete for stream: #{inspect(stream)}")
+    {:noreply, state}
   end
 end
