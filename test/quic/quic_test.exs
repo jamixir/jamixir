@@ -9,10 +9,10 @@ defmodule QuicTest do
   use ExUnit.Case
 
   setup do
-    # Logger.configure(
-    #   level: :info,
-    #   sync: false
-    # )
+    Logger.configure(
+      level: :debug,
+      sync: false
+    )
 
     # Add filter for QUIC client logs
     # :logger.add_primary_filter(
@@ -31,12 +31,12 @@ defmodule QuicTest do
     {:ok, client_pid} = Client.start_link()
     Process.sleep(100)
 
-    for i <- 1..3 do
-      message = "Hello, server#{i}!"
+    for i <- 1..10 do
+      message = <<i::8>>
       {:ok, response} = Client.send(client_pid, 127, message)
       Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
       assert response == message
-      Process.sleep(50)
+      Process.sleep(30)
     end
   end
 end
