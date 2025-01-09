@@ -112,7 +112,7 @@ defmodule Quic.Client do
               end
 
             GenServer.reply(from, response)
-            {:noreply, state}
+            {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
 
           nil ->
             {:noreply, state}
@@ -123,7 +123,7 @@ defmodule Quic.Client do
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
     log(:debug, "Stream closed: #{inspect(stream)}")
-    {:noreply, state}
+    {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
   def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do

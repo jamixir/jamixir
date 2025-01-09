@@ -22,11 +22,11 @@ defmodule Quic.MessageHandler do
 
       case on_complete do
         nil ->
-          {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+          {:noreply, state}
 
         func when is_function(func) ->
           func.(protocol_id, message, stream)
-          {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+          {:noreply, state}
       end
     else
       Logger.debug("#{log_tag} More data coming, keep buffering")
