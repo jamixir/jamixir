@@ -33,8 +33,9 @@ defmodule Quic.Server do
 
   def default_opts, do: @default_opts
 
-  def start_link(port \\ 9999) do
-    GenServer.start_link(__MODULE__, port, name: __MODULE__)
+  def start_link(port, opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, port, name: name)
   end
 
   def init(port) do

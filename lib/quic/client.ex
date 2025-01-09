@@ -1,6 +1,6 @@
 defmodule Quic.Client do
   use GenServer
-  import Quic.Flags
+  import Quic.{Flags, MessageHandler}
   require Logger
 
   @call_default_config [host: ~c"localhost", port: 9999, timeout: 5_000]
@@ -16,9 +16,10 @@ defmodule Quic.Client do
     ]
   end
 
-  def start_link(config \\ []) do
+  def start_link(config \\ [], opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
     conf = Keyword.merge(@call_default_config, config)
-    GenServer.start_link(__MODULE__, conf, name: __MODULE__)
+    GenServer.start_link(__MODULE__, conf, name: name)
   end
 
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
@@ -83,8 +84,7 @@ defmodule Quic.Client do
 
     case Map.get(state.streams, stream) do
       %{message: message, protocol_id: protocol_id} ->
-        encoded = Quic.MessageHandler.encode_message(protocol_id, message)
-        {:ok, _} = :quicer.send(stream, encoded, send_flag(:fin))
+        {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:fin))
         {:noreply, state}
 
       nil ->
@@ -94,7 +94,7 @@ defmodule Quic.Client do
 
   def handle_info({:quic, data, stream, props}, %State{streams: streams} = state)
       when is_binary(data) do
-    Quic.MessageHandler.handle_stream_data(
+    handle_stream_data(
       data,
       stream,
       props,
@@ -148,7 +148,6 @@ defmodule Quic.Client do
         {:noreply, state}
     end
   end
-
 
   # Catch-all for unhandled QUIC events
   def handle_info({:quic, event_name, _resource, _props} = _msg, state) do
