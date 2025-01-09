@@ -60,14 +60,20 @@ defmodule Quic.Server do
   end
 
   def handle_info(:accept_stream, %{connection: conn} = state) do
-    case :quicer.accept_stream(conn, [{:active, true}], :infinity) do
+    case :quicer.accept_stream(conn, [{:active, true}], 0) do
       {:ok, stream} ->
         log(:debug, "Stream accepted: #{inspect(stream)}")
         send(self(), :accept_stream)
         {:noreply, state}
 
-      error ->
-        log(:error, "Stream accept error: #{inspect(error)}")
+      {:error, :timeout} ->
+        # Normal case - no streams to accept right now
+        send(self(), :accept_stream)
+        {:noreply, state}
+
+      {:error, reason} when reason in [:badarg, :internal_error, :bad_pid, :owner_dead] ->
+        log(:error, "Stream accept error: #{inspect(reason)}")
+        send(self(), :accept_stream)
         {:noreply, state}
     end
   end
