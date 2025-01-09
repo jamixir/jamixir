@@ -22,6 +22,16 @@ defmodule ErasureCodingTest do
     end
   end
 
+  describe "join/1" do
+    test "join empty list" do
+      assert ErasureCoding.join([]) == <<>>
+    end
+
+    test "infer data size from first element" do
+      assert ErasureCoding.join([<<1, 2>>, <<3, 4>>, <<5, 6>>]) == <<1, 2, 3, 4, 5, 6>>
+    end
+  end
+
   describe "join/2" do
     test "joins empty list" do
       assert ErasureCoding.join([], 2) == <<>>
@@ -114,6 +124,13 @@ defmodule ErasureCodingTest do
 
   describe "encode/1" do
     test "returns error for empty binary" do
+    end
+  end
+
+  describe "erasure_code/1" do
+    test "smoke test" do
+      binary = <<1::684*8>>
+      # assert ErasureCoding.erasure_code(binary) == [<<1::684*8>>]
     end
   end
 

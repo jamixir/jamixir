@@ -26,6 +26,12 @@ defmodule ErasureCoding do
     end)
   end
 
+  def join([]), do: <<>>
+
+  def join([c | _] = chunks) when is_list(chunks) do
+    join(chunks, byte_size(c))
+  end
+
   # Formula (H.3) v0.5.4
   def unzip(<<>>, _), do: []
 
@@ -90,6 +96,17 @@ defmodule ErasureCoding do
 
   def c(data) do
     data
+  end
+
+  def erasure_code(d) do
+    for c <-
+          transpose(
+            for p <- unzip(d, 684) do
+              c(p)
+            end
+          ) do
+      join(c)
+    end
   end
 
   use Rustler, otp_app: :jamixir, crate: :erasure_coding
