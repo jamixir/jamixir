@@ -25,6 +25,11 @@ defmodule BasicQuicClientTest do
   setup :set_mox_from_context
 
   setup_all do
+    Logger.configure(
+      level: :debug,
+      sync: false
+    )
+
     # Start server in supervised process
     {:ok, server_pid} =
       Task.start(fn ->

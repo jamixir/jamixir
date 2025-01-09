@@ -3,6 +3,7 @@ defmodule Quic.Server do
   alias System.Network.CertUtils
   require Logger
   alias Quic.Flags
+  import Quic.MessageHandler
 
   @log_context "[QUIC_SERVER]"
 
@@ -19,7 +20,7 @@ defmodule Quic.Server do
 
   @fixed_opts [
     alpn: [~c"jamnp-s/V/H"],
-    peer_bidi_stream_count: 100,
+    peer_bidi_stream_count: 1023,
     peer_unidi_stream_count: 100,
     versions: [:"tlsv1.3"],
     verify: :none
@@ -86,10 +87,16 @@ defmodule Quic.Server do
       state,
       log_tag: "[QUIC_SERVER]",
       on_complete: fn protocol_id, message, stream ->
-        response = case protocol_id do
-          128 -> System.Network.Calls.call(128, message)
-          _ -> Quic.MessageHandler.encode_message(protocol_id, message)
-        end
+        response =
+          case protocol_id do
+            128 ->
+              blocks_bin = System.Network.Calls.call(128, message)
+              encode_message(protocol_id, blocks_bin)
+
+            _ ->
+              Quic.MessageHandler.encode_message(protocol_id, message)
+          end
+
         {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
         {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
       end

@@ -10,7 +10,7 @@ defmodule QuicTest do
 
   setup do
     # Logger.configure(
-    #   level: :info,
+    #   level: :debug,
     #   sync: false
     # )
 
@@ -31,12 +31,17 @@ defmodule QuicTest do
     {:ok, client_pid} = Client.start_link()
     Process.sleep(100)
 
-    for i <- 1..2000 do
-      message = <<i::8>>
-      {:ok, response} = Client.send(client_pid, 127, message)
-      Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
-      assert response == message
-      # Process.sleep(30)
+    tasks = for i <- 1..1000 do
+      Task.async(fn ->
+        message = "Hello, server#{i}!"
+        {:ok, response} = Client.send(client_pid, 127, message)
+        Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
+        assert response == message
+        i
+      end)
     end
+
+    results = Task.await_many(tasks, 5000)
+    assert length(results) == 1000
   end
 end
