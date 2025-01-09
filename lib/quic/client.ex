@@ -149,24 +149,9 @@ defmodule Quic.Client do
     end
   end
 
-  # def handle_info({:quic, :peer_send_aborted, stream, error_code}, %State{} = state) do
-  #   Logger.debug("#{@log_context} Stream #{inspect(stream)} peer send aborted")
-  #   Logger.info("#{@log_context} Stream #{inspect(stream)} peer send aborted")
-
-  #   case Map.get(state.streams, stream) do
-  #     nil ->
-  #       {:noreply, state}
-
-  #     %{from: from, timer_ref: timer_ref} ->
-  #       Process.cancel_timer(timer_ref)
-  #       GenServer.reply(from, {:error, {:aborted, error_code}})
-  #       new_state = %State{state | streams: Map.delete(state.streams, stream)}
-  #       {:noreply, new_state}
-  #   end
-  # end
 
   # Catch-all for unhandled QUIC events
-  def handle_info({:quic, event_name, _resource, _props} = msg, state) do
+  def handle_info({:quic, event_name, _resource, _props} = _msg, state) do
     log(:debug, "BasicQuicClient received unhandled QUIC event: #{inspect(event_name)}")
 
     {:noreply, state}
