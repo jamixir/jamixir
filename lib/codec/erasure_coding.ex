@@ -111,5 +111,5 @@ defmodule ErasureCoding do
 
   use Rustler, otp_app: :jamixir, crate: :erasure_coding
 
-  def encode_native(_size, _binary), do: :erlang.nif_error(:nif_not_loaded)
+  def encode(_bin), do: :erlang.nif_error(:nif_not_loaded)
 end
