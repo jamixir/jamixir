@@ -27,7 +27,7 @@ defmodule CommsTest do
   setup :set_mox_from_context
 
   test "parallel streams", %{client: client, port: _port} do
-    number_of_messages = 2
+    number_of_messages = 100
 
     tasks =
       for i <- 1..number_of_messages do

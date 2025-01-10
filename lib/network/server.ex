@@ -108,28 +108,23 @@ defmodule Network.Server do
           end
 
         {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
-        {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+        {:noreply, state}
       end
     )
   end
 
-  def handle_info({:quic, :new_stream, stream, props}, state) do
-    log(:debug, "New stream notification: #{inspect(stream)}, props: #{inspect(props)}")
-    {:noreply, state}
-  end
+
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    log(:debug, "Stream closed: #{inspect(stream)}")
+    log(:info, "Stream closed: #{inspect(stream)}")
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
-  def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
-    log(:debug, "Peer send shutdown for stream: #{inspect(stream)}")
-    {:noreply, state}
-  end
 
-  def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
-    log(:debug, "Send shutdown complete for stream: #{inspect(stream)}")
+
+  def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
+    log(:debug, "Received unhandled event: #{inspect(event_name)}")
+
     {:noreply, state}
   end
 end
