@@ -19,7 +19,7 @@ defmodule Network.Client do
       :conn,
       # Map of stream -> {from}
       streams: %{},
-      up_stream: nil
+      up_streams: %{}
     ]
   end
 
@@ -39,6 +39,7 @@ defmodule Network.Client do
   end
 
   def announce_block(pid, header, slot) do
+    log(:debug, "Announcing block at slot #{slot}")
     encoded_header = e(header)
     hash = h(encoded_header)
     messsage = encoded_header <> hash <> <<slot::32>>
@@ -56,7 +57,6 @@ defmodule Network.Client do
          ) do
       {:ok, conn} ->
         log(:info, "Client connected")
-        GenServer.cast(self(), :init_up_stream)
         {:ok, %State{conn: conn}}
 
       error ->
@@ -65,31 +65,32 @@ defmodule Network.Client do
     end
   end
 
-  def handle_cast(:init_up_stream, %{conn: conn} = state) do
-    case start_up_stream(conn, 0) do
-      {:ok, up_stream} ->
-        log(:info, "UP stream initialized")
-        {:noreply, %{state | up_stream: up_stream}}
 
-      {:error, error} ->
-        log(:error, "Failed to initialize UP stream: #{inspect(error)}")
-        {:noreply, state}
-    end
-  end
 
   def handle_cast(
         {:announce_block, message, hash, slot},
-        %{up_stream: stream} = state
+        %{up_streams: up_streams} = state
       ) do
-    case :quicer.send(stream, encode_message(0, message), send_flag(:none)) do
-      {:ok, _} ->
-        log(:debug, "Block announced: hash=#{inspect(hash)}, slot=#{slot}")
+    protocol_id = 0
 
-      error ->
-        log(:error, "Failed to announce block: #{inspect(error)}")
-    end
+    {stream, state_} =
+      case Map.get(up_streams, protocol_id) do
+        # Existing stream - use it without state update
+        %{stream_id: stream_id} ->
+          log(:debug, "Reusing existing UP stream for block announcement")
+          {stream_id, state}
 
-    {:noreply, state}
+        # No stream - create new one and update state
+        nil ->
+          log(:info, "Creating new UP stream for block announcements")
+          {:ok, stream} = :quicer.start_stream(state.conn, @default_stream_opts)
+          state_ = put_in(state.up_streams[protocol_id], %{stream_id: stream})
+          {stream, state_}
+      end
+
+    log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+    {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:none))
+    {:noreply, state_}
   end
 
   def handle_call({:send, protocol_id, message}, from, %State{} = state) do

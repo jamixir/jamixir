@@ -1,13 +1,14 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
   import Mox
+  import Jamixir.Factory
   require Logger
   alias Network.Client
 
   @base_port 9999
 
   setup_all do
-    Logger.configure(level: :none)
+    Logger.configure(level: :info)
     :ok
   end
 
@@ -33,7 +34,7 @@ defmodule CommsTest do
       for i <- 1..number_of_messages do
         Task.async(fn ->
           message = "Hello, server#{i}!"
-          {:ok, response} = Client.send(client, 127, message)
+          {:ok, response} = Client.send(client, 134, message)
           Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
           assert response == message
           i
@@ -61,6 +62,53 @@ defmodule CommsTest do
       result = Client.request_blocks(client, <<1::32>>, 1, 2)
       verify!()
       assert {:ok, ^blocks} = result
+    end
+  end
+
+  describe "block announcements" do
+    test "announces blocks over UP stream", %{client: client} do
+      # Mock header and slot for announcement
+      header = build(:decodable_header)
+      slot = 42
+
+      # First announcement should create UP stream
+      Client.announce_block(client, header, slot)
+      # Give some time for stream setup
+      Process.sleep(100)
+
+      # # Second announcement should reuse the same stream
+      Client.announce_block(client, header, slot + 1)
+      Process.sleep(100)
+
+      # # Get client's state to verify UP stream handling
+      client_state = :sys.get_state(client)
+
+      # # Verify we have exactly one UP stream for protocol 0
+      assert map_size(client_state.up_streams) == 1
+      assert Map.has_key?(client_state.up_streams, 0)
+
+      # # Verify the stream is valid
+      %{stream_id: stream} = client_state.up_streams[0]
+      assert is_reference(stream)
+    end
+
+    test "handles multiple sequential block announcements", %{client: client} do
+      header = build(:decodable_header)
+
+
+      for slot <- 1..100 do
+        Client.announce_block(client, %{header | timeslot: slot}, slot)
+        Process.sleep(20)
+      end
+
+      # Verify we have exactly one UP stream
+      client_state = :sys.get_state(client)
+      assert map_size(client_state.up_streams) == 1
+      assert Map.has_key?(client_state.up_streams, 0)
+
+      # Verify the stream is valid
+      %{stream_id: stream} = client_state.up_streams[0]
+      assert is_reference(stream)
     end
   end
 end

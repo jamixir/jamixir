@@ -89,27 +89,34 @@ defmodule Network.Server do
   end
 
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
-    handle_stream_data(
-      data,
-      stream,
-      props,
-      state,
-      log_tag: "[QUIC_SERVER]",
-      on_complete: fn protocol_id, message, stream ->
-        response =
-          case protocol_id do
-            128 ->
-              blocks_bin = Network.Calls.call(128, message)
-              encode_message(protocol_id, blocks_bin)
+    <<protocol_id::8, _::binary>> = data
 
-            _ ->
-              encode_message(protocol_id, message)
-          end
-
-        {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
-        {:noreply, state}
-      end
-    )
+    if protocol_id < 128 do
+      # UP stream handling
+      log(:debug, "Received UP stream data")
+      handle_up_stream_data(protocol_id, data, stream, state)
+    else
+      # CE stream handling (no need to track state)
+      handle_stream_data(
+        data,
+        stream,
+        props,
+        state,
+        log_tag: "[QUIC_SERVER]",
+        on_complete: fn protocol_id, message, stream ->
+          response =
+            case protocol_id do
+              128 ->
+                blocks_bin = Network.Calls.call(128, message)
+                encode_message(protocol_id, blocks_bin)
+              _ ->
+                encode_message(protocol_id, message)
+            end
+          {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
+          {:noreply, state}
+        end
+      )
+    end
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
@@ -121,5 +128,102 @@ defmodule Network.Server do
     log(:debug, "Received unhandled event: #{inspect(event_name)}")
 
     {:noreply, state}
+  end
+
+  defp handle_up_stream_data(protocol_id, data, stream, state) do
+    log(:debug, "Handling UP stream data: protocol=#{protocol_id}")
+    # First handle stream state management
+    {stream_state, new_state} = manage_up_stream(protocol_id, stream, state)
+
+    case stream_state do
+      {:ok, current_stream} ->
+        # Process the data for valid stream
+        process_stream_data(protocol_id, data, current_stream, new_state)
+
+      :reject ->
+        # Stream was rejected (lower ID)
+        log(:info, "Rejected UP stream with lower ID: #{inspect(stream)}")
+        {:noreply, new_state}
+    end
+  end
+
+  # Handles stream state management, returns {stream_state, new_server_state}
+  defp manage_up_stream(protocol_id, stream, state) do
+    current = Map.get(state.up_streams, protocol_id)
+
+    cond do
+      # Existing stream with matching ID
+      current != nil and stream == current.stream_id ->
+        log(:debug, "Using existing UP stream: #{inspect(stream)}")
+        {{:ok, current}, state}
+
+      # New stream or higher ID - reset old and accept new
+      current == nil or stream > current.stream_id ->
+        if current do
+          log(:info, "Replacing UP stream #{inspect(current.stream_id)} with #{inspect(stream)}")
+          :quicer.shutdown_stream(current.stream_id)
+        else
+          log(:info, "Registering new UP stream: #{inspect(stream)}")
+        end
+
+        new_stream = %{
+          stream_id: stream,
+          buffer: <<>>
+        }
+
+        new_state = put_in(state.up_streams[protocol_id], new_stream)
+        {{:ok, new_stream}, new_state}
+
+      # Lower stream ID - reject
+      true ->
+        log(
+          :info,
+          "Rejecting UP stream with lower ID: current=#{inspect(current.stream_id)}, new=#{inspect(stream)}"
+        )
+
+        :quicer.shutdown_stream(stream)
+        {:reject, state}
+    end
+  end
+
+  # Handles actual data processing for a valid stream
+  defp process_stream_data(protocol_id, data, stream_state, state) do
+    # log(:debug, "Processing stream data: protocol=#{protocol_id}, size=#{byte_size(data)}")
+    buffer_ = stream_state.buffer <> data
+
+    case process_up_stream_buffer(buffer_) do
+      {:need_more, _buffer} ->
+        # log(:debug, "Buffering incomplete message: #{byte_size(buffer_)} bytes")
+        new_state = put_in(state.up_streams[protocol_id].buffer, buffer_)
+        {:noreply, new_state}
+
+      {:complete, message} ->
+        # this is blocking, it should be non-blocking
+        log(:debug, "complete block announcement")
+        # Network.Calls.call(protocol_id, message)
+        new_state = put_in(state.up_streams[protocol_id].buffer, <<>>)
+        {:noreply, new_state}
+    end
+  end
+
+  defp process_up_stream_buffer(buffer) do
+    cond do
+      byte_size(buffer) < 5 ->
+        log(:debug, "Buffer too small (#{byte_size(buffer)} bytes), need at least 5")
+        {:need_more, buffer}
+
+      byte_size(buffer) >= 5 ->
+        <<protocol_id::8, message_size::32-little, rest::binary>> = buffer
+        log(:debug, "Got message header: protocol=#{protocol_id}, size=#{message_size}, rest=#{byte_size(rest)} bytes")
+
+        if byte_size(rest) >= message_size do
+          <<message::binary-size(message_size), remaining::binary>> = rest
+          log(:debug, "Extracted complete message: size=#{message_size}, remaining=#{byte_size(remaining)}")
+          {:complete, message}
+        else
+          log(:debug, "Incomplete message: have #{byte_size(rest)}, need #{message_size}")
+          {:need_more, buffer}
+        end
+    end
   end
 end

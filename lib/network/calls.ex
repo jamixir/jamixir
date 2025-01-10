@@ -10,4 +10,9 @@ defmodule Network.Calls do
     blocks_bin = for b <- blocks, do: Encodable.encode(b)
     Enum.join(blocks_bin)
   end
+
+  # block announcemnt
+  def call(0, bin) do
+    # TODO
+  end
 end
