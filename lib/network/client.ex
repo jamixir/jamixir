@@ -9,9 +9,7 @@ defmodule Network.Client do
   @log_context "[QUIC_CLIENT]"
 
   @default_stream_opts %{
-    active: true,
-    # QUICER_STREAM_EVENT_MASK_START_COMPLETE
-    quic_event_mask: 0x00000001
+    active: true
   }
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
@@ -19,7 +17,7 @@ defmodule Network.Client do
   defmodule State do
     defstruct [
       :conn,
-      # Map of stream -> {from, timer_ref}
+      # Map of stream -> {from}
       streams: %{},
       up_stream: nil
     ]
@@ -95,39 +93,20 @@ defmodule Network.Client do
   end
 
   def handle_call({:send, protocol_id, message}, from, %State{} = state) do
-    stream_opts = @default_stream_opts
-
-    {:ok, stream} = :quicer.start_stream(state.conn, stream_opts)
-    timer_ref = Process.send_after(self(), {:stream_timeout, stream}, 5_000)
+    {:ok, stream} = :quicer.start_stream(state.conn, @default_stream_opts)
+    {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:fin))
 
     new_state = %State{
       state
       | streams:
           Map.put(state.streams, stream, %{
             from: from,
-            timer_ref: timer_ref,
             protocol_id: protocol_id,
             message: message
           })
     }
 
     {:noreply, new_state}
-  end
-
-  def handle_info(
-        {:quic, :start_completed, stream, %{status: :success, is_peer_accepted: true} = props},
-        state
-      ) do
-    log(:debug, "Stream start completed: #{inspect(props)}")
-
-    case Map.get(state.streams, stream) do
-      %{message: message, protocol_id: protocol_id} ->
-        {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:fin))
-        {:noreply, state}
-
-      nil ->
-        {:noreply, state}
-    end
   end
 
   def handle_info({:quic, data, stream, props}, %State{streams: streams} = state)
@@ -140,9 +119,7 @@ defmodule Network.Client do
       log_tag: "[QUIC_CLIENT]",
       on_complete: fn protocol_id, message, stream ->
         case Map.get(streams, stream) do
-          %{from: from, timer_ref: timer_ref} ->
-            Process.cancel_timer(timer_ref)
-
+          %{from: from} ->
             response =
               case protocol_id do
                 128 -> {:ok, Block.decode_list(message)}
@@ -164,32 +141,9 @@ defmodule Network.Client do
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
 
-  def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
-    log(:debug, "Peer send shutdown for stream: #{inspect(stream)}")
-    {:noreply, state}
-  end
-
-  def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
-    log(:debug, "Send shutdown complete for stream: #{inspect(stream)}")
-    {:noreply, state}
-  end
-
-  def handle_info({:stream_timeout, stream}, %State{} = state) do
-    log(:info, "Stream timeout: #{inspect(stream)}")
-
-    case Map.get(state.streams, stream) do
-      nil ->
-        {:noreply, state}
-
-      %{from: from} ->
-        GenServer.reply(from, {:error, :timeout})
-        {:noreply, state}
-    end
-  end
-
   # Catch-all for unhandled QUIC events
-  def handle_info({:quic, event_name, _resource, _props} = _msg, state) do
-    log(:debug, "BasicQuicClient received unhandled QUIC event: #{inspect(event_name)}")
+  def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
+    log(:debug, "Received unhandled event: #{inspect(event_name)}")
 
     {:noreply, state}
   end
