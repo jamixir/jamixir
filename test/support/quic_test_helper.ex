@@ -2,8 +2,8 @@ defmodule QuicTestHelper do
   use ExUnit.Case
 
   def start_quic_processes(port, server_name \\ nil, client_name \\ nil) do
-    {:ok, server_pid} = Quic.Server.start_link(port, name: server_name)
-    {:ok, client_pid} = Quic.Client.start_link([port: port], name: client_name)
+    {:ok, server_pid} = Network.Server.start_link(port, name: server_name)
+    {:ok, client_pid} = Network.Client.start_link([port: port], name: client_name)
     Process.sleep(100)
     {server_pid, client_pid}
   end

@@ -1,4 +1,4 @@
-defmodule System.Network.Calls do
+defmodule Network.Calls do
   require Logger
 
   def call(128, bin) do

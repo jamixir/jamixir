@@ -2,7 +2,7 @@ defmodule CommsTest do
   use ExUnit.Case, async: false
   import Mox
   require Logger
-  alias Quic.{Client}
+  alias Network.Client
 
   @base_port 9999
 

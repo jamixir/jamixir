@@ -1,9 +1,9 @@
-defmodule Quic.Server do
+defmodule Network.Server do
   use GenServer
-  alias System.Network.CertUtils
+  alias Network.CertUtils
   require Logger
-  alias Quic.Flags
-  import Quic.MessageHandler
+  alias Quicer.Flags
+  import Network.MessageHandler
 
   @log_context "[QUIC_SERVER]"
 
@@ -90,7 +90,7 @@ defmodule Quic.Server do
   end
 
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
-    Quic.MessageHandler.handle_stream_data(
+    handle_stream_data(
       data,
       stream,
       props,
@@ -100,11 +100,11 @@ defmodule Quic.Server do
         response =
           case protocol_id do
             128 ->
-              blocks_bin = System.Network.Calls.call(128, message)
+              blocks_bin = Network.Calls.call(128, message)
               encode_message(protocol_id, blocks_bin)
 
             _ ->
-              Quic.MessageHandler.encode_message(protocol_id, message)
+              encode_message(protocol_id, message)
           end
 
         {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))

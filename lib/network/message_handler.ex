@@ -1,7 +1,7 @@
-defmodule Quic.MessageHandler do
+defmodule Network.MessageHandler do
   require Logger
   import Bitwise
-  alias Quic.Flags
+  alias Quicer.Flags
 
   def handle_stream_data(data, stream, %{flags: flags} = props, state, opts \\ []) do
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")

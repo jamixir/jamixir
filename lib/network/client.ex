@@ -1,6 +1,7 @@
-defmodule Quic.Client do
+defmodule Network.Client do
   use GenServer
-  import Quic.{Flags, MessageHandler}
+  import Quicer.Flags
+  import Network.MessageHandler
   require Logger
   use Codec.Encoder
 
@@ -10,7 +11,7 @@ defmodule Quic.Client do
   @default_stream_opts %{
     active: true,
     # QUICER_STREAM_EVENT_MASK_START_COMPLETE
-    quic_event_mask: 0x00000001,
+    quic_event_mask: 0x00000001
   }
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
@@ -52,7 +53,7 @@ defmodule Quic.Client do
     case :quicer.connect(
            conf[:host],
            conf[:port],
-           Quic.Server.default_opts(),
+           Network.Server.default_opts(),
            conf[:timeout]
          ) do
       {:ok, conn} ->
@@ -67,7 +68,7 @@ defmodule Quic.Client do
   end
 
   def handle_cast(:init_up_stream, %{conn: conn} = state) do
-    case start_up_stream(conn,0) do
+    case start_up_stream(conn, 0) do
       {:ok, up_stream} ->
         log(:info, "UP stream initialized")
         {:noreply, %{state | up_stream: up_stream}}
