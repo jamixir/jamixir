@@ -1,4 +1,4 @@
-defmodule QuicTest do
+defmodule CommsTest do
   use ExUnit.Case, async: false
   import Mox
   require Logger
