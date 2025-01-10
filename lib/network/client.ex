@@ -100,9 +100,7 @@ defmodule Network.Client do
       state
       | streams:
           Map.put(state.streams, stream, %{
-            from: from,
-            protocol_id: protocol_id,
-            message: message
+            from: from
           })
     }
 

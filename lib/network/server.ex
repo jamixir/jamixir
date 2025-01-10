@@ -13,9 +13,8 @@ defmodule Network.Server do
     defstruct [
       :socket,
       :connection,
-      # Track messages per stream
       streams: %{},
-      up_stream: nil
+      up_streams: %{}
     ]
   end
 
@@ -113,14 +112,10 @@ defmodule Network.Server do
     )
   end
 
-
-
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
     log(:info, "Stream closed: #{inspect(stream)}")
     {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
   end
-
-
 
   def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
     log(:debug, "Received unhandled event: #{inspect(event_name)}")
