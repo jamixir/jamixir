@@ -1,19 +1,27 @@
-defmodule System.Network.Server do
-  alias System.Network.{Calls, CertUtils}
+defmodule Quic.Server do
+  use GenServer
+  alias System.Network.CertUtils
   require Logger
-  use Codec.Decoder
-  use Codec.Encoder
+  alias Quic.Flags
+  import Quic.MessageHandler
 
-  @doc """
-  Starts a QUIC server.
+  @log_context "[QUIC_SERVER]"
 
-  Accepts a `cert_path` for the server certificate, a `key_path` for the server private key, and a `port`.
+  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
 
-  It starts a new `JamnpS.Server` task that handles QUIC connections.
-  """
+  defmodule State do
+    defstruct [
+      :socket,
+      :connection,
+      # Track messages per stream
+      streams: %{},
+      up_stream: nil
+    ]
+  end
+
   @fixed_opts [
     alpn: [~c"jamnp-s/V/H"],
-    peer_bidi_stream_count: 100,
+    peer_bidi_stream_count: 1023,
     peer_unidi_stream_count: 100,
     versions: [:"tlsv1.3"],
     verify: :none
@@ -24,156 +32,104 @@ defmodule System.Network.Server do
                   keyfile: ~c"#{CertUtils.keyfile()}"
                 ] ++ @fixed_opts
 
-  @default_port 9999
-  @connection_pool_size 10
-
-  def fixed_opts, do: @fixed_opts
   def default_opts, do: @default_opts
 
-  def start_server(port \\ @default_port, opts \\ @default_opts) do
-    {:ok, socket} = :quicer.listen(port, opts)
-    Logger.info("Listening on port #{port}...")
-
-    # open listening sockets
-    for _ <- 1..@connection_pool_size, do: spawn(fn -> loop(socket) end)
-    # a last one to keep the main process alive
-    loop(socket)
-  rescue
-    error ->
-      IO.puts("Error starting server: #{inspect(error)}")
-      error
+  def start_link(port, opts \\ []) do
+    name = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, port, name: name)
   end
 
-  defp loop(listen_socket) do
-    case :quicer.accept(listen_socket, [keep_alive_interval_ms: 1_000], :infinity) do
-      {:ok, conn} ->
-        Logger.info("New connection accepted: #{inspect(conn)}")
-        handle_connection(conn)
+  def init(port) do
+    log(:info, "Starting on port #{port}")
+    case :quicer.listen(port, @default_opts) do
+      {:ok, socket} ->
+        send(self(), :accept_connection)
+        {:ok, %State{socket: socket}}
 
-      {:error, reason} ->
-        Logger.error("Error accepting connection: #{inspect(reason)}")
-    end
+      {:error, :listener_start_error, _reason} = error ->
+        {:stop, error}
 
-    # Continue listening for new connections
-    loop(listen_socket)
-  end
-
-  defp handle_connection(conn) do
-    case :quicer.handshake(conn) do
-      {:ok, conn} ->
-        Logger.info("Handshake successful: #{inspect(conn)}")
-        spawn(fn -> handle_connection_loop(conn) end)
-
-      {:error, reason} ->
-        Logger.error("Handshake failed: #{inspect(reason)}")
+      error ->
+        {:stop, error}
     end
   end
 
-  defp handle_connection_loop(conn) do
-    Logger.info("Waiting for new stream...")
+  def handle_info(:accept_connection, %{socket: socket} = state) do
+    case :quicer.accept(socket, [], :infinity) do
+      {:ok, conn} ->
+        log(:info, "Connection accepted")
+        {:ok, conn} = :quicer.handshake(conn)
+        log(:info, "Handshake completed")
+        send(self(), :accept_stream)
+        {:noreply, %{state | connection: conn}}
 
-    case :quicer.accept_stream(conn, [], :infinity) do
+      error ->
+        log(:error, "Accept error: #{inspect(error)}")
+        send(self(), :accept_connection)
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:accept_stream, %{connection: conn} = state) do
+    case :quicer.accept_stream(conn, [{:active, true}], 0) do
       {:ok, stream} ->
-        Logger.info("New stream accepted: #{inspect(stream)}")
-        handle_stream(stream)
-        handle_connection_loop(conn)
+        log(:debug, "Stream accepted: #{inspect(stream)}")
+        send(self(), :accept_stream)
+        {:noreply, state}
 
-      {:error, :closed} ->
-        nil
+      {:error, :timeout} ->
+        # Normal case - no streams to accept right now
+        send(self(), :accept_stream)
+        {:noreply, state}
 
-      {:error, reason} ->
-        Logger.error("Error accepting stream: #{inspect(reason)}")
+      {:error, reason} when reason in [:badarg, :internal_error, :bad_pid, :owner_dead] ->
+        log(:error, "Stream accept error: #{inspect(reason)}")
+        send(self(), :accept_stream)
+        {:noreply, state}
     end
   end
 
-  defp handle_stream(stream) do
-    Logger.info("Waiting for message on stream: #{inspect(stream)}")
+  def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
+    Quic.MessageHandler.handle_stream_data(
+      data,
+      stream,
+      props,
+      state,
+      log_tag: "[QUIC_SERVER]",
+      on_complete: fn protocol_id, message, stream ->
+        response =
+          case protocol_id do
+            128 ->
+              blocks_bin = System.Network.Calls.call(128, message)
+              encode_message(protocol_id, blocks_bin)
 
-    case read_code_and_message(stream) do
-      {code, _size, bin} ->
-        Logger.info("Executing call #{code}")
-        result = Calls.call(code, bin)
-        Logger.info("Sending response: #{inspect(result)} of size #{byte_size(result)}")
-        send_message(stream, result)
-        handle_stream(stream)
-
-      {:error, :stream_closed} ->
-        Logger.info("Stream closed #{inspect(stream)}")
-    end
-  end
-
-  def read_code_and_message(stream) do
-    Enum.reduce_while(1..100, <<>>, fn _, acc ->
-      receive do
-        {:quic, :peer_send_shutdown, ^stream, _props} ->
-          {:cont, acc}
-
-        {:quic, :send_shutdown_complete, ^stream, _props} ->
-          {:cont, acc}
-
-        {:quic, :stream_closed, ^stream, _props} ->
-          {:halt, {:error, :stream_closed}}
-
-        {:quic, bin, ^stream, _props} ->
-          new_acc = acc <> bin
-
-          if byte_size(new_acc) < 5 do
-            {:cont, new_acc}
-          else
-            <<code::8, m_size::binary-size(4), rest::binary>> = new_acc
-
-            if byte_size(rest) >= de_le(m_size, 4) do
-              {:halt, {code, de_le(m_size, 4), rest}}
-            else
-              {:cont, new_acc}
-            end
+            _ ->
+              Quic.MessageHandler.encode_message(protocol_id, message)
           end
 
-        x ->
-          Logger.error("Unexpected message: #{inspect(x)}")
-          {:halt, :unknown_message}
+        {:ok, _} = :quicer.send(stream, response, Flags.send_flag(:fin))
+        {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
       end
-    end)
+    )
   end
 
-  def send_message(stream, message) do
-    Logger.info("Sending message: #{inspect(message)}")
-    :quicer.send(stream, e_le(byte_size(message), 4))
-    :quicer.send(stream, message)
+  def handle_info({:quic, :new_stream, stream, props}, state) do
+    log(:debug, "New stream notification: #{inspect(stream)}, props: #{inspect(props)}")
+    {:noreply, state}
   end
 
-  def receive_message(stream) do
-    Enum.reduce_while(1..100, <<>>, fn _, acc ->
-      receive do
-        {:quic, :peer_send_shutdown, ^stream, _props} ->
-          {:cont, acc}
+  def handle_info({:quic, :stream_closed, stream, _props}, state) do
+    log(:debug, "Stream closed: #{inspect(stream)}")
+    {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+  end
 
-        {:quic, :send_shutdown_complete, ^stream, _props} ->
-          {:cont, acc}
+  def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
+    log(:debug, "Peer send shutdown for stream: #{inspect(stream)}")
+    {:noreply, state}
+  end
 
-        {:quic, :stream_closed, ^stream, _props} ->
-          {:halt, {:error, :stream_closed}}
-
-        {:quic, bin, ^stream, _props} ->
-          new_acc = acc <> bin
-          Logger.info("Received message: #{inspect(new_acc)} of size #{byte_size(new_acc)}")
-
-          if byte_size(new_acc) < 4 do
-            {:cont, new_acc}
-          else
-            <<m_size::binary-size(4), rest::binary>> = new_acc
-
-            if byte_size(rest) >= de_le(m_size, 4) do
-              {:halt, {:ok, rest}}
-            else
-              {:cont, new_acc}
-            end
-          end
-
-        x ->
-          Logger.error("Unexpected message: #{inspect(x)}")
-          {:halt, {:error, :unknown_message}}
-      end
-    end)
+  def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
+    log(:debug, "Send shutdown complete for stream: #{inspect(stream)}")
+    {:noreply, state}
   end
 end
