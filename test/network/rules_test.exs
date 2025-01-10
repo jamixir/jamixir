@@ -1,7 +1,7 @@
-defmodule System.Network.RulesTest do
+defmodule Network.RulesTest do
   use ExUnit.Case
 
-  alias System.Network.Rules
+  alias Network.Rules
 
   describe "preferred_initiator/2" do
     test "prefers a when a31 > 127, b31 <= 127, and a > b" do

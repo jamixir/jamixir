@@ -1,4 +1,4 @@
-defmodule System.Network.CertUtils do
+defmodule Network.CertUtils do
   require Logger
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>

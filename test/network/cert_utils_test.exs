@@ -1,15 +1,14 @@
 # test/system/network/cert_utils_test.exs
-defmodule System.Network.CertUtilsTest do
+defmodule Network.CertUtilsTest do
   use ExUnit.Case
 
-  alias System.Network.CertUtils
+  alias Network.CertUtils
 
   describe "create valid certificate" do
     test "generate_self_signed_certificate" do
       {p, k} = :crypto.generate_key(:eddsa, :ed25519)
 
-      {:ok, cert} =
-        System.Network.CertUtils.generate_self_signed_certificate(k)
+      {:ok, cert} = CertUtils.generate_self_signed_certificate(k)
 
       {:ECPoint, cert_p_key} = X509.Certificate.public_key(cert)
       assert cert_p_key == p
