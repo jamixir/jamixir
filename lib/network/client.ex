@@ -1,7 +1,7 @@
 defmodule Network.Client do
   use GenServer
   import Quicer.Flags
-  import Network.MessageHandler
+  import Network.{MessageHandler, Codec}
   require Logger
   use Codec.Encoder
 
