@@ -8,7 +8,7 @@ defmodule CommsTest do
   @base_port 9999
 
   setup_all do
-    Logger.configure(level: :info)
+    Logger.configure(level: :none)
     :ok
   end
 

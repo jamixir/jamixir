@@ -65,8 +65,6 @@ defmodule Network.Client do
     end
   end
 
-
-
   def handle_cast(
         {:announce_block, message, hash, slot},
         %{up_streams: up_streams} = state
@@ -110,29 +108,41 @@ defmodule Network.Client do
 
   def handle_info({:quic, data, stream, props}, %State{streams: streams} = state)
       when is_binary(data) do
-    handle_stream_data(
-      data,
-      stream,
-      props,
-      state,
-      log_tag: "[QUIC_CLIENT]",
-      on_complete: fn protocol_id, message, stream ->
-        case Map.get(streams, stream) do
-          %{from: from} ->
-            response =
-              case protocol_id do
-                128 -> {:ok, Block.decode_list(message)}
-                _ -> {:ok, message}
-              end
+    <<protocol_id::8, rest::binary>> = data
+    log_tag = "[QUIC_CLIENT]"
 
-            GenServer.reply(from, response)
-            {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+    if protocol_id < 128 do
+      # UP stream handling using shared message handler
+      handle_up_stream_data(protocol_id, rest, stream, state,
+        log_tag: log_tag,
+        on_complete: fn protocol_id, message, _stream_id ->
+          Task.start(fn ->
+            Network.ClientCalls.call(protocol_id, message)
+          end)
 
-          nil ->
-            {:noreply, state}
+          {:noreply, state}
         end
-      end
-    )
+      )
+    else
+      handle_ce_stream_data(
+        data,
+        stream,
+        props,
+        state,
+        log_tag: log_tag,
+        on_complete: fn protocol_id, message, stream ->
+          case Map.get(streams, stream) do
+            %{from: from} ->
+              response = Network.ClientCalls.call(protocol_id, message)
+              GenServer.reply(from, response)
+              {:noreply, %{state | streams: Map.delete(state.streams, stream)}}
+
+            nil ->
+              {:noreply, state}
+          end
+        end
+      )
+    end
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
@@ -151,14 +161,5 @@ defmodule Network.Client do
   def handle_info(msg, state) do
     log(:debug, "BasicQuicClient received unknown message: #{inspect(msg)}")
     {:noreply, state}
-  end
-
-  defp start_up_stream(conn, protocol_id) do
-    stream_opts = @default_stream_opts
-
-    with {:ok, stream} <- :quicer.start_stream(conn, stream_opts),
-         {:ok, _} <- :quicer.send(stream, <<protocol_id::8>>, send_flag(:none)) do
-      {:ok, stream}
-    end
   end
 end
