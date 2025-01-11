@@ -89,39 +89,19 @@ defmodule Network.Server do
   end
 
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
-    <<protocol_id::8, _::binary>> = data
-    log_tag = "[QUIC_SERVER]"
-
-    if protocol_id < 128 do
-      # UP stream handling using shared message handler
-      handle_up_stream_data(protocol_id, data, stream, state,
-        log_tag: log_tag,
-        on_complete: fn protocol_id, message, _stream_id ->
-          Task.start(fn ->
-            Network.ServerCalls.call(protocol_id, message)
-          end)
-
-          {:noreply, state}
-        end
-      )
-    else
-      # CE stream handling (no need to track state)
-      handle_ce_stream_data(
-        data,
-        stream,
-        props,
-        state,
-        log_tag: log_tag,
-        on_complete: fn protocol_id, message, stream ->
+    handle_stream_data(data, stream, props, state,
+      log_tag: "[QUIC_SERVER]",
+      on_complete: fn protocol_id, message, stream ->
+        if protocol_id >= 128 do
           response = Network.ServerCalls.call(protocol_id, message)
 
           {:ok, _} =
             :quicer.send(stream, encode_message(protocol_id, response), Flags.send_flag(:fin))
-
-          {:noreply, state}
+        else
+          Task.start(fn -> Network.ServerCalls.call(protocol_id, message) end)
         end
-      )
-    end
+      end
+    )
   end
 
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
