@@ -3,7 +3,7 @@ defmodule Network.Server do
   alias Network.CertUtils
   require Logger
   alias Quicer.Flags
-  import Network.MessageHandler
+  import Network.{MessageHandler, Codec}
 
   @log_context "[QUIC_SERVER]"
 

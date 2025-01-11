@@ -1,6 +1,7 @@
 defmodule Network.MessageHandler do
   require Logger
   import Bitwise
+  import Network.{Codec, StreamManager}
   alias Quicer.Flags
 
   def handle_stream_data(data, stream, props, state, opts \\ []) do
@@ -11,13 +12,16 @@ defmodule Network.MessageHandler do
     case mode do
       :up ->
         {stream_state, new_state} = manage_up_stream(protocol_id, stream, state, log_tag)
+
         case stream_state do
           {:ok, current_stream} ->
             process_stream_data(data, stream, props, new_state, opts, current_stream.buffer)
+
           :reject ->
             Logger.info("#{log_tag} Rejected UP stream: #{inspect(stream)}")
             {:noreply, new_state}
         end
+
       :ce ->
         process_stream_data(data, stream, props, state, opts)
     end
@@ -56,7 +60,10 @@ defmodule Network.MessageHandler do
 
       byte_size(buffer) >= 5 ->
         <<protocol_id::8, message_size::32-little, rest::binary>> = buffer
-        Logger.debug("#{log_tag} Message header: size=#{message_size}, rest=#{byte_size(rest)} bytes")
+
+        Logger.debug(
+          "#{log_tag} Message header: size=#{message_size}, rest=#{byte_size(rest)} bytes"
+        )
 
         if byte_size(rest) >= message_size do
           <<message::binary-size(message_size), remaining::binary>> = rest
@@ -73,6 +80,7 @@ defmodule Network.MessageHandler do
         <<_protocol_id::8, length::32-little, _msg::binary-size(length), _rest::binary>> ->
           Logger.debug("#{log_tag} CE message complete: size=#{length}")
           {:complete, data, <<>>}
+
         _ ->
           Logger.error("#{log_tag} Invalid CE message format")
           :invalid_format
@@ -108,50 +116,5 @@ defmodule Network.MessageHandler do
     {protocol_id, message} = decode_message(message)
     on_complete.(protocol_id, message, stream)
     {:noreply, state}
-  end
-
-  defp manage_up_stream(protocol_id, stream_id, state, log_tag) do
-    current = Map.get(state.up_streams, protocol_id)
-
-    cond do
-      # Existing stream with matching ID
-      current != nil and stream_id == current.stream_id ->
-        Logger.debug("#{log_tag} Using existing UP stream: #{inspect(stream_id)}")
-        {{:ok, current}, state}
-
-      # New stream or higher ID - reset old and accept new
-      current == nil or stream_id > current.stream_id ->
-        if current do
-          Logger.info("#{log_tag} Replacing UP stream: #{inspect(current.stream_id)} -> #{inspect(stream_id)}")
-          :quicer.shutdown_stream(current.stream_id)
-        else
-          Logger.info("#{log_tag} Registering new UP stream: #{inspect(stream_id)}")
-        end
-
-        new_stream = %{
-          stream_id: stream_id,
-          buffer: <<>>
-        }
-
-        new_state = put_in(state.up_streams[protocol_id], new_stream)
-        {{:ok, new_stream}, new_state}
-
-      # Lower stream ID - reject
-      true ->
-        Logger.info("#{log_tag} Rejecting UP stream with lower ID: #{inspect(stream_id)}")
-        :quicer.shutdown_stream(stream_id)
-        {:reject, state}
-    end
-  end
-
-  defp get_protocol_id(<<protocol_id::8, _::binary>>), do: protocol_id
-
-  def encode_message(protocol_id, message) do
-    length = byte_size(message)
-    <<protocol_id::8, length::32-little, message::binary>>
-  end
-
-  def decode_message(<<protocol_id::8, length::32-little, message::binary-size(length)>>) do
-    {protocol_id, message}
   end
 end
