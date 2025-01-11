@@ -12,7 +12,7 @@ defmodule Network.Calls do
   end
 
   # block announcemnt
-  def call(0, bin) do
+  def call(0, _bin) do
     # TODO
   end
 end
