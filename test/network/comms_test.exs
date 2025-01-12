@@ -3,7 +3,7 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Network.Client
+  alias Network.Peer
 
   @base_port 9999
 
@@ -16,7 +16,7 @@ defmodule CommsTest do
     # Use a different port for each test based on its line number
     port = @base_port + (context.line || 0)
     blocks = for _ <- 1..3, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
-    {server_pid, client_pid} = QuicTestHelper.start_quic_processes(port)
+    {server_pid, client_pid} = QuicTestHelper.start_quic_processes(port, :server, :client)
 
     on_exit(fn ->
       QuicTestHelper.cleanup_processes(server_pid, client_pid)
@@ -34,7 +34,7 @@ defmodule CommsTest do
       for i <- 1..number_of_messages do
         Task.async(fn ->
           message = "Hello, server#{i}!"
-          {:ok, response} = Client.send(client, 134, message)
+          {:ok, response} = Peer.send(client, 134, message)
           Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
           assert response == message
           i
@@ -45,12 +45,13 @@ defmodule CommsTest do
     assert length(results) == number_of_messages
   end
 
+
   describe "request_blocks/4" do
     test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn 0, 0, 9 -> {:ok, blocks} end)
 
-      result = Client.request_blocks(client, <<0::32>>, 0, 9)
+      result = Peer.request_blocks(client, <<0::32>>, 0, 9)
       verify!()
       assert {:ok, ^blocks} = result
     end
@@ -59,7 +60,7 @@ defmodule CommsTest do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn 1, 1, 2 -> {:ok, blocks} end)
 
-      result = Client.request_blocks(client, <<1::32>>, 1, 2)
+      result = Peer.request_blocks(client, <<1::32>>, 1, 2)
       verify!()
       assert {:ok, ^blocks} = result
     end
@@ -72,12 +73,12 @@ defmodule CommsTest do
       slot = 42
 
       # First announcement should create UP stream
-      Client.announce_block(client, header, slot)
+      Peer.announce_block(client, header, slot)
       # Give some time for stream setup
       Process.sleep(100)
 
       # # Second announcement should reuse the same stream
-      Client.announce_block(client, header, slot + 1)
+      Peer.announce_block(client, header, slot + 1)
       Process.sleep(100)
 
       # # Get client's state to verify UP stream handling
@@ -97,7 +98,7 @@ defmodule CommsTest do
 
 
       for slot <- 1..100 do
-        Client.announce_block(client, %{header | timeslot: slot}, slot)
+        Peer.announce_block(client, %{header | timeslot: slot}, slot)
         Process.sleep(20)
       end
 

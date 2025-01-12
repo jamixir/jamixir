@@ -2,9 +2,10 @@ defmodule Network.MessageHandler do
   require Logger
   import Bitwise
   import Network.{Codec, StreamManager}
+  alias Network.PeerState
   alias Quicer.Flags
 
-  def handle_stream_data(data, stream, props, state, opts \\ []) do
+  def handle_stream_data(data, stream, props, %PeerState{} = state, opts \\ []) do
     protocol_id = get_protocol_id(data)
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
     mode = if protocol_id < 128, do: :up, else: :ce
@@ -27,7 +28,7 @@ defmodule Network.MessageHandler do
     end
   end
 
-  defp process_stream_data(data, stream, props, state, opts, stream_buffer \\ <<>>) do
+  defp process_stream_data(data, stream, props, %PeerState{} = state, opts, stream_buffer \\ <<>>) do
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
     mode = if get_protocol_id(data) < 128, do: :up, else: :ce
     on_complete = Keyword.get(opts, :on_complete)
@@ -91,19 +92,19 @@ defmodule Network.MessageHandler do
     end
   end
 
-  defp handle_incomplete(:up, buffer, _stream, state, log_tag) do
+  defp handle_incomplete(:up, buffer, _stream, %PeerState{} = state, log_tag) do
     Logger.debug("#{log_tag} Buffering incomplete UP message: #{byte_size(buffer)} bytes")
     protocol_id = get_protocol_id(buffer)
     new_state = put_in(state.up_streams[protocol_id].buffer, buffer)
     {:noreply, new_state}
   end
 
-  defp handle_incomplete(:ce, data, stream, state, log_tag) do
+  defp handle_incomplete(:ce, data, stream, %PeerState{} = state, log_tag) do
     Logger.debug("#{log_tag} Buffering incomplete CE message: #{byte_size(data)} bytes")
-    {:noreply, %{state | streams: Map.put(state.streams, stream, %{buffer: data})}}
+    {:noreply, %{state | streams: Map.put(state.outgoing_streams, stream, %{buffer: data})}}
   end
 
-  defp handle_complete(:up, message, stream, state, on_complete, log_tag) do
+  defp handle_complete(:up, message, stream, %PeerState{} = state, on_complete, log_tag) do
     Logger.info("#{log_tag} Processing complete UP message: #{byte_size(message)} bytes")
     {protocol_id, message} = decode_message(message)
     on_complete.(protocol_id, message, stream)
@@ -111,7 +112,7 @@ defmodule Network.MessageHandler do
     {:noreply, new_state}
   end
 
-  defp handle_complete(:ce, message, stream, state, on_complete, log_tag) do
+  defp handle_complete(:ce, message, stream, %PeerState{} = state, on_complete, log_tag) do
     Logger.info("#{log_tag} Processing complete CE message: #{byte_size(message)} bytes")
     {protocol_id, message} = decode_message(message)
     on_complete.(protocol_id, message, stream)

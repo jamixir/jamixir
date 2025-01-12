@@ -1,15 +1,27 @@
 defmodule QuicTestHelper do
   use ExUnit.Case
+  alias Network.Peer
 
-  def start_quic_processes(port, server_name \\ nil, client_name \\ nil) do
-    {:ok, server_pid} = Network.Server.start_link(port, name: server_name)
-    {:ok, client_pid} = Network.Client.start_link([port: port], name: client_name)
-    Process.sleep(100)
-    {server_pid, client_pid}
+  def start_quic_processes(port, peer1_name \\ nil, peer2_name \\ nil) do
+    # Start first peer in listening mode
+    {:ok, peer1_pid} = Peer.start_link(
+      [init_mode: :listener, host: ~c"::1", port: port],
+      name: peer1_name
+    )
+    Process.sleep(50) # Give peer1 time to start listening
+
+    # Start second peer in connecting mode
+    {:ok, peer2_pid} = Peer.start_link(
+      [init_mode: :initiator, host: ~c"::1", port: port],
+      name: peer2_name
+    )
+    Process.sleep(50) # Give time for connection to establish
+
+    {peer1_pid, peer2_pid}
   end
 
-  def cleanup_processes(server_pid, client_pid) do
-    if Process.alive?(server_pid), do: Process.exit(server_pid, :kill)
-    if Process.alive?(client_pid), do: Process.exit(client_pid, :kill)
+  def cleanup_processes(peer1_pid, peer2_pid) do
+    if Process.alive?(peer1_pid), do: Process.exit(peer1_pid, :kill)
+    if Process.alive?(peer2_pid), do: Process.exit(peer2_pid, :kill)
   end
 end
