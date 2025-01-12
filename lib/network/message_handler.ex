@@ -101,7 +101,7 @@ defmodule Network.MessageHandler do
 
   defp handle_incomplete(:ce, data, stream, %PeerState{} = state, log_tag) do
     Logger.debug("#{log_tag} Buffering incomplete CE message: #{byte_size(data)} bytes")
-    {:noreply, %{state | streams: Map.put(state.outgoing_streams, stream, %{buffer: data})}}
+    {:noreply, %{state | outgoing_streams: Map.put(state.outgoing_streams, stream, %{buffer: data})}}
   end
 
   defp handle_complete(:up, message, stream, %PeerState{} = state, on_complete, log_tag) do
