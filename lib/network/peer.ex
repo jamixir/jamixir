@@ -69,7 +69,9 @@ defmodule Network.Peer do
   # Data handling
   @impl GenServer
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
-    if Map.has_key?(state.outgoing_streams, stream) do
+    is_response = Map.has_key?(state.outgoing_streams, stream)
+
+    if is_response do
       Client.handle_data(data, stream, props, state)
     else
       Server.handle_data(data, stream, props, state)
