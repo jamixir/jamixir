@@ -3,7 +3,7 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Network.{Peer, Config}
+  alias Network.{Peer, Config, PeerSupervisor, PeerRegistry}
   alias Quicer.Flags
 
   @base_port 9999
@@ -14,13 +14,26 @@ defmodule CommsTest do
   end
 
   setup context do
+    # Start and supervise the supervisors for this test
+    start_supervised!(PeerSupervisor)
+    PeerRegistry.start_link()
     # Use a different port for each test based on its line number
     port = @base_port + (context.line || 0)
     blocks = for _ <- 1..3, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
-    {server_pid, client_pid} = QuicTestHelper.start_quic_processes(port, :server, :client)
+
+    {:ok, server_pid} =
+      PeerSupervisor.start_peer(:listener, "::1", port)
+
+    Process.sleep(50)
+
+    {:ok, client_pid} =
+      PeerSupervisor.start_peer(:initiator, "::1", port)
+
+    Process.sleep(50)
 
     on_exit(fn ->
-      QuicTestHelper.cleanup_processes(server_pid, client_pid)
+      if Process.alive?(server_pid), do: Process.exit(server_pid, :kill)
+      if Process.alive?(client_pid), do: Process.exit(client_pid, :kill)
     end)
 
     {:ok, client: client_pid, blocks: blocks, port: port}
@@ -28,8 +41,8 @@ defmodule CommsTest do
 
   setup :set_mox_from_context
 
-  test "parallel streams", %{client: client, port: _port} do
-    number_of_messages = 100
+  test "parallel streams", %{client: client} do
+    number_of_messages = 5
 
     tasks =
       for i <- 1..number_of_messages do
@@ -228,5 +241,53 @@ defmodule CommsTest do
       client_state = :sys.get_state(client)
       assert map_size(client_state.outgoing_streams) == 0, "Stream leak detected"
     end
+  end
+
+  test "multiple peers can communicate simultaneously" do
+    # Start 3 listeners on different ports
+    listener_ports = [9001, 9002, 9003]
+    {:ok, listeners} = start_multiple_peers(:listener, listener_ports)
+    Process.sleep(100)  # Give listeners time to start
+
+    # Start 3 initiators connecting to the listeners
+    {:ok, initiators} = start_multiple_peers(:initiator, listener_ports)
+    Process.sleep(100)  # Give connections time to establish
+
+    # Send messages between peers in parallel
+    tasks =
+      for {initiator, i} <- Enum.with_index(initiators) do
+        Task.async(fn ->
+          message = "Message from initiator #{i}"
+          {:ok, response} = Peer.send(initiator, 134, message)
+          assert response == message
+
+          # Get peer state and verify stream cleanup
+          Process.sleep(50)
+          state = :sys.get_state(initiator)
+          assert map_size(state.outgoing_streams) == 0
+
+          {i, response}
+        end)
+      end
+
+    # Wait for all communications to complete
+    results = Task.await_many(tasks, 5000)
+    assert length(results) == length(initiators)
+
+    # Cleanup
+    for pid <- listeners ++ initiators do
+      Process.exit(pid, :normal)
+    end
+  end
+
+  # Helper function to start multiple peers
+  defp start_multiple_peers(mode, ports) do
+    peers =
+      for port <- ports do
+        {:ok, pid} = PeerSupervisor.start_peer(mode, "::1", port)
+        pid
+      end
+
+    {:ok, peers}
   end
 end

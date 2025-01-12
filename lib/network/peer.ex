@@ -14,14 +14,23 @@ defmodule Network.Peer do
   defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client
   defdelegate announce_block(pid, header, slot), to: Client
   # Starts the peer handler and connects to a remote peer
-  def start_link(config \\ [], opts \\ []) do
-    name = Keyword.get(opts, :name, __MODULE__)
-    conf = Keyword.merge(default_peer_config(), config)
-    GenServer.start_link(__MODULE__, {conf[:init_mode], conf[:host], conf[:port]}, name: name)
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args)
   end
 
   @impl GenServer
-  def init({:initiator, ip, port}) do
+  def init(%{init_mode: init_mode, ip: ip, port: port}) do
+    identifier = "#{init_mode}#{ip}:#{port}"
+    {:ok, pid} = Network.PeerRegistry.register_peer(self(), identifier)
+    log(:info, "Registered peer with identifier: #{identifier} #{inspect(pid)}")
+
+    case init_mode do
+      :initiator -> initiate_connection(ip, port)
+      :listener -> start_listener(ip, port)
+    end
+  end
+
+  defp initiate_connection(ip, port) do
     log(:info, "Initiating connection to #{ip}:#{port}...")
 
     case :quicer.connect(ip, port, default_quicer_opts(), 5_000) do
@@ -35,8 +44,7 @@ defmodule Network.Peer do
     end
   end
 
-  @impl GenServer
-  def init({:listener, ip, port}) do
+  defp start_listener(ip, port) do
     log(:info, "Listening for connection on #{ip}:#{port}...")
 
     case :quicer.listen(port, default_quicer_opts()) do
