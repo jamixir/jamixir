@@ -142,7 +142,8 @@ defmodule ErasureCodingTest do
           case: :lower
         )
 
-      assert ErasureCoding.encode([:binary.bin_to_list(binary)]) == [<<1::684*8>>]
+      result = ErasureCoding.encode_bin(binary)
+      assert length(result) == 1023
     end
   end
 

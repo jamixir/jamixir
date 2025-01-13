@@ -109,6 +109,16 @@ defmodule ErasureCoding do
     end
   end
 
+  @spec encode_bin(binary) :: list(binary)
+  def encode_bin(data) when is_binary(data) and byte_size(data) == 684 do
+    data
+    |> :binary.bin_to_list()
+    |> Enum.chunk_every(2)
+    |> encode()
+  end
+
+  def encode_bin(_), do: raise(ArgumentError, "Invalid data size")
+
   use Rustler, otp_app: :jamixir, crate: :erasure_coding
 
   def encode(_bin), do: :erlang.nif_error(:nif_not_loaded)
