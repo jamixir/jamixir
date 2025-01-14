@@ -259,6 +259,51 @@ defmodule CommsTest do
     end
   end
 
+  describe "malformed message handling" do
+    test "handles single byte message", %{client: client} do
+      assert_handles_malformed_message(client, <<1>>, "single byte")
+    end
+
+    test "handles incomplete header", %{client: client} do
+      assert_handles_malformed_message(client, <<1, 2, 3, 4>>, "less than header size (5 bytes)")
+    end
+
+    test "handles CE message with oversized length", %{client: client} do
+      payload = <<@dummy_protocol_id, 0, 0, 0, 10, 0>>
+      assert_handles_malformed_message(client, payload, "length larger than actual payload (CE)")
+    end
+
+    test "handles UP message with oversized length", %{client: client} do
+      assert_handles_malformed_message(
+        client,
+        <<0, 0, 0, 0, 10, 0>>,
+        "length larger than actual payload (UP)"
+      )
+    end
+
+    test "handles CE message with undersized length", %{client: client} do
+      payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
+      assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
+    end
+
+    test "handles UP message with undersized length", %{client: client} do
+      payload = <<0, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
+      assert_handles_malformed_message(client, payload, "length smaller than actual payload (UP)")
+    end
+
+    test "handles empty message", %{client: client} do
+      assert_handles_malformed_message(client, <<>>, "empty message")
+    end
+  end
+
+  # Helper function to reduce duplication
+  defp assert_handles_malformed_message(client, payload, description) do
+    client_state = :sys.get_state(client)
+    {:ok, stream} = :quicer.start_stream(client_state.connection, Config.default_stream_opts())
+    {:ok, _} = :quicer.send(stream, payload, Flags.send_flag(:fin))
+    assert Process.alive?(client), "Peer crashed on #{description}"
+  end
+
   # Helper function to start multiple peers
   defp start_multiple_peers(mode, ports) do
     peers =
