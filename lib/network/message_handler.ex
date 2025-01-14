@@ -9,6 +9,7 @@ defmodule Network.MessageHandler do
     protocol_id = get_protocol_id(data)
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
     mode = if protocol_id < 128, do: :up, else: :ce
+    opts = Keyword.put(opts, :mode, mode)
 
     case mode do
       :up ->
@@ -29,8 +30,8 @@ defmodule Network.MessageHandler do
   end
 
   defp process_stream_data(data, stream, props, %PeerState{} = state, opts, stream_buffer \\ <<>>) do
-    log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
-    mode = if get_protocol_id(data) < 128, do: :up, else: :ce
+    log_tag = Keyword.get(opts, :log_tag)
+    mode = Keyword.get(opts, :mode)
     on_complete = Keyword.get(opts, :on_complete)
 
     buffer =
