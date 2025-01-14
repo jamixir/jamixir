@@ -7,6 +7,7 @@ defmodule CommsTest do
   alias Quicer.Flags
 
   @base_port 9999
+  @dummy_protocol_id 242
 
   setup_all do
     Logger.configure(level: :none)
@@ -48,7 +49,7 @@ defmodule CommsTest do
       for i <- 1..number_of_messages do
         Task.async(fn ->
           message = "Hello, server#{i}!"
-          {:ok, response} = Peer.send(client, 134, message)
+          {:ok, response} = Peer.send(client, @dummy_protocol_id, message)
           Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
           assert response == message
           i
@@ -80,13 +81,13 @@ defmodule CommsTest do
   end
 
   describe "block announcements" do
-
     test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 
       for slot <- 1..20 do
         Peer.announce_block(client, %{header | timeslot: slot}, slot)
       end
+
       Process.sleep(10)
 
       # Verify we have exactly one UP stream
@@ -104,7 +105,7 @@ defmodule CommsTest do
     test "cleans up outgoing streams after completion", %{client: client} do
       # Send multiple messages
       for i <- 1..10 do
-        {:ok, _} = Peer.send(client, 134, "message#{i}")
+        {:ok, _} = Peer.send(client, @dummy_protocol_id, "message#{i}")
       end
 
       # Give some time for streams to close
@@ -123,7 +124,7 @@ defmodule CommsTest do
       tasks =
         for i <- 1..50 do
           Task.async(fn ->
-            {:ok, _} = Peer.send(client, 134, "message#{i}")
+            {:ok, _} = Peer.send(client, @dummy_protocol_id, "message#{i}")
           end)
         end
 
@@ -145,9 +146,10 @@ defmodule CommsTest do
       cases = [
         {<<1>>, "single byte"},
         {<<1, 2, 3, 4>>, "less than header size (5 bytes)"},
-        {<<134, 0, 0, 0, 10, 0>>, "length larger than actual payload (CE)"},
+        {<<@dummy_protocol_id, 0, 0, 0, 10, 0>>, "length larger than actual payload (CE)"},
         {<<0, 0, 0, 0, 10, 0>>, "length larger than actual payload (UP)"},
-        {<<134, 0, 0, 1, 0, 1, 2, 3, 4, 5>>, "length smaller than actual payload (CE)"},
+        {<<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>,
+         "length smaller than actual payload (CE)"},
         {<<0, 0, 0, 1, 0, 1, 2, 3, 4, 5>>, "length smaller than actual payload (UP)"},
         {<<>>, "empty message"}
       ]
@@ -166,7 +168,7 @@ defmodule CommsTest do
 
     test "handles concurrent malformed and valid messages", %{client: client} do
       client_state = :sys.get_state(client)
-      valid_msg = fn -> Peer.send(client, 134, "valid message") end
+      valid_msg = fn -> Peer.send(client, @dummy_protocol_id, "valid message") end
 
       invalid_msg = fn ->
         {:ok, stream} =
@@ -192,7 +194,7 @@ defmodule CommsTest do
       {:ok, stream} = :quicer.start_stream(client_state.connection, Config.default_stream_opts())
 
       # Send partial message without FIN
-      {:ok, _} = :quicer.send(stream, <<134, 0, 0, 5, 0>>, Flags.send_flag(:none))
+      {:ok, _} = :quicer.send(stream, <<@dummy_protocol_id, 0, 0, 5, 0>>, Flags.send_flag(:none))
       Process.sleep(50)
 
       # Abruptly close stream
@@ -222,18 +224,20 @@ defmodule CommsTest do
     # Start 3 listeners on different ports
     listener_ports = [9001, 9002, 9003]
     {:ok, listeners} = start_multiple_peers(:listener, listener_ports)
-    Process.sleep(100)  # Give listeners time to start
+    # Give listeners time to start
+    Process.sleep(100)
 
     # Start 3 initiators connecting to the listeners
     {:ok, initiators} = start_multiple_peers(:initiator, listener_ports)
-    Process.sleep(100)  # Give connections time to establish
+    # Give connections time to establish
+    Process.sleep(100)
 
     # Send messages between peers in parallel
     tasks =
       for {initiator, i} <- Enum.with_index(initiators) do
         Task.async(fn ->
           message = "Message from initiator #{i}"
-          {:ok, response} = Peer.send(initiator, 134, message)
+          {:ok, response} = Peer.send(initiator, @dummy_protocol_id, message)
           assert response == message
 
           # Get peer state and verify stream cleanup
