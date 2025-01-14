@@ -11,9 +11,6 @@ defmodule TestnetBlockImporterTest do
   require Logger
   import Mox
 
-  @first_epoch 407_402
-  @last_epoch 407_406
-
   setup_all do
     RingVrf.init_ring_context()
 
@@ -38,7 +35,7 @@ defmodule TestnetBlockImporterTest do
   end
 
   @ignore_fields [:accumulation_history, :recent_history, :safrole]
-  @safrole_path "./safrole"
+  @safrole_path "./fallback"
   @state_path "#{@safrole_path}/state_snapshots/"
   @block_path "#{@safrole_path}/blocks/"
   @genesis_path "./chainspecs/state_snapshots/"
@@ -47,7 +44,7 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     # waiting for correctnes of other party side
-    @tag :skip
+    # @tag :skip
     test "jam-dune" do
       {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
 
@@ -57,7 +54,15 @@ defmodule TestnetBlockImporterTest do
 
       state = Codec.State.Json.decode(genesis_json)
 
-      Enum.reduce(@first_epoch..@last_epoch, state, fn epoch, state ->
+      files =
+        for f <- File.ls!(local_vectors_dir() <> @repo <> "/" <> @block_path) |> Enum.sort(),
+            f =~ ~r/.*\.bin/,
+            do: String.replace(f, ~r/_.*.bin/, "") |> String.to_integer()
+
+      [first_epoch | _] = files
+      [last_epoch | _] = Enum.reverse(files)
+
+      Enum.reduce(first_epoch..last_epoch, state, fn epoch, state ->
         Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
           Logger.info("Processing block #{epoch}:#{timeslot}...")
           timeslot = String.pad_leading("#{timeslot}", 3, "0")
@@ -87,7 +92,11 @@ defmodule TestnetBlockImporterTest do
             Logger.info("Checking field #{field}...")
 
             unless Enum.find(@ignore_fields, &(&1 == field)) do
-              assert Map.get(expected_state, field) == Map.get(new_state, field)
+              expected = Map.get(expected_state, field)
+              new = Map.get(new_state, field)
+
+              IO.puts(field)
+              assert expected == new
             end
           end
 
