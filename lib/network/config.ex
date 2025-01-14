@@ -10,7 +10,7 @@ defmodule Network.Config do
 
   @fixed_quicer_opts [
     alpn: [~c"jamnp-s/V/H"],
-    peer_bidi_stream_count: 1023,
+    peer_bidi_stream_count: Constants.validator_count(),
     peer_unidi_stream_count: 100,
     versions: [:"tlsv1.3"],
     verify: :none
