@@ -26,7 +26,7 @@ defmodule Network.Peer do
 
     case init_mode do
       :initiator -> initiate_connection(ip, port)
-      :listener -> start_listener(ip, port)
+      :listener -> start_listener(port)
     end
   end
 
@@ -44,8 +44,8 @@ defmodule Network.Peer do
     end
   end
 
-  defp start_listener(ip, port) do
-    log("Listening for connection on #{ip}:#{port}...")
+  defp start_listener(port) do
+    log("Listening for connection on #{port}...")
 
     case :quicer.listen(port, default_quicer_opts()) do
       {:ok, socket} ->
