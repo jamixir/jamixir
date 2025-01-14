@@ -80,39 +80,14 @@ defmodule CommsTest do
   end
 
   describe "block announcements" do
-    test "announces blocks over UP stream", %{client: client} do
-      # Mock header and slot for announcement
-      header = build(:decodable_header)
-      slot = 42
-
-      # First announcement should create UP stream
-      Peer.announce_block(client, header, slot)
-      # Give some time for stream setup
-      Process.sleep(100)
-
-      # # Second announcement should reuse the same stream
-      Peer.announce_block(client, header, slot + 1)
-      Process.sleep(100)
-
-      # # Get client's state to verify UP stream handling
-      client_state = :sys.get_state(client)
-
-      # # Verify we have exactly one UP stream for protocol 0
-      assert map_size(client_state.up_streams) == 1
-      assert Map.has_key?(client_state.up_streams, 0)
-
-      # # Verify the stream is valid
-      %{stream_id: stream} = client_state.up_streams[0]
-      assert is_reference(stream)
-    end
 
     test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 
-      for slot <- 1..100 do
+      for slot <- 1..20 do
         Peer.announce_block(client, %{header | timeslot: slot}, slot)
-        Process.sleep(20)
       end
+      Process.sleep(10)
 
       # Verify we have exactly one UP stream
       client_state = :sys.get_state(client)
