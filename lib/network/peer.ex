@@ -8,7 +8,7 @@ defmodule Network.Peer do
   @log_context "[QUIC_PEER]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
-
+  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
   # Re-export the client API functions
   defdelegate send(pid, protocol_id, message), to: Client
   defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client
@@ -22,7 +22,7 @@ defmodule Network.Peer do
   def init(%{init_mode: init_mode, ip: ip, port: port}) do
     identifier = "#{init_mode}#{ip}:#{port}"
     {:ok, pid} = Network.PeerRegistry.register_peer(self(), identifier)
-    log(:info, "Registered peer with identifier: #{identifier} #{inspect(pid)}")
+    log("Registered peer with identifier: #{identifier} #{inspect(pid)}")
 
     case init_mode do
       :initiator -> initiate_connection(ip, port)
@@ -31,11 +31,11 @@ defmodule Network.Peer do
   end
 
   defp initiate_connection(ip, port) do
-    log(:info, "Initiating connection to #{ip}:#{port}...")
+    log("Initiating connection to #{ip}:#{port}...")
 
     case :quicer.connect(ip, port, default_quicer_opts(), 5_000) do
       {:ok, conn} ->
-        log(:info, "Connected to #{ip}:#{port}")
+        log("Connected to #{ip}:#{port}")
         {:ok, %PeerState{connection: conn}}
 
       error ->
@@ -45,7 +45,7 @@ defmodule Network.Peer do
   end
 
   defp start_listener(ip, port) do
-    log(:info, "Listening for connection on #{ip}:#{port}...")
+    log("Listening for connection on #{ip}:#{port}...")
 
     case :quicer.listen(port, default_quicer_opts()) do
       {:ok, socket} ->
@@ -89,7 +89,7 @@ defmodule Network.Peer do
   # Stream cleanup
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    log(:info, "Stream closed: #{inspect(stream)}")
+    log("Stream closed: #{inspect(stream)}")
     {:noreply, %{state | outgoing_streams: Map.delete(state.outgoing_streams, stream)}}
   end
 
