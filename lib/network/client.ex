@@ -8,6 +8,7 @@ defmodule Network.Client do
   @log_context "[QUIC_CLIENT]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
+  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
 
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
     GenServer.call(pid, {:send, protocol_id, message}, 5_000)
@@ -41,7 +42,7 @@ defmodule Network.Client do
 
         # No stream - create new one and update state
         nil ->
-          log(:info, "Creating new UP stream for block announcements")
+          log("Creating new UP stream for block announcements")
           {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
           state_ = put_in(state.up_streams[protocol_id], %{stream_id: stream})
           {stream, state_}

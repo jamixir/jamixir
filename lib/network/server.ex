@@ -6,13 +6,14 @@ defmodule Network.Server do
   @log_context "[QUIC_SERVER]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
+  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
 
   def handle_info(:accept_connection, %{socket: socket} = state) do
     case :quicer.accept(socket, [], :infinity) do
       {:ok, conn} ->
-        log(:info, "Connection accepted")
+        log("Connection accepted")
         {:ok, conn} = :quicer.handshake(conn)
-        log(:info, "Handshake completed")
+        log("Handshake completed")
         send(self(), :accept_stream)
         {:noreply, %{state | connection: conn}}
 
