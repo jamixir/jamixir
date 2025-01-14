@@ -57,22 +57,19 @@ defmodule System.State.RecentHistory do
   Gets the initial block history, modifying the last block to include the given state root.
   Formula (7.2) v0.5.2
   """
-  def update_latest_state_root_(nil, %Header{}) do
-    %__MODULE__{}
-  end
+  def update_latest_state_root(nil, _), do: %__MODULE__{}
 
-  @spec update_latest_state_root_(t(), Header.t()) :: t()
-  def update_latest_state_root_(%__MODULE__{blocks: []} = self, %Header{}) do
-    self
-  end
+  @spec update_latest_state_root(t(), Types.hash()) :: t()
+  def update_latest_state_root(%__MODULE__{blocks: []} = self, _), do: self
 
   # β† ≡ β except β † [∣β∣ − 1]s = Hr
-  def update_latest_state_root_(%__MODULE__{blocks: blocks} = self, %Header{
-        prior_state_root: s
-      }) do
+  def update_latest_state_root(%__MODULE__{blocks: blocks} = self, prior_state_root) do
     case Enum.split(blocks, length(blocks) - 1) do
       {init, [last_block]} ->
-        %__MODULE__{self | blocks: init ++ [%RecentBlock{last_block | state_root: s}]}
+        %__MODULE__{
+          self
+          | blocks: init ++ [%RecentBlock{last_block | state_root: prior_state_root}]
+        }
     end
   end
 
@@ -81,14 +78,14 @@ defmodule System.State.RecentHistory do
   Formula (7.3) v0.5.2
   """
   mockable transition(
-             %Header{} = header,
+             %Header{prior_state_root: prior_state_root} = header,
              %RecentHistory{} = recent_history,
              guarantees,
              beefy_commitment
            ) do
     # β† Formula (17) v0.4.5
     recent_history =
-      RecentHistory.update_latest_state_root_(recent_history, header)
+      RecentHistory.update_latest_state_root(recent_history, prior_state_root)
 
     # 32 bytes of zeros
     state_root_ = Hash.zero()

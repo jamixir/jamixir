@@ -30,10 +30,10 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    Formula (323) v0.4.5
+    Formula (D.4) v0.5.3
     Encodes the leaf nodes distinguin between regular and embedded leafs.
       { (H, Y) → B512
-    L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)...6 ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
+    L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
               { [1,1,0,0,0,0,0,0] ~ bits(k)...248 ~ bits(H(v))                    otherwise
 
   Leaf nodes are further subdivided into embedded-value leaves and regular leaves. The second bit of the node discriminates between these.
@@ -50,7 +50,7 @@ defmodule Util.Merklization do
     if byte_size(value) <= 32 do
       result =
         [1, 0] ++
-          (bits(e_le(byte_size(value), 1)) |> Enum.take(6)) ++
+          (bits(e_le(byte_size(value), 1)) |> Enum.drop(2)) ++
           (bits(key) |> Enum.take(248)) ++
           bits(value)
 

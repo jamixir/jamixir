@@ -16,7 +16,7 @@ defmodule Util.MerkleTree do
   def well_balanced_merkle_root([single_blob], hash_func), do: hash_func.(single_blob)
   def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
-  # Formula (329) v0.4.5
+  # Formula (E.4) v0.5.3
   @spec merkle_root(list(binary())) :: Types.hash()
   def merkle_root(v), do: merkle_root(v, &Hash.default/1)
   @spec merkle_root(list(binary()), (binary() -> Types.hash())) :: Types.hash()
@@ -49,7 +49,7 @@ defmodule Util.MerkleTree do
 
   def justification(v, i), do: justification(v, i, &Hash.default/1)
 
-  # Formula (331) v0.4.5
+  # Formula (E.5) v0.5.3
   # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
   @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification([], _, hash_func, _) when is_function(hash_func, 1), do: []
@@ -57,6 +57,18 @@ defmodule Util.MerkleTree do
   def justification(v, i, hash_func, x) when x >= 0 and is_function(hash_func, 1) do
     size = max(0, ceil(:math.log2(max(1, length(v))) - x))
     justification(v, i, hash_func) |> Enum.take(size)
+  end
+
+  # Formula (E.6) v0.5.3
+  # (v, i, H) ↦ [H($leaf ⌢ l) S l <− v2xi... min(2xi+2x,SvS)]
+  # note as of 0.5.3, the justification_l is not used anywhere
+  def justification_l(v, i, x), do: justification_l(v, i, &Hash.default/1, x)
+
+  @spec justification_l([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
+  def justification_l(v, i, hash_func, x) do
+    start_idx = trunc(:math.pow(2, x * i))
+    end_idx = min(trunc(:math.pow(2, x * i) + :math.pow(2, x)), length(v))
+    for l <- Enum.slice(v, start_idx..(end_idx - 1)), do: hash_func.("leaf" <> l)
   end
 
   @spec pi(list(), integer()) :: integer()

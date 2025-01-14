@@ -36,7 +36,7 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (323) v0.4.5: TESTS
+  # Formula (D.4) v0.5.3: TESTS
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do
@@ -50,7 +50,7 @@ defmodule Util.MerklizationTest do
 
       assert Enum.slice(result, 0, 2) == [1, 0]
 
-      assert Enum.slice(result, 2, 6) == [0, 0, 0, 1, 0, 0]
+      assert Enum.slice(result, 2, 6) == Merklization.bits(<<16>>) |> Enum.drop(2)
     end
 
     test "encode_leaf when byte_size(value) == 32" do

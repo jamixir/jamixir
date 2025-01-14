@@ -218,4 +218,64 @@ defmodule Util.MerkleTreeTest do
              ]
     end
   end
+
+  describe "justification_l/4" do
+    test "returns correct leaf hashes for given range" do
+      list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+      index = 1
+      x = 1
+      result = MerkleTree.justification_l(list, index, &identity_hash/1, x)
+
+      # For i=1, x=1:
+      # start_idx = 2^(x*i) = 2^1 = 2
+      # end_idx = min(2^1 + 2^1, 8) = min(4, 8) = 4
+      # Should return hashes of elements [2,3]
+      assert result == ["leafc", "leafd"]
+    end
+
+    test "handles edge of list" do
+      list = ["a", "b", "c", "d"]
+      index = 1
+      x = 1
+      result = MerkleTree.justification_l(list, index, &identity_hash/1, x)
+
+      # Should return hashes of elements [2,3]
+      assert result == ["leafc", "leafd"]
+    end
+
+    test "returns empty list when start index exceeds list length" do
+      list = ["a", "b", "c"]
+      index = 2
+      x = 1
+      result = MerkleTree.justification_l(list, index, &identity_hash/1, x)
+
+      # start_idx = 2^(x*i) = 2^2 = 4
+      # This exceeds list length, so should return empty list
+      assert result == []
+    end
+
+    test "handles larger x values" do
+      list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+      index = 1
+      x = 2
+      result = MerkleTree.justification_l(list, index, &identity_hash/1, x)
+
+      # start_idx = 2^(x*i) = 2^2 = 4
+      # end_idx = min(4 + 4, 8) = 8
+      # Should return hashes of elements [4,5,6,7]
+      assert result == ["leafe", "leaff", "leafg", "leafh"]
+    end
+
+    test "handles x=0 case" do
+      list = ["a", "b", "c", "d"]
+      index = 1
+      x = 0
+      result = MerkleTree.justification_l(list, index, &identity_hash/1, x)
+
+      # start_idx = 2^0 = 1
+      # end_idx = min(1 + 1, 4) = 2
+      # Should return hash of element [1]
+      assert result == ["leafb"]
+    end
+  end
 end

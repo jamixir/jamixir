@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   import Jamixir.Factory
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Guarantee, Guarantor}
+  alias Block.Header
   alias System.State
   alias System.State.{CoreReport, Ready, RecentHistory, RecentHistory.RecentBlock, ServiceAccount}
   alias Util.{Crypto, Hash}
@@ -49,6 +50,11 @@ defmodule Block.Extrinsic.GuaranteeTest do
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root_,
               accumulated_result_mmr: [<<1>>, <<2>>]
+            },
+            %RecentBlock{
+              header_hash: Hash.one(),
+              state_root: nil,
+              accumulated_result_mmr: [<<1>>, <<2>>]
             }
           ]
         }
@@ -58,7 +64,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns :ok for valid guarantees", %{state: state, g1: g1, g2: g2} do
-      assert Guarantee.validate([g1, g2], state, 1) == :ok
+      assert Guarantee.validate([g1, g2], state, %Header{timeslot: 1}) == :ok
     end
 
     test "returns error when work report size is invalid", %{state: state, g1: g1} do
@@ -69,44 +75,46 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       invalid_g1 = put_in(invalid_g1.work_report.segment_root_lookup, %{"a" => "b"})
 
-      assert Guarantee.validate([invalid_g1], state, 1) == {:error, :too_many_dependencies}
+      assert Guarantee.validate([invalid_g1], state, %Header{timeslot: 1}) ==
+               {:error, :too_many_dependencies}
     end
 
     test "returns error for guarantees not ordered by core_index", %{state: state, g1: g1, g2: g2} do
-      assert Guarantee.validate([g2, g1], state, 1) == {:error, :out_of_order_guarantee}
+      assert Guarantee.validate([g2, g1], state, %Header{timeslot: 1}) ==
+               {:error, :out_of_order_guarantee}
     end
 
     test "returns error for duplicate core_index in guarantees", %{state: state, g1: g1} do
-      assert Guarantee.validate([g1, g1], state, 1) == {:error, :duplicates}
+      assert Guarantee.validate([g1, g1], state, %Header{timeslot: 1}) == {:error, :duplicates}
     end
 
     test "returns error for invalid credential length", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}])
 
-      assert Guarantee.validate([invalid_g1], state, 1) ==
+      assert Guarantee.validate([invalid_g1], state, %Header{timeslot: 1}) ==
                {:error, :insufficient_guarantees}
     end
 
     test "returns error for credentials not ordered by validator_index", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{2, <<1::512>>}, {1, <<2::512>>}])
 
-      assert Guarantee.validate([invalid_g1], state, 1) ==
+      assert Guarantee.validate([invalid_g1], state, %Header{timeslot: 1}) ==
                {:error, :not_sorted_or_unique_guarantors}
     end
 
     test "returns error for duplicate validator_index in credentials", %{g1: g1, state: state} do
       invalid_g1 = put_in(g1.credentials, [{1, <<1::512>>}, {1, <<2::512>>}])
 
-      assert Guarantee.validate([invalid_g1], state, 1) ==
+      assert Guarantee.validate([invalid_g1], state, %Header{timeslot: 1}) ==
                {:error, :not_sorted_or_unique_guarantors}
     end
 
     test "handles empty list of guarantees", context do
-      assert Guarantee.validate([], context.state, 1) == :ok
+      assert Guarantee.validate([], context.state, %Header{timeslot: 1}) == :ok
     end
 
     test "validates a single guarantee correctly", context do
-      assert Guarantee.validate([context.g1], context.state, 1) == :ok
+      assert Guarantee.validate([context.g1], context.state, %Header{timeslot: 1}) == :ok
     end
 
     test "passes when gas accumulation is within limits", %{state: state, g1: g1, g2: g2} do
@@ -124,7 +132,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
-      assert Guarantee.validate(guarantees, s, 1) == :ok
+      assert Guarantee.validate(guarantees, s, %Header{timeslot: 1}) == :ok
     end
 
     test "fails when a work result references a non-existent service",
@@ -144,7 +152,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
-      assert Guarantee.validate(guarantees, s, 1) == {:error, :bad_service_id}
+      assert Guarantee.validate(guarantees, s, %Header{timeslot: 1}) == {:error, :bad_service_id}
     end
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
@@ -164,7 +172,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
           2 => %ServiceAccount{gas_limit_g: 2_000_000, code_hash: Hash.one()}
         })
 
-      assert Guarantee.validate(guarantees, s, 1) == {:error, :work_report_gas_too_high}
+      assert Guarantee.validate(guarantees, s, %Header{timeslot: 1}) ==
+               {:error, :work_report_gas_too_high}
     end
 
     test "fails when gas_ratio is less than service's gas_limit_g",
@@ -183,13 +192,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
           2 => %ServiceAccount{gas_limit_g: 200, code_hash: Hash.one()}
         })
 
-      assert Guarantee.validate(guarantees, s, 1) ==
+      assert Guarantee.validate(guarantees, s, %Header{timeslot: 1}) ==
                {:error, :insufficient_gas_ratio}
     end
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
       s = put_in(state.services[0].code_hash, Hash.two())
-      assert Guarantee.validate([g1, g2], s, 1) == {:error, :bad_code_hash}
+      assert Guarantee.validate([g1, g2], s, %Header{timeslot: 1} ) == {:error, :bad_code_hash}
     end
 
     test "returns error when duplicated work package hash", %{g1: g1, g2: g2, state: state} do
@@ -199,39 +208,47 @@ defmodule Block.Extrinsic.GuaranteeTest do
           g1.work_report.specification.work_package_hash
         )
 
-      assert Guarantee.validate([g1, updated_g2], state, 1) == {:error, :duplicate_package}
+      assert Guarantee.validate([g1, updated_g2], state, %Header{timeslot: 1}) ==
+               {:error, :duplicate_package}
     end
 
     test "returns error when refinement context timeslot is too old", %{g1: g1, state: state} do
       current_timeslot = 1000
       old_timeslot = current_timeslot - Constants.max_age_lookup_anchor() - 1
       invalid_g = put_in(g1.work_report.refinement_context.timeslot, old_timeslot)
+      header = %Header{timeslot: current_timeslot}
 
-      assert Guarantee.validate([invalid_g], state, current_timeslot) ==
+      assert Guarantee.validate([invalid_g], state, header) ==
                {:error, :refine_context_timeslot}
     end
 
-    test "error when recent history does not have header_hash", %{g1: g1, state: state} do
+    test "error when recent history does not have header_hash", %{g1: g1, state: state, refinement_context: refinement_context} do
       valid_rh = state.recent_history
       valid_rb = Enum.at(valid_rh.blocks, 0)
       invalid_rb = %RecentBlock{valid_rb | header_hash: nil}
       s = put_in(state.recent_history, %RecentHistory{valid_rh | blocks: [invalid_rb]})
 
-      assert Guarantee.validate([g1], s, 1) == {:error, :anchor_not_recent}
+      assert Guarantee.validate([g1], s, %Header{timeslot: 1, prior_state_root: refinement_context.state_root_}) == {:error, :anchor_not_recent}
     end
 
     test "error when recent history does not have state_root", %{g1: g1, state: state} do
       invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).state_root, nil)
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :bad_state_root}
+      assert Guarantee.validate([g1], invalid_state, %Header{timeslot: 1}) ==
+               {:error, :bad_state_root}
     end
 
-    test "error when recent history does not have accumulated_result_mmr", %{g1: g1, state: state} do
+    test "error when recent history does not have accumulated_result_mmr", %{
+      g1: g1,
+      state: state,
+      refinement_context: refinement_context
+    } do
       invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([g1], invalid_state, 1) == {:error, :bad_beefy_mmr}
+      assert Guarantee.validate([g1], invalid_state, %Header{timeslot: 1, prior_state_root: refinement_context.state_root_}) ==
+               {:error, :bad_beefy_mmr}
     end
 
     test "returns error when work package exists in recent history", %{state: state, g1: g1} do
@@ -240,7 +257,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       block = %{hd(state.recent_history.blocks) | work_report_hashes: %{wp_hash => "hash"}}
       s = put_in(state.recent_history.blocks, [block])
 
-      assert Guarantee.validate([g1], s, 1) == {:error, :duplicate_package}
+      assert Guarantee.validate([g1], s, %Header{timeslot: 1}) == {:error, :duplicate_package}
     end
 
     test "returns error when work package exists in accumulation history", %{state: state, g1: g1} do
@@ -248,7 +265,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       wp_hash = g1.work_report.specification.work_package_hash
       s = put_in(state.accumulation_history, [MapSet.new([wp_hash])])
 
-      assert Guarantee.validate([g1], s, 1) == {:error, :duplicate_package}
+      assert Guarantee.validate([g1], s, %Header{timeslot: 1}) == {:error, :duplicate_package}
     end
 
     test "returns error when segment root lookup value mismatches", %{state: state, g1: g1} do
@@ -261,7 +278,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       s = put_in(state.recent_history.blocks, [block])
       invalid_g1 = put_in(g1.work_report.segment_root_lookup, %{"hash1" => "wrong_export"})
 
-      assert Guarantee.validate([invalid_g1], s, 1) ==
+      assert Guarantee.validate([invalid_g1], s, %Header{timeslot: 1}) ==
                {:error, :segment_root_lookup_invalid}
     end
   end
