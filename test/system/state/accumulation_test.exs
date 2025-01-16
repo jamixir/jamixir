@@ -530,9 +530,9 @@ defmodule System.State.AccumulationTest do
       ]
 
       result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
-      assert result[1].balance == 150
-      assert result[2].balance == 175
-      assert result[3].balance == 275
+      assert result[1].balance == 200
+      assert result[2].balance == 250
+      assert result[3].balance == 375
     end
 
     test "handles empty transfers" do

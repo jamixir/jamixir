@@ -2,11 +2,10 @@ defmodule System.State.Safrole do
   @moduledoc """
   Safrole  state, as specified in section 6.1 of the GP.
   """
-  alias System.State.RotateKeys
   alias Block.Extrinsic.TicketProof
   alias Block.Header
   alias Codec.{Decoder, Encoder}
-  alias System.State.{EntropyPool, Safrole, SealKeyTicket, Validator}
+  alias System.State.{EntropyPool, RotateKeys, Safrole, SealKeyTicket, Validator}
   use SelectiveMock
   alias Util.{Hash, Time}
 

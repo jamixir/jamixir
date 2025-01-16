@@ -48,6 +48,14 @@ defmodule AccumulateTestVectors do
     json_data =
       put_in(json_data[:pre_state][:entropy], for(_ <- 1..4, do: json_data[:pre_state][:entropy]))
 
+    core_reports =
+      for(
+        r <- json_data[:input][:reports],
+        do: %{timeout: json_data[:input][:slot], report: r}
+      )
+
+    json_data = put_in(json_data[:pre_state][:rho], core_reports)
+
     json_data =
       put_in(
         json_data[:post_state][:entropy],

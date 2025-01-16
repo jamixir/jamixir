@@ -382,6 +382,11 @@ defmodule System.State do
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
   defp decode_json_field(:accounts, value), do: [{:services, Services.from_json(value)}]
 
+  defp decode_json_field(:ready_queue, value),
+    do: [
+      {:ready_to_accumulate, for(queue <- value, do: for(r <- queue, do: Ready.from_json(r)))}
+    ]
+
   defp decode_json_field(:services, value),
     do: [
       {:services, for(s <- value, do: {s[:id], ServiceAccount.from_json(s[:info])}, into: %{})}
