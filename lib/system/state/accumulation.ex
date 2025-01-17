@@ -320,7 +320,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.24) v0.5.2
+  # Formula (12.24) v0.5.4
   def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
@@ -345,20 +345,7 @@ defmodule System.State.Accumulation do
     }
   end
 
-  # stub for On-Transfer Invocation ΨT
-  defp apply_transfers(services, service, transfers) do
-    Enum.reduce(transfers, services, fn transfer, acc ->
-      acc
-      |> Map.update!(transfer.sender, fn account ->
-        %{account | balance: account.balance - transfer.amount}
-      end)
-      |> Map.update!(service, fn account ->
-        %{account | balance: account.balance + transfer.amount}
-      end)
-    end)
-  end
-
-  # Formula (12.27) v0.5.2
+  # Formula (12.27) v0.5.4
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
@@ -392,22 +379,32 @@ defmodule System.State.Accumulation do
 
     work_package_hashes = WorkReport.work_package_hashes(Enum.take(w_star, n))
 
-    Enum.map(0..(e - 1), fn i ->
-      index = rem(m - i, e)
+    list =
+      for i <- 0..(e - 1) do
+        cond do
+          i == 0 ->
+            WorkReport.edit_queue(w_q, work_package_hashes)
 
-      cond do
-        i == 0 ->
-          WorkReport.edit_queue(w_q, work_package_hashes)
+          i < header_timeslot - state_timeslot ->
+            []
 
-        i < header_timeslot - state_timeslot ->
-          []
-
-        true ->
-          WorkReport.edit_queue(
-            Enum.at(ready_to_accumulate, index) |> Enum.map(&Ready.to_tuple/1),
-            work_package_hashes
-          )
+          true ->
+            WorkReport.edit_queue(
+              Enum.at(ready_to_accumulate, rem(m - i, e)) |> Enum.map(&Ready.to_tuple/1),
+              work_package_hashes
+            )
+        end
       end
-    end)
+      |> Enum.reverse()
+      |> rotate(m + 1)
+
+    for q <- list, do: for({w, d} <- q, do: %Ready{work_report: w, dependencies: d})
+  end
+
+  def rotate(list, m) when is_list(list) do
+    len = length(list)
+    m = rem(m, len)
+    # Take last m elements and prepend to rest
+    Enum.take(list, -m) ++ Enum.drop(list, -m)
   end
 end
