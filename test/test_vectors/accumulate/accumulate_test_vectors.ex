@@ -26,7 +26,7 @@ defmodule AccumulateTestVectors do
       :entropy_pool,
       :services,
       :ready_to_accumulate,
-      :accumulation_history,
+      # :accumulation_history,
       :privileged_services
     ]
 
@@ -38,15 +38,21 @@ defmodule AccumulateTestVectors do
       Map.from_struct(%Extrinsic{})
       |> Map.put(:disputes, Map.from_struct(%Disputes{}))
 
-    ValidatorStatisticsMock
-    |> stub(:do_transition, fn _, _, _, _, _, _ ->
-      {:ok, "mockvalue"}
-    end)
+    ValidatorStatisticsMock |> stub(:do_transition, fn _, _, _, _, _, _ -> {:ok, "mockvalue"} end)
 
     header = json_data[:input]
 
     json_data =
       put_in(json_data[:pre_state][:entropy], for(_ <- 1..4, do: json_data[:pre_state][:entropy]))
+
+    mock_safrole = %{
+      gamma_k: for(_ <- 1..Constants.validator_count(), do: %{}),
+      gamma_s: %{keys: []},
+      gamma_z: "0x00",
+      gamma_a: []
+    }
+
+    json_data = put_in(json_data[:pre_state], Map.merge(json_data[:pre_state], mock_safrole))
 
     core_reports =
       for(
