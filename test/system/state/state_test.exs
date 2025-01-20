@@ -11,7 +11,7 @@ defmodule System.StateTest do
   alias Codec.{Encoder, NilDiscriminator}
   alias IO.ANSI
   alias System.State
-  alias Util.Hash
+  alias Util.{Hash, Hex}
 
   setup :verify_on_exit!
 
@@ -113,7 +113,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :preimage_storage_p)
         |> Enum.each(fn {h, v} ->
-          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 29)}
+          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 28)}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -124,7 +124,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          key = (Encoder.encode_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 30)
+          key = Encoder.encode_le(l, 4) <>  binary_slice(Hash.default(h),2, 28)
           value = e(vs(for x <- t, do: Encoder.encode_le(x, 4)))
           assert state_keys(state)[{s, key}] == value
         end)
@@ -326,22 +326,55 @@ defmodule System.StateTest do
     @tag :skip
     test "genesis matches key vals" do
       {:ok, state} = from_genesis()
-      {:ok, content} = File.read("test/genesis-keyvals.json")
-      {:ok, json} = Jason.decode(content)
-      state_hex = hex(encode(state))
+      {:ok, state_with_services} = load_services_from_dump(state, "genesis-tiny.json")
 
-      for [k, v] <- json["keyvals"] do
-        my_k = String.replace(k, "0x", "") |> String.upcase()
-        my_v = String.replace(v, "0x", "") |> String.upcase()
+      state_keys = encode(state_with_services)
 
-        if state_hex[my_k] == my_v do
-          # IO.puts("#{ANSI.green()} #{my_k} => #{my_v}\n")
-        else
-          IO.puts("#{ANSI.red()}> #{my_k} => #{my_v}")
-          IO.puts("#{ANSI.red()}< #{state_hex[my_k]}\n")
-          assert state_hex[my_k] == my_v
+      # Read and parse genesis-tiny.json
+      {:ok, content} = File.read("genesis-tiny.json")
+      {:ok, %{"keyvals" => keyvals, "state_root" => genesis_state_root}} = Jason.decode(content)
+
+      # Convert keyvals to map of binary key -> binary value
+      genesis_map =
+        for [key, value, _type, _meta] <- keyvals, into: %{} do
+          {Hex.decode16!(key), Hex.decode16!(value)}
+        end
+
+      # Compare the sets of keys
+      state_keys_set = MapSet.new(Map.keys(state_keys))
+      genesis_keys_set = MapSet.new(Map.keys(genesis_map))
+
+      missing_in_genesis = MapSet.difference(state_keys_set, genesis_keys_set)
+      missing_in_state = MapSet.difference(genesis_keys_set, state_keys_set)
+
+      assert missing_in_genesis == MapSet.new(),
+             "Keys present in state but missing in genesis: #{inspect(missing_in_genesis)}"
+
+      assert missing_in_state == MapSet.new(),
+             "Keys present in genesis but missing in state: #{inspect(missing_in_state)}"
+
+      # Compare each key-value pair
+      for {key, expected_value} <- state_keys do
+        actual_value = Map.get(genesis_map, key)
+
+        if actual_value != expected_value do
+          field_num =
+            case key do
+              <<n::8, _rest::binary>> -> "C(#{n})"
+              _ -> "unknown field"
+            end
+
+          flunk("""
+          Mismatch in #{field_num}:
+          Key: #{Base.encode16(key)}
+          Expected: #{Base.encode16(expected_value)}
+          Got:      #{Base.encode16(actual_value)}
+          """)
         end
       end
+
+      state_root = Merklization.merkelize_state(state_keys)
+      assert state_root == Hex.decode16!(genesis_state_root)
     end
   end
 
@@ -384,19 +417,5 @@ defmodule System.StateTest do
       assert byte_size(preimage_1) == 113
       assert Map.has_key?(service_1.preimage_storage_l, {hash, 113})
     end
-  end
-
-  test "assert_state_root" do
-    {:ok, state} = from_genesis()
-    {:ok, state_with_services} = load_services_from_dump(state, "genesis-tiny.json")
-
-    #load state root from genesis-tiny.json
-    {:ok, content} = File.read("genesis-tiny.json")
-    {:ok, json} = Jason.decode(content)
-    expected_state_root = json["state_root"] |> Util.Hex.decode16!()
-
-    state_root = Merklization.merkelize_state(encode(state_with_services))
-
-    assert state_root == expected_state_root
   end
 end

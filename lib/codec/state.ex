@@ -106,7 +106,7 @@ defmodule Codec.State do
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 29)}, v)
+        Map.put(ac, {s, e_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 28)}, v)
       end)
     end)
   end
@@ -118,7 +118,7 @@ defmodule Codec.State do
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value = e(vs(for x <- t, do: e_le(x, 4)))
-        key = (e_le(l, 4) <> h(h)) |> binary_slice(2, 30)
+        key = e_le(l, 4) <> binary_slice(h(h),2, 28)
         Map.put(ac, {s, key}, value)
       end)
     end)
@@ -141,7 +141,8 @@ defmodule Codec.State do
       {:ok, content} ->
         case Jason.decode(content) do
           {:ok, json_data} ->
-            {:ok, from_json(json_data |> Utils.atomize_keys())}
+            state = from_json(json_data |> Utils.atomize_keys())
+            {:ok, state}
 
           {:error, reason} ->
             {:error, reason}
