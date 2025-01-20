@@ -22,7 +22,7 @@ defmodule BlockTest do
       services: %{1 => build(:service_account)}
     }
 
-    state_root = Merklization.merkelize_state(State.serialize(state))
+    state_root = Merklization.merkelize_state(Codec.State.encode(state))
     extrinsic = build(:extrinsic)
     extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
 

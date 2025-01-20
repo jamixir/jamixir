@@ -2,7 +2,7 @@ defmodule Block.Header do
   alias Block.Header
   alias Util.Merklization
   alias Codec.{NilDiscriminator, VariableSize}
-  alias System.{State, Validators}
+  alias System.Validators
   alias System.State.{SealKeyTicket, Validator}
   alias Util.{Hash, Time}
   use SelectiveMock
@@ -87,7 +87,7 @@ defmodule Block.Header do
   # Formula (43) v0.4.5
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
     state_root = case Storage.get_state_root() do
-      nil -> Merklization.merkelize_state(State.serialize(state))
+      nil -> Merklization.merkelize_state(Codec.State.encode(state))
       root -> root
     end
 

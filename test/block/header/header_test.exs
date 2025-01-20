@@ -89,7 +89,7 @@ defmodule Block.HeaderTest do
   describe "validate/2" do
     setup do
       state = %State{timeslot: 99}
-      state_root = Merklization.merkelize_state(State.serialize(state))
+      state_root = Merklization.merkelize_state(Codec.State.encode(state))
       parent = build(:decodable_header, timeslot: 99)
       Storage.put(parent)
 

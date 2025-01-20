@@ -50,7 +50,7 @@ defmodule TestnetBlockImporterTest do
         {:ok, %{vrf_signature_output: Hash.zero()}}
       end)
 
-      state = State.from_json(genesis_json)
+      state = Codec.State.from_json(genesis_json)
 
       Enum.reduce(@first_epoch..@last_epoch, state, fn epoch, state ->
         Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
@@ -64,7 +64,7 @@ defmodule TestnetBlockImporterTest do
           {:ok, json} =
             fetch_and_parse_json("#{epoch}_#{timeslot}.json", @state_path, @user, @repo)
 
-          expected_state = State.from_json(json)
+          expected_state = Codec.State.from_json(json)
 
           new_state =
             case State.add_block(state, block) do

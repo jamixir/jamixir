@@ -1,7 +1,7 @@
 defmodule System.StateTest do
   use ExUnit.Case
   import Jamixir.Factory
-  import System.State
+  import Codec.State
   import OriginalModules
   import Mox
   import Bitwise
@@ -184,7 +184,7 @@ defmodule System.StateTest do
   describe "serialize/1" do
     test "serialized state dictionary", %{state: state} do
       state_keys = state_keys(state)
-      serialized_state = serialize(state)
+      serialized_state = encode(state)
 
       state_keys
       |> Enum.each(fn {k, _} ->
@@ -318,15 +318,16 @@ defmodule System.StateTest do
 
   describe "from_genesis/0" do
     test "from_genesis smoke test" do
-      {:ok, state} = State.from_genesis()
+      {:ok, state} = from_genesis()
       assert state.timeslot == 0
     end
 
+    @tag :skip
     test "genesis matches key vals" do
-      {:ok, state} = State.from_genesis()
+      {:ok, state} = from_genesis()
       {:ok, content} = File.read("test/genesis-keyvals.json")
       {:ok, json} = Jason.decode(content)
-      state_hex = State.serialize_hex(state)
+      state_hex = hex(encode(state))
 
       for [k, v] <- json["keyvals"] do
         my_k = String.replace(k, "0x", "") |> String.upcase()

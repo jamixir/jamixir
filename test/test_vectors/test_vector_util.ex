@@ -146,7 +146,7 @@ defmodule TestVectorUtil do
   end
 
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do
-    pre_state = System.State.from_json(json_data[:pre_state])
+    pre_state = Codec.State.from_json(json_data[:pre_state])
     ok_output = json_data[:output][:ok]
 
     header =
@@ -158,7 +158,7 @@ defmodule TestVectorUtil do
         header: header
       })
 
-    expected_state = System.State.from_json(json_data[:post_state])
+    expected_state = Codec.State.from_json(json_data[:post_state])
 
     result = System.State.add_block(pre_state, block)
 

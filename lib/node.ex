@@ -50,7 +50,7 @@ defmodule Jamixir.Node do
       {:ok, contents} ->
         case Jason.decode(contents) do
           {:ok, json_data} ->
-            state = System.State.from_json(json_data |> Utils.atomize_keys())
+            state = Codec.State.from_json(json_data |> Utils.atomize_keys())
             Storage.put(state)
             :ok
 
