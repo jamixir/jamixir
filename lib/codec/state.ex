@@ -1,6 +1,7 @@
 defmodule Codec.State do
   alias System.State
-  alias Codec.NilDiscriminator
+  alias Codec.{NilDiscriminator}
+  import Util.Hex
 
   alias System.State.{
     CoreReport,
@@ -13,7 +14,7 @@ defmodule Codec.State do
     ValidatorStatistics
   }
 
-  use Codec.Encoder
+  use Codec.{Decoder, Encoder}
 
   import Bitwise
   # # Formula (D.2) v0.5
@@ -228,6 +229,106 @@ defmodule Codec.State do
       |> Map.put(:safrole, safrole)
     else
       fields
+    end
+  end
+
+  @doc """
+  Updates state's services map from a state dump file.
+  The file contains service account encodings and their preimages.
+  """
+  def load_services_from_dump(%State{} = state, dump_path) do
+    with {:ok, content} <- File.read(dump_path),
+         {:ok, %{"keyvals" => keyvals}} <- Jason.decode(content) do
+      # Filter preimage entries and parse them
+      preimage_entries =
+        Enum.filter(keyvals, fn [_key, _value, type, _meta] ->
+          type == "account_preimage"
+        end)
+
+      # Parse each preimage entry
+      preimages =
+        Enum.reduce(preimage_entries, [], fn [key, value, _type, meta], acc ->
+          with {:ok, service_index} <- parse_service_index(key),
+               {:ok, hash_binary} <- parse_hash(meta),
+               {:ok, preimage} <- decode_preimage(value),
+               {:ok, length} <- parse_length(meta) do
+            [{service_index, {hash_binary, preimage, length}} | acc]
+          else
+            error ->
+              IO.puts("Failed to parse preimage entry: #{inspect(error)}")
+              acc
+          end
+        end)
+
+      # Group by service index
+      preimages = Enum.group_by(preimages, &elem(&1, 0), &elem(&1, 1))
+
+      # Then build services with their preimages
+      services =
+        for [key, value, "service_account", _meta] <- keyvals do
+          <<0xFF, n0, 0, n1, 0, n2, 0, n3, 0, _rest::binary>> = decode16!(key)
+          service_id = de_le(<<n0, n1, n2, n3>>, 4)
+          service = ServiceAccount.decode(decode16!(value))
+
+          # Add preimages for this service if they exist
+          service =
+            case Map.get(preimages, service_id) do
+              nil ->
+                service
+
+              service_preimages ->
+                Enum.reduce(service_preimages, service, fn {hash, preimage, length}, acc ->
+                  %ServiceAccount{
+                    acc
+                    | preimage_storage_p: Map.put(acc.preimage_storage_p, hash, preimage),
+                      preimage_storage_l: Map.put(acc.preimage_storage_l, {hash, length}, [0])
+                  }
+                end)
+            end
+
+          {service_id, service}
+        end
+        |> Map.new()
+
+      {:ok, %State{state | services: services}}
+    end
+  end
+
+  # Helper functions for parsing preimage entries
+  defp parse_service_index(key) do
+    case decode16!(key) do
+      <<service_index, _rest::binary>> -> {:ok, service_index}
+      other -> {:error, {:invalid_key_format, other}}
+    end
+  end
+
+  defp parse_hash(meta) do
+    case String.split(meta, "h=") do
+      [_, after_h] ->
+        hash = String.slice(after_h, 0, 64)
+        {:ok, decode16!(hash)}
+
+      _ ->
+        {:error, {:invalid_hash_format, meta}}
+    end
+  end
+
+  defp decode_preimage(value) do
+    {:ok, decode16!(value)}
+  rescue
+    e -> {:error, {:invalid_preimage, e}}
+  end
+
+  defp parse_length(meta) do
+    case String.split(meta, "plen=") do
+      [_, after_plen] ->
+        case Integer.parse(after_plen) do
+          {length, _} -> {:ok, length}
+          :error -> {:error, {:invalid_length_format, after_plen}}
+        end
+
+      _ ->
+        {:error, {:invalid_length_format, meta}}
     end
   end
 end

@@ -133,6 +133,21 @@ defmodule System.State.ServiceAccount do
     end
   end
 
+  def decode(binary) do
+    <<code_hash::binary-size(32),
+      balance::64-little,
+      gas_limit_g::64-little,
+      gas_limit_m::64-little,
+      _octets_in_storage::64-little,
+      _items_in_storage::32-little>> = binary
+    %ServiceAccount{
+      code_hash: code_hash,
+      balance: balance,
+      gas_limit_g: gas_limit_g,
+      gas_limit_m: gas_limit_m
+    }
+  end
+
   use JsonDecoder
 
   def json_mapping do

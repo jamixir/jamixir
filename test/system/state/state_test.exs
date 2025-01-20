@@ -5,6 +5,7 @@ defmodule System.StateTest do
   import OriginalModules
   import Mox
   import Bitwise
+  alias Util.Merklization
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.{Encoder, NilDiscriminator}
@@ -342,5 +343,60 @@ defmodule System.StateTest do
         end
       end
     end
+  end
+
+  describe "load_services_from_dump/2" do
+    test "loads service accounts and preimages from dump file" do
+      {:ok, state} = from_genesis()
+      {:ok, state_with_services} = load_services_from_dump(state, "genesis-tiny.json")
+
+      # Check service 0
+      service_0 = state_with_services.services[0]
+
+      assert service_0.code_hash ==
+               Base.decode16!("2D99CC5B7EB05871F2627BF6CFA8368349AAB108035F857F79A38E1CEC204957",
+                 case: :mixed
+               )
+
+      assert service_0.balance == 10000
+      assert service_0.gas_limit_g == 100
+      assert service_0.gas_limit_m == 100
+
+      # Check its preimage
+      {hash, preimage_0} = service_0.preimage_storage_p |> Enum.at(0)
+      assert byte_size(preimage_0) == 151
+      assert Map.has_key?(service_0.preimage_storage_l, {hash, 151})
+
+      # Check service 1
+      service_1 = state_with_services.services[1]
+
+      assert service_1.code_hash ==
+               Base.decode16!("74930BED80BB11DD6DFD43B1655FD441595BD019B66960192F9964F61ECEEE84",
+                 case: :mixed
+               )
+
+      assert service_1.balance == 100_000
+      assert service_1.gas_limit_g == 100
+      assert service_1.gas_limit_m == 100
+
+      # Check its preimage
+      {hash, preimage_1} = service_1.preimage_storage_p |> Enum.at(0)
+      assert byte_size(preimage_1) == 113
+      assert Map.has_key?(service_1.preimage_storage_l, {hash, 113})
+    end
+  end
+
+  test "assert_state_root" do
+    {:ok, state} = from_genesis()
+    {:ok, state_with_services} = load_services_from_dump(state, "genesis-tiny.json")
+
+    #load state root from genesis-tiny.json
+    {:ok, content} = File.read("genesis-tiny.json")
+    {:ok, json} = Jason.decode(content)
+    expected_state_root = json["state_root"] |> Util.Hex.decode16!()
+
+    state_root = Merklization.merkelize_state(encode(state_with_services))
+
+    assert state_root == expected_state_root
   end
 end
