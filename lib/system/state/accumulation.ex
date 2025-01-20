@@ -55,7 +55,7 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.2
+  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.4
   """
 
   def transition(w, h, s, si) do
@@ -76,7 +76,7 @@ defmodule System.State.Accumulation do
         },
         services
       ) do
-    # Formula (12.20) v0.5.2
+    # Formula (12.20) v0.5.4
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -99,8 +99,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (12.21) v0.5.2
-    # Formula (12.22) v0.5.2
+    # Formula (12.21) v0.5.4
+    # Formula (12.22) v0.5.4
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,

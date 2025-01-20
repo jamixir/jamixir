@@ -634,10 +634,11 @@ defmodule System.State.AccumulationTest do
           state_timeslot
         )
 
-      # Update these assertions to match the actual output format
-      assert Enum.at(result, 0) == w_q
-      assert Enum.at(result, 1) == []
-      assert Enum.at(result, 2) == Enum.map(Enum.at(ready_to_accumulate, 0), &Ready.to_tuple/1)
+      [r0, r1, [r2_0, r2_1]] = result
+      assert [^r0 | _] = ready_to_accumulate
+      assert r1 == []
+      assert r2_0.work_report == elem(Enum.at(w_q, 0), 0)
+      assert r2_1.work_report == elem(Enum.at(w_q, 1), 0)
     end
 
     test "handles empty inputs" do
