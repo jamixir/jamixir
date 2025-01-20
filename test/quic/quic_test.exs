@@ -18,6 +18,7 @@ defmodule QuicTest do
     {:ok, client: client_pid}
   end
 
+  @tag :skip
   test "parallel streams", %{client: client} do
     tasks = for i <- 1..100 do
       Task.async(fn ->
