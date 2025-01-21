@@ -168,4 +168,13 @@ defmodule BlockTest do
       end
     end
   end
+
+  describe "new/4" do
+    @tag :skip
+    test "creates a valid new block" do
+      state = build(:genesis_state)
+      b = Block.new(%Extrinsic{}, nil, state, 100)
+      assert :ok = State.add_block(state, b)
+    end
+  end
 end
