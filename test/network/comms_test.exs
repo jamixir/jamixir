@@ -11,7 +11,7 @@ defmodule CommsTest do
 
   setup_all do
     Logger.configure(level: :none)
-    blocks = for _ <- 1..3, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
+    blocks = for _ <- 1..300, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
     {:ok, blocks: blocks}
   end
 
@@ -92,7 +92,7 @@ defmodule CommsTest do
       assert Map.has_key?(client_state.up_streams, 0)
 
       # Verify the stream is valid
-      %{stream_id: stream} = client_state.up_streams[0]
+      %{stream: stream} = client_state.up_streams[0]
       assert is_reference(stream)
     end
   end
@@ -111,8 +111,8 @@ defmodule CommsTest do
       client_state = :sys.get_state(client)
 
       # Verify outgoing streams were cleaned up
-      assert map_size(client_state.outgoing_streams) == 0,
-             "Expected outgoing streams to be cleaned up, but found: #{inspect(client_state.outgoing_streams)}"
+      assert map_size(client_state.pending_responses) == 0,
+             "Expected outgoing streams to be cleaned up, but found: #{inspect(client_state.pending_responses)}"
     end
 
     test "handles rapid message sending without leaking streams", %{client: client} do
@@ -132,8 +132,8 @@ defmodule CommsTest do
       # Verify state
       client_state = :sys.get_state(client)
 
-      assert map_size(client_state.outgoing_streams) == 0,
-             "Stream leak detected: #{map_size(client_state.outgoing_streams)} streams remaining"
+      assert map_size(client_state.pending_responses) == 0,
+             "Stream leak detected: #{map_size(client_state.pending_responses)} streams remaining"
     end
   end
 
@@ -193,7 +193,7 @@ defmodule CommsTest do
 
       Process.sleep(20)
       client_state = :sys.get_state(client)
-      assert map_size(client_state.outgoing_streams) == 0, "Stream leak detected"
+      assert map_size(client_state.pending_responses) == 0, "Stream leak detected"
     end
   end
 
@@ -219,7 +219,7 @@ defmodule CommsTest do
           # Get peer state and verify stream cleanup
           Process.sleep(20)
           state = :sys.get_state(initiator)
-          assert map_size(state.outgoing_streams) == 0
+          assert map_size(state.pending_responses) == 0
 
           {i, response}
         end)

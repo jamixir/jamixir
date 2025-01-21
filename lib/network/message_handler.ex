@@ -5,9 +5,11 @@ defmodule Network.MessageHandler do
   alias Network.PeerState
   alias Quicer.Flags
 
-  def handle_stream_data(data, stream, props, %PeerState{} = state, opts \\ []) do
-    protocol_id = get_protocol_id(data)
+  def handle_stream_data(protocol_id, data, stream, props, %PeerState{} = state, opts \\ []) do
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
+    buffer = Map.get(state.stream_buffers, stream, <<>>) <> data
+
+    Logger.debug("#{log_tag} Handling stream data: protocol_id=#{protocol_id}")
     mode = if protocol_id < 128, do: :up, else: :ce
     opts = Keyword.put(opts, :mode, mode)
 
@@ -16,8 +18,8 @@ defmodule Network.MessageHandler do
         {stream_state, new_state} = manage_up_stream(protocol_id, stream, state, log_tag)
 
         case stream_state do
-          {:ok, current_stream} ->
-            process_stream_data(data, stream, props, new_state, opts, current_stream.buffer)
+          {:ok, _current_stream} ->
+            process_stream_data(protocol_id, data, stream, props, new_state, opts)
 
           :reject ->
             Logger.info("#{log_tag} Rejected UP stream: #{inspect(stream)}")
@@ -25,27 +27,28 @@ defmodule Network.MessageHandler do
         end
 
       :ce ->
-        process_stream_data(data, stream, props, state, opts)
+        process_stream_data(protocol_id, buffer, stream, props, state, opts)
     end
   end
 
-  defp process_stream_data(data, stream, props, %PeerState{} = state, opts, stream_buffer \\ <<>>) do
+  defp process_stream_data(
+         protocol_id,
+         buffer,
+         stream,
+         props,
+         %PeerState{} = state,
+         opts
+       ) do
     log_tag = Keyword.get(opts, :log_tag)
     mode = Keyword.get(opts, :mode)
     on_complete = Keyword.get(opts, :on_complete)
-
-    buffer =
-      case mode do
-        :up -> stream_buffer <> data
-        :ce -> data
-      end
 
     case check_message_complete(mode, buffer, props, log_tag) do
       {:need_more, remaining} ->
         handle_incomplete(mode, remaining, stream, state, log_tag)
 
       {:complete, message, _remaining} ->
-        handle_complete(mode, message, stream, state, on_complete, log_tag)
+        handle_complete(mode, protocol_id, message, stream, state, on_complete, log_tag)
 
       :invalid_format ->
         Logger.error("#{log_tag} Dropping stream due to invalid message format")
@@ -79,6 +82,10 @@ defmodule Network.MessageHandler do
   defp check_message_complete(:ce, data, %{flags: flags}, log_tag) do
     if (flags &&& Flags.receive_flag(:fin)) != 0 do
       case data do
+        <<length::32-little, _msg::binary-size(length), _rest::binary>> ->
+          Logger.debug("#{log_tag} CE message complete: size=#{length}")
+          {:complete, data, <<>>}
+
         <<_protocol_id::8, length::32-little, _msg::binary-size(length), _rest::binary>> ->
           Logger.debug("#{log_tag} CE message complete: size=#{length}")
           {:complete, data, <<>>}
@@ -93,30 +100,24 @@ defmodule Network.MessageHandler do
     end
   end
 
-  defp handle_incomplete(:up, buffer, _stream, %PeerState{} = state, log_tag) do
-    Logger.debug("#{log_tag} Buffering incomplete UP message: #{byte_size(buffer)} bytes")
-    protocol_id = get_protocol_id(buffer)
-    new_state = put_in(state.up_streams[protocol_id].buffer, buffer)
-    {:noreply, new_state}
+  defp handle_incomplete(mode, data, stream, %PeerState{} = state, log_tag) do
+    Logger.debug("#{log_tag} Buffering incomplete #{mode} message: #{byte_size(data)} bytes")
+    {:noreply, %{state | stream_buffers: Map.put(state.stream_buffers, stream, data)}}
   end
 
-  defp handle_incomplete(:ce, data, stream, %PeerState{} = state, log_tag) do
-    Logger.debug("#{log_tag} Buffering incomplete CE message: #{byte_size(data)} bytes")
-    {:noreply, %{state | outgoing_streams: Map.put(state.outgoing_streams, stream, %{buffer: data})}}
-  end
-
-  defp handle_complete(:up, message, stream, %PeerState{} = state, on_complete, log_tag) do
-    Logger.info("#{log_tag} Processing complete UP message: #{byte_size(message)} bytes")
-    {protocol_id, message} = decode_message(message)
+  defp handle_complete(
+         mode,
+         protocol_id,
+         message,
+         stream,
+         %PeerState{} = state,
+         on_complete,
+         log_tag
+       ) do
+    Logger.info("#{log_tag} Processing complete #{mode} message: #{byte_size(message)} bytes")
+    message = decode_message(message)
     on_complete.(protocol_id, message, stream)
-    new_state = put_in(state.up_streams[protocol_id].buffer, <<>>)
+    new_state = %{state | stream_buffers: Map.delete(state.stream_buffers, stream)}
     {:noreply, new_state}
-  end
-
-  defp handle_complete(:ce, message, stream, %PeerState{} = state, on_complete, log_tag) do
-    Logger.info("#{log_tag} Processing complete CE message: #{byte_size(message)} bytes")
-    {protocol_id, message} = decode_message(message)
-    on_complete.(protocol_id, message, stream)
-    {:noreply, state}
   end
 end

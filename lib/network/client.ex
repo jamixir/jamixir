@@ -11,7 +11,7 @@ defmodule Network.Client do
   def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
 
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
-    GenServer.call(pid, {:send, protocol_id, message}, 5_000)
+    GenServer.call(pid, {:send, protocol_id, message}, 500)
   end
 
   def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
@@ -36,15 +36,15 @@ defmodule Network.Client do
     {stream, state_} =
       case Map.get(up_streams, protocol_id) do
         # Existing stream - use it without state update
-        %{stream_id: stream_id} ->
+        %{stream: stream} ->
           log(:debug, "Reusing existing UP stream for block announcement")
-          {stream_id, state}
+          {stream, state}
 
         # No stream - create new one and update state
         nil ->
           log("Creating new UP stream for block announcements")
           {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-          state_ = put_in(state.up_streams[protocol_id], %{stream_id: stream})
+          state_ = put_in(state.up_streams[protocol_id], %{stream: stream})
           {stream, state_}
       end
 
@@ -59,20 +59,18 @@ defmodule Network.Client do
 
     new_state = %PeerState{
       state
-      | outgoing_streams:
-          Map.put(state.outgoing_streams, stream, %{
-            from: from
-          })
+      | pending_responses:
+          Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
     }
 
     {:noreply, new_state}
   end
 
-  def handle_data(data, stream, props, %PeerState{} = state) do
-    handle_stream_data(data, stream, props, state,
+  def handle_data(protocol_id, data, stream, props, %PeerState{} = state) do
+    handle_stream_data(protocol_id, data, stream, props, state,
       log_tag: "[QUIC_CLIENT]",
       on_complete: fn protocol_id, message, stream ->
-        case protocol_id >= 128 and Map.get(state.outgoing_streams, stream) do
+        case protocol_id >= 128 and Map.get(state.pending_responses, stream) do
           %{from: from} ->
             response = Network.ClientCalls.call(protocol_id, message)
             GenServer.reply(from, response)

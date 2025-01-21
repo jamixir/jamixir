@@ -4,9 +4,10 @@ defmodule Network.PeerState do
     :socket,
     # QUIC connection handle
     :connection,
-    # Map of outgoing streams (we initiated these)
-    # {stream -> %{from: pid, buffer: binary}}
-    outgoing_streams: %{},
+    # Map of stream buffers (stream id -> buffer)
+    stream_buffers: %{},
+    # Map of stream -> from for pending responses
+    pending_responses: %{},
     # Map of UP streams (protocol id -> stream)
     up_streams: %{}
   ]
