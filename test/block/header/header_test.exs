@@ -3,6 +3,7 @@ defmodule Block.HeaderTest do
   import TestHelper
   import Jamixir.Factory
 
+  alias Block.Extrinsic
   alias Block.Header
   alias Codec.NilDiscriminator
   alias System.State
@@ -46,7 +47,7 @@ defmodule Block.HeaderTest do
 
     test "valid_extrinsic_hash?/2 correct" do
       extrinsic = build(:extrinsic)
-      header = %Header{extrinsic_hash: h(e(extrinsic))}
+      header = %Header{extrinsic_hash: Extrinsic.calculate_hash(extrinsic)}
       assert Header.valid_extrinsic_hash?(header, extrinsic)
     end
   end

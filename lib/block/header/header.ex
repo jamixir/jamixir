@@ -1,4 +1,5 @@
 defmodule Block.Header do
+  alias Block.Extrinsic
   alias Block.Header
   alias Codec.{NilDiscriminator, VariableSize}
   alias System.Validators
@@ -10,13 +11,13 @@ defmodule Block.Header do
   import Codec.Decoder
 
   @type t :: %__MODULE__{
-          # Formula (39) v0.4.5
+          # Formula (5.2) v0.5.4
           # Hp
           parent_hash: Types.hash(),
-          # Formula (43) v0.4.5
+          # Formula (5.8) v0.5.4
           # Hr
           prior_state_root: Types.hash(),
-          # Formula (41) v0.4.5
+          # Formula (5.4) v0.5.4
           # Hx
           extrinsic_hash: Types.hash(),
           # Formula (42) v0.4.5
@@ -80,10 +81,11 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (41) v0.4.5
-  def valid_extrinsic_hash?(header, extrinsic), do: header.extrinsic_hash == h(e(extrinsic))
+  # Formula (5.4) v0.5.4
+  def valid_extrinsic_hash?(header, extrinsic),
+    do: header.extrinsic_hash == Extrinsic.calculate_hash(extrinsic)
 
-  # Formula (43) v0.4.5
+  # Formula (5.8) v0.5.4
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
     state_root =
       case Storage.get_state_root() do
@@ -99,9 +101,9 @@ defmodule Block.Header do
   end
 
   use MapUnion
-  # Formula (40) v0.4.5
-  # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
 
+  # Formula (5.3) v0.5.4
+  # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
   def ancestors(nil), do: []
 
   def ancestors(%__MODULE__{} = h) do
