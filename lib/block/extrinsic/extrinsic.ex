@@ -63,6 +63,22 @@ defmodule Block.Extrinsic do
         })
   end
 
+  use Codec.Encoder
+  # Formula (5.4) v0.5.4
+  # Formula (5.5) v0.5.4
+  # Formula (5.6) v0.5.4
+  def calculate_hash(%Block.Extrinsic{} = ex) do
+    a = [
+      e(vs(ex.tickets)),
+      e(vs(ex.preimages)),
+      e(vs(ex.guarantees)),
+      e(vs(ex.assurances)),
+      e(ex.disputes)
+    ]
+
+    h(e(for el <- a, do: h(el)))
+  end
+
   use JsonDecoder
 
   def decode(bin) do

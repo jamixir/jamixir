@@ -1,6 +1,7 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Block.Extrinsic
   alias Block
   alias Block.Extrinsic.Disputes
   alias System.State
@@ -24,7 +25,7 @@ defmodule BlockTest do
 
     state_root = Codec.State.Trie.state_root(state)
     extrinsic = build(:extrinsic)
-    extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
+    extrinsic_hash = Extrinsic.calculate_hash(extrinsic)
 
     parent = build(:decodable_header, timeslot: 99)
     Storage.put(parent)
