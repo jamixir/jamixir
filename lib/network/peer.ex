@@ -2,8 +2,7 @@ defmodule Network.Peer do
   use GenServer
   alias Network.{Client, Server, PeerState}
   require Logger
-  import Network.Config
-  use Codec.Encoder
+  import Network.{Config, Codec}
 
   @log_context "[QUIC_PEER]"
 
@@ -77,12 +76,14 @@ defmodule Network.Peer do
   # Data handling
   @impl GenServer
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
-    is_response = Map.has_key?(state.outgoing_streams, stream)
+    is_response = Map.has_key?(state.pending_responses, stream)
 
     if is_response do
-      Client.handle_data(data, stream, props, state)
+      protocol_id = Map.get(state.pending_responses, stream).protocol_id
+      Client.handle_data(protocol_id, data, stream, props, state)
     else
-      Server.handle_data(data, stream, props, state)
+      protocol_id = get_protocol_id(data)
+      Server.handle_data(protocol_id, data, stream, props, state)
     end
   end
 
@@ -90,7 +91,14 @@ defmodule Network.Peer do
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
     log("Stream closed: #{inspect(stream)}")
-    {:noreply, %{state | outgoing_streams: Map.delete(state.outgoing_streams, stream)}}
+
+    new_state = %{
+      state
+      | stream_buffers: Map.delete(state.stream_buffers, stream),
+        pending_responses: Map.delete(state.pending_responses, stream)
+    }
+
+    {:noreply, new_state}
   end
 
   # Catch-all for unhandled QUIC events
