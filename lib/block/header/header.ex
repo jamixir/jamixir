@@ -39,7 +39,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Formula (38) v0.4.5
+  # Formula (5.1) v0.5.4
   defstruct [
     # Hp
     parent_hash: Hash.zero(),
@@ -118,7 +118,7 @@ defmodule Block.Header do
   def mock(:validate_parent, _), do: :ok
 
   mockable validate_parent(header) do
-    if header.parent_hash == nil and header.timeslot == 0 do
+    if header.parent_hash == nil do
       :ok
     else
       case Storage.get(header.parent_hash) do

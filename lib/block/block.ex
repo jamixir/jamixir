@@ -1,4 +1,5 @@
 defmodule Block do
+  alias Util.Merklization
   alias Block.Extrinsic
   alias Block.Header
   alias System.State
@@ -24,6 +25,20 @@ defmodule Block do
     else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  def new(extrinsic, parent_hash, state, timeslot) do
+    header = %Header{
+      timeslot: timeslot,
+      prior_state_root: Merklization.merkelize_state(State.serialize(state)),
+      extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
+      parent_hash: parent_hash
+    }
+
+    %__MODULE__{
+      header: header,
+      extrinsic: extrinsic
+    }
   end
 
   mockable validate_extrinsic_hash(header, extrinsic) do
