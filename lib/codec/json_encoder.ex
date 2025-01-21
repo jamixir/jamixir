@@ -11,6 +11,10 @@ defmodule Codec.JsonEncoder do
     end
   end
 
+  def to_json(struct) when is_struct(struct) do
+    for x <- Map.from_struct(struct), do: encode_field(x), into: %{}
+  end
+
   def to_list(map, key_name, value_name) when is_map(map) do
     for {k, v} <- map do
       %{
