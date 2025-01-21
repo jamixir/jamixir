@@ -9,7 +9,6 @@ defmodule Network.MessageHandler do
     log_tag = Keyword.get(opts, :log_tag, "[MESSAGE_HANDLER]")
     buffer = Map.get(state.stream_buffers, stream, <<>>) <> data
 
-    Logger.debug("#{log_tag} Handling stream data: protocol_id=#{protocol_id}")
     mode = if protocol_id < 128, do: :up, else: :ce
     opts = Keyword.put(opts, :mode, mode)
 
