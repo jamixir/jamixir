@@ -82,7 +82,11 @@ defmodule System.HeaderSeal do
              curr_validators_
            ),
          # verify that the vrf signature is a valid signature
+<<<<<<< HEAD
          # Formula (6.17) v0.6.0
+=======
+         # Formula (6.17) v0.5.4
+>>>>>>> 39895be (pass header seal vectors)
          {:ok, vrf_signature_output} <-
            RingVrf.ietf_vrf_verify(
              Enum.at(bandersnatch_public_keys, header.block_author_key_index),

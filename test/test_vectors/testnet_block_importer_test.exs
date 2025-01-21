@@ -1,15 +1,10 @@
 defmodule TestnetBlockImporterTest do
-  alias System.HeaderSeal
-  alias System.State.EntropyPool
   alias Block.Header
-  alias Util.Hash
   alias IO.ANSI
   alias System.State
-  alias Util.Hash
   import TestVectorUtil
   use ExUnit.Case
   require Logger
-  import Mox
 
   setup_all do
     RingVrf.init_ring_context()
@@ -44,13 +39,9 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     # waiting for correctnes of other party side
-    # @tag :skip
+    @tag :skip
     test "jam-dune" do
       {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
-
-      stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-        {:ok, %{vrf_signature_output: Hash.zero()}}
-      end)
 
       state = Codec.State.Json.decode(genesis_json)
 
@@ -147,10 +138,7 @@ defmodule TestnetBlockImporterTest do
     #            "0x4cdb983b47b88e59ec9e0580eef41b99634b0b1636fc3642d6818bc81a9a3ae4"
     #          )
 
-    key =
-      JsonDecoder.from_json("0xaa2b95f7572875b0d0f186552ae745ba8222fc0b5bd456554bfe51c68938f8bc")
-
-    pool = %EntropyPool{n3: header.vrf_signature}
+    # pool = %EntropyPool{n3: header.vrf_signature}
 
     # assert :ok =
     #          RingVrf.ietf_vrf_verify(
