@@ -5,7 +5,7 @@ use rustler::NifResult;
 fn encode(data: Vec<Vec<u8>>) -> NifResult<Vec<Vec<u8>>> {
     let result = do_encode(data);
 
-    result.map_err(|e| rustler::Error::Atom("error"))
+    result.map_err(|_| rustler::Error::Atom("error"))
 }
 
 fn do_encode(data: Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>, reed_solomon::Error> {
@@ -20,7 +20,7 @@ fn do_encode(data: Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>, reed_solomon::Error> {
     // TODO this is temporary until we can get the erasure coding to work with 2 bytes
     let padded_data: Vec<Vec<u8>> = data
         .into_iter()
-        .map(|mut v| {
+        .map(|v| {
             let mut padded = vec![0u8; 64]; // Create vector with 64 zeros
             padded[..v.len()].copy_from_slice(&v); // Copy original bytes to start
             padded

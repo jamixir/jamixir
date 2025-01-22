@@ -64,7 +64,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
       end
 
     s_clubs =
-      for c <- ErasureCoding.transpose(coded_chunks), do: MerkleTree.well_balanced_merkle_root(c)
+      for c <- Utils.transpose(coded_chunks), do: MerkleTree.well_balanced_merkle_root(c)
 
     chunk_size = ceil(byte_size(bundle_binary) / Constants.erasure_coded_piece_size())
 
@@ -77,7 +77,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           do: Hash.default(x)
 
     MerkleTree.well_balanced_merkle_root(
-      Collections.union(for x <- ErasureCoding.transpose([b_clubs, s_clubs]), do: x)
+      Collections.union(for x <- Utils.transpose([b_clubs, s_clubs]), do: x)
     )
   end
 

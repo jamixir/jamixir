@@ -68,7 +68,12 @@ defmodule Util.MerkleTree do
   def justification_l(v, i, hash_func, x) do
     start_idx = trunc(:math.pow(2, x * i))
     end_idx = min(trunc(:math.pow(2, x * i) + :math.pow(2, x)), length(v))
-    for l <- Enum.slice(v, start_idx..(end_idx - 1)), do: hash_func.("leaf" <> l)
+
+    if start_idx > length(v) or start_idx > end_idx do
+      []
+    else
+      for l <- Enum.slice(v, start_idx..(end_idx - 1)), do: hash_func.("leaf" <> l)
+    end
   end
 
   @spec pi(list(), integer()) :: integer()
