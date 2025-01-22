@@ -184,7 +184,10 @@ defmodule ErasureCodingTest do
   describe "erasure_code/1" do
     test "smoke test" do
       binary = <<1::684*8>>
-      # assert ErasureCoding.erasure_code(binary) == [<<1::684*8>>]
+      result = ErasureCoding.erasure_code(binary)
+      assert length(result) == 1023
+      [first | _] = result
+      assert byte_size(first) == 64
     end
   end
 
