@@ -1,6 +1,7 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Util.Time
   alias Block.Extrinsic
   alias Block
   alias Block.Extrinsic.Disputes
@@ -11,8 +12,6 @@ defmodule BlockTest do
   import OriginalModules
   use Codec.Encoder
   setup :verify_on_exit!
-
-  setup_validators(1)
 
   setup do
     state = %State{
@@ -57,6 +56,8 @@ defmodule BlockTest do
   end
 
   describe "encode/1" do
+    setup_validators(1)
+
     test "encode block smoke test" do
       Codec.Encoder.encode(build(:block))
     end
@@ -170,11 +171,12 @@ defmodule BlockTest do
   end
 
   describe "new/4" do
-    @tag :skip
-    test "creates a valid new block" do
-      state = build(:genesis_state)
-      b = Block.new(%Extrinsic{}, nil, state, 100)
-      assert :ok = State.add_block(state, b)
+    test "creates a valid new block no extrinsics" do
+      %{state: state, validators: validators, key_pairs: key_pairs} =
+        build(:genesis_state_with_safrole)
+
+      b = Block.new(%Extrinsic{}, nil, state, Time.current_time(), key_pairs)
+      assert {:ok, new_state} = State.add_block(state, b)
     end
   end
 end
