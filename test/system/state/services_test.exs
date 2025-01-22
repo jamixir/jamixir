@@ -60,7 +60,7 @@ defmodule System.State.ServicesTest do
         1 => %ServiceAccount{
           # Empty storage - preimage not provided
           preimage_storage_p: %{},
-          preimage_storage_l: %{}
+          preimage_storage_l: %{{preimage_hash, 3} => []}
         },
         2 => %ServiceAccount{
           preimage_storage_p: %{preimage_hash2 => "keep_this"},

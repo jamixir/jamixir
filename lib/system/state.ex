@@ -380,6 +380,7 @@ defmodule System.State do
   defp decode_json_field(:slot, value), do: [{:timeslot, value}]
   defp decode_json_field(:entropy, value), do: decode_json_field(:eta, value)
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
+  defp decode_json_field(:accounts, value), do: [{:services, Services.from_json(value)}]
 
   defp decode_json_field(:services, value),
     do: [

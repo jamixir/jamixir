@@ -1,28 +1,29 @@
 defmodule Block.Extrinsic.Preimage do
   alias Codec.VariableSize
-  alias Util.{Collections, Hash}
+  alias Util.Collections
   import SelectiveMock
-  # Formula (158) v0.4.5
+  use Codec.Encoder
+
+  # Formula (12.28) v0.5.2
   @type t :: %__MODULE__{
-          # i
+          # s
           service: non_neg_integer(),
-          # d
+          # p
           blob: binary()
         }
 
-  # i
+  # s
   defstruct service: 0,
-            # d
+            # p
             blob: <<>>
 
-  # Formula (159) v0.4.5
-  # Formula (160) v0.4.5
+  # Formula (12.29) v0.5.2
   @spec validate(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
-    # Formula (155) v0.4.5
+    # Formula (12.29) v0.5.2
     with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service),
-         # Formula (160) v0.4.5
+         # Formula (12.31) v0.5.2
          :ok <- check_all_preimages(preimages, services) do
       :ok
     else
@@ -32,7 +33,7 @@ defmodule Block.Extrinsic.Preimage do
 
   def mock(:validate, _), do: :ok
 
-  # Formula (12.31) v0.5
+  # Formula (12.31) v0.5.2
   @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   defp check_all_preimages(preimages, services) do
@@ -40,12 +41,12 @@ defmodule Block.Extrinsic.Preimage do
       if not_provided?(preimage, services) do
         {:cont, :ok}
       else
-        {:halt, {:error, "Preimage already provided for service index #{preimage.service}"}}
+        {:halt, {:error, :preimage_unneeded}}
       end
     end)
   end
 
-  # Formula (12.30) v0.5
+  # Formula (12.30) v0.5.2
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   def not_provided?(preimage, services) do
     case services[preimage.service] do
@@ -53,11 +54,11 @@ defmodule Block.Extrinsic.Preimage do
         false
 
       service_account ->
-        preimage_hash = Hash.default(preimage.blob)
+        preimage_hash = h(preimage.blob)
         preimage_size = byte_size(preimage.blob)
 
         not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
-          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}, []) == []
+          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}) == []
     end
   end
 
