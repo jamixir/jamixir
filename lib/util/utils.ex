@@ -69,4 +69,19 @@ defmodule Utils do
   end
 
   def keys_set(map), do: MapSet.new(Map.keys(map))
+
+  # Formula (H.5) v0.5.3
+  def transpose([]), do: []
+
+  def transpose([first | _] = matrix) when is_binary(first) do
+    matrix
+    |> Enum.map(&:binary.bin_to_list/1)
+    |> List.zip()
+    |> Enum.map(&Tuple.to_list(&1))
+    |> Enum.map(&:binary.list_to_bin/1)
+  end
+
+  def transpose([first | _] = matrix) when is_list(matrix) and is_list(first) do
+    List.zip(matrix) |> Enum.map(&Tuple.to_list/1)
+  end
 end
