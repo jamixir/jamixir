@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.Preimage do
         preimage_size = byte_size(preimage.blob)
 
         not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
-          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}, []) == []
+          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}) == []
     end
   end
 

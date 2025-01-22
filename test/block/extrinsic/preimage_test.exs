@@ -50,10 +50,11 @@ defmodule Block.Extrinsic.PreimageTest do
   describe "validate/2 - pass cases" do
     test "passes with valid preimages and services" do
       preimages = [build(:preimage, service: 1), build(:preimage, service: 2)]
+      keys = Enum.map(preimages, &{Hash.default(&1.blob), byte_size(&1.blob)})
 
       services = %{
-        1 => build(:service_account),
-        2 => build(:service_account)
+        1 => build(:service_account, preimage_storage_l: %{Enum.at(keys, 0) => []}),
+        2 => build(:service_account, preimage_storage_l: %{Enum.at(keys, 1) => []})
       }
 
       assert :ok = Preimage.validate(preimages, services)
