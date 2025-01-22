@@ -35,7 +35,7 @@ defmodule System.State.Accumulation do
 
   @callback do_single_accumulation(t(), list(), map(), non_neg_integer()) ::
               AccumulationResult.t()
-  @callback do_transition(list(), Header.t(), State.t(), any()) :: any()
+  @callback do_transition(list(), non_neg_integer(), State.t()) :: any()
 
   # Formula (12.3) v0.5.2 - U
   @type t :: %__MODULE__{
@@ -58,23 +58,23 @@ defmodule System.State.Accumulation do
   Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.4
   """
 
-  def transition(w, h, s, si) do
+  def transition(w, t_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
-    module.do_transition(w, h, s, si)
+    module.do_transition(w, t_, s)
   end
 
   def do_transition(
         work_reports,
-        %Header{timeslot: ht},
+        timeslot_,
         %State{
           accumulation_history: accumulation_history,
           ready_to_accumulate: ready_to_accumulate,
           privileged_services: privileged_services,
           next_validators: next_validators,
           authorizer_queue: authorizer_queue,
-          timeslot: state_timeslot
-        },
-        services
+          services: services,
+          timeslot: timeslot
+        }
       ) do
     # Formula (12.20) v0.5.4
     gas_limit =
@@ -87,7 +87,7 @@ defmodule System.State.Accumulation do
     accumulatable_reports =
       WorkReport.accumulatable_work_reports(
         work_reports,
-        ht,
+        timeslot_,
         accumulation_history,
         ready_to_accumulate
       )
@@ -105,8 +105,7 @@ defmodule System.State.Accumulation do
            gas_limit,
            accumulatable_reports,
            initial_state,
-           privileged_services.services_gas,
-           state_timeslot
+           privileged_services.services_gas
          ) do
       {:ok,
        {n,
@@ -118,7 +117,7 @@ defmodule System.State.Accumulation do
         }, deferred_transfers, beefy_commitment}} ->
         # Formula (12.24) v0.5.2
         services_intermediate_2 =
-          calculate_posterior_services(services_intermediate, deferred_transfers, state_timeslot)
+          calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
 
         # Formula (12.25) v0.5.2
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
@@ -129,11 +128,10 @@ defmodule System.State.Accumulation do
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
-            accumulatable_reports,
+            work_package_hashes,
             w_q,
-            n,
-            ht,
-            state_timeslot
+            timeslot_,
+            timeslot
           )
 
         {:ok,
@@ -157,12 +155,11 @@ defmodule System.State.Accumulation do
           non_neg_integer(),
           list(WorkReport.t()),
           t(),
-          %{non_neg_integer() => non_neg_integer()},
-          Types.timeslot()
+          %{non_neg_integer() => non_neg_integer()}
         ) ::
           {:ok, {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}}
           | {:error, atom()}
-  def outer_accumulation(gas_limit, work_reports, acc_state, always_acc_services, timeslot) do
+  def outer_accumulation(gas_limit, work_reports, acc_state, always_acc_services) do
     i = calculate_i(work_reports, gas_limit)
 
     if i == 0 do
@@ -175,8 +172,7 @@ defmodule System.State.Accumulation do
                gas_limit - g_star,
                Enum.drop(work_reports, i),
                o_star,
-               Map.new(),
-               timeslot
+               Map.new()
              ) do
         {:ok, {i + j, o_prime, t_star ++ t, b_star ++ b}}
       else
@@ -350,7 +346,6 @@ defmodule System.State.Accumulation do
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
           w_q :: list({WorkReport.t(), MapSet.t(Types.hash())}),
-          n :: non_neg_integer(),
           header_timeslot :: non_neg_integer(),
           state_timeslot :: non_neg_integer()
         ) :: list(list(Ready.t()))
@@ -359,7 +354,6 @@ defmodule System.State.Accumulation do
         [],
         _w_star,
         _w_q,
-        _n,
         _header_timeslot,
         _state_timeslot
       ) do
@@ -368,16 +362,13 @@ defmodule System.State.Accumulation do
 
   def build_ready_to_accumulate_(
         ready_to_accumulate,
-        w_star,
+        work_package_hashes,
         w_q,
-        n,
-        header_timeslot,
-        state_timeslot
+        timeslot_,
+        timeslot
       ) do
     e = length(ready_to_accumulate)
-    m = Util.Time.epoch_phase(header_timeslot)
-
-    work_package_hashes = WorkReport.work_package_hashes(Enum.take(w_star, n))
+    m = Util.Time.epoch_phase(timeslot_)
 
     list =
       for i <- 0..(e - 1) do
@@ -385,7 +376,7 @@ defmodule System.State.Accumulation do
           i == 0 ->
             WorkReport.edit_queue(w_q, work_package_hashes)
 
-          i < header_timeslot - state_timeslot ->
+          i < timeslot_ - timeslot ->
             []
 
           true ->

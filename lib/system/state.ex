@@ -123,7 +123,7 @@ defmodule System.State do
             accumulation_history: accumulation_history_,
             beefy_commitment: beefy_commitment_
           }} <-
-           Accumulation.transition(available_work_reports, h, state, state.services),
+           Accumulation.transition(available_work_reports, timeslot_, state),
          # δ' Formula (4.18) v0.5
          services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
          # α' Formula (30) v0.4.5
