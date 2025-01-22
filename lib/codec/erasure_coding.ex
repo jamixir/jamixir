@@ -69,6 +69,9 @@ defmodule ErasureCoding do
     end
   end
 
+  def lace([]), do: <<>>
+  def lace([c | _] = chunks) when is_list(chunks), do: lace(chunks, byte_size(c))
+
   # Formula (H.5) v0.5.3
   def transpose([]), do: []
 

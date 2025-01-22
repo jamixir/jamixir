@@ -73,6 +73,18 @@ defmodule ErasureCodingTest do
     end
   end
 
+  describe "lace/1" do
+    test "laces empty list" do
+      assert ErasureCoding.lace([]) == <<>>
+      assert ErasureCoding.lace([]) == <<>>
+    end
+
+    test "laces binary data" do
+      assert ErasureCoding.lace([<<1, 4>>, <<2, 5>>, <<3, 6>>]) == <<1, 2, 3, 4, 5, 6>>
+      assert ErasureCoding.lace([<<1, 3, 5>>, <<2, 4, 6>>]) == <<1, 2, 3, 4, 5, 6>>
+    end
+  end
+
   describe "lace/2" do
     test "laces empty list data" do
       assert ErasureCoding.lace([], 2) == <<>>
@@ -92,6 +104,48 @@ defmodule ErasureCodingTest do
       assert_raise ArgumentError, fn ->
         ErasureCoding.lace([<<1, 4>>, <<2, 5>>, <<3, 6, 7>>], 2)
       end
+    end
+  end
+
+  describe "unzip/lace" do
+    test "unzip => lace" do
+      n = :rand.uniform(10)
+      k = :rand.uniform(10)
+      bin = for _ <- 1..(k * n), into: <<>>, do: <<:rand.uniform(256) - 1>>
+      assert bin |> ErasureCoding.unzip(n) |> ErasureCoding.lace(n) == bin
+    end
+
+    test "lace => unzip" do
+      n = :rand.uniform(10)
+      k = :rand.uniform(10)
+
+      bin_list =
+        for _ <- 1..k do
+          for _ <- 1..n, into: <<>>, do: <<:rand.uniform(256) - 1>>
+        end
+
+      assert bin_list |> ErasureCoding.lace(n) |> ErasureCoding.unzip(n) == bin_list
+    end
+  end
+
+  describe "split/join" do
+    test "split => join" do
+      n = :rand.uniform(10)
+      k = :rand.uniform(10)
+      bin = for _ <- 1..(k * n), into: <<>>, do: <<:rand.uniform(256) - 1>>
+      assert bin |> ErasureCoding.split(n) |> ErasureCoding.join(n) == bin
+    end
+
+    test "join => split" do
+      n = :rand.uniform(10)
+      k = :rand.uniform(10)
+
+      bin_list =
+        for _ <- 1..k do
+          for _ <- 1..n, into: <<>>, do: <<:rand.uniform(256) - 1>>
+        end
+
+      assert bin_list |> ErasureCoding.join(n) |> ErasureCoding.split(n) == bin_list
     end
   end
 
