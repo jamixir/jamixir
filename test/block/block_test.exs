@@ -110,12 +110,9 @@ defmodule BlockTest do
       state: state,
       valid_block: valid_block
     } do
-
-
       block = put_in(valid_block.header.extrinsic_hash, Hash.one())
       assert {:error, "Invalid extrinsic hash"} = Block.validate(block, state)
     end
-
   end
 
   describe "preimage validation" do

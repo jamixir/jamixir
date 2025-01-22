@@ -28,8 +28,12 @@ defmodule ErasureCoding do
 
   def join([]), do: <<>>
 
-  def join([c | _] = chunks) when is_list(chunks) do
+  def join([c | _] = chunks) when is_list(chunks) and is_binary(c) do
     join(chunks, byte_size(c))
+  end
+
+  def join([c | _] = chunks) when is_list(chunks) and is_list(c) do
+    join(for c <- chunks, do: :binary.list_to_bin(c))
   end
 
   # Formula (H.3) v0.5.4
@@ -87,25 +91,11 @@ defmodule ErasureCoding do
     List.zip(matrix) |> Enum.map(&Tuple.to_list/1)
   end
 
-  def encode(<<>>, _n), do: <<>>
-
-  def encode(d, n) when is_binary(d) do
-    d
-    |> split(n)
-    |> Enum.map(&c(:binary.bin_to_list(&1)))
-    |> transpose()
-    |> Enum.map(&join(&1, n))
-  end
-
-  def c(data) do
-    data
-  end
-
   def erasure_code(d) do
     for c <-
           transpose(
             for p <- unzip(d, 684) do
-              c(p)
+              encode_bin(p)
             end
           ) do
       join(c)
