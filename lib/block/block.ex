@@ -1,8 +1,12 @@
 defmodule Block do
+  alias System.State.EntropyPool
+  alias System.HeaderSeal
+  alias Util.Time
   alias Util.Merklization
   alias Block.Extrinsic
   alias Block.Header
   alias System.State
+  alias System.Validators.Safrole
   use SelectiveMock
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
@@ -27,7 +31,7 @@ defmodule Block do
     end
   end
 
-  def new(extrinsic, parent_hash, state, timeslot) do
+  def new(extrinsic, parent_hash, state, timeslot, keypairs) do
     header = %Header{
       timeslot: timeslot,
       prior_state_root: Merklization.merkelize_state(State.serialize(state)),
@@ -35,10 +39,49 @@ defmodule Block do
       parent_hash: parent_hash
     }
 
+    header = put_in(header.epoch_mark, choose_epoch_marker(timeslot, state))
+    rotated_entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
+
+    {_, _, safrole_} =
+      System.State.Safrole.transition(
+        %Block{header: header, extrinsic: %Extrinsic{}},
+        state,
+        %System.State.Judgements{},
+        rotated_entropy_pool
+      )
+
+    pubkey =
+      Enum.at(safrole_.slot_sealers, rem(timeslot, length(safrole_.slot_sealers)))
+
+    key = Enum.find(keypairs, fn {_, pk} -> pk == pubkey end)
+    new_index = Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
+
+    header = put_in(header.block_author_key_index, new_index)
+    # Build and seal the header dynamically with the correct timeslot
+    header =
+      HeaderSeal.seal_header(
+        header,
+        safrole_.slot_sealers,
+        rotated_entropy_pool,
+        key
+      )
+
     %__MODULE__{
       header: header,
       extrinsic: extrinsic
     }
+  end
+
+  defp choose_epoch_marker(timeslot, state) do
+    if Time.new_epoch?(state.timeslot, timeslot) do
+      Safrole.new_epoch_marker(
+        state.entropy_pool.n0,
+        state.entropy_pool.n1,
+        state.safrole.pending
+      )
+    else
+      nil
+    end
   end
 
   mockable validate_extrinsic_hash(header, extrinsic) do

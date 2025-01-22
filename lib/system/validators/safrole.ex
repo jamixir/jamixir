@@ -14,7 +14,7 @@ defmodule System.Validators.Safrole do
     new_epoch? = Time.new_epoch?(state_timeslot, timeslot)
 
     cond do
-      new_epoch? and epoch_marker == {n0, n1, for(v <- pending_, do: v.bandersnatch)} ->
+      new_epoch? and epoch_marker == new_epoch_marker(n0, n1, pending_) ->
         :ok
 
       not new_epoch? and is_nil(epoch_marker) ->
@@ -23,6 +23,10 @@ defmodule System.Validators.Safrole do
       true ->
         {:error, "Invalid epoch marker"}
     end
+  end
+
+  def new_epoch_marker(n0, n1, pending_) do
+    {n0, n1, for(v <- pending_, do: v.bandersnatch)}
   end
 
   def mock(:valid_epoch_marker, _), do: :ok
