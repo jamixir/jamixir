@@ -112,7 +112,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :preimage_storage_p)
         |> Enum.each(fn {h, v} ->
-          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 29)}
+          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 28)}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -123,7 +123,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          key = (Encoder.encode_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 30)
+          key = (Encoder.encode_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 28)
           value = e(vs(for x <- t, do: Encoder.encode_le(x, 4)))
           assert state_keys(state)[{s, key}] == value
         end)
