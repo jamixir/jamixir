@@ -83,8 +83,8 @@ defmodule Block.Extrinsic.TicketProof do
     end
   end
 
-  # Formula (74) v0.4.5
-  # Formula (76) v0.4.5
+  # Formula (6.29) v0.5.4
+  # Formula (6.31) v0.5.4
   @spec construct_n(list(t()), binary(), Types.bandersnatch_ring_root()) ::
           {:ok, list(SealKeyTicket.t())} | {:error, String.t()}
   mockable construct_n(ticket_proofs, eta2, epoch_root) do
