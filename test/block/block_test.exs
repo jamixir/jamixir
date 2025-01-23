@@ -171,13 +171,18 @@ defmodule BlockTest do
   end
 
   describe "new/4" do
-    test "creates a valid new block no extrinsics" do
-      %{state: state, validators: validators, key_pairs: key_pairs} =
+    setup do
+      Application.delete_env(:jamixir, :original_modules)
+    end
+
+    test "creates a valid fallback block no extrinsics" do
+      %{state: state, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
 
-      initial_time = Time.current_timeslot()
+      end_time = Time.current_timeslot() - Constants.slot_period() * 2
+      initial_time = end_time - Constants.slot_period() * 2
 
-      for t <- 316_090..316_103, reduce: {state, nil} do
+      for t <- initial_time..end_time, reduce: {state, nil} do
         {state, header_hash} ->
           b = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs)
           {:ok, h} = Storage.put(b.header)
