@@ -1,6 +1,6 @@
 defmodule Util.Time do
   use SelectiveMock
-  @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
+  @epoch :calendar.datetime_to_gregorian_seconds({{2025, 1, 1}, {12, 0, 0}})
 
   @doc """
   Returns the base epoch time in Gregorian seconds.
@@ -14,6 +14,14 @@ defmodule Util.Time do
   """
   def current_time do
     :calendar.datetime_to_gregorian_seconds(:calendar.universal_time()) - @epoch
+  end
+
+  def current_timeslot do
+    div(current_time(), Constants.slot_period())
+  end
+
+  def time_to_timeslot(time) do
+    div(time - @epoch, Constants.slot_period())
   end
 
   @doc """
@@ -30,7 +38,7 @@ defmodule Util.Time do
   mockable validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
-    # Formula (42) v0.4.5
+    # Formula (5.7) v0.5.4
     if valid_block_time?(block_time) do
       :ok
     else
@@ -61,13 +69,13 @@ defmodule Util.Time do
 
   @doc """
   Determines the epoch index of a given timeslot.
-  Formula (47) v0.4.5
+  Formula (6.2) v0.5.4
   """
   def epoch_index(timeslot), do: div(timeslot, Constants.epoch_length())
 
   @doc """
   Determines the phase of a given timeslot within an epoch.
-  Formula (47) v0.4.5
+  Formula (6.2) v0.5.4
   """
   def epoch_phase(timeslot), do: rem(timeslot, Constants.epoch_length())
 

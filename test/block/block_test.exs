@@ -175,8 +175,15 @@ defmodule BlockTest do
       %{state: state, validators: validators, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
 
-      b = Block.new(%Extrinsic{}, nil, state, Time.current_time(), key_pairs)
-      assert {:ok, new_state} = State.add_block(state, b)
+      initial_time = Time.current_timeslot()
+
+      for t <- 316_090..316_103, reduce: {state, nil} do
+        {state, header_hash} ->
+          b = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs)
+          {:ok, h} = Storage.put(b.header)
+          {:ok, state} = State.add_block(state, b)
+          {state, h}
+      end
     end
   end
 end

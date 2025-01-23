@@ -3,7 +3,11 @@ defmodule Util.TimeTest do
   alias Util.Time, as: Time
 
   test "base time is correct" do
-    assert Time.base_time() == :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
+    assert Time.base_time() == :calendar.datetime_to_gregorian_seconds({{2025, 1, 1}, {12, 0, 0}})
+  end
+
+  test "base timeslot is correct" do
+    assert Time.time_to_timeslot(Time.base_time()) == 0
   end
 
   test "current time is after base time" do
