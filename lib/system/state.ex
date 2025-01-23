@@ -387,6 +387,9 @@ defmodule System.State do
       {:ready_to_accumulate, for(queue <- value, do: for(r <- queue, do: Ready.from_json(r)))}
     ]
 
+  defp decode_json_field(:accumulated, value),
+    do: [{:accumulation_history, Enum.map(value, &MapSet.new(JsonDecoder.from_json(&1)))}]
+
   defp decode_json_field(:services, value),
     do: [
       {:services, for(s <- value, do: {s[:id], ServiceAccount.from_json(s[:info])}, into: %{})}
