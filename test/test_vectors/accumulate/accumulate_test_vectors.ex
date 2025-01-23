@@ -26,7 +26,7 @@ defmodule AccumulateTestVectors do
       :entropy_pool,
       :services,
       :ready_to_accumulate,
-      # :accumulation_history,
+      :accumulation_history,
       :privileged_services
     ]
 
