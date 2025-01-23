@@ -33,7 +33,7 @@ defmodule PreimagesTestVectors do
 
     pre_services = Services.from_json(json_data[:pre_state][:accounts] || [])
 
-    stub(MockAccumulation, :do_transition, fn _, _, _, _ ->
+    stub(MockAccumulation, :do_transition, fn _, _, _ ->
       {:ok, %{accumulate_mock_return() | services: pre_services}}
     end)
 
