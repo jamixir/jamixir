@@ -5,7 +5,6 @@ defmodule System.State.Accumulation do
 
   alias System.State.BeefyCommitmentMap
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
-  alias Block.Header
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
   alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator}
