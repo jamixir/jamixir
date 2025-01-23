@@ -1,4 +1,5 @@
 defmodule JsonDecoder do
+  import Util.Hex
   def from_json(nil), do: nil
 
   def from_json(map) when is_map(map) do
@@ -10,7 +11,7 @@ defmodule JsonDecoder do
   end
 
   def from_json(value) when is_binary(value) do
-    case Base.decode16(String.replace_prefix(value, "0x", ""), case: :lower) do
+    case decode16(value) do
       {:ok, binary} ->
         binary
 
