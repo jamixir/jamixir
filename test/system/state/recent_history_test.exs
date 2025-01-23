@@ -9,7 +9,7 @@ defmodule RecentHistoryTest do
   alias Util.{Hash, MerkleTree, MMR}
   import Jamixir.Factory
   use Codec.Encoder
-
+  import Util.Hex
   describe "update_latest_state_root/2" do
     test "returns empty list when given nil" do
       header = %Header{prior_state_root: "s"}
@@ -342,29 +342,29 @@ defmodule RecentHistoryTest do
       # Add assertions to verify the result
       assert block1 == %RecentBlock{
                header_hash:
-                 hex_to_binary(
+                 decode16!(
                    "0x530ef4636fedd498e99c7601581271894a53e965e901e8fa49581e525f165dae"
                  ),
                accumulated_result_mmr: [
-                 hex_to_binary(
+                 decode16!(
                    "0x8720b97ddd6acc0f6eb66e095524038675a4e4067adc10ec39939eaefc47d842"
                  )
                ],
                state_root:
-                 hex_to_binary(
+                 decode16!(
                    "0x1831dde64e40bfd8639c2d122e5ac00fe133c48cd16e1621ca6d5cf0b8e10d3b"
                  ),
                work_report_hashes: %{
-                 hex_to_binary(
+                 decode16!(
                    "0x016cb55eb7b84e0d495d40832c7238965baeb468932c415dc2ceffe0afb039e5"
                  ) =>
-                   hex_to_binary(
+                   decode16!(
                      "0x935f6dfef36fa06e10a9ba820f933611c05c06a207b07141fe8d87465870c11c"
                    ),
-                 hex_to_binary(
+                 decode16!(
                    "0x76bcb24901299c331f0ca7342f4874f19b213ee72df613d50699e7e25edb82a6"
                  ) =>
-                   hex_to_binary(
+                   decode16!(
                      "0xc825d16b7325ca90287123bd149d47843c999ce686ed51eaf8592dd2759272e3"
                    )
                }
@@ -373,30 +373,28 @@ defmodule RecentHistoryTest do
       # Check second block
       assert block2 == %RecentBlock{
                header_hash:
-                 hex_to_binary(
+                 decode16!(
                    "0x241d129c6edc2114e6dfba7d556f7f7c66399b55ceec3078a53d44c752ba7e9a"
                  ),
                accumulated_result_mmr: [
                  nil,
-                 hex_to_binary(
+                 decode16!(
                    "0x7076c31882a5953e097aef8378969945e72807c4705e53a0c5aacc9176f0d56b"
                  )
                ],
                state_root:
-                 hex_to_binary(
+                 decode16!(
                    "0x0000000000000000000000000000000000000000000000000000000000000000"
                  ),
                work_report_hashes: %{
-                 hex_to_binary(
+                 decode16!(
                    "0x3cc8d8c94e7b3ee01e678c63fd6b5db894fc807dff7fe10a11ab41e70194894d"
                  ) =>
-                   hex_to_binary(
+                   decode16!(
                      "0xc0edfe377d20b9f4ed7d9df9511ef904c87e24467364f0f7f75f20cfe90dd8fb"
                    )
                }
              }
     end
   end
-
-  defp hex_to_binary("0x" <> hex), do: Base.decode16!(hex, case: :mixed)
 end

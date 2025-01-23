@@ -4,14 +4,14 @@ defmodule PVM.Host.Refine.InvokeTest do
   alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
+  import Util.Hex
 
   describe "invoke/4" do
     setup do
       # Program that sets registers [1,2,3] to [30,11,10] and halts
-      {:ok, program} =
-        Base.decode16(
-          "00012a33010033020133030a3305020156120a14af520452140008aa12010179220128ee3d0103320c0000ffff010000010000010000010000010100000001000001000000010000010100000100010000010000000000",
-          case: :lower
+      program =
+        decode16!(
+          "00012a33010033020133030a3305020156120a14af520452140008aa12010179220128ee3d0103320c0000ffff010000010000010000010000010100000001000001000000010000010100000100010000010000000000"
         )
 
       machine = %Integrated{
