@@ -3,7 +3,6 @@ defmodule PreimagesTestVectorsTest do
   alias System.State.Services
   use ExUnit.Case
   import Mox
-  import PreimagesTestVectors
   import TestVectorUtil
 
   setup :verify_on_exit!
