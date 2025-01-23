@@ -527,34 +527,34 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
-      assert result[1].balance == 150
-      assert result[2].balance == 175
-      assert result[3].balance == 275
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
+      assert result[1].balance == 200
+      assert result[2].balance == 250
+      assert result[3].balance == 375
     end
 
     test "handles empty transfers" do
       services_intermediate_2 = %{
-        1 => %{balance: 100},
-        2 => %{balance: 200}
+        1 => %ServiceAccount{balance: 100},
+        2 => %ServiceAccount{balance: 200}
       }
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, [])
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, [], 0)
 
       assert result == services_intermediate_2
     end
 
     test "transfers to non-existent services is a noop" do
       services_intermediate_2 = %{
-        1 => %{balance: 100},
-        2 => %{balance: 200}
+        1 => %ServiceAccount{balance: 100},
+        2 => %ServiceAccount{balance: 200}
       }
 
       transfers = [
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers)
+      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
 
       assert result == services_intermediate_2
     end
@@ -602,6 +602,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       w_star = []
+      work_package_hashes = WorkReport.work_package_hashes(w_star)
 
       w_q = [
         {%WorkReport{specification: %{work_package_hash: "wph3", exports_root: "root3"}},
@@ -610,42 +611,41 @@ defmodule System.State.AccumulationTest do
          MapSet.new(["hash8"])}
       ]
 
-      {:ok, ready_to_accumulate: ready_to_accumulate, w_star: w_star, w_q: w_q}
+      {:ok, ready_to_accumulate: ready_to_accumulate, work_package_hashes: work_package_hashes, w_q: w_q}
     end
 
     test "builds ready_to_accumulate correctly", %{
       ready_to_accumulate: ready_to_accumulate,
-      w_star: w_star,
+      work_package_hashes: work_package_hashes,
       w_q: w_q
     } do
-      n = 2
       header_timeslot = 5
       state_timeslot = 3
 
       result =
         Accumulation.build_ready_to_accumulate_(
           ready_to_accumulate,
-          w_star,
+          work_package_hashes,
           w_q,
-          n,
           header_timeslot,
           state_timeslot
         )
 
-      # Update these assertions to match the actual output format
-      assert Enum.at(result, 0) == w_q
-      assert Enum.at(result, 1) == []
-      assert Enum.at(result, 2) == Enum.map(Enum.at(ready_to_accumulate, 0), &Ready.to_tuple/1)
+      [r0, r1, [r2_0, r2_1]] = result
+      assert [^r0 | _] = ready_to_accumulate
+      assert r1 == []
+      assert r2_0.work_report == elem(Enum.at(w_q, 0), 0)
+      assert r2_1.work_report == elem(Enum.at(w_q, 1), 0)
     end
 
     test "handles empty inputs" do
-      result = Accumulation.build_ready_to_accumulate_([], [], [], 0, 1, 1)
+      result = Accumulation.build_ready_to_accumulate_([], [], [], 1, 1)
 
       assert result == []
     end
 
     test "handles large timeslot difference", %{ready_to_accumulate: ready_to_accumulate} do
-      result = Accumulation.build_ready_to_accumulate_(ready_to_accumulate, [], [], 0, 10, 1)
+      result = Accumulation.build_ready_to_accumulate_(ready_to_accumulate, [], [], 10, 1)
 
       assert result == [[], [], []]
     end
@@ -653,8 +653,6 @@ defmodule System.State.AccumulationTest do
 
   describe "accumulate/4" do
     setup do
-      header = build(:header, timeslot: 5)
-
       state = %State{
         privileged_services: %PrivilegedServices{
           manager_service: 1,
@@ -662,12 +660,11 @@ defmodule System.State.AccumulationTest do
           alter_validator_service: 2,
           services_gas: %{1 => 100, 2 => 100}
         },
-        timeslot: 3
-      }
-
-      services_intermediate = %{
-        1 => build(:service_account, balance: 1000),
-        2 => build(:service_account, balance: 1000)
+        timeslot: 3,
+        services: %{
+          1 => build(:service_account, balance: 1000),
+          2 => build(:service_account, balance: 1000)
+        }
       }
 
       # Set the mock module for accumulation
@@ -678,16 +675,14 @@ defmodule System.State.AccumulationTest do
       end)
 
       %{
-        header: header,
-        state: state,
-        services_intermediate: services_intermediate
+        timeslot: 5,
+        state: state
       }
     end
 
     test "successfully accumulates valid work reports", %{
-      header: header,
-      state: state,
-      services_intermediate: services_intermediate
+      timeslot: timeslot,
+      state: state
     } do
       work_reports = [
         build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
@@ -700,15 +695,14 @@ defmodule System.State.AccumulationTest do
         %AccumulationResult{}
       end)
 
-      result = Accumulation.transition(work_reports, header, state, services_intermediate)
+      result = Accumulation.transition(work_reports, timeslot, state)
 
       assert {:ok, _accumulated_state} = result
     end
 
     test "returns error when encountering an invalid service", %{
-      header: header,
-      state: state,
-      services_intermediate: services_intermediate
+      timeslot: timeslot,
+      state: state
     } do
       work_reports = [
         build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
@@ -717,7 +711,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       assert {:error, :invalid_service} =
-               Accumulation.transition(work_reports, header, state, services_intermediate)
+               Accumulation.transition(work_reports, timeslot, state)
     end
   end
 end

@@ -123,7 +123,7 @@ defmodule System.State do
             accumulation_history: accumulation_history_,
             beefy_commitment: beefy_commitment_
           }} <-
-           Accumulation.transition(available_work_reports, h, state, state.services),
+           Accumulation.transition(available_work_reports, timeslot_, state),
          # δ' Formula (4.18) v0.5
          services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
          # α' Formula (30) v0.4.5
@@ -381,6 +381,11 @@ defmodule System.State do
   defp decode_json_field(:entropy, value), do: decode_json_field(:eta, value)
   defp decode_json_field(:eta, value), do: [{:entropy_pool, EntropyPool.from_json(value)}]
   defp decode_json_field(:accounts, value), do: [{:services, Services.from_json(value)}]
+
+  defp decode_json_field(:ready_queue, value),
+    do: [
+      {:ready_to_accumulate, for(queue <- value, do: for(r <- queue, do: Ready.from_json(r)))}
+    ]
 
   defp decode_json_field(:services, value),
     do: [

@@ -105,14 +105,20 @@ defmodule PVM do
     end
 
     # Formula (B.15) v0.5.2
+    service = Map.get(services, service_index)
+
     service =
-      Map.get(services, service_index)
-      |> update_in(
-        [:balance],
-        &for t <- transfers, reduce: &1 do
-          acc -> acc + t.amount
-        end
-      )
+      if service != nil do
+        update_in(
+          service,
+          [:balance],
+          &for t <- transfers, reduce: &1 do
+            acc -> acc + t.amount
+          end
+        )
+      else
+        nil
+      end
 
     code = ServiceAccount.code(service)
 

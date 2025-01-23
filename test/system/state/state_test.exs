@@ -250,6 +250,7 @@ defmodule System.StateTest do
       with_original_modules([:transition]) do
         new_core_report = build(:core_report)
         state = %{state | core_reports: [new_core_report | tl(state.core_reports)]}
+        state = put_in(state.services, %{0 => build(:service_account)})
 
         {:ok, new_state} =
           State.add_block(

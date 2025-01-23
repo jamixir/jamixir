@@ -1,5 +1,6 @@
 defmodule System.State.Ready do
   alias Block.Extrinsic.Guarantee.WorkReport
+  use JsonDecoder
 
   @type t :: %__MODULE__{
           work_report: WorkReport.t(),
@@ -15,4 +16,15 @@ defmodule System.State.Ready do
 
   @spec initial_state() :: list(t())
   def initial_state, do: List.duplicate([], Constants.epoch_length())
+
+  def json_mapping do
+    %{
+      work_report: %{m: WorkReport, f: :report},
+      dependencies: &parse_dependencies/1
+    }
+  end
+
+  def parse_dependencies(deps) do
+    MapSet.new(for d <- deps, do: JsonDecoder.from_json(d))
+  end
 end

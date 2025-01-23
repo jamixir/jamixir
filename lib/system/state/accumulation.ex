@@ -35,7 +35,7 @@ defmodule System.State.Accumulation do
 
   @callback do_single_accumulation(t(), list(), map(), non_neg_integer()) ::
               AccumulationResult.t()
-  @callback do_transition(list(), Header.t(), State.t(), any()) :: any()
+  @callback do_transition(list(), non_neg_integer(), State.t()) :: any()
 
   # Formula (12.3) v0.5.2 - U
   @type t :: %__MODULE__{
@@ -55,28 +55,28 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.2
+  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.4
   """
 
-  def transition(w, h, s, si) do
+  def transition(w, t_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
-    module.do_transition(w, h, s, si)
+    module.do_transition(w, t_, s)
   end
 
   def do_transition(
         work_reports,
-        %Header{timeslot: ht},
+        timeslot_,
         %State{
           accumulation_history: accumulation_history,
           ready_to_accumulate: ready_to_accumulate,
           privileged_services: privileged_services,
           next_validators: next_validators,
           authorizer_queue: authorizer_queue,
-          timeslot: state_timeslot
-        },
-        services
+          services: services,
+          timeslot: timeslot
+        }
       ) do
-    # Formula (12.20) v0.5.2
+    # Formula (12.20) v0.5.4
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -87,7 +87,7 @@ defmodule System.State.Accumulation do
     accumulatable_reports =
       WorkReport.accumulatable_work_reports(
         work_reports,
-        ht,
+        timeslot_,
         accumulation_history,
         ready_to_accumulate
       )
@@ -99,8 +99,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (12.21) v0.5.2
-    # Formula (12.22) v0.5.2
+    # Formula (12.21) v0.5.4
+    # Formula (12.22) v0.5.4
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,
@@ -117,7 +117,7 @@ defmodule System.State.Accumulation do
         }, deferred_transfers, beefy_commitment}} ->
         # Formula (12.24) v0.5.2
         services_intermediate_2 =
-          calculate_posterior_services(services_intermediate, deferred_transfers)
+          calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
 
         # Formula (12.25) v0.5.2
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
@@ -128,11 +128,10 @@ defmodule System.State.Accumulation do
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
-            accumulatable_reports,
+            work_package_hashes,
             w_q,
-            n,
-            ht,
-            state_timeslot
+            timeslot_,
+            timeslot
           )
 
         {:ok,
@@ -317,11 +316,11 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.24) v0.5.2
-  def calculate_posterior_services(services_intermediate_2, transfers) do
+  # Formula (12.24) v0.5.4
+  def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-      apply_transfers(services, s, selected_transfers)
+      %{services | s => PVM.on_transfer(services, timeslot, s, selected_transfers)}
     end)
   end
 
@@ -342,25 +341,11 @@ defmodule System.State.Accumulation do
     }
   end
 
-  # stub for On-Transfer Invocation ΨT
-  defp apply_transfers(services, service, transfers) do
-    Enum.reduce(transfers, services, fn transfer, acc ->
-      acc
-      |> Map.update!(transfer.sender, fn account ->
-        %{account | balance: account.balance - transfer.amount}
-      end)
-      |> Map.update!(service, fn account ->
-        %{account | balance: account.balance + transfer.amount}
-      end)
-    end)
-  end
-
-  # Formula (12.27) v0.5.2
+  # Formula (12.27) v0.5.4
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
           w_q :: list({WorkReport.t(), MapSet.t(Types.hash())}),
-          n :: non_neg_integer(),
           header_timeslot :: non_neg_integer(),
           state_timeslot :: non_neg_integer()
         ) :: list(list(Ready.t()))
@@ -369,7 +354,6 @@ defmodule System.State.Accumulation do
         [],
         _w_star,
         _w_q,
-        _n,
         _header_timeslot,
         _state_timeslot
       ) do
@@ -378,33 +362,40 @@ defmodule System.State.Accumulation do
 
   def build_ready_to_accumulate_(
         ready_to_accumulate,
-        w_star,
+        work_package_hashes,
         w_q,
-        n,
-        header_timeslot,
-        state_timeslot
+        timeslot_,
+        timeslot
       ) do
     e = length(ready_to_accumulate)
-    m = Util.Time.epoch_phase(header_timeslot)
+    m = Util.Time.epoch_phase(timeslot_)
 
-    work_package_hashes = WorkReport.work_package_hashes(Enum.take(w_star, n))
+    list =
+      for i <- 0..(e - 1) do
+        cond do
+          i == 0 ->
+            WorkReport.edit_queue(w_q, work_package_hashes)
 
-    Enum.map(0..(e - 1), fn i ->
-      index = rem(m - i, e)
+          i < timeslot_ - timeslot ->
+            []
 
-      cond do
-        i == 0 ->
-          WorkReport.edit_queue(w_q, work_package_hashes)
-
-        i < header_timeslot - state_timeslot ->
-          []
-
-        true ->
-          WorkReport.edit_queue(
-            Enum.at(ready_to_accumulate, index) |> Enum.map(&Ready.to_tuple/1),
-            work_package_hashes
-          )
+          true ->
+            WorkReport.edit_queue(
+              Enum.at(ready_to_accumulate, rem(m - i, e)) |> Enum.map(&Ready.to_tuple/1),
+              work_package_hashes
+            )
+        end
       end
-    end)
+      |> Enum.reverse()
+      |> rotate(m + 1)
+
+    for q <- list, do: for({w, d} <- q, do: %Ready{work_report: w, dependencies: d})
+  end
+
+  def rotate(list, m) when is_list(list) do
+    len = length(list)
+    m = rem(m, len)
+    # Take last m elements and prepend to rest
+    Enum.take(list, -m) ++ Enum.drop(list, -m)
   end
 end

@@ -57,7 +57,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def transition(core_reports_2, guarantees, timeslot_) do
-    # Formula (11.42) v0.5.0
+    # Formula (11.43) v0.5.4
     Enum.with_index(core_reports_2, fn cr, index ->
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> cr

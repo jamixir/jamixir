@@ -38,7 +38,7 @@ defmodule HistoryTestVectors do
       |> Map.put(:disputes, Map.from_struct(%Disputes{}))
       |> Map.put(:guarantees, guarantees)
 
-    stub(MockAccumulation, :do_transition, fn _, _, _, _ ->
+    stub(MockAccumulation, :do_transition, fn _, _, _->
       {:ok,
        %{
          beefy_commitment: JsonDecoder.from_json(json_data[:input][:accumulate_root]),
