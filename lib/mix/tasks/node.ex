@@ -20,10 +20,6 @@ defmodule Mix.Tasks.Node do
       ],
       into: IO.stream(:stdio, :line)
     )
-
-    # Give it a moment to start up
-    Process.sleep(1000)
-    IO.puts("Jamixir node started successfully.")
   end
 
   def run(["stop"]) do

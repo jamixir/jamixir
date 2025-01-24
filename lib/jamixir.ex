@@ -3,7 +3,7 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
-    children = [Jamixir.NodeCLIServer]
+    children = [Jamixir.NodeCLIServer, Jamixir.TimeTicker]
 
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
     Supervisor.start_link(children, opts)
