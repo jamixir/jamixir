@@ -3,13 +3,7 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Define workers and child supervisors to be supervised
-      # {YourWorker, arg},
-      # {YourSupervisor, arg}
-      # Jamixir.Node
-      Jamixir.NodeCLIServer
-    ]
+    children = [Jamixir.NodeCLIServer]
 
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
     Supervisor.start_link(children, opts)

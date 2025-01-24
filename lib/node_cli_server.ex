@@ -2,7 +2,6 @@ defmodule Jamixir.NodeCLIServer do
   use GenServer
   require Logger
 
-
   # Client API
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
@@ -16,10 +15,15 @@ defmodule Jamixir.NodeCLIServer do
   # Server Callbacks
   @impl true
   def init(_) do
-    case Storage.start_link([persist: true]) do
+    init_storage()
+  end
+
+  defp init_storage do
+    case Storage.start_link(persist: true) do
       {:ok, _} ->
         Logger.info("Storage initialized")
         {:ok, nil}
+
       error ->
         Logger.error("Failed to initialize storage: #{inspect(error)}")
         {:stop, error}

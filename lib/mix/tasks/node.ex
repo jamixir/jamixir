@@ -7,12 +7,19 @@ defmodule Mix.Tasks.Node do
 
   def run(["start"]) do
     # Start the node in detached mode
-    System.cmd("elixir", [
-      "--name", "#{@node_name}",
-      "--cookie", "#{@cookie}",
-      "--erl", "-detached",
-      "-S", "mix", "run", "--no-halt"
-    ])
+    System.cmd(
+      "elixir",
+      [
+        "--name",
+        "#{@node_name}",
+        "--cookie",
+        "#{@cookie}",
+        "-S",
+        "mix",
+        "jam"
+      ],
+      into: IO.stream(:stdio, :line)
+    )
 
     # Give it a moment to start up
     Process.sleep(1000)
@@ -46,6 +53,7 @@ defmodule Mix.Tasks.Node do
     case Node.connect(@node_name) do
       true ->
         :rpc.call(@node_name, module, function, args)
+
       false ->
         {:error, :node_not_available}
     end
