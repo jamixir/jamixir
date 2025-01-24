@@ -1,12 +1,12 @@
 defmodule Block do
-  alias System.State.EntropyPool
-  alias System.HeaderSeal
-  alias Util.Time
-  alias Util.Merklization
   alias Block.Extrinsic
   alias Block.Header
+  alias System.HeaderSeal
   alias System.State
+  alias System.State.EntropyPool
   alias System.Validators.Safrole
+  alias Util.Merklization
+  alias Util.Time
   use SelectiveMock
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
@@ -31,7 +31,7 @@ defmodule Block do
     end
   end
 
-  def new(extrinsic, parent_hash, state, timeslot, keypairs) do
+  def new(extrinsic, parent_hash, state, timeslot, key_pairs: key_pairs) do
     header = %Header{
       timeslot: timeslot,
       prior_state_root: Merklization.merkelize_state(State.serialize(state)),
@@ -51,13 +51,19 @@ defmodule Block do
       )
 
     pubkey =
-      Enum.at(safrole_.slot_sealers, rem(timeslot, length(safrole_.slot_sealers)))
+      Enum.at(safrole_.slot_sealers, rem(timeslot, Constants.epoch_length()))
 
-    key = Enum.find(keypairs, fn {_, pk} -> pk == pubkey end)
     new_index = Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
 
     header = put_in(header.block_author_key_index, new_index)
     # Build and seal the header dynamically with the correct timeslot
+
+    key =
+      if key_pairs == [] do
+      else
+        Enum.find(key_pairs, fn {_, pk} -> pk == pubkey end)
+      end
+
     header =
       HeaderSeal.seal_header(
         header,

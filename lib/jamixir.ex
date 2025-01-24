@@ -12,4 +12,6 @@ defmodule Jamixir do
   def config do
     Application.get_env(:jamixir, Jamixir)
   end
+
+  def config(k), do: config()[k]
 end

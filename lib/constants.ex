@@ -51,7 +51,7 @@ defmodule Constants do
   @doc "L = 14, 400: The maximum age in timeslots of the lookup anchor."
   def max_age_lookup_anchor, do: 14_400
 
-  defmockable(:tickets_per_validator, do: Jamixir.config()[:tickets_per_validator])
+  defmockable(:tickets_per_validator, do: Jamixir.config(:tickets_per_validator))
 
   @doc "O - The maximum number of items in the authorizations pool."
   def max_authorizations_items, do: 8
@@ -63,13 +63,13 @@ defmodule Constants do
   def max_authorization_queue_items, do: 80
 
   @doc "R - The rotation period of validator-core assignments, in timeslots."
-  defmockable(:rotation_period, do: Jamixir.config()[:rotation_period])
+  defmockable(:rotation_period, do: Jamixir.config(:rotation_period))
 
   @doc "U - The period in timeslots after which reported but unavailable work may be replaced."
   def unavailability_period, do: 5
 
   @doc "V - The total number of validators."
-  defmockable(:validator_count, do: Jamixir.config()[:validator_count])
+  defmockable(:validator_count, do: Jamixir.config(:validator_count))
 
   @doc "WE - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: 684
@@ -87,7 +87,7 @@ defmodule Constants do
   def max_manifest_size, do: 2048
 
   @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
-  defmockable(:ticket_submission_end, do: Jamixir.config()[:ticket_submission_end])
+  defmockable(:ticket_submission_end, do: Jamixir.config(:ticket_submission_end))
 
   # 4104
   def wswe, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()

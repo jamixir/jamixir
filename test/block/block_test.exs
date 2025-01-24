@@ -176,15 +176,14 @@ defmodule BlockTest do
     end
 
     test "creates a valid fallback block no extrinsics" do
-      %{state: state, key_pairs: key_pairs} =
-        build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
       end_time = Time.current_timeslot() - Constants.slot_period() * 2
       initial_time = end_time - Constants.slot_period() * 2
 
       for t <- initial_time..end_time, reduce: {state, nil} do
         {state, header_hash} ->
-          b = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs)
+          b = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
           {:ok, h} = Storage.put(b.header)
           {:ok, state} = State.add_block(state, b)
           {state, h}
