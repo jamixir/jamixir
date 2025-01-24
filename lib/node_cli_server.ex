@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeCLIServer do
+  alias Jamixir.TimeTicker
   use GenServer
   require Logger
 
@@ -15,6 +16,7 @@ defmodule Jamixir.NodeCLIServer do
   # Server Callbacks
   @impl true
   def init(_) do
+    TimeTicker.subscribe()
     init_storage()
   end
 
@@ -60,5 +62,12 @@ defmodule Jamixir.NodeCLIServer do
       :ok -> {:reply, :ok, nil}
       error -> {:reply, error, nil}
     end
+  end
+
+  @impl true
+  def handle_info({:new_timeslot, timeslot}, state) do
+    Logger.info("NodeCLIServer received new timeslot: #{timeslot}")
+    # Jamixir.Node.handle_new_timeslot(timeslot)
+    {:noreply, state}
   end
 end

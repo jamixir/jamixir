@@ -44,7 +44,8 @@ defmodule Jamixir.MixProject do
       {:dotenv, "~> 3.1.0"},
       {:temp, "~> 0.4"},
       {:jamixir_vm, git: "https://github.com/jamixir/jamixir-vm.git", branch: "main"},
-      {:cubdb, "~> 2.0.2"}
+      {:cubdb, "~> 2.0.2"},
+      {:muontrap, "~> 1.0"}
     ]
   end
 
