@@ -4,10 +4,11 @@ defmodule Mix.Tasks.Node do
 
   @node_name :"jamixir@127.0.0.1"
   @cookie :jamixir_cookie
+  @pid_file "./.jamixir.pid"
 
   def run(["start"]) do
     # Start the node in detached mode
-    System.cmd(
+    MuonTrap.cmd(
       "elixir",
       [
         "--name",
@@ -18,6 +19,7 @@ defmodule Mix.Tasks.Node do
         "mix",
         "jam"
       ],
+      cd: File.cwd!(),
       into: IO.stream(:stdio, :line)
     )
   end
