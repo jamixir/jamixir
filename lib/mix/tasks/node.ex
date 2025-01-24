@@ -1,30 +1,24 @@
 defmodule Mix.Tasks.Node do
   use Mix.Task
+  require Logger
   @shortdoc "Manage the Jamixir node"
 
   @node_name :"jamixir@127.0.0.1"
   @cookie :jamixir_cookie
-  @pid_file "./.jamixir.pid"
 
-  def run(["start"]) do
+  def run(["start" | extra_args]) do
+    args = ["--name", "#{@node_name}", "--cookie", "#{@cookie}", "-S", "mix", "jam"]
+
     # Start the node in detached mode
     MuonTrap.cmd(
       "elixir",
-      [
-        "--name",
-        "#{@node_name}",
-        "--cookie",
-        "#{@cookie}",
-        "-S",
-        "mix",
-        "jam"
-      ],
+      args ++ extra_args,
       cd: File.cwd!(),
       into: IO.stream(:stdio, :line)
     )
   end
 
-  def run(["stop"]) do
+  def run(["stop" | _]) do
     connect_and_call(:init, :stop, [])
   end
 
