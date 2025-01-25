@@ -56,26 +56,29 @@ defmodule Block do
     new_index = Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
 
     header = put_in(header.block_author_key_index, new_index)
-    # Build and seal the header dynamically with the correct timeslot
 
-    key =
-      if key_pairs == [] do
-      else
-        Enum.find(key_pairs, fn {_, pk} -> pk == pubkey end)
-      end
-
-    header =
-      HeaderSeal.seal_header(
-        header,
-        safrole_.slot_sealers,
-        rotated_entropy_pool,
-        key
-      )
-
-    %__MODULE__{
-      header: header,
-      extrinsic: extrinsic
-    }
+    with key <- Enum.find(key_pairs, &(elem(&1, 1) == pubkey)),
+         %{ed25519_priv: key, ed25519: pub} <-
+           if(key == nil,
+             do: Application.get_env(:jamixir, :keys),
+             else: %{ed25519: pubkey, ed25519_priv: key}
+           ),
+         :ok <- if(pubkey != pub, do: :error, else: :ok) do
+      #  my_key <- if(key1 == nil, do: key, else: key1) do
+      {:ok,
+       %__MODULE__{
+         header:
+           HeaderSeal.seal_header(
+             header,
+             safrole_.slot_sealers,
+             rotated_entropy_pool,
+             key
+           ),
+         extrinsic: extrinsic
+       }}
+    else
+      true -> {:error, :author_key_not_found}
+    end
   end
 
   defp choose_epoch_marker(timeslot, state) do

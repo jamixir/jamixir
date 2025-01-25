@@ -2,7 +2,7 @@ defmodule KeyManager do
   @moduledoc """
   Manages the retrieval of public and private keys.
   """
-
+  require Logger
   @private_key_file "private_key.enc"
 
   @doc """
@@ -42,5 +42,20 @@ defmodule KeyManager do
     <<iv::binary-size(16), ciphertext::binary>> = encrypted_data
     key = :crypto.hash(:sha256, password) |> binary_part(0, 32)
     :crypto.crypto_one_time(:aes_256_cbc, key, iv, ciphertext, false)
+  end
+
+  def load_keys(keys_file) do
+    with {:ok, content} <- File.read(keys_file),
+         {:ok, keys} <- Jason.decode(content) do
+      # Store in application env
+      keys = keys |> Utils.atomize_keys() |> JsonDecoder.from_json()
+      Application.put_env(:jamixir, :keys, keys)
+      Logger.info("🔑 Keys loaded successfully from #{keys_file}")
+      {:ok, keys}
+    else
+      {:error, e} ->
+        Logger.error("Failed to load keys: #{inspect(e)}")
+        {:error, e}
+    end
   end
 end

@@ -183,11 +183,16 @@ defmodule BlockTest do
 
       for t <- initial_time..end_time, reduce: {state, nil} do
         {state, header_hash} ->
-          b = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
+          {:ok, b} = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
           {:ok, h} = Storage.put(b.header)
           {:ok, state} = State.add_block(state, b)
           {state, h}
       end
+    end
+
+    test "create a valid block with env keys" do
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+      {:ok, b} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
     end
   end
 end
