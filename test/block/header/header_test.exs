@@ -6,7 +6,7 @@ defmodule Block.HeaderTest do
   alias Block.Header
   alias Codec.NilDiscriminator
   alias System.State
-  alias Util.{Hash, Merklization}
+  alias Util.Hash
   import TestHelper
 
   use Codec.Encoder
@@ -89,7 +89,7 @@ defmodule Block.HeaderTest do
   describe "validate/2" do
     setup do
       state = %State{timeslot: 99}
-      state_root = Merklization.merkelize_state(State.serialize(state))
+      state_root = Codec.State.Trie.state_root(state)
       parent = build(:decodable_header, timeslot: 99)
       Storage.put(parent)
 

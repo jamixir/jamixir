@@ -1,7 +1,7 @@
 defmodule System.StateTest do
   use ExUnit.Case
   import Jamixir.Factory
-  import System.State
+  import Codec.State.Trie
   import OriginalModules
   import Mox
   import Bitwise
@@ -11,7 +11,6 @@ defmodule System.StateTest do
   alias IO.ANSI
   alias System.State
   alias Util.Hash
-
   setup :verify_on_exit!
 
   setup_all do
@@ -319,7 +318,7 @@ defmodule System.StateTest do
 
   describe "from_genesis/0" do
     test "from_genesis smoke test" do
-      {:ok, state} = State.from_genesis()
+      {:ok, state} = Codec.State.from_genesis()
       assert state.timeslot == 0
     end
 
@@ -329,10 +328,10 @@ defmodule System.StateTest do
     # a. use our own genesis
     # b. have jam duna correctly encode service account
     test "genesis matches key vals" do
-      {:ok, state} = State.from_genesis()
+      {:ok, state} = Codec.State.from_genesis()
       {:ok, content} = File.read("test/genesis-keyvals.json")
       {:ok, json} = Jason.decode(content)
-      state_hex = State.serialize_hex(state)
+      state_hex = Codec.State.Trie.serialize_hex(state)
 
       for [k, v] <- json["keyvals"] do
         my_k = String.replace(k, "0x", "") |> String.upcase()
