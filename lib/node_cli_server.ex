@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeCLIServer do
+  alias System.State
   alias Jamixir.TimeTicker
   use GenServer
   require Logger
@@ -18,6 +19,8 @@ defmodule Jamixir.NodeCLIServer do
   def init(_) do
     TimeTicker.subscribe()
     init_storage()
+    {:ok, jam_state} = State.from_genesis()
+    {:ok, %{jam_state: jam_state}}
   end
 
   defp init_storage do
@@ -65,9 +68,22 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info({:new_timeslot, timeslot}, state) do
+  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
     Logger.info("NodeCLIServer received new timeslot: #{timeslot}")
-    # Jamixir.Node.handle_new_timeslot(timeslot)
+
+    case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
+      {:ok, block} ->
+        Logger.info("Block created successfully. #{inspect(block)}")
+
+      # case Jamixir.Node.add_block(block) do
+      #   :ok -> Logger.info("Block added successfully")
+      #   {:error, reason} -> Logger.error("Failed to add block: #{reason}")
+      # end
+
+      {:error, reason} ->
+        Logger.info("Not my turn to create block: #{reason}")
+    end
+
     {:noreply, state}
   end
 end

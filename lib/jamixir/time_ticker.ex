@@ -3,7 +3,7 @@ defmodule Jamixir.TimeTicker do
   require Logger
   alias Util.Time
 
-  @default_tick_interval 1000
+  @default_tick_interval 500
 
   # Client API
   def start_link(opts \\ []) do

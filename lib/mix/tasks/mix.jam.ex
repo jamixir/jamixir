@@ -6,6 +6,7 @@ defmodule Mix.Tasks.Jam do
 
   def run(args) do
     Logger.info("🟣 Pump up the JAM, pump it up...")
+    Logger.info("System loaded with config: #{inspect(Jamixir.config())}")
     {opts, _, _} = OptionParser.parse(args, strict: @switches)
 
     if keys_file = opts[:keys] do

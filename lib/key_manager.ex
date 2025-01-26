@@ -3,6 +3,7 @@ defmodule KeyManager do
   Manages the retrieval of public and private keys.
   """
   require Logger
+  import Util.Hex
   @private_key_file "private_key.enc"
 
   @doc """
@@ -44,7 +45,7 @@ defmodule KeyManager do
     :crypto.crypto_one_time(:aes_256_cbc, key, iv, ciphertext, false)
   end
 
-  def load_keys(%{ed25519: _, ed25519_priv: _} = keys) do
+  def load_keys(%{bandersnatch: _, bandersnatch_priv: _} = keys) do
     Application.put_env(:jamixir, :keys, keys)
   end
 
@@ -55,6 +56,8 @@ defmodule KeyManager do
       keys = keys |> Utils.atomize_keys() |> JsonDecoder.from_json()
       Application.put_env(:jamixir, :keys, keys)
       Logger.info("🔑 Keys loaded successfully from #{keys_file}")
+      Logger.info("🔑 Validator bandersnatch key: #{inspect(encode16(keys.bandersnatch))}")
+      Logger.info("🔑 Validator ed25519 key: #{inspect(encode16(keys.ed25519))}")
       {:ok, keys}
     else
       {:error, e} ->
