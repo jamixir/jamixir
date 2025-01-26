@@ -31,7 +31,11 @@ defmodule Block do
     end
   end
 
-  def new(extrinsic, parent_hash, state, timeslot, key_pairs: key_pairs) do
+  def new(extrinsic, parent_hash, state, timeslot) do
+    new(extrinsic, parent_hash, state, timeslot, [])
+  end
+
+  def new(extrinsic, parent_hash, state, timeslot, opts) do
     header = %Header{
       timeslot: timeslot,
       prior_state_root: Merklization.merkelize_state(State.serialize(state)),
@@ -57,14 +61,7 @@ defmodule Block do
 
     header = put_in(header.block_author_key_index, new_index)
 
-    with key <- Enum.find(key_pairs, &(elem(&1, 1) == pubkey)),
-         %{ed25519_priv: key, ed25519: pub} <-
-           if(key == nil,
-             do: Application.get_env(:jamixir, :keys),
-             else: %{ed25519: pubkey, ed25519_priv: key}
-           ),
-         :ok <- if(pubkey != pub, do: :error, else: :ok) do
-      #  my_key <- if(key1 == nil, do: key, else: key1) do
+    with {:ok, signing_key} <- get_signing_key(opts[:key_pairs], pubkey) do
       {:ok,
        %__MODULE__{
          header:
@@ -72,12 +69,26 @@ defmodule Block do
              header,
              safrole_.slot_sealers,
              rotated_entropy_pool,
-             key
+             signing_key
            ),
          extrinsic: extrinsic
        }}
     else
-      true -> {:error, :author_key_not_found}
+      {:error, e} -> {:error, e}
+    end
+  end
+
+  defp get_signing_key(nil, pubkey) do
+    case Application.get_env(:jamixir, :keys) do
+      %{ed25519_priv: priv, ed25519: ^pubkey} -> {:ok, {priv, pubkey}}
+      _ -> {:error, :no_valid_keys_found}
+    end
+  end
+
+  defp get_signing_key(key_pairs, pubkey) do
+    case Enum.find(key_pairs, &(elem(&1, 1) == pubkey)) do
+      priv -> {:ok, priv}
+      nil -> {:error, :key_not_found}
     end
   end
 

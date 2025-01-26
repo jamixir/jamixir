@@ -190,9 +190,30 @@ defmodule BlockTest do
       end
     end
 
-    test "create a valid block with env keys" do
+    test "create a valid block passing all key pairs" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-      {:ok, b} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
+      {:ok, _} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
+    end
+
+    test "create a valid block with env key" do
+      %{state: state, key_pairs: [{priv, pub} | _]} = build(:genesis_state_with_safrole)
+
+      # Set the first key in the environment
+      KeyManager.load_keys(%{ed25519: pub, ed25519_priv: priv})
+
+      # try to create a block for any of the timeslots. One of them should work
+      result =
+        for i <- 100..(100 + Constants.epoch_length()), do: Block.new(%Extrinsic{}, nil, state, i)
+
+      assert Enum.any?(result, fn
+               {:ok, _} -> true
+               _ -> false
+             end)
+    end
+
+    test "cant't create block if it doesnt have the author key" do
+      %{state: state} = build(:genesis_state_with_safrole)
+      {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, 100)
     end
   end
 end

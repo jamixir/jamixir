@@ -44,6 +44,10 @@ defmodule KeyManager do
     :crypto.crypto_one_time(:aes_256_cbc, key, iv, ciphertext, false)
   end
 
+  def load_keys(%{ed25519: _, ed25519_priv: _} = keys) do
+    Application.put_env(:jamixir, :keys, keys)
+  end
+
   def load_keys(keys_file) do
     with {:ok, content} <- File.read(keys_file),
          {:ok, keys} <- Jason.decode(content) do
