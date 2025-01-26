@@ -4,7 +4,7 @@ defmodule BlockTest do
   alias Block
   alias Block.Extrinsic.Disputes
   alias System.State
-  alias Util.{Hash, Merklization}
+  alias Util.Hash
   import Mox
   import TestHelper
   import OriginalModules
@@ -22,7 +22,7 @@ defmodule BlockTest do
       services: %{1 => build(:service_account)}
     }
 
-    state_root = Merklization.merkelize_state(State.serialize(state))
+    state_root = Codec.State.Trie.state_root(state)
     extrinsic = build(:extrinsic)
     extrinsic_hash = Util.Hash.default(Encodable.encode(extrinsic))
 

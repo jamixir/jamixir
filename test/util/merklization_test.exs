@@ -1,7 +1,6 @@
 defmodule Util.MerklizationTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State
   alias Util.{Hash, Merklization}
   use Sizes
   # Formula (322) v0.4.5: TESTS
@@ -170,7 +169,7 @@ defmodule Util.MerklizationTest do
     end
 
     test "smoke test real state" do
-      hash = build(:genesis_state) |> State.serialize() |> Merklization.merkelize_state()
+      hash = Codec.State.Trie.state_root(build(:genesis_state))
       assert is_binary(hash)
       assert byte_size(hash) == @hash_size
     end

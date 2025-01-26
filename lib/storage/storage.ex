@@ -1,5 +1,4 @@
 defmodule Storage do
-  alias Util.Merklization
   alias Block.Header
   alias System.State
   alias Util.Hash
@@ -40,7 +39,7 @@ defmodule Storage do
   def put(headers) when is_list(headers), do: put_headers(headers)
 
   def put(%State{} = state) do
-    state_root = Merklization.merkelize_state(State.serialize(state))
+    state_root = Codec.State.Trie.state_root(state)
 
     KVStorage.put(%{
       @state_key => state,
