@@ -7,6 +7,7 @@ defmodule Block do
   alias System.Validators.Safrole
   alias Util.Merklization
   alias Util.Time
+  require Logger
   use SelectiveMock
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
@@ -43,7 +44,11 @@ defmodule Block do
       parent_hash: parent_hash
     }
 
+    Logger.debug("2")
+
     header = put_in(header.epoch_mark, choose_epoch_marker(timeslot, state))
+    Logger.debug("3")
+
     rotated_entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
 
     {_, _, safrole_} =
@@ -56,6 +61,8 @@ defmodule Block do
 
     pubkey =
       Enum.at(safrole_.slot_sealers, rem(timeslot, Constants.epoch_length()))
+
+    Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(pubkey))}")
 
     new_index = Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
 
@@ -80,7 +87,7 @@ defmodule Block do
 
   defp get_signing_key(nil, pubkey) do
     case Application.get_env(:jamixir, :keys) do
-      %{ed25519_priv: priv, ed25519: ^pubkey} -> {:ok, {priv, pubkey}}
+      %{bandersnatch_priv: priv, bandersnatch: ^pubkey} -> {:ok, {priv, pubkey}}
       _ -> {:error, :no_valid_keys_found}
     end
   end
@@ -94,6 +101,8 @@ defmodule Block do
 
   defp choose_epoch_marker(timeslot, state) do
     if Time.new_epoch?(state.timeslot, timeslot) do
+      Logger.debug("4")
+
       Safrole.new_epoch_marker(
         state.entropy_pool.n0,
         state.entropy_pool.n1,

@@ -17,3 +17,5 @@ config :jamixir, Jamixir,
   validator_count: 6,
   # Y
   ticket_submission_end: 10
+
+config :logger, level: :debug

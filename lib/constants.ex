@@ -57,7 +57,7 @@ defmodule Constants do
   def max_authorizations_items, do: 8
 
   @doc "P - The timeslot period, in seconds."
-  def slot_period, do: 6
+  def slot_period, do: Jamixir.config()[:slot_period] || 6
 
   @doc "Q - The maximum number of items in the authorization queue."
   def max_authorization_queue_items, do: 80

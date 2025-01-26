@@ -199,7 +199,7 @@ defmodule BlockTest do
       %{state: state, key_pairs: [{priv, pub} | _]} = build(:genesis_state_with_safrole)
 
       # Set the first key in the environment
-      KeyManager.load_keys(%{ed25519: pub, ed25519_priv: priv})
+      KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
 
       # try to create a block for any of the timeslots. One of them should work
       result =
