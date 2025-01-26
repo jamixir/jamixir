@@ -139,9 +139,16 @@ defmodule System.State.ServiceAccount do
     %{
       preimage_storage_p: [&extract_preimages_p/1, :preimages],
       preimage_storage_l: [&extract_preimages_l/1, :history],
+      storage: [&extract_storage/1, :storage],
       gas_limit_g: :min_item_gas,
       gas_limit_m: :min_memo_gas
     }
+  end
+
+  def extract_storage(storage) do
+    for d <- storage || [], into: %{} do
+      {JsonDecoder.from_json(d[:hash]), JsonDecoder.from_json(d[:blob])}
+    end
   end
 
   def extract_preimages_p(preimages) do
