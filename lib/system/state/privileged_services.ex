@@ -9,6 +9,8 @@ defmodule System.State.PrivilegedServices do
   - `alter_validator_service` (χv): The index of the service able to alter the validator queue (ι).
   """
 
+  use JsonDecoder
+
   @type t :: %__MODULE__{
           # m
           manager_service: non_neg_integer(),
@@ -36,5 +38,14 @@ defmodule System.State.PrivilegedServices do
         end
       ) <> e(v.services_gas)
     end
+  end
+
+  def json_mapping do
+    %{
+      manager_service: :chi_m,
+      alter_authorizer_service: :chi_a,
+      alter_validator_service: :chi_v,
+      services_gas: [:chi_g, %{}]  # Using the [value, default] pattern from JsonDecoder
+    }
   end
 end
