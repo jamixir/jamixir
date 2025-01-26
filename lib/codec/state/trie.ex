@@ -70,9 +70,7 @@ defmodule Codec.State.Trie do
     for {k, v} <- serialize(state), do: {Base.encode16(k), Base.encode16(v)}, into: %{}
   end
 
-  def state_root(state) do
-    Merklization.merkelize_state(serialize(state))
-  end
+  def state_root(state), do: Merklization.merkelize_state(serialize(state))
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
   defp encode_accounts(%{} = state_keys, %State{} = state) do

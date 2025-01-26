@@ -3,6 +3,7 @@ defmodule Jamixir.NodeTest do
   alias Storage
   alias Util.Hash
   import Jamixir.Factory
+  @genesis_file "genesis/genesis.json"
 
   setup do
     on_exit(fn ->
@@ -16,13 +17,13 @@ defmodule Jamixir.NodeTest do
   end
 
   test "load_state from file" do
-    assert :ok = Jamixir.Node.load_state("genesis.json")
+    assert :ok = Jamixir.Node.load_state(@genesis_file)
     assert {:ok, _keys} = Jamixir.Node.inspect_state()
   end
 
   @tag :skip
   test "add_block with valid block" do
-    assert :ok = Jamixir.Node.load_state("genesis.json")
+    assert :ok = Jamixir.Node.load_state(@genesis_file)
     parent = build(:decodable_header)
     parent_hash = Hash.default(Encodable.encode(parent))
     Storage.put(parent)
