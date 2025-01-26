@@ -5,7 +5,7 @@ defmodule Codec.State do
 
 
 
-  def from_genesis(file \\ "genesis.json") do
+  def from_genesis(file \\ "genesis/genesis.json") do
     case File.read(file) do
       {:ok, content} ->
         case Jason.decode(content) do
