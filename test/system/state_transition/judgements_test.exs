@@ -1,10 +1,11 @@
 defmodule System.State.JudgementsTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Codec.JsonEncoder
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.Error
   alias System.State.Judgements
-  alias Util.{Hash, Time}
+  alias Util.{Hash, Time, Hex}
   import Mox
   setup :verify_on_exit!
 
@@ -294,6 +295,19 @@ defmodule System.State.JudgementsTest do
                wonky: MapSet.new([<<3>>]),
                offenders: MapSet.new([<<4>>])
              }) == <<2, 1, 2, 1, 2, 1, 3, 1, 4>>
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes a judgement to json" do
+      j = build(:judgements)
+
+      assert JsonEncoder.encode(j) == %{
+               good: for(v <- j.good, do: Hex.encode16(v, prefix: true)),
+               bad: for(v <- j.bad, do: Hex.encode16(v, prefix: true)),
+               wonky: for(v <- j.wonky, do: Hex.encode16(v, prefix: true)),
+               offenders: for(v <- j.offenders, do: Hex.encode16(v, prefix: true))
+             }
     end
   end
 end
