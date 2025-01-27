@@ -1,4 +1,5 @@
 defmodule System.State.CoreReportTest do
+  alias Codec.JsonEncoder
   alias System.State.CoreReport
   alias Util.Hash
   use ExUnit.Case
@@ -133,6 +134,16 @@ defmodule System.State.CoreReportTest do
   describe "from_json/1" do
     test "return nil when json is null" do
       assert CoreReport.from_json(nil) == nil
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes a core report to json" do
+      cr = build(:core_report)
+      assert JsonEncoder.encode(cr) == %{
+               report: JsonEncoder.encode(cr.work_report),
+               timeout: cr.timeslot
+             }
     end
   end
 end

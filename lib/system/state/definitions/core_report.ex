@@ -84,4 +84,7 @@ defmodule System.State.CoreReport do
       timeslot: :timeout
     }
   end
+
+  def to_json_mapping,
+    do: %{work_report: :report, timeslot: :timeout}
 end
