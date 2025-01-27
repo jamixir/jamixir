@@ -24,6 +24,8 @@ defmodule System.State.Ready do
     }
   end
 
+  def to_json_mapping, do: %{work_report: :report}
+
   def parse_dependencies(deps) do
     MapSet.new(for d <- deps, do: JsonDecoder.from_json(d))
   end

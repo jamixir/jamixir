@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias System.State.Ready
   alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
@@ -492,6 +493,20 @@ defmodule Jamixir.Factory do
       attempt: 1,
       signature: Hash.random(@bandersnatch_proof_size)
     }
+  end
+
+  def ready_to_accumulate_factory(_attrs) do
+    for(
+      _ <- 1..Constants.epoch_length(),
+        do: %Ready{
+          work_report: work_report_factory(),
+          dependencies: MapSet.new([Hash.random()])
+        }
+    )
+  end
+
+  def accumulation_history_factory(_attrs) do
+    for(_ <- 1..Constants.epoch_length(), do: MapSet.new([Hash.random()]))
   end
 
   def shuffle_hash_factory do

@@ -357,20 +357,26 @@ defmodule System.StateTest do
         services: %{
           1 => s1,
           2 => s2
-        }
+        },
+        ready_to_accumulate: build(:ready_to_accumulate),
+        accumulation_history: build(:accumulation_history)
       }
 
       json = JsonEncoder.encode(state)
+
       assert json.delta == [
-        %{
-          id: 1,
-          info: JsonEncoder.encode(s1)
-        },
-        %{
-          id: 2,
-          info: JsonEncoder.encode(s2)
-        }
-      ]
+               %{
+                 id: 1,
+                 info: JsonEncoder.encode(s1)
+               },
+               %{
+                 id: 2,
+                 info: JsonEncoder.encode(s2)
+               }
+             ]
+
+      assert json.theta == for r <- state.ready_to_accumulate, do: JsonEncoder.encode(r)
+      assert json.xi == for h <- state.accumulation_history, do: JsonEncoder.encode(h)
     end
   end
 end
