@@ -20,8 +20,14 @@ defmodule Jamixir.NodeCLIServer do
     TimeTicker.subscribe()
     init_storage()
     RingVrf.init_ring_context()
-    {:ok, jam_state} = State.from_genesis()
-    {:ok, %{jam_state: jam_state}}
+    {:ok, %{jam_state: init_jam_state()}}
+  end
+
+  defp init_jam_state do
+    genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis.json")
+    Logger.info("✨ Initializing JAM state from genesis file: #{genesis_file}")
+    {:ok, jam_state} = State.from_genesis(genesis_file)
+    jam_state
   end
 
   defp init_storage do

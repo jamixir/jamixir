@@ -1,12 +1,11 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Util.Time
-  alias Block.Extrinsic
   alias Block
+  alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   alias System.State
-  alias Util.Hash
+  alias Util.{Hash, Merklization, Time}
   import Mox
   import TestHelper
   import OriginalModules
@@ -203,7 +202,8 @@ defmodule BlockTest do
 
       # try to create a block for any of the timeslots. One of them should work
       result =
-        for i <- 100..(100 + Constants.epoch_length()), do: Block.new(%Extrinsic{}, nil, state, i)
+        for i <- 100..(100 + Constants.epoch_length() * 2),
+            do: Block.new(%Extrinsic{}, nil, state, i)
 
       assert Enum.any?(result, fn
                {:ok, _} -> true
