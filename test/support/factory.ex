@@ -131,8 +131,8 @@ defmodule Jamixir.Factory do
   def refinement_context_factory do
     %RefinementContext{
       anchor: Hash.one(),
-      state_root_: Hash.two(),
-      beefy_root_: Hash.three(),
+      state_root: Hash.two(),
+      beefy_root: Hash.three(),
       lookup_anchor: <<4::256>>,
       timeslot: 5
     }

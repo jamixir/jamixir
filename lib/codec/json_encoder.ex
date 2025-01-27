@@ -25,6 +25,8 @@ defmodule Codec.JsonEncoder do
     }
   end
 
+  def encode(%MapSet{} = set), do: set |> MapSet.to_list() |> encode()
+
   def encode(%{__struct__: module} = struct) do
     # Get key mappings if module has them, otherwise empty map
     key_mapping =

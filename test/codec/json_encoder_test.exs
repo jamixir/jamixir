@@ -1,7 +1,6 @@
 defmodule Codec.JsonEncoderTest do
   use ExUnit.Case
   alias Codec.JsonEncoder
-  alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, Hex}
   import Jamixir.Factory
 

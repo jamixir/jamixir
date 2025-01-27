@@ -1,5 +1,6 @@
 defmodule RefinementContextTest do
-  alias Util.Hash
+  alias Util.{Hash, Hex}
+  alias Codec.JsonEncoder
   use ExUnit.Case
   import Jamixir.Factory
 
@@ -30,5 +31,18 @@ defmodule RefinementContextTest do
     encoded = Encodable.encode(rc)
     {decoded, _} = RefinementContext.decode(encoded)
     assert rc == decoded
+  end
+
+  describe "to_json/1" do
+    test "encodes refinement context to json", %{rc: rc} do
+      assert JsonEncoder.encode(rc) == %{
+               anchor: Hex.encode16(rc.anchor, prefix: true),
+               state_root: Hex.encode16(rc.state_root, prefix: true),
+               beefy_root: Hex.encode16(rc.beefy_root, prefix: true),
+               lookup_anchor: Hex.encode16(rc.lookup_anchor, prefix: true),
+               lookup_anchor_slot: rc.timeslot,
+               prerequisite: JsonEncoder.encode(rc.prerequisite)
+             }
+    end
   end
 end
