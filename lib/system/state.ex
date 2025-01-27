@@ -215,4 +215,18 @@ defmodule System.State do
   end
 
 
+  def to_json_mapping do
+    %{
+      services: {:delta, fn services ->
+        for {id, service} <- services do
+          %{
+            id: id,
+            info: service
+          }
+        end
+      end}
+    }
+  end
+
+
 end

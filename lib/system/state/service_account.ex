@@ -16,6 +16,7 @@ defmodule System.State.ServiceAccount do
   alias System.State.ServiceAccount
   alias Util.Hash
   use Codec.Encoder
+  import Codec.JsonEncoder
 
   @type t :: %__MODULE__{
           # s
@@ -164,5 +165,21 @@ defmodule System.State.ServiceAccount do
          d[:key][:length]
        }, d[:value]}
     end
+  end
+
+  def to_json_mapping do
+    %{
+      storage: {:storage, &to_list(&1, :hash, :blob)},
+      preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
+      preimage_storage_l:
+        {:history,
+         &to_list(
+           &1,
+           {:key, fn key -> to_object(key, :hash, :length) end},
+           :value
+         )},
+      gas_limit_g: :min_item_gas,
+      gas_limit_m: :min_memo_gas
+    }
   end
 end

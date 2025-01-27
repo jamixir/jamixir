@@ -1,9 +1,10 @@
 defmodule System.State.ServiceAccountTest do
   alias System.State.ServiceAccount
-  alias Util.Hash
+  alias Util.{Hash, Hex}
   use ExUnit.Case
   use Codec.Encoder
   import Jamixir.Factory
+  alias Codec.JsonEncoder
 
   setup do
     {:ok, %{sa: build(:service_account), preimage: Hash.random()}}
@@ -143,6 +144,43 @@ defmodule System.State.ServiceAccountTest do
       assert Codec.Encoder.encode(sa) ==
                sa.code_hash <>
                  "\xE8\x03\0\0\0\0\0\0\x88\x13\0\0\0\0\0\0\x10'\0\0\0\0\0\0y\0\0\0\0\0\0\0\x03\0\0\0"
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes service account to json format" do
+      account = build(:service_account)
+      expected_code_hash = Hex.encode16(account.code_hash, prefix: true)
+
+      json = JsonEncoder.encode(account)
+
+      assert json == %{
+               code_hash: expected_code_hash,
+               balance: account.balance,
+               min_item_gas: account.gas_limit_g,
+               min_memo_gas: account.gas_limit_m,
+               preimages: [
+                 %{
+                   hash: expected_code_hash,
+                   blob: Hex.encode16(account.preimage_storage_p[account.code_hash], prefix: true)
+                 }
+               ],
+               history: [
+                 %{
+                   key: %{
+                     hash: expected_code_hash,
+                     length: 4
+                   },
+                   value: [1, 2, 3]
+                 }
+               ],
+               storage: Map.to_list(account.storage) |> Enum.map(fn {key, value} ->
+                 %{
+                   hash: Hex.encode16(key, prefix: true),
+                   blob: Hex.encode16(value, prefix: true)
+                 }
+               end)
+             }
     end
   end
 end

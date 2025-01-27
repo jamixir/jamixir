@@ -1,6 +1,32 @@
 defmodule Codec.JsonEncoder do
   import Util.Hex
 
+  def to_list(map, {key, transform}, value_name)
+      when is_map(map) and is_function(transform) do
+    for {k, v} <- map do
+      key_object = transform.(k)
+      %{key => key_object, value_name => v}
+    end
+  end
+
+  def to_list(map, key_name, value_name) when is_map(map) do
+    for {k, v} <- map do
+      %{
+        key_name => k,
+        value_name => v
+      }
+    end
+  end
+
+  def to_object({k, v}, key_name, value_name) do
+    %{
+      key_name => k,
+      value_name => v
+    }
+  end
+
+  
+
   def encode(%{__struct__: module} = struct) do
     # Get key mappings if module has them, otherwise empty map
     key_mapping =
@@ -14,7 +40,9 @@ defmodule Codec.JsonEncoder do
       |> Map.drop(Map.keys(key_mapping))
 
     # Handle root transformation separately
-    case Enum.find(key_mapping, fn {_, mapping} -> match?({:_root, _}, mapping) or mapping == :_root end) do
+    case Enum.find(key_mapping, fn {_, mapping} ->
+           match?({:_root, _}, mapping) or mapping == :_root
+         end) do
       {key, {:_root, transform}} ->
         transform.(Map.get(struct, key)) |> encode()
 
@@ -28,9 +56,15 @@ defmodule Codec.JsonEncoder do
             original_value = Map.get(struct, old_key)
 
             case mapping do
-              {new_key, transform} -> {new_key, transform.(original_value)}
-              new_key when is_atom(new_key) -> {new_key, original_value}
-              [parent_key, child_key] -> {parent_key, %{child_key => original_value}}
+              {new_key, transform} ->
+                {new_key, transform.(original_value)}
+
+              new_key when is_atom(new_key) ->
+                {new_key, original_value}
+
+              [parent_key, child_key] ->
+                {parent_key, %{child_key => original_value}}
+
               f when is_function(f) ->
                 [parent_key, child_key] = f.(original_value)
                 {parent_key, %{child_key => original_value}}
