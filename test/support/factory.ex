@@ -273,7 +273,8 @@ defmodule Jamixir.Factory do
     %System.State.PrivilegedServices{
       manager_service: sequence(:manager_service, & &1),
       alter_authorizer_service: sequence(:alter_authorizer_service, & &1),
-      alter_validator_service: sequence(:alter_validator_service, & &1)
+      alter_validator_service: sequence(:alter_validator_service, & &1),
+      services_gas: %{1 => 1000, 2 => 2000, 3 => 3000}
     }
   end
 
