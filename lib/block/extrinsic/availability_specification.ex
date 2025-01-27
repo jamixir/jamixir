@@ -99,4 +99,6 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   end
 
   def json_mapping, do: %{work_package_hash: :hash, segment_count: :exports_count}
+
+  def to_json_mapping, do: json_mapping()
 end
