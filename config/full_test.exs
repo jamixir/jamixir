@@ -17,3 +17,5 @@ config :jamixir, Jamixir,
   validator_count: 1023,
   # Y
   ticket_submission_end: 500
+
+config :logger, level: :none
