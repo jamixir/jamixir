@@ -16,7 +16,7 @@ docker run jamixir
 ## Using development env
 
 ```
-mix jam
+mix jam --keys test/keys/0.json
 ```
 
 ### How to Run Unit Tests

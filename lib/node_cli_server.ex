@@ -27,7 +27,7 @@ defmodule Jamixir.NodeCLIServer do
   defp init_storage do
     case Storage.start_link(persist: true) do
       {:ok, _} ->
-        Logger.info("Storage initialized")
+        Logger.info("🗃️ Storage initialized")
         {:ok, nil}
 
       error ->
@@ -70,11 +70,11 @@ defmodule Jamixir.NodeCLIServer do
 
   @impl true
   def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
-    Logger.info("NodeCLIServer received new timeslot: #{timeslot}")
+    Logger.debug("Node received new timeslot: #{timeslot}")
 
     case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
       {:ok, block} ->
-        Logger.info("Block created successfully. #{inspect(block)}")
+        Logger.info("⛓️ Block created successfully. #{inspect(block)}")
 
       # case Jamixir.Node.add_block(block) do
       #   :ok -> Logger.info("Block added successfully")
