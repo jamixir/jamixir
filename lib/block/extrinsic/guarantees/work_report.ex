@@ -10,6 +10,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias PVM.Refine
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
+  alias Codec.JsonEncoder
 
   use Codec.Encoder
   use MapUnion
@@ -285,6 +286,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       segment_root_lookup: &decode_segment_root_lookup/1
     }
   end
+
+  def to_json_mapping,
+    do: %{
+      specification: :package_spec,
+      refinement_context: :context,
+      output: :auth_output,
+      segment_root_lookup: {:segment_root_lookup, &JsonEncoder.to_list(&1, :work_package_hash, :segment_tree_root)}
+    }
 
   def decode_segment_root_lookup(json) do
     if json == nil do
