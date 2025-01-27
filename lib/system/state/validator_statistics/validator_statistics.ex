@@ -140,6 +140,8 @@ defmodule System.State.ValidatorStatistics do
     }
   end
 
+  def to_json_mapping, do: %{current_epoch_statistics: :current, previous_epoch_statistics: :last}
+
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
     use Codec.Encoder

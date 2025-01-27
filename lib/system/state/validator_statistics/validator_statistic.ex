@@ -48,4 +48,6 @@ defmodule System.State.ValidatorStatistic do
       availability_assurances: :assurances
     }
   end
+
+  def to_json_mapping, do: json_mapping()
 end
