@@ -31,10 +31,11 @@ defmodule System.State do
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
-          # Formula (162) v0.4.5
-          accumulation_history: list(MapSet.t(Types.hash())),
           # Formula (164) v0.4.5
-          ready_to_accumulate: list(list(Ready.t()))
+          ready_to_accumulate: list(list(Ready.t())),
+          # Formula (162) v0.4.5
+          accumulation_history: list(MapSet.t(Types.hash()))
+
         }
 
   # Formula (15) v0.4.5 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
@@ -71,10 +72,11 @@ defmodule System.State do
     judgements: %Judgements{},
     # π: Validator statistics
     validator_statistics: %ValidatorStatistics{},
-    # ξ
-    accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length()),
     # ϑ
-    ready_to_accumulate: Ready.initial_state()
+    ready_to_accumulate: Ready.initial_state(),
+    # ξ
+    accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length())
+
   ]
 
   # Formula (12) v0.4.5
@@ -224,7 +226,9 @@ defmodule System.State do
             info: service
           }
         end
-      end}
+      end},
+      ready_to_accumulate: :theta,
+      accumulation_history: :xi
     }
   end
 
