@@ -19,6 +19,7 @@ defmodule Jamixir.NodeCLIServer do
   def init(_) do
     TimeTicker.subscribe()
     init_storage()
+    RingVrf.init_ring_context()
     {:ok, jam_state} = State.from_genesis()
     {:ok, %{jam_state: jam_state}}
   end

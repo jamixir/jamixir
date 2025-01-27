@@ -47,6 +47,7 @@ defmodule KeyManager do
 
   def load_keys(%{bandersnatch: _, bandersnatch_priv: _} = keys) do
     Application.put_env(:jamixir, :keys, keys)
+    {:ok, keys}
   end
 
   def load_keys(keys_file) do

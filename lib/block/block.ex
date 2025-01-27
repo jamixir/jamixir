@@ -44,10 +44,7 @@ defmodule Block do
       parent_hash: parent_hash
     }
 
-    Logger.debug("2")
-
     header = put_in(header.epoch_mark, choose_epoch_marker(timeslot, state))
-    Logger.debug("3")
 
     rotated_entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
 
@@ -87,7 +84,7 @@ defmodule Block do
 
   defp get_signing_key(nil, pubkey) do
     case Application.get_env(:jamixir, :keys) do
-      %{bandersnatch_priv: priv, bandersnatch: ^pubkey} -> {:ok, {priv, pubkey}}
+      %{bandersnatch_priv: priv, bandersnatch: ^pubkey} -> {:ok, {{priv, pubkey}, pubkey}}
       _ -> {:error, :no_valid_keys_found}
     end
   end
@@ -101,8 +98,6 @@ defmodule Block do
 
   defp choose_epoch_marker(timeslot, state) do
     if Time.new_epoch?(state.timeslot, timeslot) do
-      Logger.debug("4")
-
       Safrole.new_epoch_marker(
         state.entropy_pool.n0,
         state.entropy_pool.n1,
