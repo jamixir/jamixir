@@ -1,9 +1,10 @@
 defmodule System.StateTransition.EntropyPoolTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Codec.JsonEncoder
   alias Block.Header
   alias System.State.EntropyPool
-  alias Util.Hash
+  alias Util.{Hash, Hex}
   import Mox
   use Codec.Encoder
 
@@ -84,6 +85,21 @@ defmodule System.StateTransition.EntropyPoolTest do
       {:ok, state_} = System.State.add_block(state, block)
 
       assert state_.entropy_pool.n0 == h(state.entropy_pool.n0 <> vrf_output)
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes entropy pool to list of hashes" do
+      pool = build(:entropy_pool)
+
+      json = JsonEncoder.encode(pool)
+
+      assert json == [
+               Hex.encode16(pool.n0, prefix: true),
+               Hex.encode16(pool.n1, prefix: true),
+               Hex.encode16(pool.n2, prefix: true),
+               Hex.encode16(pool.n3, prefix: true)
+             ]
     end
   end
 end

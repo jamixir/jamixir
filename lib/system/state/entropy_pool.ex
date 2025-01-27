@@ -44,4 +44,14 @@ defmodule System.State.EntropyPool do
     [n0, n1, n2, n3] = JsonDecoder.from_json(json)
     %__MODULE__{n0: n0, n1: n1, n2: n2, n3: n3}
   end
+
+  def to_json_mapping do
+    %{
+      _root:
+        {:_root,
+         fn %__MODULE__{} = ep ->
+           [ep.n0, ep.n1, ep.n2, ep.n3]
+         end}
+    }
+  end
 end
