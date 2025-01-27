@@ -107,6 +107,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   def json_mapping,
     do: %{service: :service_id, gas_ratio: :accumulate_gas, result: &parse_result/1}
 
+  def to_json_mapping,
+    do: %{service: :service_id, gas_ratio: :accumulate_gas, result: {:result, &result_to_json/1}}
+
   def parse_result(%{ok: ok}), do: {:ok, JsonDecoder.from_json(ok)}
   def parse_result(%{panic: _}), do: {:error, :panic}
+
+  def result_to_json({:ok, b}), do: %{ok: b}
+  def result_to_json({:error, e}), do: %{e => nil}
 end

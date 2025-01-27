@@ -59,11 +59,11 @@ defmodule Codec.JsonEncoder do
             original_value = Map.get(struct, old_key)
 
             case mapping do
-              {new_key, transform} ->
-                {new_key, transform.(original_value)}
-
               new_key when is_atom(new_key) ->
                 {new_key, original_value}
+
+              {new_key, transform} ->
+                {new_key, transform.(original_value)}
 
               [parent_key, child_key] ->
                 {parent_key, %{child_key => original_value}}
