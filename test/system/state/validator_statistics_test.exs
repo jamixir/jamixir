@@ -1,4 +1,5 @@
 defmodule System.State.ValidatorStatisticsTest do
+  alias Codec.JsonEncoder
   alias System.State.ValidatorStatistics
   use ExUnit.Case
   import Jamixir.Factory
@@ -234,6 +235,17 @@ defmodule System.State.ValidatorStatisticsTest do
         )
 
       assert msg == :author_stats_not_found
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes a validator statistics to json" do
+      vs = build(:validator_statistics)
+      json = JsonEncoder.encode(vs)
+      assert json == %{
+               current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
+               last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s))
+             }
     end
   end
 end
