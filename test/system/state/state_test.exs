@@ -7,7 +7,7 @@ defmodule System.StateTest do
   import Bitwise
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{Encoder, NilDiscriminator}
+  alias Codec.{Encoder, NilDiscriminator, JsonEncoder}
   alias IO.ANSI
   alias System.State
   alias Util.Hash
@@ -345,6 +345,32 @@ defmodule System.StateTest do
           assert state_hex[my_k] == my_v
         end
       end
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes services map correctly" do
+      s1 = build(:service_account)
+      s2 = build(:service_account)
+
+      state = %State{
+        services: %{
+          1 => s1,
+          2 => s2
+        }
+      }
+
+      json = JsonEncoder.encode(state)
+      assert json.delta == [
+        %{
+          id: 1,
+          info: JsonEncoder.encode(s1)
+        },
+        %{
+          id: 2,
+          info: JsonEncoder.encode(s2)
+        }
+      ]
     end
   end
 end
