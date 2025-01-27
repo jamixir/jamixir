@@ -233,6 +233,20 @@ defmodule System.State.Safrole do
     }
   end
 
+  def to_json_mapping do
+    %{
+      pending: :gamma_k,
+      slot_sealers: fn sealers ->
+        case sealers do
+          [%SealKeyTicket{} | _] -> [:gamma_s, :tickets]
+          _ -> [:gamma_s, :keys]
+        end
+      end,
+      ticket_accumulator: :gamma_a,
+      epoch_root: :gamma_z
+    }
+  end
+
   defp parse_slot_sealers(%{keys: keys}) do
     keys |> Enum.map(&JsonDecoder.from_json/1)
   end

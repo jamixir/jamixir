@@ -30,6 +30,10 @@ defmodule Codec.JsonEncoder do
             case mapping do
               {new_key, transform} -> {new_key, transform.(original_value)}
               new_key when is_atom(new_key) -> {new_key, original_value}
+              [parent_key, child_key] -> {parent_key, %{child_key => original_value}}
+              f when is_function(f) ->
+                [parent_key, child_key] = f.(original_value)
+                {parent_key, %{child_key => original_value}}
             end
           end
 
