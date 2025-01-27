@@ -196,7 +196,7 @@ defmodule BlockTest do
     end
 
     test "create a valid block with env key" do
-      %{state: state, key_pairs: [{priv, pub} | _]} = build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: [{{priv, _}, pub} | _]} = build(:genesis_state_with_safrole)
 
       # Set the first key in the environment
       KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})

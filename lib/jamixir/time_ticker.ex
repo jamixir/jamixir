@@ -38,13 +38,13 @@ defmodule Jamixir.TimeTicker do
   @impl true
   def handle_info(:tick, state) do
     new_timeslot = Time.current_timeslot()
+    schedule_tick(state.tick_interval)
 
     if new_timeslot != state.last_timeslot do
       Logger.info("🕒 Time has come: #{new_timeslot}")
       broadcast_timeslot(new_timeslot, state.subscribers)
     end
 
-    schedule_tick(state.tick_interval)
     {:noreply, %{state | last_timeslot: new_timeslot}}
   end
 

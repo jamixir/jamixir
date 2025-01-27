@@ -243,4 +243,12 @@ defmodule RingVrfTest do
       assert out1 == out3
     end
   end
+
+  describe "sign with test keys" do
+    test "sign with test" do
+      {:ok, keys} = KeyManager.load_keys("test/keys/0.json")
+      output = RingVrf.ietf_vrf_output({keys.bandersnatch_priv, keys.bandersnatch}, <<1>>)
+      assert is_binary(output)
+    end
+  end
 end
