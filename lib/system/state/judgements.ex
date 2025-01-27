@@ -17,14 +17,14 @@ defmodule System.State.Judgements do
           # w
           wonky: MapSet.t(Types.hash()),
           # o
-          punish: MapSet.t(Types.ed25519_key())
+          offenders: MapSet.t(Types.ed25519_key())
         }
 
   # Formula (97) v0.4.5
   defstruct good: MapSet.new(),
             bad: MapSet.new(),
             wonky: MapSet.new(),
-            punish: MapSet.new()
+            offenders: MapSet.new()
 
   mockable transition(%Header{} = header, disputes, state) do
     # Formula (107) v0.4.5
@@ -43,7 +43,7 @@ defmodule System.State.Judgements do
           {:ok,
            %Judgements{
              posterior_judgement_sets(v, state.judgements)
-             | punish: state.judgements.punish ++ MapSet.new(new_offenders)
+             | offenders: state.judgements.offenders ++ MapSet.new(new_offenders)
            }, bad_wonky_verdicts}
         else
           {:error, Error.invalid_header_markers()}
@@ -137,7 +137,7 @@ defmodule System.State.Judgements do
     use Codec.Encoder
     # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
     def encode(%Judgements{} = j) do
-      e({sorted_vs(j.good), sorted_vs(j.bad), sorted_vs(j.wonky), sorted_vs(j.punish)})
+      e({sorted_vs(j.good), sorted_vs(j.bad), sorted_vs(j.wonky), sorted_vs(j.offenders)})
     end
 
     defp sorted_vs(mapset) do
@@ -154,7 +154,7 @@ defmodule System.State.Judgements do
       good: [decoder, :good],
       bad: [decoder, :bad],
       wonky: [decoder, :wonky],
-      punish: [decoder, :offenders]
+      offenders: [decoder, :offenders]
     }
   end
 end

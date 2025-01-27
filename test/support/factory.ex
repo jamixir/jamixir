@@ -271,9 +271,9 @@ defmodule Jamixir.Factory do
 
   def privileged_services_factory do
     %System.State.PrivilegedServices{
-      manager_service: sequence(:manager_service, & &1),
-      alter_authorizer_service: sequence(:alter_authorizer_service, & &1),
-      alter_validator_service: sequence(:alter_validator_service, & &1),
+      manager_service: 1,
+      alter_authorizer_service: 2,
+      alter_validator_service: 3,
       services_gas: %{1 => 1000, 2 => 2000, 3 => 3000}
     }
   end
@@ -343,7 +343,7 @@ defmodule Jamixir.Factory do
       good: MapSet.new([Hash.random()]),
       bad: MapSet.new([Hash.random()]),
       wonky: MapSet.new([Hash.random()]),
-      punish: MapSet.new([Hash.random()])
+      offenders: MapSet.new([Hash.random()])
     }
   end
 
@@ -430,8 +430,9 @@ defmodule Jamixir.Factory do
       :header,
       Map.merge(attrs, %{
         prior_state_root: Hash.random(),
-        epoch_mark: {Hash.random(), Hash.random(),
-          for(_ <- 1..Constants.validator_count(), do: Hash.random())},
+        epoch_mark:
+          {Hash.random(), Hash.random(),
+           for(_ <- 1..Constants.validator_count(), do: Hash.random())},
         vrf_signature: Hash.random(96),
         block_seal: Hash.random(96)
       })

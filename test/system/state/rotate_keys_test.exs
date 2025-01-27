@@ -40,7 +40,7 @@ defmodule System.State.RotateKeysTest do
       offenders = MapSet.new([v1.ed25519, v2.ed25519, v3.ed25519])
 
       {pending_, current_, prev_, epoch_root_} =
-        RotateKeys.rotate_keys(header, state, %Judgements{punish: offenders})
+        RotateKeys.rotate_keys(header, state, %Judgements{offenders: offenders})
 
       assert Enum.all?(pending_, &TH.nullified?/1)
       assert current_ == state.safrole.pending
@@ -58,7 +58,7 @@ defmodule System.State.RotateKeysTest do
       offenders = MapSet.new()
 
       {pending_, current_, prev_, epoch_root_} =
-        RotateKeys.rotate_keys(header, state, %Judgements{punish: offenders})
+        RotateKeys.rotate_keys(header, state, %Judgements{offenders: offenders})
 
       assert pending_ == [v1, v2, v3]
       assert current_ == state.safrole.pending
@@ -76,7 +76,7 @@ defmodule System.State.RotateKeysTest do
       offenders = MapSet.new([v1.ed25519, v3.ed25519])
 
       {pending_, current_, prev_, epoch_root_} =
-        RotateKeys.rotate_keys(header, state, %Judgements{punish: offenders})
+        RotateKeys.rotate_keys(header, state, %Judgements{offenders: offenders})
 
       assert Enum.count(pending_, &TH.nullified?/1) == 2
       assert Enum.at(pending_, 1) == v2
@@ -89,7 +89,7 @@ defmodule System.State.RotateKeysTest do
       state = %State{state | timeslot: 2, next_validators: []}
 
       result =
-        RotateKeys.rotate_keys(%Header{timeslot: 3}, state, %Judgements{punish: MapSet.new()})
+        RotateKeys.rotate_keys(%Header{timeslot: 3}, state, %Judgements{offenders: MapSet.new()})
 
       assert result == {state.safrole.pending, [v2], [], state.safrole.epoch_root}
     end

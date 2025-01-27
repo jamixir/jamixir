@@ -6,7 +6,7 @@ defmodule System.State.PrivilegedServicesTest do
   describe "encode/1" do
     test "encode smoke test" do
       assert Codec.Encoder.encode(build(:privileged_services)) ==
-               <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 131, 232, 2, 135, 208, 3, 139, 184>>
+               <<1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 3, 1, 131, 232, 2, 135, 208, 3, 139, 184>>
     end
   end
 

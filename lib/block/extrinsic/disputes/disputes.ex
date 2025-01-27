@@ -133,7 +133,7 @@ defmodule Block.Extrinsic.Disputes do
   # Formula (101) v0.4.5
   # Formula (102) v0.4.5
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
-    MapSet.new(curr_validators, & &1.ed25519) ++ MapSet.new(prev_validators, & &1.ed25519) \\ judgements.punish
+    MapSet.new(curr_validators, & &1.ed25519) ++ MapSet.new(prev_validators, & &1.ed25519) \\ judgements.offenders
   end
 
   # Formula (113) v0.4.5
