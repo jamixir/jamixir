@@ -8,6 +8,7 @@ defmodule System.State.PrivilegedServices do
   - `alter_authorizer_service` (χa): The index of the service able to alter the authorizer queue (φ).
   - `alter_validator_service` (χv): The index of the service able to alter the validator queue (ι).
   """
+  alias Codec.JsonEncoder
 
   use JsonDecoder
 
@@ -45,7 +46,15 @@ defmodule System.State.PrivilegedServices do
       manager_service: :chi_m,
       alter_authorizer_service: :chi_a,
       alter_validator_service: :chi_v,
-      services_gas: [:chi_g, %{}]  # Using the [value, default] pattern from JsonDecoder
+      services_gas: [:chi_g, %{}]
     }
   end
+
+  def to_json_mapping,
+    do: %{
+      manager_service: :chi_m,
+      alter_authorizer_service: :chi_a,
+      alter_validator_service: :chi_v,
+      services_gas: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
+    }
 end
