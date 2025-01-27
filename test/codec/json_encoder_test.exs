@@ -67,5 +67,17 @@ defmodule Codec.JsonEncoderTest do
       json = JsonEncoder.encode(history)
       assert json == Enum.map(history.blocks, &JsonEncoder.encode/1)
     end
+
+
+    test "encodes Safrole" do
+      safrole = build(:safrole)
+      json = JsonEncoder.encode(safrole)
+      assert json == %{
+               gamma_k: Enum.map(safrole.pending, &JsonEncoder.encode/1),
+               gamma_s: %{tickets: Enum.map(safrole.slot_sealers, &JsonEncoder.encode/1)},
+               gamma_a: Enum.map(safrole.ticket_accumulator, &JsonEncoder.encode/1),
+               gamma_z: Hex.encode16(safrole.epoch_root, prefix: true)
+             }
+    end
   end
 end
