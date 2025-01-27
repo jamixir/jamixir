@@ -14,8 +14,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       refinement_context =
         build(:refinement_context,
           anchor: <<99>>,
-          state_root_: <<77>>,
-          beefy_root_: Codec.Encoder.super_peak_mmr([<<1>>, <<2>>])
+          state_root: <<77>>,
+          beefy_root: Codec.Encoder.super_peak_mmr([<<1>>, <<2>>])
         )
 
       g1 =
@@ -48,7 +48,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           blocks: [
             %RecentBlock{
               header_hash: refinement_context.anchor,
-              state_root: refinement_context.state_root_,
+              state_root: refinement_context.state_root,
               accumulated_result_mmr: [<<1>>, <<2>>]
             },
             %RecentBlock{
@@ -228,7 +228,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_rb = %RecentBlock{valid_rb | header_hash: nil}
       s = put_in(state.recent_history, %RecentHistory{valid_rh | blocks: [invalid_rb]})
 
-      assert Guarantee.validate([g1], s, %Header{timeslot: 1, prior_state_root: refinement_context.state_root_}) == {:error, :anchor_not_recent}
+      assert Guarantee.validate([g1], s, %Header{timeslot: 1, prior_state_root: refinement_context.state_root}) == {:error, :anchor_not_recent}
     end
 
     test "error when recent history does not have state_root", %{g1: g1, state: state} do
@@ -247,7 +247,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([g1], invalid_state, %Header{timeslot: 1, prior_state_root: refinement_context.state_root_}) ==
+      assert Guarantee.validate([g1], invalid_state, %Header{timeslot: 1, prior_state_root: refinement_context.state_root}) ==
                {:error, :bad_beefy_mmr}
     end
 
