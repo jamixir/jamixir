@@ -25,8 +25,6 @@ defmodule Codec.JsonEncoder do
     }
   end
 
-  
-
   def encode(%{__struct__: module} = struct) do
     # Get key mappings if module has them, otherwise empty map
     key_mapping =
@@ -43,6 +41,9 @@ defmodule Codec.JsonEncoder do
     case Enum.find(key_mapping, fn {_, mapping} ->
            match?({:_root, _}, mapping) or mapping == :_root
          end) do
+      {:_root, {:_root, transform}} ->
+        transform.(struct) |> encode()
+
       {key, {:_root, transform}} ->
         transform.(Map.get(struct, key)) |> encode()
 
