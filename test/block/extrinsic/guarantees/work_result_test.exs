@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   alias Block.Extrinsic.Guarantee.WorkResult
-  alias Util.Hash
+  alias Util.{Hash, Hex}
   use ExUnit.Case
   import Jamixir.Factory
 
@@ -47,6 +47,31 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
       assert wr.payload_hash == Hash.default(wi.payload)
       assert wr.gas_ratio == wi.refine_gas_limit
       assert wr.result == output
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes a work result to json", %{wr: wr} do
+      json = Codec.JsonEncoder.encode(wr)
+      assert json == %{
+               code_hash: Hex.encode16(wr.code_hash, prefix: true),
+               payload_hash: Hex.encode16(wr.payload_hash, prefix: true),
+               service_id: wr.service,
+               accumulate_gas: wr.gas_ratio,
+               result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true  )}
+             }
+    end
+
+    test "encodes a work result with error to json", %{wr: wr} do
+      wr = put_in(wr.result, {:error, :panic})
+      json = Codec.JsonEncoder.encode(wr)
+      assert json == %{
+               code_hash: Hex.encode16(wr.code_hash, prefix: true),
+               payload_hash: Hex.encode16(wr.payload_hash, prefix: true),
+               service_id: wr.service,
+               accumulate_gas: wr.gas_ratio,
+               result: %{:panic => nil}
+             }
     end
   end
 end
