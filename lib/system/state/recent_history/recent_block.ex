@@ -31,4 +31,15 @@ defmodule System.State.RecentHistory.RecentBlock do
         into: %{},
         do: {JsonDecoder.from_json(report[:hash]), JsonDecoder.from_json(report[:exports_root])}
   end
+
+  def to_json_mapping do
+    %{
+      accumulated_result_mmr: :mmr,
+      work_report_hashes:
+        {:reported,
+         &for {hash, exports_root} <- &1 do
+           %{hash: hash, exports_root: exports_root}
+         end}
+    }
+  end
 end

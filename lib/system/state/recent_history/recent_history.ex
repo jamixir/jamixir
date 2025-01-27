@@ -167,4 +167,11 @@ defmodule System.State.RecentHistory do
       _ -> %RecentHistory{blocks: for(b <- json_data, do: RecentBlock.from_json(b))}
     end
   end
+
+  def to_json_mapping do
+    %{
+      # nil key means use the value as root
+      blocks: :_root
+    }
+  end
 end
