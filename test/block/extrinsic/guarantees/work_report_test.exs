@@ -5,7 +5,8 @@ defmodule WorkReportTest do
   alias Block.Extrinsic.WorkPackage
   alias System.State.Ready
   alias System.State.ServiceAccount
-  alias Util.Hash
+  alias Util.{Hash, Hex}
+  alias Codec.JsonEncoder
 
   setup_all do
     preimage = Hash.random()
@@ -409,6 +410,28 @@ defmodule WorkReportTest do
     test "processes a work item smoke test", %{wp: wp, state: state} do
       wp = %WorkPackage{wp | work_items: [build(:work_item)]}
       assert WorkReport.process_item(wp, 0, <<>>, state.services) == {:bad, []}
+    end
+  end
+
+  describe "to_json/1" do
+    test "encodes a work report to json", %{wr: wr} do
+      wr = put_in(wr.segment_root_lookup, %{Hash.one() => Hash.two()})
+      json = JsonEncoder.encode(wr)
+
+      assert json == %{
+               package_spec: JsonEncoder.encode(wr.specification),
+               context: JsonEncoder.encode(wr.refinement_context),
+               core_index: wr.core_index,
+               authorizer_hash: Hex.encode16(wr.authorizer_hash, prefix: true),
+               auth_output: Hex.encode16(wr.output, prefix: true),
+               segment_root_lookup: [
+                 %{
+                   work_package_hash: Hex.encode16(Hash.one(), prefix: true),
+                   segment_tree_root: Hex.encode16(Hash.two(), prefix: true)
+                 }
+               ],
+               results: for(r <- wr.results, do: JsonEncoder.encode(r))
+             }
     end
   end
 end
