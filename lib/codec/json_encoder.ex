@@ -1,6 +1,8 @@
 defmodule Codec.JsonEncoder do
   import Util.Hex
 
+  def to_list(map, _, _) when map_size(map) == 0, do: nil
+
   def to_list(map, {key, transform}, value_name)
       when is_map(map) and is_function(transform) do
     for {k, v} <- map do
@@ -74,7 +76,8 @@ defmodule Codec.JsonEncoder do
             end
           end
 
-        Map.merge(base, transformed) |> Map.new(fn {k, v} -> {k, encode(v)} end)
+        merged = Map.merge(base, transformed)
+        Map.new(merged, fn {k, v} -> {k, encode(v)} end)
     end
   end
 
