@@ -1,15 +1,23 @@
 defmodule Jamixir.Node do
-  @behaviour Jamixir.NodeAPI
+  alias System.State
+  require Logger
 
+  @behaviour Jamixir.NodeAPI
   @impl true
   def add_block(block_binary) when is_binary(block_binary) do
-    with {block, _rest} <- Block.decode(block_binary),
-         app_state <- Storage.get_state() do
-      case System.State.add_block(app_state, block) do
+    {block, _} = Block.decode(block_binary)
+    add_block(block)
+  end
+
+  def add_block(%Block{} = block) do
+    with app_state <- Storage.get_state() do
+      case State.add_block(app_state, block) do
         {:ok, new_app_state} ->
           Storage.put(new_app_state)
           Storage.put(block.header)
-          :ok
+          Logger.info("🔄 State Updated successfully")
+          Logger.debug("🔄 New State: #{inspect(new_app_state)}")
+          {:ok, new_app_state}
 
         {:error, _pre_state, reason} ->
           {:error, reason}

@@ -27,6 +27,7 @@ defmodule Jamixir.NodeCLIServer do
     genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis.json")
     Logger.info("✨ Initializing JAM state from genesis file: #{genesis_file}")
     {:ok, jam_state} = State.from_genesis(genesis_file)
+    Storage.put(jam_state)
     jam_state
   end
 
@@ -75,22 +76,28 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
+  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state}) do
     Logger.debug("Node received new timeslot: #{timeslot}")
 
-    case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
-      {:ok, block} ->
-        Logger.info("⛓️ Block created successfully. #{inspect(block)}")
+    jam_state =
+      case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
+        {:ok, block} ->
+          Logger.info("⛓️ Block created successfully. #{inspect(block)}")
 
-      # case Jamixir.Node.add_block(block) do
-      #   :ok -> Logger.info("Block added successfully")
-      #   {:error, reason} -> Logger.error("Failed to add block: #{reason}")
-      # end
+          case Jamixir.Node.add_block(block) do
+            {:ok, new_jam_state} ->
+              new_jam_state
 
-      {:error, reason} ->
-        Logger.info("Not my turn to create block: #{reason}")
-    end
+            {:error, reason} ->
+              Logger.error("Failed to add block: #{reason}")
+              jam_state
+          end
 
-    {:noreply, state}
+        {:error, reason} ->
+          Logger.info("Not my turn to create block: #{reason}")
+          jam_state
+      end
+
+    {:noreply, %{jam_state: jam_state}}
   end
 end
