@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Jam do
   use Mix.Task
   require Logger
   @shortdoc "Overrides the default `mix run` to start Jamixir.CLI"
-  @switches [keys: :string, genesis: :string]
+  @switches [keys: :string, genesis: :string, port: :integer]
 
   def run(args) do
     Logger.info("🟣 Pump up the JAM, pump it up...")
@@ -15,6 +15,10 @@ defmodule Mix.Tasks.Jam do
 
     if genesis_file = opts[:genesis] do
       Application.put_env(:jamixir, :genesis_file, genesis_file)
+    end
+
+    if port = opts[:port] do
+      Application.put_env(:jamixir, :port, port)
     end
 
     Application.ensure_all_started(:jamixir)
