@@ -2,7 +2,7 @@ defmodule Codec.State.Trie do
   alias Util.Merklization
   alias System.State
   alias Codec.NilDiscriminator
-  alias Util.Hash
+  alias Util.{Hash, Hex}
   use Codec.Encoder
   import Bitwise
 
@@ -66,8 +66,11 @@ defmodule Codec.State.Trie do
     for({k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{})
   end
 
-  def serialize_hex(state) do
-    for {k, v} <- serialize(state), do: {Base.encode16(k), Base.encode16(v)}, into: %{}
+  def serialize_hex(state, opts \\ []) do
+    prefix = Keyword.get(opts, :prefix, false)
+    for {k, v} <- serialize(state),
+        do: {Hex.encode16(k, prefix: prefix), Hex.encode16(v, prefix: prefix)},
+        into: %{}
   end
 
   def state_root(state), do: Merklization.merkelize_state(serialize(state))
