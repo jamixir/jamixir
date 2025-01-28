@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeCLIServer do
+  alias Network.PeerSupervisor
   alias System.State.Validator
   alias Jamixir.TimeTicker
   use GenServer
@@ -20,7 +21,7 @@ defmodule Jamixir.NodeCLIServer do
     TimeTicker.subscribe()
     init_storage()
     RingVrf.init_ring_context()
-    {:ok, %{jam_state: init_jam_state()}}
+    {:ok, %{jam_state: init_jam_state(), server_pid: init_network_listener()}}
   end
 
   defp init_jam_state do
@@ -29,6 +30,12 @@ defmodule Jamixir.NodeCLIServer do
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
     Storage.put(jam_state)
     jam_state
+  end
+
+  def init_network_listener do
+    port = Application.get_env(:jamixir, :port, 9999)
+    {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
+    server_pid
   end
 
   defp init_storage do
@@ -76,7 +83,7 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state}) do
+  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
     Logger.debug("Node received new timeslot: #{timeslot}")
 
     jam_state =
@@ -99,7 +106,7 @@ defmodule Jamixir.NodeCLIServer do
           jam_state
       end
 
-    {:noreply, %{jam_state: jam_state}}
+    {:noreply, %{state | jam_state: jam_state}}
   end
 
   import Util.Hex
