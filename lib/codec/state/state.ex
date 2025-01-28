@@ -1,6 +1,7 @@
 defmodule Codec.State do
   alias Codec.State.Json
   use Codec.Encoder
+  require Logger
 
   def from_file(file) do
     case File.read(file) do
@@ -14,6 +15,7 @@ defmodule Codec.State do
         end
 
       {:error, reason} ->
+        Logger.error(reason)
         {:error, reason}
     end
   end
