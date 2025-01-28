@@ -322,6 +322,12 @@ defmodule System.StateTest do
       assert state.timeslot == 0
     end
 
+    test "decode/encode genesis state" do
+      genesis_json = File.read!("genesis/genesis.json") |> Jason.decode!() |> Utils.atomize_keys()
+
+      assert JsonEncoder.encode(Codec.State.Json.decode(genesis_json)) == genesis_json
+    end
+
     @tag :skip
     # genesis DOES NOT match key vals after remove the hardcoded values
     # solve by
@@ -375,8 +381,8 @@ defmodule System.StateTest do
                }
              ]
 
-      assert json.theta == for r <- state.ready_to_accumulate, do: JsonEncoder.encode(r)
-      assert json.xi == for h <- state.accumulation_history, do: JsonEncoder.encode(h)
+      assert json.theta == for(r <- state.ready_to_accumulate, do: JsonEncoder.encode(r))
+      assert json.xi == for(h <- state.accumulation_history, do: JsonEncoder.encode(h))
     end
   end
 end

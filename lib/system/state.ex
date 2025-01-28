@@ -219,6 +219,9 @@ defmodule System.State do
 
   def to_json_mapping do
     %{
+      authorizer_pool: :alpha,
+      recent_history: :beta,
+      safrole: :gamma,
       services: {:delta, fn services ->
         for {id, service} <- services do
           %{
@@ -227,6 +230,16 @@ defmodule System.State do
           }
         end
       end},
+      entropy_pool: :eta,
+      next_validators: :iota,
+      curr_validators: :kappa,
+      prev_validators: :lambda,
+      core_reports: :rho,
+      timeslot: :tau,
+      authorizer_queue: :varphi,
+      privileged_services: :chi,
+      judgements: :psi,
+      validator_statistics: :pi,
       ready_to_accumulate: :theta,
       accumulation_history: :xi
     }
