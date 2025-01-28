@@ -1,11 +1,8 @@
 defmodule Codec.State do
-
   alias Codec.State.Json
   use Codec.Encoder
 
-
-
-  def from_genesis(file \\ "genesis/genesis.json") do
+  def from_file(file) do
     case File.read(file) do
       {:ok, content} ->
         case Jason.decode(content) do
@@ -21,5 +18,7 @@ defmodule Codec.State do
     end
   end
 
-
+  def from_genesis(file \\ "genesis/genesis.json") do
+    from_file(file)
+  end
 end
