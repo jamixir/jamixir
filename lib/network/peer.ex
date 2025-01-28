@@ -1,13 +1,13 @@
 defmodule Network.Peer do
   use GenServer
-  alias Network.{Client, Server, PeerState}
+  alias Network.{Client, PeerState, Server}
   require Logger
   import Network.{Config, Codec}
 
   @log_context "[QUIC_PEER]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
-  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
+  def log(message), do: Logger.info("#{@log_context} #{message}")
   # Re-export the client API functions
   defdelegate send(pid, protocol_id, message), to: Client
   defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client

@@ -4,6 +4,7 @@ defmodule System.State.ValidatorTest do
   alias System.State.Validator
   alias TestHelper, as: TH
   alias Util.Hash
+  import Util.Hex
 
   setup_all do
     next_validators = for v <- 1..3, do: TH.create_validator(v)
@@ -72,6 +73,44 @@ defmodule System.State.ValidatorTest do
 
     test "return empty when next_validators is empty", %{} do
       assert Validator.nullify_offenders([], MapSet.new()) == []
+    end
+  end
+
+  describe "IP and port from metadata" do
+    test "extracts IPv6 and port from metadata" do
+      # IPv6: 2001:0db8:85a3:0000:0000:8a2e:0370:7334 (16 bytes)
+      # Port: 8080 (2 bytes, little endian = <<0x90, 0x1F>>)
+      metadata = decode16!("20010db885a3000000008a2e03707334901f")
+
+      v = build(:validator, metadata: metadata)
+
+      assert Validator.ip_address(v) ==
+               "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+
+      assert Validator.port(v) == 8080
+      assert Validator.address(v) == "2001:0db8:85a3:0000:0000:8a2e:0370:7334:8080"
+    end
+
+    test "handles empty metadata" do
+      v = build(:validator, metadata: <<>>)
+
+      assert Validator.ip_address(v) == nil
+      assert Validator.port(v) == nil
+    end
+
+    test "handles metadata bigger than 18" do
+      v =
+        build(:validator,
+          metadata: <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19>>
+        )
+
+      assert Validator.ip_address(v) != nil
+      assert Validator.port(v) != nil
+    end
+
+    test "handles invalid metadata length" do
+      v = build(:validator, metadata: <<1, 2, 3>>)
+      assert Validator.ip_address(v) == nil
     end
   end
 end

@@ -1,6 +1,7 @@
 defmodule Jamixir.NodeCLIServer do
-  alias System.State
+  alias System.State.Validator
   alias Jamixir.TimeTicker
+  alias System.State
   use GenServer
   require Logger
 
@@ -46,7 +47,7 @@ defmodule Jamixir.NodeCLIServer do
   @impl true
   def handle_call({:add_block, block_binary}, _from, _state) do
     case Jamixir.Node.add_block(block_binary) do
-      :ok -> {:reply, :ok, nil}
+      {:ok, _} -> {:reply, :ok, nil}
       {:error, reason} -> {:reply, {:error, reason}, nil}
     end
   end
@@ -86,6 +87,7 @@ defmodule Jamixir.NodeCLIServer do
 
           case Jamixir.Node.add_block(block) do
             {:ok, new_jam_state} ->
+              announce_block_to_peers(new_jam_state.curr_validators)
               new_jam_state
 
             {:error, reason} ->
@@ -99,5 +101,18 @@ defmodule Jamixir.NodeCLIServer do
       end
 
     {:noreply, %{jam_state: jam_state}}
+  end
+
+  import Util.Hex
+
+  def announce_block_to_peers(validators) do
+    Logger.debug("📢 Announcing block to peers")
+
+    for v <- validators do
+      case Validator.address(v) do
+        nil -> Logger.warning("No address found for this validator: #{encode16(v.bandersnatch)}")
+        address -> Logger.debug("📢 Announcing block to peer: #{address}")
+      end
+    end
   end
 end
