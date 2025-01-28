@@ -49,4 +49,30 @@ defmodule System.State.Validator do
   end
 
   use JsonDecoder
+
+  def ip_address(%__MODULE__{metadata: metadata}) when byte_size(metadata) >= 18 do
+    <<ip::binary-size(16), _::binary>> = metadata
+
+    ip
+    |> Util.Hex.encode16()
+    |> String.codepoints()
+    |> Enum.chunk_every(4)
+    |> Enum.join(":")
+  end
+
+  def ip_address(_), do: nil
+
+  @spec port(%__MODULE__{}) :: integer() | nil
+  def port(%__MODULE__{metadata: metadata}) when byte_size(metadata) >= 18 do
+    <<_::binary-size(16), port::little-16, _::binary>> = metadata
+    port
+  end
+
+  def port(_), do: nil
+
+  def address(%__MODULE__{} = validator) do
+    ip = ip_address(validator)
+    port = port(validator)
+    if ip && port, do: "#{ip}:#{port}", else: nil
+  end
 end
