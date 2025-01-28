@@ -1,11 +1,11 @@
 defmodule Block do
   alias Block.Extrinsic
   alias Block.Header
+  alias Codec.State.Trie
   alias System.HeaderSeal
   alias System.State
   alias System.State.EntropyPool
   alias System.Validators.Safrole
-  alias Util.Merklization
   alias Util.Time
   require Logger
   use SelectiveMock
@@ -39,7 +39,7 @@ defmodule Block do
   def new(extrinsic, parent_hash, state, timeslot, opts) do
     header = %Header{
       timeslot: timeslot,
-      prior_state_root: Merklization.merkelize_state(State.serialize(state)),
+      prior_state_root: Trie.state_root(state),
       extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
       parent_hash: parent_hash
     }

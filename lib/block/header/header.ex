@@ -1,7 +1,7 @@
 defmodule Block.Header do
   alias Block.Extrinsic
   alias Block.Header
-  alias Codec.{NilDiscriminator, VariableSize}
+  alias Codec.{NilDiscriminator, State.Trie, VariableSize}
   alias System.Validators
   alias System.State.{SealKeyTicket, Validator}
   alias Util.{Hash, Time}
@@ -87,11 +87,7 @@ defmodule Block.Header do
 
   # Formula (5.8) v0.5.4
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
-    state_root =
-      case Storage.get_state_root() do
-        nil -> Codec.State.Trie.state_root(state)
-        root -> root
-      end
+    state_root = Trie.state_root(state)
 
     if state_root == r,
       do: :ok,

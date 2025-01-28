@@ -1,7 +1,6 @@
 defmodule Jamixir.NodeCLIServer do
   alias System.State.Validator
   alias Jamixir.TimeTicker
-  alias System.State
   use GenServer
   require Logger
 
@@ -25,9 +24,9 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   defp init_jam_state do
-    genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis.json")
+    genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis/genesis.json")
     Logger.info("✨ Initializing JAM state from genesis file: #{genesis_file}")
-    {:ok, jam_state} = State.from_genesis(genesis_file)
+    {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
     Storage.put(jam_state)
     jam_state
   end
