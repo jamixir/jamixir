@@ -1,6 +1,7 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias Block.Header
   alias Block
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
@@ -201,15 +202,18 @@ defmodule BlockTest do
       # Set the first key in the environment
       KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
 
-      # try to create a block for any of the timeslots. One of them should work
-      result =
-        for i <- 100..(100 + Constants.epoch_length() * 2),
-            do: Block.new(%Extrinsic{}, nil, state, i)
+      # choose the first timeslot that has a valid key
+      t =
+        Enum.reduce_while(100..1000, nil, fn i, _ ->
+          h = %Header{timeslot: i, epoch_mark: Block.choose_epoch_marker(i, state)}
 
-      assert Enum.any?(result, fn
-               {:ok, _} -> true
-               _ -> false
-             end)
+          case Block.get_seal_components(h, state) do
+            %{pubkey: ^pub} -> {:halt, i}
+            _ -> {:cont, nil}
+          end
+        end)
+
+      {:ok, _} = Block.new(%Extrinsic{}, nil, state, t)
     end
 
     test "cant't create block if it doesnt have the author key" do
