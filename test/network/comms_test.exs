@@ -17,7 +17,7 @@ defmodule CommsTest do
 
   setup context do
     # Start and supervise the supervisors for this test
-    start_supervised!(PeerSupervisor)
+    start_supervised(PeerSupervisor)
     PeerRegistry.start_link()
     # Use a different port for each test based on its line number
     port = @base_port + (context.line || 0)

@@ -5,6 +5,7 @@ defmodule System.StateTest do
   import OriginalModules
   import Mox
   import Bitwise
+  alias Codec.State.Json
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.{Encoder, NilDiscriminator, JsonEncoder}
@@ -325,7 +326,7 @@ defmodule System.StateTest do
     test "decode/encode genesis state" do
       genesis_json = File.read!("genesis/genesis.json") |> Jason.decode!() |> Utils.atomize_keys()
 
-      assert JsonEncoder.encode(Codec.State.Json.decode(genesis_json)) == genesis_json
+      assert JsonEncoder.encode(Json.decode(genesis_json)) == genesis_json
     end
 
     @tag :skip

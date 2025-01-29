@@ -44,35 +44,25 @@ defmodule Block do
       parent_hash: parent_hash
     }
 
-    header = put_in(header.epoch_mark, choose_epoch_marker(timeslot, state))
+    header = put_in(header.epoch_mark, choose_epoch_marker(header.timeslot, state))
 
-    rotated_entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
+    params = get_seal_components(header, state)
 
-    {_, _, safrole_} =
-      System.State.Safrole.transition(
-        %Block{header: header, extrinsic: %Extrinsic{}},
-        state,
-        %System.State.Judgements{},
-        rotated_entropy_pool
-      )
+    Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
 
-    pubkey =
-      Enum.at(safrole_.slot_sealers, rem(timeslot, Constants.epoch_length()))
-
-    Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(pubkey))}")
-
-    new_index = Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
+    new_index =
+      Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == params.pubkey end)
 
     header = put_in(header.block_author_key_index, new_index)
 
-    with {:ok, signing_key} <- get_signing_key(opts[:key_pairs], pubkey) do
+    with {:ok, signing_key} <- get_signing_key(opts[:key_pairs], params.pubkey) do
       {:ok,
        %__MODULE__{
          header:
            HeaderSeal.seal_header(
              header,
-             safrole_.slot_sealers,
-             rotated_entropy_pool,
+             params.safrole_.slot_sealers,
+             params.entropy_pool,
              signing_key
            ),
          extrinsic: extrinsic
@@ -80,6 +70,24 @@ defmodule Block do
     else
       {:error, e} -> {:error, e}
     end
+  end
+
+  def get_seal_components(header, state) do
+    entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
+
+    {_, _, safrole_} =
+      System.State.Safrole.transition(
+        %Block{header: header, extrinsic: %Extrinsic{}},
+        state,
+        %System.State.Judgements{},
+        entropy_pool
+      )
+
+    %{
+      pubkey: Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
+      safrole_: safrole_,
+      entropy_pool: entropy_pool
+    }
   end
 
   defp get_signing_key(nil, pubkey) do
@@ -96,7 +104,7 @@ defmodule Block do
     end
   end
 
-  defp choose_epoch_marker(timeslot, state) do
+  def choose_epoch_marker(timeslot, state) do
     if Time.new_epoch?(state.timeslot, timeslot) do
       Safrole.new_epoch_marker(
         state.entropy_pool.n0,
