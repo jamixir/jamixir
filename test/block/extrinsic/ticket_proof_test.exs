@@ -7,13 +7,13 @@ defmodule Block.Extrinsic.TicketProofTest do
     ring = for v <- state.curr_validators, do: v.bandersnatch
 
     for i <- 0..(count - 1) do
-      {secret, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
+      {keypair, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
       attempt = rem(i, 2)
 
       {proof, _} =
         RingVrf.ring_vrf_sign(
           ring,
-          secret,
+          keypair,
           i,
           SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
           <<>>
@@ -23,10 +23,10 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
   end
 
-  defp create_valid_proof(state, {secret, _}, prover_idx, attempt) do
+  defp create_valid_proof(state, {keypair, _}, prover_idx, attempt) do
     RingVrf.ring_vrf_sign(
       for(v <- state.curr_validators, do: v.bandersnatch),
-      secret,
+      keypair,
       prover_idx,
       SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
       <<>>
@@ -153,13 +153,13 @@ defmodule Block.Extrinsic.TicketProofTest do
       [ticket] = create_valid_tickets(1, state, key_pairs)
 
       # Generate the output hash using ring_vrf_output
-      {secret, _} = List.first(key_pairs)
+      {keypair, _} = List.first(key_pairs)
       public_keys = for v <- state.curr_validators, do: v.bandersnatch
 
       context =
         SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<ticket.attempt>>
 
-      output_hash = RingVrf.ring_vrf_output(public_keys, secret, 0, context)
+      output_hash = RingVrf.ring_vrf_output(public_keys, keypair, 0, context)
 
       # Add the output hash to gamma_a
       safrole_with_overlap = %{

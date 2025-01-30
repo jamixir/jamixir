@@ -70,7 +70,7 @@ defmodule System.StateTransition.EntropyPoolTest do
       expected_slot_sealer =
         Enum.at(state.safrole.slot_sealers, block.header.timeslot)
 
-      {secret, _} = Enum.at(key_pairs, block.header.block_author_key_index)
+      {keypair, _} = Enum.at(key_pairs, block.header.block_author_key_index)
 
       seal_context =
         SigningContexts.jam_ticket_seal() <>
@@ -78,8 +78,8 @@ defmodule System.StateTransition.EntropyPoolTest do
 
       vrf_output =
         RingVrf.ietf_vrf_output(
-          secret,
-          SigningContexts.jam_entropy() <> RingVrf.ietf_vrf_output(secret, seal_context)
+          keypair,
+          SigningContexts.jam_entropy() <> RingVrf.ietf_vrf_output(keypair, seal_context)
         )
 
       {:ok, state_} = System.State.add_block(state, block)

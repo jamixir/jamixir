@@ -10,7 +10,6 @@ defmodule CommsTest do
   @dummy_protocol_id 242
 
   setup_all do
-    Logger.configure(level: :none)
     blocks = for _ <- 1..300, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
     {:ok, blocks: blocks}
   end
