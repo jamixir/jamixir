@@ -5,6 +5,7 @@ defmodule Block do
   alias System.HeaderSeal
   alias System.State
   alias System.State.EntropyPool
+  alias System.State.SealKeyTicket
   alias System.Validators.Safrole
   alias Util.Time
   require Logger
@@ -48,14 +49,16 @@ defmodule Block do
 
     params = get_seal_components(header, state)
 
-    Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
+    with {:ok, keypair} <-
+           get_signing_key(opts[:key_pairs], params.pubkey, params.entropy_pool, params.safrole_) do
+      {_, pubkey} = keypair
 
-    new_index =
-      Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == params.pubkey end)
+      new_index =
+        Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
 
-    header = put_in(header.block_author_key_index, new_index)
+      header = put_in(header.block_author_key_index, new_index)
+      Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
 
-    with {:ok, signing_key} <- get_signing_key(opts[:key_pairs], params.pubkey) do
       {:ok,
        %__MODULE__{
          header:
@@ -63,7 +66,7 @@ defmodule Block do
              header,
              params.safrole_.slot_sealers,
              params.entropy_pool,
-             signing_key
+             keypair
            ),
          extrinsic: extrinsic
        }}
@@ -90,17 +93,59 @@ defmodule Block do
     }
   end
 
-  defp get_signing_key(nil, pubkey) do
-    case Application.get_env(:jamixir, :keys) do
-      %{bandersnatch_priv: priv, bandersnatch: ^pubkey} -> {:ok, {{priv, pubkey}, pubkey}}
-      _ -> {:error, :no_valid_keys_found}
+  defp get_signing_key(nil, %SealKeyTicket{id: id, attempt: r}, pool, _) do
+    case my_key() do
+      {{priv, pub}, pub} ->
+        # my_index = Enum.find_index(safrole_.pending, fn v -> v.bandersnatch == pub end)
+        context = HeaderSeal.construct_seal_context(%{attempt: r}, %EntropyPool{n3: pool.n3})
+
+        case RingVrf.ietf_vrf_output({priv, pub}, context) do
+          ^id -> {:ok, {{priv, pub}, pub}}
+          _ -> {:error, :no_valid_keys_found}
+        end
+
+      # output =
+      #   RingVrf.ring_vrf_output(
+      #     for(v <- safrole_.pending, do: v.bandersnatch),
+      #     {priv, pub},
+      #     my_index,
+      #     HeaderSeal.construct_seal_context(ticket, pool)
+      #   )
+
+      # output_hash = RingVrf.ring_vrf_output(public_keys, keypair, 0, context)
+
+      # if output == id do
+      # {:ok, {{priv, pub}, pub}}
+
+      # else
+      # end
+
+      _ ->
+        {:error, :no_valid_keys_found}
     end
   end
 
-  defp get_signing_key(key_pairs, pubkey) do
+  defp get_signing_key(nil, pubkey, _, _) do
+    case my_key() do
+      {{priv, ^pubkey}, ^pubkey} ->
+        {:ok, {{priv, pubkey}, pubkey}}
+
+      _ ->
+        {:error, :no_valid_keys_found}
+    end
+  end
+
+  defp get_signing_key(key_pairs, pubkey, _, _) do
     case Enum.find(key_pairs, &(elem(&1, 1) == pubkey)) do
-      priv -> {:ok, priv}
       nil -> {:error, :key_not_found}
+      priv -> {:ok, priv}
+    end
+  end
+
+  def my_key do
+    case Application.get_env(:jamixir, :keys) do
+      %{bandersnatch_priv: priv, bandersnatch: pubkey} -> {{priv, pubkey}, pubkey}
+      _ -> nil
     end
   end
 

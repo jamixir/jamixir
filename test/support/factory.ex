@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias System.HeaderSeal
   alias System.State.Ready
   alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
@@ -41,20 +42,16 @@ defmodule Jamixir.Factory do
   end
 
   # Seal Key Ticket Factory
-
   @spec single_seal_key_ticket_factory(list(), any(), integer()) :: System.State.SealKeyTicket.t()
   def single_seal_key_ticket_factory(key_pairs, entropy_pool, i) do
-    {secret, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
+    {keypair, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
 
     attempt = Enum.random([0, 1])
 
-    context =
-      SigningContexts.jam_ticket_seal() <>
-        entropy_pool.n3 <>
-        <<attempt::8>>
+    context = HeaderSeal.construct_seal_context(%{attempt: attempt}, entropy_pool)
 
     %SealKeyTicket{
-      id: RingVrf.ietf_vrf_output(secret, context),
+      id: RingVrf.ietf_vrf_output(keypair, context),
       attempt: attempt
     }
   end
@@ -498,10 +495,10 @@ defmodule Jamixir.Factory do
   def ready_to_accumulate_factory(_attrs) do
     for(
       _ <- 1..Constants.epoch_length(),
-        do: %Ready{
-          work_report: work_report_factory(),
-          dependencies: MapSet.new([Hash.random()])
-        }
+      do: %Ready{
+        work_report: work_report_factory(),
+        dependencies: MapSet.new([Hash.random()])
+      }
     )
   end
 

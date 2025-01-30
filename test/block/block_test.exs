@@ -1,10 +1,8 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Header
   alias Block
-  alias Block.Extrinsic
-  alias Block.Extrinsic.Disputes
+  alias Block.{Extrinsic, Extrinsic.Disputes, Header}
   alias Codec.State.Trie
   alias System.State
   alias Util.{Hash, Time}
@@ -196,7 +194,7 @@ defmodule BlockTest do
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
     end
 
-    test "create a valid block with env key" do
+    test "create a valid block with env key fallback mode new epoch" do
       %{state: state, key_pairs: [{{priv, _}, pub} | _]} = build(:genesis_state_with_safrole)
 
       # Set the first key in the environment
@@ -214,6 +212,25 @@ defmodule BlockTest do
         end)
 
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, t)
+    end
+
+    test "create a valid block with ticket proofs same epoch" do
+      %{state: state, key_pairs: [_, {{priv1, _}, pub1} | _]} = build(:genesis_state_with_safrole)
+
+      # Set the first key in the environment
+      KeyManager.load_keys(%{bandersnatch: pub1, bandersnatch_priv: priv1})
+
+      {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
+      {:ok, _} = State.add_block(state, block)
+    end
+
+    test "can't create block ticket proofs from other validator" do
+      %{state: state, key_pairs: [{{priv0, _}, pub0} | _]} = build(:genesis_state_with_safrole)
+
+      # Set the first key in the environment
+      KeyManager.load_keys(%{bandersnatch: pub0, bandersnatch_priv: priv0})
+
+      {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
     end
 
     test "cant't create block if it doesnt have the author key" do

@@ -7,19 +7,19 @@ defmodule RingVrfTest do
 
   defp gen_keys(public_key_index, count) do
     # Generate a secret key from randomness
-    {secret, public} = RingVrf.generate_secret_from_rand()
+    {keypair, public} = RingVrf.generate_secret_from_rand()
 
     # Generate a ring of public keys
     keys =
       for _i <- 1..(count - 1) do
-        {_, secret} = RingVrf.generate_secret_from_rand()
-        secret
+        {_, keypair} = RingVrf.generate_secret_from_rand()
+        keypair
       end
 
     # Insert the public key at the specified position
     keys = List.insert_at(keys, public_key_index, public)
 
-    {keys, secret}
+    {keys, keypair}
   end
 
   defp init_ring_context_and_gen_keys(count), do: init_ring_context_and_gen_keys(0, count)

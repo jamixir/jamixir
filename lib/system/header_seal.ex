@@ -30,7 +30,7 @@ defmodule System.HeaderSeal do
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
         %EntropyPool{} = entropy_pool,
-        {secret, _}
+        {keypair, _}
       ) do
     # associated with formula (6.15, 6.16) v0.5.4
     # let i = γs′ [Ht ]↺
@@ -38,16 +38,16 @@ defmodule System.HeaderSeal do
       Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
 
     seal_context = construct_seal_context(expected_slot_sealer, entropy_pool)
-    block_seal_output = RingVrf.ietf_vrf_output(secret, seal_context)
+    block_seal_output = RingVrf.ietf_vrf_output(keypair, seal_context)
 
     # Formula (6.17) v0.5.4
     {vrf_signature, _} =
-      RingVrf.ietf_vrf_sign(secret, SigningContexts.jam_entropy() <> block_seal_output, <<>>)
+      RingVrf.ietf_vrf_sign(keypair, SigningContexts.jam_entropy() <> block_seal_output, <<>>)
 
     header = put_in(header.vrf_signature, vrf_signature)
 
     {block_seal, _} =
-      RingVrf.ietf_vrf_sign(secret, seal_context, Header.unsigned_encode(header))
+      RingVrf.ietf_vrf_sign(keypair, seal_context, Header.unsigned_encode(header))
 
     put_in(header.block_seal, block_seal)
   end
