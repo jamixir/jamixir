@@ -1,4 +1,5 @@
 defmodule Block do
+  alias System.State.RotateKeys
   alias Block.Extrinsic
   alias Block.Header
   alias Codec.State.Trie
@@ -45,7 +46,8 @@ defmodule Block do
       parent_hash: parent_hash
     }
 
-    header = put_in(header.epoch_mark, choose_epoch_marker(header.timeslot, state))
+    {pending_, _, _, _} = RotateKeys.rotate_keys(header, state, state.judgements)
+    header = put_in(header.epoch_mark, choose_epoch_marker(header.timeslot, state, pending_))
 
     params = get_seal_components(header, state)
 
@@ -150,12 +152,12 @@ defmodule Block do
     end
   end
 
-  def choose_epoch_marker(timeslot, state) do
+  def choose_epoch_marker(timeslot, state, pending_) do
     if Time.new_epoch?(state.timeslot, timeslot) do
       Safrole.new_epoch_marker(
         state.entropy_pool.n0,
         state.entropy_pool.n1,
-        state.safrole.pending
+        pending_
       )
     else
       nil
