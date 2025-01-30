@@ -1,6 +1,7 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
+  alias System.State.RotateKeys
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes, Header}
   alias Codec.State.Trie
@@ -203,7 +204,9 @@ defmodule BlockTest do
       # choose the first timeslot that has a valid key
       t =
         Enum.reduce_while(100..1000, nil, fn i, _ ->
-          h = %Header{timeslot: i, epoch_mark: Block.choose_epoch_marker(i, state)}
+          h = %Header{timeslot: i}
+          {pending_, _, _, _} = RotateKeys.rotate_keys(h, state, state.judgements)
+          h = put_in(h.epoch_mark, Block.choose_epoch_marker(i, state, pending_))
 
           case Block.get_seal_components(h, state) do
             %{pubkey: ^pub} -> {:halt, i}
