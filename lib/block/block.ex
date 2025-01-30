@@ -54,7 +54,7 @@ defmodule Block do
       {_, pubkey} = keypair
 
       new_index =
-        Enum.find_index(state.curr_validators, fn v -> v.bandersnatch == pubkey end)
+        Enum.find_index(params.curr_validators_, fn v -> v.bandersnatch == pubkey end)
 
       header = put_in(header.block_author_key_index, new_index)
       Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
@@ -78,7 +78,7 @@ defmodule Block do
   def get_seal_components(header, state) do
     entropy_pool = EntropyPool.rotate(header, state.timeslot, state.entropy_pool)
 
-    {_, _, safrole_} =
+    {curr_validators_, _, safrole_} =
       System.State.Safrole.transition(
         %Block{header: header, extrinsic: %Extrinsic{}},
         state,
@@ -89,7 +89,8 @@ defmodule Block do
     %{
       pubkey: Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
       safrole_: safrole_,
-      entropy_pool: entropy_pool
+      entropy_pool: entropy_pool,
+      curr_validators_: curr_validators_
     }
   end
 
