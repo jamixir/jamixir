@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (195) v0.4.5
+  # Formula (14.3) v0.6.0
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
@@ -99,7 +99,7 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (199) v0.4.5
+  # Formula (14.8) v0.6.0
   def to_work_result(%__MODULE__{} = wi, output) do
     %WorkResult{
       service: wi.service,

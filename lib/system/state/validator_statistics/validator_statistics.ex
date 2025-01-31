@@ -1,6 +1,6 @@
 defmodule System.State.ValidatorStatistics do
   @moduledoc """
-  Formula (189) v0.4.5
+  Formula (13.1) v0.6.0
   Tracks validator statistics on a per-epoch basis.
 
   The validator statistics are made on a per-epoch basis and are retained as a

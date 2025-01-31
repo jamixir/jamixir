@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   work-package
 
   section 11.1.4
-  Formula (122) v0.4.5
+  Formula (11.6) v0.6.0
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}

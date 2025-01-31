@@ -13,7 +13,7 @@ defmodule Block.Extrinsic.Guarantee do
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
-  # Formula (137) v0.4.5
+  # Formula (11.23) v0.6.0
   @type t :: %__MODULE__{
           # w
           work_report: WorkReport.t(),
@@ -31,23 +31,23 @@ defmodule Block.Extrinsic.Guarantee do
   mockable validate(guarantees, state, %Header{timeslot: t, prior_state_root: s}) do
     w = work_reports(guarantees)
 
-    # Formula (138) v0.4.5
+    # Formula (11.24) v0.6.0
     with :ok <-
            (case Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index) do
               {:error, :not_in_order} -> {:error, :out_of_order_guarantee}
               result -> result
             end),
-         # Formula (11.3) v0.5.2
+         # Formula (11.3) v0.6.0
          :ok <- validate_work_report_sizes(w),
-         # Formula (144) v0.4.5
+         # Formula (11.30) v0.6.0
          :ok <- validate_gas_accumulation(w, state.services),
-         # Formula (146) v0.4.5
+         # Formula (11.32) v0.6.0
          :ok <- validate_unique_wp_hash(guarantees),
-         # Formula (148) v0.4.5
+         # Formula (11.34) v0.6.0
          :ok <- validate_refine_context_timeslot(guarantees, t),
-         # Formula (156) v0.4.5
+         # Formula (11.42) v0.6.0
          :ok <- validate_work_result_cores(w, state.services),
-         # Formula (152) v0.4.5
+         # Formula (11.38) v0.6.0
          :ok <-
            validate_new_work_packages(
              w,
@@ -65,7 +65,7 @@ defmodule Block.Extrinsic.Guarantee do
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (11.32) v0.5.0
          :ok <- validate_anchor_block(guarantees, state.recent_history, s),
-         # Formula (139) v0.4.5
+         # Formula (11.25) v0.6.0
          :ok <-
            if(
              Collections.all_ok?(guarantees, fn %__MODULE__{credentials: cred} ->
@@ -90,7 +90,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (142) v0.4.5 - w
+  # Formula (11.28) v0.6.0 - w
   @spec work_reports(list(t())) :: list(WorkReport.t())
   def work_reports(guarantees) do
     for g <- guarantees do
@@ -98,7 +98,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (145) v0.4.5 - x
+  # Formula (11.31) v0.6.0 - x
   def refinement_contexts(guarantees) do
     for w <- work_reports(guarantees) do
       w.refinement_context
@@ -219,7 +219,7 @@ defmodule Block.Extrinsic.Guarantee do
     end)
   end
 
-  # Formula (148) v0.4.5
+  # Formula (11.34) v0.6.0
   mockable validate_refine_context_timeslot(guarantees, t) do
     if Enum.all?(
          refinement_contexts(guarantees),
@@ -231,8 +231,8 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (150) v0.4.5
-  # Formula (151) v0.4.5
+  # Formula (11.36) v0.6.0
+  # Formula (11.37) v0.6.0
   @spec collect_prerequisites(
           list(%{work_report: WorkReport.t()})
           | list(list(%{work_report: WorkReport.t()}))
@@ -245,7 +245,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (152) v0.4.5
+  # Formula (11.38) v0.6.0
   mockable validate_new_work_packages(
              work_reports,
              %RecentHistory{blocks: blocks},
@@ -364,7 +364,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (154) v0.4.5
+  # Formula (11.40) v0.6.0
   @spec p_map(list(WorkReport.t())) :: %{Types.hash() => Types.hash()}
   def p_map(work_reports) do
     for w <- work_reports,

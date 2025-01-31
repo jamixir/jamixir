@@ -9,7 +9,7 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
-  # Formula (124) v0.4.5
+  # Formula (11.10) v0.6.0
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
             bitfield: Utils.zero_bitstring(Sizes.bitfield()),

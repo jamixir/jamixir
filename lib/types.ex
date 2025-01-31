@@ -50,6 +50,6 @@ defmodule Types do
   # L
   @type max_age_timeslot_lookup_anchor :: non_neg_integer()
 
-  # Formula (193) v0.4.5 - G ≡ Y WS*WE
-  @type export_segment :: <<_::32_832>>
+  # Formula (14.1) v0.6.0 - G ≡ YWG
+  @type export_segment :: <<_::32_808>>
 end

@@ -31,9 +31,9 @@ defmodule System.State do
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
-          # Formula (164) v0.4.5
+          # Formula (12.3) v0.6.0
           ready_to_accumulate: list(list(Ready.t())),
-          # Formula (162) v0.4.5
+          # Formula (12.1) v0.6.0
           accumulation_history: list(MapSet.t(Types.hash()))
         }
 

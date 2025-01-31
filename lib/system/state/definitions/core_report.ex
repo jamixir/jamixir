@@ -1,6 +1,6 @@
 defmodule System.State.CoreReport do
   @moduledoc """
-  Formula (117) v0.4.5
+  Formula (11.1) v0.6.0
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 

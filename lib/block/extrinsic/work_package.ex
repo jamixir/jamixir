@@ -23,7 +23,7 @@ defmodule Block.Extrinsic.WorkPackage do
           work_items: list(WorkItem.t())
         }
 
-  # Formula (194) v0.4.5
+  # Formula (14.2) v0.6.0
   defstruct [
     # j
     authorization_token: <<>>,
@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_exported_items 2048
   def maximum_exported_items, do: @maximum_exported_items
 
-  # Formula (198) v0.4.5
+  # Formula (14.6) v0.6.0 - WB
   # 12 * 2 ** 20
   @maximum_size 12_582_912
 
@@ -74,6 +74,7 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   # Formula (197) v0.4.5
+  # TODO update to Formula 14.5 v0.6.0
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
       part1 = length(i.import_segments) * Constants.wswe()
@@ -82,7 +83,7 @@ defmodule Block.Extrinsic.WorkPackage do
     end) <= @maximum_size
   end
 
-  # Formula (196) v0.4.5
+  # Formula (14.4) v0.6.0
   defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
     {exported_sum, imported_sum} =
       Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->

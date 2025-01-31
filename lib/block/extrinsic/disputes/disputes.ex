@@ -76,14 +76,14 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, Error.bad_vote_split()}
 
-      # Formula (103) v0.4.5
+      # Formula (10.7) v0.6.0
       !match?(
         :ok,
         Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
       ) ->
         {:error, Error.unsorted_verdicts()}
 
-      # Formula (105) v0.4.5
+      # Formula (10.9) v0.6.0
       !MapSet.disjoint?(
         Judgements.union_all(judgements),
         MapSet.new(verdicts, & &1.work_report_hash)
@@ -98,14 +98,14 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, Error.invalid_signature()}
 
-      # Formula (106) v0.4.5
+      # Formula (10.10) v0.6.0
       !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
         Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
       end) ->
         {:error, Error.unsorted_judgements()}
 
-      # Formula (107) v0.4.5
-      # Formula (108) v0.4.5
+      # Formula (10.11) v0.6.0
+      # Formula (10.12) v0.6.0
       Enum.any?(verdicts, fn verdict ->
         validator_count =
             length(
@@ -130,13 +130,13 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (101) v0.4.5
-  # Formula (102) v0.4.5
+  # Formula (10.5) v0.6.0
+  # Formula (10.6) v0.6.0
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
     MapSet.new(curr_validators, & &1.ed25519) ++ MapSet.new(prev_validators, & &1.ed25519) \\ judgements.offenders
   end
 
-  # Formula (113) v0.4.5
+  # Formula (10.17) v0.6.0
   defp compute_bad_set(verdicts, judgements) do
     for v <- verdicts, Verdict.sum_judgements(v) == 0, into: MapSet.new() do
       v.work_report_hash
@@ -145,16 +145,16 @@ defmodule Block.Extrinsic.Disputes do
 
   defp validate_common_offense_rules(offenses, allowed_validator_keys, offense_type) do
     cond do
-      # Formula (104) v0.4.5
+      # Formula (10.8) v0.6.0
       !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.key)) ->
         {:error,
          if(offense_type == :faults, do: Error.unsorted_faults(), else: Error.unsorted_culprits())}
 
-      # Formula 101 and 102 - Check if all offense validator keys are valid
+      # Formula 10.5 and 1.6 - Check if all offense validator keys are valid
       !Enum.all?(offenses, &(&1.key in allowed_validator_keys)) ->
         {:error, Error.offender_already_reported()}
 
-      # Formula 101 and 102 - Check signatures
+      # Formula 10.5 and 10.6 - Check signatures
       !Enum.all?(
         offenses,
         fn offense ->

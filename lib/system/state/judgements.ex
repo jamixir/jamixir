@@ -27,8 +27,8 @@ defmodule System.State.Judgements do
             offenders: MapSet.new()
 
   mockable transition(%Header{} = header, disputes, state) do
-    # Formula (107) v0.4.5
-    # Formula (108) v0.4.5
+    # Formula (10.11) v0.6.0
+    # Formula (10.12) v0.6.0
     case calculate_v(disputes, state) do
       {:ok, v} ->
         bad_wonky_verdicts =
@@ -36,7 +36,7 @@ defmodule System.State.Judgements do
               sum != div(2 * validator_count, 3) + 1,
               do: hash
 
-        # Formula (115) v0.4.5
+        # Formula (10.19) v0.6.0
         new_offenders = for %{key: k} <- disputes.culprits ++ disputes.faults, do: k
 
         if valid_header_markers?(header, new_offenders) do
@@ -72,11 +72,11 @@ defmodule System.State.Judgements do
 
     issues =
       Enum.reduce(v_set, {false, false}, fn {r, sum, v_count}, {culprits_issue, faults_issue} ->
-        # Formula (110) v0.4.5
+        # Formula (10.14) v0.6.0
         new_culprits_issue =
           culprits_issue or (sum == 0 && length(Enum.filter(c, &(&1.work_report_hash == r))) < 2)
 
-        # Formula (109) v0.4.5
+        # Formula (10.13) v0.6.0
         new_faults_issue =
           faults_issue or
             (sum == div(2 * v_count, 3) + 1 &&
@@ -97,7 +97,7 @@ defmodule System.State.Judgements do
     end
   end
 
-  # Formula (116) v0.4.5
+  # Formula (10.20) v0.6.0
   mockable(
     valid_header_markers?(
       %Header{offenders_marker: of},
@@ -109,15 +109,15 @@ defmodule System.State.Judgements do
   defp posterior_judgement_sets(v, judgements) do
     Enum.reduce(v, judgements, fn {hash, sum, validator_count}, acc ->
       cond do
-        # Formula (112) v0.4.5
+        # Formula (10.16) v0.6.0
         sum == div(2 * validator_count, 3) + 1 ->
           %{acc | good: MapSet.put(acc.good, hash)}
 
-        # Formula (113) v0.4.5
+        # Formula (10.17) v0.6.0
         sum == 0 ->
           %{acc | bad: MapSet.put(acc.bad, hash)}
 
-        # Formula (114) v0.4.5
+        # Formula (10.18) v0.6.0
         sum == div(validator_count, 3) ->
           %{acc | wonky: MapSet.put(acc.wonky, hash)}
       end

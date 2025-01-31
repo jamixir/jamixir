@@ -1,5 +1,5 @@
 defmodule System.DeferredTransfer do
-  # Formula (175) v0.4.5
+  # Formula (12.14) v0.6.0
 
   @type t :: %__MODULE__{
           # s ∈ ℕ_S

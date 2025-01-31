@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantor do
   @moduledoc """
-  # Formula (132) v0.4.5 - section 11.3
+  # Formula (11.21) v0.6.0 - section 11.3
   Every block, each core has three validators uniquely assigned to guarantee workreports for it.
   This is borne out with V = 1, 023 validators and C = 341 cores, since V/C = 3.
   The core index assigned to each of the validators, as well as the validators’ Ed25519 keys
@@ -42,7 +42,7 @@ defmodule Block.Extrinsic.Guarantor do
     }
   end
 
-  # Formula (136) v0.4.5
+  # Formula (11.22) v0.6.0
   def prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders) do
     {e, k} =
       if div(t_ - Constants.rotation_period(), Constants.epoch_length()) ==

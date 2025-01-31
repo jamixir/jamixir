@@ -197,6 +197,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (178) v0.4.5
+  # TODO review to Formula 12.17 v0.6.0
   @spec parallelized_accumulation(t(), list(WorkReport.t()), %{
           non_neg_integer() => non_neg_integer()
         }) ::
@@ -288,6 +289,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (180) v0.4.5
+  # TODO to Formula 12.19 v0.6.0
   def single_accumulation(acc_state, work_reports, service_dict, service) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 

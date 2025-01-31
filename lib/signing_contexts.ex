@@ -3,7 +3,7 @@ defmodule SigningContexts do
   Defines signing contexts used throughout the system for various cryptographic operations.
   """
 
-  # Formula (128) v0.4.5
+  # Formula (11.14) v0.6.0
   @doc "XA - Ed25519 Availability assurances context."
   def jam_available, do: "jam_available"
 
@@ -19,7 +19,7 @@ defmodule SigningContexts do
   @doc "XF - Bandersnatch Fallback block seal context."
   def jam_fallback_seal, do: "jam_fallback_seal"
 
-  # Formula (141) v0.4.5
+  # Formula (11.27) v0.6.0
   @doc "XG - Ed25519 Guarantee statements context."
   def jam_guarantee, do: "jam_guarantee"
 
@@ -35,11 +35,11 @@ defmodule SigningContexts do
   @doc "XU - Bandersnatch Audit selection entropy context."
   def jam_audit, do: "jam_audit"
 
-  # Formula (100) v0.4.5
+  # Formula (10.4) v0.6.0
   @doc "X⊺ - Ed25519 Judgements for valid work-reports context."
   def jam_valid, do: "jam_valid"
 
-  # Formula (100) v0.4.5
+  # Formula (10.4) v0.6.0
   @doc "X - Ed25519 Judgements for invalid work-reports context."
   def jam_invalid, do: "jam_invalid"
 end

@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
 
   defstruct validator_index: 0, vote: true, signature: Crypto.zero_sign()
 
-  # Formula (100) v0.4.5
+  # Formula (10.4) v0.6.0
   def signature_base(%__MODULE__{vote: vote}) do
     if vote, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
   end
