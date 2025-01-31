@@ -68,6 +68,7 @@ defmodule Codec.State.Trie do
 
   def serialize_hex(state, opts \\ []) do
     prefix = Keyword.get(opts, :prefix, false)
+
     for {k, v} <- serialize(state),
         do: {Hex.encode16(k, prefix: prefix), Hex.encode16(v, prefix: prefix)},
         into: %{}

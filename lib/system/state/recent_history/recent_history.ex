@@ -83,7 +83,7 @@ defmodule System.State.RecentHistory do
              guarantees,
              beefy_commitment
            ) do
-    # β† Formula (17) v0.4.5
+    # β† Formula (4.6) v0.6.0
     recent_history =
       RecentHistory.update_latest_state_root(recent_history, prior_state_root)
 

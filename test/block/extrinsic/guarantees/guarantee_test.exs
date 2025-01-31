@@ -198,7 +198,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "error when service code_hash mismatch", %{state: state, g1: g1, g2: g2} do
       s = put_in(state.services[0].code_hash, Hash.two())
-      assert Guarantee.validate([g1, g2], s, %Header{timeslot: 1} ) == {:error, :bad_code_hash}
+      assert Guarantee.validate([g1, g2], s, %Header{timeslot: 1}) == {:error, :bad_code_hash}
     end
 
     test "returns error when duplicated work package hash", %{g1: g1, g2: g2, state: state} do
@@ -222,13 +222,20 @@ defmodule Block.Extrinsic.GuaranteeTest do
                {:error, :refine_context_timeslot}
     end
 
-    test "error when recent history does not have header_hash", %{g1: g1, state: state, refinement_context: refinement_context} do
+    test "error when recent history does not have header_hash", %{
+      g1: g1,
+      state: state,
+      refinement_context: refinement_context
+    } do
       valid_rh = state.recent_history
       valid_rb = Enum.at(valid_rh.blocks, 0)
       invalid_rb = %RecentBlock{valid_rb | header_hash: nil}
       s = put_in(state.recent_history, %RecentHistory{valid_rh | blocks: [invalid_rb]})
 
-      assert Guarantee.validate([g1], s, %Header{timeslot: 1, prior_state_root: refinement_context.state_root}) == {:error, :anchor_not_recent}
+      assert Guarantee.validate([g1], s, %Header{
+               timeslot: 1,
+               prior_state_root: refinement_context.state_root
+             }) == {:error, :anchor_not_recent}
     end
 
     test "error when recent history does not have state_root", %{g1: g1, state: state} do
@@ -247,7 +254,10 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
 
-      assert Guarantee.validate([g1], invalid_state, %Header{timeslot: 1, prior_state_root: refinement_context.state_root}) ==
+      assert Guarantee.validate([g1], invalid_state, %Header{
+               timeslot: 1,
+               prior_state_root: refinement_context.state_root
+             }) ==
                {:error, :bad_beefy_mmr}
     end
 

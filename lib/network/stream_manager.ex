@@ -1,6 +1,7 @@
 defmodule Network.StreamManager do
   require Logger
   alias Network.PeerState
+
   def manage_up_stream(protocol_id, stream_ref, %PeerState{} = state, log_tag) do
     current = Map.get(state.up_streams, protocol_id)
 

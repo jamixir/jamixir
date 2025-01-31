@@ -10,21 +10,21 @@ defmodule System.State.Safrole do
   alias Util.{Hash, Time}
 
   @type t :: %__MODULE__{
-          # Formula (52) v0.4.5
+          # Formula (6.7) v0.6.0
           # gamma_k
           pending: list(Validator.t()),
-          # Formula (49) v0.4.5
+          # Formula (6.4) v0.6.0
           # gamma_z
           epoch_root: Types.bandersnatch_ring_root(),
-          # Formula (50) v0.4.5
+          # Formula (6.5) v0.6.0
           # gamma_s
           slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
-          # Formula (50) v0.4.5
+          # Formula (6.5) v0.6.0
           # gamma_a
           ticket_accumulator: list(SealKeyTicket.t())
         }
 
-  # Formula (48) v0.4.5
+  # Formula (6.3) v0.6.0
   defstruct pending: [], epoch_root: <<>>, slot_sealers: [], ticket_accumulator: []
 
   def transition(
@@ -33,9 +33,9 @@ defmodule System.State.Safrole do
         judgements_,
         rotated_history_entropy_pool
       ) do
-    # κ' Formula (21) v0.4.5
-    # λ' Formula (22) v0.4.5
-    # γ'(gamma_k, gamma_z) Formula (19) v0.4.5
+    # κ' Formula (4.10) v0.6.0
+    # λ' Formula (4.11) v0.6.0
+    # γ'(γ_k, γ_z) Formula (4.8) v0.6.0
     with {pending_, curr_validators_, prev_validators_, epoch_root_} <-
            RotateKeys.rotate_keys(h, state, judgements_),
          :ok <-

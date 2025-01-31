@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Judgement do
   @moduledoc """
-  Formula (98) v0.4.5
+  Formula (10.2)
   essentialy a vote on the validity of a work report.
   """
   alias Util.Crypto

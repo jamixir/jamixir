@@ -20,7 +20,7 @@ defmodule System.State.Judgements do
           offenders: MapSet.t(Types.ed25519_key())
         }
 
-  # Formula (97) v0.4.5
+  # Formula (10.1) v0.6.0
   defstruct good: MapSet.new(),
             bad: MapSet.new(),
             wonky: MapSet.new(),

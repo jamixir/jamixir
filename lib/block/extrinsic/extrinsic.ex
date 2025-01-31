@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic do
   alias Codec.VariableSize
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
-  # Formula (14) v0.4.5
+  # Formula (4.2) v0.6.0
   defstruct tickets: [], disputes: %Disputes{}, preimages: [], assurances: [], guarantees: []
 
   @type t :: %__MODULE__{
@@ -64,9 +64,9 @@ defmodule Block.Extrinsic do
   end
 
   use Codec.Encoder
-  # Formula (5.4) v0.5.4
-  # Formula (5.5) v0.5.4
-  # Formula (5.6) v0.5.4
+  # Formula (5.4) v0.6.0
+  # Formula (5.5) v0.6.0
+  # Formula (5.6) v0.6.0
   def calculate_hash(%Block.Extrinsic{} = ex) do
     a = [
       e(vs(ex.tickets)),
@@ -79,7 +79,7 @@ defmodule Block.Extrinsic do
     h(e(for el <- a, do: h(el)))
   end
 
-  # Formula 5.6 v0.5.4
+  # Formula 5.6 v0.6.0
   def g(guarantees) do
     e(
       vs(

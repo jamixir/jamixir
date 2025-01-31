@@ -242,6 +242,7 @@ defmodule System.State.ValidatorStatisticsTest do
     test "encodes a validator statistics to json" do
       vs = build(:validator_statistics)
       json = JsonEncoder.encode(vs)
+
       assert json == %{
                current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
                last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s))

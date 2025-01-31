@@ -292,7 +292,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       specification: :package_spec,
       refinement_context: :context,
       output: :auth_output,
-      segment_root_lookup: {:segment_root_lookup, &JsonEncoder.to_list(&1, :work_package_hash, :segment_tree_root)}
+      segment_root_lookup:
+        {:segment_root_lookup, &JsonEncoder.to_list(&1, :work_package_hash, :segment_tree_root)}
     }
 
   def decode_segment_root_lookup(json) do

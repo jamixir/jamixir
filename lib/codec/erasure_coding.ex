@@ -76,7 +76,6 @@ defmodule ErasureCoding do
   def lace([]), do: <<>>
   def lace([c | _] = chunks) when is_list(chunks), do: lace(chunks, byte_size(c))
 
-
   def erasure_code(d) do
     for c <-
           Utils.transpose(

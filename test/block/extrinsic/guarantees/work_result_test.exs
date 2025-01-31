@@ -53,18 +53,20 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   describe "to_json/1" do
     test "encodes a work result to json", %{wr: wr} do
       json = Codec.JsonEncoder.encode(wr)
+
       assert json == %{
                code_hash: Hex.encode16(wr.code_hash, prefix: true),
                payload_hash: Hex.encode16(wr.payload_hash, prefix: true),
                service_id: wr.service,
                accumulate_gas: wr.gas_ratio,
-               result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true  )}
+               result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true)}
              }
     end
 
     test "encodes a work result with error to json", %{wr: wr} do
       wr = put_in(wr.result, {:error, :panic})
       json = Codec.JsonEncoder.encode(wr)
+
       assert json == %{
                code_hash: Hex.encode16(wr.code_hash, prefix: true),
                payload_hash: Hex.encode16(wr.payload_hash, prefix: true),

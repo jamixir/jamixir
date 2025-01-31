@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes do
   @moduledoc """
-  Formula (98) v0.4.5
+  Formula (10.2)
   Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
   """
 
@@ -63,11 +63,11 @@ defmodule Block.Extrinsic.Disputes do
     current_epoch = Time.epoch_index(timeslot)
 
     cond do
-      # Formula (98) v0.4.5 - epoch index
+      # Formula (10.2) - epoch index
       !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
         {:error, Error.bad_judgement_age()}
 
-      # Formula (98) v0.4.5 - required length ⌊2/3V⌋+1
+      # Formula (10.2) - required length ⌊2/3V⌋+1
       !Enum.all?(verdicts, fn %Verdict{judgements: judgements, epoch_index: epoch_index} ->
         validator_set =
             get_validator_set(curr_validators, prev_validators, current_epoch, epoch_index)
@@ -90,7 +90,7 @@ defmodule Block.Extrinsic.Disputes do
       ) ->
         {:error, Error.already_judged()}
 
-      #  Formula (99) v0.4.5 - signatures
+      #  Formula (10.3) v0.6.0 - signatures
       !Enum.all?(verdicts, fn verdict ->
         curr_validators
         |> get_validator_set(prev_validators, current_epoch, verdict.epoch_index)
@@ -213,7 +213,7 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (99) v0.4.5
+  # Formula (10.3) v0.6.0
   def get_validator_set(curr_validators, _prev_validators, current_epoch, current_epoch),
     do: curr_validators
 

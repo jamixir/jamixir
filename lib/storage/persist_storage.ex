@@ -1,7 +1,8 @@
 defmodule PersistStorage do
   use GenServer
   @db_path if Mix.env() == :test, do: "priv/test_db", else: "priv/db"
-  @compact_interval :timer.minutes(5)  # Adjust as needed
+  # Adjust as needed
+  @compact_interval :timer.minutes(5)
   # @compact_threshold 1000  # Number of operations before considering compaction
 
   def start_link(opts) do
@@ -12,6 +13,7 @@ defmodule PersistStorage do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, {:put, key, value})
     end
+
     {:ok, key}
   end
 
@@ -19,6 +21,7 @@ defmodule PersistStorage do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, {:put_map, map})
     end
+
     {:ok, Map.keys(map)}
   end
 
@@ -32,6 +35,7 @@ defmodule PersistStorage do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, {:delete, key})
     end
+
     :ok
   end
 
@@ -39,6 +43,7 @@ defmodule PersistStorage do
     if Process.whereis(__MODULE__) do
       GenServer.cast(__MODULE__, :clear)
     end
+
     :ok
   end
 
@@ -48,16 +53,20 @@ defmodule PersistStorage do
     case Keyword.get(opts, :persist) do
       true ->
         File.mkdir_p!(@db_path)
+
         case CubDB.start_link(
-          data_dir: @db_path,
-          name: :cubdb,
-          auto_compact: false
-        ) do
+               data_dir: @db_path,
+               name: :cubdb,
+               auto_compact: false
+             ) do
           {:ok, db} ->
             schedule_compaction()
             {:ok, %{db: db, persist: true, ops_count: 0}}
-          error -> {:stop, error}
+
+          error ->
+            {:stop, error}
         end
+
       false ->
         {:ok, %{db: nil, persist: false, ops_count: 0}}
     end

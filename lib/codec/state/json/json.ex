@@ -3,7 +3,6 @@ defmodule Codec.State.Json do
   alias System.State.Safrole
   import Codec.State.Json.DecodeField
 
-
   @spec decode(any()) :: State.t()
   def decode(json) do
     decoded_fields =
