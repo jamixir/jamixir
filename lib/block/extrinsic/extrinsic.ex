@@ -71,12 +71,24 @@ defmodule Block.Extrinsic do
     a = [
       e(vs(ex.tickets)),
       e(vs(ex.preimages)),
-      e(vs(ex.guarantees)),
+      g(ex.guarantees),
       e(vs(ex.assurances)),
       e(ex.disputes)
     ]
 
     h(e(for el <- a, do: h(el)))
+  end
+
+  # Formula 5.6 v0.5.4
+  def g(guarantees) do
+    e(
+      vs(
+        for(
+          %Guarantee{work_report: w, timeslot: t, credentials: a} <- guarantees,
+          do: e({h(e(w)), e_le(t, 4), vs(a)})
+        )
+      )
+    )
   end
 
   use JsonDecoder
