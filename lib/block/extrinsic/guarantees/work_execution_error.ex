@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   # Formula (11.7) v0.6.0
   @type t :: :out_of_gas | :panic | :bad_exports | :bad | :big
 
-  # Formula (C.28) v0.5.0
+  # Formula (C.28) v0.6.0
   @codes %{out_of_gas: 1, panic: 2, bad_exports: 3, bad: 4, big: 5}
 
   def code(error) do

@@ -89,6 +89,7 @@
           }
         ],
         "storage": null,
+        "code_hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
         "preimages": [
           {
             "hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
@@ -100,6 +101,7 @@
           }
         ],
         "code_hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
+        "storage": null,
         "min_item_gas": 10,
         "min_memo_gas": 10
       }
@@ -420,40 +422,55 @@
       },
       {
         "blocks": 0,
-        "assurances": 0,
         "guarantees": 0,
+        "assurances": 0,
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "assurances": 0,
         "guarantees": 0,
+        "assurances": 0,
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
@@ -462,48 +479,78 @@
     "current": [
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
+<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
+=======
+        "guarantees": 0,
+        "assurances": 0,
+>>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0

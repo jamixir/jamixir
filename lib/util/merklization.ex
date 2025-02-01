@@ -14,7 +14,7 @@ defmodule Util.Merklization do
   alias Util.Hash
 
   @doc """
-  Formula (322) v0.4.5:
+  Formula (D.3) v0.6.0:
      { (H, H) → B512
   B: { (l,r) → [0] ~ bits(l)1... ~ bits(r)
 
@@ -63,7 +63,7 @@ defmodule Util.Merklization do
   @doc """
     Merklization State Function
 
-   Formula (324) v0.4.5
+   Formula (D.5) v0.6.0
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
   """
@@ -79,7 +79,7 @@ defmodule Util.Merklization do
   @doc """
     General Merklization Function
 
-   Formula (325) v0.4.5
+   Formula (D.6) v0.6.0
                        { H°                       if |d| = 0
     M(d:D(B → (H,Y))) ={ H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
                        { H(bits-1 (B(M(l), M(r)))) otherwise, where Vb,p: (b → p) ed → (b1.. → p) E { l   if bo = 0

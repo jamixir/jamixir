@@ -56,7 +56,7 @@ defmodule Block.HeaderTest do
     {:ok, header: %Header{block_seal: <<123::256>>}}
   end
 
-  # Formula (C.19) v0.5.0
+  # Formula (C.19) v0.6.0
   describe "encode/1" do
     test "encode header smoke test" do
       assert Encodable.encode(build(:header))
@@ -124,7 +124,7 @@ defmodule Block.HeaderTest do
     end
   end
 
-  # Formula (C.20) v0.5.0
+  # Formula (C.20) v0.6.0
   describe "unsigned_encode/1" do
     test "unsigned_encode header", %{header: h} do
       assert Header.unsigned_encode(h) ==

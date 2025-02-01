@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_segment_root_lookups(w, state.recent_history),
          # Formula (11.40) v0.5.2
          :ok <- validate_prerequisites(w, state.recent_history),
-         # Formula (11.22) v0.5.0
+         # Formula (11.23) v0.6.0
          true <-
            Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
          # Formula (11.32) v0.5.0
@@ -268,7 +268,7 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  # Formula (11.25) v0.5.0
+  # Formula (11.26) v0.6.0
   mockable reporters_set(
              guarantees,
              %EntropyPool{n2: n2_, n3: n3_},
@@ -382,7 +382,7 @@ defmodule Block.Extrinsic.Guarantee do
     use Codec.Encoder
     alias Block.Extrinsic.Guarantee
 
-    # Formula (C.16) v0.5.0
+    # Formula (C.16) v0.6.0
     def encode(g = %Guarantee{}) do
       e({
         g.work_report,

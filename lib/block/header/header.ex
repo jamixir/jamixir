@@ -131,7 +131,7 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (C.20) v0.5.0
+  # Formula (C.20) v0.6.0
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       e_le(header.timeslot, 4) <>
@@ -147,7 +147,7 @@ defmodule Block.Header do
   defimpl Encodable do
     use Codec.Encoder
     alias Block.Header
-    # Formula (C.19) v0.5.0
+    # Formula (C.19) v0.6.0
     def encode(%Block.Header{} = header) do
       <<>>
       Header.unsigned_encode(header) <> e(header.block_seal)

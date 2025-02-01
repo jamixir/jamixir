@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  # Formula (207) v0.4.5
+  # Formula (14.16) v0.6.0
   @spec from_package_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           Block.Extrinsic.t()
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
@@ -55,7 +55,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     }
   end
 
-  # Formula (207) v0.4.5 - u
+  # Formula (14.16) v0.6.0 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   defp calculate_erasure_root(bundle_binary, exported_segments) do
     coded_chunks =

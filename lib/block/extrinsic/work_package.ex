@@ -51,7 +51,7 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp)
   end
 
-  # Formula (200) v0.4.5
+  # Formula (14.9) v0.6.0
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
     ServiceAccount.historical_lookup(
@@ -61,13 +61,13 @@ defmodule Block.Extrinsic.WorkPackage do
     )
   end
 
-  # Formula (200) v0.4.5
+  # Formula (14.9) v0.6.0
   # pa
   def implied_authorizer(%__MODULE__{} = wp, services) do
     Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
-  # Formula (203) v0.4.5
+  # Formula (14.12) v0.6.0
   def segment_root(r) do
     # TODO ⊞ part
     r
@@ -112,7 +112,7 @@ defmodule Block.Extrinsic.WorkPackage do
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     use Codec.Encoder
-    # Formula (C.25) v0.5.0
+    # Formula (C.25) v0.6.0
     def encode(%WorkPackage{} = wp) do
       e({
         vs(wp.authorization_token),

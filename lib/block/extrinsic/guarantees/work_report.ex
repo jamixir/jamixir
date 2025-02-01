@@ -175,7 +175,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (201) v0.4.5
-  # TODO review to 0.5.2
+  # TODO review to 14.10 v0.6.0
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
@@ -191,7 +191,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
+  # TODO 14.13 v0.6.0
+
   # Formula (202) v0.4.5
+  # TODO review to 14.11 v0.6.0
   def compute_work_result(%WorkPackage{} = wp, core, services) do
     _l = calculate_segments(wp)
     # TODO
@@ -211,7 +214,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
 
-        # Formula (206) v0.4.5
+        # Formula (14.15) v0.6.0
         specification =
           AvailabilitySpecification.from_package_execution(
             Hash.default(e(wp)),
@@ -237,6 +240,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (202) v0.4.5
+  # TODO review to 14.11 v0.6.0
   # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
   def process_item(%WorkPackage{} = p, j, o, services) do
@@ -310,7 +314,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.24) v0.5.0
+    # Formula (C.24) v0.6.0
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       e({
