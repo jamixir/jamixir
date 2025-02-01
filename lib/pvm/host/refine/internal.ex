@@ -1,8 +1,8 @@
 # Formula (B.22) v0.6.0
 defmodule PVM.Host.Refine.Internal do
-  alias Util.Hash
   alias System.State.ServiceAccount
-  alias PVM.{Memory, Integrated, Registers, Host.Refine.Context, Host.Refine.Result.Internal}
+  alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
+  alias Util.Hash
   use Codec.{Decoder, Encoder}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult}
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}

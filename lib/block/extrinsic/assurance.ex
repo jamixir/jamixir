@@ -55,7 +55,7 @@ defmodule Block.Extrinsic.Assurance do
 
   def mock(:validate_assurances, _), do: :ok
 
-  # Formula (11.14) v0.5
+  # Formula (11.15) v0.6.0
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
