@@ -18,10 +18,10 @@ defmodule Block.Extrinsic.Guarantor do
             # d
             validators: []
 
-  # Formula (11.18) v0.5.0
+  # Formula (11.19) v0.6.0
   def rotate(c, n), do: for(x <- c, do: rem(x + n, Constants.core_count()))
 
-  # Formula (11.19) v0.5.0
+  # Formula (11.20) v0.6.0
   def permute(e, t) when is_list(e) or is_binary(e) do
     rotate(
       Shuffle.shuffle(
@@ -34,7 +34,7 @@ defmodule Block.Extrinsic.Guarantor do
     )
   end
 
-  # Formula (11.20) v0.5.0
+  # Formula (11.21) v0.6.0
   def guarantors(n2_, time_stamp_, curr_validators_, offenders) do
     %__MODULE__{
       assigned_cores: permute(n2_, time_stamp_),

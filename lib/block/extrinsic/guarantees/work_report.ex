@@ -45,12 +45,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (11.3) v0.5.2
+  # Formula (11.3) v0.6.0
   # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    # Formula (11.3) v0.5.2
-    # Formula (11.8) v0.5.2
+    # Formula (11.3) v0.6.0
+    # Formula (11.8) v0.6.0
     map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
@@ -62,7 +62,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.15) v0.5.0 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (11.16) v0.6.0 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     for c <- 0..(Constants.core_count() - 1),

@@ -121,7 +121,7 @@ defmodule System.State.ServiceAccount do
   defimpl Encodable do
     alias Codec.Encoder
     alias System.State.ServiceAccount
-    # Formula (D.2) v0.5.0
+    # Formula (D.2) v0.6.0
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do

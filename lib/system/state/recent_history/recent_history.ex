@@ -147,7 +147,7 @@ defmodule System.State.RecentHistory do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (D.2) v0.5.0
+    # Formula (D.2) v0.6.0
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
       e(

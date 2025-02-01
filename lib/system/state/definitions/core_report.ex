@@ -31,11 +31,11 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (4.14) v0.5.0
+  # ρ‡ Formula (4.14) v0.6.0
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances, h_t) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
-    # Formula (11.16) v0.5.0
+    # Formula (11.71) v0.6.0
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil or intermediate == nil,
         do: nil,
@@ -69,7 +69,7 @@ defmodule System.State.CoreReport do
   defimpl Encodable do
     alias System.State.CoreReport
     use Codec.Encoder
-    # Formula (D.2) v0.5.0
+    # Formula (D.2) v0.6.0
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     def encode(%CoreReport{} = c) do
       e({c.work_report, e_le(c.timeslot, 4)})
