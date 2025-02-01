@@ -1,5 +1,5 @@
 defmodule ErasureCoding do
-  # Formula (H.1) v0.5.4
+  # Formula (H.1) v0.6.0
 
   def split(data, n) when is_binary(data) and rem(byte_size(data), n) != 0 do
     raise ArgumentError, "Invalid data size"
@@ -15,7 +15,7 @@ defmodule ErasureCoding do
     |> Enum.map(&:binary.list_to_bin/1)
   end
 
-  # Formula (H.2) v0.5.4
+  # Formula (H.2) v0.6.0
   def join(chunks, n) when is_list(chunks) do
     Enum.reduce(chunks, <<>>, fn chunk, acc ->
       if byte_size(chunk) != n do
@@ -36,7 +36,7 @@ defmodule ErasureCoding do
     join(for c <- chunks, do: :binary.list_to_bin(c))
   end
 
-  # Formula (H.3) v0.5.4
+  # Formula (H.3) v0.6.0
   def unzip(<<>>, _), do: []
 
   def unzip(data, n) when rem(byte_size(data), n) != 0 do
@@ -54,7 +54,7 @@ defmodule ErasureCoding do
     end
   end
 
-  # Formula (H.4) v0.5.4
+  # Formula (H.4) v0.6.0
   def lace([], _), do: <<>>
 
   def lace(chunks, n) when is_list(chunks) do

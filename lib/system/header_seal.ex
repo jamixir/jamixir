@@ -23,16 +23,16 @@ defmodule System.HeaderSeal do
     module.do_validate_header_seals(header, curr_validators_, epoch_slot_sealers_, entropy_pool)
   end
 
-  # Formula (6.15) v0.5.4
-  # Formula (6.16) v0.5.4
-  # Formula (6.17) v0.5.4
+  # Formula (6.15) v0.6.0
+  # Formula (6.16) v0.6.0
+  # Formula (6.17) v0.6.0
   def seal_header(
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
         %EntropyPool{} = entropy_pool,
         {keypair, _}
       ) do
-    # associated with formula (6.15, 6.16) v0.5.4
+    # associated with formula (6.15, 6.16) v0.6.0
     # let i = γs′ [Ht ]↺
     expected_slot_sealer =
       Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
@@ -40,7 +40,7 @@ defmodule System.HeaderSeal do
     seal_context = construct_seal_context(expected_slot_sealer, entropy_pool)
     block_seal_output = RingVrf.ietf_vrf_output(keypair, seal_context)
 
-    # Formula (6.17) v0.5.4
+    # Formula (6.17) v0.6.0
     {vrf_signature, _} =
       RingVrf.ietf_vrf_sign(keypair, SigningContexts.jam_entropy() <> block_seal_output, <<>>)
 
@@ -52,8 +52,8 @@ defmodule System.HeaderSeal do
     put_in(header.block_seal, block_seal)
   end
 
-  # Formula (6.15) v0.5.4
-  # Formula (6.16) v0.5.4
+  # Formula (6.15) v0.6.0
+  # Formula (6.16) v0.6.0
   def do_validate_header_seals(
         header,
         curr_validators_,
@@ -82,7 +82,7 @@ defmodule System.HeaderSeal do
              curr_validators_
            ),
          # verify that the vrf signature is a valid signature
-         # Formula (6.17) v0.5.4
+         # Formula (6.17) v0.6.0
          {:ok, vrf_signature_output} <-
            RingVrf.ietf_vrf_verify(
              Enum.at(bandersnatch_public_keys, header.block_author_key_index),

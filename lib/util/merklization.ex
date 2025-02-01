@@ -30,7 +30,7 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    Formula (D.4) v0.5.3
+    Formula (D.4) v0.6.0
     Encodes the leaf nodes distinguin between regular and embedded leafs.
       { (H, Y) → B512
     L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32

@@ -54,7 +54,7 @@ defmodule System.State.Safrole do
              rotated_history_entropy_pool,
              curr_validators_
            ),
-         # Formula (6.34) v0.5.4
+         # Formula (6.34) v0.6.0
          {:ok, ticket_accumulator_} <-
            Safrole.calculate_ticket_accumulator_(
              h.timeslot,
@@ -73,7 +73,7 @@ defmodule System.State.Safrole do
     end
   end
 
-  # Formula (6.24) v0.5.4
+  # Formula (6.24) v0.6.0
   def get_epoch_slot_sealers_(
         %Header{timeslot: timeslot_},
         timeslot,
@@ -84,11 +84,11 @@ defmodule System.State.Safrole do
         %EntropyPool{n2: n2_},
         curr_validators
       ) do
-    # Formula (6.24) v0.5.4 - second arm
+    # Formula (6.24) v0.6.0 - second arm
     if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) do
       slot_sealers
     else
-      # Formula (6.24) v0.5.4 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
+      # Formula (6.24) v0.6.0 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
       if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) + 1 and
            length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
@@ -99,8 +99,8 @@ defmodule System.State.Safrole do
     end
   end
 
-  # Formula (6.34) v0.5.4
-  # Formula (6.35) v0.5.4
+  # Formula (6.34) v0.6.0
+  # Formula (6.35) v0.6.0
   def calculate_ticket_accumulator_(
         header_timeslot,
         state_timeslot,
@@ -138,7 +138,7 @@ defmodule System.State.Safrole do
   @doc """
   Z function: Outside-in sequencer function.
   Reorders the list by alternating between the first and last elements.
-  Formula (6.25) v0.5.4
+  Formula (6.25) v0.6.0
   """
   @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
   def outside_in_sequencer(tickets) do
@@ -155,7 +155,7 @@ defmodule System.State.Safrole do
   end
 
   @doc """
-  Formula (6.26) v0.5.4
+  Formula (6.26) v0.6.0
   Fallback key sequence function.
   selects an epoch’s worth of validator Bandersnatch keys
   """

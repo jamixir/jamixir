@@ -54,9 +54,8 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.4
+  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.6.0
   """
-
   def transition(w, t_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
     module.do_transition(w, t_, s)
@@ -75,7 +74,7 @@ defmodule System.State.Accumulation do
           timeslot: timeslot
         }
       ) do
-    # Formula (12.20) v0.5.4
+    # Formula (12.20) v0.6.0
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -98,8 +97,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (12.21) v0.5.4
-    # Formula (12.22) v0.5.4
+    # Formula (12.21) v0.6.0
+    # Formula (12.22) v0.6.0
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,
@@ -317,7 +316,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.24) v0.5.4
+  # Formula (12.24) v0.6.0
   def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
@@ -342,7 +341,7 @@ defmodule System.State.Accumulation do
     }
   end
 
-  # Formula (12.27) v0.5.4
+  # Formula (12.27) v0.6.0
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),

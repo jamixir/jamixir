@@ -35,7 +35,7 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (D.4) v0.5.3: TESTS
+  # Formula (D.4) v0.6.0
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do

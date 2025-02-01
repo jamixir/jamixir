@@ -59,7 +59,7 @@ defmodule Util.MerkleTree do
     justification(v, i, hash_func) |> Enum.take(size)
   end
 
-  # Formula (E.6) v0.5.3
+  # Formula (E.6) v0.6.0
   # (v, i, H) ↦ [H($leaf ⌢ l) S l <− v2xi... min(2xi+2x,SvS)]
   # note as of 0.5.3, the justification_l is not used anywhere
   def justification_l(v, i, x), do: justification_l(v, i, &Hash.default/1, x)

@@ -86,8 +86,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.4) v0.5.4
-  # Formula (12.5) v0.5.4
+  # Formula (12.4) v0.6.0
+  # Formula (12.5) v0.6.0
   @spec separate_work_reports(list(__MODULE__.t()), list(MapSet.t(Types.hash()))) ::
           {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
   def separate_work_reports(work_reports, accumulation_history)
@@ -109,13 +109,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {w_bang, w_q}
   end
 
-  # Formula (12.6) v0.5.4
+  # Formula (12.6) v0.6.0
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
     {w, w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)}
   end
 
-  # Formula (12.7) v0.5.4
+  # Formula (12.7) v0.6.0
   @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), MapSet.t(Types.hash())) ::
           list({__MODULE__.t(), MapSet.t(Types.hash())})
   def edit_queue(r, x) do
@@ -125,7 +125,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.8) v0.5.4
+  # Formula (12.8) v0.6.0
   @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())})) ::
           list(__MODULE__.t())
   def accumulation_priority_queue(r) do
@@ -135,7 +135,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.9) v0.5.4
+  # Formula (12.9) v0.6.0
   def work_package_hashes(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
@@ -153,24 +153,24 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (12.2) v0.5.4
+    # Formula (12.2) v0.6.0
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (12.4) v0.5.4
-    # Formula (12.5) v0.5.4
+    # Formula (12.4) v0.6.0
+    # Formula (12.5) v0.6.0
     {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
-    # Formula (12.10) v0.5.4
+    # Formula (12.10) v0.6.0
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (12.12) v0.5.4
+    # Formula (12.12) v0.6.0
     q =
       edit_queue(
         for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ w_q,
         work_package_hashes(w_bang)
       )
 
-    # Formula (12.11) v0.5.4
+    # Formula (12.11) v0.6.0
     w_bang ++ accumulation_priority_queue(q)
   end
 
