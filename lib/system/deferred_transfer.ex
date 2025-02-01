@@ -20,7 +20,7 @@ defmodule System.DeferredTransfer do
             memo: <<0::size(Constants.memo_size() * 8)>>,
             gas_limit: 0
 
-  # Formula (12.23) v0.5.2
+  # Formula (12.23) v0.6.0
   @spec select_transfers_for_destination(list(t()), non_neg_integer()) :: list(t())
   def select_transfers_for_destination(transfers, destination) do
     Enum.with_index(transfers)

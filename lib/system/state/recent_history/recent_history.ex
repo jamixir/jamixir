@@ -55,7 +55,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Gets the initial block history, modifying the last block to include the given state root.
-  Formula (7.2) v0.5.2
+  Formula (7.2) v0.6.0
   """
   def update_latest_state_root(nil, _), do: %__MODULE__{}
 
@@ -75,7 +75,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  Formula (7.3) v0.5.2
+  Formula (7.3) v0.6.0
   """
   mockable transition(
              %Header{prior_state_root: prior_state_root} = header,
@@ -92,12 +92,12 @@ defmodule System.State.RecentHistory do
     header_hash = calculate_header_hash(header)
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
-    # Formula (7.3) v0.5.2
+    # Formula (7.3) v0.6.0
 
     well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # Formula (7.3) v0.5.2
+    # Formula (7.3) v0.6.0
 
     mmr_roots =
       case recent_history.blocks do
@@ -118,7 +118,7 @@ defmodule System.State.RecentHistory do
           do: {spec.work_package_hash, spec.exports_root},
           into: %{}
 
-    # Formula (7.4) v0.5.2
+    # Formula (7.4) v0.6.0
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 

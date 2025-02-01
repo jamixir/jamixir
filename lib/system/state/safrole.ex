@@ -45,7 +45,7 @@ defmodule System.State.Safrole do
              state.entropy_pool,
              pending_
            ),
-         # Formula (6.24) v0.5.2
+         # Formula (6.24) v0.6.0
          epoch_slot_sealers_ =
            Safrole.get_epoch_slot_sealers_(
              h,

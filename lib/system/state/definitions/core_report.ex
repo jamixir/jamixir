@@ -14,7 +14,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
-  # Formula (10.15) v0.5.2
+  # Formula (10.15) v0.6.0
   def process_disputes(core_reports, bad_wonky_verdicts) do
     for c <- core_reports do
       process_report(c, MapSet.new(bad_wonky_verdicts))

@@ -1,4 +1,5 @@
 # Formula (B.6) v0.5.2
+# TODO update to 0.6.0
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
 
@@ -21,7 +22,7 @@ defmodule PVM.Host.Accumulate.Context do
             computed_service: nil,
             transfers: []
 
-  # Formula (B.7) v0.5.2
+  # Formula (B.7) v0.6.0
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
   def accumulating_service(%__MODULE__{} = x), do: x.accumulation.services[x.service]
 

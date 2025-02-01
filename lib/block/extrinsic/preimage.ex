@@ -4,7 +4,7 @@ defmodule Block.Extrinsic.Preimage do
   import SelectiveMock
   use Codec.Encoder
 
-  # Formula (12.28) v0.5.2
+  # Formula (12.28) v0.6.0
   @type t :: %__MODULE__{
           # s
           service: non_neg_integer(),
@@ -17,13 +17,13 @@ defmodule Block.Extrinsic.Preimage do
             # p
             blob: <<>>
 
-  # Formula (12.29) v0.5.2
+  # Formula (12.29) v0.6.0
   @spec validate(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
-    # Formula (12.29) v0.5.2
+    # Formula (12.29) v0.6.0
     with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service),
-         # Formula (12.31) v0.5.2
+         # Formula (12.31) v0.6.0
          :ok <- check_all_preimages(preimages, services) do
       :ok
     else
@@ -33,7 +33,7 @@ defmodule Block.Extrinsic.Preimage do
 
   def mock(:validate, _), do: :ok
 
-  # Formula (12.31) v0.5.2
+  # Formula (12.31) v0.6.0
   @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   defp check_all_preimages(preimages, services) do
@@ -46,7 +46,7 @@ defmodule Block.Extrinsic.Preimage do
     end)
   end
 
-  # Formula (12.30) v0.5.2
+  # Formula (12.30) v0.6.0
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   def not_provided?(preimage, services) do
     case services[preimage.service] do

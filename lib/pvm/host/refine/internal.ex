@@ -1,4 +1,4 @@
-# Formula (B.22) v0.5.2
+# Formula (B.22) v0.6.0
 defmodule PVM.Host.Refine.Internal do
   alias Util.Hash
   alias System.State.ServiceAccount

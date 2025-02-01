@@ -36,7 +36,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_transition(list(), non_neg_integer(), State.t()) :: any()
 
-  # Formula (12.3) v0.5.2 - U
+  # Formula (12.3) v0.6.0 - U
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -114,16 +114,16 @@ defmodule System.State.Accumulation do
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
         }, deferred_transfers, beefy_commitment}} ->
-        # Formula (12.24) v0.5.2
+        # Formula (12.24) v0.6.0
         services_intermediate_2 =
           calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
 
-        # Formula (12.25) v0.5.2
+        # Formula (12.25) v0.6.0
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-        # Formula (12.26) v0.5.2
+        # Formula (12.26) v0.6.0
         accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
         {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-        # Formula (12.27) v0.5.2
+        # Formula (12.27) v0.6.0
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
@@ -149,7 +149,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.16) v0.5.2
+  # Formula (12.16) v0.6.0
   @spec outer_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),

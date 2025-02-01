@@ -9,7 +9,7 @@ defmodule PVM do
   import PVM.Host.Gas
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (B.1) v0.5.2
+  # Formula (B.1) v0.6.0
   @spec authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
           binary() | WorkExecutionError.t()
   def authorized(p = %WorkPackage{}, core, services) do
@@ -21,7 +21,7 @@ defmodule PVM do
     r
   end
 
-  # Formula (B.2) v0.5.2
+  # Formula (B.2) v0.6.0
   @spec authorized_f(non_neg_integer(), PVM.Types.host_call_state(), PVM.Types.context()) ::
           {PVM.Types.exit_reason(), PVM.Types.host_call_state(), PVM.Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
@@ -40,7 +40,7 @@ defmodule PVM do
     end
   end
 
-  # Formula (B.8) v0.5.2
+  # Formula (B.8) v0.6.0
   @spec refine(Params.t(), %{integer() => ServiceAccount.t()}) ::
           {binary() | WorkExecutionError.t(), list(binary())}
   def refine(%Params{} = params, services), do: PVM.Refine.execute(params, services)
@@ -63,6 +63,7 @@ defmodule PVM do
   end
 
   # Formula (B.14) v0.5.2
+  # TODO update to B.14 on v0.6.0
   @spec on_transfer(
           services :: %{integer() => ServiceAccount.t()},
           timeslot :: non_neg_integer(),
@@ -70,7 +71,7 @@ defmodule PVM do
           transfers :: list(DeferredTransfer.t())
         ) :: ServiceAccount.t()
   def on_transfer(services, timeslot, service_index, transfers) do
-    # Formula (B.16) v0.5.2
+    # Formula (B.16) v0.6.0
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
         case host(n) do
@@ -104,7 +105,7 @@ defmodule PVM do
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
-    # Formula (B.15) v0.5.2
+    # Formula (B.15) v0.6.0
     service = Map.get(services, service_index)
 
     service =
