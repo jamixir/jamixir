@@ -125,12 +125,11 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   # Formula (14.14) v0.6.0
-  # J ( w ∈ I ) ≡ [ ↕ J ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
-  # TODO review to be J0(s, n) and not J(s, n)
+  # J ( w ∈ I ) ≡ [ ↕ J0 ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
   def segment_justification(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,
         MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
-        do: vs(MerkleTree.justification(s, n))
+        do: vs(MerkleTree.justification(s, n, 0))
   end
 
   use JsonDecoder
