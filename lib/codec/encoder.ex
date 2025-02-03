@@ -25,7 +25,7 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (E.9) v0.5.2
+  # Formula (E.9) v0.6.0
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
@@ -34,14 +34,18 @@ defmodule Codec.Encoder do
 
   use Sizes
 
-  # Formula (E.10) v0.5.3
+  # Formula (E.10) v0.6.0
   def super_peak_mmr(b) do
     case for h <- b, h != nil, do: h do
-      [] -> Hash.zero()
-      [h0] -> h0
+      [] ->
+        Hash.zero()
+
+      [h0] ->
+        h0
+
       h ->
         {init, [last]} = Enum.split(h, -1)
-        Hash.keccak_256("node" <> super_peak_mmr(init) <> last)
+        Hash.keccak_256("peak" <> super_peak_mmr(init) <> last)
     end
   end
 

@@ -191,16 +191,19 @@ defmodule Block.Extrinsic.Guarantee do
   mockable validate_anchor_block(guarantees, %RecentHistory{} = beta, prior_state_root) do
     beta_dagger = RecentHistory.update_latest_state_root(beta, prior_state_root)
     Enum.reduce_while(refinement_contexts(guarantees), :ok, fn x, _acc ->
+      # xs = ys
       case for(y <- beta_dagger.blocks, x.state_root == y.state_root, do: y) do
         [] ->
           {:halt, {:error, :bad_state_root}}
 
         blocks ->
+          # xa = yh
           case for(y <- blocks, x.anchor == y.header_hash, do: y) do
             [] ->
               {:halt, {:error, :anchor_not_recent}}
 
             blocks ->
+              # xb = MR(yb)
               case for(
                      y <- blocks,
                      x.beefy_root ==
