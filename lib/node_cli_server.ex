@@ -18,7 +18,12 @@ defmodule Jamixir.NodeCLIServer do
   def init(_) do
     TimeTicker.subscribe()
     RingVrf.init_ring_context()
-    {:ok, %{jam_state: init_jam_state(), server_pid: init_network_listener()}}
+    jam_state = init_jam_state()
+    server_pid = init_network_listener()
+    Logger.info("Waiting 10s for clients to connect...")
+    Process.sleep(10_000)
+    cliend_pids = init_clients(jam_state.curr_validators)
+    {:ok, %{jam_state: jam_state, server_pid: server_pid, client_pids: cliend_pids}}
   end
 
   defp init_jam_state do
@@ -29,10 +34,24 @@ defmodule Jamixir.NodeCLIServer do
     jam_state
   end
 
+  defp init_clients(validators) do
+    for v <- validators do
+      case PeerSupervisor.start_peer(:initiator, Validator.address(v), Validator.port(v)) do
+        {:ok, pid} ->
+          Logger.info("📡 Client started for validator: #{inspect(v)}")
+          pid
+
+        error ->
+          Logger.error("Failed to start client for validator: #{inspect(v)}: #{inspect(error)}")
+          nil
+      end
+    end
+  end
+
   def init_network_listener do
     port = Application.get_env(:jamixir, :port, 9999)
-    {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
-    server_pid
+    {:ok, client_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
+    client_pid
   end
 
   @impl true
