@@ -89,8 +89,8 @@ defmodule Constants do
   @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config(:ticket_submission_end))
 
-  # 4104
-  def wswe, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+  @doc "WG = WP WE = 4104: The size of a segment in octets."
+  def segment_size, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
 
   @doc "W_T - The size of the memo component in a deferred transfer, in octets."
   def memo_size, do: 128

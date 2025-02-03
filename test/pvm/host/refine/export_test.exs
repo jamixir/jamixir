@@ -75,7 +75,7 @@ defmodule PVM.Host.Refine.ExportTest do
       # Context should have new segment added
       assert length(context_.e) == 1
       # Verify the exported segment is padded correctly
-      assert List.last(context_.e) == Utils.pad_binary_right(test_data, Constants.wswe())
+      assert List.last(context_.e) == Utils.pad_binary_right(test_data, Constants.segment_size())
     end
   end
 end

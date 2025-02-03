@@ -1,8 +1,5 @@
 {
-  "alpha": [
-    [],
-    []
-  ],
+  "alpha": [[], []],
   "beta": [],
   "gamma": {
     "gamma_a": [],
@@ -69,19 +66,14 @@
         "balance": 20219,
         "history": [
           {
-            "value": [
-              43
-            ],
+            "value": [43],
             "key": {
               "length": 18,
               "hash": "0x6989ea1c2d5d81e7ef17b32e23d56e5ec90d9d48e19c634e14dd630dd5dd2ce1"
             }
           },
           {
-            "value": [
-              37,
-              40
-            ],
+            "value": [37, 40],
             "key": {
               "length": 49,
               "hash": "0x7a71eb4834e36bcea488abf607e408569bd27cab1ca9c6075f4a4cf64d0a6048"
@@ -227,10 +219,7 @@
       "bls": "0x985e5c9d1fda3d4e50cf3b7f74c6bf2fbc25d6b74d138c8f66657869fb0a11f3a33ce3a7785996f20f600257ac21221db54d71cd03f411d8403c444a1db5bfc5216914b8e7755acab4cd8880534d704abf39b7a3fdcc32b9e0b0bff0e41827271222c341e37ae6d5f576e5b9c6b4c0af45b27ba98aa219d074cae283d8914ec79cdb4d1a5e5c28f5be1b0bfda6934c22"
     }
   ],
-  "rho": [
-    null,
-    null
-  ],
+  "rho": [null, null],
   "tau": 0,
   "varphi": [
     [
@@ -422,55 +411,40 @@
       },
       {
         "blocks": 0,
-        "guarantees": 0,
         "assurances": 0,
+        "guarantees": 0,
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "guarantees": 0,
         "assurances": 0,
+        "guarantees": 0,
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
@@ -479,110 +453,54 @@
     "current": [
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-<<<<<<< HEAD
         "assurances": 0,
         "guarantees": 0,
-=======
-        "guarantees": 0,
-        "assurances": 0,
->>>>>>> 001ccdd (changed all old v0.4.x to 0.6.0)
         "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       }
     ]
   },
-  "theta": [
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    []
-  ],
-  "xi": [
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    []
-  ]
+  "theta": [[], [], [], [], [], [], [], [], [], [], [], []],
+  "xi": [[], [], [], [], [], [], [], [], [], [], [], []]
 }

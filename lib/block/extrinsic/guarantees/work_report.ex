@@ -174,8 +174,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     w_bang ++ accumulation_priority_queue(q)
   end
 
-  # Formula (201) v0.4.5
-  # TODO review to 14.10 v0.6.0
+  # Formula 14.10 v0.6.0
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
@@ -184,9 +183,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       Utils.pad_binary_right(
         e({
           vs(MerkleTree.justification(exported_segments, i, 6)),
-          vs(for x <- Enum.slice(exported_segments, i, 64), do: Hash.default(x))
+          vs(MerkleTree.justification_l(exported_segments, i, 6))
         }),
-        Constants.wswe()
+        Constants.segment_size()
       )
     end
   end

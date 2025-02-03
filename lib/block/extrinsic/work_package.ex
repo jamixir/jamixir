@@ -77,7 +77,7 @@ defmodule Block.Extrinsic.WorkPackage do
   # TODO update to Formula 14.5 v0.6.0
   defp valid_size?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn i, acc ->
-      part1 = length(i.import_segments) * Constants.wswe()
+      part1 = length(i.import_segments) * Constants.segment_size()
       part2 = Enum.sum(for {_, e} <- i.extrinsic, do: e)
       acc + part1 + part2
     end) <= @maximum_size
