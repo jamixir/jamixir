@@ -132,7 +132,7 @@ defmodule CodecEncoderTest do
 
     test "two elements", %{h1: h1} do
       h2 = Hash.random()
-      assert Encoder.super_peak_mmr([h1, h2]) == Hash.keccak_256("node" <> h1 <> h2)
+      assert Encoder.super_peak_mmr([h1, h2]) == Hash.keccak_256("peak" <> h1 <> h2)
     end
 
     test "three elements", %{h1: h1} do
@@ -141,7 +141,7 @@ defmodule CodecEncoderTest do
 
       assert Encoder.super_peak_mmr([h1, h2, h3]) ==
                Hash.keccak_256(
-                 "node" <>
+                 "peak" <>
                    Encoder.super_peak_mmr([h1, h2]) <> h3
                )
     end

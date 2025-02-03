@@ -5,6 +5,7 @@
   ],
   "beta": [],
   "gamma": {
+    "gamma_a": [],
     "gamma_k": [
       {
         "metadata": "0x0000000000000000000000000000000000003132372e302e302e313a393930303a416c696365000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -59,7 +60,6 @@
         "0x08f1d38dc04a75f1136d8ec2f4eaa2918e06cab6631fbc133224edfa8ef31f85"
       ]
     },
-    "gamma_a": [],
     "gamma_z": "0xb7871a4b7f871ba6a7b2e8c8da2189746e8e144d3e59f5e39f5aeba1e9025488ebb96c49c438923d31a7ac983c8ddc98aa40a88a6b9bc1b230e71abc231d5e6513e0bd73742323443a5085ceba357e1c796cea508e08607a1628e4aaa0ea04b992e630ae2b14e758ab0960e372172203f4c9a41777dadd529971d7ab9d23ab29fe0e9c85ec450505dde7f5ac038274cf"
   },
   "delta": [
@@ -88,6 +88,7 @@
             }
           }
         ],
+        "storage": null,
         "preimages": [
           {
             "hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
@@ -99,7 +100,6 @@
           }
         ],
         "code_hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
-        "storage": null,
         "min_item_gas": 10,
         "min_memo_gas": 10
       }
@@ -397,10 +397,10 @@
     ]
   ],
   "chi": {
-    "chi_m": 0,
     "chi_a": 0,
-    "chi_v": 0,
-    "chi_g": null
+    "chi_g": null,
+    "chi_m": 0,
+    "chi_v": 0
   },
   "psi": {
     "bad": [],
@@ -412,49 +412,49 @@
     "last": [
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       }
@@ -462,49 +462,49 @@
     "current": [
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       },
       {
         "blocks": 0,
-        "tickets": 0,
         "assurances": 0,
         "guarantees": 0,
+        "tickets": 0,
         "pre_images": 0,
         "pre_images_size": 0
       }
