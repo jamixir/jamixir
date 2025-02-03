@@ -78,8 +78,8 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   use Codec.Decoder
 
   def decode(bin) do
-    <<service::binary-size(4), code_hash::binary-size(@hash_size),
-      payload_hash::binary-size(@hash_size), gas_ratio::binary-size(8), error_code::8,
+    <<service::32-little, code_hash::binary-size(@hash_size),
+      payload_hash::binary-size(@hash_size), gas_ratio::64-little, error_code::8,
       temp_rest::binary>> = bin
 
     {result, rest} =
@@ -94,10 +94,10 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       end
 
     {%__MODULE__{
-       service: de_le(service, 4),
+       service: service,
        code_hash: code_hash,
        payload_hash: payload_hash,
-       gas_ratio: de_le(gas_ratio, 8),
+       gas_ratio: gas_ratio,
        result: result
      }, rest}
   end

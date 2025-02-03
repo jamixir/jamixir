@@ -119,18 +119,20 @@ defmodule System.State.ServiceAccount do
   defp in_storage?([x, y, z], t), do: (x <= t and t < y) or z <= t
 
   defimpl Encodable do
-    alias Codec.Encoder
     alias System.State.ServiceAccount
     # Formula (D.2) v0.6.0
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
+      octets_in_storage = ServiceAccount.octets_in_storage(s)
+      items_in_storage = ServiceAccount.items_in_storage(s)
+
       s.code_hash <>
-        Encoder.encode_le(s.balance, 8) <>
-        Encoder.encode_le(s.gas_limit_g, 8) <>
-        Encoder.encode_le(s.gas_limit_m, 8) <>
-        Encoder.encode_le(ServiceAccount.octets_in_storage(s), 8) <>
-        Encoder.encode_le(ServiceAccount.items_in_storage(s), 4)
+        <<s.balance::64-little>> <>
+        <<s.gas_limit_g::64-little>> <>
+        <<s.gas_limit_m::64-little>> <>
+        <<octets_in_storage::64-little>> <>
+        <<items_in_storage::32-little>>
     end
   end
 

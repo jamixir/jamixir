@@ -32,7 +32,7 @@ defmodule RefinementContext do
 
   defimpl Encodable do
     alias Codec.{Encoder, VariableSize}
-
+    use Codec.Encoder
     # Formula (C.21) v0.6.0
     def encode(%RefinementContext{
           anchor: a,
@@ -42,8 +42,7 @@ defmodule RefinementContext do
           timeslot: t,
           prerequisite: p
         }) do
-      Encoder.encode({a, s, b, l}) <>
-        Encoder.encode_le(t, 4) <> Encoder.encode(VariableSize.new(p))
+      e({a, s, b, l}) <> <<t::32-little>> <> e(vs(p))
     end
   end
 
@@ -55,7 +54,7 @@ defmodule RefinementContext do
 
     <<anchor::binary-size(@hash_size), state_root::binary-size(@hash_size),
       beefy_root::binary-size(@hash_size), lookup_anchor::binary-size(@hash_size),
-      timeslot::binary-size(4), temp_rest::binary>> = bin
+      timeslot::32-little, temp_rest::binary>> = bin
 
     {prerequisite, rest} = VariableSize.decode(temp_rest, :mapset, @hash_size)
 
@@ -65,7 +64,7 @@ defmodule RefinementContext do
         state_root: state_root,
         beefy_root: beefy_root,
         lookup_anchor: lookup_anchor,
-        timeslot: de_le(timeslot, 4),
+        timeslot: timeslot,
         prerequisite: prerequisite
       },
       rest

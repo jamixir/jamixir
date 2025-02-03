@@ -18,8 +18,8 @@ defmodule PVM.Host.Accumulate.Internal do
     g =
       case Memory.read(memory, o, 12 * n) do
         {:ok, data} ->
-          for <<service::binary-size(4), value::binary-size(8) <- data>>, into: %{} do
-            {de_le(service, 4), de_le(value, 8)}
+          for <<service::32-little, value::64-little <- data>>, into: %{} do
+            {service, value}
           end
 
         _ ->

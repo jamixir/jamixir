@@ -398,20 +398,16 @@ defmodule Block.Extrinsic.Guarantee do
 
   def decode(bin) do
     {work_report, bin} = WorkReport.decode(bin)
-    <<timeslot::binary-size(4), credentials_count::8, bin::binary>> = bin
+    <<timeslot::32-little, credentials_count::8, bin::binary>> = bin
 
     {credentials, rest} =
       Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->
-        <<v::binary-size(@validator_index_size), s::binary-size(@signature_size), b2::binary>> = b
+        <<v::8*@validator_index_size-little, s::binary-size(@signature_size), b2::binary>> = b
 
-        {acc ++ [{de_le(v, @validator_index_size), s}], b2}
+        {acc ++ [{v, s}], b2}
       end)
 
-    {%__MODULE__{
-       work_report: work_report,
-       timeslot: de_le(timeslot, 4),
-       credentials: credentials
-     }, rest}
+    {%__MODULE__{work_report: work_report, timeslot: timeslot, credentials: credentials}, rest}
   end
 
   use JsonDecoder

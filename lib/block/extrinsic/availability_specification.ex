@@ -85,16 +85,16 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   defp erasure_code_chunk(_binary, _n), do: []
 
   def decode(bin) do
-    <<work_package_hash::binary-size(@hash_size), length::binary-size(4),
+    <<work_package_hash::binary-size(@hash_size), length::32-little,
       erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
-      segment_count::binary-size(2), rest::binary>> = bin
+      segment_count::16-little, rest::binary>> = bin
 
     {%__MODULE__{
        work_package_hash: work_package_hash,
-       length: de_le(length, 4),
+       length: length,
        erasure_root: erasure_root,
        exports_root: exports_root,
-       segment_count: de_le(segment_count, 2)
+       segment_count: segment_count
      }, rest}
   end
 

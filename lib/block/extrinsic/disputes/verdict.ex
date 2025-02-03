@@ -41,7 +41,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     judgements_count = div(2 * Constants.validator_count(), 3) + 1
     judgements_size = Judgement.size() * judgements_count
 
-    <<work_report_hash::binary-size(@hash_size), epoch_index::binary-size(4),
+    <<work_report_hash::binary-size(@hash_size), epoch_index::32-little,
       judgements_bin::binary-size(judgements_size), rest::binary>> = bin
 
     {judgements, _} =
@@ -53,7 +53,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     {
       %__MODULE__{
         work_report_hash: work_report_hash,
-        epoch_index: de_le(epoch_index, 4),
+        epoch_index: epoch_index,
         judgements: judgements
       },
       rest

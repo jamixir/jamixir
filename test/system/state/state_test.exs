@@ -75,7 +75,7 @@ defmodule System.StateTest do
     end
 
     test "timeslot serialization - C(11)", %{state: state} do
-      assert state_keys(state)[11] == Encoder.encode_le(state.timeslot, 4)
+      assert state_keys(state)[11] == <<state.timeslot::32-little>>
     end
 
     test "privileged services serialization - C(12)", %{state: state} do
@@ -100,7 +100,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :storage)
         |> Enum.each(fn {h, v} ->
-          key = {s, Encoder.encode_le((1 <<< 32) - 1, 4) <> binary_slice(h, 0, 28)}
+          key = {s, <<(1 <<< 32) - 1::32-little>> <> binary_slice(h, 0, 28)}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -112,7 +112,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :preimage_storage_p)
         |> Enum.each(fn {h, v} ->
-          key = {s, Encoder.encode_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 28)}
+          key = {s, <<(1 <<< 32) - 2::32-little>> <> binary_slice(h, 1, 28)}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -123,8 +123,8 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          key = (Encoder.encode_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 28)
-          value = e(vs(for x <- t, do: Encoder.encode_le(x, 4)))
+          key = (<<l::32-little>> <> Hash.default(h)) |> binary_slice(2, 28)
+          value = e(vs(for x <- t, do: <<x::32-little>>))
           assert state_keys(state)[{s, key}] == value
         end)
       end)
