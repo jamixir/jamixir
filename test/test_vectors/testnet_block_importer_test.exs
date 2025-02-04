@@ -39,7 +39,6 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     # waiting for correctnes of other party side
-    @tag :skip
     test "jam-dune" do
       {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
 
