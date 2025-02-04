@@ -33,9 +33,9 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     # Formula (C.22) v0.6.0
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
-        e_le(availability.length, 4) <>
+        <<availability.length::32-little>> <>
         e({availability.erasure_root, availability.exports_root}) <>
-        e_le(availability.segment_count, 2)
+        <<availability.segment_count::16-little>>
     end
   end
 

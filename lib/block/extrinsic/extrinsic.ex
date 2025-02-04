@@ -85,7 +85,7 @@ defmodule Block.Extrinsic do
       vs(
         for(
           %Guarantee{work_report: w, timeslot: t, credentials: a} <- guarantees,
-          do: e({h(e(w)), e_le(t, 4), vs(a)})
+          do: e({h(e(w)), <<t::32-little>>, vs(a)})
         )
       )
     )

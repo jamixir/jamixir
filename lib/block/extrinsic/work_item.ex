@@ -55,14 +55,14 @@ defmodule Block.Extrinsic.WorkItem do
     # Formula (C.26) v0.6.0
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
-        e_le(wi.service, 4),
+        <<wi.service::32-little>>,
         wi.code_hash,
         vs(wi.payload),
-        e_le(wi.refine_gas_limit, 8),
-        e_le(wi.accumulate_gas_limit, 8),
+        <<wi.refine_gas_limit::64-little>>,
+        <<wi.accumulate_gas_limit::64-little>>,
         vs(encode_import_segments(wi)),
         vs(encode_extrinsic(wi)),
-        e_le(wi.export_count, 2)
+        <<wi.export_count::16-little>>
       })
     end
 

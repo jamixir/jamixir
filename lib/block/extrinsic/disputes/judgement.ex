@@ -26,7 +26,10 @@ defmodule Block.Extrinsic.Disputes.Judgement do
     use Sizes
 
     def encode(j = %Block.Extrinsic.Disputes.Judgement{}) do
-      e({if(j.vote, do: 1, else: 0), e_le(j.validator_index, @validator_index_size), j.signature})
+      e(
+        {if(j.vote, do: 1, else: 0), <<j.validator_index::8*@validator_index_size-little>>,
+         j.signature}
+      )
     end
   end
 

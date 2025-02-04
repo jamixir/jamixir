@@ -45,8 +45,8 @@ defmodule PVM.AccumulateTest do
 
     test "executes program with gas host call", %{accumulation: accumulation, init_fn: init_fn} do
       # Program that calls gas host function
-      program = e_le(0, 5) <> <<op(:ecalli), 0, op(:fallthrough)>>
-      bitmask = e_le(0, 5) <> <<1, 0, 1>>
+      program = <<0::40>> <> <<op(:ecalli), 0, op(:fallthrough)>>
+      bitmask = <<0::40>> <> <<1, 0, 1>>
       binary = PVM.Helper.init(program, bitmask)
       hash = Hash.default(binary)
 
@@ -82,7 +82,7 @@ defmodule PVM.AccumulateTest do
     test "executes program with multiple host calls", %{init_fn: init_fn} do
       # Program that exercises multiple host calls
       program =
-        e_le(0, 5) <>
+        <<0::40>> <>
           <<
             # lookup host call
             op(:ecalli),
@@ -103,7 +103,7 @@ defmodule PVM.AccumulateTest do
           >>
 
       bitmask =
-        e_le(0, 5) <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>>
+        <<0::40>> <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>> <> <<1, 0, 1>>
 
       binary = PVM.Helper.init(program, bitmask)
       hash = Hash.default(binary)
@@ -141,7 +141,7 @@ defmodule PVM.AccumulateTest do
     test "executes program with accumulate-specific host calls", %{init_fn: init_fn} do
       # Program that exercises accumulate-specific host calls
       program =
-        e_le(0, 5) <>
+        <<0::40>> <>
           <<
             # bless
             op(:ecalli),
@@ -190,7 +190,7 @@ defmodule PVM.AccumulateTest do
           >>
 
       bitmask =
-        e_le(0, 5) <>
+        <<0::40>> <>
           <<1, 0, 1>> <>
           <<1, 0, 1>> <>
           <<1, 0, 1>> <>

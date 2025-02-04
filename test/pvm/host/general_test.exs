@@ -167,8 +167,8 @@ defmodule PVM.Host.GeneralTest do
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       other_key = "other_key" |> String.pad_trailing(32, "\0")
 
-      storage_key = Hash.default(e_le(0, 4) <> key)
-      other_storage_key = Hash.default(e_le(0, 4) <> other_key)
+      storage_key = Hash.default(<<0::32>> <> key)
+      other_storage_key = Hash.default(<<0::32>> <> other_key)
 
       c = %ServiceAccount{storage: %{storage_key => value}}
       s = %{1 => %ServiceAccount{storage: %{other_storage_key => other_value}}}
@@ -257,7 +257,7 @@ defmodule PVM.Host.GeneralTest do
       m = %Memory{} |> Memory.set_default_access(:write)
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(32, "\0")
-      storage_key = Hash.default(e_le(0, 4) <> key)
+      storage_key = Hash.default(<<0::32>> <> key)
       c = %ServiceAccount{storage: %{storage_key => value}, balance: 2000}
       g = 100
       {:ok, m: m, c: c, g: g, key: key, value: value, storage_key: storage_key}
@@ -315,7 +315,7 @@ defmodule PVM.Host.GeneralTest do
       r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 0, r11: 0}
 
       result = General.write(g, r, m, c, 0)
-      storage_key = Hash.default(e_le(0, 4) <> key)
+      storage_key = Hash.default(<<0::32>> <> key)
       # returns old value size
       assert result.registers.r7 == byte_size(get_in(c.storage, [storage_key]))
       assert result.memory == m
@@ -359,7 +359,7 @@ defmodule PVM.Host.GeneralTest do
       result = General.write(g, r, m, c, 0)
       assert result.registers.r7 == none()
       assert result.memory == m
-      assert Map.has_key?(result.context.storage, Hash.default(e_le(0, 4) <> new_key))
+      assert Map.has_key?(result.context.storage, Hash.default(<<0::32>> <> new_key))
     end
 
     test "returns full with invalid key but exceeded threshold", %{m: m, c: c, g: g} do
