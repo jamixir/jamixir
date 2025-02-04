@@ -4,25 +4,30 @@ defmodule WorkPackageTest do
   alias Block.Extrinsic.WorkPackage
   use ExUnit.Case
   import Jamixir.Factory
+  import Constants
 
   setup_all do
     {:ok, wp: build(:work_package, service: 0), state: build(:genesis_state)}
   end
 
   describe "valid?/1" do
+    @big_binary max_work_package_size() * 8
     test "validates a work package", %{wp: wp} do
       assert WorkPackage.valid?(wp)
     end
 
     test "invalid when the sum of export_count exceeds the maximum", %{wp: wp} do
-      refute WorkPackage.valid?(%{
-               wp
-               | work_items: [
-                   build(:work_item,
-                     export_count: WorkPackage.maximum_exported_items() + 1
-                   )
-                 ]
-             })
+      big_work_item =
+        build(:work_item, export_count: WorkPackage.maximum_exported_items() + 1)
+
+      refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
+    end
+
+    test "invalid when work item payload is big", %{wp: wp} do
+      big_work_item =
+        build(:work_item, payload: <<0::size(max_work_package_size() * 8)>>)
+
+      refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end
 
     test "invalid when the sum of import_segments exceeds the maximum", %{wp: wp} do
@@ -33,6 +38,12 @@ defmodule WorkPackageTest do
       assert WorkPackage.valid?(%{wp | work_items: [medium_work_item]})
       refute WorkPackage.valid?(%{wp | work_items: [medium_work_item, medium_work_item]})
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
+    end
+
+    test "invalid when binaries also extrapolate maximum", %{wp: wp} do
+      refute WorkPackage.valid?(%{wp | parameterization_blob: <<0::size(@big_binary)>>})
+
+      refute WorkPackage.valid?(%{wp | authorization_token: <<0::size(@big_binary)>>})
     end
 
     test "validates different work_item import_segments content size", %{wp: wp} do
@@ -74,7 +85,7 @@ defmodule WorkPackageTest do
     end
   end
 
-  # Formula (200) v0.4.5
+  # Formula (14.9) v0.6.0
   describe "authorization_code/2" do
     test "returns authorization_code when it is available in history", %{state: state} do
       h = Hash.random()

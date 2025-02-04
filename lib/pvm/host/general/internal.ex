@@ -1,11 +1,11 @@
-# Formula (B.18) v0.5.2
+# Formula (B.18) v0.6.0
 
 defmodule PVM.Host.General.Internal do
+  import PVM.{Constants.HostCallResult}
+  alias PVM.Host.General.Result
+  alias PVM.{Memory, Registers}
   alias System.State.ServiceAccount
   alias Util.Hash
-  alias PVM.{Memory, Registers}
-  alias PVM.Host.General.Result
-  import PVM.{Constants.HostCallResult}
   use Codec.Encoder
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}

@@ -140,6 +140,7 @@ defmodule System.State.CoreReportTest do
   describe "to_json/1" do
     test "encodes a core report to json" do
       cr = build(:core_report)
+
       assert JsonEncoder.encode(cr) == %{
                report: JsonEncoder.encode(cr.work_report),
                timeout: cr.timeslot

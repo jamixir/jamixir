@@ -1,5 +1,6 @@
 defmodule Codec.State.Json.DecodeField do
   alias System.State.PrivilegedServices
+
   alias System.State.{
     EntropyPool,
     RecentHistory,

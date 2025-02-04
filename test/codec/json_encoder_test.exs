@@ -55,11 +55,13 @@ defmodule Codec.JsonEncoderTest do
                reported:
                  block.work_report_hashes
                  |> Enum.map(fn {hash, exports_root} ->
-                   %{hash: Hex.encode16(hash, prefix: true), exports_root: Hex.encode16(exports_root, prefix: true)}
+                   %{
+                     hash: Hex.encode16(hash, prefix: true),
+                     exports_root: Hex.encode16(exports_root, prefix: true)
+                   }
                  end)
              }
     end
-
 
     test "encodes RecentHistory" do
       history = build(:recent_history)
@@ -67,10 +69,10 @@ defmodule Codec.JsonEncoderTest do
       assert json == Enum.map(history.blocks, &JsonEncoder.encode/1)
     end
 
-
     test "encodes Safrole" do
       safrole = build(:safrole)
       json = JsonEncoder.encode(safrole)
+
       assert json == %{
                gamma_k: Enum.map(safrole.pending, &JsonEncoder.encode/1),
                gamma_s: %{tickets: Enum.map(safrole.slot_sealers, &JsonEncoder.encode/1)},

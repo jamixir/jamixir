@@ -16,7 +16,7 @@ defmodule PersistStorageTest do
       GenServer.stop(pid)
     end
 
-    {:ok, _pid} = PersistStorage.start_link([persist: true])
+    {:ok, _pid} = PersistStorage.start_link(persist: true)
 
     on_exit(fn ->
       PersistStorage.stop()

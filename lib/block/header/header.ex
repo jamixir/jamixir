@@ -11,26 +11,26 @@ defmodule Block.Header do
   import Codec.Decoder
 
   @type t :: %__MODULE__{
-          # Formula (5.2) v0.5.4
+          # Formula (5.2) v0.6.0
           # Hp
           parent_hash: Types.hash(),
-          # Formula (5.8) v0.5.4
+          # Formula (5.8) v0.6.0
           # Hr
           prior_state_root: Types.hash(),
-          # Formula (5.4) v0.5.4
+          # Formula (5.4) v0.6.0
           # Hx
           extrinsic_hash: Types.hash(),
-          # Formula (42) v0.4.5
+          # Formula (5.7) v0.6.0
           # Ht
           timeslot: integer(),
-          # Formula (45) v0.4.5
+          # Formula (5.10) v0.6.0
           # He
           epoch_mark: {Types.hash(), Types.hash(), list(Validator.t())} | nil,
           # Hw
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Ho
           offenders_marker: list(Types.hash()),
-          # Formula (44) v0.4.5
+          # Formula (5.9) v0.6.0
           # Hi
           block_author_key_index: Types.validator_index(),
           # Hv
@@ -39,7 +39,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Formula (5.1) v0.5.4
+  # Formula (5.1) v0.6.0
   defstruct [
     # Hp
     parent_hash: Hash.zero(),
@@ -81,11 +81,11 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (5.4) v0.5.4
+  # Formula (5.4) v0.6.0
   def valid_extrinsic_hash?(header, extrinsic),
     do: header.extrinsic_hash == Extrinsic.calculate_hash(extrinsic)
 
-  # Formula (5.8) v0.5.4
+  # Formula (5.8) v0.6.0
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
     state_root = Trie.state_root(state)
 
@@ -98,7 +98,7 @@ defmodule Block.Header do
 
   use MapUnion
 
-  # Formula (5.3) v0.5.4
+  # Formula (5.3) v0.6.0
   # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
   def ancestors(nil), do: []
 
@@ -131,7 +131,7 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (C.20) v0.5.0
+  # Formula (C.20) v0.6.0
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
       e_le(header.timeslot, 4) <>
@@ -147,7 +147,7 @@ defmodule Block.Header do
   defimpl Encodable do
     use Codec.Encoder
     alias Block.Header
-    # Formula (C.19) v0.5.0
+    # Formula (C.19) v0.6.0
     def encode(%Block.Header{} = header) do
       <<>>
       Header.unsigned_encode(header) <> e(header.block_seal)

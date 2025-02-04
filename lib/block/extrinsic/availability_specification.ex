@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           segment_count: non_neg_integer()
         }
 
-  # Formula (11.5) v0.5
+  # Formula (11.5) v0.6.0
   # h
   defstruct work_package_hash: Hash.zero(),
             # l
@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.22) v0.5
+    # Formula (C.22) v0.6.0
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
         e_le(availability.length, 4) <>
@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  # Formula (207) v0.4.5
+  # Formula (14.16) v0.6.0
   @spec from_package_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           Block.Extrinsic.t()
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
@@ -55,7 +55,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     }
   end
 
-  # Formula (207) v0.4.5 - u
+  # Formula (14.16) v0.6.0 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   defp calculate_erasure_root(bundle_binary, exported_segments) do
     coded_chunks =

@@ -12,33 +12,32 @@ defmodule System.State do
   alias Util.Hash
 
   @type t :: %__MODULE__{
-          # Formula (85) v0.4.5
+          # Formula (8.1) v0.6.0
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           safrole: Safrole.t(),
-          # Formula (88) v0.4.5 # TODO enforce key to be less than 2^32
-          # Formula (89) v0.4.5
+          # Formula (9.1) v0.6.0
+          # Formula (9.2) v0.6.0
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
-          # Formula (52) v0.4.5
+          # Formula (6.7) v0.6.0
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t() | nil),
           timeslot: integer(),
-          # Formula (85) v0.4.5
+          # Formula (8.1) v0.6.0
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
-          # Formula (164) v0.4.5
+          # Formula (12.3) v0.6.0
           ready_to_accumulate: list(list(Ready.t())),
-          # Formula (162) v0.4.5
+          # Formula (12.1) v0.6.0
           accumulation_history: list(MapSet.t(Types.hash()))
-
         }
 
-  # Formula (15) v0.4.5 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π)
+  # Formula (4.4) v0.6.0 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
   defstruct [
     # α: Authorization requirement for work done on the core
     authorizer_pool: List.duplicate([], Constants.core_count()),
@@ -76,23 +75,22 @@ defmodule System.State do
     ready_to_accumulate: Ready.initial_state(),
     # ξ
     accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length())
-
   ]
 
-  # Formula (12) v0.4.5
+  # Formula (4.1) v0.6.0
   @spec add_block(System.State.t(), Block.t()) ::
           {:error, System.State.t(), :atom | String.t()} | {:ok, System.State.t()}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
-    # Formula (16) v0.4.5
-    # Formula (46) v0.4.5
+    # Formula (4.5) v0.6.0
+    # Formula (6.1) v0.6.0
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
-         # ψ' Formula (23) v0.4.5
+         # ψ' Formula (4.12) v0.6.0
          {:ok, judgements_, bad_wonky_verdicts} <- Judgements.transition(h, e.disputes, state),
-         # ρ† Formula (25) v0.4.5
+         # ρ† Formula (4.13) v0.6.0
          core_reports_1 = CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
-         # ρ‡ Formula (26) v0.4.5
+         # ρ‡ Formula (4.14) v0.6.0
          core_reports_2 =
            CoreReport.process_availability(
              state.core_reports,
@@ -107,11 +105,11 @@ defmodule System.State do
              h.timeslot,
              state.authorizer_pool
            ),
-         # ρ' Formula (27) v0.4.5
+         # ρ' Formula (4.15) v0.6.0
          core_reports_ = CoreReport.transition(core_reports_2, e.guarantees, timeslot_),
          available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
-         # Formula (4.16) v0.5
-         # Formula (4.17) v0.5
+         # Formula (4.16) v0.6.0
+         # Formula (4.17) v0.6.0
          {:ok,
           %{
             services: services_intermediate_2,
@@ -123,9 +121,9 @@ defmodule System.State do
             beefy_commitment: beefy_commitment_
           }} <-
            Accumulation.transition(available_work_reports, timeslot_, state),
-         # δ' Formula (4.18) v0.5
+         # δ' Formula (4.18) v0.6.0
          services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
-         # α' Formula (30) v0.4.5
+         # α' Formula (4.19) v0.6.0
          authorizer_pool_ =
            AuthorizerPool.transition(
              e.guarantees,
@@ -133,9 +131,9 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # η' Formula (20) v0.4.5
+         # η' Formula (4.9) v0.6.0
          rotated_entropy_pool = EntropyPool.rotate(h, state.timeslot, state.entropy_pool),
-         # β' Formula (18) v0.4.5
+         # β' Formula (4.7) v0.6.0
          recent_history_ =
            RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
          {curr_validators_, prev_validators_, safrole_} <-
@@ -165,7 +163,7 @@ defmodule System.State do
              prev_validators_,
              Judgements.union_all(judgements_)
            ),
-         # π' Formula (31) v0.4.5
+         # π' Formula (4.20) v0.6.0
          # π' ≺ (EG,EP,EA, ET,τ,κ',π,H)
          {:ok, validator_statistics_} <-
            ValidatorStatistics.transition(
@@ -216,20 +214,21 @@ defmodule System.State do
     end
   end
 
-
   def to_json_mapping do
     %{
       authorizer_pool: :alpha,
       recent_history: :beta,
       safrole: :gamma,
-      services: {:delta, fn services ->
-        for {id, service} <- services do
-          %{
-            id: id,
-            info: service
-          }
-        end
-      end},
+      services:
+        {:delta,
+         fn services ->
+           for {id, service} <- services do
+             %{
+               id: id,
+               info: service
+             }
+           end
+         end},
       entropy_pool: :eta,
       next_validators: :iota,
       curr_validators: :kappa,
@@ -244,6 +243,4 @@ defmodule System.State do
       accumulation_history: :xi
     }
   end
-
-
 end

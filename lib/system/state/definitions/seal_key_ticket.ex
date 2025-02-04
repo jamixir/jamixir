@@ -1,7 +1,7 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
   represent a ticket, as specified in section 6.2 of the GP.
-  Formula (51) v0.4.5
+  Formula (6.6) v0.6.0
   """
 
   @type t :: %__MODULE__{id: Types.hash(), attempt: non_neg_integer()}
@@ -10,7 +10,7 @@ defmodule System.State.SealKeyTicket do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.27) v0.5.0
+    # Formula (C.27) v0.6.0
     def encode(%System.State.SealKeyTicket{} = skt) do
       e({skt.id, skt.attempt})
     end

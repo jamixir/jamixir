@@ -1,8 +1,8 @@
-# Formula (B.22) v0.5.2
+# Formula (B.22) v0.6.0
 defmodule PVM.Host.Refine.Internal do
-  alias Util.Hash
   alias System.State.ServiceAccount
-  alias PVM.{Memory, Integrated, Registers, Host.Refine.Context, Host.Refine.Result.Internal}
+  alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
+  alias Util.Hash
   use Codec.{Decoder, Encoder}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult}
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
@@ -72,7 +72,7 @@ defmodule PVM.Host.Refine.Internal do
     w7 = registers.r7
     v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
     o = registers.r8
-    l = min(registers.r9, Constants.wswe())
+    l = min(registers.r9, Constants.segment_size())
 
     write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
@@ -98,12 +98,12 @@ defmodule PVM.Host.Refine.Internal do
   @spec export_internal(Registers.t(), Memory.t(), Context.t(), non_neg_integer()) :: Internal.t()
   def export_internal(registers, memory, %Context{e: e} = context, export_offset) do
     p = registers.r7
-    z = min(registers.r8, Constants.wswe())
+    z = min(registers.r8, Constants.segment_size())
 
     # Try to read memory segment
     x =
       case PVM.Memory.read(memory, p, z) do
-        {:ok, data} -> Utils.pad_binary_right(data, Constants.wswe())
+        {:ok, data} -> Utils.pad_binary_right(data, Constants.segment_size())
         _ -> :error
       end
 

@@ -71,7 +71,7 @@ defmodule System.State.ServiceAccountTest do
     end
   end
 
-  # Formula (94) v0.4.5
+  # Formula (9.7) v0.6.0
   describe "historical_lookup/3" do
     test "return nil when historical lookup does not exist", %{sa: sa} do
       assert ServiceAccount.historical_lookup(sa, 1, Hash.random()) == nil
@@ -174,12 +174,14 @@ defmodule System.State.ServiceAccountTest do
                    value: [1, 2, 3]
                  }
                ],
-               storage: Map.to_list(account.storage) |> Enum.map(fn {key, value} ->
-                 %{
-                   hash: Hex.encode16(key, prefix: true),
-                   blob: Hex.encode16(value, prefix: true)
-                 }
-               end)
+               storage:
+                 Map.to_list(account.storage)
+                 |> Enum.map(fn {key, value} ->
+                   %{
+                     hash: Hex.encode16(key, prefix: true),
+                     blob: Hex.encode16(value, prefix: true)
+                   }
+                 end)
              }
     end
   end

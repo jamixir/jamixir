@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantor do
   @moduledoc """
-  # Formula (132) v0.4.5 - section 11.3
+  # Formula (11.21) v0.6.0 - section 11.3
   Every block, each core has three validators uniquely assigned to guarantee workreports for it.
   This is borne out with V = 1, 023 validators and C = 341 cores, since V/C = 3.
   The core index assigned to each of the validators, as well as the validators’ Ed25519 keys
@@ -18,10 +18,10 @@ defmodule Block.Extrinsic.Guarantor do
             # d
             validators: []
 
-  # Formula (11.18) v0.5.0
+  # Formula (11.19) v0.6.0
   def rotate(c, n), do: for(x <- c, do: rem(x + n, Constants.core_count()))
 
-  # Formula (11.19) v0.5.0
+  # Formula (11.20) v0.6.0
   def permute(e, t) when is_list(e) or is_binary(e) do
     rotate(
       Shuffle.shuffle(
@@ -34,7 +34,7 @@ defmodule Block.Extrinsic.Guarantor do
     )
   end
 
-  # Formula (11.20) v0.5.0
+  # Formula (11.21) v0.6.0
   def guarantors(n2_, time_stamp_, curr_validators_, offenders) do
     %__MODULE__{
       assigned_cores: permute(n2_, time_stamp_),
@@ -42,7 +42,7 @@ defmodule Block.Extrinsic.Guarantor do
     }
   end
 
-  # Formula (136) v0.4.5
+  # Formula (11.22) v0.6.0
   def prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders) do
     {e, k} =
       if div(t_ - Constants.rotation_period(), Constants.epoch_length()) ==

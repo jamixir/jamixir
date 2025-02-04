@@ -36,7 +36,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_transition(list(), non_neg_integer(), State.t()) :: any()
 
-  # Formula (12.3) v0.5.2 - U
+  # Formula (12.3) v0.6.0 - U
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -54,9 +54,8 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.5.4
+  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.6.0
   """
-
   def transition(w, t_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
     module.do_transition(w, t_, s)
@@ -75,7 +74,7 @@ defmodule System.State.Accumulation do
           timeslot: timeslot
         }
       ) do
-    # Formula (12.20) v0.5.4
+    # Formula (12.20) v0.6.0
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -98,8 +97,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (12.21) v0.5.4
-    # Formula (12.22) v0.5.4
+    # Formula (12.21) v0.6.0
+    # Formula (12.22) v0.6.0
     case outer_accumulation(
            gas_limit,
            accumulatable_reports,
@@ -114,16 +113,16 @@ defmodule System.State.Accumulation do
           next_validators: next_validators_,
           authorizer_queue: authorizer_queue_
         }, deferred_transfers, beefy_commitment}} ->
-        # Formula (12.24) v0.5.2
+        # Formula (12.24) v0.6.0
         services_intermediate_2 =
           calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
 
-        # Formula (12.25) v0.5.2
+        # Formula (12.25) v0.6.0
         work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-        # Formula (12.26) v0.5.2
+        # Formula (12.26) v0.6.0
         accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
         {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-        # Formula (12.27) v0.5.2
+        # Formula (12.27) v0.6.0
         ready_to_accumulate_ =
           build_ready_to_accumulate_(
             ready_to_accumulate,
@@ -149,7 +148,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.16) v0.5.2
+  # Formula (12.16) v0.6.0
   @spec outer_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
@@ -197,6 +196,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (178) v0.4.5
+  # TODO review to Formula 12.17 v0.6.0
   @spec parallelized_accumulation(t(), list(WorkReport.t()), %{
           non_neg_integer() => non_neg_integer()
         }) ::
@@ -288,6 +288,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (180) v0.4.5
+  # TODO to Formula 12.19 v0.6.0
   def single_accumulation(acc_state, work_reports, service_dict, service) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
@@ -315,7 +316,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.24) v0.5.4
+  # Formula (12.24) v0.6.0
   def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
@@ -340,7 +341,7 @@ defmodule System.State.Accumulation do
     }
   end
 
-  # Formula (12.27) v0.5.4
+  # Formula (12.27) v0.6.0
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),

@@ -13,7 +13,7 @@ defmodule PVM.Accumulate do
   use Codec.{Encoder, Decoder}
 
   @doc """
-  Formula (B.8) v0.5.2
+  Formula (B.8) v0.6.0
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
@@ -30,9 +30,10 @@ defmodule PVM.Accumulate do
           non_neg_integer()
         }
   def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn) do
-    # Formula (B.9) v0.5.2
+    # Formula (B.9) v0.6.0
     x = init_fn.(accumulation_state, service_index)
     # Formula (B.10) v0.5.2
+    # TODO update B.10 to v0.6.0
     d = Map.merge(x.accumulation.services, x.services)
     s = Context.accumulating_service(x)
 

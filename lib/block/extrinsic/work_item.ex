@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (195) v0.4.5
+  # Formula (14.3) v0.6.0
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
@@ -52,7 +52,7 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     alias Codec.{Encoder, VariableSize}
-    # Formula (C.26) v0.5.3
+    # Formula (C.26) v0.6.0
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
         e_le(wi.service, 4),
@@ -99,7 +99,7 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (199) v0.4.5
+  # Formula (14.8) v0.6.0
   def to_work_result(%__MODULE__{} = wi, output) do
     %WorkResult{
       service: wi.service,
@@ -110,13 +110,13 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (205) v0.4.5
+  # Formula (14.14) v0.6.0
   # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w, storage) do
     for {r, n} <- w.extrinsic, d = Map.get(storage, r), byte_size(d) == n, do: d
   end
 
-  # Formula (205) v0.4.5
+  # Formula (14.14) v0.6.0
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,
@@ -124,12 +124,12 @@ defmodule Block.Extrinsic.WorkItem do
         do: Enum.at(s, n)
   end
 
-  # Formula (205) v0.4.5
-  # J ( w ∈ I ) ≡ [ ↕ J ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
+  # Formula (14.14) v0.6.0
+  # J ( w ∈ I ) ≡ [ ↕ J0 ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
   def segment_justification(%__MODULE__{} = w, s) do
     for {r, n} <- w.import_segments,
         MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
-        do: vs(MerkleTree.justification(s, n))
+        do: vs(MerkleTree.justification(s, n, 0))
   end
 
   use JsonDecoder

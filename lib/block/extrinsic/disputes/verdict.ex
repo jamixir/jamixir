@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Verdict do
   @moduledoc """
-  Formula (98) v0.4.5
+  Formula (10.2)
   verdic on the correctness of a work-report.
   the Dispute extrinsic Ed may contain 1 or more verdicts. secion 10.2
   A verdict consists of a work-report hash, an epoch index, and a list of judgements from validators.
@@ -20,7 +20,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
 
   defstruct work_report_hash: <<>>, epoch_index: 0, judgements: []
 
-  # Formula (108) v0.4.5
+  # Formula (10.12) v0.6.0
   def sum_judgements(%__MODULE__{judgements: j}) do
     Enum.reduce(j, 0, &if(&1.vote, do: &2 + 1, else: &2))
   end

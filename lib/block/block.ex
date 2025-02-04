@@ -14,7 +14,7 @@ defmodule Block do
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
 
-  # Formula (13) v0.4.5
+  # Formula (4.2) v0.6.0
   defstruct [
     # Hp
     header: nil,
@@ -176,7 +176,7 @@ defmodule Block do
   def mock(:validate_refinement_context, _), do: :ok
 
   use Codec.Encoder
-  # Formula (149) v0.4.5
+  # Formula (11.35) v0.6.0
   mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
     Enum.reduce_while(guarantees, :ok, fn g, _ ->
       x = g.work_report.refinement_context
@@ -193,7 +193,7 @@ defmodule Block do
   defimpl Encodable do
     use Codec.Encoder
 
-    # Formula (C.13) v0.5.0
+    # Formula (C.13) v0.6.0
     def encode(%Block{extrinsic: e, header: h}), do: e({h, e})
   end
 

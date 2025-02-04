@@ -3,8 +3,8 @@ defmodule Util.MerklizationTest do
   import Jamixir.Factory
   alias Util.{Hash, Merklization}
   use Sizes
-  # Formula (322) v0.4.5: TESTS
 
+  # Formula (D.3) v0.6.0
   describe "encode_branch/2 (l,r)" do
     test "encode_branch with simple values" do
       # 256-bit value with only the first bit set
@@ -35,7 +35,7 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (D.4) v0.5.3: TESTS
+  # Formula (D.4) v0.6.0
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do
@@ -74,11 +74,8 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (324) v0.4.5: TESTS
-  # Formula (325) v0.4.5: TESTS
-
-  ### 3.7.3
-
+  # Formula (D.5) v0.6.0
+  # Formula (D.6) v0.6.0
   describe "bits" do
     test "bits function with single byte" do
       # Binary representation: 00101010

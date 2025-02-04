@@ -5,7 +5,6 @@ defmodule Util.ExportTest do
   import Codec.State
   import Codec.State.Trie
 
-
   describe "get_key_name/1" do
     test "matches c1-c15 keys" do
       assert Export.get_key_name(Hex.decode16!("0x01")) == "c1"

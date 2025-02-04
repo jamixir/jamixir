@@ -611,7 +611,10 @@ defmodule System.State.AccumulationTest do
          MapSet.new(["hash8"])}
       ]
 
-      {:ok, ready_to_accumulate: ready_to_accumulate, work_package_hashes: work_package_hashes, w_q: w_q}
+      {:ok,
+       ready_to_accumulate: ready_to_accumulate,
+       work_package_hashes: work_package_hashes,
+       w_q: w_q}
     end
 
     test "builds ready_to_accumulate correctly", %{

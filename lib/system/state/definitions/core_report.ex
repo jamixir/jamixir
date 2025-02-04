@@ -1,6 +1,6 @@
 defmodule System.State.CoreReport do
   @moduledoc """
-  Formula (117) v0.4.5
+  Formula (11.1) v0.6.0
   Represents the state of a core's report, including the work report and the timeslot it was reported.
   """
 
@@ -14,7 +14,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
-  # Formula (10.15) v0.5.2
+  # Formula (10.15) v0.6.0
   def process_disputes(core_reports, bad_wonky_verdicts) do
     for c <- core_reports do
       process_report(c, MapSet.new(bad_wonky_verdicts))
@@ -31,11 +31,11 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (4.14) v0.5.0
+  # ρ‡ Formula (4.14) v0.6.0
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances, h_t) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
-    # Formula (11.16) v0.5.0
+    # Formula (11.71) v0.6.0
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil or intermediate == nil,
         do: nil,
@@ -57,7 +57,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def transition(core_reports_2, guarantees, timeslot_) do
-    # Formula (11.43) v0.5.4
+    # Formula (11.43) v0.6.0
     Enum.with_index(core_reports_2, fn cr, index ->
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> cr
@@ -69,7 +69,7 @@ defmodule System.State.CoreReport do
   defimpl Encodable do
     alias System.State.CoreReport
     use Codec.Encoder
-    # Formula (D.2) v0.5.0
+    # Formula (D.2) v0.6.0
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     def encode(%CoreReport{} = c) do
       e({c.work_report, e_le(c.timeslot, 4)})

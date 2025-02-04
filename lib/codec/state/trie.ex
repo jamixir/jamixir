@@ -6,7 +6,7 @@ defmodule Codec.State.Trie do
   use Codec.Encoder
   import Bitwise
 
-  # # Formula (D.2) v0.5
+  # Formula (D.2) v0.6.0
   def state_keys(%State{} = s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
@@ -44,7 +44,7 @@ defmodule Codec.State.Trie do
     |> encode_accounts_preimage_storage_l(s)
   end
 
-  # Formula (D.1) v0.5 - C constructor
+  # Formula (D.1) v0.6.0 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)
@@ -68,6 +68,7 @@ defmodule Codec.State.Trie do
 
   def serialize_hex(state, opts \\ []) do
     prefix = Keyword.get(opts, :prefix, false)
+
     for {k, v} <- serialize(state),
         do: {Hex.encode16(k, prefix: prefix), Hex.encode16(v, prefix: prefix)},
         into: %{}

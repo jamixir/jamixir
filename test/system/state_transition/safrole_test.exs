@@ -39,7 +39,8 @@ defmodule System.StateTransition.SafroleStateTest do
       state = %{
         state
         | judgements: %Judgements{
-            offenders: MapSet.new([Enum.at(validators, 0).ed25519, Enum.at(validators, 2).ed25519])
+            offenders:
+              MapSet.new([Enum.at(validators, 0).ed25519, Enum.at(validators, 2).ed25519])
           },
           timeslot: 11,
           curr_validators: validators,

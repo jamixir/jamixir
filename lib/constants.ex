@@ -71,6 +71,10 @@ defmodule Constants do
   @doc "V - The total number of validators."
   defmockable(:validator_count, do: Jamixir.config(:validator_count))
 
+  # Formula (14.6) v0.6.0 - WB
+  @doc "WB = 12 * 2^20: The maximum size of an encoded work-package together with its extrinsic data and import implications, in octets"
+  def max_work_package_size, do: 12_582_912
+
   @doc "WE - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: 684
 
@@ -89,8 +93,8 @@ defmodule Constants do
   @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config(:ticket_submission_end))
 
-  # 4104
-  def wswe, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
+  @doc "WG = WP WE = 4104: The size of a segment in octets."
+  def segment_size, do: erasure_coded_piece_size() * erasure_coded_exported_segment_size()
 
   @doc "W_T - The size of the memo component in a deferred transfer, in octets."
   def memo_size, do: 128

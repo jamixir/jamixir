@@ -1,11 +1,11 @@
-# Formula (B.20) v0.5.2
+# Formula (B.20) v0.6.0
 
 defmodule PVM.Host.Accumulate.Internal do
   alias System.DeferredTransfer
   alias System.State.PrivilegedServices
   alias System.State.ServiceAccount
+  alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.{Memory, Registers}
-  alias PVM.Host.Accumulate.{Result, Context}
   import PVM.{Constants.HostCallResult}
   use Codec.{Encoder, Decoder}
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
