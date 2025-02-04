@@ -1,6 +1,18 @@
 defmodule Network.PeerRegistry do
-  def start_link(opts \\ []) do
-    Registry.start_link(keys: :unique, name: __MODULE__, opts: opts)
+  def child_spec(_opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, []},
+      type: :supervisor
+    }
+  end
+
+  def start_link(_opts \\ []) do
+    Registry.start_link(
+      keys: :unique,
+      name: __MODULE__,
+      partitions: System.schedulers_online()
+    )
   end
 
   # Register a peer process with a unique identifier

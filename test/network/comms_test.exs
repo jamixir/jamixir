@@ -3,7 +3,7 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Network.{Peer, Config, PeerSupervisor, PeerRegistry}
+  alias Network.{Peer, Config, PeerSupervisor}
   alias Quicer.Flags
 
   @base_port 9999
@@ -15,9 +15,6 @@ defmodule CommsTest do
   end
 
   setup context do
-    # Start and supervise the supervisors for this test
-    start_supervised(PeerSupervisor)
-    PeerRegistry.start_link()
     # Use a different port for each test based on its line number
     port = @base_port + (context.line || 0)
 
@@ -30,8 +27,8 @@ defmodule CommsTest do
       PeerSupervisor.start_peer(:initiator, "::1", port)
 
     on_exit(fn ->
-      if Process.alive?(server_pid), do: Process.exit(server_pid, :kill)
-      if Process.alive?(client_pid), do: Process.exit(client_pid, :kill)
+      if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
+      if Process.alive?(client_pid), do: GenServer.stop(client_pid, :normal)
     end)
 
     {:ok, client: client_pid, port: port}
