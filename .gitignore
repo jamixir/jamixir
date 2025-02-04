@@ -34,3 +34,4 @@ native/**/Cargo.lock
 *.enc
 .env
 Mnesia.nonode@nohost/
+/test/output/
