@@ -124,14 +124,14 @@ defmodule Block.Extrinsic.Assurance do
     bitfield_size = Sizes.bitfield()
 
     <<hash::binary-size(@hash_size), bitfield::binary-size(bitfield_size),
-      validator_index::binary-size(@validator_index_size),
-      signature::binary-size(@signature_size), rest::binary>> = bin
+      validator_index::8*@validator_index_size-little, signature::binary-size(@signature_size),
+      rest::binary>> = bin
 
     {
       %__MODULE__{
         hash: hash,
         bitfield: bitfield,
-        validator_index: de_le(validator_index, 2),
+        validator_index: validator_index,
         signature: signature
       },
       rest

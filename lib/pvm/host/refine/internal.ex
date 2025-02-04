@@ -378,11 +378,8 @@ defmodule PVM.Host.Refine.Internal do
          # Check if memory range is writable
          true <- Memory.check_range_access?(memory, o, 60, :write),
          # Read gas and register values
-         {:ok, gas_bytes} <- Memory.read(memory, o, 8),
+         {:ok, <<gas::64-little>>} <- Memory.read(memory, o, 8),
          {:ok, register_bytes} <- Memory.read(memory, o + 8, 13 * 4) do
-      # Decode gas (8 bytes) and registers (13 x 4 bytes)
-      gas = de_le(gas_bytes, 8)
-
       # Convert register values to a Registers struct in one pass
       vm_registers =
         register_bytes

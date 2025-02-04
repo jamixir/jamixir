@@ -23,7 +23,8 @@ defmodule Shuffle do
   # Formula (F.2) v0.6.0
   defp hash_to_sequence(hash, l) do
     for i <- 0..l do
-      de_le(:binary.part(h(hash <> e_le(div(i, 8), 4)), rem(4 * i, 32), 4), 4)
+      <<n::32-little>> = :binary.part(h(hash <> e_le(div(i, 8), 4)), rem(4 * i, 32), 4)
+      n
     end
   end
 end

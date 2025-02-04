@@ -159,7 +159,7 @@ defmodule Block.Header do
 
   def unsigned_decode(bin) do
     <<parent_hash::binary-size(@hash_size), prior_state_root::binary-size(@hash_size),
-      extrinsic_hash::binary-size(@hash_size), timeslot::binary-size(4), bin::binary>> = bin
+      extrinsic_hash::binary-size(@hash_size), timeslot::32-little, bin::binary>> = bin
 
     {epoch_mark, bin} =
       NilDiscriminator.decode(bin, fn epoch_mark_bin ->
@@ -178,18 +178,18 @@ defmodule Block.Header do
       )
 
     {offenders_marker, bin} = VariableSize.decode(bin, :hash)
-    <<block_author_key_index::binary-size(2), bin::binary>> = bin
+    <<block_author_key_index::16-little, bin::binary>> = bin
     <<vrf_signature::binary-size(96), rest::binary>> = bin
 
     {%__MODULE__{
        parent_hash: parent_hash,
        prior_state_root: prior_state_root,
        extrinsic_hash: extrinsic_hash,
-       timeslot: de_le(timeslot, 4),
+       timeslot: timeslot,
        epoch_mark: epoch_mark,
        winning_tickets_marker: winning_tickets_marker,
        offenders_marker: offenders_marker,
-       block_author_key_index: de_le(block_author_key_index, 2),
+       block_author_key_index: block_author_key_index,
        vrf_signature: vrf_signature,
        block_seal: nil
      }, rest}

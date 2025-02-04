@@ -78,24 +78,24 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   def decode(bin) do
-    <<service::binary-size(4), bin::binary>> = bin
+    <<service::32-little, bin::binary>> = bin
     <<code_hash::binary-size(@hash_size), bin::binary>> = bin
     {payload, bin} = VariableSize.decode(bin, :binary)
-    <<refine_gas_limit::binary-size(8), bin::binary>> = bin
-    <<accumulate_gas_limit::binary-size(8), bin::binary>> = bin
+    <<refine_gas_limit::64-little, bin::binary>> = bin
+    <<accumulate_gas_limit::64-little, bin::binary>> = bin
     {import_segments, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 2)
     {extrinsic, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
-    <<export_count::binary-size(2), rest::binary>> = bin
+    <<export_count::16-little, rest::binary>> = bin
 
     {%__MODULE__{
-       service: de_le(service, 4),
+       service: service,
        code_hash: code_hash,
        payload: payload,
-       refine_gas_limit: de_le(refine_gas_limit, 8),
-       accumulate_gas_limit: de_le(accumulate_gas_limit, 8),
-       import_segments: for({h, i} <- import_segments, do: {h, de_le(i, 2)}),
-       extrinsic: for({h, i} <- extrinsic, do: {h, de_le(i, 4)}),
-       export_count: de_le(export_count, 2)
+       refine_gas_limit: refine_gas_limit,
+       accumulate_gas_limit: accumulate_gas_limit,
+       import_segments: for({h, <<i::16-little>>} <- import_segments, do: {h, i}),
+       extrinsic: for({h, <<i::32-little>>} <- extrinsic, do: {h, i}),
+       export_count: export_count
      }, rest}
   end
 

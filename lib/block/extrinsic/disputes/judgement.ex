@@ -35,12 +35,12 @@ defmodule Block.Extrinsic.Disputes.Judgement do
 
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Judgement.t(), binary()}
   def decode(bin) do
-    <<vote::binary-size(1), validator_index::binary-size(@validator_index_size),
+    <<vote::binary-size(1), validator_index::@validator_index_size*8-little,
       signature::binary-size(@signature_size), rest::binary>> = bin
 
     {
       %__MODULE__{
-        validator_index: de_le(validator_index, @validator_index_size),
+        validator_index: validator_index,
         vote: vote == <<1>>,
         signature: signature
       },
