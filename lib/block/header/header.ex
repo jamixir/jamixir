@@ -134,12 +134,12 @@ defmodule Block.Header do
   # Formula (C.20) v0.6.0
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
-      e_le(header.timeslot, 4) <>
+      <<header.timeslot::32-little>> <>
       e({
         NilDiscriminator.new(header.epoch_mark),
         NilDiscriminator.new(header.winning_tickets_marker),
         vs(header.offenders_marker),
-        e_le(header.block_author_key_index, 2),
+        <<header.block_author_key_index::16-little>>,
         header.vrf_signature
       })
   end
