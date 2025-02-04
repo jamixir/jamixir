@@ -3,6 +3,7 @@ defmodule BlockTest do
   import Jamixir.Factory
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes, Header}
+  alias Codec.JsonEncoder
   alias Codec.State.Trie
   alias System.State
   alias System.State.RotateKeys
@@ -10,6 +11,7 @@ defmodule BlockTest do
   import Mox
   import TestHelper
   import OriginalModules
+  import Logger
   use Codec.Encoder
   setup :verify_on_exit!
 
