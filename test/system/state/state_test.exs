@@ -8,7 +8,7 @@ defmodule System.StateTest do
   alias Codec.State.Json
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{Encoder, NilDiscriminator, JsonEncoder}
+  alias Codec.{NilDiscriminator, JsonEncoder}
   alias IO.ANSI
   alias System.State
   alias Util.Hash

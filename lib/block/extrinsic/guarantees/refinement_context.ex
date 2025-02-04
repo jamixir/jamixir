@@ -31,7 +31,7 @@ defmodule RefinementContext do
             prerequisite: MapSet.new()
 
   defimpl Encodable do
-    alias Codec.{Encoder, VariableSize}
+    alias Codec.VariableSize
     use Codec.Encoder
     # Formula (C.21) v0.6.0
     def encode(%RefinementContext{
