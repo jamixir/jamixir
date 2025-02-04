@@ -1,4 +1,5 @@
 defmodule Util.Export do
+  alias Util.Time
   alias Util.Hex
   alias Codec.JsonEncoder
   alias Base
@@ -35,20 +36,21 @@ defmodule Util.Export do
   - output_dir and custom filename (without .json extension)
 
   Examples:
+      Export.export(state, "output/dir")
       Export.export(state, "output/dir", {0, 1})
       Export.export(state, "output/dir", "my_custom_state")
   """
+  def export(%System.State{} = s, output_dir) do
+    export(s, output_dir, {Time.epoch_index(s.timeslot), Time.epoch_phase(s.timeslot)})
+  end
+
   def export(%System.State{} = s, output_dir, %{epoch: e, epoch_phase: ep}) do
-    do_export(s, output_dir, "state_#{e}_#{ep}", "state_trie_#{e}_#{ep}")
+    padded_ep = String.pad_leading("#{ep}", 3, "0")
+    do_export(s, output_dir, "state_#{e}_#{padded_ep}", "state_trie_#{e}_#{padded_ep}")
   end
 
   def export(%System.State{} = s, output_dir, {epoch, epoch_phase}) do
-    do_export(
-      s,
-      output_dir,
-      "state_#{epoch}_#{epoch_phase}",
-      "state_trie_#{epoch}_#{epoch_phase}"
-    )
+    export(s, output_dir, %{epoch: epoch, epoch_phase: epoch_phase})
   end
 
   def export(%System.State{} = s, output_dir, filename) when is_binary(filename) do

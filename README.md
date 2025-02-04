@@ -30,6 +30,11 @@ mix test
 mix test --only test_vectors
 ```
 
+### How to generate test blocks
+```
+mix test --only generate_blocks
+```
+
 ### How to generate a bandersnatch key-pair
 ```
 mix generate_keypair
