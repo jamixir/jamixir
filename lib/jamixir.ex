@@ -1,12 +1,14 @@
 defmodule Jamixir do
-  alias Network.PeerRegistry
-  alias Network.PeerSupervisor
   use Application
 
   @impl true
   def start(_type, _args) do
-    children = [PeerSupervisor, Jamixir.TimeTicker, Jamixir.NodeCLIServer]
-    PeerRegistry.start_link()
+    children = [
+      Network.PeerRegistry,
+      Network.PeerSupervisor,
+      Jamixir.TimeTicker,
+      Jamixir.NodeCLIServer
+    ]
 
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
     Supervisor.start_link(children, opts)
