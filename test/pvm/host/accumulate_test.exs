@@ -24,7 +24,7 @@ defmodule PVM.Host.AccumulateTest do
       # Encode the gas map entries
       encoded_data =
         for {service, value} <- gas_map, into: <<>> do
-          e_le(service, 4) <> e_le(value, 8)
+          <<service::32-little, value::64-little>>
         end
 
       # Write to memory

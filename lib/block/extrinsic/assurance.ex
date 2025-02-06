@@ -111,7 +111,7 @@ defmodule Block.Extrinsic.Assurance do
     def encode(%Assurance{} = a) do
       e(a.hash) <>
         e(pad(a.bitfield, Sizes.bitfield())) <>
-        e_le(a.validator_index, @validator_index_size) <>
+        <<a.validator_index::8*@validator_index_size-little>> <>
         e(pad(a.signature, @signature_size))
     end
   end

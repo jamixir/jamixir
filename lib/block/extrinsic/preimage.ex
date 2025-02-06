@@ -67,7 +67,7 @@ defmodule Block.Extrinsic.Preimage do
 
     # Formula (C.15) v0.6.0
     def encode(%Block.Extrinsic.Preimage{service: s, blob: p}) do
-      e_le(s, 4) <> e(vs(p))
+      <<s::32-little>> <> e(vs(p))
     end
   end
 

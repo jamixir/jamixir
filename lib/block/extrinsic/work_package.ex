@@ -116,7 +116,7 @@ defmodule Block.Extrinsic.WorkPackage do
     def encode(%WorkPackage{} = wp) do
       e({
         vs(wp.authorization_token),
-        e_le(wp.service, 4),
+        <<wp.service::32-little>>,
         wp.authorization_code_hash,
         vs(wp.parameterization_blob),
         wp.context,

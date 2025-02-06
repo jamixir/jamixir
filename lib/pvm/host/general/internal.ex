@@ -73,7 +73,7 @@ defmodule PVM.Host.General.Internal do
 
     k =
       with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-        Hash.default(e_le(service_index, 4) <> mem_segment)
+        Hash.default(<<service_index::32-little>> <> mem_segment)
       else
         _ -> :error
       end
@@ -159,7 +159,7 @@ defmodule PVM.Host.General.Internal do
 
   defp read_storage_key(memory, ko, kz, service_index) do
     with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-      Hash.default(e_le(service_index, 4) <> mem_segment)
+      Hash.default(<<service_index::32-little>> <> mem_segment)
     else
       _ -> :error
     end

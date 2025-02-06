@@ -49,7 +49,7 @@ defmodule PVM.AuthorizedTest do
             op(:fallthrough)
           >>
 
-      bitmask = <<1>> <> e_le(0, 9) <> <<1>> <> e_le(0, 9) <> <<1, 0, 1>>
+      bitmask = <<1, 0::72, 1, 0::72, 1, 0, 1>>
 
       binary = PVM.Helper.init(program, bitmask, message)
       hash = Hash.default(binary)

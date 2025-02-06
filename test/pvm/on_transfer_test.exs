@@ -50,7 +50,7 @@ defmodule PVM.OnTransferTest do
     test "executes all host functions when code_hash exists" do
       # transfer entry point is counter: 10
       program =
-        e_le(0, 10) <>
+        <<0::80>> <>
           <<
             # gas
             op(:ecalli),
@@ -79,7 +79,7 @@ defmodule PVM.OnTransferTest do
           >>
 
       bitmask =
-        e_le(0, 10) <>
+        <<0::80>> <>
           <<1, 0, 1>> <>
           <<1, 0, 1>> <>
           <<1, 0, 1>> <>
