@@ -8,8 +8,7 @@ defmodule PVM.Accumulate.Utils do
 
   @hash_size 32
 
-  # Formula (B.9) v0.5.2
-  # TODO update to B.9 on 0.6.0
+  # Formula (B.9) v0.6.1
   # first part of the initializer function is expected to be called in the context that calls
   # the accumulate inocation, this is where n0_, and header_timeslot are known
   # the second part is called internally in accumulate.execute
@@ -18,15 +17,6 @@ defmodule PVM.Accumulate.Utils do
           (Accumulation.t(), non_neg_integer() -> Context.t())
   def initializer(n0_, header_timeslot) do
     fn accumulation_state, service_index ->
-      {service_state, remaining_services} = Map.pop(accumulation_state.services, service_index)
-
-      new_accumulation =
-        if service_state do
-          %{accumulation_state | services: %{service_index => service_state}}
-        else
-          %{accumulation_state | services: %{}}
-        end
-
       computed_service_index =
         e({service_index, n0_, header_timeslot})
         |> Hash.default()
@@ -36,11 +26,11 @@ defmodule PVM.Accumulate.Utils do
         |> check(accumulation_state)
 
       %Context{
-        services: remaining_services,
         service: service_index,
-        accumulation: new_accumulation,
+        accumulation: accumulation_state,
         computed_service: computed_service_index,
-        transfers: []
+        transfers: [],
+        accumulation_trie_result: nil
       }
     end
   end
@@ -68,18 +58,17 @@ defmodule PVM.Accumulate.Utils do
     256 + rem(i - 256 + 42, 0xFFFFFE00)
   end
 
-  # Formula (B.12) v0.5.2
-  # TODO update to B.12 on 0.6.0
+  # Formula (B.12) v0.6.1
+  def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
+    do: {y.accumulation, y.transfers, y.accumulation_trie_result, gas}
+
   @spec collapse({non_neg_integer(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
           {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, non_neg_integer()}
   def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
     do: {x.accumulation, x.transfers, output, gas}
 
-  def collapse({gas, output, {x, _y}}) when is_binary(output),
-    do: {x.accumulation, x.transfers, nil, gas}
-
-  def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
-    do: {y.accumulation, y.transfers, nil, gas}
+  def collapse({gas, _output, {x, _y}}),
+    do: {x.accumulation, x.transfers, x.accumulation_trie_result, gas}
 
   # Formula (B.11) v0.6.0
   @spec replace_service(

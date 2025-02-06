@@ -2,7 +2,7 @@ defmodule PVM do
   alias PVM.Host.General
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
-  alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers, Refine.Params, Host.Accumulate}
+  alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers, Host.Accumulate}
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
@@ -41,9 +41,32 @@ defmodule PVM do
   end
 
   # Formula (B.8) v0.6.0
-  @spec refine(Params.t(), %{integer() => ServiceAccount.t()}) ::
+  @spec refine(
+          non_neg_integer(),
+          WorkPackage.t(),
+          binary(),
+          list(list(binary())),
+          non_neg_integer(),
+          %{integer() => ServiceAccount.t()}
+        ) ::
           {binary() | WorkExecutionError.t(), list(binary())}
-  def refine(%Params{} = params, services), do: PVM.Refine.execute(params, services)
+  def refine(
+        work_item_index,
+        work_package,
+        authorizer_output,
+        import_segments,
+        export_segment_offset,
+        services
+      ),
+      do:
+        PVM.Refine.execute(
+          work_item_index,
+          work_package,
+          authorizer_output,
+          import_segments,
+          export_segment_offset,
+          services
+        )
 
   @spec accumulate(
           accumulation_state :: Accumulation.t(),
@@ -62,8 +85,7 @@ defmodule PVM do
     PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, init_fn)
   end
 
-  # Formula (B.14) v0.5.2
-  # TODO update to B.14 on v0.6.0
+  # Formula (B.14) v0.6.1
   @spec on_transfer(
           services :: %{integer() => ServiceAccount.t()},
           timeslot :: non_neg_integer(),
@@ -94,7 +116,7 @@ defmodule PVM do
             %{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: registers,
+              registers: Registers.set(registers, 7, what()),
               memory: memory,
               context: context
             }

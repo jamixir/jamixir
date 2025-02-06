@@ -17,44 +17,41 @@ defmodule PVM.Host.General.Internal do
     a =
       if registers.r7 in [@max_64_bit_value, service_index],
         do: service_account,
-        else: services[registers.r7]
+        else: Map.get(services, registers.r7)
 
-    [ho, bo, bz] = Registers.get(registers, [8, 9, 10])
+    [h, o] = Registers.get(registers, [8, 9])
 
-    h =
-      with {:ok, mem_segment} <- Memory.read(memory, ho, 32) do
-        Hash.default(mem_segment)
+    v =
+      with {:ok, pre_image_hash} <- Memory.read(memory, h, 32) do
+        cond do
+          is_nil(a) -> nil
+          # will be nil if pre_image_hash is not in the map
+          true -> Map.get(a, :preimage_storage_p) |> Map.get(pre_image_hash)
+        end
       else
         _ -> :error
       end
 
-    v =
-      if a != nil and h in Map.keys(Map.get(a, :preimage_storage_p)),
-        do: get_in(a, [:preimage_storage_p, h]),
-        else: nil
+    f = min(registers.r10, byte_size(v))
+    l = min(registers.r11, byte_size(v) - f)
 
-    is_writable = Memory.check_range_access?(memory, bo, bz, :write)
+    is_writable = Memory.check_range_access?(memory, o, l, :write)
 
-    memory_ =
-      if v != nil and is_writable do
-        write_value = binary_part(v, 0, min(byte_size(v), bz))
-        Memory.write(memory, bo, write_value) |> elem(1)
-      else
-        memory
+    {exit_reason_, w7__, memory__} =
+      cond do
+        v == :error or !is_writable -> {:panic, registers, memory}
+        is_nil(v) -> {:continue, none(), memory}
+        true -> {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l))}
       end
 
-    w7_ =
-      if h != :error and is_writable do
-        cond do
-          v == nil -> none()
-          true -> byte_size(v)
-        end
-      else
-        oob()
-      end
+    registers_ = Registers.set(registers, :r7, w7__)
 
-    registers_ = Registers.set(registers, :r7, w7_)
-    %Result.Internal{registers: registers_, memory: memory_, context: service_account}
+    %Result.Internal{
+      exit_reason: exit_reason_,
+      registers: registers_,
+      memory: memory__,
+      context: service_account
+    }
   end
 
   @spec read_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), %{

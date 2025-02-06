@@ -1,8 +1,8 @@
 defmodule PVM.Refine do
   alias PVM.Registers
   alias System.State.ServiceAccount
-  alias Block.Extrinsic.{Guarantee.WorkExecutionError}
-  alias PVM.{ArgInvoc, Refine.Params, Host.Refine, Host.General}
+  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
+  alias PVM.{ArgInvoc, Host.Refine, Host.General}
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
   import PVM.Types
@@ -11,19 +11,31 @@ defmodule PVM.Refine do
   @doc """
   ΨR: The Refine pvm invocation function.
   """
-  @spec execute(Params.t(), %{integer() => ServiceAccount.t()}) ::
+  @spec execute(
+          non_neg_integer(),
+          WorkPackage.t(),
+          binary(),
+          list(list(binary())),
+          non_neg_integer(),
+          %{integer() => ServiceAccount.t()}
+        ) ::
           {binary() | WorkExecutionError.t(), list(binary())}
-  def execute(%Params{} = params, services) do
-    with {:ok, service} <- fetch_service(services, params.service),
-         {:ok, program} <-
-           fetch_lookup(service, params.refinement_context.timeslot, params.service_code),
-         :ok <- validate_code_size(program) do
-      args =
-        e(
-          {params.service, params.payload, params.work_package_hash, params.refinement_context,
-           params.authorizer_hash, params.output, vs(Enum.map(params.extrinsic_data, &vs/1))}
-        )
+  def execute(
+        work_item_index,
+        work_package,
+        authorizer_output,
+        import_segments,
+        export_segment_offset,
+        services
+      ) do
+    work_item = Enum.at(work_package.work_items, work_item_index)
+    %WorkItem{service: ws, code_hash: wc, payload: wy, refine_gas_limit: wg} = work_item
+    px = work_package.refinement_context
 
+    with {:ok, service} <- fetch_service(services, ws),
+         {:ok, program} <-
+           fetch_lookup(service, px.timeslot, wc),
+         :ok <- validate_code_size(program) do
       f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
         host_call_result =
           case host(n) do
@@ -33,16 +45,16 @@ defmodule PVM.Refine do
                 registers,
                 memory,
                 context,
-                params.service,
+                ws,
                 services,
-                params.refinement_context.timeslot
+                px.timeslot
               )
 
-            :import ->
-              Refine.import(gas, registers, memory, context, params.import_segments)
+            :fetch ->
+              Refine.fetch(gas, registers, memory, context, work_item_index, work_package, authorizer_output, import_segments)
 
             :export ->
-              Refine.export(gas, registers, memory, context, params.export_offset)
+              Refine.export(gas, registers, memory, context, export_segment_offset)
 
             :gas ->
               General.gas(gas, registers, memory, context)
@@ -89,8 +101,14 @@ defmodule PVM.Refine do
         {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
       end
 
+      args =
+        e(
+          {ws, wy, h(work_package), px,
+           WorkPackage.implied_authorizer(work_package, services)}
+        )
+
       {_gas, result, %Refine.Context{e: exports}} =
-        ArgInvoc.execute(program, 0, params.gas, args, f, %Refine.Context{})
+        ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})
 
       if result in [:out_of_gas, :panic] do
         {result, []}

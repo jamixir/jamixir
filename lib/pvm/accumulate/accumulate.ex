@@ -7,8 +7,9 @@ defmodule PVM.Accumulate do
   alias PVM.{Accumulate.Operand, ArgInvoc}
   import PVM.Host.Gas
 
+
   alias PVM.Accumulate.Utils
-  import PVM.Constants.HostCallId
+  import PVM.Constants.{HostCallId, HostCallResult  }
 
   use Codec.{Encoder, Decoder}
 
@@ -34,7 +35,7 @@ defmodule PVM.Accumulate do
     x = init_fn.(accumulation_state, service_index)
     # Formula (B.10) v0.5.2
     # TODO update B.10 to v0.6.0
-    d = Map.merge(x.accumulation.services, x.services)
+    d = x.accumulation.services
     s = Context.accumulating_service(x)
 
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
@@ -79,8 +80,11 @@ defmodule PVM.Accumulate do
           :transfer ->
             Accumulate.transfer(gas, registers, memory, context)
 
-          :quit ->
-            Accumulate.quit(gas, registers, memory, context)
+          :eject ->
+            Accumulate.eject(gas, registers, memory, context)
+
+          :query ->
+            Accumulate.query(gas, registers, memory, context)
 
           :solicit ->
             Accumulate.solicit(gas, registers, memory, context, timeslot)
@@ -88,11 +92,14 @@ defmodule PVM.Accumulate do
           :forget ->
             Accumulate.forget(gas, registers, memory, context, timeslot)
 
+          :yield ->
+            Accumulate.yield(gas, registers, memory, context)
+
           _ ->
             %Accumulate.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: registers,
+              registers: Registers.set(registers, 7, what()),
               memory: memory,
               context: context
             }
