@@ -1,11 +1,8 @@
-# Formula (B.6) v0.5.2
-# TODO update to 0.6.0
+# Formula (B.6) v0.6.1
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
 
   @type t :: %__MODULE__{
-          # d: Service accounts state without service s
-          services: %{non_neg_integer() => ServiceAccount.t()},
           # s: Service index
           service: non_neg_integer(),
           # u: Accumulation state
@@ -13,14 +10,17 @@ defmodule PVM.Host.Accumulate.Context do
           # i: Computed service index from check function
           computed_service: non_neg_integer(),
           # t: List of deferred transfers
-          transfers: list(System.DeferredTransfer.t())
+          transfers: list(System.DeferredTransfer.t()),
+          # y: accumulation trie result
+          accumulation_trie_result: Types.Hash.t() | nil
         }
 
   defstruct services: %{},
             service: nil,
             accumulation: %Accumulation{},
             computed_service: nil,
-            transfers: []
+            transfers: [],
+            accumulation_trie_result: nil
 
   # Formula (B.7) v0.6.0
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
@@ -36,7 +36,6 @@ defmodule PVM.Host.Accumulate.Context do
     put_in(x, [:accumulation, :services, x.service] ++ path, value)
   end
 
-  # Implement Access behaviour
   @behaviour Access
 
   @impl Access
