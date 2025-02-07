@@ -9,7 +9,6 @@ defmodule RecentHistoryTest do
   alias Util.{Hash, MerkleTree, MMR}
   import Jamixir.Factory
   use Codec.Encoder
-  import Util.Hex
 
   describe "update_latest_state_root/2" do
     test "returns empty list when given nil" do
@@ -343,33 +342,33 @@ defmodule RecentHistoryTest do
       # Add assertions to verify the result
       assert block1 == %RecentBlock{
                header_hash:
-                 decode16!("0x530ef4636fedd498e99c7601581271894a53e965e901e8fa49581e525f165dae"),
+                 <<0x530EF4636FEDD498E99C7601581271894A53E965E901E8FA49581E525F165DAE::256>>,
                accumulated_result_mmr: [
-                 decode16!("0x8720b97ddd6acc0f6eb66e095524038675a4e4067adc10ec39939eaefc47d842")
+                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::256>>
                ],
                state_root:
-                 decode16!("0x1831dde64e40bfd8639c2d122e5ac00fe133c48cd16e1621ca6d5cf0b8e10d3b"),
+                 <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::256>>,
                work_report_hashes: %{
-                 decode16!("0x016cb55eb7b84e0d495d40832c7238965baeb468932c415dc2ceffe0afb039e5") =>
-                   decode16!("0x935f6dfef36fa06e10a9ba820f933611c05c06a207b07141fe8d87465870c11c"),
-                 decode16!("0x76bcb24901299c331f0ca7342f4874f19b213ee72df613d50699e7e25edb82a6") =>
-                   decode16!("0xc825d16b7325ca90287123bd149d47843c999ce686ed51eaf8592dd2759272e3")
+                 <<0x016CB55EB7B84E0D495D40832C7238965BAEB468932C415DC2CEFFE0AFB039E5::256>> =>
+                   <<0x935F6DFEF36FA06E10A9BA820F933611C05C06A207B07141FE8D87465870C11C::256>>,
+                 <<0x76BCB24901299C331F0CA7342F4874F19B213EE72DF613D50699E7E25EDB82A6::256>> =>
+                   <<0xC825D16B7325CA90287123BD149D47843C999CE686ED51EAF8592DD2759272E3::256>>
                }
              }
 
       # Check second block
       assert block2 == %RecentBlock{
                header_hash:
-                 decode16!("0x241d129c6edc2114e6dfba7d556f7f7c66399b55ceec3078a53d44c752ba7e9a"),
+                 <<0x241D129C6EDC2114E6DFBA7D556F7F7C66399B55CEEC3078A53D44C752BA7E9A::256>>,
                accumulated_result_mmr: [
                  nil,
-                 decode16!("0x7076c31882a5953e097aef8378969945e72807c4705e53a0c5aacc9176f0d56b")
+                 <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::256>>
                ],
                state_root:
-                 decode16!("0x0000000000000000000000000000000000000000000000000000000000000000"),
+                 <<0x0000000000000000000000000000000000000000000000000000000000000000::256>>,
                work_report_hashes: %{
-                 decode16!("0x3cc8d8c94e7b3ee01e678c63fd6b5db894fc807dff7fe10a11ab41e70194894d") =>
-                   decode16!("0xc0edfe377d20b9f4ed7d9df9511ef904c87e24467364f0f7f75f20cfe90dd8fb")
+                 <<0x3CC8D8C94E7B3EE01E678C63FD6B5DB894FC807DFF7FE10A11AB41E70194894D::256>> =>
+                   <<0xC0EDFE377D20B9F4ED7D9DF9511EF904C87E24467364F0F7F75F20CFE90DD8FB::256>>
                }
              }
     end
