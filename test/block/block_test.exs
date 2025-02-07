@@ -3,7 +3,6 @@ defmodule BlockTest do
   import Jamixir.Factory
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes, Header}
-  alias Codec.JsonEncoder
   alias Codec.State.Trie
   alias System.State
   alias System.State.RotateKeys
@@ -11,7 +10,6 @@ defmodule BlockTest do
   import Mox
   import TestHelper
   import OriginalModules
-  import Logger
   use Codec.Encoder
   setup :verify_on_exit!
 
@@ -220,13 +218,17 @@ defmodule BlockTest do
     end
 
     test "create a valid block with ticket proofs same epoch" do
-      %{state: state, key_pairs: [_, {{priv1, _}, pub1} | _]} = build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: key_pairs} =
+        build(:genesis_state_with_safrole)
 
-      # Set the first key in the environment
-      KeyManager.load_keys(%{bandersnatch: pub1, bandersnatch_priv: priv1})
-
-      {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
-      {:ok, _} = State.add_block(state, block)
+      for i <- 1..9, reduce: state do
+        state ->
+          {{priv, pub}, _} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
+          KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
+          {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
+          {:ok, state} = State.add_block(state, block)
+          state
+      end
     end
 
     test "can't create block ticket proofs from other validator" do
