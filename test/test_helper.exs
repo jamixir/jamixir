@@ -1,7 +1,7 @@
 {:ok, _} = Application.ensure_all_started(:ex_machina, :quicer)
 
 ExUnit.start()
-ExUnit.configure(exclude: [:full_vectors, :check_vectors_count])
+ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks])
 # Storage.start_link([persist: false])
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)

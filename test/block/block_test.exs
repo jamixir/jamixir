@@ -1,12 +1,12 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias System.State.RotateKeys
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes, Header}
   alias Codec.State.Trie
   alias System.State
-  alias Util.{Hash, Time}
+  alias System.State.RotateKeys
+  alias Util.{Export, Hash, Time}
   import Mox
   import TestHelper
   import OriginalModules
@@ -218,13 +218,17 @@ defmodule BlockTest do
     end
 
     test "create a valid block with ticket proofs same epoch" do
-      %{state: state, key_pairs: [_, {{priv1, _}, pub1} | _]} = build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: key_pairs} =
+        build(:genesis_state_with_safrole)
 
-      # Set the first key in the environment
-      KeyManager.load_keys(%{bandersnatch: pub1, bandersnatch_priv: priv1})
-
-      {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
-      {:ok, _} = State.add_block(state, block)
+      for i <- 1..9, reduce: state do
+        state ->
+          {{priv, pub}, _} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
+          KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
+          {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
+          {:ok, state} = State.add_block(state, block)
+          state
+      end
     end
 
     test "can't create block ticket proofs from other validator" do
@@ -239,6 +243,37 @@ defmodule BlockTest do
     test "cant't create block if it doesnt have the author key" do
       %{state: state} = build(:genesis_state_with_safrole)
       {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, 100)
+    end
+  end
+
+  @epoch_count 4
+  describe "generate state and block dumps" do
+    @describetag :generate_blocks
+    setup do
+      tmp_dir = System.tmp_dir!() |> Path.join("jamixir_test_#{:erlang.unique_integer()}")
+      IO.puts("Writing test data to #{tmp_dir}")
+      File.mkdir_p!(tmp_dir)
+      Application.delete_env(:jamixir, :original_modules)
+      tn = Time.current_timeslot()
+      t0 = tn - Constants.slot_period() * @epoch_count
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+      {:ok, t0: t0, tn: tn, state: state, key_pairs: key_pairs, tmp_dir: tmp_dir}
+    end
+
+    test "fallback", %{state: state, t0: t0, tn: tn, key_pairs: key_pairs, tmp_dir: tmp_dir} do
+      Export.export(state, tmp_dir, "genesis")
+
+      for t <- t0..tn, reduce: {state, nil} do
+        {state, header_hash} ->
+          {:ok, b} = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
+          :ok = File.write("#{tmp_dir}/block_#{b.header.timeslot}.bin", Encodable.encode(b))
+          {:ok, h} = Storage.put(b.header)
+          {:ok, state} = State.add_block(state, b)
+          Export.export(state, tmp_dir)
+          {state, h}
+      end
+
+      IO.puts("State and blocks exported to #{tmp_dir}")
     end
   end
 end
