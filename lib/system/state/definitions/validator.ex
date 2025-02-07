@@ -75,4 +75,24 @@ defmodule System.State.Validator do
     port = port(validator)
     if ip && port, do: "#{ip}:#{port}", else: nil
   end
+
+  def neighbours(_, prev, curr, next)
+      when length(curr) != length(prev) or length(curr) != length(next) do
+    MapSet.new()
+  end
+
+  def neighbours(%__MODULE__{} = v, prev, curr, next) do
+    size = length(curr)
+
+    case Enum.find_index(curr, &(&1 == v)) do
+      nil ->
+        MapSet.new()
+
+      i ->
+        w = floor(:math.sqrt(size))
+        rows = for r <- 0..(size - 1), r != i, div(i, w) == div(r, w), do: Enum.at(curr, r)
+        cols = for r <- 0..(size - 1), r != i, rem(i, w) == rem(r, w), do: Enum.at(curr, r)
+        MapSet.new(rows ++ cols ++ [Enum.at(prev, i)] ++ [Enum.at(next, i)])
+    end
+  end
 end

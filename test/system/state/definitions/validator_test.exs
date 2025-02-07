@@ -113,4 +113,61 @@ defmodule System.State.ValidatorTest do
       assert Validator.ip_address(v) == nil
     end
   end
+
+  describe "neighbours/4" do
+    setup do
+      prev_validators = for v <- 1..9, do: TH.create_validator(v)
+      curr_validators = for v <- 10..18, do: TH.create_validator(v)
+      next_validators = for v <- 19..27, do: TH.create_validator(v)
+
+      {:ok,
+       prev_validators: prev_validators,
+       curr_validators: curr_validators,
+       next_validators: next_validators}
+    end
+
+    # GRID
+    # 1 2 3     10 11 12     19 20 21
+    # 4 5 6     13 14 15     22 23 24
+    # 7 8 9     16 17 18     25 26 27
+
+    test "returns the correct neighbours", c do
+      [p01, _, _, _, p05 | _] = c.prev_validators
+      [c10, c11, c12, c13, c14, c15, c16, c17, _] = c.curr_validators
+      [n19, _, _, _, n23 | _] = c.next_validators
+
+      assert Validator.neighbours(c10, c.prev_validators, c.curr_validators, c.next_validators) ==
+               MapSet.new([c11, c12, c13, c16, p01, n19])
+
+      assert Validator.neighbours(c14, c.prev_validators, c.curr_validators, c.next_validators) ==
+               MapSet.new([c11, c13, c15, c17, p05, n23])
+    end
+
+    test "return empty set when validator is not in grid", c do
+      assert Validator.neighbours(
+               TH.create_validator(100),
+               c.prev_validators,
+               c.curr_validators,
+               c.next_validators
+             ) == MapSet.new()
+    end
+
+    test "return empty set when list sizes are different", c do
+      [p01 | _] = c.prev_validators
+
+      assert Validator.neighbours(
+               p01,
+               c.prev_validators ++ [TH.create_validator(100)],
+               c.curr_validators,
+               c.next_validators
+             ) == MapSet.new()
+
+      assert Validator.neighbours(
+               p01,
+               c.prev_validators,
+               c.curr_validators,
+               c.next_validators ++ [TH.create_validator(100)]
+             ) == MapSet.new()
+    end
+  end
 end
