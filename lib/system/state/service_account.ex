@@ -141,12 +141,16 @@ defmodule System.State.ServiceAccount do
   def json_mapping do
     %{
       preimage_storage_p: [&extract_preimages_p/1, :preimages],
-      preimage_storage_l: [&extract_preimages_l/1, :history],
+      preimage_storage_l: [&extract_preimages_l/1, :lookup_meta],
       storage: [&extract_storage/1, :storage],
-      gas_limit_g: :min_item_gas,
-      gas_limit_m: :min_memo_gas
+      gas_limit_g: {:service, :min_item_gas},
+      gas_limit_m: {:service, :min_memo_gas},
+      balance: {:service, :balance},
+      code_hash: [&extract_code_hash/1, :service]
     }
   end
+
+  def extract_code_hash(service), do: JsonDecoder.from_json(service[:code_hash])
 
   def extract_storage(storage) do
     for d <- storage || [], into: %{} do
@@ -170,18 +174,33 @@ defmodule System.State.ServiceAccount do
   end
 
   def to_json_mapping do
+    custom_map =
+      {:_custom,
+       {:service,
+        fn
+          service ->
+            %{
+              balance: service.balance,
+              min_item_gas: service.gas_limit_g,
+              min_memo_gas: service.gas_limit_m,
+              code_hash: service.code_hash
+            }
+        end}}
+
     %{
       storage: {:storage, &to_list(&1, :hash, :blob)},
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
       preimage_storage_l:
-        {:history,
+        {:lookup_meta,
          &to_list(
            &1,
            {:key, fn key -> to_object(key, :hash, :length) end},
            :value
          )},
-      gas_limit_g: :min_item_gas,
-      gas_limit_m: :min_memo_gas
+      balance: custom_map,
+      code_hash: custom_map,
+      gas_limit_g: custom_map,
+      gas_limit_m: custom_map
     }
   end
 end

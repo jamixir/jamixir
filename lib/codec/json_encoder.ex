@@ -48,6 +48,9 @@ defmodule Codec.JsonEncoder do
       {:_root, {:_root, transform}} ->
         transform.(struct) |> encode()
 
+      {:_root, {field_name, transform}} ->
+        {field_name, transform.(struct)} |> encode()
+
       {key, {:_root, transform}} ->
         transform.(Map.get(struct, key)) |> encode()
 
@@ -61,6 +64,9 @@ defmodule Codec.JsonEncoder do
             original_value = Map.get(struct, old_key)
 
             case mapping do
+              {:_custom, {field, transform}} ->
+                {field, transform.(struct)}
+
               new_key when is_atom(new_key) ->
                 {new_key, original_value}
 

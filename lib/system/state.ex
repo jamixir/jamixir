@@ -223,10 +223,7 @@ defmodule System.State do
         {:delta,
          fn services ->
            for {id, service} <- services do
-             %{
-               id: id,
-               info: service
-             }
+             %{id: id, data: service}
            end
          end},
       entropy_pool: :eta,

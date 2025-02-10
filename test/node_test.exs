@@ -27,7 +27,6 @@ defmodule Jamixir.NodeTest do
     assert {:ok, _keys} = Jamixir.Node.inspect_state()
   end
 
-  # @tag :skip
   test "add_block with valid block" do
     assert :ok = Jamixir.Node.load_state(@genesis_file)
     parent = build(:decodable_header)

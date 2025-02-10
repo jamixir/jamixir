@@ -374,11 +374,11 @@ defmodule System.StateTest do
       assert json.delta == [
                %{
                  id: 1,
-                 info: JsonEncoder.encode(s1)
+                 data: JsonEncoder.encode(s1)
                },
                %{
                  id: 2,
-                 info: JsonEncoder.encode(s2)
+                 data: JsonEncoder.encode(s2)
                }
              ]
 

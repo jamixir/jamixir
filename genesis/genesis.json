@@ -62,11 +62,13 @@
   "delta": [
     {
       "id": 0,
-      "info": {
-        "code_hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
-        "balance": 20219,
-        "min_item_gas": 10,
-        "min_memo_gas": 10,
+      "data": {
+        "service": {
+          "code_hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
+          "balance": 20219,
+          "min_item_gas": 10,
+          "min_memo_gas": 10
+        },
         "preimages": [
           {
             "hash": "0x6470fd21983eae8d706f1edd5e2dc5afe095980f8fb7bd4ebfd33550d8730246",
@@ -77,7 +79,7 @@
             "blob": "0x31237cdb79ae1dfa7ffb87cde7ea8a80352d300ee5ac758a6cddd19d671925ec973d6a912166c954916057eb6a07d3e8bf"
           }
         ],
-        "history": [
+        "lookup_meta": [
           {
             "key": {
               "hash": "0x6989ea1c2d5d81e7ef17b32e23d56e5ec90d9d48e19c634e14dd630dd5dd2ce1",

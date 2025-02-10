@@ -155,17 +155,19 @@ defmodule System.State.ServiceAccountTest do
       json = JsonEncoder.encode(account)
 
       assert json == %{
-               code_hash: expected_code_hash,
-               balance: account.balance,
-               min_item_gas: account.gas_limit_g,
-               min_memo_gas: account.gas_limit_m,
+               service: %{
+                 balance: account.balance,
+                 code_hash: expected_code_hash,
+                 min_item_gas: account.gas_limit_g,
+                 min_memo_gas: account.gas_limit_m
+               },
                preimages: [
                  %{
                    hash: expected_code_hash,
                    blob: Hex.encode16(account.preimage_storage_p[account.code_hash], prefix: true)
                  }
                ],
-               history: [
+               lookup_meta: [
                  %{
                    key: %{
                      hash: expected_code_hash,
