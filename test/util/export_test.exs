@@ -7,25 +7,25 @@ defmodule Util.ExportTest do
 
   describe "get_key_name/1" do
     test "matches c1-c15 keys" do
-      assert Export.get_key_name(Hex.decode16!("0x01")) == "c1"
-      assert Export.get_key_name(Hex.decode16!("0x0a")) == "c10"
-      assert Export.get_key_name(Hex.decode16!("0x0f")) == "c15"
+      assert Export.get_key_name(<<0x01>>) == "c1"
+      assert Export.get_key_name(<<0x0A>>) == "c10"
+      assert Export.get_key_name(<<0x0F>>) == "c15"
     end
 
     test "matches account storage" do
-      assert Export.get_key_name(Hex.decode16!("0x01ff00ff00ff00ff")) == "account_storage"
+      assert Export.get_key_name(<<0x01FF00FF00FF00FF::64>>) == "account_storage"
     end
 
     test "matches account preimage p" do
-      assert Export.get_key_name(Hex.decode16!("0x01fe00ff00ff00ff")) == "account_preimage_p"
+      assert Export.get_key_name(<<0x01FE00FF00FF00FF::64>>) == "account_preimage_p"
     end
 
     test "matches account preimage l" do
-      assert Export.get_key_name(Hex.decode16!("0x01fd00ff00ff00ff")) == "account_preimage_l"
+      assert Export.get_key_name(<<0x01FD00FF00FF00FF::64>>) == "account_preimage_l"
     end
 
     test "returns unknown for unmatched patterns" do
-      assert Export.get_key_name(Hex.decode16!("0x00")) == "unknown"
+      assert Export.get_key_name(<<0x0>>) == "unknown"
       assert Export.get_key_name("invalid") == "unknown"
       assert Export.get_key_name(nil) == "unknown"
     end
