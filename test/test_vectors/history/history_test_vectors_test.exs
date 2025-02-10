@@ -2,7 +2,7 @@ defmodule HistoryTestVectorsTest do
   use ExUnit.Case
   import Mox
   import HistoryTestVectors
-  import TestVectorUtil
+  import TestHelper
 
   setup :verify_on_exit!
 

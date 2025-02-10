@@ -2,6 +2,7 @@ defmodule TestHelper do
   alias System.State.Validator
   alias Util.Hash
   alias Util.Time, as: Time
+  import Mox
 
   def past_timeslot do
     div(Time.current_time() - 10, Constants.slot_period())
@@ -16,6 +17,12 @@ defmodule TestHelper do
       validator.ed25519 == Hash.zero() and
       validator.bls == <<0::1152>> and
       validator.metadata == <<0::1024>>
+  end
+
+  def mock_header_seal do
+    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
+      {:ok, %{vrf_signature_output: Hash.zero()}}
+    end)
   end
 
   def create_validator(index) do

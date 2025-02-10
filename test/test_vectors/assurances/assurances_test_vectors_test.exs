@@ -3,7 +3,9 @@ defmodule AssurancesTestVectorsTest do
   use ExUnit.Case
   import Mox
   import AssurancesTestVectors
+  import TestHelper
   import TestVectorUtil
+
   setup :verify_on_exit!
 
   setup do

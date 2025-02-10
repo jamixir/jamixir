@@ -3,6 +3,7 @@ defmodule DisputesTinyTestVectors do
   import Mox
   import DisputesTestVectors
   import TestVectorUtil
+  import TestHelper
 
   setup :verify_on_exit!
 

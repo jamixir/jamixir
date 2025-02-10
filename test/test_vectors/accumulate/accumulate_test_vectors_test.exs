@@ -3,6 +3,8 @@ defmodule AccumulateTestVectorsTest do
   import Mox
   import AccumulateTestVectors
   import TestVectorUtil
+  import TestHelper
+
   setup :verify_on_exit!
 
   setup_all do
