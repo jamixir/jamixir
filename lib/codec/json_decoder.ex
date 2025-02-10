@@ -49,6 +49,9 @@ defmodule JsonDecoder do
            %{m: module, f: f} ->
              module.from_json(json_data[f])
 
+           f when is_tuple(f) ->
+             get_in(json_data, Tuple.to_list(f))
+
            [f, field] when is_function(f, 1) ->
              f.(json_data[field])
 

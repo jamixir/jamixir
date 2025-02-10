@@ -30,9 +30,9 @@ defmodule AccumulateTestVectorsTest do
       :ok
     end
 
-    # test "smoke" do
-    #   execute_test("enqueue_and_unlock_chain_wraps-2", "accumulate/tiny")
-    # end
+    test "smoke" do
+      execute_test("enqueue_and_unlock_chain_wraps-2", "accumulate/tiny")
+    end
 
     define_vector_tests("accumulate")
   end

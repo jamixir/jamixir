@@ -25,7 +25,7 @@ defmodule System.State.Services do
 
   def from_json(json_data) do
     for service <- json_data, into: %{} do
-      {service[:id], ServiceAccount.from_json(service[:info])}
+      {service[:id], ServiceAccount.from_json(service[:data])}
     end
   end
 end
