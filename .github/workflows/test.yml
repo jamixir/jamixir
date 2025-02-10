@@ -39,18 +39,21 @@ jobs:
           otp-version: '27.0.1'
 
       - name: Restore dependencies cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('mix.exs') }}
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-
             ${{ runner.os }}-mix-
 
       - name: Install dependencies
         run: mix deps.get
+
+      - name: Compile dependencies and project
+        run: |
+          mix compile
 
       - name: Run tests with full_vectors
         run: mix test --trace
