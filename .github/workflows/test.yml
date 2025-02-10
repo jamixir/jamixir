@@ -56,4 +56,4 @@ jobs:
           mix compile
 
       - name: Run tests with full_vectors
-        run: mix test --trace
+        run: mix test --no-compile --timeout 180_000
