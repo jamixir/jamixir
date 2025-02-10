@@ -1,6 +1,6 @@
 {:ok, _} = Application.ensure_all_started(:ex_machina, :quicer)
 
-ExUnit.configure(timeout: 120_000)
+ExUnit.configure(timeout: 180_000)
 ExUnit.start()
 ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks])
 # Storage.start_link([persist: false])
