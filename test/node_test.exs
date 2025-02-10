@@ -1,13 +1,19 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
   alias Storage
-  alias Util.Hash
   import Jamixir.Factory
+  import TestHelper
   @genesis_file "genesis/genesis.json"
 
   setup do
+    Application.put_env(:jamixir, :original_modules, [Jamixir.Node])
+    Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    mock_header_seal()
+
     on_exit(fn ->
       Storage.remove_all()
+      Application.delete_env(:jamixir, :original_modules)
+      Application.delete_env(:jamixir, :header_seal)
     end)
   end
 
@@ -21,16 +27,14 @@ defmodule Jamixir.NodeTest do
     assert {:ok, _keys} = Jamixir.Node.inspect_state()
   end
 
-  @tag :skip
+  # @tag :skip
   test "add_block with valid block" do
     assert :ok = Jamixir.Node.load_state(@genesis_file)
     parent = build(:decodable_header)
-    parent_hash = Hash.default(Encodable.encode(parent))
     Storage.put(parent)
     block = build(:block)
-    block = put_in(block.header.parent_hash, parent_hash)
     block_binary = Encodable.encode(block)
 
-    assert :ok = Jamixir.Node.add_block(block_binary)
+    assert {:ok, _} = Jamixir.Node.add_block(block_binary)
   end
 end

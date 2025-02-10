@@ -5,6 +5,7 @@ defmodule ReportsTestVectorsTest do
   import Mox
   import ReportsTestVectors
   import TestVectorUtil
+  import TestHelper
 
   setup :verify_on_exit!
 

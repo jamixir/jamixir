@@ -3,7 +3,9 @@ defmodule AuthorizationTestVectorsTest do
   use ExUnit.Case
   import Mox
   import AuthorizationsTestVectors
+  import TestHelper
   import TestVectorUtil
+
   setup :verify_on_exit!
 
   setup do

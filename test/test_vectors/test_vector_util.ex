@@ -2,7 +2,6 @@ defmodule TestVectorUtil do
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   alias Codec.State
-  alias Util.Hash
   use ExUnit.Case
   import Mox
 
@@ -123,12 +122,6 @@ defmodule TestVectorUtil do
       {:error, e} ->
         {:error, "#{e} cant read file or download it at #{url}"}
     end
-  end
-
-  def mock_header_seal do
-    stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
-      {:ok, %{vrf_signature_output: Hash.zero()}}
-    end)
   end
 
   def accumulate_mock_return do

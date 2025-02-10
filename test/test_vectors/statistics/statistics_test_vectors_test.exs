@@ -3,6 +3,7 @@ defmodule StatisticsTestVectorsTest do
   import Mox
   import StatisticsTestVectors
   import TestVectorUtil
+  import TestHelper
   setup :verify_on_exit!
 
   setup do
