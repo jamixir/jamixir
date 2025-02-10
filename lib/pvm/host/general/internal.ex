@@ -37,18 +37,16 @@ defmodule PVM.Host.General.Internal do
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
-    {exit_reason_, w7__, memory__} =
+    {exit_reason_, w7_, memory__} =
       cond do
-        v == :error or !is_writable -> {:panic, registers, memory}
+        v == :error or !is_writable -> {:panic, registers.r7, memory}
         is_nil(v) -> {:continue, none(), memory}
         true -> {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l))}
       end
 
-    registers_ = Registers.set(registers, :r7, w7__)
-
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: registers_,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory__,
       context: service_account
     }
@@ -59,49 +57,52 @@ defmodule PVM.Host.General.Internal do
         }) ::
           Result.Internal.t()
   def read_internal(registers, memory, service_account, service_index, services) do
-    a =
+    s_star =
       cond do
-        registers.r7 in [@max_64_bit_value, service_index] -> service_account
-        Map.has_key?(services, registers.r7) -> services[registers.r7]
-        true -> nil
+        registers.r7 == @max_64_bit_value -> service_index
+        true -> registers.r7
       end
 
-    [ko, kz, bo, bz] = Registers.get(registers, [8, 9, 10, 11])
+    a =
+      cond do
+        s_star == service_index -> service_account
+        true -> Map.get(services, s_star)
+      end
 
-    k =
+    [ko, kz, o] = Registers.get(registers, [8, 9, 10])
+
+    storage_key =
       with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-        Hash.default(<<service_index::32-little>> <> mem_segment)
+        Hash.default(<<s_star::32-little>> <> mem_segment)
       else
         _ -> :error
       end
 
     v =
-      if a != nil and k in Map.keys(Map.get(a, :storage)),
-        do: get_in(a, [:storage, k]),
-        else: nil
-
-    is_writable = Memory.check_range_access?(memory, bo, bz, :write)
-
-    memory_ =
-      if v != nil and is_writable do
-        write_value = binary_part(v, 0, min(byte_size(v), bz))
-        Memory.write(memory, bo, write_value) |> elem(1)
-      else
-        memory
+      cond do
+        storage_key == :error -> :error
+        a != nil -> Map.get(a.storage, storage_key)
+        true -> nil
       end
 
-    w7_ =
-      if k != :error and is_writable do
-        cond do
-          v == nil -> none()
-          true -> byte_size(v)
-        end
-      else
-        oob()
+    f = min(registers.r11, byte_size(v))
+    l = min(registers.r12, byte_size(v) - f)
+
+    is_writable = Memory.check_range_access?(memory, o, l, :write)
+
+    {exit_reason_, w7_, memory__} =
+      cond do
+        v == :error or !is_writable -> {:panic, registers.r7, memory}
+        is_nil(v) -> {:continue, none(), memory}
+        true -> {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l))}
       end
 
-    registers_ = Registers.set(registers, :r7, w7_)
-    %Result.Internal{registers: registers_, memory: memory_, context: service_account}
+    %Result.Internal{
+      exit_reason: exit_reason_,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory__,
+      context: service_account
+    }
   end
 
   @spec write_internal(
@@ -112,46 +113,37 @@ defmodule PVM.Host.General.Internal do
         ) ::
           Result.Internal.t()
   def write_internal(registers, memory, service_account, service_index) do
-    [ko, kz, vo, vz] = Registers.get(registers, [8, 9, 10, 11])
+    [ko, kz, vo, vz] = Registers.get(registers, [7, 8, 9, 10])
 
     k = read_storage_key(memory, ko, kz, service_index)
     l = current_value_length(k, service_account)
     value_result = Memory.read(memory, vo, vz)
 
-    updated_account =
+    a =
       case {k, value_result, vo} do
-        {k, {:ok, _}, 0} when k != :error ->
+        {k, _, 0} when k != :error ->
           put_in(service_account, [:storage], Map.drop(Map.get(service_account, :storage), [k]))
 
         {k, {:ok, value}, _} when k != :error ->
           put_in(service_account, [:storage, k], value)
 
         _ ->
-          service_account
+          :error
       end
 
-    cond do
-      ServiceAccount.threshold_balance(updated_account) > updated_account.balance ->
-        %Result.Internal{
-          registers: Registers.set(registers, :r7, full()),
-          memory: memory,
-          context: service_account
-        }
+    {exit_reason_, w7_, service_account_} =
+      cond do
+        k == :error or a == :error -> {:panic, registers.r7, service_account}
+        ServiceAccount.threshold_balance(a) > a.balance -> {:continue, full(), service_account}
+        true -> {:continue, l, a}
+      end
 
-      k != :error and match?({:ok, _}, value_result) ->
-        %Result.Internal{
-          registers: Registers.set(registers, :r7, l),
-          memory: memory,
-          context: updated_account
-        }
-
-      true ->
-        %Result.Internal{
-          registers: Registers.set(registers, :r7, oob()),
-          memory: memory,
-          context: service_account
-        }
-    end
+    %Result.Internal{
+      exit_reason: exit_reason_,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: service_account_
+    }
   end
 
   defp read_storage_key(memory, ko, kz, service_index) do
@@ -190,23 +182,30 @@ defmodule PVM.Host.General.Internal do
         nil
       end
 
-    is_writable = Memory.check_range_access?(memory, o, byte_size(m || ""), :write)
-
     memory_ =
-      if m != nil and is_writable do
+      if m != nil and Memory.check_range_access?(memory, o, byte_size(m), :write) do
         Memory.write(memory, o, m) |> elem(1)
       else
         memory
       end
 
-    w7_ =
+    {exit_reason_, w7_} =
       cond do
-        m != nil and is_writable -> ok()
-        m == nil -> none()
-        true -> oob()
+        m == nil ->
+          {:continue, none()}
+
+        m != nil and not Memory.check_range_access?(memory, o, byte_size(m), :write) ->
+          {:panic, registers.r7}
+
+        true ->
+          {:continue, ok()}
       end
 
-    registers_ = Registers.set(registers, :r7, w7_)
-    %Result.Internal{registers: registers_, memory: memory_, context: context}
+    %Result.Internal{
+      exit_reason: exit_reason_,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory_,
+      context: context
+    }
   end
 end
