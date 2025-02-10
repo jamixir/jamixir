@@ -22,8 +22,10 @@ jobs:
           token: ${{ secrets.GH_PAT }}
 
       - name: Setup Git for private deps
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          git config --global url."https://${{ secrets.GH_PAT }}@github.com/"
+          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
