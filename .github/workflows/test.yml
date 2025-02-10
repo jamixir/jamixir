@@ -72,5 +72,4 @@ jobs:
           key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
 
       - name: Run tests with full_vectors
-        if: false  # Temporarily disabled to build cache
         run: mix test  --timeout 300000
