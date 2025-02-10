@@ -81,18 +81,32 @@ defmodule System.State.Validator do
     MapSet.new()
   end
 
-  def neighbours(%__MODULE__{} = v, prev, curr, next) do
+def neighbours(%__MODULE__{} = v, prev, curr, next) do
     size = length(curr)
+    row_size = floor(:math.sqrt(size))
 
     case Enum.find_index(curr, &(&1 == v)) do
       nil ->
         MapSet.new()
 
       i ->
-        w = floor(:math.sqrt(size))
-        rows = for r <- 0..(size - 1), r != i, div(i, w) == div(r, w), do: Enum.at(curr, r)
-        cols = for r <- 0..(size - 1), r != i, rem(i, w) == rem(r, w), do: Enum.at(curr, r)
-        MapSet.new(rows ++ cols ++ [Enum.at(prev, i)] ++ [Enum.at(next, i)])
+        row_neighbors =
+          for r <- 0..(size - 1),
+              r != i,
+              row(r, row_size) == row(i, row_size),
+              do: Enum.at(curr, r)
+
+        col_neigbors =
+          for r <- 0..(size - 1),
+              r != i,
+              coloum(r, row_size) == coloum(i, row_size),
+              do: Enum.at(curr, r)
+
+        MapSet.new(row_neighbors ++ col_neigbors ++ [Enum.at(prev, i)] ++ [Enum.at(next, i)])
     end
   end
+
+  defp row(index, row_size), do: div(index, row_size)
+  defp coloum(index, row_size), do: rem(index, row_size)
+  
 end
