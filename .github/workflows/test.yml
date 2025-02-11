@@ -78,7 +78,7 @@ jobs:
         run: |
           cd ..
           git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git jam-test-vectors-cache
-          cd jam-test-vectors
+          cd jam-test-vectors-cache
           git rev-parse HEAD > latest_commit.txt
           cd $GITHUB_WORKSPACE
 
