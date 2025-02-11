@@ -1,4 +1,4 @@
-# Formula (B.20) v0.6.0
+# Formula (B.20) v0.6.1
 
 defmodule PVM.Host.Accumulate.Internal do
   alias System.DeferredTransfer
@@ -13,12 +13,13 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def bless_internal(registers, memory, {x, _y} = context_pair) do
-    [m, a, v, o, n] = Registers.get(registers, [8, 9, 10, 11, 12])
+    [m, a, v, o, n] = Registers.get(registers, [7, 8, 9, 10, 11])
 
     g =
       case Memory.read(memory, o, 12 * n) do
         {:ok, data} ->
-          for <<service::32-little, value::64-little <- data>>, into: %{} do
+          for <<chunk::binary-size(12) <- data>>, into: %{} do
+            <<service::32-little, value::64-little>> = chunk
             {service, value}
           end
 
@@ -26,13 +27,13 @@ defmodule PVM.Host.Accumulate.Internal do
           :error
       end
 
-    {registers_, context_} =
+    {exit_reason_, w7_, context_} =
       cond do
         g == :error ->
-          {Registers.set(registers, :r7, oob()), context_pair}
+          {:panic, registers.r7, context_pair}
 
-        Enum.any?([m, a, v], &(&1 < 0 or &1 > 0x100000000)) ->
-          {Registers.set(registers, :r7, who()), context_pair}
+        Enum.any?([m, a, v], &(&1 < 0 or &1 > 0x1_0000_0000)) ->
+          {:continue, who(), context_pair}
 
         true ->
           privileged_service = %PrivilegedServices{
@@ -43,11 +44,13 @@ defmodule PVM.Host.Accumulate.Internal do
           }
 
           x_ = put_in(x, [:accumulation, :privileged_services], privileged_service)
-          {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason_,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: context_
     }
@@ -61,30 +64,34 @@ defmodule PVM.Host.Accumulate.Internal do
     c =
       case Memory.read(memory, registers.r8, 32 * q) do
         {:ok, data} ->
-          for <<chunk::binary-size(32) <- data>>, do: chunk
+          for <<hash::binary-size(32) <- data>>, do: hash
 
         _ ->
           :error
       end
 
-    {registers_, context_} =
+    w7 = registers.r7
+
+    {exit_reason, w7_, context_} =
       cond do
         c == :error ->
-          {Registers.set(registers, :r7, oob()), context_pair}
+          {:panic, w7, context_pair}
 
-        registers.r7 >= Constants.core_count() ->
-          {Registers.set(registers, :r7, core()), context_pair}
+        w7 >= Constants.core_count() ->
+          {:continue, core(), context_pair}
 
         true ->
           queue_ =
-            x.accumulation.authorizer_queue |> List.insert_at(registers.r7, c)
+            x.accumulation.authorizer_queue |> List.insert_at(w7, c)
 
           x_ = put_in(x.accumulation.authorizer_queue, queue_)
-          {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: context_
     }
@@ -93,10 +100,8 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec designate_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def designate_internal(registers, memory, {x, _y} = context_pair) do
-    v = Constants.validator_count()
-
-    i =
-      case Memory.read(memory, registers.r7, 336 * v) do
+    v =
+      case Memory.read(memory, registers.r7, 336 * Constants.validator_count()) do
         {:ok, data} ->
           for <<validator_data::binary-size(336) <- data>> do
             <<bandersnatch::binary-size(32), ed25519::binary-size(32), bls::binary-size(144),
@@ -114,18 +119,20 @@ defmodule PVM.Host.Accumulate.Internal do
           :error
       end
 
-    {registers_, context_} =
+    {exit_reason, w7_, context_} =
       cond do
-        i == :error ->
-          {Registers.set(registers, :r7, oob()), context_pair}
+        v == :error ->
+          {:panic, registers.r7, context_pair}
 
         true ->
-          x_ = put_in(x, [:accumulation, :next_validators], i)
-          {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
+          x_ = put_in(x, [:accumulation, :next_validators], v)
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: context_
     }
@@ -178,34 +185,37 @@ defmodule PVM.Host.Accumulate.Internal do
 
     s = Map.put(x_s, :balance, Map.get(x_s, :balance) - a_t)
 
-    {w7_, computed_service, accumulation_services_} =
+    {exit_reason, w7_, computed_service_, accumulation_services_} =
       (
         x_i = x.computed_service
         xu_d = x.accumulation.services
 
         cond do
           c == :error ->
-            {oob(), x_i, xu_d}
+            {:panic, registers.r7, x_i, xu_d}
 
-          a != :error and s.balance >= ServiceAccount.threshold_balance(x_s) ->
-            {x_i, check(bump(x_i), x.accumulation), Map.merge(xu_d, %{x_i => a, x.service => s})}
+          s.balance < ServiceAccount.threshold_balance(x_s) ->
+            {:continue, cash(), x_i, xu_d}
 
           true ->
-            {cash(), x_i, xu_d}
+            {:continue, x_i, check(bump(x_i), x.accumulation),
+             Map.merge(xu_d, %{x_i => a, x.service => s})}
         end
       )
 
     registers_ = Registers.set(registers, 7, w7_)
 
     x_ =
-      Map.merge(x, %{
-        computed_service: computed_service,
-        accumulation: Map.merge(x.accumulation, %{services: accumulation_services_})
-      })
+      %{
+        x
+        | computed_service: computed_service_,
+          accumulation: Map.merge(x.accumulation, %{services: accumulation_services_})
+      }
 
     context_ = put_elem(context_pair, 0, x_)
 
     %Result.Internal{
+      exit_reason: exit_reason,
       registers: registers_,
       memory: memory,
       context: context_
@@ -223,21 +233,23 @@ defmodule PVM.Host.Accumulate.Internal do
         _ -> :error
       end
 
-    {registers_, context_} =
+    {exit_reason, w7_, context_} =
       cond do
         c == :error ->
-          {Registers.set(registers, :r7, oob()), context_pair}
+          {:panic, registers.r7, context_pair}
 
         true ->
           xs_ =
             %{Context.accumulating_service(x) | code_hash: c, gas_limit_g: g, gas_limit_m: m}
 
           x_ = put_in(x, [:accumulation, :services, x.service], xs_)
-          {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: context_
     }
@@ -250,14 +262,10 @@ defmodule PVM.Host.Accumulate.Internal do
         ) ::
           Result.Internal.t()
   def transfer_internal(registers, memory, {x, _y} = context_pair) do
-    # let [d,a,l,o] = ω7..11
     [d, a, l, o] = Registers.get(registers, [7, 8, 9, 10])
 
-    # let d = xd ∪ (xu)d
-    all_services = Map.merge(x.services, x.accumulation.services)
+    services = x.accumulation.services
 
-    # Read transfer data for memo
-    # otherwise if No...+WT ∈ Vμ
     t =
       case Memory.read(memory, o, Constants.memo_size()) do
         {:ok, memo} ->
@@ -273,27 +281,25 @@ defmodule PVM.Host.Accumulate.Internal do
           :error
       end
 
-    # let b = (xs)b - a
     xs = Context.accumulating_service(x)
     b = Map.get(xs, :balance) - a
 
-    {registers_, context_} =
+    {exit_reason, w7_, context_} =
       cond do
-        # if t = ∇
         t == :error ->
-          {Registers.set(registers, :r7, oob()), context_pair}
+          {:panic, registers.r7, context_pair}
 
         # otherwise if d ∉ K(d)
-        all_services[d] == nil ->
-          {Registers.set(registers, :r7, who()), context_pair}
+        not Map.has_key?(services, d) ->
+          {:continue, who(), context_pair}
 
         # otherwise if g < d[d]m
-        l < all_services[d][:gas_limit_m] ->
-          {Registers.set(registers, :r7, low()), context_pair}
+        l < get_in(services, [d, :gas_limit_m]) ->
+          {:continue, low(), context_pair}
 
         # otherwise if b < (xs)t
         b < ServiceAccount.threshold_balance(xs) ->
-          {Registers.set(registers, :r7, cash()), context_pair}
+          {:continue, cash(), context_pair}
 
         # otherwise (OK case)
         true ->
@@ -301,100 +307,125 @@ defmodule PVM.Host.Accumulate.Internal do
             Context.update_accumulating_service(x, [:balance], b)
             |> update_in([:transfers], &(&1 ++ [t]))
 
-          {Registers.set(registers, :r7, ok()), put_elem(context_pair, 0, x_)}
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: context_
     }
   end
 
-  @spec quit_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec eject_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           {:halt | :continue, Result.Internal.t()}
-  def quit_internal(registers, memory, {x, _y} = context_pair, gas) do
+  def eject_internal(registers, memory, {x, _y} = context_pair, timeslot) do
     # let [d,o] = ω7..8
     [d, o] = Registers.get(registers, [7, 8])
 
-    # let a = (xs)b - (xs)t + BS
-    xs = Context.accumulating_service(x)
-    a = xs.balance - ServiceAccount.threshold_balance(xs) + Constants.service_minimum_balance()
-
-    # let d = xd ∪ (xu)d
-    all_services = Map.merge(x.services, x.accumulation.services)
-
-    # Read transfer data for memo
-    t =
-      if d in [x.service, 0xFFFFFFFFFFFFFFFF] do
-        # if d ∈ {xs, 2^64 - 1}
-        nil
-      else
-        # otherwise if No...+WT ∈ Vμ
-        case Memory.read(memory, o, Constants.memo_size()) do
-          {:ok, memo} ->
-            %DeferredTransfer{
-              sender: x.service,
-              receiver: d,
-              amount: a,
-              memo: memo,
-              gas_limit: gas
-            }
-
-          _ ->
-            :error
-        end
+    h =
+      case Memory.read(memory, o, 32) do
+        {:ok, hash} -> hash
+        _ -> :error
       end
 
-    {exit_reason, registers_, x_} =
-      (
-        x_u_d = x.accumulation.services
+    service =
+      case d != x.service do
+        true -> Map.get(x.accumulation.services, d, :error)
+        false -> :error
+      end
 
-        x_s = x.service
+    l = max(81, ServiceAccount.octets_in_storage(service)) - 81
 
-        cond do
-          # if t = ∅
-          t == nil ->
-            {:halt, Registers.set(registers, :r7, ok()),
-             put_in(x, [:accumulation, :services], Map.delete(x_u_d, x_s))}
+    s_ = Context.accumulating_service(x)
+    s_ = %{s_ | balance: s_.balance + service.balance}
 
-          # otherwise if t = ∇
-          t == :error ->
-            {:continue, Registers.set(registers, :r7, oob()), x}
+    {exit_reason, w7_, x_} =
+      cond do
+        h == :error ->
+          {:panic, registers.r7, x}
 
-          # otherwise if d ∉ K(d)
-          not Map.has_key?(all_services, d) ->
-            {:continue, Registers.set(registers, :r7, who()), x}
+        d == :error or d.code_hash != <<x.service::32-little>> ->
+          {:continue, who(), x}
 
-          # otherwise if g < d[d]m
-          gas < get_in(all_services, [d, :gas_limit_m]) ->
-            {:continue, Registers.set(registers, :r7, low()), x}
+        ServiceAccount.items_in_storage(s_) != 2 or !Map.has_key?(d.preimage_storage_l, {h, l}) ->
+          {:continue, huh(), x}
 
-          # otherwise (OK case)
-          true ->
-            x_ =
-              update_in(x, [:transfers], &(&1 ++ [t]))
-              |> put_in([:accumulation, :services], Map.delete(x_u_d, x_s))
+        match?([_x, _y], Map.get(d.preimage_storage_l, {h, l})) and
+            elem(Map.get(d.preimage_storage_l, {h, l}), 1) < timeslot - Constants.forget_delay() ->
+          x_u_d_ = Map.delete(x.accumulation.services, d) |> Map.merge(%{x.service => s_})
+          x_ = put_in(x, [:accumulation, :services], x_u_d_)
+          {:continue, ok(), x_}
 
-            {:halt, Registers.set(registers, :r7, ok()), x_}
-        end
-      )
+        true ->
+          {:continue, huh(), x}
+      end
 
-    {exit_reason,
-     %Result.Internal{
-       registers: registers_,
-       memory: memory,
-       context: put_elem(context_pair, 0, x_)
-     }}
+    %Result.Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: put_elem(context_pair, 0, x_)
+    }
+  end
+
+  @spec query_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+          Result.Internal.t()
+  def query_internal(registers, memory, {x, _y} = context_pair) do
+    [o, z] = Registers.get(registers, [7, 8])
+
+    h =
+      case Memory.read(memory, o, 32) do
+        {:ok, hash} -> hash
+        _ -> :error
+      end
+
+    xs = Context.accumulating_service(x)
+    a = Map.get(xs.preimage_storage_l, {h, z}, :error)
+
+    {exit_reason, w7_, w8_} =
+      cond do
+        h == :error ->
+          {:panic, registers.r7, registers.r8}
+
+        a == :error ->
+          {:continue, none(), 0}
+
+        true ->
+          two_32 = 0x1_0000_0000
+
+          case a do
+            [] ->
+              {:continue, 0, 0}
+
+            [x] ->
+              {:continue, 1 + two_32 * x, 0}
+
+            [x, y] ->
+              {:continue, 2 + two_32 * x, y}
+
+            [x, y, z] ->
+              {:continue, 3 + two_32 * x, y + two_32 * z}
+          end
+      end
+
+    registers_ = Registers.set(registers, :r7, w7_) |> Registers.set(:r8, w8_)
+
+    %Result.Internal{
+      exit_reason: exit_reason,
+      registers: registers_,
+      memory: memory,
+      context: context_pair
+    }
   end
 
   @spec solicit_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
   def solicit_internal(registers, memory, {x, _y} = context_pair, timeslot) do
-    # let [o,z] = ω7,8
     [o, z] = Registers.get(registers, [7, 8])
 
-    # let h = μo...+32 if Zo...+32 ⊂ Vμ
     h =
       case Memory.read(memory, o, 32) do
         {:ok, hash} -> hash
@@ -421,28 +452,28 @@ defmodule PVM.Host.Accumulate.Internal do
           :error
       end
 
-    {registers_, x_} =
+    {exit_reason, w7_, x_} =
       cond do
         # if h = ∇
         h == :error ->
-          {Registers.set(registers, :r7, oob()), x}
+          {:panic, registers.r7, x}
 
         # otherwise if a = ∇
         a == :error ->
-          {Registers.set(registers, :r7, huh()), x}
+          {:continue, huh(), x}
 
         # otherwise if ab < at
         a.balance < ServiceAccount.threshold_balance(a) ->
-          {Registers.set(registers, :r7, full()), x}
+          {:continue, full(), x}
 
         # otherwise
         true ->
-          {Registers.set(registers, :r7, ok()),
-           put_in(x, [:accumulation, :services, x.service], a)}
+          {:continue, ok(), put_in(x, [:accumulation, :services, x.service], a)}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -480,7 +511,6 @@ defmodule PVM.Host.Accumulate.Internal do
               preimage_storage_p: Map.delete(xs.preimage_storage_p, h)
           }
 
-        # if |(xs)l[h,z]| = 1
         [x] ->
           put_in(xs, [:preimage_storage_l, {h, z}], [x, timeslot])
 
@@ -492,21 +522,49 @@ defmodule PVM.Host.Accumulate.Internal do
           :error
       end
 
-    {registers_, x_} =
+    {exit_reason, w7_, x_} =
       cond do
         h == :error ->
-          {Registers.set(registers, :r7, oob()), x}
+          {:panic, registers.r7, x}
 
         a == :error ->
-          {Registers.set(registers, :r7, huh()), x}
+          {:continue, huh(), x}
 
         true ->
-          {Registers.set(registers, :r7, ok()),
-           put_in(x, [:accumulation, :services, x.service], a)}
+          {:continue, ok(), put_in(x, [:accumulation, :services, x.service], a)}
       end
 
     %Result.Internal{
-      registers: registers_,
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: put_elem(context_pair, 0, x_)
+    }
+  end
+
+  @spec yield_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+          Result.Internal.t()
+  def yield_internal(registers, memory, {x, _y} = context_pair) do
+    o = registers.r7
+
+    h =
+      case Memory.read(memory, o, 32) do
+        {:ok, hash} -> hash
+        _ -> :error
+      end
+
+    {exit_reason, w7_, x_} =
+      cond do
+        h == :error ->
+          {:panic, registers.r7, x}
+
+        true ->
+          {:continue, ok(), %{x | accumulation_trie_result: h}}
+      end
+
+    %Result.Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
