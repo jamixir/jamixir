@@ -28,8 +28,9 @@ jobs:
           elixir-version: '1.17.2'
           otp-version: '27.0.1'
 
-      - name: Cache build dependencies
-        uses: actions/cache@v4
+      - name: Restore cached build
+        id: cache-build-restore
+        uses: actions/cache/restore@v4
         with:
           path: |
             _build
@@ -48,6 +49,17 @@ jobs:
           MIX_ENV=test mix compile
           MIX_ENV=full_test mix compile
 
+      - name: Save build cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            _build
+            deps
+            native
+          key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
+
+
       - name: Get latest test vectors commit hash
         id: get-vector-hash
         run: |
@@ -56,7 +68,7 @@ jobs:
 
       - name: Restore test vectors cache
         id: cache-vectors-restore
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ../jam-test-vectors
           key: test-vectors-${{ env.LATEST_HASH }}
@@ -70,8 +82,8 @@ jobs:
           git rev-parse HEAD > latest_commit.txt
           cd $GITHUB_WORKSPACE
 
-      - name: Save latest commit hash to cache
-        uses: actions/cache@v4
+      - name: Save latest commit hash to cache manually
+        uses: actions/cache/save@v4
         with:
           path: ../jam-test-vectors
           key: test-vectors-${{ env.LATEST_HASH }}
@@ -82,10 +94,7 @@ jobs:
 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
-        continue-on-error: true
-
       - name: Run full vector tests
-        if: ${{ job.status == 'success' }}
         env:
           MIX_ENV: full_test
         run: mix test --only full_vectors
