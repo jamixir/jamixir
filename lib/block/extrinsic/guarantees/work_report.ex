@@ -65,9 +65,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   # Formula (11.16) v0.6.0 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
+    a_bits = for a <- assurances, do: Assurance.core_bits(a)
+
     for c <- 0..(Constants.core_count() - 1),
-        Enum.sum(for(a <- assurances, bits = Assurance.core_bits(a), do: Enum.at(bits, c))) >
-          @threadhold do
+        Enum.sum(for(bits <- a_bits, do: elem(bits, c))) > @threadhold do
       case Enum.at(core_reports_intermediate_1, c) do
         nil -> nil
         cr -> cr.work_report

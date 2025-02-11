@@ -62,7 +62,7 @@ defmodule Block.Extrinsic.Assurance do
         bits = core_bits(assurance)
 
         Enum.all?(0..(Constants.core_count() - 1), fn c ->
-          case Enum.at(bits, c) do
+          case elem(bits, c) do
             0 -> true
             _ -> Enum.at(core_reports_intermediate, c) != nil
           end
@@ -145,6 +145,9 @@ defmodule Block.Extrinsic.Assurance do
   def json_mapping, do: %{hash: :anchor}
 
   def core_bits(%__MODULE__{bitfield: b}) do
-    Util.Merklization.bits(b) |> Enum.reverse() |> Enum.take(Constants.core_count())
+    Util.Merklization.bits(b)
+    |> Enum.reverse()
+    |> Enum.take(Constants.core_count())
+    |> List.to_tuple()
   end
 end
