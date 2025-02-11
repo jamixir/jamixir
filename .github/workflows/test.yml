@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
 
       - name: Setup Git for private deps
         env:
@@ -30,9 +28,8 @@ jobs:
           elixir-version: '1.17.2'
           otp-version: '27.0.1'
 
-      - name: Restore cached build
-        id: cache-build-restore
-        uses: actions/cache/restore@v4
+      - name: Cache build dependencies
+        uses: actions/cache@v4
         with:
           path: |
             _build
@@ -44,28 +41,13 @@ jobs:
             ${{ runner.os }}-mix-
 
       - name: Install dependencies
-        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         run: mix deps.get
 
-      - name: Compile dependencies and project
-        if: steps.cache-build-restore.outputs.cache-hit != 'true'
-        run: |
-          mix deps.compile
-          mix compile
-
-      - name: Save build cache
-        uses: actions/cache/save@v4
-        if: always()
-        with:
-          path: |
-            _build
-            deps
-            native
-          key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
+      - name: Compile
+        run: mix compile
 
       - name: Remove invalid test files
         run: find deps/x509/test/data/ -name "*.tools.ietf.org.cer" -delete || true
-  
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -89,34 +71,40 @@ jobs:
         with:
           name: build-artifacts
 
+      - name: Get latest test vectors commit hash
+        id: get-vector-hash
+        run: |
+          LATEST_HASH=$(git ls-remote https://github.com/davxy/jam-test-vectors.git refs/heads/polkajam-vectors | awk '{ print $1 }')
+          echo "LATEST_HASH=$LATEST_HASH" >> $GITHUB_ENV
+
       - name: Restore test vectors cache
         id: cache-vectors-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: ../jam-test-vectors
-          key: test-vectors-${{ hashFiles('../jam-test-vectors/.git/refs/heads/polkajam-vectors') }}
+          key: test-vectors-${{ env.LATEST_HASH }}
 
-      - name: Clone test vectors
+      - name: Clone test vectors if repo is updated
         if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         run: |
           cd ..
           git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git
+          cd jam-test-vectors
+          git rev-parse HEAD > latest_commit.txt
           cd $GITHUB_WORKSPACE
 
-      - name: Save test vectors cache
-        uses: actions/cache/save@v4
-        if: always()
+      - name: Save latest commit hash to cache
+        uses: actions/cache@v4
         with:
           path: ../jam-test-vectors
-          key: test-vectors-${{ hashFiles('../jam-test-vectors/.git/refs/heads/polkajam-vectors') }}
+          key: test-vectors-${{ env.LATEST_HASH }}
 
       - name: Run standard tests
-        run: mix test --exclude tiny_vectors
-
+        run: mix test --exclude tiny_vectors --exclude full_vectors 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
 
       - name: Run full vector tests
         env:
           MIX_ENV: full_test
-        run: mix test --only full_vectors
+        run: mix test --only full_vectors 
