@@ -81,7 +81,7 @@ defmodule PVM.Accumulate do
             Accumulate.transfer(gas, registers, memory, context)
 
           :eject ->
-            Accumulate.eject(gas, registers, memory, context)
+            Accumulate.eject(gas, registers, memory, context, timeslot)
 
           :query ->
             Accumulate.query(gas, registers, memory, context)
