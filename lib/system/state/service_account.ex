@@ -68,7 +68,7 @@ defmodule System.State.ServiceAccount do
     2 * length(Map.keys(l)) + length(Map.keys(s))
   end
 
-  # al ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
+  # ao ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
     Enum.sum(for {_h, z} <- Map.keys(l), do: 81 + z) +
       Enum.sum(for v <- Map.values(s), do: 32 + byte_size(v))
