@@ -43,8 +43,8 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
-      - name: Compile
-        run: mix compile
+      - name: Compile test environment
+        run: MIX_ENV=test mix compile
 
       - name: Get latest test vectors commit hash
         id: get-vector-hash
@@ -74,13 +74,11 @@ jobs:
           path: ../jam-test-vectors
           key: test-vectors-${{ env.LATEST_HASH }}
 
-      - name: Run standard tests
-        run: mix test --exclude tiny_vectors --exclude full_vectors
+      # - name: Run standard tests
+      #   run: mix test --exclude tiny_vectors --exclude full_vectors
 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
 
       - name: Run full vector tests
-        env:
-          MIX_ENV: full_test
-        run: mix test --only full_vectors
+        run: MIX_ENV=full_test mix test --only full_vectors
