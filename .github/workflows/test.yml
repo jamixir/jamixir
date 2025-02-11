@@ -43,8 +43,10 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
-      - name: Compile test environment
-        run: MIX_ENV=test mix compile
+      - name: Compile test and full_test environments
+        run: |
+          MIX_ENV=test mix compile
+          MIX_ENV=full_test mix compile
 
       - name: Get latest test vectors commit hash
         id: get-vector-hash
@@ -70,7 +72,6 @@ jobs:
 
       - name: Save latest commit hash to cache
         uses: actions/cache@v4
-        if: always()
         with:
           path: ../jam-test-vectors
           key: test-vectors-${{ env.LATEST_HASH }}
@@ -84,7 +85,7 @@ jobs:
         continue-on-error: true
 
       - name: Run full vector tests
-        if: success()
+        if: ${{ job.status == 'success' }}
         env:
           MIX_ENV: full_test
         run: mix test --only full_vectors
