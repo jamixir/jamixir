@@ -146,7 +146,9 @@ defmodule Block.Extrinsic.Assurance do
 
   def core_bits(%__MODULE__{bitfield: b}) do
     Util.Merklization.bits(b)
-    |> Enum.reverse()
+    |> Enum.chunk_every(8)
+    |> Enum.map(&Enum.reverse/1)
+    |> List.flatten()
     |> Enum.take(Constants.core_count())
     |> List.to_tuple()
   end
