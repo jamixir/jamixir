@@ -30,7 +30,7 @@ defmodule TestnetBlockImporterTest do
   end
 
   @ignore_fields [:accumulation_history, :recent_history, :safrole]
-  @safrole_path "./fallback"
+  @safrole_path "./data/fallback"
   @state_path "#{@safrole_path}/state_snapshots/"
   @block_path "#{@safrole_path}/blocks/"
   @genesis_path "./chainspecs/state_snapshots/"
