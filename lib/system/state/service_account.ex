@@ -175,7 +175,7 @@ defmodule System.State.ServiceAccount do
 
   def to_json_mapping do
     custom_map =
-      {:_custom,
+      {:_module,
        {:service,
         fn
           service ->
