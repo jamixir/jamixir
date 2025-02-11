@@ -80,7 +80,7 @@ jobs:
           git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git jam-test-vectors-cache
           cd jam-test-vectors-cache
           git rev-parse HEAD > latest_commit.txt
-          cd $GITHUB_WORKSPACE
+          cd ..
 
       - name: Save latest commit hash to cache manually
         uses: actions/cache/save@v4
