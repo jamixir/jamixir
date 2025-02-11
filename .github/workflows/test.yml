@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build and Compile
+  test:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -46,31 +46,6 @@ jobs:
       - name: Compile
         run: mix compile
 
-      - name: Remove invalid test files
-        run: find deps/x509/test/data/ -name "*.tools.ietf.org.cer" -delete || true
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            _build
-            deps
-            native
-
-  test:
-    name: Run Tests
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-
       - name: Get latest test vectors commit hash
         id: get-vector-hash
         run: |
@@ -100,11 +75,12 @@ jobs:
           key: test-vectors-${{ env.LATEST_HASH }}
 
       - name: Run standard tests
-        run: mix test --exclude tiny_vectors --exclude full_vectors 
+        run: mix test --exclude tiny_vectors --exclude full_vectors
+
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
 
       - name: Run full vector tests
         env:
           MIX_ENV: full_test
-        run: mix test --only full_vectors 
+        run: mix test --only full_vectors
