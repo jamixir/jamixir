@@ -67,14 +67,22 @@ defmodule PVM.Host.Accumulate do
     )
   end
 
-  def quit(gas, registers, memory, context_pair) do
+  def eject(gas, registers, memory, context_pair, timeslot) do
     with_gas(
       Result,
       {gas, registers, memory, context_pair},
-      &quit_internal/4,
-      [gas]
+      &eject_internal/4,
+      [timeslot]
     )
   end
+
+  def query(gas, registers, memory, context_pair),
+    do:
+      with_gas(
+        Result,
+        {gas, registers, memory, context_pair},
+        &query_internal/3
+      )
 
   def solicit(gas, registers, memory, context_pair, timeslot) do
     with_gas(
@@ -93,4 +101,12 @@ defmodule PVM.Host.Accumulate do
       [timeslot]
     )
   end
+
+  def yield(gas, registers, memory, context_pair),
+    do:
+      with_gas(
+        Result,
+        {gas, registers, memory, context_pair},
+        &yield_internal/3
+      )
 end
