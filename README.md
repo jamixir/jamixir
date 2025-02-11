@@ -27,7 +27,7 @@ mix test
 
 ### How to Run Official Test Vectors
 ```
-mix test --only test_vectors
+MIX_ENV=full_test mix test --only test_vectors
 ```
 
 ### How to generate test blocks
