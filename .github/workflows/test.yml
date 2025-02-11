@@ -70,14 +70,14 @@ jobs:
         id: cache-vectors-restore
         uses: actions/cache/restore@v4
         with:
-          path: ../jam-test-vectors
+          path: jam-test-vectors-cache
           key: test-vectors-${{ env.LATEST_HASH }}
 
       - name: Clone test vectors if repo is updated
         if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         run: |
           cd ..
-          git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git
+          git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git jam-test-vectors-cache
           cd jam-test-vectors
           git rev-parse HEAD > latest_commit.txt
           cd $GITHUB_WORKSPACE
@@ -85,8 +85,11 @@ jobs:
       - name: Save latest commit hash to cache manually
         uses: actions/cache/save@v4
         with:
-          path: ../jam-test-vectors
+          path: jam-test-vectors-cache
           key: test-vectors-${{ env.LATEST_HASH }}
+      
+      - name: Move cached test vectors to expected location
+        run: mv jam-test-vectors-cache ../jam-test-vectors
 
       - name: Run standard tests
         run: mix test --exclude tiny_vectors --exclude full_vectors
