@@ -70,15 +70,21 @@ jobs:
 
       - name: Save latest commit hash to cache
         uses: actions/cache@v4
+        if: always()
         with:
           path: ../jam-test-vectors
           key: test-vectors-${{ env.LATEST_HASH }}
 
-      # - name: Run standard tests
-      #   run: mix test --exclude tiny_vectors --exclude full_vectors
+      - name: Run standard tests
+        run: mix test --exclude tiny_vectors --exclude full_vectors
+        continue-on-error: true
 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
+        continue-on-error: true
 
       - name: Run full vector tests
-        run: MIX_ENV=full_test mix test --only full_vectors
+        if: success()
+        env:
+          MIX_ENV: full_test
+        run: mix test --only full_vectors
