@@ -1,6 +1,5 @@
 name: Elixir Tests
 
-
 on:
   pull_request:
     branches:
@@ -9,12 +8,10 @@ on:
     branches:
       - main
 
-
 jobs:
-  test:
-    name: Run Tests
+  build:
+    name: Build and Compile
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,5 +63,56 @@ jobs:
             native
           key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
 
-      - name: Run tests with full_vectors
-        run: mix test --include full_vectors  --timeout 300000
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            _build
+            deps
+            native
+
+  test:
+    name: Run Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Restore test vectors cache
+        id: cache-vectors-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ../jam-test-vectors
+          key: test-vectors-${{ hashFiles('../jam-test-vectors/.git/refs/heads/polkajam-vectors') }}
+
+      - name: Clone test vectors
+        if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
+        run: |
+          cd ..
+          git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git
+          cd $GITHUB_WORKSPACE
+
+      - name: Save test vectors cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ../jam-test-vectors
+          key: test-vectors-${{ hashFiles('../jam-test-vectors/.git/refs/heads/polkajam-vectors') }}
+
+      - name: Run standard tests
+        run: mix test --exclude tiny_vectors
+
+      - name: Run tiny vector tests
+        run: mix test --only tiny_vectors
+
+      - name: Run full vector tests
+        env:
+          MIX_ENV: full_test
+        run: mix test --only full_vectors
