@@ -119,7 +119,12 @@ defmodule Block.Header do
     else
       case Storage.get(header.parent_hash) do
         nil ->
+          # if header.parent_hash == Hash.zero() do
+          #   :ok
+          # else
           {:error, :no_parent}
+
+        # end
 
         parent_header ->
           if parent_header.timeslot < header.timeslot do
