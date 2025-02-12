@@ -2,30 +2,13 @@ defmodule TestnetBlockImporterTest do
   alias Block.Header
   alias IO.ANSI
   alias System.State
+  alias Util.Export
   import TestVectorUtil
   use ExUnit.Case
   require Logger
 
   setup_all do
     RingVrf.init_ring_context()
-
-    # Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-
-    Application.put_env(:jamixir, :original_modules, [
-      System.State.Safrole,
-      :validate,
-      System.Validators.Safrole,
-      Block.Extrinsic.TicketProof,
-      Util.Collections,
-      Util.Time
-    ])
-
-    on_exit(fn ->
-      # Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.delete_env(:jamixir, Constants)
-      Application.delete_env(:jamixir, :original_modules)
-    end)
-
     :ok
   end
 
@@ -55,6 +38,7 @@ defmodule TestnetBlockImporterTest do
       Enum.reduce(first_epoch..last_epoch, state, fn epoch, state ->
         Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
           Logger.info("Processing block #{epoch}:#{timeslot}...")
+          # Export.export(state, "priv/")
           timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
           block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", @block_path, @user, @repo)
@@ -131,20 +115,5 @@ defmodule TestnetBlockImporterTest do
     {:ok, bin} = Base.decode16(expected_hex, case: :lower)
 
     assert Header.unsigned_encode(header) == bin
-
-    # assert Hash.keccak_256(bin) ==
-    #          JsonDecoder.from_json(
-    #            "0x4cdb983b47b88e59ec9e0580eef41b99634b0b1636fc3642d6818bc81a9a3ae4"
-    #          )
-
-    # pool = %EntropyPool{n3: header.vrf_signature}
-
-    # assert :ok =
-    #          RingVrf.ietf_vrf_verify(
-    #            key,
-    #            HeaderSeal.construct_seal_context(key, pool),
-    #            Header.unsigned_encode(header),
-    #            header.block_seal
-    #          )
   end
 end
