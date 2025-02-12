@@ -170,30 +170,30 @@ defmodule PVM.Host.Refine.Internal do
     p = registers.r7
     z = min(registers.r8, Constants.segment_size())
 
-    # Try to read memory segment
     x =
       case PVM.Memory.read(memory, p, z) do
         {:ok, data} -> Utils.pad_binary_right(data, Constants.segment_size())
         _ -> :error
       end
 
-    # Update register 7 and export segments based on conditions
-    {registers_, export_segments_} =
+    {exit_reason, w7_, export_segments_} =
       cond do
-        # Memory read failed
         x == :error ->
-          {Registers.set(registers, :r7, oob()), e}
+          {:panic, registers.r7, e}
 
-        # Export segments would exceed max size
         length(e) + export_offset >= Constants.max_manifest_size() ->
-          {Registers.set(registers, :r7, full()), e}
+          {:continue, full(), e}
 
-        # Success case - append to export segments and update register
         true ->
-          {Registers.set(registers, :r7, length(e) + export_offset), e ++ [x]}
+          {:continue, length(e) + export_offset, e ++ [x]}
       end
 
-    %Internal{registers: registers_, memory: memory, context: %{context | e: export_segments_}}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: %{context | e: export_segments_}
+    }
   end
 
   @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
