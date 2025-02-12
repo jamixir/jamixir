@@ -51,7 +51,7 @@ jobs:
 
       - name: Save build cache
         uses: actions/cache/save@v4
-        if: always()
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         with:
           path: |
             _build
