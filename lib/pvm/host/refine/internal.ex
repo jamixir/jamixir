@@ -347,33 +347,44 @@ defmodule PVM.Host.Refine.Internal do
   def void_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
-    {registers_, context_} =
-      cond do
-        p + c >= 0x1_0000_0000 ->
-          {Registers.set(registers, :r7, oob()), context}
+    u =
+      case Map.has_key?(m, n) do
+        true -> Map.get(m, n).memory
+        false -> :error
+      end
 
-        not Map.has_key?(m, n) ->
-          {Registers.set(registers, :r7, who()), context}
+    u_ =
+      case u do
+        :error ->
+          :error
+
+        _ ->
+          Memory.set_access_by_page(u, p, c, nil)
+          |> elem(1)
+          |> Memory.write(p * zp, <<0::size(c * zp)>>)
+          |> elem(1)
+      end
+
+    {w7_, m_} =
+      cond do
+        u == :error ->
+          {who(), m}
+
+        p < 16 or p + c > 0x1_0000_0000 / zp or not Memory.check_pages_access?(u, p, c, :read) ->
+          {huh(), m}
 
         true ->
           machine = Map.get(m, n)
-
-          case Memory.check_pages_access?(machine.memory, p, c, :read) do
-            false ->
-              {Registers.set(registers, :r7, oob()), context}
-
-            true ->
-              u_ =
-                Memory.write(machine.memory, p * zp, <<0::size(c * zp)>>)
-                |> elem(1)
-                |> Memory.set_access_by_page(p, c, nil)
-
-              {Registers.set(registers, :r7, ok()),
-               %{context | m: Map.put(m, n, %{machine | memory: u_})}}
-          end
+          machine_ = %{machine | memory: u_}
+          m_ = Map.put(m, n, machine_)
+          {ok(), m_}
       end
 
-    %Internal{registers: registers_, memory: memory, context: context_}
+    %Internal{
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: %{context | m: m_}
+    }
   end
 
   @spec invoke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
