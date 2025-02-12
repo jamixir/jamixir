@@ -1,5 +1,6 @@
 # Formula (B.22) v0.6.0
 defmodule PVM.Host.Refine.Internal do
+  alias Block.Extrinsic.WorkPackage
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
   alias Util.Hash
@@ -30,69 +31,138 @@ defmodule PVM.Host.Refine.Internal do
           nil
       end
 
-    [ho, bo, bz] = Registers.get(registers, [8, 9, 10])
+    [h, o] = Registers.get(registers, [8, 9])
 
-    h =
-      with {:ok, mem_segment} <- PVM.Memory.read(memory, ho, 32) do
-        Hash.default(mem_segment)
+    v =
+      with {:ok, hash} <- PVM.Memory.read(memory, h, 32) do
+        case a do
+          nil -> nil
+          _ -> ServiceAccount.historical_lookup(a, timeslot, hash)
+        end
       else
         _ -> :error
       end
 
-    v =
-      if a != nil and h != :error do
-        ServiceAccount.historical_lookup(a, timeslot, h)
-      else
-        nil
-      end
+    f = min(registers.r10, byte_size(v))
+    l = min(registers.r11, byte_size(v) - f)
+    is_writable = Memory.check_range_access?(memory, o, l, :write)
 
-    is_writable = Memory.check_range_access?(memory, bo, bz, :write)
-
-    memory_ =
-      if v != nil and is_writable do
-        write_value = binary_part(v, 0, min(byte_size(v), bz))
-        PVM.Memory.write(memory, bo, write_value) |> elem(1)
-      else
-        memory
-      end
-
-    w7_ =
+    {exit_reason, w7_, memory_} =
       cond do
-        !is_writable or h == :error -> oob()
-        v == nil -> none()
-        true -> byte_size(v)
+        v == :error or not is_writable ->
+          {:panic, registers.r7, memory}
+
+        v == nil ->
+          {:continue, none(), memory}
+
+        true ->
+          {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l)) |> elem(1)}
       end
 
-    registers_ = Registers.set(registers, :r7, w7_)
-    %Internal{registers: registers_, memory: memory_, context: context}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory_,
+      context: context
+    }
   end
 
-  @spec import_internal(Registers.t(), Memory.t(), Context.t(), [binary()]) :: Internal.t()
-  def import_internal(registers, memory, context, import_segments) do
-    w7 = registers.r7
-    v = if w7 < length(import_segments), do: Enum.at(import_segments, w7), else: nil
-    o = registers.r8
-    l = min(registers.r9, Constants.segment_size())
+  # see here about where the preimages comes from , it is not in the GP
+  # but knowledge of it is assume,
+  # this is a repeating pattern in refine logic (in-core, off-chain)
+  # it is up to us to figure out what data/maps we are to store and where/when to store it
+  # https://matrix.to/#/!ddsEwXlCWnreEGuqXZ:polkadot.io/$2BY5KB1iDMI3RxikTBLj0iMYJbf7L5EhZjXl0xRKlBw?via=polkadot.io&via=matrix.org&via=parity.io
+  @spec fetch_internal(
+          Registers.t(),
+          Memory.t(),
+          Context.t(),
+          non_neg_integer(),
+          WorkPackage.t(),
+          binary(),
+          list(list(binary())),
+          %{{Types.hash(), non_neg_integer()} => binary()}
+        ) :: Internal.t()
+  def fetch_internal(
+        registers,
+        memory,
+        context,
+        work_item_index,
+        work_package,
+        authorizer_output,
+        import_segments,
+        preimages
+      ) do
+    [w9, w10, w11, w12] = Registers.get(registers, [9, 10, 11, 12])
+
+    v =
+      cond do
+        w10 == 0 ->
+          e(work_package)
+
+        w10 == 1 ->
+          authorizer_output
+
+        w10 == 2 and w11 < length(work_package.work_items) ->
+          get_in(work_package, [:work_items, w11, :payload])
+
+        w10 == 3 and w11 < length(work_package.work_items) and
+          w12 < length(get_in(work_package, [:work_items, w11, :extrinsic])) and
+            Map.has_key?(preimages, get_in(work_package, [:work_items, w11, :extrinsic, w12])) ->
+          Map.get(preimages, get_in(work_package, [:work_items, w11, :extrinsic, w12]))
+
+        w10 == 4 and
+          w11 < length(get_in(work_package, [:work_items, work_item_index, :extrinsic])) and
+            Map.has_key?(
+              preimages,
+              get_in(work_package, [:work_items, work_item_index, :extrinsic, w11])
+            ) ->
+          Map.get(
+            preimages,
+            get_in(work_package, [:work_items, work_item_index, :extrinsic, w11])
+          )
+
+        w10 == 5 and w11 < length(import_segments) and
+            w12 < length(Enum.at(import_segments, w11)) ->
+          Enum.at(import_segments, w11) |> Enum.at(w12)
+
+        w10 == 6 and w11 < length(Enum.at(import_segments, work_item_index)) ->
+          Enum.at(import_segments, work_item_index) |> Enum.at(w11)
+
+        true ->
+          nil
+      end
+
+    o = registers.r7
+    f = min(registers.r8, byte_size(v))
+    l = min(registers.r9, byte_size(v) - f)
 
     write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
     memory_ =
       if v != nil and write_check do
-        PVM.Memory.write(memory, o, v) |> elem(1)
+        PVM.Memory.write(memory, o, binary_part(v, f, l)) |> elem(1)
       else
         memory
       end
 
-    # Update register 7 with result
-    w7_ =
+    {exit_reason, w7_} =
       cond do
-        !write_check -> oob()
-        v == nil -> none()
-        true -> ok()
+        !write_check or (w9 == 5 and not PVM.Memory.check_range_access?(memory, w10, 32, :read)) ->
+          {:panic, registers.r7}
+
+        v == nil ->
+          {:continue, none()}
+
+        true ->
+          {:continue, byte_size(v)}
       end
 
-    registers_ = Registers.set(registers, :r7, w7_)
-    %Internal{registers: registers_, memory: memory_, context: context}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory_,
+      context: context
+    }
   end
 
   @spec export_internal(Registers.t(), Memory.t(), Context.t(), non_neg_integer()) :: Internal.t()
