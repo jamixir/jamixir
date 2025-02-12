@@ -203,14 +203,20 @@ defmodule BlockTest do
 
       # choose the first timeslot that has a valid key
       t =
-        Enum.reduce_while(100..1000, nil, fn i, _ ->
+        Enum.reduce_while(100..200, nil, fn i, _ ->
           h = %Header{timeslot: i}
           {pending_, _, _, _} = RotateKeys.rotate_keys(h, state, state.judgements)
           h = put_in(h.epoch_mark, Block.choose_epoch_marker(i, state, pending_))
 
           case Block.get_seal_components(h, state) do
-            %{pubkey: ^pub} -> {:halt, i}
-            _ -> {:cont, nil}
+            %{pubkey: p} when p == pub ->
+              {:halt, i}
+
+            %{pubkey: p} when p != pub ->
+              {:cont, i}
+
+            _ ->
+              {:cont, i}
           end
         end)
 
