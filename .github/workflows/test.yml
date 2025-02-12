@@ -35,7 +35,7 @@ jobs:
           path: |
             _build
             deps
-            native
+            priv/native
           key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-
@@ -51,7 +51,7 @@ jobs:
 
       - name: Save build cache
         uses: actions/cache/save@v4
-        if: always()
+        if: steps.cache-build-restore.outputs.cache-hit != 'true'
         with:
           path: |
             _build
@@ -79,7 +79,7 @@ jobs:
           git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git jam-test-vectors-cache
           git -C jam-test-vectors-cache rev-parse HEAD > jam-test-vectors-cache/latest_commit.txt
 
-      - name: Save latest commit hash to cache manually
+      - name: cache test vectors repo if it's updated
         if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
