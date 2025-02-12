@@ -15,7 +15,8 @@ defmodule Jamixir.MixProject do
         "coveralls.detail": :test,
         "coveralls.post": :test,
         "coveralls.html": :test
-      ]
+      ],
+      aliases: aliases()
     ]
   end
 
@@ -52,4 +53,11 @@ defmodule Jamixir.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors"]
   defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors"]
   defp elixirc_paths(_), do: ["lib"]
+
+  def aliases do
+    [
+      "test.full": "cmd MIX_ENV=full_test mix test --only full_vectors",
+      "test.tiny": "cmd mix test --only tiny_vectors"
+    ]
+  end
 end
