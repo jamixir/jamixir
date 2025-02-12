@@ -1,5 +1,4 @@
 name: Jam Test Vectors
-
 on:
   pull_request:
     branches:
