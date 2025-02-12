@@ -41,6 +41,12 @@ jobs:
             ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-
             ${{ runner.os }}-mix-
 
+      - name: Debug cache outputs
+        run: |
+          echo "Cache restore hit: ${{ steps.cache-build-restore.outputs.cache-hit }}"
+          echo "All outputs from restore step:"
+          echo "${{ toJSON(steps.cache-build-restore.outputs) }}"
+
       - name: Install dependencies
         run: mix deps.get
 
