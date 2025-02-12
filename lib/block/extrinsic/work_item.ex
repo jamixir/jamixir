@@ -8,6 +8,7 @@ defmodule Block.Extrinsic.WorkItem do
   use Codec.Encoder
   use Codec.Decoder
   use Sizes
+  use AccessStruct
 
   @type t :: %__MODULE__{
           # s

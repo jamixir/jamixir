@@ -16,6 +16,7 @@ defmodule System.State.ServiceAccount do
   alias System.State.ServiceAccount
   alias Util.Hash
   use Codec.Encoder
+  use AccessStruct
   import Codec.JsonEncoder
 
   @type t :: %__MODULE__{
@@ -42,25 +43,6 @@ defmodule System.State.ServiceAccount do
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0
-
-  @behaviour Access
-
-  @impl Access
-  def fetch(%__MODULE__{} = sa, key) when is_atom(key) do
-    Map.fetch(Map.from_struct(sa), key)
-  end
-
-  @impl Access
-  def get_and_update(%__MODULE__{} = sa, key, fun) when is_atom(key) do
-    {get, update} = fun.(Map.get(sa, key))
-    {get, %{sa | key => update}}
-  end
-
-  @impl Access
-  def pop(%__MODULE__{} = sa, key) when is_atom(key) do
-    {value, new_map} = Map.pop(Map.from_struct(sa), key)
-    {value, struct!(ServiceAccount, new_map)}
-  end
 
   # Formula (9.8) v0.6.0
   # ai ≡ 2⋅∣al∣ + ∣as∣

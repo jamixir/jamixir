@@ -12,25 +12,7 @@ defmodule System.State.Accumulation do
   alias Util.Collections
 
   use MapUnion
-
-  @behaviour Access
-
-  @impl Access
-  def fetch(container, key) do
-    Map.fetch(Map.from_struct(container), key)
-  end
-
-  @impl Access
-  def get_and_update(container, key, fun) do
-    {get, update} = fun.(Map.get(container, key))
-    {get, Map.put(container, key, update)}
-  end
-
-  @impl Access
-  def pop(container, key) do
-    value = Map.get(container, key)
-    {value, Map.put(container, key, nil)}
-  end
+  use AccessStruct
 
   @callback do_single_accumulation(t(), list(), map(), non_neg_integer()) ::
               AccumulationResult.t()

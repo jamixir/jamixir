@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.WorkPackage do
   alias Util.Hash
   use Codec.Encoder
   use Codec.Decoder
-
+  use AccessStruct
   @type t :: %__MODULE__{
           # j
           authorization_token: binary(),

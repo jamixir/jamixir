@@ -1,7 +1,7 @@
 # Formula (B.6) v0.6.1
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
-
+  use AccessStruct
   @type t :: %__MODULE__{
           # s: Service index
           service: non_neg_integer(),
@@ -34,25 +34,5 @@ defmodule PVM.Host.Accumulate.Context do
           PVM.Host.Accumulate.Context.t()
   def update_accumulating_service(x, path, value) do
     put_in(x, [:accumulation, :services, x.service] ++ path, value)
-  end
-
-  @behaviour Access
-
-  @impl Access
-  def fetch(container, key) do
-    Map.fetch(Map.from_struct(container), key)
-  end
-
-  @impl Access
-  def get_and_update(container, key, fun) do
-    value = Map.get(container, key)
-    {get, update} = fun.(value)
-    {get, Map.put(container, key, update)}
-  end
-
-  @impl Access
-  def pop(container, key) do
-    value = Map.get(container, key)
-    {value, Map.put(container, key, nil)}
   end
 end
