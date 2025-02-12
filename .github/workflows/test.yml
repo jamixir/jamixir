@@ -41,13 +41,6 @@ jobs:
             ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-
             ${{ runner.os }}-mix-
 
-      - name: Debug cache outputs
-        run: |
-          echo "Cache restore hit: ${{ steps.cache-build-restore.outputs.cache-hit }}"
-          echo "All outputs from restore step:"
-          echo "${{ toJSON(steps.cache-build-restore.outputs) }}"
-          echo "Current key being used: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}"
-
       - name: Install dependencies
         run: mix deps.get
 
@@ -58,7 +51,7 @@ jobs:
 
       - name: Save build cache
         uses: actions/cache/save@v4
-        if: steps.cache-build-restore.outputs.cache-hit != 'true'
+        if: always()
         with:
           path: |
             _build
@@ -87,6 +80,7 @@ jobs:
           git -C jam-test-vectors-cache rev-parse HEAD > jam-test-vectors-cache/latest_commit.txt
 
       - name: Save latest commit hash to cache manually
+        if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: jam-test-vectors-cache
