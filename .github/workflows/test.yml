@@ -46,6 +46,7 @@ jobs:
           echo "Cache restore hit: ${{ steps.cache-build-restore.outputs.cache-hit }}"
           echo "All outputs from restore step:"
           echo "${{ toJSON(steps.cache-build-restore.outputs) }}"
+          echo "Current key being used: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}"
 
       - name: Install dependencies
         run: mix deps.get
