@@ -56,7 +56,7 @@ jobs:
           path: |
             _build
             deps
-            native
+            priv/native
           key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
 
 
