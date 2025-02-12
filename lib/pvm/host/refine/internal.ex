@@ -238,79 +238,66 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec peek_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def peek_internal(registers, memory, %Context{m: m} = context) do
-    # Extract registers[7..11] for [n, o, s, z]
     [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
 
-    # Get machine state if n exists in m
-    data =
+    {exit_reason, w7_, memory_} =
       cond do
-        not Map.has_key?(m, n) ->
-          nil
+        !PVM.Memory.check_range_access?(memory, o, z, :write) ->
+          {:panic, registers.r7, memory}
+
+        !Map.has_key?(m, n) ->
+          {:continue, who(), memory}
+
+        !PVM.Memory.check_range_access?(Map.get(m, n).memory, s, z, :read) ->
+          {:continue, oob(), memory}
 
         true ->
-          %Integrated{memory: u} = Map.get(m, n)
-          # Try to read from machine memory
-          case {Memory.read(u, s, z), Memory.check_range_access?(memory, o, z, :write)} do
-            {{:ok, data}, true} -> data
-            _ -> :error
-          end
+          data = Memory.read(Map.get(m, n).memory, s, z) |> elem(1)
+          memory_ = Memory.write(memory, o, data) |> elem(1)
+          {:continue, ok(), memory_}
       end
 
-    # Update registers and memory based on conditions
-    {registers_, memory_} =
-      case data do
-        :error ->
-          {Registers.set(registers, :r7, oob()), memory}
-
-        nil ->
-          {Registers.set(registers, :r7, who()), memory}
-
-        s ->
-          {:ok, new_memory} = Memory.write(memory, o, s)
-          {Registers.set(registers, :r7, ok()), new_memory}
-      end
-
-    %Internal{registers: registers_, memory: memory_, context: context}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory_,
+      context: context
+    }
   end
 
   @spec poke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def poke_internal(registers, memory, %Context{m: m} = context) do
-    # Extract registers[7..11] for [n, s, o, z]
     [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
 
-    # Get source data if memory access is valid
-    s =
+    {exit_reason, w7_, m_} =
       cond do
-        not Map.has_key?(m, n) ->
-          nil
+        !PVM.Memory.check_range_access?(memory, s, z, :read) ->
+          {:panic, registers.r7, m}
+
+        !Map.has_key?(m, n) ->
+          {:continue, who(), m}
+
+        !PVM.Memory.check_range_access?(Map.get(m, n).memory, o, z, :write) ->
+          {:continue, oob(), m}
 
         true ->
-          %Integrated{memory: u} = Map.get(m, n)
-          # Check both read from memory and write to machine memory
-          case {Memory.read(memory, s, z), Memory.check_range_access?(u, o, z, :write)} do
-            # Both read and write permissions OK
-            {{:ok, data}, true} -> data
-            # Either read or write failed
-            _ -> :error
-          end
-      end
-
-    # Update registers and machine memory based on conditions
-    {registers_, context_} =
-      case s do
-        :error ->
-          {Registers.set(registers, :r7, oob()), context}
-
-        nil ->
-          {Registers.set(registers, :r7, who()), context}
-
-        s ->
+          data = Memory.read(memory, s, z) |> elem(1)
           machine = Map.get(m, n)
-          machine_ = %{machine | memory: Memory.write(machine.memory, o, s) |> elem(1)}
-          {Registers.set(registers, :r7, ok()), %{context | m: Map.put(m, n, machine_)}}
+
+          machine_ = %{
+            machine
+            | memory: Memory.write(machine.memory, o, data) |> elem(1)
+          }
+
+          {:continue, ok(), %{m | n => machine_}}
       end
 
-    %Internal{registers: registers_, memory: memory, context: context_}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: %{context | m: m_}
+    }
   end
 
   @spec zero_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
