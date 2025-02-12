@@ -3,12 +3,14 @@ defmodule PVM.Host.Refine.Result.Internal do
   alias PVM.Host.Refine.Context
 
   @type t() :: %__MODULE__{
+          exit_reason: :continue | :out_of_gas | :panic,
           registers: Registers.t(),
           memory: Memory.t(),
           context: Context.t()
         }
 
   defstruct [
+    :exit_reason,
     :registers,
     :memory,
     :context
@@ -39,7 +41,8 @@ defmodule PVM.Host.Refine.Result do
   def new(%__MODULE__{} = self, %Internal{} = internal) do
     %__MODULE__{
       self
-      | registers: internal.registers,
+      | exit_reason: internal.exit_reason,
+        registers: internal.registers,
         memory: internal.memory,
         context: internal.context
     }
