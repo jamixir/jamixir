@@ -198,7 +198,6 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def machine_internal(registers, memory, %Context{m: m} = context) do
-    # Extract registers[7..10] for [p0, pz, i]
     [p0, pz, i] = Registers.get(registers, [7, 8, 9])
 
     p =
@@ -207,7 +206,6 @@ defmodule PVM.Host.Refine.Internal do
         {:error, _} -> :error
       end
 
-    # Create empty machine state
     u = %Memory{} |> Memory.set_default_access(nil)
 
     # Find next available machine ID (one below min of existing keys)
@@ -219,24 +217,23 @@ defmodule PVM.Host.Refine.Internal do
         if min_id > 0, do: min_id - 1, else: nil
       end
 
-    # Update register 7 and memory based on conditions
-    {registers_, context_} =
+    {exit_reason, w7_, context_} =
       cond do
         p == :error ->
-          # Invalid memory access
-          {Registers.set(registers, :r7, oob()), context}
-
-        n == nil ->
-          # No available machine IDs
-          {Registers.set(registers, :r7, oob()), context}
+          {:panic, registers.r7, context}
 
         true ->
           # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
           machine = %Integrated{program: p, memory: u, counter: i}
-          {Registers.set(registers, :r7, n), %{context | m: Map.put(m, n, machine)}}
+          {:continue, n, %{context | m: Map.put(m, n, machine)}}
       end
 
-    %Internal{registers: registers_, memory: memory, context: context_}
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: context_
+    }
   end
 
   @spec peek_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
