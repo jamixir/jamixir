@@ -1,4 +1,4 @@
-name: Elixir Tests
+name: Jam Test Vectors
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Build and Test
+    name: Build and run test vectors
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -87,10 +87,6 @@ jobs:
       
       - name: Move cached test vectors to expected location
         run: mv jam-test-vectors-cache ../jam-test-vectors
-
-      - name: Run standard tests
-        run: mix test --exclude tiny_vectors --exclude full_vectors
-        continue-on-error: true
 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
