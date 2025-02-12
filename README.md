@@ -27,7 +27,8 @@ mix test
 
 ### How to Run Official Test Vectors
 ```
-mix test --only test_vectors
+mix test.tiny  # Runs only tiny size offical test vectors
+mix test.full  # Runs the full size officai test vectors 
 ```
 
 ### How to generate test blocks
