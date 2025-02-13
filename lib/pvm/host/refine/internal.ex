@@ -389,92 +389,94 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec invoke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def invoke_internal(registers, memory, %Context{m: m} = context) do
-    # Extract registers and validate initial conditions
+    [n, o] = Registers.get(registers, [7, 8])
 
-    case validate_invoke_params(registers, memory) do
-      {:error, _} ->
-        %Internal{
-          registers: Registers.set(registers, :r7, oob()),
-          memory: memory,
-          context: context
-        }
+    {g, w} = read_invoke_params(memory, o)
 
-      {:ok, {n, o, gas_internal, vm_registers}} ->
-        {registers_, memory_, context_} =
+    {exit_reason, w7_, w8_, memory_, m_} =
+      case g do
+        :error ->
+          {:panic, registers.r7, registers.r8, memory, m}
+
+        gas ->
           case Map.get(m, n) do
             nil ->
-              {Registers.set(registers, :r7, who()), memory, context}
+              {:continue, who(), registers.r8, memory, m}
 
             machine ->
-              %Integrated{counter: i, memory: u, program: p} = machine
+              %{program: p, memory: u, counter: i} = machine
 
-              vm_state = %PVM.State{
-                counter: i,
-                gas: gas_internal,
-                registers: vm_registers,
-                memory: u
-              }
+              {internal_exit_reason,
+               %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
+                PVM.VM.execute(p, %PVM.State{
+                  counter: i,
+                  gas: gas,
+                  registers: w,
+                  memory: u
+                })
 
-              # Execute the VM
-              {exit_reason, %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
-                PVM.VM.execute(p, vm_state)
+              write_value =
+                <<gas_::64-little>> <>
+                  for w <- Registers.get(w_, Enum.to_list(0..12)),
+                      into: <<>>,
+                      do: <<w::64-little>>
 
-              # gas_ and registers_ go into output memory
-              w_list = Registers.get(w_, Enum.to_list(0..12))
-              write_value = e_le(gas_, 8) <> (w_list |> Enum.map(&e_le(&1, 4)) |> Enum.join())
-              {:ok, memory_} = Memory.write(memory, o, write_value)
+              memory_ = Memory.write(memory, o, write_value)
 
-              # post execution memory goes into machine (in context)
               machine_ = %{
                 machine
                 | memory: u_,
                   counter:
-                    case exit_reason do
+                    case internal_exit_reason do
                       {:ecall, _} -> i_ + 1
                       _ -> i_
                     end
               }
 
-              context_ = %{context | m: Map.put(m, n, machine_)}
+              m_ = Map.put(m, n, machine_)
 
-              {w7_, w8_} =
-                case exit_reason do
-                  {:ecall, h} -> {host(), h}
-                  {:fault, x} -> {fault(), x}
-                  :out_of_gas -> {oog(), o}
-                  :panic -> {panic(), o}
-                  :halt -> {halt(), o}
-                  :continue -> {ok(), o}
-                end
+              case internal_exit_reason do
+                {:ecall, host_call_id} ->
+                  {:continue, host(), host_call_id, memory_, m_}
 
-              {Registers.set(registers, %{r7: w7_, r8: w8_}), memory_, context_}
+                {:fault, fault_address} ->
+                  {:continue, fault(), fault_address, memory_, m_}
+
+                :out_of_gas ->
+                  {:continue, oog(), registers.r8, memory_, m_}
+
+                :panic ->
+                  {:continue, panic(), registers.r8, memory_, m_}
+
+                :halt ->
+                  {:continue, halt(), registers.r8, memory_, m_}
+              end
           end
+      end
 
-        %Internal{registers: registers_, memory: memory_, context: context_}
-    end
+    %Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, %{r7: w7_, r8: w8_}),
+      memory: memory_,
+      context: %{context | m: m_}
+    }
   end
 
-  defp validate_invoke_params(registers, memory) do
-    with [n, o] <- Registers.get(registers, [7, 8]),
-         # Check if memory range is writable
-         true <- Memory.check_range_access?(memory, o, 60, :write),
-         # Read gas and register values
-         {:ok, <<gas::64-little>>} <- Memory.read(memory, o, 8),
-         {:ok, register_bytes} <- Memory.read(memory, o + 8, 13 * 4) do
-      # Convert register values to a Registers struct in one pass
-      vm_registers =
-        register_bytes
-        |> :binary.bin_to_list()
-        |> Enum.chunk_every(4)
-        |> Enum.with_index()
-        |> Enum.into(%{}, fn {bytes, index} ->
-          {index, de_le(:binary.list_to_bin(bytes), 4)}
-        end)
-        |> then(&struct(Registers, &1))
+  @spec read_invoke_params(Memory.t(), non_neg_integer()) ::
+          {non_neg_integer(), Registers.t()} | {:error, :error}
+  defp read_invoke_params(memory, o) do
+    if Memory.check_range_access?(memory, o, 112, :write) do
+      <<g::64-little, rest::binary>> = Memory.read(memory, o, 112) |> elem(1)
 
-      {:ok, {n, o, gas, vm_registers}}
+      values =
+        for {chunk, index} <- Enum.with_index(for <<chunk::64-little <- rest>>, do: chunk),
+            into: %{},
+            do: {index, chunk}
+
+      w = PVM.Registers.set(%PVM.Registers{}, values)
+      {g, w}
     else
-      _ -> {:error, :invalid_params}
+      {:error, :error}
     end
   end
 
