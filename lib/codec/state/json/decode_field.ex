@@ -63,15 +63,6 @@ defmodule Codec.State.Json.DecodeField do
   def decode_field(:xi, value),
     do: [{:accumulation_history, Enum.map(value, &MapSet.new(JsonDecoder.from_json(&1)))}]
 
-  # do: [
-  #   {:accumulation_history,
-  #    Enum.map(
-  #      value,
-  #      # &MapSet.new(JsonDecoder.from_json(&1))
-  #      fn _ -> MapSet.new([]) end
-  #    )}
-  # ]
-
   # secondry names
   # alpha - auth_pool
   def decode_field(:auth_pools, value), do: decode_field(:alpha, value)
