@@ -484,20 +484,19 @@ defmodule PVM.Host.Refine.Internal do
   def expunge_internal(registers, memory, %Context{m: m} = context) do
     n = registers.r7
 
-    case Map.get(m, n) do
-      nil ->
-        %Internal{
-          registers: Registers.set(registers, :r7, who()),
-          memory: memory,
-          context: context
-        }
+    {w7_, m_} =
+      case Map.get(m, n) do
+        nil ->
+          {who(), m}
 
-      %Integrated{counter: i} ->
-        %Internal{
-          registers: Registers.set(registers, :r7, i),
-          memory: memory,
-          context: %{context | m: Map.delete(m, n)}
-        }
-    end
+        machine ->
+          {machine.counter, Map.delete(m, n)}
+      end
+
+    %Internal{
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: %{context | m: m_}
+    }
   end
 end
