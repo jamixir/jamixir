@@ -138,7 +138,7 @@ defmodule BlockTest do
       invalid_block = %Block{header: build(:header, timeslot: 100), extrinsic: invalid_extrinsic}
 
       assert {:error, reason} = Block.validate(invalid_block, state)
-      assert reason == :not_in_order
+      assert reason == :preimages_not_sorted_unique
     end
   end
 

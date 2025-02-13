@@ -8,8 +8,7 @@ defmodule DisputesTestVectors do
   def files_to_test,
     do:
       [
-        # "progress_invalidates_avail_assignments-1",
-        # TODO commented because of accumulation error. needs review
+        "progress_invalidates_avail_assignments-1",
         for(i <- 1..2, do: "progress_with_bad_signatures-#{i}"),
         for(i <- 1..7, do: "progress_with_culprits-#{i}"),
         for(i <- 1..7, do: "progress_with_faults-#{i}"),
