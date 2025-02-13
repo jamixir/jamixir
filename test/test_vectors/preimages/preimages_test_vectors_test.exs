@@ -12,7 +12,7 @@ defmodule PreimagesTestVectorsTest do
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :accumulation, MockAccumulation)
 
-    Application.put_env(:jamixir, :original_modules, [Services, Preimage])
+    Application.put_env(:jamixir, :original_modules, [Services, Preimage, Util.Collections])
 
     on_exit(fn ->
       Application.delete_env(:jamixir, :original_modules)

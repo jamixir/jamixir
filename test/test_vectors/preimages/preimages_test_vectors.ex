@@ -9,12 +9,15 @@ defmodule PreimagesTestVectors do
   define_repo_variables()
 
   def files_to_test,
-    do: [
-      "preimage_needed-1",
-      "preimage_needed-2",
-      "preimage_not_needed-1",
-      "preimage_not_needed-2"
-    ]
+    do:
+      [
+        "preimage_needed-1",
+        "preimage_needed-2",
+        "preimage_not_needed-1",
+        "preimage_not_needed-2",
+        for(i <- 1..4, do: "preimages_order_check-#{i}")
+      ]
+      |> List.flatten()
 
   def tested_keys, do: [:services]
 

@@ -22,12 +22,14 @@ defmodule Block.Extrinsic.Preimage do
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
     # Formula (12.29) v0.6.0
-    with :ok <- Collections.validate_unique_and_ordered(preimages, & &1.service),
+    with :ok <- Collections.validate_unique_and_ordered(preimages, &{&1.service, &1.blob}),
          # Formula (12.31) v0.6.0
          :ok <- check_all_preimages(preimages, services) do
       :ok
     else
-      {:error, reason} -> {:error, reason}
+      {:error, :not_in_order} -> {:error, :preimages_not_sorted_unique}
+      {:error, :duplicates} -> {:error, :preimages_not_sorted_unique}
+      {:error, e} -> {:error, e}
     end
   end
 
