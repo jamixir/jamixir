@@ -1,8 +1,7 @@
 defmodule Codec.State.Trie do
-  alias Util.Merklization
-  alias System.State
   alias Codec.NilDiscriminator
-  alias Util.{Hash, Hex}
+  alias System.State
+  alias Util.{Hex, Merklization}
   use Codec.Encoder
   import Bitwise
 

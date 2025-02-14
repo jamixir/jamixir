@@ -2,7 +2,7 @@ defmodule TestnetBlockImporterTest do
   alias Block.Header
   alias IO.ANSI
   alias System.State
-  alias Util.{Export, Hash}
+  alias Util.Hash
   import TestVectorUtil
   import Jamixir.Factory
   use ExUnit.Case
@@ -13,7 +13,7 @@ defmodule TestnetBlockImporterTest do
     :ok
   end
 
-  @ignore_fields [:accumulation_history, :recent_history, :safrole]
+  @ignore_fields []
   @safrole_path "./data/fallback"
   @state_path "#{@safrole_path}/state_snapshots/"
   @block_path "#{@safrole_path}/blocks/"
@@ -42,10 +42,9 @@ defmodule TestnetBlockImporterTest do
       [first_epoch | _] = files
       [last_epoch | _] = Enum.reverse(files)
 
-      Enum.reduce(first_epoch..last_epoch, state, fn epoch, state ->
+      Enum.reduce(first_epoch..(last_epoch - 1), state, fn epoch, state ->
         Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
-          Logger.info("Processing block #{epoch}:#{timeslot}...")
-          Export.export(state, "priv/")
+          Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
           timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
           block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", @block_path, @user, @repo)
@@ -61,6 +60,7 @@ defmodule TestnetBlockImporterTest do
             case State.add_block(state, block) do
               {:ok, s} ->
                 Storage.put(block.header)
+                Logger.info("🔄 State Updated successfully")
                 s
 
               {:error, _, error} ->
@@ -68,17 +68,14 @@ defmodule TestnetBlockImporterTest do
                 state
             end
 
-          Logger.info("#{ANSI.green()} Comparing state...")
+          Logger.info("#{ANSI.green()}🔍 Comparing state")
 
           for field <- Utils.list_struct_fields(System.State) do
-            Logger.info("Checking field #{field}...")
-
             unless Enum.find(@ignore_fields, &(&1 == field)) do
               expected = Map.get(expected_state, field)
               new = Map.get(new_state, field)
-
-              IO.puts(field)
               assert expected == new
+              Logger.debug("✅ Field #{field} match")
             end
           end
 

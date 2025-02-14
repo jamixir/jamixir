@@ -154,7 +154,7 @@ defmodule System.State.RecentHistory do
         vs(
           for b <- rh.blocks do
             {b.header_hash, Codec.Encoder.encode_mmr(b.accumulated_result_mmr), b.state_root,
-             vs(b.work_report_hashes)}
+             e(b.work_report_hashes)}
           end
         )
       )
