@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.HistoricalLookupTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Registers}
   alias System.State.ServiceAccount
   import PVM.Constants.HostCallResult
   alias Util.Hash
@@ -147,7 +147,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       memory = Memory.write!(memory, registers.r8, test_map.hash)
-      %{length: l, value: v, hash: h} = test_map
+      %{length: l, value: v} = test_map
 
       assert %{
                exit_reason: :continue,
@@ -180,7 +180,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       gas: gas,
       registers: registers
     } do
-      %{length: l, value: v, hash: h} = test_map
+      %{length: l, value: v} = test_map
       memory = Memory.write!(memory, registers.r8, test_map.hash)
 
       # Setup registers with max 64-bit value (0xFFFF_FFFF_FFFF_FFFF)

@@ -2,7 +2,6 @@ defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine
   alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
-  import PVM.Constants.HostCallResult
 
   describe "machine/4" do
     setup do

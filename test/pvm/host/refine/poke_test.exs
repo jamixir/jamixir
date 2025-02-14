@@ -49,7 +49,7 @@ defmodule PVM.Host.Refine.PokeTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: who},
+               registers: %{r7: ^who},
                memory: ^memory,
                context: ^context
              } = Refine.poke(gas, registers, memory, context)
