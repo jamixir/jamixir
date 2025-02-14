@@ -29,9 +29,21 @@ defmodule PVM.Constants.HostCallId do
     26 => :expunge
   }
 
-  def host(code) when is_integer(code) do
-    Map.get(@host_calls, code)
+  for {byte, call} <- @host_calls do
+    def from_byte(unquote(byte)), do: unquote(call)
   end
 
+  def from_byte(_), do: nil
+
+  for {byte, call} <- @host_calls do
+    def to_byte(unquote(call)), do: unquote(byte)
+  end
+
+  def to_byte(_), do: nil
+
+  def host(call) when is_atom(call), do: to_byte(call)
+  def host(byte) when is_integer(byte), do: from_byte(byte)
   def host(_), do: nil
+
+  def host_calls, do: @host_calls
 end
