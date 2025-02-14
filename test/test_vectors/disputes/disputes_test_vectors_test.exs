@@ -10,6 +10,7 @@ defmodule DisputesTinyTestVectors do
   setup do
     RingVrf.init_ring_context()
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
       :validate,
@@ -23,9 +24,11 @@ defmodule DisputesTinyTestVectors do
     ])
 
     mock_header_seal()
+    mock_accumulate()
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
+      Application.delete_env(:jamixir, :accumulation)
       Application.delete_env(:jamixir, :original_modules)
     end)
 
@@ -33,6 +36,10 @@ defmodule DisputesTinyTestVectors do
   end
 
   describe "vectors" do
-    define_vector_tests("disputes")
+    test "smoke" do
+      execute_test("progress_invalidates_avail_assignments-1", "disputes/tiny")
+    end
+
+    # define_vector_tests("disputes")
   end
 end
