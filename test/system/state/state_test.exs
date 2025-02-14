@@ -123,7 +123,7 @@ defmodule System.StateTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          key = (<<l::32-little>> <> Hash.default(h)) |> binary_slice(2, 28)
+          key = <<l::32-little>> <> (Hash.default(h) |> binary_slice(2, 28))
           value = e(vs(for x <- t, do: <<x::32-little>>))
           assert state_keys(state)[{s, key}] == value
         end)

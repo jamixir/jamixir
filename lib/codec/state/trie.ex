@@ -113,7 +113,7 @@ defmodule Codec.State.Trie do
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value = e(vs(for x <- t, do: e_le(x, 4)))
-        key = (e_le(l, 4) <> Hash.default(h)) |> binary_slice(2, 28)
+        key = e_le(l, 4) <> (h(h) |> binary_slice(2, 28))
         Map.put(ac, {s, key}, value)
       end)
     end)
