@@ -17,7 +17,8 @@ defmodule PVM.Refine do
           binary(),
           list(list(binary())),
           non_neg_integer(),
-          %{integer() => ServiceAccount.t()}
+          %{integer() => ServiceAccount.t()},
+          %{{Types.hash(), non_neg_integer()} => binary()}
         ) ::
           {binary() | WorkExecutionError.t(), list(binary())}
   def execute(
@@ -26,11 +27,12 @@ defmodule PVM.Refine do
         authorizer_output,
         import_segments,
         export_segment_offset,
-        services
+        services,
+        preimages
       ) do
     work_item = Enum.at(work_package.work_items, work_item_index)
     %WorkItem{service: ws, code_hash: wc, payload: wy, refine_gas_limit: wg} = work_item
-    px = work_package.refinement_context
+    px = work_package.context
 
     with {:ok, service} <- fetch_service(services, ws),
          {:ok, program} <-
@@ -51,7 +53,17 @@ defmodule PVM.Refine do
               )
 
             :fetch ->
-              Refine.fetch(gas, registers, memory, context, work_item_index, work_package, authorizer_output, import_segments)
+              Refine.fetch(
+                gas,
+                registers,
+                memory,
+                context,
+                work_item_index,
+                work_package,
+                authorizer_output,
+                import_segments,
+                preimages
+              )
 
             :export ->
               Refine.export(gas, registers, memory, context, export_segment_offset)
@@ -101,11 +113,9 @@ defmodule PVM.Refine do
         {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
       end
 
-      args =
-        e(
-          {ws, wy, h(work_package), px,
-           WorkPackage.implied_authorizer(work_package, services)}
-        )
+      implied_authorizer = WorkPackage.implied_authorizer(work_package, services)
+      wph = e(work_package) |> h()
+      args = e({ws, wy, wph, px, implied_authorizer})
 
       {_gas, result, %Refine.Context{e: exports}} =
         ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})

@@ -26,12 +26,22 @@ defmodule PVM.Host.Refine do
     )
   end
 
-  def fetch(gas, registers, memory, context, work_item_index, work_package, authorizer_output, import_segments) do
+  def fetch(
+        gas,
+        registers,
+        memory,
+        context,
+        work_item_index,
+        work_package,
+        authorizer_output,
+        import_segments,
+        preimages
+      ) do
     with_gas(
       Result,
       {gas, registers, memory, context},
-      &fetch_internal/7,
-      [work_item_index, work_package, authorizer_output, import_segments]
+      &fetch_internal/8,
+      [work_item_index, work_package, authorizer_output, import_segments, preimages]
     )
   end
 
