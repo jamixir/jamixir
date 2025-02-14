@@ -76,7 +76,7 @@ defmodule PVM.Host.General.Internal do
 
     storage_key =
       try do
-        <<s_star::32-little>> <> Memory.read!(memory, ko, kz) |> Hash.default()
+        (<<s_star::32-little>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
       rescue
         _ -> :error
       end
@@ -124,7 +124,6 @@ defmodule PVM.Host.General.Internal do
     [ko, kz, vo, vz] = Registers.get(registers, [7, 8, 9, 10])
 
     k = read_storage_key(memory, ko, kz, service_index)
-    l = current_value_length(k, service_account)
 
     a =
       cond do
@@ -144,6 +143,8 @@ defmodule PVM.Host.General.Internal do
           :error
       end
 
+    l = current_value_length(k, service_account)
+
     {exit_reason_, w7_, service_account_} =
       cond do
         k == :error or a == :error -> {:panic, registers.r7, service_account}
@@ -161,7 +162,7 @@ defmodule PVM.Host.General.Internal do
 
   defp read_storage_key(memory, ko, kz, service_index) do
     try do
-      <<service_index::32-little>> <> Memory.read!(memory, ko, kz) |> Hash.default()
+      (<<service_index::32-little>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
     rescue
       _ -> :error
     end
@@ -195,8 +196,10 @@ defmodule PVM.Host.General.Internal do
         nil
       end
 
+    is_writable = Memory.check_range_access?(memory, o, safe_byte_size(m), :write)
+
     memory_ =
-      if m != nil and Memory.check_range_access?(memory, o, byte_size(m), :write) do
+      if m != nil and is_writable do
         Memory.write!(memory, o, m)
       else
         memory
@@ -207,7 +210,7 @@ defmodule PVM.Host.General.Internal do
         m == nil ->
           {:continue, none()}
 
-        m != nil and not Memory.check_range_access?(memory, o, byte_size(m), :write) ->
+        m != nil and !is_writable ->
           {:panic, registers.r7}
 
         true ->

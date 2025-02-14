@@ -7,6 +7,12 @@ defmodule PVM.Host.GeneralTest do
   import PVM.Constants.HostCallResult
   use Codec.Encoder
 
+  @doc """
+  Returns the base memory address used in tests.
+  address below this will cause memory read/write to panic.
+  """
+  def a_0, do: 0x1_0000
+
   describe "gas/4" do
     setup do
       m = %Memory{}
@@ -69,310 +75,393 @@ defmodule PVM.Host.GeneralTest do
 
   describe "lookup/6" do
     setup do
-      m = %Memory{} |> Memory.set_default_access(:write)
+      memory = %Memory{} |> Memory.set_default_access(:write)
       value = "value" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       hash = Hash.default(value)
       other_hash = Hash.default(other_value)
-      c = %ServiceAccount{preimage_storage_p: %{hash => value}}
-      s = %{1 => %ServiceAccount{preimage_storage_p: %{other_hash => other_value}}}
-      g = 100
+      service_account = %ServiceAccount{preimage_storage_p: %{hash => value}}
+      services = %{1 => %ServiceAccount{preimage_storage_p: %{other_hash => other_value}}}
+      gas = 100
 
       {:ok,
-       m: m,
-       c: c,
-       s: s,
-       g: g,
+       memory: memory,
+       service_account: service_account,
+       services: services,
+       gas: gas,
        hash: hash,
        other_hash: other_hash,
        value: value,
        other_value: other_value}
     end
 
-    test "handles service selection", %{
-      m: m,
-      c: c,
-      s: s,
-      g: g,
+    test "lookup uses service_account when service index is 0", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
       value: value,
-      other_value: other_value
+      hash: hash
     } do
-      {:ok, m} = Memory.write(m, 0, value)
-      bo = 100
-      bz = byte_size(value)
+      {:ok, memory} = Memory.write(memory, a_0(), hash)
+      o = a_0() + 100
+      h = byte_size(value)
+
+      # w7 = s = 0  => use service_account
+      r = %Registers{r7: 0, r8: a_0(), r9: o, r10: 0, r11: h}
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^h},
+               memory: memory_
+             } = General.lookup(gas, r, memory, service_account, 0, services)
+
+      assert {:ok, ^value} = Memory.read(memory_, o, h)
+    end
+
+    test "lookup uses service_account when service index is max_64_bit", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
+      value: value,
+      hash: hash
+    } do
+      {:ok, memory} = Memory.write(memory, a_0(), hash)
+      o = a_0() + 100
+      h = byte_size(value)
+
+      # w7 = 2^64 - 1  => use service_account
+      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: a_0(), r9: o, r10: 0, r11: h}
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^h},
+               memory: memory_
+             } = General.lookup(gas, r, memory, service_account, 0, services)
+
+      assert {:ok, ^value} = Memory.read(memory_, o, h)
+    end
+
+    test "lookup uses different service when valid service index provided", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
+      other_value: other_value,
+      other_hash: other_hash
+    } do
+      {:ok, memory} = Memory.write(memory, a_0(), other_hash)
+      o = a_0() + 100
+      h = byte_size(other_value)
+
+      # w7 = 1  => use services[1]
+      r = %Registers{r7: 1, r8: a_0(), r9: o, r10: 0, r11: h}
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^h},
+               memory: memory_
+             } = General.lookup(gas, r, memory, service_account, 0, services)
+
+      assert {:ok, ^other_value} = Memory.read(memory_, o, h)
+    end
+
+    test "lookup returns none when service index does not exist", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas
+    } do
+      # w7 = 2  => use services[2] (none)
+      r = %Registers{r7: 2, r8: a_0()}
       none = none()
 
-      # Case 1: w7 = service_index (uses c)
-      r = %Registers{r7: 0, r8: 0, r9: bo, r10: bz}
-
       assert %{
-               registers: %{r7: ^bz},
-               memory: m_
-             } = General.lookup(g, r, m, c, 0, s)
-
-      assert {:ok, ^value} = Memory.read(m_, bo, bz)
-
-      # Case 2: w7 = max_64_bit (uses c)
-      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: 0, r9: bo, r10: bz}
-
-      assert %{
-               registers: %{r7: ^bz},
-               memory: m_
-             } = General.lookup(g, r, m, c, 0, s)
-
-      assert {:ok, ^value} = Memory.read(m_, bo, bz)
-
-      # Case 3: w7 points to different service (uses s[1])
-      {:ok, m} = Memory.write(m, 0, other_value)
-      r = %Registers{r7: 1, r8: 0, r9: bo, r10: bz}
-
-      assert %{
-               registers: %{r7: ^bz},
-               memory: m_
-             } = General.lookup(g, r, m, c, 0, s)
-
-      assert {:ok, ^other_value} = Memory.read(m_, bo, bz)
-
-      # Case 4: w7 points to non-existent service
-      r = %Registers{r7: 999, r8: 0, r9: bo, r10: bz}
-      assert %{registers: %{r7: ^none}, memory: ^m} = General.lookup(g, r, m, c, 0, s)
+               exit_reason: :continue,
+               registers: %{r7: ^none},
+               memory: ^memory
+             } = General.lookup(gas, r, memory, service_account, 0, services)
     end
 
-    test "handles memory read failure", %{m: m, c: c, s: s, g: g} do
-      r = %Registers{r7: 1, r8: 0}
-      m = Memory.set_access(m, 0, 32, nil)
-      oob = oob()
-      assert %{registers: %{r7: ^oob}, memory: ^m} = General.lookup(g, r, m, c, 0, s)
+    test "handles memory read failure", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas
+    } do
+      r = %Registers{r7: 1, r8: a_0()}
+      memory = Memory.set_access(memory, a_0(), 32, nil)
+
+      assert %{exit_reason: :panic, registers: %{r7: 1}, memory: ^memory} =
+               General.lookup(gas, r, memory, service_account, 0, services)
     end
 
-    test "handles memory write failure", %{m: m, c: c, s: s, g: g} do
-      value = "value" |> String.pad_trailing(32, "\0")
-      hash = Hash.default(value)
-      oob = oob()
-      c = %{c | preimage_storage_p: %{hash => value}}
-      {:ok, m} = Memory.write(m, 0, value)
+    test "handles memory write failure", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
+      other_value: other_value,
+      other_hash: other_hash
+    } do
+      {:ok, memory} = Memory.write(memory, a_0(), other_hash)
+      memory = Memory.set_access(memory, a_0() + 100, 32, :read)
+      o = a_0() + 100
+      h = byte_size(other_value)
 
-      r = %Registers{r7: 1, r8: 0, r9: 100, r10: byte_size(value)}
-      m = Memory.set_access(m, 100, byte_size(value), :read)
+      # w7 = 1  => use services[1]
+      r = %Registers{r7: 1, r8: a_0(), r9: o, r10: 0, r11: h}
 
-      assert %{registers: %{r7: ^oob}, memory: ^m} = General.lookup(g, r, m, c, 0, s)
+      assert %{exit_reason: :panic, registers: %{r7: 1}, memory: ^memory} =
+               General.lookup(gas, r, memory, service_account, 0, services)
     end
   end
 
   describe "read/6" do
     setup do
-      m = %Memory{} |> Memory.set_default_access(:write)
+      memory = %Memory{} |> Memory.set_default_access(:write)
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       other_key = "other_key" |> String.pad_trailing(32, "\0")
 
-      storage_key = Hash.default(<<0::32>> <> key)
-      other_storage_key = Hash.default(<<0::32>> <> other_key)
+      storage_key = Hash.default(Hash.zero())
+      other_storage_key = Hash.default(<<1::32-little, 0::28*8>>)
 
-      c = %ServiceAccount{storage: %{storage_key => value}}
-      s = %{1 => %ServiceAccount{storage: %{other_storage_key => other_value}}}
-      g = 100
+      service_account = %ServiceAccount{storage: %{storage_key => value}}
+      services = %{1 => %ServiceAccount{storage: %{other_storage_key => other_value}}}
+      gas = 100
 
       {:ok,
-       m: m,
-       c: c,
-       s: s,
-       g: g,
+       memory: memory,
+       service_account: service_account,
+       services: services,
+       gas: gas,
        key: key,
        value: value,
        other_key: other_key,
        other_value: other_value}
     end
 
-    test "handles service selection", %{
-      m: m,
-      c: c,
-      s: s,
-      g: g,
+    test "read uses service_account when service index is max_64_bit", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
       key: key,
-      value: value,
+      value: value
+    } do
+      ko = a_0() + 100
+      kz = 28
+      o = a_0() + 200
+      v = byte_size(value)
+
+      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: ko, r9: kz, r10: o, r11: 0, r12: 300}
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^v},
+               memory: memory_
+             } = General.read(gas, r, memory, service_account, 0, services)
+
+      assert {:ok, ^value} = Memory.read(memory_, o, v)
+    end
+
+    test "read uses different service when valid service index provided", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
       other_key: other_key,
       other_value: other_value
     } do
-      bo = 100
-      bz = byte_size(value)
+      ko = a_0() + 100
+      kz = 28
+      o = a_0() + 200
+      v = byte_size(other_value)
 
-      # Case 1: w7 = service_index (uses c)
-      {:ok, m} = Memory.write(m, 0, key)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: bo, r11: bz}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == bz
-      assert {:ok, ^value} = Memory.read(result.memory, bo, bz)
+      r = %Registers{r7: 1, r8: ko, r9: kz, r10: o, r11: 0, r12: 300}
 
-      # Case 2: w7 = max_64_bit (uses c)
-      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: 0, r9: byte_size(key), r10: bo, r11: bz}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == bz
-      assert {:ok, ^value} = Memory.read(result.memory, bo, bz)
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^v},
+               memory: memory_
+             } = General.read(gas, r, memory, service_account, 0, services)
 
-      # Case 3: w7 points to different service (uses s[1])
-      {:ok, m} = Memory.write(m, 0, other_key)
-      r = %Registers{r7: 1, r8: 0, r9: byte_size(other_key), r10: bo, r11: bz}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == byte_size(other_value)
-      assert {:ok, ^other_value} = Memory.read(result.memory, bo, byte_size(other_value))
-
-      # Case 4: w7 points to non-existent service
-      r = %Registers{r7: 999, r8: 0, r9: byte_size(key), r10: bo, r11: bz}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == none()
-      assert result.memory == m
+      assert {:ok, ^other_value} = Memory.read(memory_, o, v)
     end
 
-    test "handles key not in storage", %{m: m, c: c, s: s, g: g} do
-      missing_key = "missing" |> String.pad_trailing(32, "\0")
-      {:ok, m} = Memory.write(m, 0, missing_key)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(missing_key), r10: 100, r11: 32}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == none()
-      assert result.memory == m
+    test "read returns none when service index does not exist", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas
+    } do
+      r = %Registers{r7: 2, r8: a_0()}
+      none = none()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^none},
+               memory: ^memory
+             } = General.read(gas, r, memory, service_account, 0, services)
     end
 
-    test "handles memory read failure", %{m: m, c: c, s: s, g: g, key: key} do
-      m = Memory.set_access(m, 0, byte_size(key), nil)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 100, r11: 32}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == oob()
-      assert result.memory == m
+    test "handles key not in storage", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas,
+      value: value
+    } do
+      ko = a_0() + 100
+      kz = 28
+      o = a_0() + 200
+      {:ok, memory} = Memory.write(memory, ko, <<0xAA::32-little>>)
+
+      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: ko, r9: kz, r10: o, r11: 0, r12: 300}
+      none = none()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^none},
+               memory: ^memory
+             } = General.read(gas, r, memory, service_account, 0, services)
     end
 
-    test "handles memory write failure", %{m: m, c: c, s: s, g: g, key: key} do
-      {:ok, m} = Memory.write(m, 0, key)
-      m = Memory.set_access(m, 100, 32, :read)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 100, r11: 32}
-      result = General.read(g, r, m, c, 0, s)
-      assert result.registers.r7 == oob()
-      assert result.memory == m
+    test "handles memory read failure", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas
+    } do
+      ko = a_0() + 100
+      kz = 28
+      r = %Registers{r7: 1, r8: ko, r9: kz}
+      memory = Memory.set_access(memory, ko, kz, nil)
+
+      assert %{
+               exit_reason: :panic,
+               registers: %{r7: 1},
+               memory: ^memory
+             } = General.read(gas, r, memory, service_account, 0, services)
+    end
+
+    test "handles memory write failure", %{
+      memory: memory,
+      service_account: service_account,
+      services: services,
+      gas: gas
+    } do
+      ko = a_0() + 100
+      kz = 28
+      o = a_0() + 200
+      memory = Memory.set_access(memory, o, 1, :read)
+
+      r = %Registers{r7: 0xFFFF_FFFF_FFFF_FFFF, r8: ko, r9: kz, r10: o, r11: 0, r12: 300}
+
+      assert %{
+               exit_reason: :panic,
+               registers: %{r7: 0xFFFF_FFFF_FFFF_FFFF},
+               memory: ^memory
+             } = General.read(gas, r, memory, service_account, 0, services)
     end
   end
 
   describe "write/5" do
     setup do
-      m = %Memory{} |> Memory.set_default_access(:write)
       value = "value" |> String.pad_trailing(32, "\0")
-      key = "key" |> String.pad_trailing(32, "\0")
-      storage_key = Hash.default(<<0::32>> <> key)
+      key = "key" |> String.pad_trailing(28, "\0")
+      storage_key = Hash.default(<<1::32-little>> <> key)
       c = %ServiceAccount{storage: %{storage_key => value}, balance: 2000}
       g = 100
-      {:ok, m: m, c: c, g: g, key: key, value: value, storage_key: storage_key}
+
+      registers = %Registers{
+        r7: a_0(),
+        r8: 28,
+        r9: a_0() + %Memory{}.page_size + 100,
+        r10: 32
+      }
+
+      m =
+        %Memory{}
+        |> Memory.set_default_access(:write)
+        |> Memory.write!(a_0(), key)
+        |> Memory.write!(a_0() + %Memory{}.page_size + 100, value)
+
+      {:ok, m: m, c: c, g: g, registers: registers, storage_key: storage_key}
     end
 
-    test "returns oob when key memory read fails", %{m: m, c: c, g: g} do
-      m = Memory.set_access(m, 0, 32, nil)
-      r = %Registers{r7: 0, r8: 0, r9: 32, r10: m.page_size + 100, r11: m.page_size + 132}
+    test "returns panic when key memory read fails", %{m: m, c: c, g: g, registers: registers} do
+      m = Memory.set_default_access(m, nil)
 
-      result = General.write(g, r, m, c, 0)
-      assert result.registers.r7 == oob()
-      assert result.memory == m
-      assert result.context == c
+      assert %{exit_reason: :panic, memory: ^m, context: ^c} =
+               General.write(g, registers, m, c, 0)
     end
 
-    test "returns oob when value memory read fails", %{m: m, c: c, g: g, key: key} do
-      {:ok, m} = Memory.write(m, 0, key)
-      m = Memory.set_access(m, m.page_size + 100, m.page_size + 132, nil)
-      r = %Registers{r7: 0, r8: 0, r9: 32, r10: m.page_size + 100, r11: m.page_size + 132}
+    test "returns panic when value memory read fails", %{m: m, c: c, g: g, registers: registers} do
+      m = Memory.set_access(m, registers.r9, registers.r10, nil)
 
-      result = General.write(g, r, m, c, 0)
-      assert result.registers.r7 == oob()
-      assert result.memory == m
-      assert result.context == c
+      assert %{exit_reason: :panic, memory: ^m, context: ^c} =
+               General.write(g, registers, m, c, 1)
     end
 
     test "successfully updates storage with new value", %{
       m: m,
       g: g,
       c: c,
-      key: key,
-      storage_key: storage_key
+      storage_key: storage_key,
+      registers: registers
     } do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
-      {:ok, m} = Memory.write(m, 0, key)
-      {:ok, m} = Memory.write(m, 100, new_value)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 100, r11: byte_size(new_value)}
+      m = Memory.write!(m, registers.r9, new_value)
 
       service_account = %{c | storage: %{storage_key => "b"}}
 
-      result = General.write(g, r, m, service_account, 0)
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: 1},
+               memory: ^m,
+               context: result_context
+             } = General.write(g, registers, m, service_account, 1)
 
-      assert result.registers.r7 == byte_size("b")
-      assert result.memory == m
-      assert get_in(result.context, [:storage, storage_key]) == new_value
+      assert get_in(result_context, [:storage, storage_key]) == new_value
     end
 
-    test "successfully removes key when value offset is 0", %{
+    test "successfully removes key when vz is 0", %{
       m: m,
       c: c,
       g: g,
-      key: key
+      storage_key: storage_key,
+      registers: registers
     } do
-      {:ok, m} = Memory.write(m, 0, key)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 0, r11: 0}
+      registers = %{registers | r10: 0}
+      l = get_in(c, [:storage, storage_key]) |> byte_size()
 
-      result = General.write(g, r, m, c, 0)
-      storage_key = Hash.default(<<0::32>> <> key)
-      # returns old value size
-      assert result.registers.r7 == byte_size(get_in(c.storage, [storage_key]))
-      assert result.memory == m
-      assert get_in(result.context, [:storage, storage_key]) == nil
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^l},
+               memory: ^m,
+               context: result_context
+             } = General.write(g, registers, m, c, 1)
+
+      assert get_in(result_context, [:storage, storage_key]) == nil
     end
 
-    test "returns full when threshold exceeded", %{m: m, c: c, g: g, key: key} do
+    test "returns FULL when threshold exceeded", %{m: m, c: c, g: g, registers: registers} do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
-      {:ok, m} = Memory.write(m, 0, key)
-      {:ok, m} = Memory.write(m, 100, new_value)
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(key), r10: 100, r11: byte_size(new_value)}
+      m = Memory.write!(m, registers.r9, new_value)
 
       service_account = %{c | balance: 50}
+      full = full()
 
-      result = General.write(g, r, m, service_account, 0)
-
-      assert result.registers.r7 == full()
-      assert result.memory == m
-      assert result.context == service_account
-    end
-
-    test "returns full even when memory read fails", %{m: m, c: c, g: g} do
-      # Make memory read fail
-      m = Memory.set_access(m, 0, 32, nil)
-      # Ensure threshold exceeds balance
-      service_account = %{c | balance: 50}
-      r = %Registers{r7: 0, r8: 0, r9: 32, r10: 100, r11: 32}
-
-      result = General.write(g, r, m, service_account, 0)
-      assert result.registers.r7 == full()
-      assert result.memory == m
-      assert result.context == service_account
-    end
-
-    test "returns none for non-existent key", %{m: m, c: c, g: g} do
-      new_key = "new_key" |> String.pad_trailing(32, "\0")
-      {:ok, m} = Memory.write(m, 0, new_key)
-      {:ok, m} = Memory.write(m, 100, "value")
-      r = %Registers{r7: 0, r8: 0, r9: byte_size(new_key), r10: 100, r11: 32}
-
-      result = General.write(g, r, m, c, 0)
-      assert result.registers.r7 == none()
-      assert result.memory == m
-      assert Map.has_key?(result.context.storage, Hash.default(<<0::32>> <> new_key))
-    end
-
-    test "returns full with invalid key but exceeded threshold", %{m: m, c: c, g: g} do
-      # Make key read fail
-      m = Memory.set_access(m, 0, 32, nil)
-      # Ensure threshold exceeds balance
-      service_account = %{c | balance: 50}
-      r = %Registers{r7: 0, r8: 0, r9: 32, r10: 100, r11: 32}
-
-      result = General.write(g, r, m, service_account, 0)
-      assert result.registers.r7 == full()
-      assert result.memory == m
-      assert result.context == service_account
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^full},
+               memory: ^m,
+               context: ^service_account
+             } = General.write(g, registers, m, service_account, 1)
     end
   end
 
@@ -392,70 +481,92 @@ defmodule PVM.Host.GeneralTest do
       }
 
       g = 100
+      registers = %Registers{r7: 1, r8: a_0()}
       context = %ServiceAccount{}
 
-      {:ok, m: m, service_account: service_account, services: services, g: g, context: context}
+      {:ok,
+       m: m,
+       service_account: service_account,
+       services: services,
+       g: g,
+       context: context,
+       registers: registers}
     end
 
     test "returns none when service doesn't exist", %{
       m: m,
       services: services,
       g: g,
-      context: context
+      context: context,
+      registers: registers
     } do
-      r = %Registers{r7: 999, r8: 0}
+      r = Registers.set(registers, :r7, 999)
+      none = none()
 
-      result = General.info(g, r, m, context, 0, services)
-      assert result.registers.r7 == none()
-      assert result.memory == m
-      assert result.context == context
+      assert %{exit_reason: :continue, registers: %{r7: ^none}, memory: ^m, context: ^context} =
+               General.info(g, r, m, context, 42, services)
     end
 
-    test "returns oob when memory write fails", %{
+    test "panics when memory write fails", %{
       m: m,
       services: services,
       g: g,
-      context: context
+      context: context,
+      registers: registers
     } do
-      r = %Registers{r7: 1, r8: 0}
       # Make memory write fail
-      m = Memory.set_access(m, 0, 32, :read)
+      m = Memory.set_access(m, a_0(), 32, :read)
 
-      result = General.info(g, r, m, context, 0, services)
-      assert result.registers.r7 == oob()
-      assert result.memory == m
-      assert result.context == context
+      assert %{exit_reason: :panic, memory: ^m, context: ^context} =
+               General.info(g, registers, m, context, 42, services)
     end
 
     test "successfully writes service info using service index", %{
       m: m,
       services: services,
       g: g,
-      context: context
+      context: context,
+      registers: registers
     } do
-      r = %Registers{r7: 1, r8: 0}
+      ok = ok()
 
-      result = General.info(g, r, m, context, 0, services)
-      assert result.registers.r7 == ok()
-      # Memory should be updated
-      assert result.memory != m
-      assert result.context == context
+      assert %{exit_reason: :continue, registers: %{r7: ^ok}, memory: memory_, context: ^context} =
+               General.info(g, registers, m, context, 42, services)
+
+      t = Map.get(services, 1)
+
+      expected_mem_value =
+        e(
+          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
+           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
+        )
+
+      assert Memory.read!(memory_, a_0(), byte_size(expected_mem_value)) == expected_mem_value
     end
 
     test "successfully writes service info using max 64-bit value", %{
       m: m,
       services: services,
       g: g,
-      context: context
+      context: context,
+      registers: registers
     } do
-      max_64_bit = 0xFFFF_FFFF_FFFF_FFFF
-      r = %Registers{r7: max_64_bit, r8: 0}
-      {:ok, m} = Memory.write(m, 0, "value")
-      result = General.info(g, r, m, context, 1, services)
-      assert result.registers.r7 == ok()
-      # Memory should be updated
-      assert result.memory != m
-      assert result.context == context
+      # selects service from args rather than registers
+      r = Registers.set(registers, :r7, 0xFFFF_FFFF_FFFF_FFFF)
+
+      ok = ok()
+      assert %{exit_reason: :continue, registers: %{r7: ^ok}, memory: memory_, context: ^context} =
+               General.info(g, registers, m, context, 1, services)
+
+      t = Map.get(services, 1)
+
+      expected_mem_value =
+        e(
+          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
+           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
+        )
+
+      assert Memory.read!(memory_, a_0(), byte_size(expected_mem_value)) == expected_mem_value
     end
   end
 end
