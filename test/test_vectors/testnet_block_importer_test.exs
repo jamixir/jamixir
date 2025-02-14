@@ -2,8 +2,9 @@ defmodule TestnetBlockImporterTest do
   alias Block.Header
   alias IO.ANSI
   alias System.State
-  alias Util.Export
+  alias Util.{Export, Hash}
   import TestVectorUtil
+  import Jamixir.Factory
   use ExUnit.Case
   require Logger
 
@@ -21,6 +22,12 @@ defmodule TestnetBlockImporterTest do
   @repo "jamtestnet"
 
   describe "blocks and states" do
+    setup do
+      # put zero header to storage
+      Storage.put(Hash.zero(), build(:header, timeslot: 0))
+      :ok
+    end
+
     # waiting for correctnes of other party side
     test "jam-dune" do
       {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
@@ -38,7 +45,7 @@ defmodule TestnetBlockImporterTest do
       Enum.reduce(first_epoch..last_epoch, state, fn epoch, state ->
         Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
           Logger.info("Processing block #{epoch}:#{timeslot}...")
-          # Export.export(state, "priv/")
+          Export.export(state, "priv/")
           timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
           block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", @block_path, @user, @repo)
@@ -53,6 +60,7 @@ defmodule TestnetBlockImporterTest do
           new_state =
             case State.add_block(state, block) do
               {:ok, s} ->
+                Storage.put(block.header)
                 s
 
               {:error, _, error} ->
