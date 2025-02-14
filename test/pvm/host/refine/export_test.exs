@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.ExportTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Registers}
 
   def a_0, do: 0x1_0000
   import PVM.Constants.HostCallResult
@@ -39,7 +39,6 @@ defmodule PVM.Host.Refine.ExportTest do
 
     test "returns {:continue, full()} when manifest size limit would be exceeded", %{
       memory: memory,
-      export_offset: export_offset,
       gas: gas,
       registers: registers
     } do

@@ -76,7 +76,7 @@ defmodule PVM.Host.Refine.PeekTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: oob},
+               registers: %{r7: ^oob},
                memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
@@ -109,7 +109,7 @@ defmodule PVM.Host.Refine.PeekTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ok},
+               registers: %{r7: ^ok},
                memory: memory_,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)

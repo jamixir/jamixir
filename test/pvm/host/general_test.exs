@@ -249,7 +249,6 @@ defmodule PVM.Host.GeneralTest do
       service_account: service_account,
       services: services,
       gas: gas,
-      key: key,
       value: value
     } do
       ko = a_0() + 100
@@ -273,7 +272,6 @@ defmodule PVM.Host.GeneralTest do
       service_account: service_account,
       services: services,
       gas: gas,
-      other_key: other_key,
       other_value: other_value
     } do
       ko = a_0() + 100
@@ -312,8 +310,7 @@ defmodule PVM.Host.GeneralTest do
       memory: memory,
       service_account: service_account,
       services: services,
-      gas: gas,
-      value: value
+      gas: gas
     } do
       ko = a_0() + 100
       kz = 28
@@ -552,9 +549,10 @@ defmodule PVM.Host.GeneralTest do
       registers: registers
     } do
       # selects service from args rather than registers
-      r = Registers.set(registers, :r7, 0xFFFF_FFFF_FFFF_FFFF)
+      Registers.set(registers, :r7, 0xFFFF_FFFF_FFFF_FFFF)
 
       ok = ok()
+
       assert %{exit_reason: :continue, registers: %{r7: ^ok}, memory: memory_, context: ^context} =
                General.info(g, registers, m, context, 1, services)
 
