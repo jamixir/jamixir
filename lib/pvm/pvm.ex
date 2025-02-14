@@ -47,7 +47,8 @@ defmodule PVM do
           binary(),
           list(list(binary())),
           non_neg_integer(),
-          %{integer() => ServiceAccount.t()}
+          %{integer() => ServiceAccount.t()},
+          %{{Types.hash(), non_neg_integer()} => binary()}
         ) ::
           {binary() | WorkExecutionError.t(), list(binary())}
   def refine(
@@ -56,7 +57,8 @@ defmodule PVM do
         authorizer_output,
         import_segments,
         export_segment_offset,
-        services
+        services,
+        preimages
       ),
       do:
         PVM.Refine.execute(
@@ -65,7 +67,8 @@ defmodule PVM do
           authorizer_output,
           import_segments,
           export_segment_offset,
-          services
+          services,
+          preimages
         )
 
   @spec accumulate(
