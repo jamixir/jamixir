@@ -7,6 +7,7 @@ defmodule PVM.Host.General.Internal do
   alias System.State.ServiceAccount
   alias Util.Hash
   use Codec.Encoder
+  import PVM.Host.Util
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
@@ -225,7 +226,5 @@ defmodule PVM.Host.General.Internal do
     }
   end
 
-  defp safe_byte_size(nil), do: 0
-  defp safe_byte_size(:error), do: 0
-  defp safe_byte_size(binary), do: byte_size(binary)
+
 end
