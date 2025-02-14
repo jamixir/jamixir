@@ -1,4 +1,5 @@
 defmodule PVM.Accumulate do
+  alias PVM.Registers
   alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.Context
   alias PVM.Host.{Accumulate, General}
