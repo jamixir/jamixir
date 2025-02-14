@@ -3,9 +3,8 @@ defmodule PVM.Host.Refine.Internal do
   alias Block.Extrinsic.WorkPackage
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
-  alias Util.Hash
   use Codec.{Decoder, Encoder}
-  import PVM.{Constants.HostCallResult, Constants.InnerPVMResult}
+  import PVM.{Constants.HostCallResult, Constants.InnerPVMResult, Host.Util}
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
   @spec historical_lookup_internal(
@@ -45,8 +44,8 @@ defmodule PVM.Host.Refine.Internal do
         _ -> :error
       end
 
-    f = min(registers.r10, byte_size(v))
-    l = min(registers.r11, byte_size(v) - f)
+    f = min(registers.r10, safe_byte_size(v))
+    l = min(registers.r11, safe_byte_size(v) - f)
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason, w7_, memory_} =
@@ -135,8 +134,8 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     o = registers.r7
-    f = min(registers.r8, byte_size(v))
-    l = min(registers.r9, byte_size(v) - f)
+    f = min(registers.r8, safe_byte_size(v))
+    l = min(registers.r9, safe_byte_size(v) - f)
 
     write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
 
