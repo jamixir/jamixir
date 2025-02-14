@@ -22,26 +22,29 @@ defmodule PVM.Host.General.Internal do
     [h, o] = Registers.get(registers, [8, 9])
 
     v =
-      with {:ok, pre_image_hash} <- Memory.read(memory, h, 32) do
-        cond do
-          is_nil(a) -> nil
-          # will be nil if pre_image_hash is not in the map
-          true -> Map.get(a, :preimage_storage_p) |> Map.get(pre_image_hash)
-        end
-      else
+      try do
+        pre_image_hash = Memory.read!(memory, h, 32)
+
+        if is_nil(a), do: nil, else: Map.get(a, :preimage_storage_p) |> Map.get(pre_image_hash)
+      rescue
         _ -> :error
       end
 
-    f = min(registers.r10, byte_size(v))
-    l = min(registers.r11, byte_size(v) - f)
+    f = min(registers.r10, safe_byte_size(v))
+    l = min(registers.r11, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason_, w7_, memory__} =
       cond do
-        v == :error or !is_writable -> {:panic, registers.r7, memory}
-        is_nil(v) -> {:continue, none(), memory}
-        true -> {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l))}
+        v == :error or !is_writable ->
+          {:panic, registers.r7, memory}
+
+        is_nil(v) ->
+          {:continue, none(), memory}
+
+        true ->
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Result.Internal{
@@ -72,9 +75,9 @@ defmodule PVM.Host.General.Internal do
     [ko, kz, o] = Registers.get(registers, [8, 9, 10])
 
     storage_key =
-      with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-        Hash.default(<<s_star::32-little>> <> mem_segment)
-      else
+      try do
+        <<s_star::32-little>> <> Memory.read!(memory, ko, kz) |> Hash.default()
+      rescue
         _ -> :error
       end
 
@@ -85,16 +88,21 @@ defmodule PVM.Host.General.Internal do
         true -> nil
       end
 
-    f = min(registers.r11, byte_size(v))
-    l = min(registers.r12, byte_size(v) - f)
+    f = min(registers.r11, safe_byte_size(v))
+    l = min(registers.r12, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason_, w7_, memory__} =
       cond do
-        v == :error or !is_writable -> {:panic, registers.r7, memory}
-        is_nil(v) -> {:continue, none(), memory}
-        true -> {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l))}
+        v == :error or !is_writable ->
+          {:panic, registers.r7, memory}
+
+        v == nil ->
+          {:continue, none(), memory}
+
+        true ->
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Result.Internal{
@@ -117,17 +125,22 @@ defmodule PVM.Host.General.Internal do
 
     k = read_storage_key(memory, ko, kz, service_index)
     l = current_value_length(k, service_account)
-    value_result = Memory.read(memory, vo, vz)
 
     a =
-      case {k, value_result, vo} do
-        {k, _, 0} when k != :error ->
-          put_in(service_account, [:storage], Map.drop(Map.get(service_account, :storage), [k]))
+      cond do
+        k != :error and vz == 0 ->
+          storage_ = Map.get(service_account, :storage) |> Map.drop([k])
+          put_in(service_account, [:storage], storage_)
 
-        {k, {:ok, value}, _} when k != :error ->
-          put_in(service_account, [:storage, k], value)
+        k != :error ->
+          try do
+            value = Memory.read!(memory, vo, vz)
+            put_in(service_account, [:storage, k], value)
+          rescue
+            _ -> :error
+          end
 
-        _ ->
+        true ->
           :error
       end
 
@@ -147,9 +160,9 @@ defmodule PVM.Host.General.Internal do
   end
 
   defp read_storage_key(memory, ko, kz, service_index) do
-    with {:ok, mem_segment} <- Memory.read(memory, ko, kz) do
-      Hash.default(<<service_index::32-little>> <> mem_segment)
-    else
+    try do
+      <<service_index::32-little>> <> Memory.read!(memory, ko, kz) |> Hash.default()
+    rescue
       _ -> :error
     end
   end
@@ -158,7 +171,7 @@ defmodule PVM.Host.General.Internal do
 
   defp current_value_length(k, service_account) do
     if k in Map.keys(service_account.storage),
-      do: byte_size(get_in(service_account, [:storage, k])),
+      do: safe_byte_size(get_in(service_account, [:storage, k])),
       else: none()
   end
 
@@ -184,7 +197,7 @@ defmodule PVM.Host.General.Internal do
 
     memory_ =
       if m != nil and Memory.check_range_access?(memory, o, byte_size(m), :write) do
-        Memory.write(memory, o, m) |> elem(1)
+        Memory.write!(memory, o, m)
       else
         memory
       end
@@ -208,4 +221,8 @@ defmodule PVM.Host.General.Internal do
       context: context
     }
   end
+
+  defp safe_byte_size(nil), do: 0
+  defp safe_byte_size(:error), do: 0
+  defp safe_byte_size(binary), do: byte_size(binary)
 end
