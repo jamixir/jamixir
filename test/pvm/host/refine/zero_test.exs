@@ -1,15 +1,17 @@
 defmodule PVM.Host.Refine.ZeroTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
   describe "zero/4" do
     setup do
+      # Create machine memory with test data
       machine_memory = %Memory{}
-      page_size = machine_memory.page_size
-      # Write some test data to verify it gets zeroed
-      {:ok, machine_memory} = Memory.write(machine_memory, 16 * page_size, "test_data")
+      test_data = String.duplicate("A", 256)
+
+      {:ok, machine_memory} =
+        Memory.write(machine_memory, 16 * machine_memory.page_size, test_data)
 
       machine = %Integrated{
         memory: machine_memory,
@@ -19,66 +21,99 @@ defmodule PVM.Host.Refine.ZeroTest do
       context = %Context{m: %{1 => machine}}
       gas = 100
 
-      {:ok, context: context, machine: machine, gas: gas}
+      # r7: machine ID, r8: start page, r9: page count
+      registers = %Registers{
+        r7: 1,
+        r8: 16,
+        r9: 2
+      }
+
+      {:ok,
+       context: context, machine: machine, gas: gas, registers: registers, test_data: test_data}
     end
 
-    test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
-      registers = %Registers{r7: 999, r8: 16, r9: 1}
+    test "returns WHO when machine doesn't exist", %{
+      gas: gas,
+      registers: registers,
+      context: context
+    } do
+      memory = %Memory{}
+      who = who()
+      registers = %{registers | r7: 99}
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.zero(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, who())
-      assert memory_ == %Memory{}
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who},
+               memory: ^memory,
+               context: ^context
+             } = Refine.zero(gas, registers, memory, context)
     end
 
-    test "returns OOB when page number is too small", %{context: context, gas: gas} do
-      registers = %Registers{r7: 1, r8: 15, r9: 1}
+    test "returns HUH when page number is too small", %{
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      memory = %Memory{}
+      # Set start page below minimum (16)
+      registers = %{registers | r8: 15}
+      huh = huh()
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.zero(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == %Memory{}
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Refine.zero(gas, registers, memory, context)
     end
 
-    test "returns OOB when page range is too large", %{context: context, gas: gas} do
-      registers = %Registers{r7: 1, r8: 16, r9: trunc(:math.pow(2, 32) / 64)}
+    test "returns HUH when page range is too large", %{
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      memory = %Memory{}
+      # Set page count to exceed 2^32/page_size
+      registers = %{registers | r8: 0x1_FFFE, r9: 4}
+      huh = huh()
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.zero(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == %Memory{}
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Refine.zero(gas, registers, memory, context)
     end
 
-    test "successful zero with valid parameters", %{context: context, gas: gas} do
-      page = 16
-      count = 2
+    test "successful zero with valid parameters", %{
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      memory = %Memory{}
+      ok = ok()
 
-      registers = %Registers{r7: 1, r8: page, r9: count}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.zero(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, ok())
-      assert memory_ == %Memory{}
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^ok},
+               memory: ^memory,
+               context: context_
+             } = Refine.zero(gas, registers, memory, context)
 
       # Get updated machine
-      %Integrated{memory: u_} = Map.get(context_.m, 1)
-      page_size = u_.page_size
+      machine = Map.get(context_.m, 1)
+      page_size = machine.memory.page_size
+
+      # Calculate range
+      start_offset = registers.r8 * page_size
+      length = registers.r9 * page_size
 
       # Verify pages are zeroed
-      start_offset = page * page_size
-      length = count * page_size
-      {:ok, zeroed_data} = Memory.read(u_, start_offset, length)
+      {:ok, zeroed_data} = Memory.read(machine.memory, start_offset, length)
       assert zeroed_data == <<0::size(length * 8)>>
 
       # Verify pages are writable
-      assert Memory.check_range_access?(u_, start_offset, length, :write)
+      assert Memory.check_range_access?(machine.memory, start_offset, length, :write)
     end
   end
 end

@@ -1,102 +1,134 @@
 defmodule PVM.Host.Refine.PeekTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
-  describe "peek_pure/3" do
+  defp a_0, do: 0x1_0000
+
+  describe "peek/4" do
     setup do
-      {:ok, source_memory} = Memory.write(%Memory{}, 0, "test_data")
+      memory = %Memory{}
+      context = %Context{}
+      gas = 100
+
+      source_memory = %Memory{}
+      test_data = String.duplicate("A", 32)
+      {:ok, source_memory} = Memory.write(source_memory, a_0(), test_data)
 
       machine = %Integrated{
         memory: source_memory,
         program: "program"
       }
 
-      context = %Context{m: %{1 => machine}}
-      gas = 100
-
-      {:ok, context: context, machine: machine, gas: gas}
-    end
-
-    test "out of gas", %{context: context, machine: _machine} do
-      registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
-      result = Refine.peek(8, registers, %Memory{}, context)
-      assert result.exit_reason == :out_of_gas
-      assert result.registers == registers
-      assert result.memory == %Memory{}
-      assert result.context == context
-      assert result.gas == 0
-    end
-
-    test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
-      registers = %Registers{r7: 999, r8: 0, r9: 32, r10: 100}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.peek(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, who())
-      assert memory_ == %Memory{}
-      assert context_ == context
-    end
-
-    test "returns OOB when source memory read fails", %{
-      context: context,
-      machine: machine,
-      gas: gas
-    } do
-      # Make source memory unreadable
-      machine = %{machine | memory: Memory.set_access(machine.memory, 0, 32, nil)}
       context = %{context | m: %{1 => machine}}
 
-      registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
+      # r7: machine ID, r8: dest offset, r9: source offset, r10: length
+      registers = %Registers{
+        r7: 1,
+        r8: a_0(),
+        r9: a_0(),
+        r10: byte_size(test_data)
+      }
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.peek(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == %Memory{}
-      assert context_ == context
+      {:ok,
+       memory: memory,
+       context: context,
+       machine: machine,
+       gas: gas,
+       registers: registers,
+       test_data: test_data}
     end
 
-    test "returns OOB when destination memory write fails", %{
+    test "returns WHO when machine doesn't exist", %{
+      memory: memory,
       context: context,
-      gas: gas
+      gas: gas,
+      registers: registers
+    } do
+      # Set r7 to non-existent machine ID
+      registers = %{registers | r7: 999}
+      who = who()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who},
+               memory: ^memory,
+               context: ^context
+             } = Refine.peek(gas, registers, memory, context)
+    end
+
+    test "returns OOB when source (aka machine) memory not readable", %{
+      memory: memory,
+      context: context,
+      machine: machine,
+      gas: gas,
+      registers: registers
+    } do
+      # Make source memory unreadable at read location
+      machine = %{
+        machine
+        | memory: Memory.set_access(machine.memory, registers.r9, registers.r10, nil)
+      }
+
+      context = %{context | m: %{1 => machine}}
+      oob = oob()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: oob},
+               memory: ^memory,
+               context: ^context
+             } = Refine.peek(gas, registers, memory, context)
+    end
+
+    test "panic and untouched everything when destination memory not writable", %{
+      context: context,
+      gas: gas,
+      registers: registers
     } do
       # Make destination memory unwritable
-      memory = Memory.set_access(%Memory{}, 100, 32, :read)
+      memory = Memory.set_access(%Memory{}, registers.r8, registers.r10, :read)
 
-      registers = %Registers{r7: 1, r8: 0, r9: 32, r10: 100}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.peek(gas, registers, memory, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } = Refine.peek(gas, registers, memory, context)
     end
 
     test "successful peek with valid parameters", %{
+      memory: memory,
       context: context,
-      machine: machine,
-      gas: gas
+      gas: gas,
+      registers: registers,
+      test_data: test_data
     } do
-      test_data = "test_data"
+      ok = ok()
 
-      registers = %Registers{r7: 1, r8: 100, r9: 0, r10: byte_size(test_data)}
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ok},
+               memory: memory_,
+               context: ^context
+             } = Refine.peek(gas, registers, memory, context)
 
-      machine = %{machine | memory: Memory.write(machine.memory, 0, test_data) |> elem(1)}
-      context = %{context | m: %{1 => machine}}
+      assert Memory.read!(memory_, registers.r8, registers.r10) == test_data
+    end
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.peek(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, ok())
-
-      # Verify data was copied correctly
-      {:ok, ^test_data} = Memory.read(memory_, 100, byte_size(test_data))
-
-      assert context_ == context
+    test "out of gas", %{
+      memory: memory,
+      context: context,
+      registers: registers
+    } do
+      assert %{
+               exit_reason: :out_of_gas,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context,
+               gas: 0
+             } = Refine.peek(8, registers, memory, context)
     end
   end
 end
