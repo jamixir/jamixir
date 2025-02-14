@@ -34,12 +34,14 @@ defmodule PVM.Host.Refine.Internal do
     [h, o] = Registers.get(registers, [8, 9])
 
     v =
-      with {:ok, hash} <- PVM.Memory.read(memory, h, 32) do
+      try do
+        hash = PVM.Memory.read!(memory, h, 32)
+
         case a do
           nil -> nil
           _ -> ServiceAccount.historical_lookup(a, timeslot, hash)
         end
-      else
+      rescue
         _ -> :error
       end
 
@@ -56,7 +58,7 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, none(), memory}
 
         true ->
-          {:continue, byte_size(v), Memory.write(memory, o, binary_part(v, f, l)) |> elem(1)}
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Internal{
@@ -140,7 +142,7 @@ defmodule PVM.Host.Refine.Internal do
 
     memory_ =
       if v != nil and write_check do
-        PVM.Memory.write(memory, o, binary_part(v, f, l)) |> elem(1)
+        PVM.Memory.write!(memory, o, binary_part(v, f, l))
       else
         memory
       end
@@ -252,8 +254,8 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, oob(), memory}
 
         true ->
-          data = Memory.read(Map.get(m, n).memory, s, z) |> elem(1)
-          memory_ = Memory.write(memory, o, data) |> elem(1)
+          data = Memory.read!(Map.get(m, n).memory, s, z)
+          memory_ = Memory.write!(memory, o, data)
           {:continue, ok(), memory_}
       end
 
@@ -281,12 +283,12 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, oob(), m}
 
         true ->
-          data = Memory.read(memory, s, z) |> elem(1)
+          data = Memory.read!(memory, s, z)
           machine = Map.get(m, n)
 
           machine_ = %{
             machine
-            | memory: Memory.write(machine.memory, o, data) |> elem(1)
+            | memory: Memory.write!(machine.memory, o, data)
           }
 
           {:continue, ok(), %{m | n => machine_}}
@@ -317,8 +319,7 @@ defmodule PVM.Host.Refine.Internal do
 
         _ ->
           Memory.set_access_by_page(u, p, c, :write)
-          |> Memory.write(p * zp, <<0::size(c * zp)>>)
-          |> elem(1)
+          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
       end
 
     {w7_, m_} =
@@ -360,9 +361,7 @@ defmodule PVM.Host.Refine.Internal do
 
         _ ->
           Memory.set_access_by_page(u, p, c, nil)
-          |> elem(1)
-          |> Memory.write(p * zp, <<0::size(c * zp)>>)
-          |> elem(1)
+          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
       end
 
     {w7_, m_} =
@@ -421,6 +420,7 @@ defmodule PVM.Host.Refine.Internal do
                       into: <<>>,
                       do: <<w::64-little>>
 
+              # TODO: check if this is correct
               memory_ = Memory.write(memory, o, write_value)
 
               machine_ = %{
@@ -466,7 +466,7 @@ defmodule PVM.Host.Refine.Internal do
           {non_neg_integer(), Registers.t()} | {:error, :error}
   defp read_invoke_params(memory, o) do
     if Memory.check_range_access?(memory, o, 112, :write) do
-      <<g::64-little, rest::binary>> = Memory.read(memory, o, 112) |> elem(1)
+      <<g::64-little, rest::binary>> = Memory.read!(memory, o, 112)
 
       values =
         for {chunk, index} <- Enum.with_index(for <<chunk::64-little <- rest>>, do: chunk),
