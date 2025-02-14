@@ -6,26 +6,41 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
   import PVM.Constants.HostCallResult
   alias Util.Hash
 
+  defp a_0, do: 0x1_0000
+
   describe "historical_lookup/6" do
     setup do
-      # Setup basic test data
       memory = %Memory{}
       context = %Context{}
+      some_big_value = 0xFFFF
 
       test_value = Hash.two()
-      test_hash = Hash.default(test_value)
+
+      test_map = %{
+        hash: Hash.default(test_value),
+        length: byte_size(test_value),
+        value: test_value
+      }
+
       gas = 100
 
       service_accounts = %{
         1 => %ServiceAccount{
-          # Present storage
           preimage_storage_p: %{
-            # Map of hash => value pairs for testing
-            test_hash => test_value
+            test_map.hash => test_value
           },
-          # Legacy storage (empty for this test)
-          preimage_storage_l: %{{test_hash, byte_size(test_value)} => [1]}
+          preimage_storage_l: %{
+            {test_map.hash, test_map.length} => [1]
+          }
         }
+      }
+
+      registers = %Registers{
+        r7: 1,
+        r8: a_0(),
+        r9: a_0() + %Memory{}.page_size + 100,
+        r10: 0,
+        r11: some_big_value
       }
 
       {:ok,
@@ -33,71 +48,93 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
        context: context,
        service_accounts: service_accounts,
        timeslot: 123,
-       test_hash: test_hash,
-       test_value: test_value,
-       gas: gas}
+       test_map: test_map,
+       gas: gas,
+       registers: registers}
     end
 
-    test "returns WHO when service account doesn't exist", %{
+    test "{:continue, none()} when service account doesn't exist", %{
       memory: memory,
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      gas: gas
+      gas: gas,
+      registers: registers
     } do
       # Set w7 to non-existent service account ID
-      registers = %Registers{r7: 999}
+      registers = Registers.set(registers, :r7, 999)
+      none = none()
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
-
-      assert registers_ == Registers.set(registers, 7, none())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^none},
+               memory: ^memory,
+               context: ^context
+             } =
+               Refine.historical_lookup(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 1,
+                 service_accounts,
+                 timeslot
+               )
     end
 
-    test "returns OOB when memory is not readable", %{
+    test "{:panic, w7} when memory is not readable", %{
       memory: memory,
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      gas: gas
+      gas: gas,
+      registers: registers
     } do
       # 1 is the start address in memory
-      registers = %Registers{r8: 1}
+      registers = Registers.set(registers, :r8, 1)
 
-      # Memory is not readable
-      memory = Memory.set_access(memory, 1, 1, nil)
-
-      # h will be :error => expectig oob
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } =
+               Refine.historical_lookup(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 1,
+                 service_accounts,
+                 timeslot
+               )
     end
 
-    test "return oob when memory is not writable", %{
+    test "{:panic, w7} when memory is not writable", %{
       memory: memory,
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      gas: gas
+      gas: gas,
+      registers: registers
     } do
-      registers = %Registers{r8: 1, r9: 64, r10: 32}
+      memory = Memory.set_access_by_page(memory, 17, 1, :read)
 
-      # Memory is not writable
-      # bo...+bz is not all writable
-      memory = Memory.set_access(memory, 100, 1, :read)
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } =
+               Refine.historical_lookup(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 1,
+                 service_accounts,
+                 timeslot
+               )
     end
 
     test "successful lookup with valid parameters", %{
@@ -105,22 +142,31 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      test_value: test_value,
-      gas: gas
+      test_map: test_map,
+      gas: gas,
+      registers: registers
     } do
-      # Write hash to memory
-      {:ok, memory} = Memory.write(memory, 0, test_value)
+      memory = Memory.write!(memory, registers.r8, test_map.hash)
+      %{length: l, value: v, hash: h} = test_map
 
-      # Setup registers
-      registers = %Registers{r7: 1, r8: 0, r9: 100, r10: byte_size(test_value)}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
-
-      assert registers_ == Registers.set(registers, 7, byte_size(test_value))
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^l},
+               memory: memory_,
+               context: context_
+             } =
+               Refine.historical_lookup(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 99,
+                 service_accounts,
+                 timeslot
+               )
 
       # Verify the value was written to memory
-      {:ok, ^test_value} = Memory.read(memory_, 100, byte_size(test_value))
+      {:ok, ^v} = Memory.read(memory_, registers.r9, l)
 
       assert context_ == context
     end
@@ -130,27 +176,34 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
-      test_value: test_value,
-      gas: gas
+      test_map: test_map,
+      gas: gas,
+      registers: registers
     } do
-      # Write hash to memory
-      {:ok, memory} = Memory.write(memory, 0, test_value)
+      %{length: l, value: v, hash: h} = test_map
+      memory = Memory.write!(memory, registers.r8, test_map.hash)
 
       # Setup registers with max 64-bit value (0xFFFF_FFFF_FFFF_FFFF)
-      registers = %Registers{
-        r7: 0xFFFF_FFFF_FFFF_FFFF,
-        r8: 0,
-        r9: 100,
-        r10: byte_size(test_value)
-      }
+      registers = %{registers | r7: 0xFFFF_FFFF_FFFF_FFFF}
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.historical_lookup(gas, registers, memory, context, 1, service_accounts, timeslot)
-
-      assert registers_ == Registers.set(registers, 7, byte_size(test_value))
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^l},
+               memory: memory_,
+               context: context_
+             } =
+               Refine.historical_lookup(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 1,
+                 service_accounts,
+                 timeslot
+               )
 
       # Verify the value was written to memory
-      {:ok, ^test_value} = Memory.read(memory_, 100, byte_size(test_value))
+      {:ok, ^v} = Memory.read(memory_, registers.r9, l)
 
       assert context_ == context
     end

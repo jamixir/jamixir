@@ -1,12 +1,17 @@
 defmodule PVM.Host.Refine.VoidTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
-  describe "void_pure/3" do
+  describe "void/4" do
     setup do
-      {:ok, machine_memory} = Memory.write(%Memory{}, 0, "test_data")
+      # Create machine memory with test data and read access
+      machine_memory = %Memory{}
+      test_data = String.duplicate("A", 256)
+
+      {:ok, machine_memory} =
+        Memory.write(machine_memory, 16 * machine_memory.page_size, test_data)
 
       machine = %Integrated{
         memory: machine_memory,
@@ -16,68 +21,88 @@ defmodule PVM.Host.Refine.VoidTest do
       context = %Context{m: %{1 => machine}}
       gas = 100
 
-      {:ok, context: context, machine: machine, gas: gas}
+      # r7: machine ID, r8: start page, r9: page count
+      registers = %Registers{
+        r7: 1,
+        r8: 16,
+        r9: 2
+      }
+
+      {:ok,
+       context: context, machine: machine, gas: gas, registers: registers, test_data: test_data}
     end
 
-    test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
-      registers = %Registers{r7: 999, r8: 0, r9: 1}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.void(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, who())
-      assert memory_ == %Memory{}
-      assert context_ == context
-    end
-
-    test "returns OOB when page range is too large", %{context: context, gas: gas} do
-      registers = %Registers{r7: 1, r8: 0, r9: trunc(:math.pow(2, 32))}
-
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.void(gas, registers, %Memory{}, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == %Memory{}
-      assert context_ == context
-    end
-
-    test "returns OOB when page has empty access", %{
-      context: context,
-      machine: machine,
-      gas: gas
+    test "returns WHO when machine doesn't exist", %{
+      gas: gas,
+      registers: registers
     } do
-      # Set empty access permission for target page
-      machine = %{machine | memory: Memory.set_access_by_page(machine.memory, 1, 1, nil)}
-      context = %{context | m: %{1 => machine}}
+      context = %Context{}
+      memory = %Memory{}
+      who = who()
 
-      registers = %Registers{r7: 1, r8: 1, r9: 1}
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who},
+               memory: ^memory,
+               context: ^context
+             } = Refine.void(gas, registers, memory, context)
+    end
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.void(gas, registers, %Memory{}, context)
+    test "returns HUH when page number is too small", %{
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      memory = %Memory{}
+      registers = %{registers | r8: 15}
+      huh = huh()
 
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == %Memory{}
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Refine.void(gas, registers, memory, context)
+    end
+
+    test "returns HUH when page range is too large", %{
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      memory = %Memory{}
+      registers = %{registers | r8: 0x1_FFFE, r9: 4}
+      huh = huh()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Refine.void(gas, registers, memory, context)
     end
 
     test "successful void with valid parameters", %{
       context: context,
-      gas: gas
+      gas: gas,
+      registers: registers
     } do
-      registers = %Registers{r7: 1, r8: 0, r9: 1}
+      memory = %Memory{}
+      ok = ok()
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.void(gas, registers, %Memory{}, context)
-
-      assert registers_.r7 == ok()
-      assert memory_ == %Memory{}
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^ok},
+               memory: ^memory,
+               context: context_
+             } = Refine.void(gas, registers, memory, context)
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
+      page_size = machine.memory.page_size
+      [p1, p2] = for p <- Registers.get(registers, [8, 9]), do: p * page_size
 
-      # Verify access permissions are empty
-      refute Memory.check_pages_access?(machine.memory, 0, 1, :read)
-      assert Memory.check_pages_access?(machine.memory, 1, 1, :write)
+      refute Memory.check_range_access?(machine.memory, p1, p2, :read)
     end
   end
 end

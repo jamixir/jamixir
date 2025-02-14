@@ -1,72 +1,142 @@
 defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
 
-  describe "machine_pure/3" do
-    test "returns OOB when memory read fails" do
-      registers = %Registers{r7: 100, r8: 32, r9: 0}
+  describe "machine/4" do
+    setup do
+      memory = %Memory{}
+      context = %Context{}
       gas = 100
 
-      # Make memory unreadable
-      memory = Memory.set_access(%Memory{}, 100, 32, nil)
+      # r7: program start, r8: program length, r9: initial counter
+      registers = %Registers{
+        r7: 0x1_0000,
+        r8: 32,
+        r9: 42
+      }
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.machine(gas, registers, memory, %Context{})
+      test_program = String.duplicate("A", 32)
+      memory = Memory.write!(memory, registers.r7, test_program)
 
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == memory
-      assert context_ == %Context{}
+      {:ok,
+       memory: memory,
+       context: context,
+       gas: gas,
+       registers: registers,
+       test_program: test_program}
     end
 
-    test "successful machine creation with valid parameters" do
-      test_program = "test_program"
-      {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-      gas = 100
-      registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 42}
+    test "returns {:panic, w7} when memory not readable", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      # Make memory unreadable at program location
+      memory = Memory.set_access(memory, registers.r7, registers.r8, nil)
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.machine(gas, registers, memory, %Context{})
-
-      # Should return machine ID 0 since context is empty
-      assert registers_ == Registers.set(registers, 7, 0)
-
-      # Memory should be unchanged
-      assert memory_ == memory
-
-      # Context should have new machine
-      assert map_size(context_.m) == 1
-      assert Map.has_key?(context_.m, 0)
-
-      # Verify machine state
-      assert %Integrated{program: ^test_program, counter: 42, memory: %Memory{}} =
-               Map.get(context_.m, 0)
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } = Refine.machine(gas, registers, memory, context)
     end
 
-    test "assigns lowest available ID when machines exist" do
-      # Create context with machines 2 and 3
+    test "creates new machine with ID 0 in empty context", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers,
+      test_program: test_program
+    } do
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: 0},
+               memory: ^memory,
+               context: context_
+             } = Refine.machine(gas, registers, memory, context)
+
+      # Verify new machine state
+      assert %{0 => machine} = context_.m
+
+      assert %Integrated{
+               program: ^test_program,
+               counter: 42,
+               memory: %Memory{}
+             } = machine
+    end
+
+    test "assigns lowest available ID when machines exist", %{
+      memory: memory,
+      gas: gas,
+      registers: registers,
+      test_program: test_program
+    } do
+      # Create context with machines 0 and 2
       context = %Context{
         m: %{
-          2 => %Integrated{program: "prog2"},
-          3 => %Integrated{program: "prog3"}
+          0 => %Integrated{program: "existing0"},
+          2 => %Integrated{program: "existing2"}
         }
       }
 
-      test_program = "new_program"
-      {:ok, memory} = Memory.write(%Memory{}, 0, test_program)
-      gas = 100
-      registers = %Registers{r7: 0, r8: byte_size(test_program), r9: 0}
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: 1},
+               memory: ^memory,
+               context: context_
+             } = Refine.machine(gas, registers, memory, context)
 
-      %Result{registers: registers_, context: context_} =
-        Refine.machine(gas, registers, memory, context)
+      assert %{
+               0 => %Integrated{program: "existing0"},
+               2 => %Integrated{program: "existing2"},
+               1 => %Integrated{
+                 program: ^test_program,
+                 counter: 42,
+                 memory: %Memory{}
+               }
+             } = context_.m
+    end
 
-      # Should return ID 1 (lowest available)
-      assert registers_ == Registers.set(registers, 7, 1)
-      assert map_size(context_.m) == 3
+    test "assigns correct ID with consecutive machine IDs", %{
+      memory: memory,
+      gas: gas,
+      registers: registers,
+      test_program: test_program
+    } do
+      # Create context with machines 0,1,2,3
+      context = %Context{
+        m: %{
+          0 => %Integrated{program: "existing0"},
+          1 => %Integrated{program: "existing1"},
+          2 => %Integrated{program: "existing2"},
+          3 => %Integrated{program: "existing3"}
+        }
+      }
 
-      # Verify machine state
-      assert %Integrated{program: ^test_program} = Map.get(context_.m, 1)
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: 4},
+               memory: ^memory,
+               context: context_
+             } = Refine.machine(gas, registers, memory, context)
+
+      # Verify new machine was added with ID 4
+
+      assert %{
+               0 => %Integrated{program: "existing0"},
+               1 => %Integrated{program: "existing1"},
+               2 => %Integrated{program: "existing2"},
+               3 => %Integrated{program: "existing3"},
+               4 => %Integrated{
+                 program: ^test_program,
+                 counter: 42,
+                 memory: %Memory{}
+               }
+             } = context_.m
     end
   end
 end
