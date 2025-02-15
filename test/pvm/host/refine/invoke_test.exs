@@ -1,88 +1,139 @@
 defmodule PVM.Host.Refine.InvokeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
   import Util.Hex
 
   describe "invoke/4" do
     setup do
-      # Program that sets registers [1,2,3] to [30,11,10] and halts
+      # Program that sets registers [1,2,3] to [30,11,10] and panics
       program =
         decode16!(
-          "00012a33010033020133030a3305020156120a14af520452140008aa12010179220128ee3d0103320c0000ffff010000010000010000010000010100000001000001000000010000010100000100010000010000000000"
+          "00012633010033020133030a3305020156120a14c3520452140008be12010183220128ee3d010300010100000100000100000100000101000000010000010000000100000101000001000100000000"
         )
 
-      machine = %Integrated{
-        program: program
+      # Create and encode the halt program
+      {halt_program, halt_bitmask} = ProgramUtils.create_halt_program()
+      encoded_halt_program = PVM.Encoder.encode_program(halt_program, halt_bitmask, [], 1)
+
+      context = %Context{
+        m: %{
+          1 => %Integrated{
+            program: program
+          },
+          2 => %Integrated{
+            program: encoded_halt_program
+          }
+        }
       }
 
-      context = %Context{m: %{1 => machine}}
-      memory = %Memory{}
+      # gas
+      memory = %Memory{} |> Memory.write!(0x1_1000, <<100::64-little>>)
       gas = 100
 
-      {:ok, context: context, memory: memory, machine: machine, gas: gas}
+      # Base registers setup
+      registers = %Registers{
+        # machine ID
+        r7: 1,
+        # output address (second usable page)
+        r8: 0x1_1000
+      }
+
+      {:ok, memory: memory, context: context, gas: gas, registers: registers}
     end
 
-    test "returns OOB when memory is not readable", %{context: context, gas: gas} do
-      registers = %Registers{r7: 1, r8: 0}
-      memory = %Memory{} |> Memory.set_default_access(nil)
+    test "returns panic when memory not readable at input", %{
+      context: context,
+      gas: gas,
+      registers: registers,
+      memory: memory
+    } do
+      memory = Memory.set_access(memory, registers.r8, 1, nil)
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.invoke(gas, registers, memory, context)
-
-      assert registers_ == Registers.set(registers, 7, oob())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } = Refine.invoke(gas, registers, memory, context)
     end
 
-    test "returns WHO when machine doesn't exist", %{memory: memory, context: context, gas: gas} do
-      registers = %Registers{r7: 999, r8: 0}
+    test "returns WHO when machine doesn't exist", %{
+      context: context,
+      gas: gas,
+      registers: registers,
+      memory: memory
+    } do
+      registers = %{registers | r7: 999}
+      who = who()
+      w8 = registers.r8
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.invoke(gas, registers, memory, context)
-
-      assert registers_ == Registers.set(registers, 7, who())
-      assert memory_ == memory
-      assert context_ == context
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who, r8: ^w8},
+               memory: ^memory,
+               context: ^context
+             } = Refine.invoke(gas, registers, memory, context)
     end
 
-    test "executes program successfully", %{context: context, memory: memory, gas: gas} do
-      # Set up registers with machine ID (1) and output offset (0)
-      registers = %Registers{r7: 1, r8: 0}
+    test "executes program successfully", %{
+      context: context,
+      memory: memory,
+      gas: gas,
+      registers: registers
+    } do
+      halt = halt()
+      registers = %{registers | r7: 2}
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.invoke(gas, registers, memory, context)
+      registers_for_inner_execution =
+        for x <- [42, 17, 83, 95, 29, 64, 71, 38, 56, 92, 13, 77],
+            into: <<>>,
+            do: <<x::64-little>>
 
-      # Check that execution halted successfully
-      assert registers_ == Registers.set(registers, 7, halt())
+      memory = Memory.write!(memory, registers.r8 + 8, registers_for_inner_execution)
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^halt},
+               memory: memory_,
+               context: context_
+             } = Refine.invoke(gas, registers, memory, context)
 
       # Read the execution results from memory
-      {:ok, _gas_bytes} = Memory.read(memory_, 0, 8)
-      {:ok, register_bytes} = Memory.read(memory_, 8, 13 * 4)
-
-      # Decode registers from memory
-      internal_vm_registers =
-        register_bytes
-        |> :binary.bin_to_list()
-        |> Enum.chunk_every(4)
-        |> Enum.map(&:binary.list_to_bin/1)
-        |> Enum.map(&de_le(&1, 4))
-        |> Enum.with_index()
-        |> Enum.into(%{}, fn {value, index} ->
-          {:"r#{index}", value}
-        end)
-        |> then(&struct(Registers, &1))
-
-      # Check that registers [1,2,3] contain [30,11,10]
-      assert Registers.get(internal_vm_registers, [1, 2, 3]) == [30, 11, 10]
+      {:ok, _gas_bytes} = Memory.read(memory_, registers.r8, 8)
 
       # Verify machine state in context
-      machine = Map.get(context_.m, 1)
+      machine = Map.get(context_.m, 2)
       # Should be at position 0 after halt
       assert machine.counter == 0
-      assert {:ok, <<30>>} = Memory.read(machine.memory, 3, 1)
+
+      assert {:ok, ^registers_for_inner_execution} =
+               Memory.read(memory_, registers.r8 + 8, 12 * 8)
+    end
+
+    test "executes program that panics", %{
+      context: context,
+      memory: memory,
+      gas: gas,
+      registers: registers
+    } do
+      panic = panic()
+      w8 = registers.r8
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^panic, r8: ^w8},
+               memory: memory_,
+               context: context_
+             } = Refine.invoke(gas, registers, memory, context)
+
+      assert Memory.read!(memory_, registers.r8 + 16, 24) ==
+               <<30::64-little, 11::64-little, 10::64-little>>
+
+      machine = Map.get(context_.m, 1)
+      assert Memory.read!(machine.memory, 0x10003, 4) == <<30::32-little>>
     end
   end
 end

@@ -104,22 +104,25 @@ defmodule PVM.Host.Refine.Internal do
           authorizer_output
 
         w10 == 2 and w11 < length(work_package.work_items) ->
-          get_in(work_package, [:work_items, w11, :payload])
+          Enum.at(work_package.work_items, w11).payload
 
         w10 == 3 and w11 < length(work_package.work_items) and
-          w12 < length(get_in(work_package, [:work_items, w11, :extrinsic])) and
-            Map.has_key?(preimages, get_in(work_package, [:work_items, w11, :extrinsic, w12])) ->
-          Map.get(preimages, get_in(work_package, [:work_items, w11, :extrinsic, w12]))
-
-        w10 == 4 and
-          w11 < length(get_in(work_package, [:work_items, work_item_index, :extrinsic])) and
+          w12 < length(Enum.at(work_package.work_items, w11).extrinsic) and
             Map.has_key?(
               preimages,
-              get_in(work_package, [:work_items, work_item_index, :extrinsic, w11])
+              Enum.at(work_package.work_items, w11).extrinsic |> Enum.at(w12)
+            ) ->
+          Map.get(preimages, Enum.at(work_package.work_items, w11).extrinsic |> Enum.at(w12))
+
+        w10 == 4 and
+          w11 < length(Enum.at(work_package.work_items, work_item_index).extrinsic) and
+            Map.has_key?(
+              preimages,
+              Enum.at(work_package.work_items, work_item_index).extrinsic |> Enum.at(w11)
             ) ->
           Map.get(
             preimages,
-            get_in(work_package, [:work_items, work_item_index, :extrinsic, w11])
+            Enum.at(work_package.work_items, work_item_index).extrinsic |> Enum.at(w11)
           )
 
         w10 == 5 and w11 < length(import_segments) and
@@ -209,13 +212,20 @@ defmodule PVM.Host.Refine.Internal do
 
     u = %Memory{} |> Memory.set_default_access(nil)
 
-    # Find next available machine ID (one below min of existing keys)
+    # Find first available machine ID
     n =
       if map_size(m) == 0 do
         0
       else
-        min_id = Map.keys(m) |> Enum.min()
-        if min_id > 0, do: min_id - 1, else: nil
+        max_key = Map.keys(m) |> Enum.max()
+        # range from 0 to max key + 1
+        0..(max_key + 1)
+        # remove existing keys
+        |> Stream.reject(fn id -> Map.has_key?(m, id) end)
+        # take the first one
+        |> Stream.take(1)
+        # convert to list and get the first element
+        |> Enum.at(0)
       end
 
     {exit_reason, w7_, context_} =
@@ -317,13 +327,17 @@ defmodule PVM.Host.Refine.Internal do
           :error
 
         _ ->
-          Memory.set_access_by_page(u, p, c, :write)
-          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          try do
+            Memory.set_access_by_page(u, p, c, :write)
+            |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          rescue
+            _ -> :error
+          end
       end
 
     {w7_, m_} =
       cond do
-        p < 16 or p + c > 0x1_0000_0000 / zp ->
+        p < 16 or p + c > 0x1_0000 ->
           {huh(), m}
 
         u == :error ->
@@ -359,8 +373,12 @@ defmodule PVM.Host.Refine.Internal do
           :error
 
         _ ->
-          Memory.set_access_by_page(u, p, c, nil)
-          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          try do
+            Memory.write!(u, p * zp, <<0::size(c * zp)>>)
+            |> Memory.set_access_by_page(p, c, nil)
+          rescue
+            _ -> :error
+          end
       end
 
     {w7_, m_} =
@@ -368,7 +386,7 @@ defmodule PVM.Host.Refine.Internal do
         u == :error ->
           {who(), m}
 
-        p < 16 or p + c > 0x1_0000_0000 / zp or not Memory.check_pages_access?(u, p, c, :read) ->
+        p < 16 or p + c > 0x1_0000 or not Memory.check_pages_access?(u, p, c, :read) ->
           {huh(), m}
 
         true ->
@@ -419,8 +437,7 @@ defmodule PVM.Host.Refine.Internal do
                       into: <<>>,
                       do: <<w::64-little>>
 
-              # TODO: check if this is correct
-              memory_ = Memory.write(memory, o, write_value)
+              memory_ = Memory.write!(memory, o, write_value)
 
               machine_ = %{
                 machine
