@@ -1,4 +1,5 @@
 defmodule TestnetBlockImporterTest do
+  alias Codec.State.Json
   alias Block.Header
   alias IO.ANSI
   alias System.State
@@ -14,76 +15,83 @@ defmodule TestnetBlockImporterTest do
   end
 
   @ignore_fields []
-  @safrole_path "./data/fallback"
-  @state_path "#{@safrole_path}/state_snapshots/"
-  @block_path "#{@safrole_path}/blocks/"
   @genesis_path "./chainspecs/state_snapshots/"
   @user "jamixir"
   @repo "jamtestnet"
+
+  def state_path(mode), do: "./data/#{mode}/state_snapshots/"
+  def blocks_path(mode), do: "./data/#{mode}/blocks/"
 
   describe "blocks and states" do
     setup do
       # put zero header to storage
       Storage.put(Hash.zero(), build(:header, timeslot: 0))
-      :ok
+      {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
+      state = Json.decode(genesis_json)
+      {:ok, genesis_state: state}
     end
 
     # waiting for correctnes of other party side
-    test "jam-dune" do
-      {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
 
-      state = Codec.State.Json.decode(genesis_json)
+    for mode <- ["fallback", "safrole"] do
+      @tag mode: mode
 
-      files =
-        for f <- File.ls!(local_vectors_dir() <> @repo <> "/" <> @block_path) |> Enum.sort(),
-            f =~ ~r/.*\.bin/,
-            do: String.replace(f, ~r/_.*.bin/, "") |> String.to_integer()
+      test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
+        files =
+          for f <-
+                File.ls!(local_vectors_dir() <> @repo <> "/" <> blocks_path(mode)) |> Enum.sort(),
+              f =~ ~r/.*\.bin/,
+              do: String.replace(f, ~r/_.*.bin/, "") |> String.to_integer()
 
-      [first_epoch | _] = files
-      [last_epoch | _] = Enum.reverse(files)
+        [first_epoch | _] = files
+        [last_epoch | _] = Enum.reverse(files)
 
-      Enum.reduce(first_epoch..(last_epoch - 1), state, fn epoch, state ->
-        Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
-          Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
-          timeslot = String.pad_leading("#{timeslot}", 3, "0")
+        Enum.reduce(first_epoch..(last_epoch - 1), state, fn epoch, state ->
+          Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
+            Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
+            timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
-          block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", @block_path, @user, @repo)
+            block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", blocks_path(mode), @user, @repo)
 
-          {block, _} = Block.decode(block_bin)
+            {block, _} = Block.decode(block_bin)
 
-          {:ok, json} =
-            fetch_and_parse_json("#{epoch}_#{timeslot}.json", @state_path, @user, @repo)
+            {:ok, json} =
+              fetch_and_parse_json("#{epoch}_#{timeslot}.json", state_path(mode), @user, @repo)
 
-          expected_state = Codec.State.Json.decode(json)
+            expected_state = Json.decode(json)
 
-          new_state =
-            case State.add_block(state, block) do
-              {:ok, s} ->
-                Storage.put(block.header)
-                Logger.info("🔄 State Updated successfully")
-                s
+            new_state =
+              case State.add_block(state, block) do
+                {:ok, s} ->
+                  Storage.put(block.header)
+                  Logger.info("🔄 State Updated successfully")
+                  s
 
-              {:error, _, error} ->
-                Logger.info("#{ANSI.red()} Error processing block #{epoch}:#{timeslot}: #{error}")
-                state
+                {:error, _, error} ->
+                  Logger.info(
+                    "#{ANSI.red()} Error processing block #{epoch}:#{timeslot}: #{error}"
+                  )
+
+                  state
+              end
+
+            Logger.info("🔍 Comparing state")
+
+            for field <- Utils.list_struct_fields(System.State) do
+              unless Enum.find(@ignore_fields, &(&1 == field)) do
+                expected = Map.get(expected_state, field)
+                new = Map.get(new_state, field)
+                assert expected == new
+                # Logger.info("✅ Field #{field} match")
+              end
             end
 
-          Logger.info("🔍 Comparing state")
-
-          for field <- Utils.list_struct_fields(System.State) do
-            unless Enum.find(@ignore_fields, &(&1 == field)) do
-              expected = Map.get(expected_state, field)
-              new = Map.get(new_state, field)
-              assert expected == new
-              # Logger.info("✅ Field #{field} match")
-            end
-          end
-
-          new_state
+            new_state
+          end)
         end)
-      end)
 
-      Logger.info("🎉 All blocks and states are correct")
+        Logger.info("🎉 All blocks and states are correct")
+      end
     end
   end
 
