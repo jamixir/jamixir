@@ -12,7 +12,7 @@ defmodule PVM.Host.Accumulate.Context do
           # t: List of deferred transfers
           transfers: list(System.DeferredTransfer.t()),
           # y: accumulation trie result
-          accumulation_trie_result: Types.Hash.t() | nil
+          accumulation_trie_result: Types.hash() | nil
         }
 
   defstruct services: %{},

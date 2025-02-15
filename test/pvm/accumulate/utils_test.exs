@@ -45,13 +45,13 @@ defmodule PVM.Accumulate.UtilsTest do
 
       context = init_fn.(accumulation, service_index)
 
-      assert context.services == Map.delete(accumulation.services, service_index)
-      assert context.service == service_index
-      assert context.transfers == []
-
-      assert context.accumulation.services == %{
-               service_index => accumulation.services[service_index]
-             }
+      assert %{
+               service: ^service_index,
+               accumulation: ^accumulation,
+               computed_service: computed_service,
+               transfers: [],
+               accumulation_trie_result: nil
+             } = context
 
       assert is_integer(context.computed_service)
     end
