@@ -68,20 +68,22 @@ defmodule TestnetBlockImporterTest do
                 state
             end
 
-          Logger.info("#{ANSI.green()}🔍 Comparing state")
+          Logger.info("🔍 Comparing state")
 
           for field <- Utils.list_struct_fields(System.State) do
             unless Enum.find(@ignore_fields, &(&1 == field)) do
               expected = Map.get(expected_state, field)
               new = Map.get(new_state, field)
               assert expected == new
-              Logger.debug("✅ Field #{field} match")
+              # Logger.info("✅ Field #{field} match")
             end
           end
 
           new_state
         end)
       end)
+
+      Logger.info("🎉 All blocks and states are correct")
     end
   end
 
