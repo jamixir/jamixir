@@ -32,7 +32,7 @@ defmodule PVM.Host.Accumulate.Internal do
         g == :error ->
           {:panic, registers.r7, context_pair}
 
-        Enum.any?([m, a, v], &(&1 < 0 or &1 > 0x1_0000_0000)) ->
+        Enum.any?([m, a, v], &(&1 < 0 or &1 > 0xFFFF_FFFF)) ->
           {:continue, who(), context_pair}
 
         true ->
@@ -183,7 +183,7 @@ defmodule PVM.Host.Accumulate.Internal do
     x_s = Context.accumulating_service(x)
     a_t = if a == :error, do: 0, else: ServiceAccount.threshold_balance(a)
 
-    s = Map.put(x_s, :balance, Map.get(x_s, :balance) - a_t)
+    s = %{x_s | balance: x_s.balance - a_t}
 
     {exit_reason, w7_, computed_service_, accumulation_services_} =
       (
@@ -209,7 +209,7 @@ defmodule PVM.Host.Accumulate.Internal do
       %{
         x
         | computed_service: computed_service_,
-          accumulation: Map.merge(x.accumulation, %{services: accumulation_services_})
+          accumulation: %{x.accumulation | services: accumulation_services_}
       }
 
     context_ = put_elem(context_pair, 0, x_)
@@ -337,30 +337,36 @@ defmodule PVM.Host.Accumulate.Internal do
         false -> :error
       end
 
-    l = max(81, ServiceAccount.octets_in_storage(service)) - 81
-
-    s_ = Context.accumulating_service(x)
-    s_ = %{s_ | balance: s_.balance + service.balance}
-
     {exit_reason, w7_, x_} =
       cond do
         h == :error ->
           {:panic, registers.r7, x}
 
-        d == :error or d.code_hash != <<x.service::32-little>> ->
+        service == :error or service.code_hash != <<x.service::32-little>> ->
           {:continue, who(), x}
 
-        ServiceAccount.items_in_storage(s_) != 2 or !Map.has_key?(d.preimage_storage_l, {h, l}) ->
-          {:continue, huh(), x}
-
-        match?([_x, _y], Map.get(d.preimage_storage_l, {h, l})) and
-            elem(Map.get(d.preimage_storage_l, {h, l}), 1) < timeslot - Constants.forget_delay() ->
-          x_u_d_ = Map.delete(x.accumulation.services, d) |> Map.merge(%{x.service => s_})
-          x_ = put_in(x, [:accumulation, :services], x_u_d_)
-          {:continue, ok(), x_}
-
         true ->
-          {:continue, huh(), x}
+          l =
+            max(81, ServiceAccount.octets_in_storage(service)) - 81
+
+          s_ = Context.accumulating_service(x)
+          s_ = %{s_ | balance: s_.balance + service.balance}
+
+          cond do
+            ServiceAccount.items_in_storage(service) != 2 or
+                !Map.has_key?(service.preimage_storage_l, {h, l}) ->
+              {:continue, huh(), x}
+
+            match?([_x, _y], Map.get(service.preimage_storage_l, {h, l})) and
+                Map.get(service.preimage_storage_l, {h, l}) |> Enum.at(1) <
+                  timeslot - Constants.forget_delay() ->
+              x_u_d_ = Map.delete(x.accumulation.services, d) |> Map.merge(%{x.service => s_})
+              x_ = put_in(x, [:accumulation, :services], x_u_d_)
+              {:continue, ok(), x_}
+
+            true ->
+              {:continue, huh(), x}
+          end
       end
 
     %Result.Internal{
@@ -382,32 +388,35 @@ defmodule PVM.Host.Accumulate.Internal do
         _ -> :error
       end
 
-    xs = Context.accumulating_service(x)
-    a = Map.get(xs.preimage_storage_l, {h, z}, :error)
-
     {exit_reason, w7_, w8_} =
       cond do
         h == :error ->
           {:panic, registers.r7, registers.r8}
 
-        a == :error ->
-          {:continue, none(), 0}
-
         true ->
-          two_32 = 0x1_0000_0000
+          xs = Context.accumulating_service(x)
+          a = Map.get(xs.preimage_storage_l, {h, z}, :error)
 
-          case a do
-            [] ->
-              {:continue, 0, 0}
+          cond do
+            a == :error ->
+              {:continue, none(), 0}
 
-            [x] ->
-              {:continue, 1 + two_32 * x, 0}
+            true ->
+              two_32 = 0x1_0000_0000
 
-            [x, y] ->
-              {:continue, 2 + two_32 * x, y}
+              case a do
+                [] ->
+                  {:continue, 0, 0}
 
-            [x, y, z] ->
-              {:continue, 3 + two_32 * x, y + two_32 * z}
+                [x] ->
+                  {:continue, 1 + two_32 * x, 0}
+
+                [x, y] ->
+                  {:continue, 2 + two_32 * x, y}
+
+                [x, y, z] ->
+                  {:continue, 3 + two_32 * x, y + two_32 * z}
+              end
           end
       end
 
