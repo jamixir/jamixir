@@ -388,10 +388,14 @@ defmodule Block.Extrinsic.Guarantee do
     def encode(g = %Guarantee{}) do
       e({
         g.work_report,
-        e_le(g.timeslot, 4),
-        vs(for {i, s} <- g.credentials, do: {e_le(i, 2), s})
+        <<g.timeslot::little-32>>,
+        Guarantee.encode_cretentials(g.credentials)
       })
     end
+  end
+
+  def encode_cretentials(creds) do
+    vs(for {i, s} <- creds, do: {<<i::16-little>>, s})
   end
 
   use Codec.Decoder
