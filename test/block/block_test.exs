@@ -287,4 +287,17 @@ defmodule BlockTest do
       IO.puts("State and blocks exported to #{tmp_dir}")
     end
   end
+
+  describe "calculate extrinsic hash" do
+    # based on https://github.com/jam-duna/jamtestnet/issues/62
+    test "correct extrinsic from jam duna block" do
+      {:ok, block_bin} = File.read("./test/block/extrinsics_test_block.bin")
+
+      {block, _} = Block.decode(block_bin)
+      expected_extrinsic = Extrinsic.calculate_hash(block.extrinsic)
+
+      assert expected_extrinsic ==
+               <<0x4B545B182C0D0E9B13F0A84E37D42FE5DBE7D5CC4BE41BD890A2E2785039DC49::256>>
+    end
+  end
 end

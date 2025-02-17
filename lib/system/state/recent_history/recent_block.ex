@@ -27,9 +27,15 @@ defmodule System.State.RecentHistory.RecentBlock do
   defp mmr(json), do: JsonDecoder.from_json(json[:peaks])
 
   defp map_reported_hashes(json) do
-    for report <- json,
-        into: %{},
-        do: {JsonDecoder.from_json(report[:hash]), JsonDecoder.from_json(report[:exports_root])}
+    for report <- json, into: %{} do
+      {f1, f2} =
+        if(report[:hash] != nil,
+          do: {:hash, :exports_root},
+          else: {:work_package_hash, :segment_tree_root}
+        )
+
+      {JsonDecoder.from_json(report[f1]), JsonDecoder.from_json(report[f2])}
+    end
   end
 
   def to_json_mapping do

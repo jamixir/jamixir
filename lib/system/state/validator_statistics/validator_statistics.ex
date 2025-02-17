@@ -83,6 +83,7 @@ defmodule System.State.ValidatorStatistics do
 
     case get_author_stats(current_epoc_stats_, header.block_author_key_index) do
       {:ok, author_stats} ->
+        edkeys = curr_validators_ |> Enum.map(& &1.ed25519)
         # Formula (13.4) v0.6.0
         author_stats_ = %{
           author_stats
@@ -101,16 +102,17 @@ defmodule System.State.ValidatorStatistics do
           |> Enum.map(fn {stats, index} ->
             %{
               stats
-              | availability_assurances:
+              | # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
+                availability_assurances:
                   stats.availability_assurances +
                     (extrinsic.assurances
                      |> Enum.any?(&(&1.validator_index == index))
                      |> if(do: 1, else: 0)),
-                # π'0[v]a ≡ a[v]a + (∃a ∈ EA ∶ av = v)
+                # π0[v]g ≡ a[v]g +(κ'v ∈ R)
                 reports_guaranteed:
                   author_stats.reports_guaranteed +
                     (reporters_set
-                     |> Enum.any?(&(&1 == Enum.at(index, curr_validators_)))
+                     |> Enum.any?(&(&1 == Enum.at(edkeys, index)))
                      |> if(do: 1, else: 0))
             }
           end)

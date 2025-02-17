@@ -135,8 +135,8 @@ defmodule System.State.ServiceAccount do
   def extract_code_hash(service), do: JsonDecoder.from_json(service[:code_hash])
 
   def extract_storage(storage) do
-    for d <- storage || [], into: %{} do
-      {JsonDecoder.from_json(d[:hash]), JsonDecoder.from_json(d[:blob])}
+    for {k, v} <- storage || [], into: %{} do
+      {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
     end
   end
 
