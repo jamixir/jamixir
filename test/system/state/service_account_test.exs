@@ -1,6 +1,6 @@
 defmodule System.State.ServiceAccountTest do
   alias System.State.ServiceAccount
-  alias Util.{Hash, Hex}
+  alias Util.Hash
   use ExUnit.Case
   use Codec.Encoder
   import Jamixir.Factory
@@ -150,41 +150,8 @@ defmodule System.State.ServiceAccountTest do
   describe "to_json/1" do
     test "encodes service account to json format" do
       account = build(:service_account)
-      expected_code_hash = Hex.encode16(account.code_hash, prefix: true)
-
-      json = JsonEncoder.encode(account)
-
-      assert json == %{
-               service: %{
-                 balance: account.balance,
-                 code_hash: expected_code_hash,
-                 min_item_gas: account.gas_limit_g,
-                 min_memo_gas: account.gas_limit_m
-               },
-               preimages: [
-                 %{
-                   hash: expected_code_hash,
-                   blob: Hex.encode16(account.preimage_storage_p[account.code_hash], prefix: true)
-                 }
-               ],
-               lookup_meta: [
-                 %{
-                   key: %{
-                     hash: expected_code_hash,
-                     length: 4
-                   },
-                   value: [1, 2, 3]
-                 }
-               ],
-               storage:
-                 Map.to_list(account.storage)
-                 |> Enum.map(fn {key, value} ->
-                   %{
-                     hash: Hex.encode16(key, prefix: true),
-                     blob: Hex.encode16(value, prefix: true)
-                   }
-                 end)
-             }
+      expected = JsonEncoder.encode(account) |> ServiceAccount.from_json()
+      assert expected == account
     end
   end
 end

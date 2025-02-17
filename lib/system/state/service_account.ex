@@ -136,7 +136,8 @@ defmodule System.State.ServiceAccount do
 
   def extract_storage(storage) do
     for {k, v} <- storage || [], into: %{} do
-      {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
+      keystring = (is_atom(k) && Atom.to_string(k)) || k
+      {JsonDecoder.from_json(keystring), JsonDecoder.from_json(v)}
     end
   end
 
@@ -170,7 +171,7 @@ defmodule System.State.ServiceAccount do
         end}}
 
     %{
-      storage: {:storage, &to_list(&1, :hash, :blob)},
+      storage: {:storage, &to_map(&1)},
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
       preimage_storage_l:
         {:lookup_meta,
