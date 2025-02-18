@@ -281,7 +281,6 @@ defmodule System.State.Accumulation do
           service,
           ctx_init_fn
         )
-        |> AccumulationResult.new()
 
       {
         acc_u + u,
@@ -326,7 +325,6 @@ defmodule System.State.Accumulation do
             s,
             ctx_init_fn
           )
-          |> AccumulationResult.new()
 
         Map.get(state, key)
       end
@@ -335,17 +333,16 @@ defmodule System.State.Accumulation do
     d_prime =
       Map.drop(acc_state.services, MapSet.to_list(s)) ++
         Collections.union(
-          Enum.map(
-            s,
-            &single_accumulation(
-              acc_state,
-              timeslot,
-              work_reports,
-              always_acc_services,
-              &1,
-              ctx_init_fn
-            ).state.services
-          )
+          for service <- s,
+              do:
+                single_accumulation(
+                  acc_state,
+                  timeslot,
+                  work_reports,
+                  always_acc_services,
+                  service,
+                  ctx_init_fn
+                ).state.services
         )
 
     %__MODULE__{
@@ -389,6 +386,7 @@ defmodule System.State.Accumulation do
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, service_dict, service)
     PVM.accumulate(acc_state, timeslot, service, gas, operands, ctx_init_fn)
+    |> AccumulationResult.new()
   end
 
   # This separation is to allow testing of single_accumulation without having to test the stub as well
