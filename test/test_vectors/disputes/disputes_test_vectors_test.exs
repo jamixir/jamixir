@@ -20,7 +20,8 @@ defmodule DisputesTinyTestVectors do
       Block.Extrinsic.Disputes.Culprit,
       Block.Extrinsic.Disputes.Fault,
       Block.Extrinsic.Disputes.Judgement,
-      Block.Extrinsic.Disputes.Verdict
+      Block.Extrinsic.Disputes.Verdict,
+      Block.Extrinsic.Guarantee.WorkReport
     ])
 
     mock_header_seal()
@@ -36,10 +37,6 @@ defmodule DisputesTinyTestVectors do
   end
 
   describe "vectors" do
-    test "smoke" do
-      execute_test("progress_invalidates_avail_assignments-1", "disputes/tiny")
-    end
-
-    # define_vector_tests("disputes")
+    define_vector_tests("disputes")
   end
 end
