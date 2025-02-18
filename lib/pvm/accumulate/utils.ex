@@ -37,8 +37,7 @@ defmodule PVM.Accumulate.Utils do
 
   @dialyzer {:no_return, check: 2}
 
-  # Formula (B.9) v0.5.2
-  # TODO update to B.9 on 0.6.0
+  # Formula (B.13) v0.6.1
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
     if i not in Map.keys(services) do
