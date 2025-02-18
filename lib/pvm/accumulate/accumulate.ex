@@ -34,8 +34,7 @@ defmodule PVM.Accumulate do
   def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn) do
     # Formula (B.9) v0.6.0
     x = init_fn.(accumulation_state, service_index)
-    # Formula (B.10) v0.5.2
-    # TODO update B.10 to v0.6.0
+    # Formula (B.10) v0.6.1
     d = x.accumulation.services
     s = Context.accumulating_service(x)
 
