@@ -47,7 +47,7 @@ defmodule PVM.RefineIntegrationTest do
       bitmask = <<1, 0, 1>>
       binary = PVM.Helper.init(program, bitmask)
 
-      %{services: services, work_package: work_package} = make_executable_work_package(program)
+      %{services: services, work_package: work_package} = make_executable_work_package(binary)
 
       assert {<<>>, []} = PVM.refine(0, work_package, <<>>, [], 0, services, %{})
     end
