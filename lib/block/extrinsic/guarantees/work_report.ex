@@ -7,7 +7,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
-  alias PVM.Refine
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
   alias Codec.JsonEncoder
@@ -207,10 +206,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         error
 
       o ->
+        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w, s))
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
           for j <- 0..(length(wp.work_items) - 1) do
-            {result, exports} = process_item(wp, j, o, services)
+            {result, exports} = process_item(wp, j, o, import_segments, services, d)
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
 
@@ -241,32 +241,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (202) v0.4.5
   # TODO review to 14.11 v0.6.0
-  # I(p,j) ≡ΨR(wc,wg,ws,h,wy,px,pa,o,S(w,l),X(w),l)
+  # I(p,j) ≡ΨR(j, p, o, i, ℓ)
   # and h = H(p), w = pw[j], l = ∑ pw[k]e
-  def process_item(%WorkPackage{} = p, j, o, services) do
-    w = Enum.at(p.work_items, j)
-    h = Hash.default(e(p))
+  def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
-    pa = WorkPackage.implied_authorizer(p, services)
 
-    Refine.execute(
-      %Refine.Params{
-        service_code: w.code_hash,
-        gas: w.refine_gas_limit,
-        service: w.service,
-        work_package_hash: h,
-        payload: w.payload,
-        refinement_context: p.context,
-        authorizer_hash: pa,
-        output: o,
-        # TODO
-        import_segments: [],
-        # TODO
-        extrinsic_data: [],
-        export_offset: l
-      },
-      services
-    )
+    PVM.refine(j, p, o, import_segments, l, services, preimages)
   end
 
   defp calculate_segments(%WorkPackage{} = _wp) do
