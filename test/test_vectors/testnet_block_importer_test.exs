@@ -15,12 +15,12 @@ defmodule TestnetBlockImporterTest do
   end
 
   @ignore_fields []
-  @genesis_path "./chainspecs/state_snapshots/"
+  @genesis_path "chainspecs/state_snapshots"
   @user "jamixir"
   @repo "jamtestnet"
 
-  def state_path(mode), do: "./data/#{mode}/state_snapshots/"
-  def blocks_path(mode), do: "./data/#{mode}/blocks/"
+  def state_path(mode), do: "data/#{mode}/state_snapshots"
+  def blocks_path(mode), do: "data/#{mode}/blocks"
 
   describe "blocks and states" do
     setup do
@@ -37,16 +37,7 @@ defmodule TestnetBlockImporterTest do
       @tag mode: mode
 
       test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
-        files =
-          for f <-
-                File.ls!(local_vectors_dir() <> @repo <> "/" <> blocks_path(mode)) |> Enum.sort(),
-              f =~ ~r/.*\.bin/,
-              do: String.replace(f, ~r/_.*.bin/, "") |> String.to_integer()
-
-        [first_epoch | _] = files
-        [last_epoch | _] = Enum.reverse(files)
-
-        Enum.reduce(first_epoch..(last_epoch - 1), state, fn epoch, state ->
+        Enum.reduce(1..4, state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
             Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
             timeslot = String.pad_leading("#{timeslot}", 3, "0")
