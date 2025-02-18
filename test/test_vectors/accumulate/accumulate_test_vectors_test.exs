@@ -11,6 +11,7 @@ defmodule AccumulateTestVectorsTest do
     RingVrf.init_ring_context()
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+    Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
       Accumulation,
@@ -21,6 +22,7 @@ defmodule AccumulateTestVectorsTest do
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
       Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
+      Application.delete_env(:jamixir, :accumulation_module)
     end)
   end
 
@@ -34,6 +36,6 @@ defmodule AccumulateTestVectorsTest do
       execute_test("enqueue_and_unlock_chain_wraps-2", "accumulate/tiny")
     end
 
-    # define_vector_tests("accumulate")
+    define_vector_tests("accumulate")
   end
 end
