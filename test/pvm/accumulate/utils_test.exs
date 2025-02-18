@@ -48,7 +48,6 @@ defmodule PVM.Accumulate.UtilsTest do
       assert %{
                service: ^service_index,
                accumulation: ^accumulation,
-               computed_service: computed_service,
                transfers: [],
                accumulation_trie_result: nil
              } = context
