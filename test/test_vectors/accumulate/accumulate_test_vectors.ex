@@ -39,6 +39,7 @@ defmodule AccumulateTestVectors do
       |> Map.put(:disputes, Map.from_struct(%Disputes{}))
 
     ValidatorStatisticsMock |> stub(:do_transition, fn _, _, _, _, _, _ -> {:ok, "mockvalue"} end)
+    
 
     header = json_data[:input]
 
