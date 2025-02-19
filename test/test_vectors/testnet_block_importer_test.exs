@@ -24,8 +24,12 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     setup do
-      # put zero header to storage
-      Storage.put(Hash.zero(), build(:header, timeslot: 0))
+      # put parent header to storage
+      Storage.put(
+        <<0x476243AD7CC4FC49CB6CB362C6568E931731D8650D917007A6037CCEEDD62244::256>>,
+        build(:header, timeslot: 0)
+      )
+
       {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
       state = Json.decode(genesis_json)
       {:ok, genesis_state: state}
