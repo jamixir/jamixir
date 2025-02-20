@@ -258,7 +258,9 @@ defmodule BlockTest do
     setup do
       tmp_dir = System.tmp_dir!() |> Path.join("jamixir_test_#{:erlang.unique_integer()}")
       IO.puts("Writing test data to #{tmp_dir}")
-      File.mkdir_p!(tmp_dir)
+      File.mkdir_p!("#{tmp_dir}/blocks")
+      File.mkdir_p!("#{tmp_dir}/state_snapshots")
+      File.mkdir_p!("#{tmp_dir}/state_transitions")
       Application.delete_env(:jamixir, :original_modules)
       tn = Time.current_timeslot()
       t0 = tn - Constants.slot_period() * @epoch_count
@@ -272,10 +274,13 @@ defmodule BlockTest do
       for t <- t0..tn, reduce: {state, nil} do
         {state, header_hash} ->
           {:ok, b} = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
-          :ok = File.write("#{tmp_dir}/block_#{b.header.timeslot}.bin", Encodable.encode(b))
+
+          :ok =
+            File.write("#{tmp_dir}/blocks/block_#{b.header.timeslot}.bin", Encodable.encode(b))
+
           {:ok, h} = Storage.put(b.header)
           {:ok, state} = State.add_block(state, b)
-          Export.export(state, tmp_dir)
+          Export.export(state, "#{tmp_dir}/state_snapshots")
           {state, h}
       end
 
