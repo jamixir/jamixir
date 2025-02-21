@@ -1,5 +1,4 @@
 defmodule AccumulateTestVectors do
-  alias System.AccumulationResult
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   import TestVectorUtil
@@ -40,20 +39,6 @@ defmodule AccumulateTestVectors do
       |> Map.put(:disputes, Map.from_struct(%Disputes{}))
 
     ValidatorStatisticsMock |> stub(:do_transition, fn _, _, _, _, _, _ -> {:ok, "mockvalue"} end)
-
-    MockAccumulation
-    |> stub(:do_single_accumulation, fn
-      acc_state, _timeslot, work_reports, service_dict, service, _ctx_init_fn ->
-        {gas, _operands} =
-          System.State.Accumulation.pre_single_accumulation(work_reports, service_dict, service)
-
-        %AccumulationResult{
-          state: acc_state,
-          transfers: [],
-          output: nil,
-          gas_used: gas
-        }
-    end)
 
     header = json_data[:input]
 
