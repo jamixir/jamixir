@@ -55,9 +55,9 @@ defmodule PVM.RefineIntegrationTest do
     test "test-ecall-1" do
       program =
         <<op(:ecalli), host(:machine), op(:fallthrough), op(:ecalli), host(:gas),
-          op(:fallthrough)>>
+          op(:fallthrough),op(:fallthrough),op(:fallthrough)>>
 
-      bitmask = <<1, 0, 1, 1, 0, 1>>
+      bitmask = <<183>>
       binary = PVM.Helper.init(program, bitmask)
 
       hash = Hash.default(binary)

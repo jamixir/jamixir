@@ -46,8 +46,11 @@ defmodule PVM.AccumulateTest do
 
     test "executes program with gas host call", %{accumulation: accumulation, init_fn: init_fn} do
       # Program that calls gas host function
-      program = <<0::40>> <> <<op(:ecalli), 0, op(:fallthrough)>>
-      bitmask = <<0::40>> <> <<1, 0, 1>>
+      program =
+        <<0, 0, 0, 0, 0>> <>
+          <<op(:ecalli), 0, op(:fallthrough)>>
+
+      bitmask = <<5>>
       binary = PVM.Helper.init(program, bitmask)
       hash = Hash.default(binary)
 
@@ -80,7 +83,7 @@ defmodule PVM.AccumulateTest do
       assert gas < 1000
     end
 
-    #TODO  - create a meaningful test
+    # TODO  - create a meaningful test
     @tag :skip
     test "executes program with multiple host calls", %{init_fn: init_fn} do
       # Program that exercises multiple host calls
@@ -149,7 +152,8 @@ defmodule PVM.AccumulateTest do
       assert result_acc.services[256].preimage_storage_p[hash] == binary
       assert result_acc.services[256].preimage_storage_l[{hash, byte_size(binary)}] == [0]
     end
-#TODO  - create a meaningful test
+
+    # TODO  - create a meaningful test
     @tag :skip
     test "executes program with accumulate-specific host calls", %{init_fn: init_fn} do
       # Program that exercises accumulate-specific host calls

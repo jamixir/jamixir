@@ -35,7 +35,7 @@ defmodule PVM.AuthorizedTest do
         <<op(:load_imm_64), 8, end_addr::64-little, op(:ecalli), host(:gas), op(:fallthrough),
           op(:load_imm_64), 7, start_addr::64-little, op(:fallthrough)>>
 
-      bitmask = <<1, 0::72, 1, 0, 1, 1, 0::72, 1>>
+      bitmask = <<128, 44, 1>>
 
       binary = PVM.Helper.init(program, bitmask, message)
       hash = Hash.default(binary)
@@ -64,10 +64,15 @@ defmodule PVM.AuthorizedTest do
         # non-gas host call
         op(:ecalli),
         2,
+        op(:fallthrough),
+        op(:fallthrough),
+        op(:fallthrough),
+        op(:fallthrough),
+        op(:fallthrough),
         op(:fallthrough)
       >>
 
-      bitmask = <<1, 0, 1>>
+      bitmask = <<191>>
       binary = PVM.Helper.init(program, bitmask, nil, false)
       hash = Hash.default(binary)
 
