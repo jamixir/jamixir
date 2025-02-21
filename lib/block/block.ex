@@ -1,4 +1,5 @@
 defmodule Block do
+  alias Util.Hash
   alias System.State.RotateKeys
   alias Block.Extrinsic
   alias Block.Header
@@ -43,7 +44,7 @@ defmodule Block do
       timeslot: timeslot,
       prior_state_root: Trie.state_root(state),
       extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
-      parent_hash: parent_hash
+      parent_hash: parent_hash || Hash.zero()
     }
 
     {pending_, _, _, _} = RotateKeys.rotate_keys(header, state, state.judgements)

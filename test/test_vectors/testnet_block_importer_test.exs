@@ -1,9 +1,8 @@
 defmodule TestnetBlockImporterTest do
-  alias Codec.State.Json
   alias Block.Header
+  alias Codec.State.Json
   alias IO.ANSI
   alias System.State
-  alias Util.Hash
   import TestVectorUtil
   import Jamixir.Factory
   use ExUnit.Case

@@ -172,6 +172,7 @@ defmodule BlockTest do
 
   describe "new/4" do
     setup do
+      Storage.put(Hash.zero(), build(:header, timeslot: 0))
       Application.delete_env(:jamixir, :original_modules)
     end
 
@@ -256,6 +257,8 @@ defmodule BlockTest do
   describe "generate state and block dumps" do
     @describetag :generate_blocks
     setup do
+      Storage.put(Hash.zero(), build(:header, timeslot: 0))
+
       tmp_dir = System.tmp_dir!() |> Path.join("jamixir_test_#{:erlang.unique_integer()}")
       IO.puts("Writing test data to #{tmp_dir}")
       File.mkdir_p!("#{tmp_dir}/blocks")
@@ -271,12 +274,16 @@ defmodule BlockTest do
     test "fallback", %{state: state, t0: t0, tn: tn, key_pairs: key_pairs, tmp_dir: tmp_dir} do
       Export.export(state, tmp_dir, "genesis")
 
-      for t <- t0..tn, reduce: {state, nil} do
+      for t <- t0..tn, reduce: {state, Hash.zero()} do
         {state, header_hash} ->
           {:ok, b} = Block.new(%Extrinsic{}, header_hash, state, t, key_pairs: key_pairs)
 
-          :ok =
-            File.write("#{tmp_dir}/blocks/block_#{b.header.timeslot}.bin", Encodable.encode(b))
+          filename = "#{tmp_dir}/blocks/block_#{b.header.timeslot}.bin"
+
+          bin1 = Codec.Encoder.encode(b)
+          {b_check, _} = Block.decode(bin1)
+          assert b == b_check
+          :ok = File.write(filename, bin1)
 
           {:ok, h} = Storage.put(b.header)
           {:ok, state} = State.add_block(state, b)
