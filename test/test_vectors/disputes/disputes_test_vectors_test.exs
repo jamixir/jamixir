@@ -10,7 +10,6 @@ defmodule DisputesTinyTestVectors do
   setup do
     RingVrf.init_ring_context()
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, :accumulation, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
       :validate,
@@ -29,7 +28,6 @@ defmodule DisputesTinyTestVectors do
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.delete_env(:jamixir, :accumulation)
       Application.delete_env(:jamixir, :original_modules)
     end)
 
