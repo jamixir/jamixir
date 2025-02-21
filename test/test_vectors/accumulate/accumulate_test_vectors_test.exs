@@ -11,7 +11,6 @@ defmodule AccumulateTestVectorsTest do
     RingVrf.init_ring_context()
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
-    Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
       Accumulation,
@@ -22,7 +21,6 @@ defmodule AccumulateTestVectorsTest do
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
       Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
-      Application.delete_env(:jamixir, :accumulation_module)
     end)
   end
 
