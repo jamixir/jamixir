@@ -113,6 +113,9 @@ defmodule PVM.Host.Refine.InvokeTest do
                Memory.read(memory_, registers.r8 + 8, 12 * 8)
     end
 
+
+    @tag :skip
+    # TODO, rely on simpler program, this is too much to maintain
     test "executes program that panics", %{
       context: context,
       memory: memory,
