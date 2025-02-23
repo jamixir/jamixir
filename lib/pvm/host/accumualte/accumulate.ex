@@ -56,7 +56,13 @@ defmodule PVM.Host.Accumulate do
   end
 
   def transfer(gas, registers, memory, context_pair) do
-    gas_cost = 10 + registers.r9
+    IO.puts(
+      IO.ANSI.yellow() <>
+        "⚠️  Warning: Gas Cost in transfer host call is a temporary set to 10 to match the gas cost of the jamduna assurance blocks" <>
+        IO.ANSI.reset()
+    )
+
+    gas_cost = 10
 
     with_gas(
       Result,
