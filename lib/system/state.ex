@@ -110,38 +110,6 @@ defmodule System.State do
          available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
          # η' Formula (4.9) v0.6.0
          rotated_entropy_pool = EntropyPool.rotate(h, state.timeslot, state.entropy_pool),
-         # Formula (4.16) v0.6.0
-         # Formula (4.17) v0.6.0
-         {:ok,
-          %{
-            services: services_intermediate_2,
-            next_validators: next_validators_,
-            authorizer_queue: authorizer_queue_,
-            ready_to_accumulate: ready_to_accumulate_,
-            privileged_services: privileged_services_,
-            accumulation_history: accumulation_history_,
-            beefy_commitment: beefy_commitment_
-          }} <-
-           Accumulation.transition(
-             available_work_reports,
-             timeslot_,
-             rotated_entropy_pool.n0,
-             state
-           ),
-         # δ' Formula (4.18) v0.6.0
-         services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
-         # α' Formula (4.19) v0.6.0
-         authorizer_pool_ =
-           AuthorizerPool.transition(
-             e.guarantees,
-             authorizer_queue_,
-             state.authorizer_pool,
-             h.timeslot
-           ),
-
-         # β' Formula (4.7) v0.6.0
-         recent_history_ =
-           RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
          {curr_validators_, prev_validators_, safrole_} <-
            Safrole.transition(block, state, judgements_, rotated_entropy_pool),
          :ok <-
@@ -160,6 +128,37 @@ defmodule System.State do
              rotated_entropy_pool
            ),
          entropy_pool_ = EntropyPool.transition(vrf_output, rotated_entropy_pool),
+         # Formula (4.16) v0.6.0
+         # Formula (4.17) v0.6.0
+         {:ok,
+          %{
+            services: services_intermediate_2,
+            next_validators: next_validators_,
+            authorizer_queue: authorizer_queue_,
+            ready_to_accumulate: ready_to_accumulate_,
+            privileged_services: privileged_services_,
+            accumulation_history: accumulation_history_,
+            beefy_commitment: beefy_commitment_
+          }} <-
+           Accumulation.transition(
+             available_work_reports,
+             timeslot_,
+             entropy_pool_.n0,
+             state
+           ),
+         # δ' Formula (4.18) v0.6.0
+         services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
+         # α' Formula (4.19) v0.6.0
+         authorizer_pool_ =
+           AuthorizerPool.transition(
+             e.guarantees,
+             authorizer_queue_,
+             state.authorizer_pool,
+             h.timeslot
+           ),
+         # β' Formula (4.7) v0.6.0
+         recent_history_ =
+           RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
          {:ok, reporters_set} <-
            Guarantee.reporters_set(
              e.guarantees,
