@@ -36,9 +36,14 @@ defmodule TestnetBlockImporterTest do
 
     # waiting for correctnes of other party side
 
-    for mode <- ["fallback", "safrole"] do
-      @tag mode: mode
+    for mode <- ["fallback", "safrole", "assurances"] do
 
+      if mode == "assurances" do
+        IO.puts(IO.ANSI.yellow() <> "⚠️  Warning: #{mode} mode block import test is disabled" <> IO.ANSI.reset())
+        @tag :skip
+      end
+
+      @tag mode: mode
       test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
         Enum.reduce(1..4, state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
