@@ -18,11 +18,11 @@ defmodule PVM.Accumulate.Utils do
   def initializer(n0_, header_timeslot) do
     fn accumulation_state, service_index ->
       computed_service_index =
-        e({service_index, n0_, header_timeslot})
+        <<service_index::32-little, n0_::binary, header_timeslot::32-little>>
         |> Hash.default()
         |> de_le(4)
         |> rem(0xFFFFFE00)
-        |> Kernel.+(0x100)
+        |> Kernel.+(256)
         |> check(accumulation_state)
 
       %Context{
