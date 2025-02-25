@@ -1,4 +1,5 @@
 defmodule TestnetBlockImporterTest do
+  alias Util.Export
   alias Block.Header
   alias Codec.State.Json
   alias IO.ANSI
@@ -9,12 +10,12 @@ defmodule TestnetBlockImporterTest do
   require Logger
 
   @ignore_fields []
-  @genesis_path "chainspecs/state_snapshots"
-  @user "jamixir"
-  @repo "jamtestnet"
+  @genesis_path "state_snapshots"
+  @user "javajamio"
+  @repo "javajam-trace"
 
-  def state_path(mode), do: "data/#{mode}/state_snapshots"
-  def blocks_path(mode), do: "data/#{mode}/blocks"
+  def state_path(mode), do: "state_snapshots"
+  def blocks_path(mode), do: "blocks"
 
   describe "blocks and states" do
     setup do
@@ -24,7 +25,7 @@ defmodule TestnetBlockImporterTest do
         build(:header, timeslot: 0)
       )
 
-      {:ok, genesis_json} = fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
+      {:ok, genesis_json} = fetch_and_parse_json("0.json", @genesis_path, @user, @repo)
       state = Json.decode(genesis_json)
       {:ok, genesis_state: state}
     end
@@ -45,17 +46,18 @@ defmodule TestnetBlockImporterTest do
 
       @tag mode: mode
       test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
-        Enum.reduce(1..4, state, fn epoch, state ->
-          Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
+        Enum.reduce([""], state, fn epoch, state ->
+          Enum.reduce(6_008_213..6_008_237, state, fn timeslot, state ->
             Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
-            timeslot = String.pad_leading("#{timeslot}", 3, "0")
+            # timeslot = String.pad_leading("#{timeslot}", 3, "0")
 
-            block_bin = fetch_binary("#{epoch}_#{timeslot}.bin", blocks_path(mode), @user, @repo)
+            block_bin = fetch_binary("#{epoch}#{timeslot}.bin", blocks_path(mode), @user, @repo)
 
             {block, _} = Block.decode(block_bin)
+            Export.export(state, "priv/")
 
             {:ok, json} =
-              fetch_and_parse_json("#{epoch}_#{timeslot}.json", state_path(mode), @user, @repo)
+              fetch_and_parse_json("#{epoch}#{timeslot}.json", state_path(mode), @user, @repo)
 
             expected_state = Json.decode(json)
 

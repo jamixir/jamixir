@@ -65,8 +65,10 @@ defmodule Codec.JsonEncoder do
 
       _ ->
         # Normal field transformations
+
         transformed =
           for {old_key, mapping} <- key_mapping, into: %{} do
+            IO.inspect(mapping)
             original_value = Map.get(struct, old_key)
 
             case mapping do

@@ -1,6 +1,6 @@
 defmodule Util.Time do
   use SelectiveMock
-  @epoch :calendar.datetime_to_gregorian_seconds({{2025, 1, 1}, {12, 0, 0}})
+  @epoch :calendar.datetime_to_gregorian_seconds({{2024, 1, 1}, {12, 0, 0}})
 
   @doc """
   Returns the base epoch time in Gregorian seconds.

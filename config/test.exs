@@ -18,4 +18,4 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 10
 
-config :logger, level: :none
+# config :logger, level: :none
