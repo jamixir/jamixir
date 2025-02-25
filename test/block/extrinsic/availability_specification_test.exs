@@ -49,6 +49,7 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
       assert spec.erasure_root == exp_erasure_root
       assert spec.exports_root == MerkleTree.merkle_root(segments)
       assert spec.segment_count == 2
+      assert spec.length == 10
     end
   end
 end

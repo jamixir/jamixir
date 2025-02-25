@@ -49,7 +49,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
     %__MODULE__{
       work_package_hash: work_package_hash,
-      length: length(export_segments),
+      length: byte_size(bundle_binary),
       erasure_root: calculate_erasure_root(bundle_binary, export_segments),
       exports_root: MerkleTree.merkle_root(export_segments),
       segment_count: length(export_segments)
