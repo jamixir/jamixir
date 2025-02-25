@@ -28,6 +28,10 @@ defmodule Types do
 
   # @hash_size
 
+  # Formula (14.1) v0.6.2 - G ≡ YWG
+  # (4104 * 8)
+  def_bin_type(:export_segment, :export_segment)
+
   # 144 bytes
   @type bls_key :: <<_::1152>>
   @type validator_index :: non_neg_integer()
@@ -49,7 +53,4 @@ defmodule Types do
   @type bandersnatch_ring_root :: <<_::1152>>
   # L
   @type max_age_timeslot_lookup_anchor :: non_neg_integer()
-
-  # Formula (14.1) v0.6.0 - G ≡ YWG
-  @type export_segment :: <<_::32_808>>
 end

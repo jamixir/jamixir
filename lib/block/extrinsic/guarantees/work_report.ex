@@ -174,7 +174,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     w_bang ++ accumulation_priority_queue(q)
   end
 
-  # Formula 14.10 v0.6.0
+  # Formula 14.10 v0.6.2
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exported_segments) do
     segments_count = ceil(length(exported_segments) / 64)
@@ -201,6 +201,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # TODO
     s = []
 
+    # o = ΨI (p,c)
     case PVM.authorized(wp, core, services) do
       error when is_integer(error) ->
         error

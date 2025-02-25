@@ -100,7 +100,7 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (14.8) v0.6.0
+  # Formula (14.8) v0.6.2
   def to_work_result(%__MODULE__{} = wi, output) do
     %WorkResult{
       service: wi.service,

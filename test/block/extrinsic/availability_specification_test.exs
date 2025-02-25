@@ -32,4 +32,23 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
              }
     end
   end
+
+  describe "from_package_execution/3" do
+    use Sizes
+
+    test "calculates erasure root", %{availability: availability} do
+      segments = [<<0::@export_segment_size*8>>, <<1::@export_segment_size*8>>]
+
+      bundle_binary = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
+
+      spec =
+        AvailabilitySpecification.from_package_execution(
+          Hash.one(),
+          bundle_binary,
+          segments
+        )
+
+      assert spec.work_package_hash == Hash.one()
+    end
+  end
 end
