@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   # Formula (14.16) v0.6.2 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
-  defp calculate_erasure_root(bundle_binary, exported_segments) do
+  def calculate_erasure_root(bundle_binary, exported_segments) do
     # C6# (s⌢P(s))
     coded_chunks =
       for s <- exported_segments ++ WorkReport.paged_proofs(exported_segments) do

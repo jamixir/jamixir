@@ -1,5 +1,6 @@
 defmodule Block.Extrinsic.AvailabilitySpecificationTest do
-  alias Block.Extrinsic.AvailabilitySpecification
+  alias Util.MerkleTree
+  alias Block.Extrinsic.AvailabilitySpecification, as: AS
   alias Util.{Hash, Hex}
   use ExUnit.Case
   import Jamixir.Factory
@@ -16,7 +17,7 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
 
     test "decode/1", %{availability: availability} do
       encoded = Encodable.encode(availability)
-      {decoded, _} = AvailabilitySpecification.decode(encoded)
+      {decoded, _} = AS.decode(encoded)
       assert decoded == availability
     end
   end
@@ -36,19 +37,18 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   describe "from_package_execution/3" do
     use Sizes
 
-    test "calculates erasure root", %{availability: availability} do
+    test "calculates erasure root" do
       segments = [<<0::@export_segment_size*8>>, <<1::@export_segment_size*8>>]
 
       bundle_binary = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
+      exp_erasure_root = AS.calculate_erasure_root(bundle_binary, segments)
 
-      spec =
-        AvailabilitySpecification.from_package_execution(
-          Hash.one(),
-          bundle_binary,
-          segments
-        )
+      spec = AS.from_package_execution(Hash.one(), bundle_binary, segments)
 
       assert spec.work_package_hash == Hash.one()
+      assert spec.erasure_root == exp_erasure_root
+      assert spec.exports_root == MerkleTree.merkle_root(segments)
+      assert spec.segment_count == 2
     end
   end
 end
