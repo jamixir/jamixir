@@ -18,6 +18,7 @@ defmodule Sizes do
       @signature_size Sizes.signature()
       @validator_index_size 2
       @export_segment_size Sizes.export_segment()
+      @max_work_items Constants.max_work_items()
     end
   end
 end

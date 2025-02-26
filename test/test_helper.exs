@@ -8,5 +8,6 @@ ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
 Mox.defmock(MockAccumulation, for: System.State.Accumulation)
+Mox.defmock(MockPVM, for: PVM)
 Mox.defmock(Jamixir.NodeAPI.Mock, for: Jamixir.NodeAPI)
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
