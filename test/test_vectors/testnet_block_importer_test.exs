@@ -20,7 +20,6 @@ defmodule TestnetBlockImporterTest do
 
   def state_path(mode), do: "data/#{mode}/state_snapshots"
   def blocks_path(mode), do: "data/#{mode}/blocks"
-
   describe "blocks and states" do
     setup do
       # put parent header to storage
@@ -36,9 +35,10 @@ defmodule TestnetBlockImporterTest do
 
     # waiting for correctnes of other party side
 
-    for mode <- ["fallback", "safrole", "assurances"] do
+    skip = ["fallback", "safrole"]
 
-      if mode == "assurances" do
+    for mode <- ["fallback", "safrole", "assurances"] do
+      if Enum.member?(skip, mode) do
         IO.puts(IO.ANSI.yellow() <> "⚠️  Warning: #{mode} mode block import test is disabled" <> IO.ANSI.reset())
         @tag :skip
       end
