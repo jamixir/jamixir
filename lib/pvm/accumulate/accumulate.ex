@@ -31,7 +31,13 @@ defmodule PVM.Accumulate do
           Types.hash() | nil,
           non_neg_integer()
         }
-  def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn) do
+  def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn, opts \\ []) do
+    # Get trace setting from environment variable
+    opts = case System.get_env("PVM_TRACE") do
+      "true" -> Keyword.put(opts, :trace, true)
+      _ -> opts
+    end
+
     # Formula (B.9) v0.6.0
     x = init_fn.(accumulation_state, service_index)
     # Formula (B.10) v0.6.1
@@ -121,7 +127,8 @@ defmodule PVM.Accumulate do
         gas,
         e({timeslot, service_index, vs(operands)}),
         f,
-        {x, x}
+        {x, x},
+        opts
       )
       |> Utils.collapse()
     end
