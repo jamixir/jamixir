@@ -1,0 +1,82 @@
+defmodule PVM.ServicesTest do
+  alias PVM.ArgInvoc
+  alias PVM.Host.Refine
+  alias PVM.Accumulate
+  alias PVM.Host.Accumulate.Context
+  alias System.State.{Accumulation, ServiceAccount}
+  use ExUnit.Case
+
+  import PVM.Instructions
+  import PVM.Utils.AddInstruction
+
+  def make_accumulate_args(bin) do
+    code_hash = Util.Hash.default(bin)
+
+    accumulation = %Accumulation{
+      services: %{
+        0 => %ServiceAccount{
+          code_hash: code_hash,
+          preimage_storage_p: %{code_hash => bin},
+          preimage_storage_l: %{{code_hash, byte_size(bin)} => bin}
+        }
+      }
+    }
+
+    init_fn = fn acc, service_idx ->
+      %Context{
+        accumulation: acc,
+        service: service_idx
+      }
+    end
+
+    # Return tuple with all necessary args in order
+    {
+      # accumulation_state
+      accumulation,
+      # timeslot
+      1,
+      # service_index
+      0,
+      # gas
+      10000,
+      # operands
+      [],
+      # init_fn
+      init_fn
+    }
+  end
+
+  describe "ArgInvoke/3" do
+    test "smoke" do
+      bin = PVM.Helper.init_bin(Services.Fibonacci.program())
+      args = :crypto.strong_rand_bytes(8)
+
+      opts =
+        case System.get_env("PVM_TRACE") do
+          "true" -> Keyword.put([], :trace, true)
+          _ -> []
+        end
+
+      f = fn n ->
+        IO.puts("n: #{n}")
+      end
+
+      {gas, memory_read, context_} =
+        ArgInvoc.execute(bin, 0, 10000, <<>>, f, %Refine.Context{}, opts)
+
+      assert memory_read == <<>>
+    end
+  end
+
+  test "accumulate execution" do
+    bin =
+      Services.Fibonacci.program()
+      |> :binary.bin_to_list()
+      |> insert_instruction(2, [0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
+      |> PVM.Helper.init_bin()
+
+    {accumulation, timeslot, service_index, gas, operands, init_fn} = make_accumulate_args(bin)
+    result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, init_fn)
+    assert match?({%Accumulation{}, [], nil, _gas}, result)
+  end
+end
