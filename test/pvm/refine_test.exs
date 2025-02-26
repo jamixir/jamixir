@@ -40,14 +40,11 @@ defmodule PVM.RefineIntegrationTest do
   end
 
   describe "refine/2" do
-    @tag :skip
     test "successfully processes a valid program" do
-      program = <<op(:ecalli), 18, op(:fallthrough)>>
+      program = Services.Fibonacci.program()
+      |> PVM.Helper.init_bin()
 
-      bitmask = <<1, 0, 1>>
-      binary = PVM.Helper.init(program, bitmask)
-
-      %{services: services, work_package: work_package} = make_executable_work_package(binary)
+      %{services: services, work_package: work_package} = make_executable_work_package(program)
 
       assert {<<>>, []} = PVM.refine(0, work_package, <<>>, [], 0, services, %{})
     end
@@ -55,7 +52,7 @@ defmodule PVM.RefineIntegrationTest do
     test "test-ecall-1" do
       program =
         <<op(:ecalli), host(:machine), op(:fallthrough), op(:ecalli), host(:gas),
-          op(:fallthrough),op(:fallthrough),op(:fallthrough)>>
+          op(:fallthrough), op(:fallthrough), op(:fallthrough)>>
 
       bitmask = <<183>>
       binary = PVM.Helper.init(program, bitmask)
