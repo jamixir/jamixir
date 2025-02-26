@@ -30,6 +30,9 @@ defmodule Constants do
   @doc "H - The size of recent history, in blocks."
   defmockable(:recent_history_size, do: 8)
 
+  @doc "I - The maximum amount of work items in a package."
+  def max_work_items, do: 4
+
   @doc "J - The maximum sum of dependency items in a work-report."
   defmockable(:max_work_report_dep_sum, do: 8)
 

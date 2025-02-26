@@ -48,7 +48,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_size Constants.max_work_package_size()
 
   def valid?(wp) do
-    valid_data_segments?(wp) && valid_size?(wp)
+    valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp)
   end
 
   # Formula (14.9) v0.6.0
@@ -67,12 +67,6 @@ defmodule Block.Extrinsic.WorkPackage do
     Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
-  # Formula (14.12) v0.6.0
-  def segment_root(r) do
-    # TODO ⊞ part
-    r
-  end
-
   # Formula (14.5) v0.6.0
   defp valid_size?(%__MODULE__{work_items: work_items} = p) do
     byte_size(p.authorization_token) +
@@ -83,6 +77,13 @@ defmodule Block.Extrinsic.WorkPackage do
         acc + byte_size(w.payload) + segments_size + extrinsics_size
       end) <= @maximum_size
   end
+
+  use Sizes
+
+  # Formula 14.2 w  ∈ ⟦I⟧ 1∶I - I = 4
+  defp valid_items?(%__MODULE__{work_items: []}), do: false
+  defp valid_items?(%__MODULE__{work_items: pw}) when length(pw) > @max_work_items, do: false
+  defp valid_items?(_), do: true
 
   # Formula (14.4) v0.6.2
   def valid_data_segments?(%__MODULE__{work_items: work_items}) do

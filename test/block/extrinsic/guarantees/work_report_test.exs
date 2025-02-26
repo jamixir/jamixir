@@ -7,6 +7,7 @@ defmodule WorkReportTest do
   alias System.State.ServiceAccount
   alias Util.{Hash, Hex}
   alias Codec.JsonEncoder
+  import Mox
 
   setup_all do
     preimage = Hash.random()
@@ -407,9 +408,44 @@ defmodule WorkReportTest do
   end
 
   describe "process_item/3" do
-    test "processes a work item smoke test", %{wp: wp, state: state} do
-      wp = %WorkPackage{wp | work_items: [build(:work_item)]}
-      assert WorkReport.process_item(wp, 0, <<>>, [], state.services, %{}) == {:bad, []}
+    setup do
+      Application.put_env(:jamixir, :pvm, MockPVM)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>]} end)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :pvm, PVM)
+      end)
+
+      :ok
+    end
+
+    # case |e| = we
+    test "processes a work item correct exports", %{wp: wp, state: state} do
+      wi = build(:work_item, export_count: 1)
+      wp = %WorkPackage{wp | work_items: [wi]}
+      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      assert r == <<1>>
+      assert length(e) == 1
+    end
+
+    # case r not binary
+    test "processes a work item error in PVM", %{wp: wp, state: state} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>]} end)
+
+      wi = build(:work_item, export_count: 4)
+      wp = %WorkPackage{wp | work_items: [wi]}
+      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      assert r == :bad
+      assert length(e) == 4
+    end
+
+    # case r binary
+    test "processes a work item bad exports", %{wp: wp, state: state} do
+      wi = build(:work_item, export_count: 4)
+      wp = %WorkPackage{wp | work_items: [wi]}
+      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      assert r == :bad_exports
+      assert length(e) == 4
     end
   end
 

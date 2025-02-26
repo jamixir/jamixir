@@ -16,6 +16,14 @@ defmodule WorkPackageTest do
       assert WorkPackage.valid?(wp)
     end
 
+    test "invalid amount of work items", %{wp: wp} do
+      [wi] = wp.work_items
+      # empty wi not allowed
+      refute WorkPackage.valid?(%{wp | work_items: []})
+      # 5 is too big
+      refute WorkPackage.valid?(%{wp | work_items: [wi, wi, wi, wi, wi]})
+    end
+
     test "invalid when the sum of export_count exceeds the maximum", %{wp: wp} do
       big_work_item =
         build(:work_item, export_count: WorkPackage.maximum_exported_items() + 1)

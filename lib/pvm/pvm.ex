@@ -41,17 +41,40 @@ defmodule PVM do
   end
 
   # Formula (B.8) v0.6.0
-  @spec refine(
-          non_neg_integer(),
-          WorkPackage.t(),
-          binary(),
-          list(list(binary())),
-          non_neg_integer(),
-          %{integer() => ServiceAccount.t()},
-          %{{Types.hash(), non_neg_integer()} => binary()}
-        ) ::
-          {binary() | WorkExecutionError.t(), list(binary())}
+  @callback do_refine(
+              non_neg_integer(),
+              WorkPackage.t(),
+              binary(),
+              list(list(binary())),
+              non_neg_integer(),
+              %{integer() => ServiceAccount.t()},
+              %{{Types.hash(), non_neg_integer()} => binary()}
+            ) ::
+              {binary() | WorkExecutionError.t(), list(binary())}
+
   def refine(
+        work_item_index,
+        work_package,
+        authorizer_output,
+        import_segments,
+        export_segment_offset,
+        services,
+        preimages
+      ) do
+    module = Application.get_env(:jamixir, :pvm, __MODULE__)
+
+    module.do_refine(
+      work_item_index,
+      work_package,
+      authorizer_output,
+      import_segments,
+      export_segment_offset,
+      services,
+      preimages
+    )
+  end
+
+  def do_refine(
         work_item_index,
         work_package,
         authorizer_output,

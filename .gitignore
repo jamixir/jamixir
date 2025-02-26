@@ -36,3 +36,4 @@ native/**/Cargo.lock
 Mnesia.nonode@nohost/
 /test/output/
 .DS_Store
+MnesiaCore.nonode*

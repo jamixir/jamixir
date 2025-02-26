@@ -7,9 +7,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
+  alias Codec.JsonEncoder
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
-  alias Codec.JsonEncoder
 
   use Codec.Encoder
   use MapUnion
@@ -190,15 +190,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # TODO 14.13 v0.6.0
-
   # Formula (202) v0.4.5
   # TODO review to 14.11 v0.6.0
   def compute_work_result(%WorkPackage{} = wp, core, services) do
-    _l = calculate_segments(wp)
-    # TODO
-    d = %{}
-    # TODO
     s = []
 
     # o = ΨI (p,c)
@@ -211,7 +205,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
           for j <- 0..(length(wp.work_items) - 1) do
-            {result, exports} = process_item(wp, j, o, import_segments, services, d)
+            {result, exports} = process_item(wp, j, o, import_segments, services, %{})
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
 
@@ -220,7 +214,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           AvailabilitySpecification.from_package_execution(
             Hash.default(e(wp)),
             e(
-              {wp, for(w <- wp, do: WorkItem.extrinsic_data(w, d)),
+              {wp, for(w <- wp, do: WorkItem.extrinsic_data(w)),
                for(w <- wp, do: WorkItem.import_segment_data(w, s)),
                for(w <- wp, do: WorkItem.segment_justification(w, s))}
             ),
@@ -233,25 +227,48 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           refinement_context: nil,
           # s
           specification: specification,
-          # l # TODO
-          segment_root_lookup: %{},
+          segment_root_lookup: get_import_segments(wp),
           results: r
         }
     end
   end
 
-  # Formula (202) v0.4.5
-  # TODO review to 14.11 v0.6.0
-  # I(p,j) ≡ΨR(j, p, o, i, ℓ)
-  # and h = H(p), w = pw[j], l = ∑ pw[k]e
+  use Sizes
+  # Formula 14.11 v0.6.2
+  # I(p,j) ≡ ...
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
-    l = Enum.sum(for k <- 0..(j - 1), do: Enum.at(p.work_items, k).export_count)
+    w = Enum.at(p.work_items, j)
+    # ℓ = ∑k<j pw[k]e
+    l = Enum.sum(for k <- 0..j, k < j, do: Enum.at(p.work_items, k).export_count)
+    # (r,e) = ΨR(j,p,o,i,ℓ)
+    {r, e} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
-    PVM.refine(j, p, o, import_segments, l, services, preimages)
+    case {r, e} do
+      # if ∣e∣= we
+      {r, e} when length(e) == w.export_count ->
+        {r, e}
+
+      # otherwise if r ∈/ Y
+      {r, _} when not is_binary(r) ->
+        {r, zero_segments(w.export_count)}
+
+      # otherwise
+      _ ->
+        {:bad_exports, zero_segments(w.export_count)}
+    end
   end
 
-  defp calculate_segments(%WorkPackage{} = _wp) do
-    # for w <- wp.work_items, do:
+  defp zero_segments(size), do: for(_ <- 1..size, do: <<0::@export_segment_size*8>>)
+
+  # Formula (14.12) v0.6.2
+  # TODO ⊞ part
+  def segment_root(r) do
+    r
+  end
+
+  # TODO 14.13 v0.6.2
+  def get_import_segments(%WorkPackage{work_items: wi}) do
+    %{}
   end
 
   use JsonDecoder
