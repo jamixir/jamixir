@@ -71,7 +71,17 @@ defmodule Util.Collections do
   # Formula (3.11) v0.6.0
   @spec union([map()]) :: map()
   def union([]), do: %{}
-  def union([d1 | rest]), do: d1 ++ union(rest)
+
+  def union([d1 | rest]) do
+    d1 ++ union(rest)
+  end
+
+  @spec union_bin([binary()]) :: binary()
+  def union_bin([]), do: <<>>
+
+  def union_bin([d1 | rest]) do
+    d1 <> union_bin(rest)
+  end
 
   def all_ok?(collection, fun) do
     Enum.all?(collection, fn item ->

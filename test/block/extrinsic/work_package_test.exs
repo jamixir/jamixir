@@ -122,4 +122,29 @@ defmodule WorkPackageTest do
                "\x01\x01\0\0\0\0\x03\x01\x04\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
     end
   end
+
+  describe "valid_data_segments?/1" do
+    test "segment count is below limit" do
+      wp = build(:work_package, work_items: [build(:work_item), build(:work_item)])
+      assert WorkPackage.valid_data_segments?(wp)
+    end
+
+    test "export count sum is above limit" do
+      wi = build(:work_item, export_count: WorkPackage.maximum_exported_items() / 2)
+      wp1 = build(:work_package, work_items: [wi])
+      wp2 = build(:work_package, work_items: [wi, wi, wi])
+
+      assert WorkPackage.valid_data_segments?(wp1)
+      refute WorkPackage.valid_data_segments?(wp2)
+    end
+
+    test "segment size is abo limit" do
+      segments = for _ <- 1..div(WorkPackage.maximum_exported_items(), 2), do: {Hash.zero(), 256}
+      wi = build(:work_item, import_segments: segments)
+      wp1 = build(:work_package, work_items: [wi])
+      wp2 = build(:work_package, work_items: [wi, wi, wi])
+      assert WorkPackage.valid_data_segments?(wp1)
+      refute WorkPackage.valid_data_segments?(wp2)
+    end
+  end
 end

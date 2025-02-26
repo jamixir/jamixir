@@ -43,31 +43,35 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  # Formula (14.16) v0.6.0
+  # Formula (14.16) v0.6.2
   @spec from_package_execution(Types.hash(), binary(), list(Types.export_segment())) ::
-          Block.Extrinsic.t()
+          __MODULE__.t()
   def from_package_execution(work_package_hash, bundle_binary, export_segments) do
     %__MODULE__{
       work_package_hash: work_package_hash,
-      length: length(export_segments),
+      length: byte_size(bundle_binary),
       erasure_root: calculate_erasure_root(bundle_binary, export_segments),
-      exports_root: MerkleTree.merkle_root(export_segments)
+      exports_root: MerkleTree.merkle_root(export_segments),
+      segment_count: length(export_segments)
     }
   end
 
-  # Formula (14.16) v0.6.0 - u
+  # Formula (14.16) v0.6.2 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
-  defp calculate_erasure_root(bundle_binary, exported_segments) do
+  def calculate_erasure_root(bundle_binary, exported_segments) do
+    # C6# (s⌢P(s))
     coded_chunks =
       for s <- exported_segments ++ WorkReport.paged_proofs(exported_segments) do
         erasure_code_chunk(s, 6)
       end
 
+    # s♣ = MB#(T(...))
     s_clubs =
       for c <- Utils.transpose(coded_chunks), do: MerkleTree.well_balanced_merkle_root(c)
 
     chunk_size = ceil(byte_size(bundle_binary) / Constants.erasure_coded_piece_size())
 
+    # b♣ = H#(C ⌈ ∣b∣/WE ⌉(PWE (b)))
     b_clubs =
       for x <-
             erasure_code_chunk(
@@ -76,13 +80,13 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
             ),
           do: Hash.default(x)
 
+    # u = MB ([x ∣ x <− T[b♣,s♣]])
     MerkleTree.well_balanced_merkle_root(
-      Collections.union(for x <- Utils.transpose([b_clubs, s_clubs]), do: x)
+      for x <- Utils.transpose([b_clubs, s_clubs]), do: Collections.union_bin(x)
     )
   end
 
-  # TODO
-  defp erasure_code_chunk(_binary, _n), do: []
+  defp erasure_code_chunk(bin, _n), do: ErasureCoding.erasure_code(bin)
 
   def decode(bin) do
     <<work_package_hash::binary-size(@hash_size), length::32-little,

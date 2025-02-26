@@ -8,6 +8,7 @@ defmodule Sizes do
 
   def bandersnatch_signature, do: 96
   def bandersnatch_proof, do: 784
+  def export_segment, do: 4104
 
   defmacro __using__(_) do
     quote do
@@ -16,6 +17,7 @@ defmodule Sizes do
       @hash_size Sizes.hash()
       @signature_size Sizes.signature()
       @validator_index_size 2
+      @export_segment_size Sizes.export_segment()
     end
   end
 end

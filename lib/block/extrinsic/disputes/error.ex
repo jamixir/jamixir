@@ -2,7 +2,6 @@ defmodule Block.Extrinsic.Disputes.Error do
   # Ordering and uniqueness errors
   def unsorted_judgements, do: :unsorted_judgements
   def unsorted_culprits, do: :unsorted_culprits
-  def unsorted_faults, do: :unsorted_faults
   def unsorted_verdicts, do: :unsorted_verdicts
 
   # Validation errors
@@ -11,7 +10,6 @@ defmodule Block.Extrinsic.Disputes.Error do
   def invalid_signature, do: :invalid_signature
   def bad_vote_split, do: :bad_vote_split
   def fault_verdict_wrong, do: :fault_verdict_wrong
-  def invalid_validator, do: :invalid_validator
   def offender_already_reported, do: :offender_already_reported
 
   # Set validation errors

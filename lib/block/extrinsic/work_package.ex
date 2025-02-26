@@ -8,6 +8,7 @@ defmodule Block.Extrinsic.WorkPackage do
   use Codec.Encoder
   use Codec.Decoder
   use AccessStruct
+
   @type t :: %__MODULE__{
           # j
           authorization_token: binary(),
@@ -83,13 +84,14 @@ defmodule Block.Extrinsic.WorkPackage do
       end) <= @maximum_size
   end
 
-  # Formula (14.4) v0.6.0
-  defp valid_data_segments?(%__MODULE__{work_items: work_items}) do
+  # Formula (14.4) v0.6.2
+  def valid_data_segments?(%__MODULE__{work_items: work_items}) do
     {exported_sum, imported_sum} =
       Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
         {exported_acc + item.export_count, imported_acc + length(item.import_segments)}
       end)
 
+    # ∑we ≤ WM ^  ∑|wi| ≤ WM
     exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
   end
 
