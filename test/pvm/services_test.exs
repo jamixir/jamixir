@@ -6,7 +6,6 @@ defmodule PVM.ServicesTest do
   alias System.State.{Accumulation, ServiceAccount}
   use ExUnit.Case
 
-  import PVM.Instructions
   import PVM.Utils.AddInstruction
 
   def make_accumulate_args(bin) do
@@ -49,7 +48,6 @@ defmodule PVM.ServicesTest do
   describe "ArgInvoke/3" do
     test "smoke" do
       bin = PVM.Helper.init_bin(Services.Fibonacci.program())
-      args = :crypto.strong_rand_bytes(8)
 
       opts =
         case System.get_env("PVM_TRACE") do
@@ -61,7 +59,7 @@ defmodule PVM.ServicesTest do
         IO.puts("n: #{n}")
       end
 
-      {gas, memory_read, context_} =
+      {_gas_, memory_read, _context_} =
         ArgInvoc.execute(bin, 0, 10000, <<>>, f, %Refine.Context{}, opts)
 
       assert memory_read == <<>>
