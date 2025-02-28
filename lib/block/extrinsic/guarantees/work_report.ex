@@ -192,7 +192,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (202) v0.4.5
   # TODO review to 14.11 v0.6.0
-  def compute_work_result(%WorkPackage{} = wp, core, services) do
+  def execute_work_package(%WorkPackage{} = wp, core, services) do
     s = []
 
     # o = ΨI (p,c)
@@ -239,7 +239,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
-    l = Enum.sum(for k <- 0..j, k < j, do: Enum.at(p.work_items, k).export_count)
+    l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
     {r, e} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
@@ -258,7 +258,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  defp zero_segments(size), do: for(_ <- 1..size, do: <<0::@export_segment_size*8>>)
+  defp zero_segments(size), do: List.duplicate(<<0::@export_segment_size*8>>, size)
 
   # Formula (14.12) v0.6.2
   # TODO ⊞ part
