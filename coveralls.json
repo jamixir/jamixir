@@ -12,6 +12,18 @@
     "test/support/mockable.ex",
     "test/test_vectors/test_vector_util.ex",
     "test/support_original_modules.ex",
-    "lib/macros/"
+    "lib/macros/",
+    "lib/network/flags.ex",
+    "lib/network/config.ex",
+    "lib/network/peer_registry.ex",
+    "lib/network/peer_state.ex",
+    "lib/pvm/accumulate/operand.ex",
+    "lib/pvm/constants/host_call_ids.ex",
+    "lib/pvm/constants/inner_pvm_result.ex",
+    "lib/pvm/host/refine/context.ex",
+    "lib/pvm/integrated.ex",
+    "test/support/original_modules.ex",
+    "lib/types.ex"
+
   ]
 }
