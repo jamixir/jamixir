@@ -3,7 +3,9 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
-  alias Block.Extrinsic.{Guarantee.WorkResult, WorkPackage}
+  alias Block.Extrinsic.Guarantee.WorkReport
+  alias System.DataAvailability
+  alias Block.Extrinsic.{Guarantee.WorkResult}
   alias Util.{Hash, MerkleTree}
   use Codec.Encoder
   use Codec.Decoder
@@ -117,19 +119,18 @@ defmodule Block.Extrinsic.WorkItem do
     for {r, n} <- w.extrinsic, d = Storage.get(r), byte_size(d) == n, do: d
   end
 
-  # Formula (14.14) v0.6.0
+  # Formula (14.14) v0.6.2
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
-  def import_segment_data(%__MODULE__{} = w, s) do
+  def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
-        MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
-        do: Enum.at(s, n)
+        do: DataAvailability.get_segment(WorkReport.segment_root(r), n)
   end
 
   # Formula (14.14) v0.6.0
   # J ( w ∈ I ) ≡ [ ↕ J0 ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
-  def segment_justification(%__MODULE__{} = w, s) do
+  def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
-        MerkleTree.merkle_root(s) == WorkPackage.segment_root(r),
+        s = DataAvailability.get_segment(WorkReport.segment_root(r), n),
         do: vs(MerkleTree.justification(s, n, 0))
   end
 

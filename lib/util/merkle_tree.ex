@@ -7,7 +7,7 @@ defmodule Util.MerkleTree do
 
   @doc """
     Constructs a well-balanced binary Merkle tree and returns the root hash.
-    Formula (E.3) v0.6.0
+    Formula (E.3) v0.6.2
   """
   @spec well_balanced_merkle_root(list(binary())) :: Types.hash()
   def well_balanced_merkle_root(l), do: well_balanced_merkle_root(l, &Hash.default/1)
@@ -16,13 +16,13 @@ defmodule Util.MerkleTree do
   def well_balanced_merkle_root([single_blob], hash_func), do: hash_func.(single_blob)
   def well_balanced_merkle_root(list_of_blobs, hash_func), do: node(list_of_blobs, hash_func)
 
-  # Formula (E.4) v0.6.0
+  # Formula (E.4) v0.6.2
   @spec merkle_root(list(binary())) :: Types.hash()
   def merkle_root(v), do: merkle_root(v, &Hash.default/1)
   @spec merkle_root(list(binary()), (binary() -> Types.hash())) :: Types.hash()
   def merkle_root(list, hash_func), do: node(c_preprocess(list, hash_func), hash_func)
 
-  # Formula (E.7) v0.6.0
+  # Formula (E.7) v0.6.2
   @spec c_preprocess(list(binary()), (binary() -> Types.hash())) :: list(Types.hash())
   def c_preprocess([], _), do: [Hash.zero()]
 
@@ -30,7 +30,7 @@ defmodule Util.MerkleTree do
     pad_to_power_of_two(for(x <- list, do: hash_func.("leaf" <> x)), Hash.zero())
   end
 
-  # Formula (E.2) v0.6.0
+  # Formula (E.2) v0.6.2
   # case |v| <= 1
   # case |v| > 1
   def trace(v, i, hash_func) when length(v) > 1 do
@@ -39,27 +39,22 @@ defmodule Util.MerkleTree do
 
   def trace(_, _i, _hash_func), do: []
 
-  # Formula (E.5) v0.6.0
-  @spec justification([binary()], integer(), (binary() -> Types.hash())) :: [binary()]
-  def justification(v, i, hash_func) when is_function(hash_func, 1) do
-    trace(c_preprocess(v, hash_func), i, hash_func)
-  end
+  # Formula (E.5) v0.6.2
+  @spec justification([binary()], integer(), integer()) :: [binary()]
+  def justification(v, i, x), do: justification(v, i, &Hash.default/1, x)
 
-  def justification(v, i, x) when is_integer(x), do: justification(v, i, &Hash.default/1, x)
-
-  def justification(v, i), do: justification(v, i, &Hash.default/1)
-
-  # Formula (E.5) v0.6.0
-  # (v,i,H) ↦ T(C(v,H),i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
+  # Formula (E.5) v0.6.2
   @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification([], _, hash_func, _) when is_function(hash_func, 1), do: []
 
+  # (v,i,H) ↦ T(C(v,H),(2^x)*i,H)...max(0,⌈log2(max(1,∣v∣))−x⌉)
+  @spec justification([binary()], integer(), (binary() -> Types.hash()), number()) :: list()
   def justification(v, i, hash_func, x) when x >= 0 and is_function(hash_func, 1) do
     size = max(0, ceil(:math.log2(max(1, length(v))) - x))
-    justification(v, i, hash_func) |> Enum.take(size)
+    trace(c_preprocess(v, hash_func), :math.pow(2, i) * x, hash_func) |> Enum.take(size)
   end
 
-  # Formula (E.6) v0.6.0
+  # Formula (E.6) v0.6.2
   # (v, i, H) ↦ [H($leaf ⌢ l) S l <− v2xi... min(2xi+2x,SvS)]
   # note as of 0.5.3, the justification_l is not used anywhere
   def justification_l(v, i, x), do: justification_l(v, i, &Hash.default/1, x)
@@ -69,7 +64,7 @@ defmodule Util.MerkleTree do
     start_idx = trunc(:math.pow(2, x * i))
     end_idx = min(trunc(:math.pow(2, x * i) + :math.pow(2, x)), length(v))
 
-    if start_idx > length(v) or start_idx > end_idx do
+    if start_idx > length(v) or start_idx > end_idx - 1 do
       []
     else
       for l <- Enum.slice(v, start_idx..(end_idx - 1)), do: hash_func.("leaf" <> l)
@@ -104,7 +99,7 @@ defmodule Util.MerkleTree do
   end
 
   # Node function N for the Merkle tree.
-  # Formula (E.1) v0.6.0
+  # Formula (E.1) v0.6.2
   @spec node(list(binary()), (binary() -> Types.hash())) :: binary() | Types.hash()
   def node([], _), do: <<0::256>>
   def node([single_blob], _), do: single_blob

@@ -10,9 +10,15 @@ defmodule PVM do
 
   # ΨI : The Is-Authorized pvm invocation function.
   # Formula (B.1) v0.6.0
-  @spec authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
-          binary() | WorkExecutionError.t()
-  def authorized(p = %WorkPackage{}, core, services) do
+  @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
+              binary() | WorkExecutionError.t()
+
+  def authorized(p, core, services) do
+    module = Application.get_env(:jamixir, :pvm, __MODULE__)
+    module.do_authorized(p, core, services)
+  end
+
+  def do_authorized(p = %WorkPackage{}, core, services) do
     pc = WorkPackage.authorization_code(p, services)
 
     {_g, r, nil} =

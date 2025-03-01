@@ -449,6 +449,47 @@ defmodule WorkReportTest do
     end
   end
 
+  use Sizes
+
+  describe "execute_work_package/3" do
+    setup do
+      Application.put_env(:jamixir, :pvm, MockPVM)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> <<1>> end)
+
+      stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
+        w = Enum.at(p.work_items, j)
+
+        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count)}
+      end)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :pvm, PVM)
+      end)
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{<<1>> => <<7, 7, 7>>},
+          preimage_storage_l: %{{<<1>>, 3} => [1]},
+          code_hash: <<1>>
+        )
+
+      wp =
+        build(:work_package,
+          authorization_code_hash: service_account.code_hash,
+          context: build(:refinement_context, timeslot: 3),
+          work_items: build_list(1, :work_item, export_count: 1)
+        )
+
+      services = %{wp.service => service_account}
+      {:ok, services: services, wp: wp}
+    end
+
+    test "smoke teste", %{wp: wp, services: services} do
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      assert wr.refinement_context == wp.context
+    end
+  end
+
   describe "to_json/1" do
     test "encodes a work report to json", %{wr: wr} do
       wr = put_in(wr.segment_root_lookup, %{Hash.one() => Hash.two()})
