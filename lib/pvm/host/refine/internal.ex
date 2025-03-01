@@ -93,7 +93,7 @@ defmodule PVM.Host.Refine.Internal do
         import_segments,
         preimages
       ) do
-    [w9, w10, w11, w12] = Registers.get(registers, [9, 10, 11, 12])
+    [o, w8, w9, w10, w11, w12] = Registers.get(registers, [7, 8, 9, 10, 11, 12])
 
     v =
       cond do
@@ -136,29 +136,19 @@ defmodule PVM.Host.Refine.Internal do
           nil
       end
 
-    o = registers.r7
-    f = min(registers.r8, safe_byte_size(v))
-    l = min(registers.r9, safe_byte_size(v) - f)
+    f = min(w8, safe_byte_size(v))
+    l = min(w9, safe_byte_size(v) - f)
 
-    write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
-
-    memory_ =
-      if v != nil and write_check do
-        PVM.Memory.write!(memory, o, binary_part(v, f, l))
-      else
-        memory
-      end
-
-    {exit_reason, w7_} =
+    {exit_reason, w7_, memory_} =
       cond do
-        !write_check or (w9 == 5 and not PVM.Memory.check_range_access?(memory, w10, 32, :read)) ->
-          {:panic, registers.r7}
+        !PVM.Memory.check_range_access?(memory, o, l, :write) ->
+          {:panic, registers.r7, memory}
 
         v == nil ->
-          {:continue, none()}
+          {:continue, none(), memory}
 
         true ->
-          {:continue, byte_size(v)}
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Internal{
@@ -234,9 +224,15 @@ defmodule PVM.Host.Refine.Internal do
           {:panic, registers.r7, context}
 
         true ->
-          # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
-          machine = %Integrated{program: p, memory: u, counter: i}
-          {:continue, n, %{context | m: Map.put(m, n, machine)}}
+          case PVM.Decoder.decode_program(p) do
+            {:ok, _} ->
+              # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
+              machine = %Integrated{program: p, memory: u, counter: i}
+              {:continue, n, %{context | m: Map.put(m, n, machine)}}
+
+            {:error, _} ->
+              {:continue, huh(), context}
+          end
       end
 
     %Internal{

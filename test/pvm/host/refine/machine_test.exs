@@ -2,6 +2,8 @@ defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine
   alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
+  use PVM.Instructions
+  import PVM.Constants.HostCallResult
 
   describe "machine/4" do
     setup do
@@ -10,13 +12,14 @@ defmodule PVM.Host.Refine.MachineTest do
       gas = 100
 
       # r7: program start, r8: program length, r9: initial counter
+      test_program = PVM.Encoder.encode_program(<<1, 1, 1, 1, 1, 1, 1, 1>>, <<255>>, [], 1)
+
       registers = %Registers{
         r7: 0x1_0000,
-        r8: 32,
+        r8: byte_size(test_program),
         r9: 42
       }
 
-      test_program = String.duplicate("A", 32)
       memory = Memory.write!(memory, registers.r7, test_program)
 
       {:ok,
@@ -136,6 +139,30 @@ defmodule PVM.Host.Refine.MachineTest do
                  memory: %Memory{}
                }
              } = context_.m
+    end
+
+    test "returns {:continue, huh()} when program is invalid", %{
+      context: context,
+      gas: gas,
+      test_program: test_program
+    } do
+      test_program = <<40, 30, 20>> <> test_program
+
+      registers = %Registers{
+        r7: 0x1_0000,
+        r8: byte_size(test_program),
+        r9: 42
+      }
+
+      memory = Memory.write!(%Memory{}, registers.r7, test_program)
+      huh = huh()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Refine.machine(gas, registers, memory, context)
     end
   end
 end
