@@ -150,9 +150,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^l},
                memory: memory_,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
 
       assert Memory.read!(memory_, registers.r7, l) == "payload1"
     end
@@ -169,7 +178,13 @@ defmodule PVM.Host.Refine.FetchTest do
       preimages: preimages
     } do
       registers = %{registers | r10: 3, r11: 0, r12: 1}
-      preimage_key = work_package.work_items |> Enum.at(registers.r11) |> Map.get(:extrinsic) |> Enum.at(registers.r12)
+
+      preimage_key =
+        work_package.work_items
+        |> Enum.at(registers.r11)
+        |> Map.get(:extrinsic)
+        |> Enum.at(registers.r12)
+
       preimage = Map.get(preimages, preimage_key)
       l = byte_size(preimage)
 
@@ -178,9 +193,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^l},
                memory: memory_,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
 
       assert Memory.read!(memory_, registers.r7, l) == preimage
     end
@@ -197,7 +221,13 @@ defmodule PVM.Host.Refine.FetchTest do
       preimages: preimages
     } do
       registers = %{registers | r10: 4, r11: 0}
-      preimage_key = work_package.work_items |> Enum.at(work_item_index) |> Map.get(:extrinsic) |> Enum.at(registers.r11)
+
+      preimage_key =
+        work_package.work_items
+        |> Enum.at(work_item_index)
+        |> Map.get(:extrinsic)
+        |> Enum.at(registers.r11)
+
       preimage = Map.get(preimages, preimage_key)
       l = byte_size(preimage)
 
@@ -206,9 +236,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^l},
                memory: memory_,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
 
       assert Memory.read!(memory_, registers.r7, l) == "preimage1"
     end
@@ -232,9 +271,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^l},
                memory: memory_,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
 
       assert Memory.read!(memory_, registers.r7, l) == "seg1_1"
     end
@@ -258,9 +306,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^l},
                memory: memory_,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
 
       assert Memory.read!(memory_, registers.r7, l) == "seg1_2"
     end
@@ -276,7 +333,8 @@ defmodule PVM.Host.Refine.FetchTest do
       import_segments: import_segments,
       preimages: preimages
     } do
-      registers = %{registers | r10: 99}  # Invalid selector
+      # Invalid selector
+      registers = %{registers | r10: 99}
       none = none()
 
       assert %{
@@ -284,9 +342,18 @@ defmodule PVM.Host.Refine.FetchTest do
                registers: %{r7: ^none},
                memory: ^memory,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
     end
 
     test "panics when memory range check fails", %{
@@ -301,40 +368,26 @@ defmodule PVM.Host.Refine.FetchTest do
       preimages: preimages
     } do
       # registers = %{registers | r9: 5}  # Set length to 5
-      memory = Memory.set_default_access(memory, :read)  # Make memory read-only
+      # Make memory read-only
+      memory = Memory.set_default_access(memory, :read)
 
       assert %{
                exit_reason: :panic,
                registers: ^registers,
                memory: ^memory,
                context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
+             } =
+               Refine.fetch(
+                 gas,
+                 registers,
+                 memory,
+                 context,
+                 work_item_index,
+                 work_package,
+                 authorizer_output,
+                 import_segments,
+                 preimages
+               )
     end
-
-    test "panics when w9 == 5 and memory is not readable", %{
-      context: context,
-      gas: gas,
-      registers: registers,
-      memory: memory,
-      work_package: work_package,
-      work_item_index: work_item_index,
-      authorizer_output: authorizer_output,
-      import_segments: import_segments,
-      preimages: preimages
-    } do
-      registers = %{registers | r9: 5, r10: 0x30000} 
-      memory = Memory.set_access(memory, registers.r10, 32, nil)
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               memory: ^memory,
-               context: ^context
-             } = Refine.fetch(gas, registers, memory, context,
-                            work_item_index, work_package, authorizer_output,
-                            import_segments, preimages)
-    end
-
   end
 end

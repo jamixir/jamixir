@@ -140,25 +140,16 @@ defmodule PVM.Host.Refine.Internal do
     f = min(registers.r8, safe_byte_size(v))
     l = min(registers.r9, safe_byte_size(v) - f)
 
-    write_check = PVM.Memory.check_range_access?(memory, o, l, :write)
-
-    memory_ =
-      if v != nil and write_check do
-        PVM.Memory.write!(memory, o, binary_part(v, f, l))
-      else
-        memory
-      end
-
-    {exit_reason, w7_} =
+    {exit_reason, w7_, memory_} =
       cond do
-        !write_check or (w9 == 5 and not PVM.Memory.check_range_access?(memory, w10, 32, :read)) ->
-          {:panic, registers.r7}
+        !PVM.Memory.check_range_access?(memory, o, l, :write) ->
+          {:panic, registers.r7, memory}
 
         v == nil ->
-          {:continue, none()}
+          {:continue, none(), memory}
 
         true ->
-          {:continue, byte_size(v)}
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Internal{
