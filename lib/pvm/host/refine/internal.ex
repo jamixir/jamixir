@@ -93,7 +93,7 @@ defmodule PVM.Host.Refine.Internal do
         import_segments,
         preimages
       ) do
-    [w9, w10, w11, w12] = Registers.get(registers, [9, 10, 11, 12])
+    [o, w8, w9, w10, w11, w12] = Registers.get(registers, [7, 8, 9, 10, 11, 12])
 
     v =
       cond do
@@ -136,9 +136,8 @@ defmodule PVM.Host.Refine.Internal do
           nil
       end
 
-    o = registers.r7
-    f = min(registers.r8, safe_byte_size(v))
-    l = min(registers.r9, safe_byte_size(v) - f)
+    f = min(w8, safe_byte_size(v))
+    l = min(w9, safe_byte_size(v) - f)
 
     {exit_reason, w7_, memory_} =
       cond do

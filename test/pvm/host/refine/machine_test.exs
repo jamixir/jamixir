@@ -161,7 +161,7 @@ defmodule PVM.Host.Refine.MachineTest do
                exit_reason: :continue,
                registers: %{r7: ^huh},
                memory: ^memory,
-               context: context_
+               context: ^context
              } = Refine.machine(gas, registers, memory, context)
     end
   end
