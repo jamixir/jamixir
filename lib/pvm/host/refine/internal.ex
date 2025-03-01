@@ -234,9 +234,15 @@ defmodule PVM.Host.Refine.Internal do
           {:panic, registers.r7, context}
 
         true ->
-          # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
-          machine = %Integrated{program: p, memory: u, counter: i}
-          {:continue, n, %{context | m: Map.put(m, n, machine)}}
+          case PVM.Decoder.decode_program(p) do
+            {:ok, _} ->
+              # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
+              machine = %Integrated{program: p, memory: u, counter: i}
+              {:continue, n, %{context | m: Map.put(m, n, machine)}}
+
+            {:error, _} ->
+              {:continue, huh(), context}
+          end
       end
 
     %Internal{
