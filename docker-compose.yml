@@ -1,0 +1,118 @@
+
+services:
+  node1:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9900", "--keys=/node/keys/0.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9900:9900"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.10
+        ipv6_address: fd00::10
+
+  node2:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9901", "--keys=/node/keys/1.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9901:9901"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.11
+        ipv6_address: fd00::11
+
+  node3:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9902", "--keys=/node/keys/2.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9902:9902"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.12
+        ipv6_address: fd00::12
+
+  node4:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9903", "--keys=/node/keys/3.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9903:9903"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.13
+        ipv6_address: fd00::13
+
+  node5:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9904", "--keys=/node/keys/4.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9904:9904"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.14
+        ipv6_address: fd00::14
+
+  node6:
+    build:
+      context: .
+      ssh: [default]
+    environment:
+      RELEASE_DAEMON: "false"
+    command: ["/node/jamixir/bin/jamixir", "start", "--port=9905", "--keys=/node/keys/5.json", "--genesis=/node/genesis.json"]
+    restart: unless-stopped
+    ports:
+      - "9905:9905"
+    volumes:
+      - ./test/keys:/node/keys
+      - ./genesis/genesis.json:/node/genesis.json
+    networks:
+      jamnet:
+        ipv4_address: 172.16.238.15
+        ipv6_address: fd00::15
+
+networks:
+  jamnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+        - subnet: fd00::/64

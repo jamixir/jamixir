@@ -38,14 +38,14 @@ defmodule Jamixir.MixProject do
       {:ex_machina, "~> 2.8.0", only: [:test, :full_test]},
       {:excoveralls, "~> 0.18.3", only: [:test, :full_test]},
       {:httpoison, "~> 2.2.1", only: [:test, :full_test]},
-      {:quicer, github: "emqx/quic", tag: "0.1.11"},
-      {:x509, git: "https://github.com/jamixir/x509.git", branch: "master"},
+      {:quicer, github: "emqx/quic", tag: "0.2.4"},
+      {:x509, git: "git@github.com:jamixir/x509.git", branch: "master"},
       {:blake2, "~> 1.0"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
       {:dotenv, "~> 3.1.0"},
       {:temp, "~> 0.4"},
-      {:jamixir_vm, git: "https://github.com/jamixir/jamixir-vm.git", branch: "main"},
+      {:jamixir_vm, git: "git@github.com:jamixir/jamixir-vm.git", branch: "main"},
       {:cubdb, "~> 2.0.2"},
       {:muontrap, "~> 1.0"}
     ]

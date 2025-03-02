@@ -6,10 +6,17 @@ Jamixir is the Elixir implementation of the JAM Protocol, as described in the [G
 
 # How to Run
 
-## Using a docker image (cli)
+## Using a docker image
 ```
-docker build -t jamixir .
-docker run jamixir
+docker build --ssh default -t jamixir .
+docker run -p 9900:9900 jamixir
+```
+
+## Using a docker-compose
+The following commands builds and runs a simulated network of six Jamixir nodes.
+```
+docker compose build
+docker compose up 
 ```
 
 
