@@ -1,12 +1,14 @@
 defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.AvailabilitySpecification
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
+  alias Codec.JsonEncoder
   alias System.State.Ready
   alias System.State.ServiceAccount
   alias Util.{Hash, Hex}
-  alias Codec.JsonEncoder
+  use Codec.Encoder
   import Mox
 
   setup_all do
@@ -484,9 +486,37 @@ defmodule WorkReportTest do
       {:ok, services: services, wp: wp}
     end
 
-    test "smoke teste", %{wp: wp, services: services} do
+    test "smoke test", %{wp: wp, services: services} do
       wr = WorkReport.execute_work_package(wp, 0, services)
+      [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
+      assert wr.core_index == 0
+      assert wr.output == <<1>>
+      assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
+
+      expected_work_result = %WorkResult{
+        service: 1,
+        code_hash: wi.code_hash,
+        payload_hash: h(wi.payload),
+        gas_ratio: wi.refine_gas_limit,
+        result: <<1>>
+      }
+
+      assert wr.results == [expected_work_result]
+      %AvailabilitySpecification{} = wr.specification
+    end
+
+    test "PVM return error on authorized", %{wp: wp, services: services} do
+      stub(MockPVM, :do_authorized, fn _, _, _ -> :bad end)
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      assert wr == :bad
+    end
+
+    test "bad exports when processing items", %{wp: wp, services: services} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>]} end)
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      [work_result | _] = wr.results
+      assert work_result.result == :bad
     end
   end
 

@@ -107,7 +107,7 @@ defmodule Block.Extrinsic.WorkItem do
     %WorkResult{
       service: wi.service,
       code_hash: wi.code_hash,
-      payload_hash: Hash.default(wi.payload),
+      payload_hash: h(wi.payload),
       gas_ratio: wi.refine_gas_limit,
       result: output
     }

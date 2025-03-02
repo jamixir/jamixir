@@ -243,13 +243,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {r, e} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e} do
-      # if ∣e∣= we
-      {r, e} when length(e) == w.export_count ->
-        {r, e}
-
       # otherwise if r ∈/ Y
       {r, _} when not is_binary(r) ->
         {r, zero_segments(w.export_count)}
+
+      # if ∣e∣= we
+      {r, e} when length(e) == w.export_count ->
+        {r, e}
 
       # otherwise
       _ ->
