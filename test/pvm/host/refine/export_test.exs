@@ -43,7 +43,7 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       # Fill context with max_manifest_size + 1 segments
-      max_size = Constants.max_manifest_size()
+      max_size = Constants.max_imports_and_exports()
       context = %Context{e: List.duplicate("", max_size - 5)}
       full = full()
 
@@ -68,6 +68,7 @@ defmodule PVM.Host.Refine.ExportTest do
       context = %Context{e: [<<1>>, <<2>>, <<3>>, <<4>>, <<5>>]}
 
       expected_w7 = export_offset + length(context.e)
+
       assert %{
                exit_reason: :continue,
                registers: %{r7: ^expected_w7},

@@ -16,17 +16,28 @@ defmodule WorkPackageTest do
       assert WorkPackage.valid?(wp)
     end
 
+    test "validates too many extrinsics", %{wp: wp} do
+      half_size_extrinsic = for _ <- 1..div(Constants.max_extrinsics(), 2), do: {Hash.zero(), 1}
+      wi = build(:work_item, extrinsic: half_size_extrinsic)
+      assert WorkPackage.valid?(%{wp | work_items: [wi]})
+      assert WorkPackage.valid?(%{wp | work_items: [wi, wi]})
+      refute WorkPackage.valid?(%{wp | work_items: [wi, wi, wi]})
+    end
+
     test "invalid amount of work items", %{wp: wp} do
       [wi] = wp.work_items
       # empty wi not allowed
       refute WorkPackage.valid?(%{wp | work_items: []})
-      # 5 is too big
-      refute WorkPackage.valid?(%{wp | work_items: [wi, wi, wi, wi, wi]})
+
+      refute WorkPackage.valid?(%{
+               wp
+               | work_items: for(_ <- 1..(Constants.max_work_items() + 1), do: wi)
+             })
     end
 
     test "invalid when the sum of export_count exceeds the maximum", %{wp: wp} do
       big_work_item =
-        build(:work_item, export_count: WorkPackage.maximum_exported_items() + 1)
+        build(:work_item, export_count: Constants.max_imports_and_exports() + 1)
 
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end
@@ -39,7 +50,7 @@ defmodule WorkPackageTest do
     end
 
     test "invalid when the sum of import_segments exceeds the maximum", %{wp: wp} do
-      data_segments = for _ <- 1..1500, do: {Hash.zero(), 1}
+      data_segments = for _ <- 1..2500, do: {Hash.zero(), 1}
       medium_work_item = build(:work_item, import_segments: data_segments)
       big_work_item = build(:work_item, import_segments: data_segments ++ data_segments)
 
@@ -74,14 +85,15 @@ defmodule WorkPackageTest do
 
     test "validates different work_item import_segments length", %{wp: wp} do
       [ds1 | rest] = for _ <- 1..500, do: {Hash.zero(), 21_062}
+      [ex1 | ex_rest] = for _ <- 1..100, do: {Hash.zero(), 105_310}
 
       in_limit_work_item =
-        build(:work_item, import_segments: rest, extrinsic: rest)
+        build(:work_item, import_segments: rest, extrinsic: [ex_rest])
 
       big_work_item =
         build(:work_item,
           import_segments: [ds1 | rest],
-          extrinsic: [ds1 | rest]
+          extrinsic: [ex1 | ex_rest]
         )
 
       # WS*WC = 4104
@@ -138,7 +150,7 @@ defmodule WorkPackageTest do
     end
 
     test "export count sum is above limit" do
-      wi = build(:work_item, export_count: WorkPackage.maximum_exported_items() / 2)
+      wi = build(:work_item, export_count: Constants.max_imports_and_exports() / 2)
       wp1 = build(:work_package, work_items: [wi])
       wp2 = build(:work_package, work_items: [wi, wi, wi])
 
@@ -147,7 +159,7 @@ defmodule WorkPackageTest do
     end
 
     test "segment size is abo limit" do
-      segments = for _ <- 1..div(WorkPackage.maximum_exported_items(), 2), do: {Hash.zero(), 256}
+      segments = for _ <- 1..div(Constants.max_imports_and_exports(), 2), do: {Hash.zero(), 256}
       wi = build(:work_item, import_segments: segments)
       wp1 = build(:work_package, work_items: [wi])
       wp2 = build(:work_package, work_items: [wi, wi, wi])

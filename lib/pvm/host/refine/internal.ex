@@ -175,7 +175,7 @@ defmodule PVM.Host.Refine.Internal do
         x == :error ->
           {:panic, registers.r7, e}
 
-        length(e) + export_offset >= Constants.max_manifest_size() ->
+        length(e) + export_offset >= Constants.max_imports_and_exports() ->
           {:continue, full(), e}
 
         true ->

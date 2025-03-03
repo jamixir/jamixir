@@ -40,10 +40,6 @@ defmodule Block.Extrinsic.WorkPackage do
     work_items: []
   ]
 
-  # 2^11
-  @maximum_exported_items 2048
-  def maximum_exported_items, do: @maximum_exported_items
-
   # 12 * 2 ** 20
   @maximum_size Constants.max_work_package_size()
 
@@ -51,6 +47,7 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp)
   end
 
+<<<<<<< HEAD
   def bundle_binary(%__MODULE__{} = wp) do
     e(
       {wp, for(w <- wp.work_items, do: WorkItem.extrinsic_data(w)),
@@ -60,6 +57,7 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   # Formula (14.9) v0.6.2
+  # TODO update to v0.6.3
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
 
@@ -94,15 +92,18 @@ defmodule Block.Extrinsic.WorkPackage do
   defp valid_items?(%__MODULE__{work_items: pw}) when length(pw) > @max_work_items, do: false
   defp valid_items?(_), do: true
 
-  # Formula (14.4) v0.6.2
+  # Formula (14.4) v0.6.3
   def valid_data_segments?(%__MODULE__{work_items: work_items}) do
-    {exported_sum, imported_sum} =
-      Enum.reduce(work_items, {0, 0}, fn item, {exported_acc, imported_acc} ->
-        {exported_acc + item.export_count, imported_acc + length(item.import_segments)}
+    {exported_sum, imported_sum, extrinsic_sum} =
+      Enum.reduce(work_items, {0, 0, 0}, fn item, {exported_acc, imported_acc, extrinsic_acc} ->
+        {exported_acc + item.export_count, imported_acc + length(item.import_segments),
+         extrinsic_acc + length(item.extrinsic)}
       end)
 
-    # ∑we ≤ WM ^  ∑|wi| ≤ WM
-    exported_sum <= @maximum_exported_items and imported_sum <= @maximum_exported_items
+    # ∑we ≤ WM ^  ∑|wi| ≤ WM ^ ∑ ∣wx∣ ≤ T
+    exported_sum <= Constants.max_imports_and_exports() and
+      imported_sum <= Constants.max_imports_and_exports() and
+      extrinsic_sum <= Constants.max_extrinsics()
   end
 
   use JsonDecoder
