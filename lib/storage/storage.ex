@@ -118,7 +118,6 @@ defmodule Storage do
   @spec put_headers(list(Header.t())) :: {:ok, list(String.t())}
   defp put_headers(headers) do
     if Enum.all?(headers, &is_struct(&1, Header)) do
-      # find the latest timeslot
       latest_timeslot = Enum.max_by(headers, & &1.timeslot, fn -> 0 end).timeslot
 
       map =
@@ -136,15 +135,12 @@ defmodule Storage do
   end
 
   def stop do
-    # Stop Mnesia
     :mnesia.stop()
 
-    # Stop PersistStorage (which is a GenServer)
     if pid = Process.whereis(PersistStorage) do
       GenServer.stop(pid)
     end
 
-    # Stop CubDB
     if pid = Process.whereis(:cubdb) do
       GenServer.stop(pid)
     end
