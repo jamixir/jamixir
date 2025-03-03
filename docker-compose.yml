@@ -1,0 +1,30 @@
+# Jamixir docker compose builder
+
+services:
+  jamixir:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Use command substitution for Mac/Linux compatibility
+        USER_ID: ${USERID:-1000}
+        GROUP_ID: ${GROUPID:-1000}
+        # platform: ${PLATFORM:-linux/amd64}
+    environment:
+      - MIX_ENV=test
+      - SSH_AUTH_SOCK=${SSH_AUTH_SOCK}
+      - GIT_CONFIG_GLOBAL=/home/jamixir/.gitconfig
+    volumes:
+      - .:/app
+      - ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}
+      - ~/.ssh:/home/jamixir/.ssh
+      - ~/.gitconfig:/home/jamixir/.gitconfig
+    user: jamixir
+    command: >
+      sh -c "
+        mix local.hex --force &&
+        mix local.rebar --force &&
+        mix deps.get &&
+        mix compile &&
+        mix test.tiny
+      "
