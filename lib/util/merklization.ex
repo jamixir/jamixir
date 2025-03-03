@@ -4,11 +4,6 @@ defmodule Util.Merklization do
   D.2. Merklization
   D.2.1. Node Encoding and Trie Identification
 
-  We identif (sub-) tries as the hash of their root node, with one exception:
-  empty (sub-) tries are identified as the zero-hash, H0.
-
-  Nodes are fixed in size at 512 bit (64 bytes). Each node is either a branch or a
-  leaf. The first bit discriminate between these two types.
   """
 
   alias Util.Hash

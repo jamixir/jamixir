@@ -1,8 +1,4 @@
 defmodule Util.MerkleTree do
-  @moduledoc """
-  A module for constructing Well-Balanced Binary Merkle Trees.
-  """
-
   alias Util.Hash
 
   @doc """

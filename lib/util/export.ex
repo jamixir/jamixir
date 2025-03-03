@@ -104,8 +104,4 @@ defmodule Util.Export do
   def get_key_name(<<key::8, _::binary>>) when key in 1..15, do: "c#{key}"
 
   def get_key_name(_), do: "unknown"
-
-  # Helper to generate metadata based on key type and value
-  # You can expand this to add specific metadata
-  # def get_metadata(_key, _val), do: ""
 end

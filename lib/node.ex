@@ -74,7 +74,6 @@ defmodule Jamixir.Node do
   @impl true
   def add_ticket(_epoch, _attempt, _proof) do
     # TODO
-    # Implement the function logic here
     :ok
   end
 

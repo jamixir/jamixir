@@ -1,6 +1,6 @@
 defmodule SigningContexts do
   @moduledoc """
-  Defines signing contexts used throughout the system for various cryptographic operations.
+  Appendix I.4.5
   """
 
   # Formula (11.14) v0.6.0
