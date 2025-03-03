@@ -31,7 +31,7 @@ defmodule Constants do
   defmockable(:recent_history_size, do: 8)
 
   @doc "I - The maximum amount of work items in a package."
-  def max_work_items, do: 4
+  def max_work_items, do: 16
 
   @doc "J - The maximum sum of dependency items in a work-report."
   defmockable(:max_work_report_dep_sum, do: 8)
@@ -68,6 +68,9 @@ defmodule Constants do
   @doc "R - The rotation period of validator-core assignments, in timeslots."
   defmockable(:rotation_period, do: Jamixir.config(:rotation_period))
 
+  @doc "T - The maximum number of extrinsics in a work-package."
+  def max_extrinsics, do: 128
+
   @doc "U - The period in timeslots after which reported but unavailable work may be replaced."
   def unavailability_period, do: 5
 
@@ -90,8 +93,8 @@ defmodule Constants do
   @doc "Wc - The maximum size of service code in octets"
   def max_service_code_size, do: 4_000_000
 
-  @doc "Wm - The maximum number of entries in a work-package manifest"
-  def max_manifest_size, do: 2048
+  @doc "Wm - The maximum number of imports and exports in a work-package"
+  def max_imports_and_exports, do: 3_072
 
   @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config(:ticket_submission_end))
