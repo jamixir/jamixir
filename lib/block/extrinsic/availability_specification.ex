@@ -44,9 +44,9 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Codec.Decoder
 
   # Formula (14.16) v0.6.2
-  @spec from_package_execution(Types.hash(), binary(), list(Types.export_segment())) ::
+  @spec from_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           __MODULE__.t()
-  def from_package_execution(work_package_hash, bundle_binary, export_segments) do
+  def from_execution(work_package_hash, bundle_binary, export_segments) do
     %__MODULE__{
       work_package_hash: work_package_hash,
       length: byte_size(bundle_binary),

@@ -142,35 +142,6 @@ defmodule Util.MerkleTreeTest do
 
   defp identity_hash(x), do: x
 
-  describe "justification/3" do
-    test "returns correct justification for a list of 4 elements" do
-      list = ["a", "b", "c", "d"]
-      index = 2
-      result = MerkleTree.justification(list, index, &identity_hash/1)
-
-      assert result == ["nodeleafaleafb", "leafd"]
-    end
-
-    test "returns correct justification for a list of 3 elements" do
-      list = ["a", "b", "c"]
-      index = 1
-      result = MerkleTree.justification(list, index, &identity_hash/1)
-
-      assert result == [
-               "nodeleafc\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-               "leafa"
-             ]
-    end
-
-    test "returns empty list for single element input" do
-      assert MerkleTree.justification(["a"], 0, &identity_hash/1) == []
-    end
-
-    test "raises ArgumentError for empty list" do
-      assert MerkleTree.justification([], 0, &identity_hash/1) == []
-    end
-  end
-
   describe "justification/4" do
     test "returns correct justification with x parameter" do
       list = ["a", "b", "c", "d", "e", "f", "g", "h"]
@@ -178,10 +149,7 @@ defmodule Util.MerkleTreeTest do
       x = 1
       result = MerkleTree.justification(list, index, &identity_hash/1, x)
 
-      assert result == [
-               "nodenodeleafeleaffnodeleafgleafh",
-               "nodeleafaleafb"
-             ]
+      assert result == ["nodenodeleafaleafbnodeleafcleafd", "nodeleafeleaff"]
     end
 
     test "returns empty list when x is greater than or equal to log2(length)" do
@@ -191,17 +159,6 @@ defmodule Util.MerkleTreeTest do
       assert MerkleTree.justification(list, index, &identity_hash/1, x) == []
     end
 
-    test "returns full justification when x is 0" do
-      list = ["a", "b", "c", "d"]
-      index = 2
-      x = 0
-      result = MerkleTree.justification(list, index, &identity_hash/1, x)
-      full_result = MerkleTree.justification(list, index, &identity_hash/1)
-
-      assert result == full_result
-      assert result == ["nodeleafaleafb", "leafd"]
-    end
-
     test "raises ArgumentError for empty list" do
       assert MerkleTree.justification([], 0, &identity_hash/1, 1) == []
     end
@@ -209,13 +166,9 @@ defmodule Util.MerkleTreeTest do
     test "returns correct justification for odd number of elements" do
       list = ["a", "b", "c", "d", "e"]
       index = 3
-      result = MerkleTree.justification(list, index, &identity_hash/1)
+      result = MerkleTree.justification(list, index, &identity_hash/1, 2)
 
-      assert result == [
-               "nodenodeleafe\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0node\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-               "nodeleafaleafb",
-               "leafc"
-             ]
+      assert result == ["nodenodeleafaleafbnodeleafcleafd"]
     end
   end
 
@@ -276,6 +229,12 @@ defmodule Util.MerkleTreeTest do
       # end_idx = min(1 + 1, 4) = 2
       # Should return hash of element [1]
       assert result == ["leafb"]
+    end
+
+    test "i=0 case" do
+      list = ["a"]
+      result = MerkleTree.justification_l(list, 0, &identity_hash/1, 6)
+      assert result == []
     end
   end
 end

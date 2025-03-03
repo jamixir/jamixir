@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   section 11.1
   """
 
+  alias System.State.ServiceAccount
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
@@ -17,7 +18,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (11.2) v0.6.0
+  # Formula (11.2) v0.6.2
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -35,7 +36,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           results: list(WorkResult.t())
         }
 
-  # Formula (11.2) v0.6.0
+  # Formula (11.2) v0.6.2
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -44,12 +45,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (11.3) v0.6.0
+  # Formula (11.3) v0.6.2
   # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    # Formula (11.3) v0.6.0
-    # Formula (11.8) v0.6.0
+    # Formula (11.3) v0.6.2
+    # Formula (11.8) v0.6.2
     map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
@@ -61,7 +62,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.16) v0.6.0 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (11.16) v0.6.2 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = for a <- assurances, do: Assurance.core_bits(a)
@@ -86,8 +87,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.4) v0.6.0
-  # Formula (12.5) v0.6.0
+  # Formula (12.4) v0.6.2
+  # Formula (12.5) v0.6.2
   @spec separate_work_reports(list(__MODULE__.t()), list(MapSet.t(Types.hash()))) ::
           {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
   def separate_work_reports(work_reports, accumulation_history)
@@ -109,13 +110,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {w_bang, w_q}
   end
 
-  # Formula (12.6) v0.6.0
+  # Formula (12.6) v0.6.2
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
     {w, w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)}
   end
 
-  # Formula (12.7) v0.6.0
+  # Formula (12.7) v0.6.2
   @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), MapSet.t(Types.hash())) ::
           list({__MODULE__.t(), MapSet.t(Types.hash())})
   def edit_queue(r, x) do
@@ -125,7 +126,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.8) v0.6.0
+  # Formula (12.8) v0.6.2
   @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())})) ::
           list(__MODULE__.t())
   def accumulation_priority_queue(r) do
@@ -135,7 +136,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.9) v0.6.0
+  # Formula (12.9) v0.6.2
   def work_package_hashes(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
@@ -153,24 +154,24 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (12.2) v0.6.0
+    # Formula (12.2) v0.6.2
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (12.4) v0.6.0
-    # Formula (12.5) v0.6.0
+    # Formula (12.4) v0.6.2
+    # Formula (12.5) v0.6.2
     {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
-    # Formula (12.10) v0.6.0
+    # Formula (12.10) v0.6.2
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (12.12) v0.6.0
+    # Formula (12.12) v0.6.2
     q =
       edit_queue(
         for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ w_q,
         work_package_hashes(w_bang)
       )
 
-    # Formula (12.11) v0.6.0
+    # Formula (12.11) v0.6.2
     w_bang ++ accumulation_priority_queue(q)
   end
 
@@ -190,43 +191,41 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (202) v0.4.5
-  # TODO review to 14.11 v0.6.0
+  # Formula 14.11 v0.6.2
+  @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
+          WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
-    s = []
-
     # o = ΨI (p,c)
     case PVM.authorized(wp, core, services) do
-      error when is_integer(error) ->
+      error when is_atom(error) ->
         error
 
       o ->
-        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w, s))
+        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
           for j <- 0..(length(wp.work_items) - 1) do
+            # (r,e) = I(p,j)
             {result, exports} = process_item(wp, j, o, import_segments, services, %{})
+            # C(pw [j],r), e)
             {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
           end
+          |> Enum.unzip()
 
-        # Formula (14.15) v0.6.0
-        specification =
-          AvailabilitySpecification.from_package_execution(
-            Hash.default(e(wp)),
-            e(
-              {wp, for(w <- wp, do: WorkItem.extrinsic_data(w)),
-               for(w <- wp, do: WorkItem.import_segment_data(w, s)),
-               for(w <- wp, do: WorkItem.segment_justification(w, s))}
-            ),
-            e
+        # Formula (14.15) v0.6.2
+        s =
+          AvailabilitySpecification.from_execution(
+            h(e(wp)),
+            WorkPackage.bundle_binary(wp),
+            List.flatten(e)
           )
 
         %__MODULE__{
+          specification: s,
+          refinement_context: wp.context,
+          core_index: core,
           authorizer_hash: WorkPackage.implied_authorizer(wp, services),
           output: o,
-          refinement_context: nil,
-          # s
-          specification: specification,
           segment_root_lookup: get_import_segments(wp),
           results: r
         }
@@ -244,13 +243,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {r, e} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e} do
-      # if ∣e∣= we
-      {r, e} when length(e) == w.export_count ->
-        {r, e}
-
       # otherwise if r ∈/ Y
       {r, _} when not is_binary(r) ->
         {r, zero_segments(w.export_count)}
+
+      # if ∣e∣= we
+      {r, e} when length(e) == w.export_count ->
+        {r, e}
 
       # otherwise
       _ ->
@@ -267,7 +266,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # TODO 14.13 v0.6.2
-  def get_import_segments(%WorkPackage{work_items: wi}) do
+  def get_import_segments(%WorkPackage{work_items: _wi}) do
     %{}
   end
 
@@ -312,7 +311,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.24) v0.6.0
+    # Formula (C.24) v0.6.2
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       e({

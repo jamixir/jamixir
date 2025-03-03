@@ -1,12 +1,14 @@
 defmodule WorkReportTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.AvailabilitySpecification
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.WorkPackage
+  alias Codec.JsonEncoder
   alias System.State.Ready
   alias System.State.ServiceAccount
   alias Util.{Hash, Hex}
-  alias Codec.JsonEncoder
+  use Codec.Encoder
   import Mox
 
   setup_all do
@@ -446,6 +448,75 @@ defmodule WorkReportTest do
       {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == :bad_exports
       assert length(e) == 4
+    end
+  end
+
+  use Sizes
+
+  describe "execute_work_package/3" do
+    setup do
+      Application.put_env(:jamixir, :pvm, MockPVM)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> <<1>> end)
+
+      stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
+        w = Enum.at(p.work_items, j)
+
+        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count)}
+      end)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :pvm, PVM)
+      end)
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{<<1>> => <<7, 7, 7>>},
+          preimage_storage_l: %{{<<1>>, 3} => [1]},
+          code_hash: <<1>>
+        )
+
+      wp =
+        build(:work_package,
+          authorization_code_hash: service_account.code_hash,
+          context: build(:refinement_context, timeslot: 3),
+          work_items: build_list(1, :work_item, export_count: 1)
+        )
+
+      services = %{wp.service => service_account}
+      {:ok, services: services, wp: wp}
+    end
+
+    test "smoke test", %{wp: wp, services: services} do
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      [wi | _] = wp.work_items
+      assert wr.refinement_context == wp.context
+      assert wr.core_index == 0
+      assert wr.output == <<1>>
+      assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
+
+      expected_work_result = %WorkResult{
+        service: 1,
+        code_hash: wi.code_hash,
+        payload_hash: h(wi.payload),
+        gas_ratio: wi.refine_gas_limit,
+        result: <<1>>
+      }
+
+      assert wr.results == [expected_work_result]
+      %AvailabilitySpecification{} = wr.specification
+    end
+
+    test "PVM return error on authorized", %{wp: wp, services: services} do
+      stub(MockPVM, :do_authorized, fn _, _, _ -> :bad end)
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      assert wr == :bad
+    end
+
+    test "bad exports when processing items", %{wp: wp, services: services} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>]} end)
+      wr = WorkReport.execute_work_package(wp, 0, services)
+      [work_result | _] = wr.results
+      assert work_result.result == :bad
     end
   end
 

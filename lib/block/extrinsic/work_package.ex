@@ -24,7 +24,7 @@ defmodule Block.Extrinsic.WorkPackage do
           work_items: list(WorkItem.t())
         }
 
-  # Formula (14.2) v0.6.0
+  # Formula (14.2) v0.6.2
   defstruct [
     # j
     authorization_token: <<>>,
@@ -51,9 +51,18 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp)
   end
 
-  # Formula (14.9) v0.6.0
+  def bundle_binary(%__MODULE__{} = wp) do
+    e(
+      {wp, for(w <- wp.work_items, do: WorkItem.extrinsic_data(w)),
+       for(w <- wp.work_items, do: WorkItem.import_segment_data(w)),
+       for(w <- wp.work_items, do: WorkItem.segment_justification(w))}
+    )
+  end
+
+  # Formula (14.9) v0.6.2
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
+
     ServiceAccount.historical_lookup(
       services[wp.service],
       wp.context.timeslot,
@@ -61,13 +70,13 @@ defmodule Block.Extrinsic.WorkPackage do
     )
   end
 
-  # Formula (14.9) v0.6.0
+  # Formula (14.9) v0.6.2
   # pa
   def implied_authorizer(%__MODULE__{} = wp, services) do
     Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
-  # Formula (14.5) v0.6.0
+  # Formula (14.5) v0.6.2
   defp valid_size?(%__MODULE__{work_items: work_items} = p) do
     byte_size(p.authorization_token) +
       byte_size(p.parameterization_blob) +
@@ -115,7 +124,7 @@ defmodule Block.Extrinsic.WorkPackage do
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     use Codec.Encoder
-    # Formula (C.25) v0.6.0
+    # Formula (C.25) v0.6.2
     def encode(%WorkPackage{} = wp) do
       e({
         vs(wp.authorization_token),

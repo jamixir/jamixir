@@ -34,7 +34,7 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
     end
   end
 
-  describe "from_package_execution/3" do
+  describe "from_execution/3" do
     use Sizes
 
     test "calculates erasure root" do
@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
       bundle_binary = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
       exp_erasure_root = AS.calculate_erasure_root(bundle_binary, segments)
 
-      spec = AS.from_package_execution(Hash.one(), bundle_binary, segments)
+      spec = AS.from_execution(Hash.one(), bundle_binary, segments)
 
       assert spec.work_package_hash == Hash.one()
       assert spec.erasure_root == exp_erasure_root
