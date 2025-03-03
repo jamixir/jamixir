@@ -1,17 +1,6 @@
 defmodule System.State.ServiceAccount do
   @moduledoc """
-  Formula (9.3) v0.6.0
-  Represents a service account in the Jam system, analogous to a smart contract in Ethereum.
-  Each service account includes a storage component, preimage lookup dictionaries,
-  code hash, balance, and gas limits.
-
-  Formally:
-  - `s`: Storage dictionary (D⟨H → Y⟩)
-  - `p`: Preimage lookup dictionary (D⟨H → Y⟩)
-  - `l`: Preimage lookup dictionary with additional index (D⟨(H, NL) → ⟦NT⟧∶3⟩)
-  - `c`: Code hash
-  - `b`: Balance
-  - `g`, `m`: Gas limits
+  Formula (9.3) v0.6.2
   """
   alias System.State.ServiceAccount
   alias Util.Hash

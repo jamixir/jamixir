@@ -39,37 +39,37 @@ defmodule System.State do
 
   # Formula (4.4) v0.6.0 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
   defstruct [
-    # α: Authorization requirement for work done on the core
+    # α
     authorizer_pool: List.duplicate([], Constants.core_count()),
-    # β: Details of the most recent blocks
+    # β
     recent_history: %RecentHistory{},
-    # γ: State concerning the determination of validator keys
+    # γ
     safrole: %Safrole{},
-    # δ: State dealing with services (analogous to smart contract accounts)
+    # δ
     services: %{},
-    # η: On-chain entropy pool
+    # η
     entropy_pool: %EntropyPool{},
-    # ι: Validators enqueued for next round
+    # ι
     next_validators: [],
-    # κ: Current Validators
+    # κ
     curr_validators: [],
-    # λ: Previous Validators
+    # λ
     prev_validators: [],
-    # ρ: Each core's currently assigned report
+    # ρ
     core_reports: CoreReport.initial_core_reports(),
-    # τ: Details of the most recent timeslot
+    # τ
     timeslot: 0,
-    # φ: Queue which fills the authorization requirement
+    # φ
     authorizer_queue:
       List.duplicate(
         List.duplicate(Hash.zero(), Constants.max_authorization_queue_items()),
         Constants.core_count()
       ),
-    # χ: Identities of services with privileged status
+    # χ
     privileged_services: %PrivilegedServices{},
-    # ψ: Judgements tracked
+    # ψ
     judgements: %Judgements{},
-    # π: Validator statistics
+    # π
     validator_statistics: %ValidatorStatistics{},
     # ϑ
     ready_to_accumulate: Ready.initial_state(),
