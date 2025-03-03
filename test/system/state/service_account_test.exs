@@ -45,12 +45,24 @@ defmodule System.State.ServiceAccountTest do
 
     test "return code when it exists in preimage storage p", %{sa: sa} do
       code_hash = Hash.random()
+      service = %{sa | code_hash: code_hash, preimage_storage_p: %{code_hash => <<0, 1, 2, 3>>}}
+      assert ServiceAccount.code(service) == <<1, 2, 3>>
+    end
 
-      assert ServiceAccount.code(%{
-               sa
-               | code_hash: code_hash,
-                 preimage_storage_p: %{code_hash => <<1, 2, 3>>}
-             }) == <<1, 2, 3>>
+    test "return empty metadata and code", %{sa: sa} do
+      code_hash = Hash.random()
+      service = %{sa | code_hash: code_hash, preimage_storage_p: %{code_hash => <<0>>}}
+      assert ServiceAccount.metadata(service) == <<>>
+      assert ServiceAccount.code(service) == <<>>
+    end
+
+    test "metadata and code", %{sa: sa} do
+      hash = Hash.random()
+
+      service = %{sa | code_hash: hash, preimage_storage_p: %{hash => <<1, 1, 2, 3, 4>>}}
+
+      assert ServiceAccount.metadata(service) == <<1>>
+      assert ServiceAccount.code(service) == <<2, 3, 4>>
     end
   end
 

@@ -47,7 +47,6 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp)
   end
 
-<<<<<<< HEAD
   def bundle_binary(%__MODULE__{} = wp) do
     e(
       {wp, for(w <- wp.work_items, do: WorkItem.extrinsic_data(w)),
@@ -56,16 +55,21 @@ defmodule Block.Extrinsic.WorkPackage do
     )
   end
 
-  # Formula (14.9) v0.6.2
-  # TODO update to v0.6.3
+  # Formula (14.9) v0.6.3
   # pc
   def authorization_code(%__MODULE__{} = wp, services) do
+    case ServiceAccount.historical_lookup(
+           services[wp.service],
+           wp.context.timeslot,
+           wp.authorization_code_hash
+         ) do
+      nil ->
+        nil
 
-    ServiceAccount.historical_lookup(
-      services[wp.service],
-      wp.context.timeslot,
-      wp.authorization_code_hash
-    )
+      bin ->
+        {_, code} = VariableSize.decode(bin, :binary)
+        code
+    end
   end
 
   # Formula (14.9) v0.6.2

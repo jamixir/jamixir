@@ -37,7 +37,7 @@ defmodule PVM.AuthorizedTest do
 
       bitmask = <<128, 44, 1>>
 
-      binary = PVM.Helper.init(program, bitmask, message)
+      binary = <<0>> <> PVM.Helper.init(program, bitmask, message)
       hash = Hash.default(binary)
 
       # Store program in service account

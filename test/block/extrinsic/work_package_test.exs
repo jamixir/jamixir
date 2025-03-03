@@ -112,8 +112,8 @@ defmodule WorkPackageTest do
 
       service_account =
         build(:service_account,
-          preimage_storage_p: %{h => <<7, 7, 7>>},
-          preimage_storage_l: %{{h, 3} => [1]},
+          preimage_storage_p: %{h => <<0, 7, 7, 7>>},
+          preimage_storage_l: %{{h, 4} => [1]},
           code_hash: h
         )
 

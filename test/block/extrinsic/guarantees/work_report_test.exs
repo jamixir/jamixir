@@ -470,8 +470,8 @@ defmodule WorkReportTest do
 
       service_account =
         build(:service_account,
-          preimage_storage_p: %{<<1>> => <<7, 7, 7>>},
-          preimage_storage_l: %{{<<1>>, 3} => [1]},
+          preimage_storage_p: %{<<1>> => <<0, 7, 7, 7>>},
+          preimage_storage_l: %{{<<1>>, 4} => [1]},
           code_hash: <<1>>
         )
 
