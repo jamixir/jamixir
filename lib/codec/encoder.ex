@@ -1,14 +1,8 @@
 defmodule Codec.Encoder do
-  @moduledoc """
-  A module for encoding data structures into binary format.
-  """
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias Util.Hash
 
-  @doc """
-  Encodes a given value into a binary format.
-  """
   @spec encode(any()) :: binary()
   def encode(value) do
     do_encode(value)
@@ -60,8 +54,6 @@ defmodule Codec.Encoder do
   defp do_encode(value) when is_binary(value) or is_bitstring(value), do: value
   # Formula (C.3) v.0.5.0
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
-  # Formula (C.4) v.0.5.0 is not implementable in Elixir,
-  # as it does not have a built-in arbitrary number of arguments in functions
 
   # Formula (C.7) v.0.5.0
   defp do_encode(value) when is_list(value) do
@@ -96,8 +88,6 @@ defmodule Codec.Encoder do
   defp encodable?(data) do
     not is_nil(Encodable.impl_for(data))
   end
-
-  # defp do_encode(%Block.Header{} = header), do: encode_header(header)
 
   # l = 0 => 2 < x < 2^7
   # l = 1 => 2^7 <= x < 2^14
