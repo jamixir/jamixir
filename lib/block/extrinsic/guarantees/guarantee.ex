@@ -1,9 +1,9 @@
 defmodule Block.Extrinsic.Guarantee do
   @moduledoc """
   Work report guarantee.
-  11.4
+  Formula (11.23) v0.6.2
   """
-  alias Block.Extrinsic.{Guarantee.WorkReport, Guarantor}
+  alias Block.Extrinsic.{Guarantee.WorkReport, GuarantorAssignments}
   alias Block.Header
   alias System.{State, State.EntropyPool, State.RecentHistory, State.ServiceAccount}
   alias Util.{Collections, Crypto}
@@ -280,8 +280,8 @@ defmodule Block.Extrinsic.Guarantee do
              offenders
            ) do
     {g, prev_g} = {
-      Guarantor.guarantors(n2_, t_, curr_validators_, offenders),
-      Guarantor.prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders)
+      GuarantorAssignments.guarantors(n2_, t_, curr_validators_, offenders),
+      GuarantorAssignments.prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders)
     }
 
     # ∀(w, t, a) ∈ EG,
@@ -290,7 +290,7 @@ defmodule Block.Extrinsic.Guarantee do
       {:ok, MapSet.new()},
       fn %__MODULE__{credentials: a, work_report: w = %WorkReport{core_index: wc}, timeslot: t},
          reporters_set ->
-        %Guarantor{assigned_cores: c, validators: validators} = choose_g(t, t_, g, prev_g)
+        %GuarantorAssignments{assigned_cores: c, validators: validators} = choose_g(t, t_, g, prev_g)
 
         # ∀(v, s) ∈ a
         result =

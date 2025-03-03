@@ -1,10 +1,6 @@
-defmodule Block.Extrinsic.Guarantor do
+defmodule Block.Extrinsic.GuarantorAssignments do
   @moduledoc """
-  # Formula (11.21) v0.6.0 - section 11.3
-  Every block, each core has three validators uniquely assigned to guarantee workreports for it.
-  This is borne out with V = 1, 023 validators and C = 341 cores, since V/C = 3.
-  The core index assigned to each of the validators, as well as the validators’ Ed25519 keys
-  are denoted by G:
+  # Formula (11.18) v0.6.2
   """
   alias System.State.Validator
   alias Util.Time

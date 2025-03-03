@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
   use ExUnit.Case
   import Jamixir.Factory
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Block.Extrinsic.{Guarantee, Guarantor}
+  alias Block.Extrinsic.{Guarantee, GuarantorAssignments}
   alias Block.Header
   alias System.State
   alias System.State.{CoreReport, Ready, RecentHistory, RecentHistory.RecentBlock, ServiceAccount}
@@ -311,7 +311,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       timeslot = 2
 
       curr_guarantor =
-        Guarantor.guarantors(
+        GuarantorAssignments.guarantors(
           entropy_pool.n2,
           timeslot,
           curr_validators,
@@ -319,7 +319,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         )
 
       prev_guarantor =
-        Guarantor.prev_guarantors(
+        GuarantorAssignments.prev_guarantors(
           entropy_pool.n2,
           entropy_pool.n3,
           timeslot,
