@@ -1,9 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Verdict do
   @moduledoc """
-  Formula (10.2)
-  verdic on the correctness of a work-report.
-  the Dispute extrinsic Ed may contain 1 or more verdicts. secion 10.2
-  A verdict consists of a work-report hash, an epoch index, and a list of judgements from validators.
+  Formula (10.2) v0.6.2
   """
 
   alias Block.Extrinsic.Disputes.Judgement

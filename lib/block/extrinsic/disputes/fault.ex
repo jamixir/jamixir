@@ -1,8 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Fault do
   @moduledoc """
-  Formula (10.2)
-  Faults represent validators who have signed  a judgement that was found to be in
-  cotradiction with the work-report's validity.
+  Formula (10.2) v0.6.2
   """
   alias Types
 
