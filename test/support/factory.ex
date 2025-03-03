@@ -239,7 +239,7 @@ defmodule Jamixir.Factory do
 
     %System.State.ServiceAccount{
       storage: %{Hash.random() => <<0xDEADBEEF::32>>},
-      preimage_storage_p: %{rh => <<0xCAFEBABE::32>>},
+      preimage_storage_p: %{rh => <<0x00FEBABE::32>>},
       preimage_storage_l: %{{rh, 4} => [1, 2, 3]},
       code_hash: rh,
       balance: 1000,

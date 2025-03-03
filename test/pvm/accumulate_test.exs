@@ -57,7 +57,7 @@ defmodule PVM.AccumulateTest do
       service_with_code = %ServiceAccount{
         balance: 100,
         code_hash: hash,
-        preimage_storage_p: %{hash => binary},
+        preimage_storage_p: %{hash => <<0>> <> binary},
         preimage_storage_l: %{{hash, byte_size(binary)} => [0]}
       }
 

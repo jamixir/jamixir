@@ -2,6 +2,7 @@ defmodule System.State.ServiceAccount do
   @moduledoc """
   Formula (9.3) v0.6.2
   """
+  alias Codec.VariableSize
   alias System.State.ServiceAccount
   alias Util.Hash
   use Codec.Encoder
@@ -53,10 +54,25 @@ defmodule System.State.ServiceAccount do
       Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
   end
 
-  # Formula (9.4) v0.6.0
-  def code(%__MODULE__{code_hash: hash, preimage_storage_p: p}), do: p[hash]
+  # Formula (9.4) v0.6.3
+  def code(account) do
+    {_, code} = code_and_metadata(account)
+    code
+  end
 
-  def code(nil), do: nil
+  def metadata(account) do
+    {meta, _} = code_and_metadata(account)
+    meta
+  end
+
+  defp code_and_metadata(nil), do: {nil, nil}
+
+  defp code_and_metadata(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
+    case p[hash] do
+      nil -> {nil, nil}
+      bin -> VariableSize.decode(bin, :binary)
+    end
+  end
 
   # Formula (9.5) v0.6.0
   # Formula (9.6) v0.6.0
