@@ -171,8 +171,6 @@ defmodule BlockTest do
   end
 
   describe "new/4" do
-    @describetag timeout: 10000
-
     setup do
       Storage.put(Hash.zero(), build(:header, timeslot: 0))
       Application.delete_env(:jamixir, :original_modules)
