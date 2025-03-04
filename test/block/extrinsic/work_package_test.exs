@@ -131,6 +131,31 @@ defmodule WorkPackageTest do
                Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
     end
 
+    test "returns authorization_code when it is available in history - 2", %{state: state} do
+      h = Hash.random()
+      p_m = Hash.random()
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{h => <<32, p_m::binary-size(32), 7, 7, 7>>},
+          preimage_storage_l: %{{h, 36} => [1]},
+          code_hash: h
+        )
+
+      wp =
+        build(:work_package,
+          authorization_code_hash: service_account.code_hash,
+          context: build(:refinement_context, timeslot: 3)
+        )
+
+      state = %State{state | services: %{wp.service => service_account}}
+
+      assert WorkPackage.authorization_code(wp, state.services) == <<7, 7, 7>>
+
+      assert WorkPackage.implied_authorizer(wp, state.services) ==
+               Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
+    end
+
     test "return nil authorization code when it is not available", %{state: state} do
       assert WorkPackage.authorization_code(build(:work_package), state.services) == nil
     end
