@@ -68,7 +68,7 @@ defmodule System.State.ServiceAccount do
   defp code_and_metadata(nil), do: {nil, nil}
 
   defp code_and_metadata(%__MODULE__{code_hash: hash, preimage_storage_p: p}) do
-    Map.get(p, hash)
+    Map.get(p, hash) do
       nil -> {nil, nil}
       bin -> VariableSize.decode(bin, :binary)
     end
