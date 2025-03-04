@@ -5,8 +5,8 @@ defmodule System.State.RotateKeys do
   alias Util.Time
 
   @doc """
-  Formula (6.13) v0.6.0
-  Rotate keys according to the GP specification.
+  Formula (6.13) v0.6.2
+
   returns tuple :{pending_, current_, prev_, epoch_root_}
   """
 

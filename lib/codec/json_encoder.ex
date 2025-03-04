@@ -44,14 +44,13 @@ defmodule Codec.JsonEncoder do
     key_mapping =
       if function_exported?(module, :to_json_mapping, 0), do: module.to_json_mapping(), else: %{}
 
-    # Start with struct-to-map conversion
     base =
       struct
       |> Map.from_struct()
       # Remove keys that will be transformed
       |> Map.drop(Map.keys(key_mapping))
 
-    # Handle root transformation separately
+    # root transformation
     case Enum.find(key_mapping, fn {_, mapping} ->
            match?({:_root, _}, mapping) or mapping == :_root
          end) do

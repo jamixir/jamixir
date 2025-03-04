@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.Disputes.Error do
   def unsorted_judgements, do: :unsorted_judgements
   def unsorted_culprits, do: :unsorted_culprits
   def unsorted_verdicts, do: :unsorted_verdicts
+  def unsorted_faults, do: :unsorted_faults
 
   # Validation errors
   def already_judged, do: :already_judged

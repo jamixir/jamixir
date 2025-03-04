@@ -1,9 +1,7 @@
 defmodule PersistStorage do
   use GenServer
   @db_path if Mix.env() == :test, do: "priv/test_db", else: "priv/db"
-  # Adjust as needed
   @compact_interval :timer.minutes(5)
-  # @compact_threshold 1000  # Number of operations before considering compaction
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -47,7 +45,6 @@ defmodule PersistStorage do
     :ok
   end
 
-  # Server callbacks
   @impl true
   def init(opts) do
     case Keyword.get(opts, :persist) do

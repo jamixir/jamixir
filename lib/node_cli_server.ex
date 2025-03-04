@@ -5,7 +5,6 @@ defmodule Jamixir.NodeCLIServer do
   use GenServer
   require Logger
 
-  # Client API
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
@@ -15,7 +14,6 @@ defmodule Jamixir.NodeCLIServer do
   def inspect_state(key), do: GenServer.call(__MODULE__, {:inspect_state, key})
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
 
-  # Server Callbacks
   @impl true
   def init(_) do
     TimeTicker.subscribe()

@@ -1,7 +1,6 @@
 defmodule Block.Extrinsic.Disputes do
   @moduledoc """
-  Formula (10.2)
-  Represents a disputes in the blockchain system, containing a list of verdicts, and optionally, culprits and faults.
+  Formula (10.2) v0.6.2
   """
 
   alias Block.Extrinsic.Disputes

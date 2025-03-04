@@ -1,4 +1,7 @@
 defmodule System.State.ValidatorStatistic do
+  @moduledoc """
+  Formula (13.1) v0.6.2
+  """
   defstruct blocks_produced: 0,
             tickets_introduced: 0,
             preimages_introduced: 0,

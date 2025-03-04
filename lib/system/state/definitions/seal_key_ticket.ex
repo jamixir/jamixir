@@ -1,7 +1,6 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
-  represent a ticket, as specified in section 6.2 of the GP.
-  Formula (6.6) v0.6.0
+  Formula (6.6) v0.6.2
   """
 
   @type t :: %__MODULE__{id: Types.hash(), attempt: non_neg_integer()}

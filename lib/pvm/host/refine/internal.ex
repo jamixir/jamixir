@@ -226,7 +226,6 @@ defmodule PVM.Host.Refine.Internal do
         true ->
           case PVM.Decoder.decode_program(p) do
             {:ok, _} ->
-              # Create new machine state M = (p ∈ Y, u ∈ M, i ∈ NR)
               machine = %Integrated{program: p, memory: u, counter: i}
               {:continue, n, %{context | m: Map.put(m, n, machine)}}
 

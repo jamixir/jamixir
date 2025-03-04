@@ -1,10 +1,10 @@
 defmodule System.State.Validator do
   @moduledoc """
-  represent a validator, as specified in section 6.3 of the GP.
+   # Formula (6.8) v0.6.2
   """
   alias System.State.Validator
 
-  # Formula (6.8) v0.6.0
+
   @type t :: %__MODULE__{
           # Formula (6.9) v0.6.0 - b
           bandersnatch: Types.bandersnatch_key(),
@@ -108,5 +108,5 @@ def neighbours(%__MODULE__{} = v, prev, curr, next) do
 
   defp row(index, row_size), do: div(index, row_size)
   defp coloum(index, row_size), do: rem(index, row_size)
-  
+
 end

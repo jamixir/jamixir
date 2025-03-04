@@ -1,6 +1,6 @@
 defmodule System.State.Judgements do
   @moduledoc """
-  Represents the state and operations related to judgements in the disputes system.
+  Formula (10.1) v0.6.2
   """
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.{Error, Verdict}

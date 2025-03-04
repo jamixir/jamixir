@@ -54,8 +54,7 @@ defmodule System.State.RecentHistory do
   def mock(:transition, context), do: context[:recent_history]
 
   @doc """
-  Gets the initial block history, modifying the last block to include the given state root.
-  Formula (7.2) v0.6.0
+  Formula (7.1) v0.6.2
   """
   def update_latest_state_root(nil, _), do: %__MODULE__{}
 

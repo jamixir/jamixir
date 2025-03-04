@@ -1,20 +1,6 @@
 defmodule System.State.ValidatorStatistics do
   @moduledoc """
-  Formula (13.1) v0.6.0
-  Tracks validator statistics on a per-epoch basis.
-
-  The validator statistics are made on a per-epoch basis and are retained as a
-  sequence of two elements:
-  - The first element is an accumulator for the present epoch.
-  - The second element is the previous epoch's statistics.
-
-  For each epoch, we track the following six statistics:
-  - `blocks_produced` (`b`): The number of blocks produced by the validator.
-  - `tickets_introduced` (`t`): The number of tickets introduced by the validator.
-  - `preimages_introduced` (`p`): The number of preimages introduced by the validator.
-  - `data_size` (`d`): The total number of octets across all preimages introduced by the validator.
-  - `reports_guaranteed` (`g`): The number of reports guaranteed by the validator.
-  - `availability_assurances` (`a`): The number of availability assurances made by the validator.
+  Formula (13.1) v0.6.2
   """
   alias Block.{Extrinsic, Header}
   alias System.State.{Validator, ValidatorStatistic}

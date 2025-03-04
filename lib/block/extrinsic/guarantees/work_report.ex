@@ -1,7 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
   @moduledoc """
-  Work report
-  section 11.1
+  Formula (11.2) v0.6.2
   """
 
   alias System.State.ServiceAccount

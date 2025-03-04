@@ -1,6 +1,6 @@
 defmodule System.State.Accumulation do
   @moduledoc """
-  Handles the accumulation and commitment process for services, validators, and the authorization queue.
+  Chapter 12 - accumulation
   """
 
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}

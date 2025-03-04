@@ -1,6 +1,6 @@
 defmodule System.State.Safrole do
   @moduledoc """
-  Safrole  state, as specified in section 6.1 of the GP.
+  Section 6.2 v0.6.2
   """
   alias Block.Extrinsic.TicketProof
   alias Block.Header
@@ -137,7 +137,6 @@ defmodule System.State.Safrole do
 
   @doc """
   Z function: Outside-in sequencer function.
-  Reorders the list by alternating between the first and last elements.
   Formula (6.25) v0.6.0
   """
   @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
@@ -198,17 +197,10 @@ defmodule System.State.Safrole do
           _ -> 1
         end
 
-      # correct
       e(
         {safrole.pending, safrole.epoch_root, sealer_type, safrole.slot_sealers,
          vs(safrole.ticket_accumulator)}
       )
-
-      # CN version
-      # e(
-      #   {vs(safrole.pending), <<0>>, sealer_type, safrole.slot_sealers,
-      #    safrole.ticket_accumulator, vs(safrole.epoch_root)}
-      # )
     end
   end
 

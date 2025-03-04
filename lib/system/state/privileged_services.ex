@@ -1,12 +1,6 @@
 defmodule System.State.PrivilegedServices do
   @moduledoc """
-  Formula (9.9) v0.6.0
-
-  Up to three services may be recognized as privileged, each with a specific role:
-
-  - `manager_service` (χm): The index of the manager service, which can alter the service privileges.
-  - `alter_authorizer_service` (χa): The index of the service able to alter the authorizer queue (φ).
-  - `alter_validator_service` (χv): The index of the service able to alter the validator queue (ι).
+  Formula (9.9) v0.6.2
   """
   alias Codec.JsonEncoder
 

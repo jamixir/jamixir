@@ -1,5 +1,5 @@
-defmodule Block.Extrinsic.GuarantorTest do
-  alias Block.Extrinsic.Guarantor
+defmodule Block.Extrinsic.GuarantorAssignmentsTest do
+  alias Block.Extrinsic.GuarantorAssignments
   alias System.State.Validator
   alias Util.Hash
   import Jamixir.Factory
@@ -7,19 +7,19 @@ defmodule Block.Extrinsic.GuarantorTest do
 
   describe "rotate/2" do
     test "rotate empty list" do
-      assert Guarantor.rotate([], 10) == []
+      assert GuarantorAssignments.rotate([], 10) == []
     end
 
     test "rotate elements" do
-      assert Guarantor.rotate([1, 2, 3], 10) == [1, 0, 1]
-      assert Guarantor.rotate([300, 340, 1], 50) == [0, 0, 1]
+      assert GuarantorAssignments.rotate([1, 2, 3], 10) == [1, 0, 1]
+      assert GuarantorAssignments.rotate([300, 340, 1], 50) == [0, 0, 1]
     end
   end
 
   describe "permute/2" do
     test "permute when e is a list" do
-      p1 = Guarantor.permute(1..1100 |> Enum.to_list(), 3)
-      p2 = Guarantor.permute(1..1100 |> Enum.to_list(), 4)
+      p1 = GuarantorAssignments.permute(1..1100 |> Enum.to_list(), 3)
+      p2 = GuarantorAssignments.permute(1..1100 |> Enum.to_list(), 4)
 
       assert p1 == [0, 0, 1, 1, 1, 0]
       assert p2 == [1, 1, 0, 0, 0, 1]
@@ -39,8 +39,8 @@ defmodule Block.Extrinsic.GuarantorTest do
           "0xe12c22d4f162d9a012c9319233da5d3e923cc5e1029b8f90e47249c9ab256b35"
         )
 
-      p1 = Guarantor.permute(h1, 2)
-      p2 = Guarantor.permute(h2, 14)
+      p1 = GuarantorAssignments.permute(h1, 2)
+      p2 = GuarantorAssignments.permute(h2, 14)
       assert p1 !== p2
 
       assert {length(p1), length(p2)} ==
@@ -52,8 +52,8 @@ defmodule Block.Extrinsic.GuarantorTest do
     test "guarantors smoke test" do
       validators = build_list(Constants.validator_count(), :validator)
 
-      %Guarantor{assigned_cores: indexes, validators: keys} =
-        Guarantor.guarantors(Hash.random(), 2, validators, MapSet.new())
+      %GuarantorAssignments{assigned_cores: indexes, validators: keys} =
+        GuarantorAssignments.guarantors(Hash.random(), 2, validators, MapSet.new())
 
       assert length(indexes) == Constants.validator_count()
       assert MapSet.difference(MapSet.new(validators), MapSet.new(keys)) == MapSet.new([])
@@ -65,8 +65,8 @@ defmodule Block.Extrinsic.GuarantorTest do
     test "guarantors nullify offender" do
       [v1 | other] = build_list(3, :validator)
 
-      %Guarantor{validators: [key1 | _]} =
-        Guarantor.guarantors(
+      %GuarantorAssignments{validators: [key1 | _]} =
+        GuarantorAssignments.guarantors(
           Hash.random(),
           2,
           [v1 | other],
@@ -84,8 +84,8 @@ defmodule Block.Extrinsic.GuarantorTest do
       p = build_list(2, :validator)
       o = MapSet.new()
 
-      assert Guarantor.prev_guarantors(n2, n3, 100, k, p, o) ==
-               Guarantor.guarantors(n2, 100 - Constants.rotation_period(), k, o)
+      assert GuarantorAssignments.prev_guarantors(n2, n3, 100, k, p, o) ==
+               GuarantorAssignments.guarantors(n2, 100 - Constants.rotation_period(), k, o)
     end
 
     test "prev_guarantors previous rotation true" do
@@ -94,8 +94,8 @@ defmodule Block.Extrinsic.GuarantorTest do
       p = build_list(2, :validator)
       o = MapSet.new()
 
-      assert Guarantor.prev_guarantors(n2, n3, 13, k, p, o) ==
-               Guarantor.guarantors(n3, 13 - Constants.rotation_period(), p, o)
+      assert GuarantorAssignments.prev_guarantors(n2, n3, 13, k, p, o) ==
+               GuarantorAssignments.guarantors(n3, 13 - Constants.rotation_period(), p, o)
     end
   end
 end

@@ -1,20 +1,17 @@
 defmodule Block.Extrinsic.Disputes.Judgement do
   @moduledoc """
-  Formula (10.2)
-  essentialy a vote on the validity of a work report.
+  Formula (10.2) v0.6.2
   """
-  alias Util.Crypto
-
   @type t :: %__MODULE__{
-          # i
-          validator_index: Types.validator_index(),
           # v
           vote: Types.vote(),
+          # i
+          validator_index: Types.validator_index(),
           # s
           signature: Types.ed25519_signature()
         }
 
-  defstruct validator_index: 0, vote: true, signature: Crypto.zero_sign()
+  defstruct [:vote, :validator_index, :signature]
 
   # Formula (10.4) v0.6.0
   def signature_base(%__MODULE__{vote: vote}) do

@@ -1,8 +1,4 @@
 defmodule System.State.Services do
-  @moduledoc """
-  Handles service-related state transitions, including processing preimages and gas accounting.
-  """
-
   alias System.State.ServiceAccount
   alias Block.Extrinsic.Preimage
 

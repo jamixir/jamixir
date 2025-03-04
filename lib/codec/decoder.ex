@@ -1,8 +1,4 @@
 defmodule Codec.Decoder do
-  @moduledoc """
-  A module for decoding binary data into data structures.
-  """
-
   use Sizes
 
   defp decode_little_endian(binary, l) do
@@ -14,9 +10,6 @@ defmodule Codec.Decoder do
 
   def decode_le(encoded, length), do: decode_little_endian(encoded, length)
 
-  @doc """
-  Decodes an integer from its binary encoded form.
-  """
   def decode_integer(<<0, _rest::binary>>), do: 0
 
   def decode_integer(<<byte0, _rest::binary>>) when byte0 in 1..127 do
