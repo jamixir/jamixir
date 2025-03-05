@@ -12,8 +12,8 @@ docker build --ssh default -t jamixir .
 docker run -p 9900:9900 jamixir
 ```
 
-## Using a docker-compose
-The following commands builds and runs a simulated network of six Jamixir nodes.
+## Using docker compose
+The following commands build and run a simulated network of six Jamixir nodes.
 ```
 docker compose build
 docker compose up 
