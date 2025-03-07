@@ -1,13 +1,13 @@
 defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, PreMemory}
   use PVM.Instructions
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants
 
   describe "machine/4" do
     setup do
-      memory = %Memory{}
       context = %Context{}
       gas = 100
 
@@ -15,12 +15,17 @@ defmodule PVM.Host.Refine.MachineTest do
       test_program = PVM.Encoder.encode_program(<<1, 1, 1, 1, 1, 1, 1, 1>>, <<255>>, [], 1)
 
       registers = %Registers{
-        r7: 0x1_0000,
+        r7: min_allowed_address(),
         r8: byte_size(test_program),
         r9: 42
       }
 
-      memory = Memory.write!(memory, registers.r7, test_program)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(min_allowed_address(), 1, :write)
+        |> PreMemory.write(min_allowed_address(), test_program)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       {:ok,
        memory: memory,
@@ -144,7 +149,8 @@ defmodule PVM.Host.Refine.MachineTest do
     test "returns {:continue, huh()} when program is invalid", %{
       context: context,
       gas: gas,
-      test_program: test_program
+      test_program: test_program,
+      memory: memory
     } do
       test_program = <<40, 30, 20>> <> test_program
 
@@ -154,7 +160,7 @@ defmodule PVM.Host.Refine.MachineTest do
         r9: 42
       }
 
-      memory = Memory.write!(%Memory{}, registers.r7, test_program)
+      memory = Memory.write!(memory, registers.r7, test_program)
       huh = huh()
 
       assert %{

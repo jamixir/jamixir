@@ -2,14 +2,20 @@ defmodule PVM.Host.Refine.FetchTest do
   use ExUnit.Case
   alias Block.Extrinsic.{WorkItem, WorkPackage}
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Registers, PreMemory}
   alias Util.Hash
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants, only: [min_allowed_address: 0]
   use Codec.Encoder
+
 
   describe "fetch/8" do
     setup do
-      memory = %Memory{}
+      memory = PreMemory.init_nil_memory()
+        |> PreMemory.set_access(min_allowed_address(), 32, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       context = %Context{}
       gas = 100
       work_item_index = 0
@@ -40,7 +46,7 @@ defmodule PVM.Host.Refine.FetchTest do
       # Base registers setup
       registers = %Registers{
         # output address
-        r7: 0x1_0000,
+        r7: min_allowed_address(),
         # offset
         r8: 0,
         # length
@@ -367,9 +373,8 @@ defmodule PVM.Host.Refine.FetchTest do
       import_segments: import_segments,
       preimages: preimages
     } do
-      # registers = %{registers | r9: 5}  # Set length to 5
       # Make memory read-only
-      memory = Memory.set_default_access(memory, :read)
+      memory = Memory.set_access_by_page(memory, 16, 1, :read)
 
       assert %{
                exit_reason: :panic,

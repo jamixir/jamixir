@@ -1,10 +1,11 @@
 defmodule PVM.Host.Refine.InvokeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils, PreMemory}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   use Codec.Decoder
   import Util.Hex
+  import PVM.Memory.Constants
 
   describe "invoke/4" do
     setup do
@@ -30,7 +31,11 @@ defmodule PVM.Host.Refine.InvokeTest do
       }
 
       # gas
-      memory = %Memory{} |> Memory.write!(0x1_1000, <<100::64-little>>)
+      memory = PreMemory.init_nil_memory()
+        |> PreMemory.set_access(min_allowed_address(), page_size() +1 , :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+        |> Memory.write!(0x1_1000, <<100::64-little>>)
       gas = 100
 
       # Base registers setup

@@ -1,16 +1,22 @@
 defmodule PVM.Host.Refine.HistoricalLookupTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Registers, PreMemory}
   alias System.State.ServiceAccount
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants
   alias Util.Hash
 
-  defp a_0, do: 0x1_0000
+  defp a_0, do: min_allowed_address()
 
   describe "historical_lookup/6" do
     setup do
-      memory = %Memory{}
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), page_size() + 100, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       context = %Context{}
       some_big_value = 0xFFFF
 
@@ -38,7 +44,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers = %Registers{
         r7: 1,
         r8: a_0(),
-        r9: a_0() + %Memory{}.page_size + 100,
+        r9: a_0() + page_size() + 100,
         r10: 0,
         r11: some_big_value
       }

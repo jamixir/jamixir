@@ -1,17 +1,21 @@
 defmodule PVM.Host.Refine.VoidTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, PreMemory}
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants
 
   describe "void/4" do
     setup do
       # Create machine memory with test data and read access
-      machine_memory = %Memory{}
       test_data = String.duplicate("A", 256)
 
-      {:ok, machine_memory} =
-        Memory.write(machine_memory, 16 * machine_memory.page_size, test_data)
+      machine_memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(min_allowed_address(), page_size() + 2, :write)
+        |> PreMemory.write(min_allowed_address(), test_data)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       machine = %Integrated{
         memory: machine_memory,
