@@ -15,7 +15,6 @@ defmodule PVM.Host.AccumulateTest do
   }
 
   import PVM.Constants.HostCallResult
-  import PVM.Memory.Constants, only: [min_allowed_address: 0]
   use Codec.{Encoder, Decoder}
 
   def a_0, do: PVM.Memory.Constants.min_allowed_address()
