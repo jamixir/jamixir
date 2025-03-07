@@ -4,9 +4,21 @@ defmodule PVM.Host.AccumulateTest do
   alias System.State.{Accumulation, ServiceAccount, PrivilegedServices}
   alias Util.Hash
   alias PVM.Host.Accumulate
-  alias PVM.{Memory, Host.Accumulate.Context, Registers, Host.Accumulate.Result, Accumulate.Utils}
+
+  alias PVM.{
+    Memory,
+    Host.Accumulate.Context,
+    Registers,
+    Host.Accumulate.Result,
+    Accumulate.Utils,
+    PreMemory
+  }
+
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants, only: [min_allowed_address: 0]
   use Codec.{Encoder, Decoder}
+
+  def a_0, do: PVM.Memory.Constants.min_allowed_address()
 
   setup_all do
     {:ok, context: {%Context{}, %Context{}}}
@@ -28,7 +40,12 @@ defmodule PVM.Host.AccumulateTest do
         end
 
       # Write to memory
-      memory = Memory.write!(%Memory{}, 0x1_0000, encoded_data)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), encoded_data)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       registers = %Registers{
         # privileged_services_service
@@ -115,7 +132,12 @@ defmodule PVM.Host.AccumulateTest do
   describe "assign/4" do
     setup do
       # 32-byte test value
-      memory = Memory.write!(%Memory{}, 0x1_0000, <<255::256>>)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), <<255::256>>)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       context = %Context{
         service: 123,
@@ -217,7 +239,13 @@ defmodule PVM.Host.AccumulateTest do
           bandersnatch <> ed25519 <> bls <> metadata
         end
 
-      memory = Memory.write!(%Memory{}, 0x1_0000, test_data)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), test_data)
+        |> PreMemory.set_access(a_0(), 336, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       registers = %Registers{r7: 0x1_0000}
 
       context = {%Context{}, %Context{}}
@@ -307,7 +335,13 @@ defmodule PVM.Host.AccumulateTest do
     setup do
       # 32-byte code hash
       code_hash = Hash.one()
-      memory = Memory.write!(%Memory{}, 0x1_0000, code_hash)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), code_hash)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       # Initial context with service account having more than threshold balance
       service_account = %ServiceAccount{balance: 1000}
@@ -427,7 +461,12 @@ defmodule PVM.Host.AccumulateTest do
 
   describe "upgrade/4" do
     setup do
-      memory = Memory.write!(%Memory{}, 0x1_0000, Hash.one())
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), Hash.one())
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       registers = %Registers{
         r7: 0x1_0000,
@@ -496,7 +535,12 @@ defmodule PVM.Host.AccumulateTest do
 
   describe "transfer/4" do
     setup do
-      memory = Memory.write!(%Memory{}, 0x1_0000, <<1::Constants.memo_size()*8>>)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), <<1::Constants.memo_size()*8>>)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       sender = %ServiceAccount{
         balance: 500,
@@ -642,7 +686,13 @@ defmodule PVM.Host.AccumulateTest do
   describe "eject/4" do
     setup do
       preimage_l_key = {Hash.one(), 50}
-      memory = Memory.write!(%Memory{}, 0x1_0000, preimage_l_key |> elem(0))
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), preimage_l_key |> elem(0))
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       # Service to be ejected
       service_to_eject = %ServiceAccount{
@@ -756,7 +806,11 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       timeslot: timeslot
     } do
-      memory = Memory.write!(memory, 0x1_0000, Hash.four())
+      memory =
+        Memory.set_access_by_page(memory, 16, 1, :write)
+        |> Memory.write!(a_0(), Hash.four())
+        |> Memory.set_access_by_page(16, 1, :read)
+
       huh = huh()
 
       assert %{
@@ -839,7 +893,13 @@ defmodule PVM.Host.AccumulateTest do
   describe "query/4" do
     setup do
       hash = Hash.one()
-      memory = Memory.write!(%Memory{}, 0x1_0000, hash)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), hash)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       service_account = %ServiceAccount{
         preimage_storage_l: %{
@@ -980,7 +1040,13 @@ defmodule PVM.Host.AccumulateTest do
   describe "solicit/5" do
     setup do
       hash = Hash.one()
-      memory = Memory.write!(%Memory{}, 0x1_0000, hash)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), hash)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       # Create service with test cases in preimage_storage_l
       service_account = %ServiceAccount{
@@ -1128,7 +1194,13 @@ defmodule PVM.Host.AccumulateTest do
   describe "forget/5" do
     setup do
       hash = Hash.one()
-      memory = Memory.write!(%Memory{}, 0x1_0000, hash)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), hash)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       # Create service with test cases in preimage_storage_l
       service_account = %ServiceAccount{
@@ -1298,7 +1370,13 @@ defmodule PVM.Host.AccumulateTest do
   describe "yield/4" do
     setup do
       hash = Hash.one()
-      memory = Memory.write!(%Memory{}, 0x1_0000, hash)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), hash)
+        |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       context = %Context{
         service: 123,
