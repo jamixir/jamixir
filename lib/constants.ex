@@ -6,6 +6,9 @@ defmodule Constants do
   see Appendix I.3 of the GP for more information.
   """
 
+  @doc "The period, in seconds, between audit tranches."
+  def audit_trenches_period, do: 8
+
   @spec additional_minimum_balance_per_item() :: Types.balance()
   @doc "BI = The additional minimum balance required per item of elective service state."
   def additional_minimum_balance_per_item, do: 10
