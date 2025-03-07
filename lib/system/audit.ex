@@ -14,7 +14,7 @@ defmodule System.Audit do
   # a0 = { (c,w) ∣ (c,w) ∈ p⋅⋅⋅+10,w ≠ ∅}
   def initial_items_to_audit(keypair, s0, auditable_work_reports) do
     p = random_selection(keypair, s0, auditable_work_reports)
-    for {c, w} <- p |> Enum.take(10), w != nil, do: {c, w}
+    for({c, w} <- p, w != nil, do: {c, w}) |> Enum.take(10)
   end
 
   # Formula (17.6) v0.6.3
@@ -43,13 +43,17 @@ defmodule System.Audit do
 
   # Formula 17.9 v0.6.3
   def announcements_signature(private_key, header, n) do
+    Crypto.sign(sign_payload(header, n), private_key)
+  end
+
+  def sign_payload(header, n) do
     xn = encoded_announcements(n)
-    payload = SigningContexts.jam_announce() <> n <> xn <> h(e(header))
-    Crypto.sign(payload, private_key)
+    SigningContexts.jam_announce() <> n <> xn <> h(e(header))
   end
 
   # Formula 17.16
   def announcements(_n) do
     # TODO
+    []
   end
 end

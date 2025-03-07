@@ -3,6 +3,8 @@
 ExUnit.configure(timeout: 180_000)
 ExUnit.start()
 ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks])
+RingVrf.init_ring_context()
+
 # Storage.start_link([persist: false])
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)

@@ -8,11 +8,6 @@ defmodule TestnetBlockImporterTest do
   use ExUnit.Case
   require Logger
 
-  setup_all do
-    RingVrf.init_ring_context()
-    :ok
-  end
-
   @ignore_fields []
   @genesis_path "chainspecs/state_snapshots"
   @user "jamixir"
@@ -20,6 +15,7 @@ defmodule TestnetBlockImporterTest do
 
   def state_path(mode), do: "data/#{mode}/state_snapshots"
   def blocks_path(mode), do: "data/#{mode}/blocks"
+
   describe "blocks and states" do
     setup do
       # put parent header to storage
@@ -39,7 +35,11 @@ defmodule TestnetBlockImporterTest do
 
     for mode <- ["fallback", "safrole", "assurances"] do
       if Enum.member?(skip, mode) do
-        IO.puts(IO.ANSI.yellow() <> "⚠️  Warning: #{mode} mode block import test is disabled" <> IO.ANSI.reset())
+        IO.puts(
+          IO.ANSI.yellow() <>
+            "⚠️  Warning: #{mode} mode block import test is disabled" <> IO.ANSI.reset()
+        )
+
         @tag :skip
       end
 
