@@ -62,7 +62,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @threadhold 2 * Constants.validator_count() / 3
   # Formula (11.16) v0.6.2 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
-  @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t())
+  @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t() | nil)
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = for a <- assurances, do: Assurance.core_bits(a)
 
@@ -73,6 +73,15 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         cr -> cr.work_report
       end
     end
+  end
+
+  # Formula (17.1) v0.6.2
+  # Formula (17.2) v0.6.2
+  @spec auditable_work_reports(list(Assurance.t()), list(CoreReport.t()), list(CoreReport.t())) ::
+          list(t() | nil)
+  def auditable_work_reports(assurances, core_reports_intermediate_1, core_reports) do
+    available = available_work_reports(assurances, core_reports_intermediate_1)
+    for w <- core_reports, do: if(Enum.member?(available, w), do: w, else: nil)
   end
 
   def mock(:available_work_reports, c) do
