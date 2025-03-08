@@ -34,7 +34,9 @@ defmodule PVM.Accumulate do
   def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn, opts \\ []) do
     # Get trace setting from environment variable
     opts = case System.get_env("PVM_TRACE") do
-      "true" -> Keyword.put(opts, :trace, true)
+      "true" ->
+        Keyword.put(opts, :trace, true)
+        |> Keyword.put(:trace_name, System.get_env("TRACE_NAME"))
       _ -> opts
     end
 
