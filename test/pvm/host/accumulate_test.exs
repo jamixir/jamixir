@@ -31,11 +31,11 @@ defmodule PVM.Host.AccumulateTest do
       memory = Memory.write!(%Memory{}, 0x1_0000, encoded_data)
 
       registers = %Registers{
-        # manager_service
+        # privileged_services_service
         r7: 1,
-        # alter_authorizer_service
+        # authorizer_queue_service
         r8: 2,
-        # alter_validator_service
+        # next_validators_service
         r9: 3,
         # memory offset
         r10: 0x1_0000,
@@ -102,9 +102,9 @@ defmodule PVM.Host.AccumulateTest do
 
       # Verify privileged services in context
       expected_privileged = %PrivilegedServices{
-        manager_service: 1,
-        alter_authorizer_service: 2,
-        alter_validator_service: 3,
+        privileged_services_service: 1,
+        authorizer_queue_service: 2,
+        next_validators_service: 3,
         services_gas: gas_map
       }
 

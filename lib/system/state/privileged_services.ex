@@ -8,18 +8,18 @@ defmodule System.State.PrivilegedServices do
 
   @type t :: %__MODULE__{
           # m
-          manager_service: non_neg_integer(),
+          privileged_services_service: non_neg_integer(),
           # a
-          alter_authorizer_service: non_neg_integer(),
+          authorizer_queue_service: non_neg_integer(),
           # v
-          alter_validator_service: non_neg_integer(),
+          next_validators_service: non_neg_integer(),
           # g
           services_gas: %{non_neg_integer() => non_neg_integer()}
         }
 
-  defstruct manager_service: 0,
-            alter_authorizer_service: 0,
-            alter_validator_service: 0,
+  defstruct privileged_services_service: 0,
+            authorizer_queue_service: 0,
+            next_validators_service: 0,
             services_gas: %{}
 
   defimpl Encodable do
@@ -28,7 +28,7 @@ defmodule System.State.PrivilegedServices do
 
     def encode(%PrivilegedServices{} = v) do
       e(
-        for s <- [v.manager_service, v.alter_authorizer_service, v.alter_validator_service] do
+        for s <- [v.privileged_services_service, v.authorizer_queue_service, v.next_validators_service] do
           e_le(s, 4)
         end
       ) <> e(v.services_gas)
@@ -37,18 +37,18 @@ defmodule System.State.PrivilegedServices do
 
   def json_mapping do
     %{
-      manager_service: :chi_m,
-      alter_authorizer_service: :chi_a,
-      alter_validator_service: :chi_v,
+      privileged_services_service: :chi_m,
+      authorizer_queue_service: :chi_a,
+      next_validators_service: :chi_v,
       services_gas: [:chi_g, %{}]
     }
   end
 
   def to_json_mapping,
     do: %{
-      manager_service: :chi_m,
-      alter_authorizer_service: :chi_a,
-      alter_validator_service: :chi_v,
+      privileged_services_service: :chi_m,
+      authorizer_queue_service: :chi_a,
+      next_validators_service: :chi_v,
       services_gas: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
     }
 end

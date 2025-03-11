@@ -3,9 +3,13 @@ defmodule System.AccumulationResult do
   alias System.DeferredTransfer
 
   @type t :: %__MODULE__{
+          # o
           state: Accumulation.t(),
+          # t
           transfers: list(DeferredTransfer.t()),
+          # b
           output: Types.hash() | nil,
+          # u
           gas_used: non_neg_integer()
         }
   defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0

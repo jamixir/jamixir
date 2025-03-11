@@ -14,11 +14,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           service: non_neg_integer(),
           # c
           code_hash: Types.hash(),
-          # l
+          # y
           payload_hash: Types.hash(),
           # g
           gas_ratio: non_neg_integer(),
-          # o
+          # d
           result: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
