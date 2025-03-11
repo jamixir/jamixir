@@ -11,6 +11,26 @@ defmodule System.State.AccumulationTest do
   use ExUnit.Case
   setup :verify_on_exit!
 
+  defp mock_privileged_services(privileged_services) do
+    Enum.each(
+      [
+        {privileged_services.privileged_services_service, :privileged_services,
+         :updated_privileged_services},
+        {privileged_services.next_validators_service, :next_validators, :updated_next_validators},
+        {privileged_services.authorizer_queue_service, :authorizer_queue,
+         :updated_authorizer_queue}
+      ],
+      fn {service, field, value} ->
+        MockAccumulation
+        |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
+          %AccumulationResult{
+            state: struct(Accumulation, [{field, value}])
+          }
+        end)
+      end
+    )
+  end
+
   setup_all do
     service = 1
     base_work_result = build(:work_result, service: service, gas_ratio: 0)
@@ -255,27 +275,8 @@ defmodule System.State.AccumulationTest do
 
       work_reports = []
       always_acc_services = %{}
-      s = MapSet.new([1, 2, 3])
 
-      Enum.each(
-        [
-          {1, :privileged_services, :updated_privileged_services},
-          {2, :next_validators, :updated_next_validators},
-          {3, :authorizer_queue, :updated_authorizer_queue}
-        ],
-        fn {service, key, updated_value} ->
-          MockAccumulation
-          |> expect(:do_single_accumulation, fn _initial_state,
-                                                _work_reports,
-                                                _always_acc_services,
-                                                ^service,
-                                                _ctx ->
-            %AccumulationResult{
-              state: struct(Accumulation, [{key, updated_value}])
-            }
-          end)
-        end
-      )
+      mock_privileged_services(initial_state.privileged_services)
 
       assert {:updated_privileged_services, :updated_next_validators, :updated_authorizer_queue} =
                Accumulation.accumulate_privileged_services(
@@ -305,7 +306,7 @@ defmodule System.State.AccumulationTest do
       }
 
       initial_state = %Accumulation{
-        services: %{1 => :service1, 2 => :service2, 3 => :service3},
+        services: %{4 => :service4, 5 => :service5, 6 => :service6},
         privileged_services: %PrivilegedServices{
           privileged_services_service: 1,
           next_validators_service: 2,
@@ -316,30 +317,16 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 10}]},
-        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 20}]}
+        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 10}]},
+        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 20}]}
       ]
 
-      always_acc_services = %{3 => 30}
+      always_acc_services = %{6 => 30}
 
-      # Mock for update_accumulation_state (privileged services)
-      privileged_updates = %{
-        1 => {:privileged_services, :updated_privileged_services},
-        2 => {:next_validators, :updated_next_validators},
-        3 => {:authorizer_queue, :updated_authorizer_queue}
-      }
-
-      Enum.each(privileged_updates, fn {service, {field, value}} ->
-        MockAccumulation
-        |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
-          %AccumulationResult{
-            state: struct(Accumulation, [{field, value}])
-          }
-        end)
-      end)
+      mock_privileged_services(initial_state.privileged_services)
 
       # Mock for accumulate_services (regular services)
-      Enum.each([1, 2, 3], fn service ->
+      Enum.each([4, 5, 6], fn service ->
         MockAccumulation
         |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
           %AccumulationResult{
@@ -360,15 +347,18 @@ defmodule System.State.AccumulationTest do
         )
 
       assert {total_gas, updated_state, transfers, outputs} = result
-      # 10 + 20 + 30
-      assert total_gas == 60
+
+      assert total_gas == 150
 
       assert updated_state.privileged_services == :updated_privileged_services
       assert updated_state.next_validators == :updated_next_validators
       assert updated_state.authorizer_queue == :updated_authorizer_queue
-      assert transfers == [%{amount: 10}, %{amount: 20}, %{amount: 30}]
+      assert transfers == [%{amount: 40}, %{amount: 50}, %{amount: 60}]
       assert MapSet.size(outputs) == 3
-      assert Enum.all?(outputs, fn {service, output} -> output == "output#{service}" end)
+
+      assert Enum.all?([4, 5, 6], fn service ->
+               MapSet.member?(outputs, {service, "output#{service}"})
+             end)
     end
 
     test "correctly handles n (new services) and m (removed services)" do
@@ -380,9 +370,9 @@ defmodule System.State.AccumulationTest do
       # Initial state with services 1, 2, 3
       initial_state = %Accumulation{
         services: %{
-          1 => %ServiceAccount{balance: 100},
-          2 => %ServiceAccount{balance: 200},
-          3 => %ServiceAccount{balance: 300}
+          4 => %ServiceAccount{balance: 100},
+          5 => %ServiceAccount{balance: 200},
+          6 => %ServiceAccount{balance: 300}
         },
         privileged_services: %PrivilegedServices{
           privileged_services_service: 1,
@@ -394,63 +384,48 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 10}]},
-        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 20}]}
+        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 10}]},
+        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 20}]}
       ]
 
       always_acc_services = %{}
 
-      # Mock for privileged services
-      Enum.each([1, 2, 3], fn service ->
-        field =
-          case service do
-            1 -> :privileged_services
-            2 -> :next_validators
-            3 -> :authorizer_queue
-          end
+      mock_privileged_services(initial_state.privileged_services)
 
-        MockAccumulation
-        |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
-          %AccumulationResult{
-            state: struct(Accumulation, [{field, :"updated_#{field}"}])
-          }
-        end)
-      end)
-
-      # Mock for service 1: Updates service 1, removes service 3, adds service 4
+      # Mock for service 4: Updates service 4, removes service 6, adds service 7
       MockAccumulation
-      |> expect(:do_single_accumulation, fn acc_state, _, _, 1, _ ->
+      |> expect(:do_single_accumulation, fn acc_state, _, _, 4, _ ->
         # Create a new services map that:
-        # 1. Updates service 1
-        # 2. Keeps service 2 unchanged
-        # 3. Omits service 3 (to be removed)
-        # 4. Adds service 4 (new service)
+        # 1. Updates service 4
+        # 2. Keeps service 5 unchanged
+        # 3. Omits service 6 (to be removed)
+        # 4. Adds service 7 (new service)
         updated_services = %{
-          1 => %ServiceAccount{balance: 150},
-          2 => acc_state.services[2],
-          4 => %ServiceAccount{balance: 400}
+          4 => %ServiceAccount{balance: 150},
+          5 => acc_state.services[5],
+          7 => %ServiceAccount{balance: 400}
         }
 
         %AccumulationResult{
           state: %{acc_state | services: updated_services},
           transfers: [%{amount: 10}],
-          output: "output1",
+          output: "output4",
           gas_used: 10
         }
       end)
 
-      # Mock for service 2: Updates service 2, adds service 5
+      # Mock for service 5: Updates service 5, adds service 8
       MockAccumulation
-      |> expect(:do_single_accumulation, fn acc_state, _, _, 2, _ ->
+      |> expect(:do_single_accumulation, fn acc_state, _, _, 5, _ ->
         updated_services =
           acc_state.services
-          |> Map.put(2, %ServiceAccount{balance: 250})
-          |> Map.put(5, %ServiceAccount{balance: 500})
+          |> Map.put(5, %ServiceAccount{balance: 250})
+          |> Map.put(8, %ServiceAccount{balance: 500})
 
         %AccumulationResult{
           state: %{acc_state | services: updated_services},
           transfers: [%{amount: 20}],
-          output: "output2",
+          output: "output5",
           gas_used: 20
         }
       end)
@@ -469,16 +444,16 @@ defmodule System.State.AccumulationTest do
       # Verify services map contains the right services
       assert map_size(updated_state.services) == 4
 
-      # Service 1 and 2 should be updated
-      assert updated_state.services[1].balance == 150
-      assert updated_state.services[2].balance == 250
+      # Service 4 and 5 should be updated
+      assert updated_state.services[4].balance == 150
+      assert updated_state.services[5].balance == 250
 
-      # Service 3 should be removed (in m)
-      refute Map.has_key?(updated_state.services, 3)
+      # Service 6 should be removed (in m)
+      refute Map.has_key?(updated_state.services, 6)
 
-      # Service 4 and 5 should be added (in n)
-      assert updated_state.services[4].balance == 400
-      assert updated_state.services[5].balance == 500
+      # Service 7 and 8 should be added (in n)
+      assert updated_state.services[7].balance == 400
+      assert updated_state.services[8].balance == 500
 
       # Verify transfers
       assert length(transfers) == 2
@@ -487,21 +462,18 @@ defmodule System.State.AccumulationTest do
       # Verify outputs
       assert MapSet.size(outputs) == 2
 
-      assert Enum.all?([1, 2], fn service ->
+      assert Enum.all?([4, 5], fn service ->
                MapSet.member?(outputs, {service, "output#{service}"})
              end)
 
-      # Verify privileged services were updated
-      assert updated_state.privileged_services == :updated_privileged_services
-      assert updated_state.next_validators == :updated_next_validators
-      assert updated_state.authorizer_queue == :updated_authorizer_queue
-
       # Verify transfers are ordered by source service executions
-      # First all transfers from service 1, then service 2, then service 3
+      # First all transfers from service 4, then service 5
       assert transfers == [
-        %{amount: 10}, # From service 1
-        %{amount: 20}  # From service 2
-      ]
+               # From service 4
+               %{amount: 10},
+               # From service 5
+               %{amount: 20}
+             ]
     end
   end
 
@@ -525,7 +497,7 @@ defmodule System.State.AccumulationTest do
       }
 
       initial_state = %Accumulation{
-        services: %{1 => :service1, 2 => :service2, 3 => :service3},
+        services: %{4 => :service4, 5 => :service5, 6 => :service6},
         privileged_services: %PrivilegedServices{
           privileged_services_service: 1,
           authorizer_queue_service: 2,
@@ -536,17 +508,17 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 30}]},
-        %WorkReport{results: [%WorkResult{service: 2, gas_ratio: 40}]},
-        %WorkReport{results: [%WorkResult{service: 1, gas_ratio: 50}]}
+        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 30}]},
+        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 40}]},
+        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 50}]}
       ]
 
-      always_acc_services = %{3 => 20}
+      always_acc_services = %{6 => 20}
 
       # Mock single_accumulation
       MockAccumulation
       |> expect(:do_single_accumulation, 6, fn acc_state, _, _, service, _ ->
-        gas_map = %{1 => 30, 2 => 40, 3 => 20}
+        gas_map = %{4 => 30, 5 => 40, 6 => 20}
         gas_used = gas_map[service]
 
         %AccumulationResult{
@@ -569,18 +541,21 @@ defmodule System.State.AccumulationTest do
       assert {total_i, final_state, all_transfers, all_outputs} = result
       # Only two work reports should be processed due to gas limit
       assert total_i == 2
-      assert final_state.services == %{1 => :service1, 2 => :service2, 3 => :service3}
+      assert final_state.services == %{4 => :service4, 5 => :service5, 6 => :service6}
 
       # (30 + 40 + 20)
-      assert Enum.all?(1..3, fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
+      assert Enum.all?([4, 5, 6], fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
 
       # Verify transfers are ordered by source service executions
-      # First all transfers from service 1, then service 2, then service 3
+      # First all transfers from service 4, then service 5, then service 6
       assert all_transfers == [
-        %{amount: 30}, # From service 1
-        %{amount: 40}, # From service 2
-        %{amount: 20}  # From service 3
-      ]
+               # From service 4
+               %{amount: 30},
+               # From service 5
+               %{amount: 40},
+               # From service 6
+               %{amount: 20}
+             ]
     end
   end
 
