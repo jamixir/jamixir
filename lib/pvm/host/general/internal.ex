@@ -189,9 +189,18 @@ defmodule PVM.Host.General.Internal do
 
     m =
       if t != nil do
+        # e(tc, tb, tt, tg , tm, tl, ti)
         e(
-          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
-           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
+          [
+            t.code_hash,
+            t.balance,
+            ServiceAccount.threshold_balance(t),
+            t.gas_limit_g,
+            t.gas_limit_m,
+            ServiceAccount.octets_in_storage(t),
+            ServiceAccount.items_in_storage(t)
+          ],
+          [:binary, :balance, :balance, :gas, :gas, :account_octets, :account_items]
         )
       else
         nil
@@ -225,6 +234,4 @@ defmodule PVM.Host.General.Internal do
       context: context
     }
   end
-
-
 end

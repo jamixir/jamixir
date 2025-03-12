@@ -20,9 +20,10 @@ defmodule PVM do
 
   def do_authorized(p = %WorkPackage{}, core, services) do
     pc = WorkPackage.authorization_code(p, services)
+    args = e([p, core], [:delegate, :core_index])
 
     {_g, r, nil} =
-      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), e({p, core}), &authorized_f/3, nil)
+      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, &authorized_f/3, nil)
 
     r
   end
@@ -181,13 +182,14 @@ defmodule PVM do
       service
     else
       gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))
+      args = e([timeslot, service_index, vs(transfers)], [:timeslot, :service_index])
 
       {_, _, service_} =
         ArgInvoc.execute(
           code,
           10,
           gas_limit,
-          e({timeslot, service_index, vs(transfers)}),
+          args,
           f,
           service
         )

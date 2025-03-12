@@ -117,6 +117,7 @@ defmodule PVM.Accumulate do
     end
 
     service_code = ServiceAccount.code(accumulation_state.services[service_index])
+    args = e([timeslot, service_index, vs(operands)], [:timeslot, :service_index])
 
     if service_code == nil do
       {x.accumulation, [], nil, 0}
@@ -125,7 +126,7 @@ defmodule PVM.Accumulate do
         service_code,
         5,
         gas,
-        e({timeslot, service_index, vs(operands)}),
+        args,
         f,
         {x, x},
         opts

@@ -2,6 +2,29 @@ defmodule Codec.Encoder do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias Util.Hash
+  import Sizes
+
+  @type encoding_type ::
+          :timeslot
+          | :service_index
+          | :balance
+          | :gas
+          | :binary
+          | :account_octets
+          | :account_items
+          | :core_index
+          | :delegate
+
+  @spec encode_typed(list(), list(encoding_type())) :: binary()
+  def encode_typed(values, types \\ []) when is_list(values) do
+    values
+    |> Stream.with_index()
+    |> Stream.map(fn {value, index} ->
+      type = if index < length(types), do: Enum.at(types, index), else: nil
+      encode_with_type(value, type)
+    end)
+    |> Enum.join()
+  end
 
   @spec encode(any()) :: binary()
   def encode(value) do
@@ -137,10 +160,21 @@ defmodule Codec.Encoder do
     |> Enum.reduce(0, fn {bit, i}, acc -> acc + bit * 2 ** i end)
   end
 
+  defp encode_with_type(value, nil), do: do_encode(value)
+  defp encode_with_type(value, :delegate), do: do_encode(value)
+  defp encode_with_type(value, :binary) when is_binary(value), do: value
+  defp encode_with_type(value, :timeslot), do: <<value::size(timeslot_size())-little>>
+  defp encode_with_type(value, :service_index), do: <<value::size(service_index_size())-little>>
+  defp encode_with_type(value, :balance), do: <<value::size(balance_size())-little>>
+  defp encode_with_type(value, :gas), do: <<value::size(gas_size())-little>>
+  defp encode_with_type(value, :account_octets), do: <<value::size(account_octets_size())-little>>
+  defp encode_with_type(value, :account_items), do: <<value::size(account_items_size())-little>>
+  defp encode_with_type(value, :core_index), do: <<value::size(core_index_size())-little>>
   defmacro __using__(_) do
     quote do
       alias Codec.VariableSize
       def e(value), do: Codec.Encoder.encode(value)
+      def e(values, types), do: Codec.Encoder.encode_typed(values, types)
       def e_le(value, l), do: Codec.Encoder.encode_le(value, l)
       def vs(value), do: VariableSize.new(value)
       def h(value), do: Hash.default(value)
