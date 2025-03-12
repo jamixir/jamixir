@@ -10,7 +10,6 @@ defmodule Sizes do
   def bandersnatch_proof, do: 784
   def export_segment, do: 4104
 
-
   defmacro __using__(_) do
     quote do
       @bandersnatch_proof_size Sizes.bandersnatch_proof()
