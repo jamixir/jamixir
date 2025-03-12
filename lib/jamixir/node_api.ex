@@ -14,6 +14,8 @@ defmodule Jamixir.NodeAPI do
             ) :: :ok | {:error, any}
   # CE 133 - Work-package submission (core index, WP, extrinsic data)
   @callback add_work_package(integer(), WorkPackage.t(), binary()) :: :ok | {:error, any}
+  @callback announce_preimage(Types.service_index(), Types.hash(), non_neg_integer()) ::
+              :ok | {:error, any}
 
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
@@ -21,6 +23,9 @@ defmodule Jamixir.NodeAPI do
   def get_blocks(hash, order, count), do: impl().get_blocks(hash, order, count)
   def add_ticket(epoch, attempt, proof), do: impl().add_ticket(epoch, attempt, proof)
   def add_work_package(core, wp, extrinsic), do: impl().add_work_package(core, wp, extrinsic)
+
+  def announce_preimage(service_id, hash, length),
+    do: impl().announce_preimage(service_id, hash, length)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

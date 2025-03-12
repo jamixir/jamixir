@@ -54,6 +54,15 @@ defmodule CommsTest do
     assert length(results) == number_of_messages
   end
 
+  describe "preimage_announcement/2" do
+    test "announces preimage", %{client: client} do
+      Jamixir.NodeAPI.Mock |> expect(:announce_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
+      result = Peer.announce_preimage(client, 44, <<45::256>>, 1)
+      assert result == :ok
+      verify!()
+    end
+  end
+
   describe "request_blocks/4" do
     test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock

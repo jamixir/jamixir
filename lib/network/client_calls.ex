@@ -8,6 +8,11 @@ defmodule Network.ClientCalls do
     {:ok, Block.decode_list(message)}
   end
 
+  def call(142, message) do
+    log("Preimage announcement confirmed.")
+    :ok
+  end
+
   def call(0, _message) do
     log("Block announcement confirmed")
     :ok

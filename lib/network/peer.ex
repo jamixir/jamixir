@@ -12,6 +12,8 @@ defmodule Network.Peer do
   defdelegate send(pid, protocol_id, message), to: Client
   defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client
   defdelegate announce_block(pid, header, slot), to: Client
+
+  defdelegate announce_preimage(pid, service_id, hash, length), to: Client
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
@@ -60,9 +62,6 @@ defmodule Network.Peer do
   # Client-side handlers
   @impl GenServer
   def handle_call({:send, _, _} = msg, from, state), do: Client.handle_call(msg, from, state)
-
-  def handle_call({:request_blocks, _, _, _} = msg, from, state),
-    do: Client.handle_call(msg, from, state)
 
   @impl GenServer
   def handle_cast({:announce_block, _, _, _} = msg, state), do: Client.handle_cast(msg, state)
