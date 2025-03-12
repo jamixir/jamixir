@@ -245,7 +245,7 @@ defmodule System.State.AccumulationTest do
     end
   end
 
-  describe "update_accumulation_state/4" do
+  describe "accumulates privileged services/4" do
     setup do
       Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
 
@@ -573,7 +573,7 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
+      result = Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
       assert result[1].balance == 200
       assert result[2].balance == 250
       assert result[3].balance == 375
@@ -585,7 +585,7 @@ defmodule System.State.AccumulationTest do
         2 => %ServiceAccount{balance: 200}
       }
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, [], 0)
+      result = Accumulation.apply_transfers(services_intermediate_2, [], 0)
 
       assert result == services_intermediate_2
     end
@@ -600,7 +600,7 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      result = Accumulation.calculate_posterior_services(services_intermediate_2, transfers, 0)
+      result = Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
 
       assert result == services_intermediate_2
     end
@@ -732,7 +732,7 @@ defmodule System.State.AccumulationTest do
       }
     end
 
-    test "successfully accumulates valid work reports", %{
+    test "smoke test successfully accumulates valid work reports", %{
       timeslot: timeslot,
       state: state,
       n0_: n0_
@@ -748,22 +748,8 @@ defmodule System.State.AccumulationTest do
         %AccumulationResult{}
       end)
 
-      result = Accumulation.transition(work_reports, timeslot, n0_, state)
+    Accumulation.transition(work_reports, timeslot, n0_, state)
     end
 
-    # test "returns error when encountering an invalid service", %{
-    #   timeslot: timeslot,
-    #   state: state,
-    #   n0_: n0_
-    # } do
-    #   work_reports = [
-    #     build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
-    #     # Invalid service
-    #     build(:work_report, results: [%{service: 3, gas_ratio: 20}], segment_root_lookup: %{})
-    #   ]
-
-    #   assert {:error, :invalid_service} =
-    #            Accumulation.transition(work_reports, timeslot, n0_, state)
-    # end
   end
 end

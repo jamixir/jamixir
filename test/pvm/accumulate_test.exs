@@ -65,10 +65,7 @@ defmodule PVM.AccumulateTest do
 
       operands = [
         %Operand{
-          o: :big,
-          l: <<0::256>>,
-          k: <<0::256>>,
-          a: <<>>
+          d: {:error, :big},
         }
       ]
 
@@ -134,7 +131,7 @@ defmodule PVM.AccumulateTest do
         services: %{256 => service_account}
       }
 
-      operands = [%Operand{o: <<>>, l: <<0::256>>, k: <<0::256>>, a: <<>>}]
+      operands = [%Operand{d: {:ok, <<>>}}]
 
       {result_acc, transfers, result_hash, gas} =
         Accumulate.execute(accumulation, 0, 256, 1000, operands, init_fn)

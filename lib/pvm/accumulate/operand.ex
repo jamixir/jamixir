@@ -16,11 +16,9 @@ defmodule PVM.Accumulate.Operand do
 
   defimpl Encodable do
     use Codec.Encoder
-    def encode_o({:ok, bin}) when is_binary(bin), do: e(bin)
-    def encode_o({:error, o}), do: e(WorkExecutionError.code(o))
+    def encode_d({:ok, bin}) when is_binary(bin), do: e(bin)
+    def encode_d({:error, o}), do: e(WorkExecutionError.code(o))
 
-    def encode(%PVM.Accumulate.Operand{} = o) do
-      <<o.h, o.e, o.a, o.o, o.y, o.d>> <> encode_o(o.o)
-    end
+    def encode(%PVM.Accumulate.Operand{} = o), do: e({o.h, o.e, o.a, o.o, o.y}) <> encode_d(o.d)
   end
 end

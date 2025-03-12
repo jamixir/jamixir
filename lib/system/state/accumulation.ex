@@ -31,7 +31,7 @@ defmodule System.State.Accumulation do
               ctx()
             ) ::
               AccumulationResult.t()
-  @callback do_transition(list(), non_neg_integer(), ctx_init_fn(), State.t()) :: any()
+  @callback do_transition(list(), State.t(), ctx()) :: any()
 
   # Formula (12.3) v0.6.3 - U
   @type t :: %__MODULE__{
@@ -51,7 +51,7 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.6.0
+  Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.3
   """
   def transition(w, t_, n0_, s) do
     ctx_init_fn = PVM.Accumulate.Utils.initializer(n0_, t_)
@@ -115,16 +115,16 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue_
     } = o
 
-    # Formula (12.24) v0.6.0
+    # Formula (12.24) v0.6.3
     services_intermediate_2 =
-      calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
+      apply_transfers(services_intermediate, deferred_transfers, timeslot_)
 
-    # Formula (12.25) v0.6.0
+    # Formula (12.25) v0.6.3
     work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-    # Formula (12.26) v0.6.0
+    # Formula (12.26) v0.6.3
     accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
     {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-    # Formula (12.27) v0.6.0
+    # Formula (12.27) v0.6.3
     ready_to_accumulate_ =
       build_ready_to_accumulate_(
         ready_to_accumulate,
@@ -370,15 +370,16 @@ defmodule System.State.Accumulation do
     {total_gas, operands}
   end
 
-  # Formula (12.24) v0.6.0
-  def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
-    Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
+  # Formula (12.24) v0.6.3
+  def apply_transfers(services_intermediate, transfers, timeslot) do
+    Enum.reduce(Map.keys(services_intermediate), %{}, fn s, acc ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-      %{services | s => PVM.on_transfer(services, timeslot, s, selected_transfers)}
+      service_with_transfers_applied = PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers)
+      Map.put(acc, s, service_with_transfers_applied)
     end)
   end
 
-  # Formula (12.27) v0.6.0
+  # Formula (12.27) v0.6.3
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
