@@ -2,7 +2,6 @@ defmodule Codec.Encoder do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias Util.Hash
-  import Sizes
 
   @type encoding_type ::
           :timeslot
@@ -14,6 +13,18 @@ defmodule Codec.Encoder do
           | :account_items
           | :core_index
           | :delegate
+          | nil
+
+  # Byte sizes
+  @type_sizes %{
+    timeslot: 4,
+    service_index: 4,
+    balance: 8,
+    gas: 8,
+    account_octets: 8,
+    account_items: 4,
+    core_index: 2
+  }
 
   @spec encode_typed(list(), list(encoding_type())) :: binary()
   def encode_typed(values, types \\ []) when is_list(values) do
@@ -162,14 +173,13 @@ defmodule Codec.Encoder do
 
   defp encode_with_type(value, nil), do: do_encode(value)
   defp encode_with_type(value, :delegate), do: do_encode(value)
-  defp encode_with_type(value, :binary) when is_binary(value), do: value
-  defp encode_with_type(value, :timeslot), do: <<value::size(timeslot_size())-little>>
-  defp encode_with_type(value, :service_index), do: <<value::size(service_index_size())-little>>
-  defp encode_with_type(value, :balance), do: <<value::size(balance_size())-little>>
-  defp encode_with_type(value, :gas), do: <<value::size(gas_size())-little>>
-  defp encode_with_type(value, :account_octets), do: <<value::size(account_octets_size())-little>>
-  defp encode_with_type(value, :account_items), do: <<value::size(account_items_size())-little>>
-  defp encode_with_type(value, :core_index), do: <<value::size(core_index_size())-little>>
+  defp encode_with_type(value, :binary), do: value
+
+  defp encode_with_type(value, type) when is_map_key(@type_sizes, type),
+    do: encode_little_endian(value, @type_sizes[type])
+
+  defp encode_with_type(value, _), do: do_encode(value)
+
   defmacro __using__(_) do
     quote do
       alias Codec.VariableSize

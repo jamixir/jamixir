@@ -11,15 +11,6 @@ defmodule Sizes do
   def export_segment, do: 4104
 
 
-  # size in bits
-  def balance_size, do: 64
-  def gas_size, do: 64
-  def timeslot_size, do: 32
-  def service_index_size, do: 32
-  def account_items_size, do: 32
-  def account_octets_size, do: 64
-  def core_index_size, do: 16
-
   defmacro __using__(_) do
     quote do
       @bandersnatch_proof_size Sizes.bandersnatch_proof()
