@@ -16,6 +16,7 @@ defmodule Jamixir.NodeAPI do
   @callback add_work_package(integer(), WorkPackage.t(), binary()) :: :ok | {:error, any}
   @callback announce_preimage(Types.service_index(), Types.hash(), non_neg_integer()) ::
               :ok | {:error, any}
+  @callback get_preimage(Types.hash()) :: {:ok, binary} | {:error, any}
 
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
@@ -26,6 +27,8 @@ defmodule Jamixir.NodeAPI do
 
   def announce_preimage(service_id, hash, length),
     do: impl().announce_preimage(service_id, hash, length)
+
+  def get_preimage(hash), do: impl().get_preimage(hash)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

@@ -16,6 +16,15 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
+  def call(143, hash) do
+    log("Requesting preimage")
+
+    case Jamixir.NodeAPI.get_preimage(hash) do
+      {:ok, preimage} -> preimage
+      _ -> <<>>
+    end
+  end
+
   def call(0, _message) do
     log("Processing block announcement")
     # TODO: Implement block processing

@@ -14,6 +14,8 @@ defmodule Network.Peer do
   defdelegate announce_block(pid, header, slot), to: Client
 
   defdelegate announce_preimage(pid, service_id, hash, length), to: Client
+  defdelegate get_preimage(pid, hash), to: Client
+
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)

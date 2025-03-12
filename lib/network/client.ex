@@ -24,6 +24,10 @@ defmodule Network.Client do
     send(pid, 142, message)
   end
 
+  def get_preimage(pid, hash) do
+    send(pid, 143, hash)
+  end
+
   def announce_block(pid, header, slot) do
     log(:debug, "Announcing block at slot #{slot}")
     encoded_header = e(header)
