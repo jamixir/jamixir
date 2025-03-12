@@ -1,0 +1,5 @@
+# Ignore build artifacts and dependencies
+.elixir_ls/
+_build/
+deps/
+.git/

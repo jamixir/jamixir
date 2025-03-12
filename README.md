@@ -6,10 +6,31 @@ Jamixir is the Elixir implementation of the JAM Protocol, as described in the [G
 
 # How to Run
 
-## Using a docker image (cli)
+## Using a docker image
+
+Currently, some of our dependencies are in private repositories. To be able to pull from there, we need enable SSH agent forwarding in local machine before issuing the docker build commands.
+
+Ensure your SSH agent is running and has the right keys, run this command:
+
 ```
-docker build -t jamixir .
-docker run jamixir
+ssh-add -l
+```
+If it doesn’t (i.e. you don't see your keys), add them using:
+
+```
+ssh-add /path/to/your/private/key
+```
+Then run this command to enable Docker's buildkit in your terminal session:
+
+```
+export DOCKER_BUILDKIT=1
+```
+
+## Using docker compose
+The following commands build and run a simulated network of six Jamixir nodes.
+```
+docker compose build
+docker compose up 
 ```
 
 
