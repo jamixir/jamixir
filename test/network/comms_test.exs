@@ -57,8 +57,7 @@ defmodule CommsTest do
   describe "preimage_announcement/2" do
     test "announces preimage", %{client: client} do
       Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
-      result = Peer.announce_preimage(client, 44, <<45::256>>, 1)
-      assert result == :ok
+      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::256>>, 1)
       verify!()
     end
   end
