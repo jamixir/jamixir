@@ -14,11 +14,13 @@ defmodule Network.ClientCalls do
   end
 
   def call(143, message) do
-    log("Preimage request confirmed.")
-
     case message do
-      <<>> -> {:error, :not_found}
-      _ -> {:ok, message}
+      <<>> ->
+        {:error, :not_found}
+
+      _ ->
+        log("Received preimage response.")
+        Jamixir.NodeAPI.save_preimage(message)
     end
   end
 

@@ -56,7 +56,7 @@ defmodule CommsTest do
 
   describe "preimage_announcement/2" do
     test "announces preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:announce_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
+      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
       result = Peer.announce_preimage(client, 44, <<45::256>>, 1)
       assert result == :ok
       verify!()
@@ -66,15 +66,14 @@ defmodule CommsTest do
   describe "preimage_request/2" do
     test "get existing preimage", %{client: client} do
       Jamixir.NodeAPI.Mock |> expect(:get_preimage, 1, fn <<45::256>> -> {:ok, <<1, 2, 3>>} end)
-      {:ok, result} = Peer.get_preimage(client, <<45::256>>)
-      assert result == <<1, 2, 3>>
+      Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3>> -> :ok end)
+      :ok = Peer.get_preimage(client, <<45::256>>)
       verify!()
     end
 
     test "get unexisting preimage", %{client: client} do
       Jamixir.NodeAPI.Mock |> expect(:get_preimage, 1, fn <<45::256>> -> {:error, :not_found} end)
-      result = Peer.get_preimage(client, <<45::256>>)
-      assert result == {:error, :not_found}
+      {:error, :not_found} = Peer.get_preimage(client, <<45::256>>)
       verify!()
     end
   end

@@ -11,13 +11,13 @@ defmodule Network.ServerCalls do
   end
 
   def call(142, <<service_id::32-little, hash::binary-size(32), length::32-little>> = _message) do
-    log("Announcing preimage")
-    :ok = Jamixir.NodeAPI.announce_preimage(service_id, hash, length)
+    log("Receiving Preimage")
+    :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
     <<>>
   end
 
   def call(143, hash) do
-    log("Requesting preimage")
+    log("Received preimage request")
 
     case Jamixir.NodeAPI.get_preimage(hash) do
       {:ok, preimage} -> preimage
