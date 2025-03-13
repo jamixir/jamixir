@@ -2,23 +2,23 @@ defmodule PVM.Accumulate.Operand do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
 
-  # Formula (12.18) v0.6.0
+  # Formula (12.18) v0.6.3
   @type t :: %__MODULE__{
-          o: binary() | WorkExecutionError.t(),
-          l: Types.hash(),
-          k: Types.hash(),
-          a: binary()
+          h: Types.hash(),
+          e: Types.hash(),
+          a: Types.hash(),
+          o: binary(),
+          y: Types.hash(),
+          d: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
-  defstruct [:o, :l, :k, :a]
+  defstruct [:h, :e, :a, :o, :y, :d]
 
   defimpl Encodable do
     use Codec.Encoder
-    def encode_o(o) when is_binary(o), do: e(o)
-    def encode_o(o), do: e(WorkExecutionError.code(o))
+    def encode_d({:ok, bin}) when is_binary(bin), do: e(bin)
+    def encode_d({:error, o}), do: e(WorkExecutionError.code(o))
 
-    def encode(%PVM.Accumulate.Operand{} = o) do
-      encode_o(o.o) <> e(o.l) <> e(o.k) <> e(o.a)
-    end
+    def encode(%PVM.Accumulate.Operand{} = o), do: e({o.h, o.e, o.a, o.o, o.y}) <> encode_d(o.d)
   end
 end

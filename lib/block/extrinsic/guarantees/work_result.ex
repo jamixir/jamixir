@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkResult do
   @moduledoc """
-  Formula (11.6) v0.6.2
+  Formula (11.6) v0.6.3
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
@@ -14,11 +14,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           service: non_neg_integer(),
           # c
           code_hash: Types.hash(),
-          # l
+          # y
           payload_hash: Types.hash(),
           # g
           gas_ratio: non_neg_integer(),
-          # o
+          # d
           result: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
@@ -26,11 +26,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   defstruct service: 0,
             # c
             code_hash: Hash.zero(),
-            # l
+            # y
             payload_hash: Hash.zero(),
             # g
             gas_ratio: 0,
-            # o
+            # d
             result: {:ok, <<>>}
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t

@@ -282,13 +282,13 @@ defmodule WorkReportTest do
       r = [{w1, MapSet.new()}, {w2, MapSet.new([Hash.three()])}]
       x = MapSet.new([Hash.two()])
 
-      result = WorkReport.edit_queue(r, x)
+      result = WorkReport.filter_and_update_dependencies(r, x)
       assert [{^w1, empty_set}] = result
       assert MapSet.equal?(empty_set, MapSet.new())
     end
 
     test "handles empty queue" do
-      assert [] == WorkReport.edit_queue([], %{Hash.one() => Hash.two()})
+      assert [] == WorkReport.filter_and_update_dependencies([], %{Hash.one() => Hash.two()})
     end
 
     test "filters out work reports with work package hash already in accumulated work" do
@@ -312,7 +312,7 @@ defmodule WorkReportTest do
       # w1's work package hash is already in x
       x = MapSet.new([Hash.one()])
 
-      result = WorkReport.edit_queue(r, x)
+      result = WorkReport.filter_and_update_dependencies(r, x)
 
       assert [{^w2, _}] = result
     end

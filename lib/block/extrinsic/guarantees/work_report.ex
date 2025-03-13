@@ -95,8 +95,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.4) v0.6.2
-  # Formula (12.5) v0.6.2
+  # Formula (12.4) v0.6.3
+  # Formula (12.5) v0.6.3
   @spec separate_work_reports(list(__MODULE__.t()), list(MapSet.t(Types.hash()))) ::
           {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
   def separate_work_reports(work_reports, accumulation_history)
@@ -106,7 +106,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec separate_work_reports(list(__MODULE__.t()), MapSet.t(Types.hash())) ::
           {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
   def separate_work_reports(work_reports, accumulated) do
-    {w_bang, pre_w_q} =
+    {immediate_work_reports, pre_w_q} =
       Enum.split_with(work_reports, fn %WorkReport{
                                          refinement_context: wx,
                                          segment_root_lookup: wl
@@ -114,41 +114,54 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         MapSet.size(wx.prerequisite) == 0 and Enum.empty?(wl)
       end)
 
-    w_q = edit_queue(for(w <- pre_w_q, do: with_dependencies(w)), accumulated)
-    {w_bang, w_q}
+    queued_work_reports =
+      Enum.map(pre_w_q, &with_dependencies/1) |> filter_and_update_dependencies(accumulated)
+
+    {immediate_work_reports, queued_work_reports}
   end
 
-  # Formula (12.6) v0.6.2
+  # Formula (12.6) v0.6.3
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
     {w, w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)}
   end
 
-  # Formula (12.7) v0.6.2
-  @spec edit_queue(list({__MODULE__.t(), MapSet.t(Types.hash())}), MapSet.t(Types.hash())) ::
+  # Formula (12.7) v0.6.3
+  @spec filter_and_update_dependencies(
+          list({__MODULE__.t(), MapSet.t(Types.hash())}),
+          MapSet.t(Types.hash())
+        ) ::
           list({__MODULE__.t(), MapSet.t(Types.hash())})
-  def edit_queue(r, x) do
+  def filter_and_update_dependencies(r, x) do
     for {w, d} <- r,
         w.specification.work_package_hash not in x do
       {w, d \\ x}
     end
   end
 
-  # Formula (12.8) v0.6.2
+  # Formula (12.8) v0.6.3
   @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())})) ::
           list(__MODULE__.t())
   def accumulation_priority_queue(r) do
-    case for {w, d} <- r, MapSet.size(d) == 0, do: w do
-      [] -> []
-      g -> g ++ accumulation_priority_queue(edit_queue(r, work_package_hashes(g)))
+    g = for {w, d} <- r, MapSet.size(d) == 0, do: w
+
+    case g do
+      [] ->
+        []
+
+      g ->
+        g ++
+          accumulation_priority_queue(filter_and_update_dependencies(r, work_package_hashes(g)))
     end
   end
 
-  # Formula (12.9) v0.6.2
+  # Formula (12.9) v0.6.3
+  @spec work_package_hashes(list(__MODULE__.t())) :: MapSet.t(Types.hash())
   def work_package_hashes(work_reports) do
     for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
   end
 
+  # Formula (12.11) v0.6.3 (W∗)
   @spec accumulatable_work_reports(
           list(__MODULE__.t()),
           non_neg_integer(),
@@ -162,25 +175,25 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (12.2) v0.6.2
+    # Formula (12.2) v0.6.3
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (12.4) v0.6.2
-    # Formula (12.5) v0.6.2
-    {w_bang, w_q} = separate_work_reports(work_reports, accumulated)
-    # Formula (12.10) v0.6.2
+    # Formula (12.4) v0.6.4
+    # Formula (12.5) v0.6.5
+    {immediate_work_reports, queued_work_reports} =
+      separate_work_reports(work_reports, accumulated)
+
+    # Formula (12.10) v0.6.3
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (12.12) v0.6.2
+    # Formula (12.12) v0.6.3
     q =
-      edit_queue(
-        for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ w_q,
-        work_package_hashes(w_bang)
-      )
+      (for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ queued_work_reports)
+      |> filter_and_update_dependencies(work_package_hashes(immediate_work_reports))
 
-    # Formula (12.11) v0.6.2
-    w_bang ++ accumulation_priority_queue(q)
+    # Formula (12.11) v0.6.3
+    immediate_work_reports ++ accumulation_priority_queue(q)
   end
 
   # Formula 14.10 v0.6.2

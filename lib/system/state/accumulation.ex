@@ -16,26 +16,24 @@ defmodule System.State.Accumulation do
   }
 
   alias Types
-  alias Util.Collections
   use MapUnion
   use AccessStruct
+  import Utils
 
   # (Accumulation.t(), service_index) -> PVM.Host.Accumulate.Context.t()
   @type ctx_init_fn :: (t(), non_neg_integer() -> PVM.Host.Accumulate.Context.t())
-
-
+  @type ctx :: %{timeslot: non_neg_integer(), ctx_init_fn: ctx_init_fn()}
   @callback do_single_accumulation(
               t(),
-              non_neg_integer(),
               list(),
               map(),
               non_neg_integer(),
-              ctx_init_fn()
+              ctx()
             ) ::
               AccumulationResult.t()
-  @callback do_transition(list(), non_neg_integer(), ctx_init_fn(), State.t()) :: any()
+  @callback do_transition(list(), State.t(), ctx()) :: any()
 
-  # Formula (12.3) v0.6.0 - U
+  # Formula (12.3) v0.6.3 - U
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -53,18 +51,17 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.16) and (12.17) v0.6.0
+  Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.3
   """
   def transition(w, t_, n0_, s) do
     ctx_init_fn = PVM.Accumulate.Utils.initializer(n0_, t_)
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
-    module.do_transition(w, t_, ctx_init_fn, s)
+    ctx = %{timeslot: t_, ctx_init_fn: ctx_init_fn}
+    module.do_transition(w, s, ctx)
   end
 
   def do_transition(
         work_reports,
-        timeslot_,
-        ctx_init_fn,
         %State{
           accumulation_history: accumulation_history,
           ready_to_accumulate: ready_to_accumulate,
@@ -73,9 +70,10 @@ defmodule System.State.Accumulation do
           authorizer_queue: authorizer_queue,
           services: services,
           timeslot: timeslot
-        }
+        },
+        %{timeslot: timeslot_} = ctx
       ) do
-    # Formula (12.20) v0.6.0
+    # Formula (12.20) v0.6.3
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -83,6 +81,7 @@ defmodule System.State.Accumulation do
           Enum.sum(Map.values(privileged_services.services_gas))
       )
 
+    # W∗
     accumulatable_reports =
       WorkReport.accumulatable_work_reports(
         work_reports,
@@ -98,109 +97,100 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # Formula (12.21) v0.6.0
-    # Formula (12.22) v0.6.0
-    case outer_accumulation(
-           gas_limit,
-           timeslot,
-           ctx_init_fn,
-           accumulatable_reports,
-           initial_state,
-           privileged_services.services_gas
-         ) do
-      {:ok,
-       {n,
-        %__MODULE__{
-          privileged_services: privileged_services_,
-          services: services_intermediate,
-          next_validators: next_validators_,
-          authorizer_queue: authorizer_queue_
-        }, deferred_transfers, beefy_commitment}} ->
-        # Formula (12.24) v0.6.0
-        services_intermediate_2 =
-          calculate_posterior_services(services_intermediate, deferred_transfers, timeslot_)
+    # Formula (12.21) v0.6.3
+    {n, o, deferred_transfers, beefy_commitment} =
+      sequential_accumulation(
+        gas_limit,
+        accumulatable_reports,
+        initial_state,
+        privileged_services.services_gas,
+        ctx
+      )
 
-        # Formula (12.25) v0.6.0
-        work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-        # Formula (12.26) v0.6.0
-        accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
-        {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-        # Formula (12.27) v0.6.0
-        ready_to_accumulate_ =
-          build_ready_to_accumulate_(
-            ready_to_accumulate,
-            work_package_hashes,
-            w_q,
-            timeslot_,
-            timeslot
-          )
+    # Formula (12.22) v0.6.3
+    %__MODULE__{
+      privileged_services: privileged_services_,
+      services: services_intermediate,
+      next_validators: next_validators_,
+      authorizer_queue: authorizer_queue_
+    } = o
 
-        {:ok,
-         %{
-           services: services_intermediate_2,
-           next_validators: next_validators_,
-           authorizer_queue: authorizer_queue_,
-           ready_to_accumulate: ready_to_accumulate_,
-           privileged_services: privileged_services_,
-           accumulation_history: accumulation_history_,
-           beefy_commitment: beefy_commitment
-         }}
+    # Formula (12.24) v0.6.3
+    services_intermediate_2 =
+      apply_transfers(services_intermediate, deferred_transfers, timeslot_)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+    # Formula (12.25) v0.6.3
+    work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
+    # Formula (12.26) v0.6.3
+    accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
+    {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
+    # Formula (12.27) v0.6.3
+    ready_to_accumulate_ =
+      build_ready_to_accumulate_(
+        ready_to_accumulate,
+        work_package_hashes,
+        w_q,
+        timeslot_,
+        timeslot
+      )
+
+    %{
+      services: services_intermediate_2,
+      next_validators: next_validators_,
+      authorizer_queue: authorizer_queue_,
+      ready_to_accumulate: ready_to_accumulate_,
+      privileged_services: privileged_services_,
+      accumulation_history: accumulation_history_,
+      beefy_commitment: beefy_commitment
+    }
   end
 
-  # Formula (12.16) v0.6.0
-  @spec outer_accumulation(
+  # Formula (12.16) v0.6.3
+  @spec sequential_accumulation(
           non_neg_integer(),
-          non_neg_integer(),
-          ctx_init_fn(),
           list(WorkReport.t()),
           t(),
-          %{non_neg_integer() => non_neg_integer()}
+          %{non_neg_integer() => non_neg_integer()},
+          ctx()
         ) ::
-          {:ok, {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}}
-          | {:error, atom()}
-  def outer_accumulation(
+          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}
+
+  def sequential_accumulation(
         gas_limit,
-        timeslot,
-        ctx_init_fn,
         work_reports,
         acc_state,
-        always_acc_services
+        always_acc_services,
+        ctx
       ) do
-    i = calculate_i(work_reports, gas_limit)
+    i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
 
     if i == 0 do
-      {:ok, {0, acc_state, [], MapSet.new()}}
+      {0, acc_state, [], MapSet.new()}
     else
-      with {:ok, {g_star, o_star, t_star, b_star}} <-
-             parallelized_accumulation(
-               acc_state,
-               timeslot,
-               ctx_init_fn,
-               Enum.take(work_reports, i),
-               always_acc_services
-             ),
-           {:ok, {j, o_prime, t, b}} <-
-             outer_accumulation(
-               gas_limit - g_star,
-               timeslot,
-               ctx_init_fn,
-               Enum.drop(work_reports, i),
-               o_star,
-               Map.new()
-             ) do
-        {:ok, {i + j, o_prime, t_star ++ t, b_star ++ b}}
-      else
-        {:error, error} -> {:error, error}
-      end
+      {g_star, o_star, t_star, b_star} =
+        parallelized_accumulation(
+          acc_state,
+          Enum.take(work_reports, i),
+          always_acc_services,
+          ctx
+        )
+
+      {j, o_prime, t, b} =
+        sequential_accumulation(
+          gas_limit - g_star,
+          Enum.drop(work_reports, i),
+          o_star,
+          Map.new(),
+          ctx
+        )
+
+      {i + j, o_prime, t_star ++ t, b_star ++ b}
     end
   end
 
-  @spec calculate_i(list(WorkReport.t()), non_neg_integer()) :: non_neg_integer()
-  def calculate_i(work_reports, gas_limit) do
+  @spec number_of_work_reports_to_accumumulate(list(WorkReport.t()), non_neg_integer()) ::
+          non_neg_integer()
+  def number_of_work_reports_to_accumumulate(work_reports, gas_limit) do
     Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
         Enum.sum(
@@ -215,51 +205,78 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (178) v0.4.5
-  # TODO review to Formula 12.17 v0.6.0
+  # Formula 12.17 v0.6.3
   @spec parallelized_accumulation(
           t(),
-          non_neg_integer(),
-          ctx_init_fn(),
           list(WorkReport.t()),
           %{
             non_neg_integer() => non_neg_integer()
-          }
+          },
+          ctx()
         ) ::
-          {:ok, {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}}
-          | {:error, atom()}
+          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}
   def parallelized_accumulation(
         acc_state,
-        timeslot,
-        ctx_init_fn,
         work_reports,
-        always_acc_services
+        always_acc_services,
+        ctx
       ) do
-    s = collect_services(work_reports, always_acc_services)
+    services = collect_services(work_reports, always_acc_services)
 
-    with :ok <- validate_services(acc_state, s) do
-      {u, b, t} =
-        accumulate_services(
-          acc_state,
-          timeslot,
-          work_reports,
-          always_acc_services,
-          s,
-          ctx_init_fn
-        )
+    # {x', i', q'}
+    {privileged_services_, next_validators_, authorizer_queue_} =
+      accumulate_privileged_services(
+        acc_state,
+        work_reports,
+        always_acc_services,
+        ctx
+      )
 
-      updated_state =
-        update_accumulation_state(
-          acc_state,
-          timeslot,
-          work_reports,
-          always_acc_services,
-          s,
-          ctx_init_fn
-        )
+    d = acc_state.services
 
-      {:ok, {u, updated_state, List.flatten(t), b}}
-    end
+    {gas_used, service_hash_pairs, transfers, n, m} =
+      Enum.reduce(services, {0, MapSet.new(), [], %{}, MapSet.new()}, fn service,
+                                                                         {acc_gas, acc_output,
+                                                                          acc_transfers, acc_n,
+                                                                          acc_m} ->
+        # ar stands for accumulation result
+        ar =
+          single_accumulation(
+            acc_state,
+            work_reports,
+            always_acc_services,
+            service,
+            ctx
+          )
+
+        ar_services = Map.get(ar.state, :services)
+
+        keys_to_drop = Map.keys(Map.drop(d, [service]))
+        service_n = Map.drop(ar_services, keys_to_drop)
+
+        service_m =
+          MapSet.difference(keys_set(d), keys_set(ar_services))
+
+        {
+          acc_gas + ar.gas_used,
+          if(is_binary(ar.output),
+            do: MapSet.put(acc_output, {service, ar.output}),
+            else: acc_output
+          ),
+          acc_transfers ++ ar.transfers,
+          acc_n ++ service_n,
+          acc_m ++ service_m
+        }
+      end)
+
+    accumulation_state = %__MODULE__{
+      services: Map.drop(d ++ n, MapSet.to_list(m)),
+      privileged_services: privileged_services_,
+      next_validators: next_validators_,
+      authorizer_queue: authorizer_queue_
+    }
+
+    {gas_used, accumulation_state, List.flatten(transfers), service_hash_pairs}
   end
 
   def collect_services(work_reports, always_acc_services) do
@@ -267,153 +284,102 @@ defmodule System.State.Accumulation do
       r <- Enum.flat_map(work_reports, & &1.results),
       do: r.service,
       into: MapSet.new()
-    ) ++ Utils.keys_set(always_acc_services)
+    ) ++ keys_set(always_acc_services)
   end
 
-  def accumulate_services(acc_state, timeslot, work_reports, always_acc_services, s, ctx_init_fn) do
-    Enum.reduce(s, {0, MapSet.new(), []}, fn service, {acc_u, acc_b, acc_t} ->
-      %{gas_used: u, transfers: t, output: b} =
+  def accumulate_privileged_services(
+        acc_state,
+        work_reports,
+        always_acc_services,
+        ctx
+      ) do
+    %__MODULE__{
+      privileged_services: ps
+    } = acc_state
+
+    for {service, key} <- [
+          {ps.privileged_services_service, :privileged_services},
+          {ps.next_validators_service, :next_validators},
+          {ps.authorizer_queue_service, :authorizer_queue}
+        ] do
+      %{state: state} =
         single_accumulation(
           acc_state,
-          timeslot,
           work_reports,
           always_acc_services,
           service,
-          ctx_init_fn
+          ctx
         )
 
-      {
-        acc_u + u,
-        if(is_binary(b), do: MapSet.put(acc_b, {service, b}), else: acc_b),
-        t ++ acc_t
-      }
-    end)
-  end
-
-  @spec update_accumulation_state(
-          t(),
-          non_neg_integer(),
-          list(WorkReport.t()),
-          %{non_neg_integer() => non_neg_integer()},
-          MapSet.t(non_neg_integer()),
-          ctx_init_fn()
-        ) :: t()
-  def update_accumulation_state(
-        %__MODULE__{} = acc_state,
-        timeslot,
-        work_reports,
-        always_acc_services,
-        s,
-        ctx_init_fn
-      ) do
-    %__MODULE__{
-      privileged_services: %PrivilegedServices{
-        manager_service: m,
-        alter_authorizer_service: a,
-        alter_validator_service: v
-      }
-    } = acc_state
-
-    {x_prime, i_prime, q_prime} =
-      for {s, key} <- [{m, :privileged_services}, {a, :next_validators}, {v, :authorizer_queue}] do
-        %{state: state} =
-          single_accumulation(
-            acc_state,
-            timeslot,
-            work_reports,
-            always_acc_services,
-            s,
-            ctx_init_fn
-          )
-
-        Map.get(state, key)
-      end
-      |> List.to_tuple()
-
-    d_prime =
-      Map.drop(acc_state.services, MapSet.to_list(s)) ++
-        Collections.union(
-          for service <- s,
-              do:
-                single_accumulation(
-                  acc_state,
-                  timeslot,
-                  work_reports,
-                  always_acc_services,
-                  service,
-                  ctx_init_fn
-                ).state.services
-        )
-
-    %__MODULE__{
-      services: d_prime,
-      next_validators: i_prime,
-      authorizer_queue: q_prime,
-      privileged_services: x_prime
-    }
-  end
-
-  def validate_services(%__MODULE__{services: d}, services) do
-    if Enum.all?(services, &Map.has_key?(d, &1)) do
-      :ok
-    else
-      {:error, :invalid_service}
+      Map.get(state, key)
     end
+    |> List.to_tuple()
   end
 
-  # Formula (180) v0.4.5
-  # TODO to Formula 12.19 v0.6.0
-  def single_accumulation(acc_state, timeslot, work_reports, service_dict, service, ctx_init_fn) do
+  # Formula 12.19 v0.6.3
+  def single_accumulation(acc_state, work_reports, service_dict, service, ctx) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
     module.do_single_accumulation(
       acc_state,
-      timeslot,
       work_reports,
       service_dict,
       service,
-      ctx_init_fn
+      ctx
     )
   end
 
   def do_single_accumulation(
         acc_state,
-        timeslot,
         work_reports,
         service_dict,
         service,
-        ctx_init_fn
+        %{timeslot: timeslot_, ctx_init_fn: ctx_init_fn}
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, service_dict, service)
-    PVM.accumulate(acc_state, timeslot, service, gas, operands, ctx_init_fn)
+
+    PVM.accumulate(acc_state, timeslot_, service, gas, operands, ctx_init_fn)
     |> AccumulationResult.new()
   end
 
-  # This separation is to allow testing of single_accumulation without having to test the stub as well
   def pre_single_accumulation(work_reports, service_dict, service) do
     initial_g = Map.get(service_dict, service, 0)
 
-    Enum.reduce(work_reports, {initial_g, []}, fn
-      %WorkReport{results: wr, output: wo, specification: ws}, {acc_g, acc_p} ->
-        wr
-        |> Enum.filter(&(&1.service == service))
-        |> Enum.reduce({acc_g, acc_p}, fn
-          %WorkResult{gas_ratio: gr, result: ro, payload_hash: rl}, {g, p} ->
-            new_p = %Accumulate.Operand{o: ro, l: rl, a: wo, k: ws.work_package_hash}
-            {g + gr, [new_p | p]}
-        end)
-    end)
+    service_results =
+      for %WorkReport{results: wr, output: wo, specification: ws, authorizer_hash: wa} <-
+            work_reports,
+          %WorkResult{service: ^service, gas_ratio: gr, result: rd, payload_hash: ry} <- wr,
+          do: {gr, rd, ry, wo, ws, wa}
+
+    total_gas =
+      initial_g +
+        Enum.sum(Stream.map(service_results, &elem(&1, 0)))
+
+    operands =
+      for {_, rd, ry, wo, ws, wa} <- service_results do
+        %Accumulate.Operand{
+          h: ws.work_package_hash,
+          e: ws.exports_root,
+          a: wa,
+          o: wo,
+          y: ry,
+          d: rd
+        }
+      end
+
+    {total_gas, operands}
   end
 
-  # Formula (12.24) v0.6.0
-  def calculate_posterior_services(services_intermediate_2, transfers, timeslot) do
-    Enum.reduce(Map.keys(services_intermediate_2), services_intermediate_2, fn s, services ->
+  # Formula (12.24) v0.6.3
+  def apply_transfers(services_intermediate, transfers, timeslot) do
+    Enum.reduce(Map.keys(services_intermediate), %{}, fn s, acc ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-      %{services | s => PVM.on_transfer(services, timeslot, s, selected_transfers)}
+      service_with_transfers_applied = PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers)
+      Map.put(acc, s, service_with_transfers_applied)
     end)
   end
 
-  # Formula (12.27) v0.6.0
+  # Formula (12.27) v0.6.3
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
@@ -446,13 +412,13 @@ defmodule System.State.Accumulation do
       for i <- 0..(e - 1) do
         cond do
           i == 0 ->
-            WorkReport.edit_queue(w_q, work_package_hashes)
+            WorkReport.filter_and_update_dependencies(w_q, work_package_hashes)
 
           i < timeslot_ - timeslot ->
             []
 
           true ->
-            WorkReport.edit_queue(
+            WorkReport.filter_and_update_dependencies(
               Enum.at(ready_to_accumulate, rem(m - i, e)) |> Enum.map(&Ready.to_tuple/1),
               work_package_hashes
             )

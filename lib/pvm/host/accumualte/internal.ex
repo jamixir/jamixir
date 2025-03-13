@@ -37,9 +37,9 @@ defmodule PVM.Host.Accumulate.Internal do
 
         true ->
           privileged_service = %PrivilegedServices{
-            manager_service: m,
-            alter_authorizer_service: a,
-            alter_validator_service: v,
+            privileged_services_service: m,
+            authorizer_queue_service: a,
+            next_validators_service: v,
             services_gas: g
           }
 

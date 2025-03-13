@@ -137,7 +137,7 @@ defmodule TestVectorUtil do
   end
 
   def mock_accumulate do
-    stub(MockAccumulation, :do_transition, fn _, _, _,_ -> {:ok, accumulate_mock_return()} end)
+    stub(MockAccumulation, :do_transition, fn _, _, _ -> accumulate_mock_return() end)
   end
 
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do
