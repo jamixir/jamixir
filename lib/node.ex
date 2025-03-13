@@ -88,4 +88,22 @@ defmodule Jamixir.Node do
     # TODO
     {:ok, []}
   end
+
+  @impl true
+  def receive_preimage(_service_id, _hash, _length) do
+    # TODO
+    :ok
+  end
+
+  @impl true
+  def get_preimage(_hash) do
+    # TODO
+    {:ok, <<>>}
+  end
+
+  @impl true
+  def save_preimage(_preimage) do
+    # TODO
+    :ok
+  end
 end

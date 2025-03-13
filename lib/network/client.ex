@@ -19,12 +19,21 @@ defmodule Network.Client do
     send(pid, 128, message)
   end
 
+  def announce_preimage(pid, service_id, hash, length) do
+    message = <<service_id::32-little>> <> hash <> <<length::32-little>>
+    send(pid, 142, message)
+  end
+
+  def get_preimage(pid, hash) do
+    send(pid, 143, hash)
+  end
+
   def announce_block(pid, header, slot) do
     log(:debug, "Announcing block at slot #{slot}")
     encoded_header = e(header)
     hash = h(encoded_header)
-    messsage = encoded_header <> hash <> <<slot::32>>
-    GenServer.cast(pid, {:announce_block, messsage, hash, slot})
+    message = encoded_header <> hash <> <<slot::32>>
+    GenServer.cast(pid, {:announce_block, message, hash, slot})
   end
 
   def handle_cast(
@@ -55,15 +64,13 @@ defmodule Network.Client do
 
   def handle_call({:send, protocol_id, message}, from, %PeerState{} = state) do
     {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
+    log("sending message to server: #{protocol_id} #{inspect(message)}")
     {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:fin))
 
-    new_state = %PeerState{
-      state
-      | pending_responses:
-          Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
-    }
+    new_pending =
+      Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
 
-    {:noreply, new_state}
+    {:noreply, %PeerState{state | pending_responses: new_pending}}
   end
 
   def handle_data(protocol_id, data, stream, props, %PeerState{} = state) do

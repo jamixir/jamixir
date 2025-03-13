@@ -8,6 +8,17 @@ defmodule Network.ClientCalls do
     {:ok, Block.decode_list(message)}
   end
 
+  def call(143, message) do
+    case message do
+      <<>> ->
+        {:error, :not_found}
+
+      _ ->
+        log("Received preimage response.")
+        Jamixir.NodeAPI.save_preimage(message)
+    end
+  end
+
   def call(0, _message) do
     log("Block announcement confirmed")
     :ok
