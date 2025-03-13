@@ -6,7 +6,8 @@ defmodule Jamixir do
     children = [
       Network.PeerRegistry,
       Network.PeerSupervisor,
-      Jamixir.TimeTicker
+      Jamixir.TimeTicker,
+      Jamixir.NodeCLIServer
     ]
 
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]

@@ -2,10 +2,6 @@ defmodule PersistStorageTest do
   use ExUnit.Case
 
   setup do
-    # Clean start for each test
-    # File.rm_rf!("priv/db")
-    # File.mkdir_p!("priv/db")
-
     # Stop any existing PersistStorage process
     if pid = Process.whereis(PersistStorage) do
       GenServer.stop(pid)
@@ -16,11 +12,10 @@ defmodule PersistStorageTest do
       GenServer.stop(pid)
     end
 
-    {:ok, _pid} = PersistStorage.start_link(persist: true)
+    {:ok, pid} = PersistStorage.start_link(persist: true)
 
     on_exit(fn ->
-      PersistStorage.stop()
-      # File.rm_rf!("priv/db")
+      if Process.alive?(pid), do: PersistStorage.stop()
     end)
 
     :ok
