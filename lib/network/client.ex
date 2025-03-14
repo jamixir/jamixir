@@ -39,6 +39,19 @@ defmodule Network.Client do
     send(pid, 141, message)
   end
 
+  def distribute_ticket(p, :proxy, a, v), do: distribute_ticket(p, 131, a, v)
+  def distribute_ticket(p, :validator, a, v), do: distribute_ticket(p, 132, a, v)
+
+  def distribute_ticket(
+        pid,
+        mode,
+        attempt,
+        <<_::binary-size(@bandersnatch_proof_size)>> = vrf_proof
+      ) do
+    message = <<attempt>> <> vrf_proof
+    send(pid, mode, message)
+  end
+
   def announce_block(pid, header, slot) do
     log(:debug, "Announcing block at slot #{slot}")
     encoded_header = e(header)

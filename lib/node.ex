@@ -112,4 +112,15 @@ defmodule Jamixir.Node do
     # TODO
     :ok
   end
+
+  @impl true
+  def process_ticket(_mode = :proxy, _attempt, _vrf_proof) do
+    # TODO
+    :ok
+  end
+
+  def process_ticket(_mode = :validator, _attempt, _vrf_proof) do
+    # TODO
+    :ok
+  end
 end

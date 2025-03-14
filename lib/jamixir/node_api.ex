@@ -20,7 +20,12 @@ defmodule Jamixir.NodeAPI do
   @callback save_preimage(binary()) :: :ok | {:error, any}
   @callback save_assurance(Types.hash(), Types.bitfield(), Types.ed25519_signature()) ::
               :ok | {:error, any}
-
+  @callback process_ticket(
+              :proxy | :validator,
+              0 | 1,
+              Types.bandersnatch_ringVRF_proof_of_knowledge()
+            ) ::
+              :ok | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -36,6 +41,9 @@ defmodule Jamixir.NodeAPI do
 
   def save_assurance(hash, bitfield, signature),
     do: impl().save_assurance(hash, bitfield, signature)
+
+  def process_ticket(mode, attempt, vrf_proof),
+    do: impl().process_ticket(mode, attempt, vrf_proof)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

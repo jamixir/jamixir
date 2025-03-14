@@ -91,6 +91,22 @@ defmodule CommsTest do
     end
   end
 
+  describe "distribute_ticket/3" do
+    test "distributes proxy ticket", %{client: client} do
+      vrf_proof = <<9::@bandersnatch_proof_size*8>>
+      Jamixir.NodeAPI.Mock |> expect(:process_ticket, 1, fn :proxy, 0, ^vrf_proof -> :ok end)
+      {:ok, ""} = Peer.distribute_ticket(client, :proxy, 0, vrf_proof)
+      verify!()
+    end
+
+    test "distributes validator ticket", %{client: client} do
+      vrf_proof = <<9::@bandersnatch_proof_size*8>>
+      Jamixir.NodeAPI.Mock |> expect(:process_ticket, 1, fn :validator, 1, ^vrf_proof -> :ok end)
+      {:ok, ""} = Peer.distribute_ticket(client, :validator, 1, vrf_proof)
+      verify!()
+    end
+  end
+
   describe "request_blocks/4" do
     test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock

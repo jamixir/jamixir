@@ -36,6 +36,20 @@ defmodule Network.ServerCalls do
     end
   end
 
+  def call(id, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>)
+      when id in [131, 132] do
+    log("Processing proxy ticket")
+
+    :ok =
+      Jamixir.NodeAPI.process_ticket(
+        if(id == 131, do: :proxy, else: :validator),
+        attempt,
+        vrf_proof
+      )
+
+    <<>>
+  end
+
   def call(0, _message) do
     log("Processing block announcement")
     # TODO: Implement block processing
@@ -44,7 +58,7 @@ defmodule Network.ServerCalls do
 
   def call(protocol_id, message) do
     Logger.warning(
-      "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)}"
+      "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)} of size #{byte_size(message)}"
     )
 
     message
