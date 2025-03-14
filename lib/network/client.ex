@@ -31,7 +31,7 @@ defmodule Network.Client do
 
   def distribute_assurance(
         pid,
-        <<_::@hash_size*8>> = hash,
+        <<_::@hash_size*8>> = header_hash,
         <<_::@bitfield_size*8>> = bitfield,
         <<_::@signature_size*8>> = signature
       ) do
