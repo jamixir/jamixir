@@ -4,6 +4,7 @@ defmodule Network.Client do
   import Network.{MessageHandler, Codec, Config}
   require Logger
   use Codec.Encoder
+  use Sizes
 
   @log_context "[QUIC_CLIENT]"
 
@@ -26,6 +27,16 @@ defmodule Network.Client do
 
   def get_preimage(pid, hash) do
     send(pid, 143, hash)
+  end
+
+  def distribute_assurance(
+        pid,
+        <<_::@hash_size*8>> = hash,
+        <<_::@bitfield_size*8>> = bitfield,
+        <<_::@signature_size*8>> = signature
+      ) do
+    message = hash <> bitfield <> signature
+    send(pid, 141, message)
   end
 
   def announce_block(pid, header, slot) do

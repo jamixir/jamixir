@@ -18,6 +18,8 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback get_preimage(Types.hash()) :: {:ok, binary} | {:error, any}
   @callback save_preimage(binary()) :: :ok | {:error, any}
+  @callback save_assurance(Types.hash(), Types.bitfield(), Types.ed25519_signature()) ::
+              :ok | {:error, any}
 
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
@@ -31,6 +33,9 @@ defmodule Jamixir.NodeAPI do
 
   def get_preimage(hash), do: impl().get_preimage(hash)
   def save_preimage(preimage), do: impl().save_preimage(preimage)
+
+  def save_assurance(hash, bitfield, signature),
+    do: impl().save_assurance(hash, bitfield, signature)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

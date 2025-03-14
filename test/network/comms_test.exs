@@ -3,8 +3,9 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Network.{Peer, Config, PeerSupervisor}
+  alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
+  use Sizes
 
   @base_port 9999
   @dummy_protocol_id 242
@@ -54,7 +55,7 @@ defmodule CommsTest do
     assert length(results) == number_of_messages
   end
 
-  describe "preimage_announcement/2" do
+  describe "announce_preimage/4" do
     test "announces preimage", %{client: client} do
       Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
       {:ok, ""} = Peer.announce_preimage(client, 44, <<45::256>>, 1)
@@ -62,7 +63,20 @@ defmodule CommsTest do
     end
   end
 
-  describe "preimage_request/2" do
+  describe "distribute_assurance/4" do
+    test "distributes assurance", %{client: client} do
+      bitfield = <<999::@bitfield_size*8>>
+      hash = Util.Hash.random()
+      sign = <<123::@signature_size*8>>
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn hash, bitfield, sign -> :ok end)
+
+      {:ok, ""} = Peer.distribute_assurance(client, hash, bitfield, sign)
+
+      verify!()
+    end
+  end
+
+  describe "get_preimage/2" do
     test "get existing preimage", %{client: client} do
       Jamixir.NodeAPI.Mock |> expect(:get_preimage, 1, fn <<45::256>> -> {:ok, <<1, 2, 3>>} end)
       Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3>> -> :ok end)
@@ -97,7 +111,7 @@ defmodule CommsTest do
     end
   end
 
-  describe "block announcements" do
+  describe "announce_block/3" do
     test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 

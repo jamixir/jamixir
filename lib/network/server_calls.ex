@@ -10,6 +10,17 @@ defmodule Network.ServerCalls do
     Enum.join(blocks_bin)
   end
 
+  use Sizes
+
+  def call(
+        141,
+        <<hash::@hash_size*8, bitfield::@bitfield_size*8, signature::@signature_size*8>>
+      ) do
+    log("Received assurance")
+    :ok = Jamixir.NodeAPI.save_assurance(hash, bitfield, signature)
+    <<>>
+  end
+
   def call(142, <<service_id::32-little, hash::binary-size(32), length::32-little>> = _message) do
     log("Receiving Preimage")
     :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
