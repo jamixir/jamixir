@@ -1,5 +1,6 @@
 defmodule Util.Hash do
   use Sizes
+  use Codec.Encoder
 
   def blake2b_n(data, n) do
     binary_part(blake2b_256(data), 0, n)
@@ -21,7 +22,8 @@ defmodule Util.Hash do
   # use as Hash.zero(), Hash.one()  etc.
   for {name, i} <- Enum.zip([:zero, :one, :two, :three, :four, :five], 0..5) do
     def unquote(name)() do
-      Utils.zero_bitstring(@hash_size - 1) <> <<unquote(i)::8>>
+      hash = unquote(i)
+      t(hash)
     end
   end
 

@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.WorkItem do
     # Formula (C.26) v0.6.0
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
-        <<wi.service::32-little>>,
+        t(wi.service),
         wi.code_hash,
         vs(wi.payload),
         <<wi.refine_gas_limit::64-little>>,
@@ -81,7 +81,7 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   def decode(bin) do
-    <<service::32-little, bin::binary>> = bin
+    <<service::service(), bin::binary>> = bin
     <<code_hash::binary-size(@hash_size), bin::binary>> = bin
     {payload, bin} = VariableSize.decode(bin, :binary)
     <<refine_gas_limit::64-little, bin::binary>> = bin

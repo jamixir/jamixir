@@ -1,7 +1,9 @@
 defmodule Util.ShuffleTest do
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
   alias Shuffle
+  alias Util.Hash
 
   describe "Fisher-Yates shuffle" do
     test "shuffle integer list - numeric sequence same length - same order 1" do
@@ -93,8 +95,7 @@ defmodule Util.ShuffleTest do
     # Some test vectors from
     # https://github.com/w3f/jamtestvectors/pull/17/files#diff-a872479a9fbb18c5f8454df4a22544369d3fbcae58ff3f9e1854a130f62fdb8a
     test "shuffle integer list - hash to numeric sequence - 0 elements" do
-      hash = <<0::256>>
-      assert Shuffle.shuffle([], hash) == []
+      assert Shuffle.shuffle([], Hash.zero()) == []
     end
 
     test "shuffle integer list - hash to numeric sequence - 8 elements" do

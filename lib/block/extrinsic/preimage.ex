@@ -68,18 +68,18 @@ defmodule Block.Extrinsic.Preimage do
     use Codec.Encoder
 
     # Formula (C.15) v0.6.0
-    def encode(%Block.Extrinsic.Preimage{service: s, blob: p}) do
-      <<s::32-little>> <> e(vs(p))
+    def encode(%Block.Extrinsic.Preimage{service: service_index, blob: p}) do
+      t(service_index) <> e(vs(p))
     end
   end
 
   use Codec.Decoder
 
   def decode(bin) do
-    <<service::32-little, bin::binary>> = bin
+    <<service_index::m(service_index), bin::binary>> = bin
 
     {blob, rest} = VariableSize.decode(bin, :binary)
-    {%__MODULE__{service: service, blob: blob}, rest}
+    {%__MODULE__{service: service_index, blob: blob}, rest}
   end
 
   use JsonDecoder

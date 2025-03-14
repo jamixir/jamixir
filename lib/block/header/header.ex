@@ -134,7 +134,7 @@ defmodule Block.Header do
   # Formula (C.20) v0.6.0
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
-      <<header.timeslot::32-little>> <>
+      <<header.timeslot::m(timeslot)>> <>
       e({
         NilDiscriminator.new(header.epoch_mark),
         NilDiscriminator.new(header.winning_tickets_marker),
@@ -159,7 +159,7 @@ defmodule Block.Header do
 
   def unsigned_decode(bin) do
     <<parent_hash::binary-size(@hash_size), prior_state_root::binary-size(@hash_size),
-      extrinsic_hash::binary-size(@hash_size), timeslot::32-little, bin::binary>> = bin
+      extrinsic_hash::binary-size(@hash_size), timeslot::m(timeslot), bin::binary>> = bin
 
     {epoch_mark, bin} =
       NilDiscriminator.decode(bin, fn epoch_mark_bin ->

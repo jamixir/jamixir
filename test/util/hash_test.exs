@@ -1,6 +1,7 @@
 defmodule Util.HashTest do
   use ExUnit.Case
   use Sizes
+  use Codec.Encoder
   alias Util.Hash
 
   describe "blake2b_n/2" do
@@ -44,7 +45,10 @@ defmodule Util.HashTest do
 
     test "returns correct hash for known input" do
       data = "test data"
-      expected_hash = <<0xEAB94977A17791D0C089FE9E393261B3AB667CF0E8456632A842D905C468CF65::256>>
+
+      expected_hash =
+        <<0xEAB94977A17791D0C089FE9E393261B3AB667CF0E8456632A842D905C468CF65::hash()>>
+
       assert Hash.default(data) == expected_hash
     end
   end

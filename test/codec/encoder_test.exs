@@ -1,8 +1,10 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
+  use Codec.Encoder
+  use Sizes
 
-  alias Util.Hash
   alias Codec.Encoder
+  alias Util.Hash
 
   describe "encode_integer/1" do
     test "encode integer 0" do
@@ -119,9 +121,9 @@ defmodule CodecEncoderTest do
     end
 
     test "empty array" do
-      assert Encoder.super_peak_mmr([]) == <<0::256>>
-      assert Encoder.super_peak_mmr([nil]) == <<0::256>>
-      assert Encoder.super_peak_mmr([nil, nil, nil]) == <<0::256>>
+      assert Encoder.super_peak_mmr([]) == Hash.zero()
+      assert Encoder.super_peak_mmr([nil]) == Hash.zero()
+      assert Encoder.super_peak_mmr([nil, nil, nil]) == Hash.zero()
     end
 
     test "one element", %{h1: h1} do
@@ -144,6 +146,34 @@ defmodule CodecEncoderTest do
                  "peak" <>
                    Encoder.super_peak_mmr([h1, h2]) <> h3
                )
+    end
+  end
+
+  describe "t macro" do
+    test "service_index" do
+      service_index = 1
+      assert t(service_index) == <<1::little-(@service_index_size * 8)>>
+    end
+
+    test "hash" do
+      hash = 7
+      assert t(hash) == <<7::@hash_size*8>>
+    end
+
+    test "timeslot" do
+      timeslot = 3
+      assert t(timeslot) == <<3::little-(@timeslot_size * 8)>>
+    end
+
+    test "with struct field" do
+      s = %{service: 8}
+      assert t(s.service) == <<8::little-(@service_index_size * 8)>>
+    end
+  end
+
+  describe "m macro" do
+    test "service_index" do
+      assert <<1::m(service_index)>> == <<1::little-(@service_index_size * 8)>>
     end
   end
 end

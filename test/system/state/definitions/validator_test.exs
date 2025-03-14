@@ -53,7 +53,7 @@ defmodule System.State.ValidatorTest do
       next_validators: next_validators
     } do
       # No matching offenders
-      offenders = MapSet.new([<<4::256>>])
+      offenders = MapSet.new([Hash.four()])
 
       result = Validator.nullify_offenders(next_validators, offenders)
 

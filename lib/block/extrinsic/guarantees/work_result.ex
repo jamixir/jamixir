@@ -70,7 +70,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   use Codec.Decoder
 
   def decode(bin) do
-    <<service::32-little, code_hash::binary-size(@hash_size),
+    <<service::service(), code_hash::binary-size(@hash_size),
       payload_hash::binary-size(@hash_size), gas_ratio::64-little, error_code::8,
       temp_rest::binary>> = bin
 

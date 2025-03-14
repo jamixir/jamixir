@@ -1,5 +1,6 @@
 defmodule Block.HeaderTest do
   use ExUnit.Case
+  use Codec.Encoder
   import TestHelper
   import Jamixir.Factory
 
@@ -9,8 +10,6 @@ defmodule Block.HeaderTest do
   alias System.State
   alias Util.Hash
   import TestHelper
-
-  use Codec.Encoder
 
   setup_validators(1)
 
@@ -53,7 +52,7 @@ defmodule Block.HeaderTest do
   end
 
   setup do
-    {:ok, header: %Header{block_seal: <<123::256>>}}
+    {:ok, header: %Header{block_seal: <<123::hash()>>}}
   end
 
   # Formula (C.19) v0.6.0

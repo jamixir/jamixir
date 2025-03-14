@@ -133,7 +133,7 @@ defmodule Block.Extrinsic.WorkPackage do
     def encode(%WorkPackage{} = wp) do
       e({
         vs(wp.authorization_token),
-        <<wp.service::32-little>>,
+        t(wp.service),
         wp.authorization_code_hash,
         vs(wp.parameterization_blob),
         wp.context,
@@ -146,7 +146,7 @@ defmodule Block.Extrinsic.WorkPackage do
 
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
-    <<service::32-little, bin::binary>> = bin
+    <<service::service(), bin::binary>> = bin
     <<authorization_code_hash::binary-size(@hash_size), bin::binary>> = bin
     {parameterization_blob, bin} = VariableSize.decode(bin, :binary)
     {context, bin} = RefinementContext.decode(bin)

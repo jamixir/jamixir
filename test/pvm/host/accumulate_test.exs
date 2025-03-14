@@ -35,7 +35,7 @@ defmodule PVM.Host.AccumulateTest do
       # Encode the gas map entries
       encoded_data =
         for {service, value} <- gas_map, into: <<>> do
-          <<service::32-little, value::64-little>>
+          <<service::service(), value::64-little>>
         end
 
       # Write to memory
@@ -697,7 +697,7 @@ defmodule PVM.Host.AccumulateTest do
       service_to_eject = %ServiceAccount{
         balance: 500,
         # matches x.service
-        code_hash: <<123::32-little>>,
+        code_hash: <<123::service()>>,
         preimage_storage_l: %{
           # Valid entry with [x,y]
           preimage_l_key => [1, 2]

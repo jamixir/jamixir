@@ -6,6 +6,7 @@ defmodule TestnetBlockImporterTest do
   import TestVectorUtil
   import Jamixir.Factory
   use ExUnit.Case
+  use Codec.Encoder
   require Logger
 
   setup_all do
@@ -30,7 +31,7 @@ defmodule TestnetBlockImporterTest do
     setup do
       # put parent header to storage
       Storage.put(
-        <<0x476243AD7CC4FC49CB6CB362C6568E931731D8650D917007A6037CCEEDD62244::256>>,
+        <<0x476243AD7CC4FC49CB6CB362C6568E931731D8650D917007A6037CCEEDD62244::hash()>>,
         build(:header, timeslot: 0)
       )
 

@@ -304,7 +304,7 @@ defmodule BlockTest do
       expected_extrinsic = Extrinsic.calculate_hash(block.extrinsic)
 
       assert expected_extrinsic ==
-               <<0x4B545B182C0D0E9B13F0A84E37D42FE5DBE7D5CC4BE41BD890A2E2785039DC49::256>>
+               <<0x4B545B182C0D0E9B13F0A84E37D42FE5DBE7D5CC4BE41BD890A2E2785039DC49::hash()>>
     end
   end
 end

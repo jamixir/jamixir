@@ -1,5 +1,6 @@
 defmodule Network.ServerCalls do
   require Logger
+  use Codec.Encoder
 
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
 
@@ -14,14 +15,18 @@ defmodule Network.ServerCalls do
 
   def call(
         141,
-        <<hash::@hash_size*8, bitfield::@bitfield_size*8, signature::@signature_size*8>>
+        <<hash::binary-size(@hash_size), bitfield::binary-size(@bitfield_size),
+          signature::binary-size(@signature_size)>>
       ) do
     log("Received assurance")
     :ok = Jamixir.NodeAPI.save_assurance(hash, bitfield, signature)
     <<>>
   end
 
-  def call(142, <<service_id::32-little, hash::binary-size(32), length::32-little>> = _message) do
+  def call(
+        142,
+        <<service_id::service(), hash::binary-size(@hash_size), length::32-little>> = _message
+      ) do
     log("Receiving Preimage")
     :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
     <<>>

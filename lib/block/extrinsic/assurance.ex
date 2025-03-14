@@ -9,6 +9,7 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
+  use Codec.Encoder
   # Formula (11.10) v0.6.0
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
@@ -111,7 +112,7 @@ defmodule Block.Extrinsic.Assurance do
     def encode(%Assurance{} = a) do
       e(a.hash) <>
         e(pad(a.bitfield, Sizes.bitfield())) <>
-        <<a.validator_index::8*@validator_index_size-little>> <>
+        t(a.validator_index) <>
         e(pad(a.signature, @signature_size))
     end
   end
@@ -124,7 +125,7 @@ defmodule Block.Extrinsic.Assurance do
     bitfield_size = Sizes.bitfield()
 
     <<hash::binary-size(@hash_size), bitfield::binary-size(bitfield_size),
-      validator_index::8*@validator_index_size-little, signature::binary-size(@signature_size),
+      validator_index::m(validator_index), signature::binary-size(@signature_size),
       rest::binary>> = bin
 
     {

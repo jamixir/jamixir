@@ -48,13 +48,14 @@ defmodule RefinementContext do
 
   use Sizes
   use Codec.Decoder
+  use Codec.Encoder
 
   def decode(bin) do
     alias Codec.VariableSize
 
     <<anchor::binary-size(@hash_size), state_root::binary-size(@hash_size),
       beefy_root::binary-size(@hash_size), lookup_anchor::binary-size(@hash_size),
-      timeslot::32-little, temp_rest::binary>> = bin
+      timeslot::m(timeslot), temp_rest::binary>> = bin
 
     {prerequisite, rest} = VariableSize.decode(temp_rest, :mapset, @hash_size)
 

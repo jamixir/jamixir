@@ -1,9 +1,9 @@
 defmodule System.AuditTest do
-  alias Util.Crypto
   alias Block.Extrinsic.Guarantee.WorkReport
   import System.Audit
   import Jamixir.Factory
   use ExUnit.Case
+  alias Util.{Crypto, Hash}
 
   setup_all do
     keypair =
@@ -30,14 +30,14 @@ defmodule System.AuditTest do
     test "build a list of work reports to audit", %{keypair: keypair} do
       work_reports = build_list(20, :work_report)
 
-      list = initial_items_to_audit(keypair, <<1::256>>, work_reports)
+      list = initial_items_to_audit(keypair, Hash.one(), work_reports)
       assert length(list) == 10
     end
 
     test "ignore nil reports on list", %{keypair: keypair} do
       work_reports = build_list(3, :work_report) ++ List.duplicate(nil, 10)
 
-      list = initial_items_to_audit(keypair, <<1::256>>, work_reports)
+      list = initial_items_to_audit(keypair, Hash.one(), work_reports)
       assert length(list) == 3
       assert Enum.all?(list, fn {_, w} -> w != nil end)
     end
@@ -48,13 +48,13 @@ defmodule System.AuditTest do
       work_reports = build_list(10, :work_report)
 
       # Random selection of work reports
-      [{core, %WorkReport{}} | _] = list = random_selection(keypair, <<1::256>>, work_reports)
+      [{core, %WorkReport{}} | _] = list = random_selection(keypair, Hash.one(), work_reports)
 
       assert length(list) == 10
       assert core == 2
 
       # Random selection of work reports with different s0 - different core selected
-      [{core, %WorkReport{}} | _] = random_selection(keypair, <<2::256>>, work_reports)
+      [{core, %WorkReport{}} | _] = random_selection(keypair, Hash.two(), work_reports)
 
       assert core == 3
     end
@@ -64,7 +64,7 @@ defmodule System.AuditTest do
     test "check announcement signature" do
       {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
       header = build(:decodable_header)
-      n = <<0::256>>
+      n = Hash.zero()
 
       sign = announcements_signature(priv, header, n)
       assert Crypto.valid_signature?(sign, sign_payload(header, n), pub)
