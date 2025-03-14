@@ -9,6 +9,7 @@ defmodule Types do
   def_bin_type(:ed25519_key, :hash)
   def_bin_type(:bandersnatch_key, :hash)
   def_bin_type(:ed25519_signature, :signature)
+  def_bin_type(:bitfield, :bitfield)
 
   @typedoc """
   Fm∈Yk∈HB ⟨x ∈ Y⟩ ⊂ Y96
