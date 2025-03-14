@@ -68,7 +68,7 @@ defmodule CommsTest do
       bitfield = <<999::@bitfield_size*8>>
       hash = Util.Hash.random()
       sign = <<123::@signature_size*8>>
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn hash, bitfield, sign -> :ok end)
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn _, _, _ -> :ok end)
 
       {:ok, ""} = Peer.distribute_assurance(client, hash, bitfield, sign)
 

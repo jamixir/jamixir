@@ -35,7 +35,7 @@ defmodule Network.Client do
         <<_::@bitfield_size*8>> = bitfield,
         <<_::@signature_size*8>> = signature
       ) do
-    message = hash <> bitfield <> signature
+    message = header_hash <> bitfield <> signature
     send(pid, 141, message)
   end
 
