@@ -41,7 +41,7 @@ defmodule TestnetBlockImporterTest do
 
     # waiting for correctnes of other party side
 
-    skip = ["fallback", "safrole"]
+    skip = ["assurances"]
 
     for mode <- ["fallback", "safrole", "assurances"] do
       if Enum.member?(skip, mode) do
