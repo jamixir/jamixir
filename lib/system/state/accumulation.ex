@@ -244,7 +244,7 @@ defmodule System.State.Accumulation do
           single_accumulation(
             acc_state,
             work_reports,
-            always_acc_services,
+            services,
             service,
             ctx
           )
