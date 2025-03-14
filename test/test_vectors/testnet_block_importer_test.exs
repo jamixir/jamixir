@@ -8,6 +8,16 @@ defmodule TestnetBlockImporterTest do
   use ExUnit.Case
   require Logger
 
+  setup_all do
+    RingVrf.init_ring_context()
+    # uncomment if you want to get trace files
+
+    # System.put_env("PVM_TRACE", "true")
+    :ok
+  end
+
+  def trace_enabled?, do: System.get_env("PVM_TRACE") == "true"
+
   @ignore_fields []
   @genesis_path "chainspecs/state_snapshots"
   @user "jamixir"
@@ -45,8 +55,12 @@ defmodule TestnetBlockImporterTest do
 
       @tag mode: mode
       test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
+
         Enum.reduce(1..4, state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
+            if trace_enabled?() do
+            System.put_env("TRACE_NAME", "#{mode}_#{epoch}:#{timeslot}")
+            end
             Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
             timeslot = String.pad_leading("#{timeslot}", 3, "0")
 

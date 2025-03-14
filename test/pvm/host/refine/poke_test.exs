@@ -1,18 +1,31 @@
 defmodule PVM.Host.Refine.PokeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, PreMemory}
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants
 
-  defp a_0, do: 0x1_0000
+  defp a_0, do: min_allowed_address()
 
   describe "poke/4" do
     setup do
       test_data = String.duplicate("A", 32)
-      {:ok, pvm_memory} = Memory.write(%Memory{}, a_0(), test_data)
+
+      pvm_memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 1, :read)
+        |> PreMemory.write(a_0(), test_data)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
+      machine_memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 1, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       machine = %Integrated{
-        memory: %Memory{},
+        memory: machine_memory,
         program: "program"
       }
 

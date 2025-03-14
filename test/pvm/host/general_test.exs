@@ -1,7 +1,7 @@
 defmodule PVM.Host.GeneralTest do
   use ExUnit.Case
   alias PVM.Host.General
-  alias PVM.{Memory, Registers}
+  alias PVM.{Memory, Registers, PreMemory}
   alias System.State.ServiceAccount
   alias Util.Hash
   import PVM.Constants.HostCallResult
@@ -11,7 +11,7 @@ defmodule PVM.Host.GeneralTest do
   Returns the base memory address used in tests.
   address below this will cause memory read/write to panic.
   """
-  def a_0, do: 0x1_0000
+  def a_0, do: PVM.Memory.Constants.min_allowed_address()
 
   describe "gas/4" do
     setup do
@@ -50,7 +50,7 @@ defmodule PVM.Host.GeneralTest do
 
   describe "out of gas using" do
     setup do
-      m = %Memory{} |> Memory.set_default_access(:write)
+      m = %Memory{}
       value = "value" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       hash = Hash.default(value)
@@ -75,7 +75,12 @@ defmodule PVM.Host.GeneralTest do
 
   describe "lookup/6" do
     setup do
-      memory = %Memory{} |> Memory.set_default_access(:write)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 32, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       value = "value" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       hash = Hash.default(value)
@@ -174,7 +179,7 @@ defmodule PVM.Host.GeneralTest do
       gas: gas
     } do
       # w7 = 2  => use services[2] (none)
-      r = %Registers{r7: 2, r8: a_0()}
+      r = %Registers{r7: 2, r8: a_0(), r9: a_0() + 100}
       none = none()
 
       assert %{
@@ -190,7 +195,7 @@ defmodule PVM.Host.GeneralTest do
       services: services,
       gas: gas
     } do
-      r = %Registers{r7: 1, r8: a_0()}
+      r = %Registers{r7: 1, r8: a_0(), r9: a_0() + 100}
       memory = Memory.set_access(memory, a_0(), 32, nil)
 
       assert %{exit_reason: :panic, registers: %{r7: 1}, memory: ^memory} =
@@ -220,7 +225,12 @@ defmodule PVM.Host.GeneralTest do
 
   describe "read/6" do
     setup do
-      memory = %Memory{} |> Memory.set_default_access(:write)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 32, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
@@ -296,7 +306,11 @@ defmodule PVM.Host.GeneralTest do
       services: services,
       gas: gas
     } do
-      r = %Registers{r7: 2, r8: a_0()}
+      ko = a_0() + 100
+      kz = 28
+      o = a_0() + 200
+
+      r = %Registers{r7: 2, r8: ko, r9: kz, r10: o, r11: 0, r12: 300}
       none = none()
 
       assert %{
@@ -382,24 +396,23 @@ defmodule PVM.Host.GeneralTest do
       }
 
       m =
-        %Memory{}
-        |> Memory.set_default_access(:write)
-        |> Memory.write!(a_0(), key)
-        |> Memory.write!(a_0() + %Memory{}.page_size + 100, value)
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), key)
+        |> PreMemory.write(a_0() + %Memory{}.page_size + 100, value)
+        # |> PreMemory.set_access(a_0(), 32, :write)
+        # |> PreMemory.set_access(a_0() + %Memory{}.page_size, 32, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       {:ok, m: m, c: c, g: g, registers: registers, storage_key: storage_key}
     end
 
     test "returns panic when key memory read fails", %{m: m, c: c, g: g, registers: registers} do
-      m = Memory.set_default_access(m, nil)
-
       assert %{exit_reason: :panic, memory: ^m, context: ^c} =
                General.write(g, registers, m, c, 0)
     end
 
     test "returns panic when value memory read fails", %{m: m, c: c, g: g, registers: registers} do
-      m = Memory.set_access(m, registers.r9, registers.r10, nil)
-
       assert %{exit_reason: :panic, memory: ^m, context: ^c} =
                General.write(g, registers, m, c, 1)
     end
@@ -412,7 +425,11 @@ defmodule PVM.Host.GeneralTest do
       registers: registers
     } do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
-      m = Memory.write!(m, registers.r9, new_value)
+
+      m =
+        Memory.set_access_by_page(m, 16, 2, :write)
+        |> Memory.write!(registers.r9, new_value)
+        |> Memory.set_access_by_page(16, 2, :read)
 
       service_account = %{c | storage: %{storage_key => "b"}}
 
@@ -433,6 +450,7 @@ defmodule PVM.Host.GeneralTest do
       storage_key: storage_key,
       registers: registers
     } do
+      m = Memory.set_access_by_page(m, 16, 1, :read)
       registers = %{registers | r10: 0}
       l = get_in(c, [:storage, storage_key]) |> byte_size()
 
@@ -448,7 +466,11 @@ defmodule PVM.Host.GeneralTest do
 
     test "returns FULL when threshold exceeded", %{m: m, c: c, g: g, registers: registers} do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
-      m = Memory.write!(m, registers.r9, new_value)
+
+      m =
+        Memory.set_access_by_page(m, 16, 2, :write)
+        |> Memory.write!(registers.r9, new_value)
+        |> Memory.set_access_by_page(16, 2, :read)
 
       service_account = %{c | balance: 50}
       full = full()
@@ -464,7 +486,11 @@ defmodule PVM.Host.GeneralTest do
 
   describe "info/6" do
     setup do
-      m = %Memory{} |> Memory.set_default_access(:write)
+      m =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 32, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       service_account = %ServiceAccount{
         code_hash: "code_hash",

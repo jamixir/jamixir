@@ -200,7 +200,7 @@ defmodule PVM.Host.Refine.Internal do
         {:error, _} -> :error
       end
 
-    u = %Memory{} |> Memory.set_default_access(nil)
+    u = %Memory{}
 
     # Find first available machine ID
     n =

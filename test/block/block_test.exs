@@ -175,7 +175,7 @@ defmodule BlockTest do
       Storage.put(Hash.zero(), build(:header, timeslot: 0))
       Application.delete_env(:jamixir, :original_modules)
     end
-
+    @tag :slow
     test "creates a valid fallback block no extrinsics" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
@@ -190,12 +190,12 @@ defmodule BlockTest do
           {state, h}
       end
     end
-
+    @tag :slow
     test "create a valid block passing all key pairs" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
     end
-
+    @tag :slow
     test "create a valid block with env key fallback mode new epoch" do
       %{state: state, key_pairs: [{{priv, _}, pub} | _]} = build(:genesis_state_with_safrole)
 
@@ -223,7 +223,7 @@ defmodule BlockTest do
 
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, t)
     end
-
+    @tag :slow
     test "create a valid block with ticket proofs same epoch" do
       %{state: state, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
@@ -237,7 +237,7 @@ defmodule BlockTest do
           state
       end
     end
-
+    @tag :slow
     test "can't create block ticket proofs from other validator" do
       %{state: state, key_pairs: [{{priv0, _}, pub0} | _]} = build(:genesis_state_with_safrole)
 
@@ -246,7 +246,7 @@ defmodule BlockTest do
 
       {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
     end
-
+    @tag :slow
     test "cant't create block if it doesnt have the author key" do
       %{state: state} = build(:genesis_state_with_safrole)
       {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, 100)

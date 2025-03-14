@@ -1,20 +1,29 @@
 defmodule PVM.Host.Refine.PeekTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers}
+  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, PreMemory}
   import PVM.Constants.HostCallResult
+  import PVM.Memory.Constants
 
-  defp a_0, do: 0x1_0000
+  defp a_0, do: min_allowed_address()
 
   describe "peek/4" do
     setup do
-      memory = %Memory{}
+      memory = PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 1, :write)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
+
       context = %Context{}
       gas = 100
 
-      source_memory = %Memory{}
+
       test_data = String.duplicate("A", 32)
-      {:ok, source_memory} = Memory.write(source_memory, a_0(), test_data)
+      source_memory = PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0(), 1, :read)
+        |> PreMemory.write(a_0(), test_data)
+        |> PreMemory.resolve_overlaps()
+        |> PreMemory.finalize()
 
       machine = %Integrated{
         memory: source_memory,
