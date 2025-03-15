@@ -36,17 +36,15 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(id, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>)
-      when id in [131, 132] do
-    log("Processing proxy ticket")
+  def call(131, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>),
+    do: process_ticket(:proxy, attempt, vrf_proof)
 
-    :ok =
-      Jamixir.NodeAPI.process_ticket(
-        if(id == 131, do: :proxy, else: :validator),
-        attempt,
-        vrf_proof
-      )
+  def call(132, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>),
+    do: process_ticket(:validator, attempt, vrf_proof)
 
+  defp process_ticket(mode, attempt, vrf_proof) do
+    log("Processing #{mode} ticket")
+    :ok = Jamixir.NodeAPI.process_ticket(mode, attempt, vrf_proof)
     <<>>
   end
 
