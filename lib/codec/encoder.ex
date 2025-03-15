@@ -166,6 +166,7 @@ defmodule Codec.Encoder do
 
       # Use byte size plus endianness for integer types
       validator_index: "16-little",
+      core_index: "16-little",
       epoch_index: "32-little",
       timeslot: "32-little",
       service_index: "32-little",
@@ -174,7 +175,7 @@ defmodule Codec.Encoder do
       balance: "64-little",
       gas: "64-little",
       gas_result: "64-little",
-      register_value: "32-little",
+      register: "32-little",
       max_age_timeslot_lookup_anchor: "32-little"
     }
   end

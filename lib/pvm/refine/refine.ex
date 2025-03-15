@@ -31,12 +31,11 @@ defmodule PVM.Refine do
         preimages
       ) do
     work_item = Enum.at(work_package.work_items, work_item_index)
-    %WorkItem{service: ws, code_hash: wc, payload: wy, refine_gas_limit: wg} = work_item
+    %WorkItem{service: service_id, code_hash: wc, payload: wy, refine_gas_limit: wg} = work_item
     px = work_package.context
 
-    with {:ok, service} <- fetch_service(services, ws),
-         {:ok, program} <-
-           fetch_lookup(service, px.timeslot, wc),
+    with {:ok, service} <- fetch_service(services, service_id),
+         {:ok, program} <- fetch_lookup(service, px.timeslot, wc),
          :ok <- validate_code_size(program) do
       f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
         host_call_result =
@@ -47,7 +46,7 @@ defmodule PVM.Refine do
                 registers,
                 memory,
                 context,
-                ws,
+                service_id,
                 services,
                 px.timeslot
               )
@@ -114,8 +113,8 @@ defmodule PVM.Refine do
       end
 
       implied_authorizer = WorkPackage.implied_authorizer(work_package, services)
-      wph = e(work_package) |> h()
-      args = e({ws, wy, wph, px, implied_authorizer})
+      wph = h(e(work_package))
+      args = e({t(service_id), wy, wph, px, implied_authorizer})
 
       {_gas, result, %Refine.Context{e: exports}} =
         ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})

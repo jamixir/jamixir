@@ -18,11 +18,13 @@ defmodule PVM do
     module.do_authorized(p, core, services)
   end
 
-  def do_authorized(p = %WorkPackage{}, core, services) do
+  def do_authorized(p = %WorkPackage{}, core_index, services) do
     pc = WorkPackage.authorization_code(p, services)
 
+    args = e({p, t(core_index)})
+
     {_g, r, nil} =
-      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), e({p, core}), &authorized_f/3, nil)
+      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, &authorized_f/3, nil)
 
     r
   end
@@ -187,7 +189,7 @@ defmodule PVM do
           code,
           10,
           gas_limit,
-          e({timeslot, service_index, vs(transfers)}),
+          e({t(timeslot), t(service_index), vs(transfers)}),
           f,
           service
         )
