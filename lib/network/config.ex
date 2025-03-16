@@ -4,7 +4,7 @@ defmodule Network.Config do
   @default_peer_config [
     init_mode: :initiator,
     host: ~c"::1",
-    port: 9999,
+    port: 9900,
     timeout: 5_000
   ]
 

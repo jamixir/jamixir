@@ -6,7 +6,7 @@ config :jamixir, Jamixir,
   # E
   epoch_length: 12,
   # K
-  max_tickets_pre_extrinsic: 16,
+  max_tickets_pre_extrinsic: 3,
   # N
   tickets_per_validator: 3,
   # P
@@ -18,7 +18,7 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 10
 
-config :logger, level: :none
+config :logger, level: :debug
 
 config :jamixir,
   keys_file: "test/keys/0.json",

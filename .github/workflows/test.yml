@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - docker-run-full-node-github-action
 
 jobs:
   test:
@@ -15,11 +16,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Git for private deps
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+      # - name: Setup Git for private deps
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GH_PAT }}
+      #   run: |
+      #     git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Start SSH agent and add key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Configure Git for SSH-based private repos
         run: |
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global url."ssh://git@github.com/".insteadOf "git@github.com:"
+          git config --global url."ssh://git@github.com/".insteadOf "git://github.com/"
+          git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1

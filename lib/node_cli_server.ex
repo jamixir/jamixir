@@ -23,17 +23,35 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   defp init_jam_state do
-    genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis/genesis.json")
+    genesis_file = Application.get_env(:jamixir, :genesis_file, "/genesis/genesis.json")
     Logger.info("✨ Initializing JAM state from genesis file: #{genesis_file}")
-    {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
-    Storage.put(jam_state)
-    jam_state
+
+    case Codec.State.from_genesis(genesis_file) do
+      {:ok, jam_state} ->
+        Logger.info("Genesis file loaded successfully")
+        Storage.put(jam_state)
+        jam_state
+
+      error ->
+        Logger.error("Failed to load genesis file: #{inspect(error)}")
+        raise "Genesis file could not be loaded!"
+    end
   end
 
   def init_network_listener do
-    port = Application.get_env(:jamixir, :port, 9999)
-    {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
-    server_pid
+    port = String.to_integer(Application.get_env(:jamixir, :port, 9900))
+    Logger.info("📡 Trying to start network listener on port: #{inspect(port)}")
+
+    case PeerSupervisor.start_peer(:listener, "::", port) do
+      {:ok, server_pid} ->
+        Logger.info("[QUIC_PEER] Listening on #{port}")
+        server_pid
+
+      {:error, reason} ->
+        Logger.error("[QUIC_PEER] Failed to start listener on #{port}: #{inspect(reason)}")
+        # Prevent crashing
+        {:stop, reason}
+    end
   end
 
   defp init_storage do

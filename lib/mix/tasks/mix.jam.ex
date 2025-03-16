@@ -10,15 +10,15 @@ defmodule Mix.Tasks.Jam do
     {opts, _, _} = OptionParser.parse(args, strict: @switches)
 
     if keys_file = opts[:keys] do
-      KeyManager.load_keys(keys_file)
+      System.put_env("KEYS_FILE", keys_file)
     end
 
     if genesis_file = opts[:genesis] do
-      Application.put_env(:jamixir, :genesis_file, genesis_file)
+      System.put_env("GENESIS_FILE", genesis_file)
     end
 
     if port = opts[:port] do
-      Application.put_env(:jamixir, :port, port)
+      System.put_env("PORT", Integer.to_string(port))
     end
 
     Application.ensure_all_started(:jamixir)
