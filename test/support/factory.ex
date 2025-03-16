@@ -259,6 +259,10 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def fixed_entropy_pool_factory do
+    %System.State.EntropyPool{n0: Hash.one(), n1: Hash.two(), n2: Hash.three(), n3: Hash.four()}
+  end
+
   # Core Reports Factory
   def core_report_factory do
     %System.State.CoreReport{
