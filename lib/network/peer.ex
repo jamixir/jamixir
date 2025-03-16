@@ -18,7 +18,7 @@ defmodule Network.Peer do
 
   defdelegate distribute_assurance(pid, hash, bitfield, signature), to: Client
 
-  defdelegate distribute_ticket(pid, mode, attempt, vrf_proof), to: Client
+  defdelegate distribute_ticket(pid, mode, epoch, ticket), to: Client
 
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do

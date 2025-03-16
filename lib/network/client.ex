@@ -1,4 +1,5 @@
 defmodule Network.Client do
+  alias Block.Extrinsic.TicketProof
   alias Network.PeerState
   import Quicer.Flags
   import Network.{MessageHandler, Codec, Config}
@@ -39,16 +40,21 @@ defmodule Network.Client do
     send(pid, 141, message)
   end
 
-  def distribute_ticket(p, :proxy, a, v), do: distribute_ticket(p, 131, a, v)
-  def distribute_ticket(p, :validator, a, v), do: distribute_ticket(p, 132, a, v)
+  def distribute_ticket(p, :proxy, epoch, ticket), do: distribute_ticket(p, 131, epoch, ticket)
+
+  def distribute_ticket(p, :validator, epoch, ticket),
+    do: distribute_ticket(p, 132, epoch, ticket)
 
   def distribute_ticket(
         pid,
         mode,
-        attempt,
-        <<_::binary-size(@bandersnatch_proof_size)>> = vrf_proof
+        epoch,
+        %TicketProof{
+          attempt: a,
+          signature: <<_::binary-size(@bandersnatch_proof_size)>> = vrf_proof
+        }
       ) do
-    message = <<attempt>> <> vrf_proof
+    message = <<epoch::32-little>> <> <<a>> <> vrf_proof
     send(pid, mode, message)
   end
 

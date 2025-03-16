@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.TicketProof
   require Logger
 
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
@@ -36,15 +37,19 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(131, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>),
-    do: process_ticket(:proxy, attempt, vrf_proof)
+  def call(131, m), do: process_ticket_message(:proxy, m)
+  def call(132, m), do: process_ticket_message(:validator, m)
 
-  def call(132, <<attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>),
-    do: process_ticket(:validator, attempt, vrf_proof)
+  defp process_ticket_message(
+         mode,
+         <<epoch::32-little, attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>
+       ),
+       do: process_ticket(mode, epoch, attempt, vrf_proof)
 
-  defp process_ticket(mode, attempt, vrf_proof) do
+  defp process_ticket(mode, epoch, attempt, vrf_proof) do
     log("Processing #{mode} ticket")
-    :ok = Jamixir.NodeAPI.process_ticket(mode, attempt, vrf_proof)
+    ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
+    :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
     <<>>
   end
 
