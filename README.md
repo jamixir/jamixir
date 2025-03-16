@@ -8,7 +8,7 @@ Jamixir is the Elixir implementation of the JAM Protocol, as described in the [G
 
 ## Using a docker image
 
-Currently, some of our dependencies are in private repositories. To be able to pull from there, we need enable SSH agent forwarding in local machine before issuing the docker build commands.
+Currently, some of our dependencies are in private repositories. To be able to pull from there, we need to enable SSH agent forwarding in local machine before issuing the docker build commands.
 
 Ensure your SSH agent is running and has the right keys, run this command:
 
@@ -25,6 +25,12 @@ Then run this command to enable Docker's buildkit in your terminal session:
 ```bash
 export DOCKER_BUILDKIT=1
 ```
+Then run these commands:
+
+```bash
+docker build --ssh default -t jamixir .
+docker run -p 9000:9000 jamixir
+```
 
 ## Using docker compose
 The following commands build and run a simulated network of six Jamixir nodes.
@@ -37,7 +43,7 @@ docker compose up
 ## Using development env
 
 ```bash
-mix jam --keys test/keys/0.json
+mix jam --keys test/keys/0.json --genesis genesis/genesis.json --port 9900
 ```
 
 ### How to Run Unit Tests
@@ -48,8 +54,8 @@ mix test
 
 ### How to Run Official Test Vectors
 ```bash
-mix test.tiny  # Runs only tiny size offical test vectors
-mix test.full  # Runs the full size officai test vectors 
+mix test.tiny  # Runs only tiny size official test vectors
+mix test.full  # Runs the full size official test vectors 
 ```
 
 ### How to generate test blocks

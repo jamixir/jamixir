@@ -19,3 +19,8 @@ config :jamixir, Jamixir,
   ticket_submission_end: 10
 
 config :logger, level: :debug
+
+config :jamixir,
+  keys_file: "test/keys/0.json",
+  genesis_file: "genesis/genesis.json",
+  port: "9900"

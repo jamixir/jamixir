@@ -10,7 +10,7 @@ FROM ${BUILDER_IMG} AS builder
 WORKDIR /node
 
 # Set environment variables
-ENV MIX_ENV="prod"
+ENV MIX_ENV="tiny"
 ENV CARGO_HOME=/root/.cargo
 ENV PATH="$CARGO_HOME/bin:$PATH"
 
@@ -47,8 +47,10 @@ RUN --mount=type=ssh \
     mix do deps.get --only $MIX_ENV, deps.compile
 
 
-# Copy node code and compile
-COPY . .
+# Copy node code and 3rd party deps
+COPY . /node/
+
+# Compile and release
 RUN mix compile
 RUN mix release
 
@@ -65,14 +67,21 @@ RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
+ENV KEYS_FILE="/node/keys/0.json"
+ENV GENESIS_FILE="/node/genesis/genesis.json"
+ENV PORT="9000"
 
 WORKDIR /node
-RUN chown nobody /node
+RUN chown -R nobody:nogroup /node
 
-ENV MIX_ENV="prod"
+ENV MIX_ENV="tiny"
 
 # Copy the release built in the builder stage
-COPY --from=builder --chown=nobody:root /node/_build/${MIX_ENV}/rel/jamixir /node/jamixir
+COPY --from=builder --chown=nobody:root /node/test/keys /node/keys
+COPY --from=builder --chown=nobody:root /node/genesis/genesis.json /node/genesis/genesis.json
+COPY --from=builder --chown=nobody:root /node/native /node/native
+COPY --from=builder --chown=nobody:root /node/priv /node/priv
+COPY --from=builder --chown=nobody:root /node/_build/tiny/rel/jamixir /node/jamixir
 
 USER nobody
 
