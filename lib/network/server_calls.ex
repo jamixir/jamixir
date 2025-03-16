@@ -40,19 +40,6 @@ defmodule Network.ServerCalls do
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
 
-  defp process_ticket_message(
-         mode,
-         <<epoch::32-little, attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>
-       ),
-       do: process_ticket(mode, epoch, attempt, vrf_proof)
-
-  defp process_ticket(mode, epoch, attempt, vrf_proof) do
-    log("Processing #{mode} ticket")
-    ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
-    :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
-    <<>>
-  end
-
   def call(0, _message) do
     log("Processing block announcement")
     # TODO: Implement block processing
@@ -65,5 +52,18 @@ defmodule Network.ServerCalls do
     )
 
     message
+  end
+
+  defp process_ticket_message(
+         mode,
+         <<epoch::32-little, attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>
+       ),
+       do: process_ticket(mode, epoch, attempt, vrf_proof)
+
+  defp process_ticket(mode, epoch, attempt, vrf_proof) do
+    log("Processing #{mode} ticket")
+    ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
+    :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
+    <<>>
   end
 end
