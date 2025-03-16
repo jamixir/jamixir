@@ -23,6 +23,7 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback process_ticket(:proxy | :validator, Types.epoch_index(), TicketProof.t()) ::
               :ok | {:error, any}
+  @callback save_verdict(Block.Extrinsic.Disputes.Verdict.t()) :: :ok | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -41,6 +42,8 @@ defmodule Jamixir.NodeAPI do
 
   def process_ticket(mode, epoch, ticket),
     do: impl().process_ticket(mode, epoch, ticket)
+
+  def save_verdict(verdict), do: impl().save_verdict(verdict)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.Disputes.{Judgement, Verdict}
   alias Block.Extrinsic.TicketProof
   require Logger
   use Codec.Encoder
@@ -44,6 +45,27 @@ defmodule Network.ServerCalls do
 
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
+
+  def call(
+        145,
+        <<epoch_index::32-little, validator_index::16-little, vote::8,
+          work_report_hash::binary-size(@hash_size), signature::binary-size(@signature_size)>>
+      ) do
+    verdict = %Verdict{
+      epoch_index: epoch_index,
+      judgements: [
+        %Judgement{
+          vote: vote,
+          validator_index: validator_index,
+          signature: signature
+        }
+      ],
+      work_report_hash: work_report_hash
+    }
+
+    Jamixir.NodeAPI.save_verdict(verdict)
+    <<>>
+  end
 
   def call(0, _message) do
     log("Processing block announcement")

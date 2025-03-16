@@ -1,5 +1,5 @@
 defmodule Network.Client do
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.PeerState
   import Quicer.Flags
   import Network.{MessageHandler, Codec, Config}
@@ -64,6 +64,26 @@ defmodule Network.Client do
     hash = h(encoded_header)
     message = encoded_header <> hash <> <<slot::32>>
     GenServer.cast(pid, {:announce_block, message, hash, slot})
+  end
+
+  alias Block.Extrinsic.Disputes.Verdict
+
+  def announce_verdict(pid, %Verdict{
+        work_report_hash: <<work_report_hash::binary-size(@hash_size)>>,
+        epoch_index: epoch_index,
+        judgements: [
+          %Judgement{
+            vote: vote,
+            validator_index: validator_index,
+            signature: <<signature::binary-size(@signature_size)>>
+          }
+        ]
+      }) do
+    message =
+      <<epoch_index::32-little>> <>
+        <<validator_index::16-little>> <> <<vote::8>> <> work_report_hash <> signature
+
+    send(pid, 145, message)
   end
 
   def handle_cast(
