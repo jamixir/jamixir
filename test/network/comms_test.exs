@@ -104,14 +104,14 @@ defmodule CommsTest do
 
   describe "distribute_ticket/3" do
     test "distributes proxy ticket", %{client: client} do
-      ticket = %TicketProof{attempt: 0, signature: <<9::@bandersnatch_proof_size*8>>}
+      ticket = %TicketProof{attempt: 0, signature: <<9::m(bandersnatch_proof)>>}
       Jamixir.NodeAPI.Mock |> expect(:process_ticket, 1, fn :proxy, 77, ^ticket -> :ok end)
       {:ok, ""} = Peer.distribute_ticket(client, :proxy, 77, ticket)
       verify!()
     end
 
     test "distributes validator ticket", %{client: client} do
-      ticket = %TicketProof{attempt: 1, signature: <<10::@bandersnatch_proof_size*8>>}
+      ticket = %TicketProof{attempt: 1, signature: <<10::m(bandersnatch_proof)>>}
 
       Jamixir.NodeAPI.Mock
       |> expect(:process_ticket, 1, fn :validator, 77, ^ticket -> :ok end)

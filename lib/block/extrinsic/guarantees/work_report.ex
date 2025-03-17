@@ -348,14 +348,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  use Codec.Decoder
+  use Codec.{Decoder, Encoder}
   use Sizes
 
   def decode(bin) do
     {specification, bin} = AvailabilitySpecification.decode(bin)
     {refinement_context, bin} = RefinementContext.decode(bin)
     <<core_index::16-little, bin::binary>> = bin
-    <<authorizer_hash::binary-size(@hash_size), bin::binary>> = bin
+    <<authorizer_hash::b(hash), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
     {results, rest} = VariableSize.decode(bin, WorkResult)

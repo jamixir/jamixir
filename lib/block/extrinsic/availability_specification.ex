@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic.AvailabilitySpecification do
-  alias Util.Collections
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Util.{Hash, MerkleTree}
+  alias Util.{Collections, Hash, MerkleTree}
+  use Codec.Encoder
 
   @type t :: %__MODULE__{
           # h: hash of the work-package
@@ -89,8 +89,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   defp erasure_code_chunk(bin, _n), do: ErasureCoding.erasure_code(bin)
 
   def decode(bin) do
-    <<work_package_hash::binary-size(@hash_size), length::32-little,
-      erasure_root::binary-size(@hash_size), exports_root::binary-size(@hash_size),
+    <<work_package_hash::b(hash), length::32-little, erasure_root::b(hash), exports_root::b(hash),
       segment_count::16-little, rest::binary>> = bin
 
     {%__MODULE__{

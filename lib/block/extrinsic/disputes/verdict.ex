@@ -31,14 +31,13 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     end
   end
 
-  use Sizes
-  use Codec.Decoder
+  use Codec.{Decoder, Encoder}
 
   def decode(bin) do
     judgements_count = div(2 * Constants.validator_count(), 3) + 1
     judgements_size = Judgement.size() * judgements_count
 
-    <<work_report_hash::binary-size(@hash_size), epoch_index::32-little,
+    <<work_report_hash::b(hash), epoch_index::m(epoch),
       judgements_bin::binary-size(judgements_size), rest::binary>> = bin
 
     {judgements, _} =

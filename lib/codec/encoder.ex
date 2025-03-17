@@ -153,30 +153,31 @@ defmodule Codec.Encoder do
   def binary_registry do
     %{
       # Use byte size * 8 for binary types
-      hash: "#{@hash_size * 8}",
-      signature: "#{@signature_size * 8}",
-      ed25519_key: "#{@hash_size * 8}",
-      ed25519_signature: "#{@signature_size * 8}",
-      bandersnatch_key: "#{@hash_size * 8}",
-      bandersnatch_signature: "#{Sizes.bandersnatch_signature() * 8}",
-      bandersnatch_proof: "#{Sizes.bandersnatch_proof() * 8}",
-      export_segment: "#{Sizes.export_segment() * 8}",
-      bitfield: "#{Sizes.bitfield() * 8}",
-      merkle_root: "#{Sizes.merkle_root() * 8}",
+      hash: @hash_size,
+      signature: @signature_size,
+      ed25519_key: @hash_size,
+      ed25519_signature: @signature_size,
+      bandersnatch_key: @hash_size,
+      bandersnatch_signature: Sizes.bandersnatch_signature(),
+      bandersnatch_proof: @bandersnatch_proof_size,
+      export_segment: Sizes.export_segment(),
+      bitfield: Sizes.bitfield(),
+      merkle_root: Sizes.merkle_root(),
 
       # Use byte size plus endianness for integer types
-      validator_index: "16-little",
-      core_index: "16-little",
-      epoch_index: "32-little",
-      timeslot: "32-little",
-      service_index: "32-little",
-      service_id: "32-little",
-      service: "32-little",
-      balance: "64-little",
-      gas: "64-little",
-      gas_result: "64-little",
-      register: "64-little",
-      max_age_timeslot_lookup_anchor: "32-little"
+      validator_index: {16, :little},
+      core_index: {16, :little},
+      epoch: {32, :little},
+      epoch_index: {32, :little},
+      timeslot: {32, :little},
+      service_index: {32, :little},
+      service_id: {32, :little},
+      service: {32, :little},
+      balance: {64, :little},
+      gas: {64, :little},
+      gas_result: {64, :little},
+      register: {64, :little},
+      max_age_timeslot_lookup_anchor: {32, :little}
     }
   end
 
@@ -188,28 +189,16 @@ defmodule Codec.Encoder do
         name when is_atom(name) -> name
       end
 
-    # quote do
     case Map.get(binary_registry(), var_name) do
-      nil ->
-        # Not in registry, return as is
-        var
+      nil -> var
+      {size, :little} -> quote(do: unquote(size) - little)
+      size -> quote(do: unquote(size) * 8)
+    end
+  end
 
-      encoding when is_binary(encoding) ->
-        if String.contains?(encoding, "-") do
-          # For integer types with endianness (like "32-little")
-          [size, endianness] = String.split(encoding, "-")
-          size_int = String.to_integer(size)
-
-          case endianness do
-            "little" -> quote(do: size(unquote(size_int)) - little)
-            "big" -> quote(do: size(unquote(size_int)) - big)
-            _ -> quote(do: size(unquote(size_int)))
-          end
-        else
-          # For binary types with just size (like "256")
-          size_int = String.to_integer(encoding)
-          quote(do: size(unquote(size_int)))
-        end
+  defmacro b(var) do
+    quote do
+      binary - m(unquote(var))
     end
   end
 
