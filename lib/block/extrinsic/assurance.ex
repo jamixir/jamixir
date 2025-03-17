@@ -122,11 +122,8 @@ defmodule Block.Extrinsic.Assurance do
   # defimpl Decodable do
   def decode(bin) do
     # this size needs to be defined in runtime because of mocked core count
-    bitfield_size = Sizes.bitfield()
-
-    <<hash::binary-size(@hash_size), bitfield::binary-size(bitfield_size),
-      validator_index::m(validator_index), signature::binary-size(@signature_size),
-      rest::binary>> = bin
+    <<hash::b(hash), bitfield::b(bitfield), validator_index::m(validator_index),
+      signature::b(signature), rest::binary>> = bin
 
     {
       %__MODULE__{

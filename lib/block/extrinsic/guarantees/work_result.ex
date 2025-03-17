@@ -70,9 +70,8 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   use Codec.Decoder
 
   def decode(bin) do
-    <<service::service(), code_hash::binary-size(@hash_size),
-      payload_hash::binary-size(@hash_size), gas_ratio::64-little, error_code::8,
-      temp_rest::binary>> = bin
+    <<service::service(), code_hash::b(hash), payload_hash::b(hash), gas_ratio::m(gas),
+      error_code::8, temp_rest::binary>> = bin
 
     {result, rest} =
       case error_code do

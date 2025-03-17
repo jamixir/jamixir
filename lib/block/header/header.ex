@@ -155,16 +155,15 @@ defmodule Block.Header do
   end
 
   use Sizes
-  use Codec.Decoder
+  use Codec.{Decoder, Encoder}
 
   def unsigned_decode(bin) do
-    <<parent_hash::binary-size(@hash_size), prior_state_root::binary-size(@hash_size),
-      extrinsic_hash::binary-size(@hash_size), timeslot::m(timeslot), bin::binary>> = bin
+    <<parent_hash::b(hash), prior_state_root::b(hash), extrinsic_hash::b(hash),
+      timeslot::m(timeslot), bin::binary>> = bin
 
     {epoch_mark, bin} =
       NilDiscriminator.decode(bin, fn epoch_mark_bin ->
-        <<entropy::binary-size(@hash_size), tickets_entropy::binary-size(@hash_size),
-          rest::binary>> = epoch_mark_bin
+        <<entropy::b(hash), tickets_entropy::b(hash), rest::binary>> = epoch_mark_bin
 
         {keys, cont} = decode_list(rest, :hash, Constants.validator_count())
 

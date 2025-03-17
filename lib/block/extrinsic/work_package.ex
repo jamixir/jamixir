@@ -147,7 +147,7 @@ defmodule Block.Extrinsic.WorkPackage do
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
     <<service::service(), bin::binary>> = bin
-    <<authorization_code_hash::binary-size(@hash_size), bin::binary>> = bin
+    <<authorization_code_hash::b(hash), bin::binary>> = bin
     {parameterization_blob, bin} = VariableSize.decode(bin, :binary)
     {context, bin} = RefinementContext.decode(bin)
     {work_items, rest} = VariableSize.decode(bin, WorkItem)

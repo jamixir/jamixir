@@ -27,12 +27,12 @@ defmodule Block.Extrinsic.Disputes.Fault do
     end
   end
 
-  use Sizes
+  use Codec.Encoder
 
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Fault.t(), binary()}
   def decode(bin) do
-    <<work_report_hash::binary-size(@hash_size), vote::binary-size(1),
-      key::binary-size(@hash_size), signature::binary-size(@signature_size), rest::binary>> = bin
+    <<work_report_hash::b(hash), vote::binary-size(1), key::b(hash), signature::b(signature),
+      rest::binary>> = bin
 
     {
       %__MODULE__{

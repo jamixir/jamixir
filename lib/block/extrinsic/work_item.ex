@@ -82,7 +82,7 @@ defmodule Block.Extrinsic.WorkItem do
 
   def decode(bin) do
     <<service::service(), bin::binary>> = bin
-    <<code_hash::binary-size(@hash_size), bin::binary>> = bin
+    <<code_hash::b(hash), bin::binary>> = bin
     {payload, bin} = VariableSize.decode(bin, :binary)
     <<refine_gas_limit::64-little, bin::binary>> = bin
     <<accumulate_gas_limit::64-little, bin::binary>> = bin

@@ -17,13 +17,10 @@ defmodule Codec.NilDiscriminator do
     end
   end
 
-  use Sizes
+  use Codec.Encoder
 
   def decode(bin, :hash) do
-    decode(bin, fn b ->
-      <<p::binary-size(@hash_size), r::binary>> = b
-      {p, r}
-    end)
+    decode(bin, fn <<p::b(hash), r::binary>> -> {p, r} end)
   end
 
   def decode(bin, callback) do

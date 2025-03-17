@@ -54,7 +54,7 @@ defmodule Network.Client do
         epoch,
         %TicketProof{
           attempt: a,
-          signature: <<_::binary-size(@bandersnatch_proof_size)>> = vrf_proof
+          signature: <<_::b(bandersnatch_proof)>> = vrf_proof
         }
       ) do
     message = <<epoch::32-little>> <> <<a>> <> vrf_proof

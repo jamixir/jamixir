@@ -14,11 +14,7 @@ defmodule Network.ServerCalls do
 
   use Sizes
 
-  def call(
-        141,
-        <<hash::binary-size(@hash_size), bitfield::binary-size(@bitfield_size),
-          signature::binary-size(@signature_size)>>
-      ) do
+  def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
     log("Received assurance")
 
     assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
@@ -27,10 +23,7 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
-  def call(
-        142,
-        <<service_id::service(), hash::binary-size(@hash_size), length::32-little>> = _message
-      ) do
+  def call(142, <<service_id::service(), hash::b(hash), length::32-little>> = _message) do
     log("Receiving Preimage")
     :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
     <<>>
@@ -51,7 +44,7 @@ defmodule Network.ServerCalls do
   def call(
         145,
         <<epoch_index::m(epoch_index), validator_index::m(validator_index), vote::8,
-          hash::binary-size(@hash_size), signature::binary-size(@signature_size)>>
+          hash::b(hash), signature::b(signature)>>
       ) do
     judgement = %Judgement{
       vote: vote,
@@ -79,7 +72,7 @@ defmodule Network.ServerCalls do
 
   defp process_ticket_message(
          mode,
-         <<epoch::32-little, attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>
+         <<epoch::m(epoch), attempt::8, vrf_proof::b(bandersnatch_proof)>>
        ),
        do: process_ticket(mode, epoch, attempt, vrf_proof)
 
