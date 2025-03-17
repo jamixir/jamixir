@@ -4,6 +4,7 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
+  alias Block.Extrinsic.TicketProof
   alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
   use Sizes
@@ -92,6 +93,25 @@ defmodule CommsTest do
       |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:error, :not_found} end)
 
       {:error, :not_found} = Peer.get_preimage(client, <<45::hash()>>)
+      verify!()
+    end
+  end
+
+  describe "distribute_ticket/3" do
+    test "distributes proxy ticket", %{client: client} do
+      ticket = %TicketProof{attempt: 0, signature: <<9::@bandersnatch_proof_size*8>>}
+      Jamixir.NodeAPI.Mock |> expect(:process_ticket, 1, fn :proxy, 77, ^ticket -> :ok end)
+      {:ok, ""} = Peer.distribute_ticket(client, :proxy, 77, ticket)
+      verify!()
+    end
+
+    test "distributes validator ticket", %{client: client} do
+      ticket = %TicketProof{attempt: 1, signature: <<10::@bandersnatch_proof_size*8>>}
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:process_ticket, 1, fn :validator, 77, ^ticket -> :ok end)
+
+      {:ok, ""} = Peer.distribute_ticket(client, :validator, 77, ticket)
       verify!()
     end
   end

@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.TicketProof
   require Logger
   use Codec.Encoder
 
@@ -41,6 +42,9 @@ defmodule Network.ServerCalls do
     end
   end
 
+  def call(131, m), do: process_ticket_message(:proxy, m)
+  def call(132, m), do: process_ticket_message(:validator, m)
+
   def call(0, _message) do
     log("Processing block announcement")
     # TODO: Implement block processing
@@ -49,9 +53,22 @@ defmodule Network.ServerCalls do
 
   def call(protocol_id, message) do
     Logger.warning(
-      "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)}"
+      "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)} of size #{byte_size(message)}"
     )
 
     message
+  end
+
+  defp process_ticket_message(
+         mode,
+         <<epoch::32-little, attempt::8, vrf_proof::binary-size(@bandersnatch_proof_size)>>
+       ),
+       do: process_ticket(mode, epoch, attempt, vrf_proof)
+
+  defp process_ticket(mode, epoch, attempt, vrf_proof) do
+    log("Processing #{mode} ticket")
+    ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
+    :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
+    <<>>
   end
 end
