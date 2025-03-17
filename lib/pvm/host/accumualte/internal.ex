@@ -19,7 +19,7 @@ defmodule PVM.Host.Accumulate.Internal do
       case Memory.read(memory, o, 12 * n) do
         {:ok, data} ->
           for <<chunk::binary-size(12) <- data>>, into: %{} do
-            <<service::32-little, value::64-little>> = chunk
+            <<service::service(), value::64-little>> = chunk
             {service, value}
           end
 
@@ -342,7 +342,7 @@ defmodule PVM.Host.Accumulate.Internal do
         h == :error ->
           {:panic, registers.r7, x}
 
-        service == :error or service.code_hash != <<x.service::32-little>> ->
+        service == :error or service.code_hash != t(x.service) ->
           {:continue, who(), x}
 
         true ->

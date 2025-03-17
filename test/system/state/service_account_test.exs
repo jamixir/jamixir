@@ -40,7 +40,7 @@ defmodule System.State.ServiceAccountTest do
 
   describe "code/1" do
     test "return nil value when code does not exist", %{sa: sa} do
-      assert ServiceAccount.code(%{sa | code_hash: <<4::256>>}) == nil
+      assert ServiceAccount.code(%{sa | code_hash: Hash.four()}) == nil
     end
 
     test "return code when it exists in preimage storage p", %{sa: sa} do

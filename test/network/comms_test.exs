@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  use Codec.Encoder
   import Mox
   import Jamixir.Factory
   require Logger
@@ -57,18 +58,18 @@ defmodule CommsTest do
 
   describe "announce_preimage/4" do
     test "announces preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::256>>, 1 -> :ok end)
-      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::256>>, 1)
+      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::hash()>>, 1 -> :ok end)
+      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::hash()>>, 1)
       verify!()
     end
   end
 
   describe "distribute_assurance/4" do
     test "distributes assurance", %{client: client} do
-      bitfield = <<999::@bitfield_size*8>>
+      bitfield = <<999::m(bitfield)>>
       hash = Util.Hash.random()
-      sign = <<123::@signature_size*8>>
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn _, _, _ -> :ok end)
+      sign = <<123::m(signature)>>
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^hash, ^bitfield, ^sign -> :ok end)
 
       {:ok, ""} = Peer.distribute_assurance(client, hash, bitfield, sign)
 
@@ -78,15 +79,19 @@ defmodule CommsTest do
 
   describe "get_preimage/2" do
     test "get existing preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:get_preimage, 1, fn <<45::256>> -> {:ok, <<1, 2, 3>>} end)
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:ok, <<1, 2, 3>>} end)
+
       Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3>> -> :ok end)
-      :ok = Peer.get_preimage(client, <<45::256>>)
+      :ok = Peer.get_preimage(client, <<45::hash()>>)
       verify!()
     end
 
     test "get unexisting preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:get_preimage, 1, fn <<45::256>> -> {:error, :not_found} end)
-      {:error, :not_found} = Peer.get_preimage(client, <<45::256>>)
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:error, :not_found} end)
+
+      {:error, :not_found} = Peer.get_preimage(client, <<45::hash()>>)
       verify!()
     end
   end

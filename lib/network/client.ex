@@ -21,7 +21,7 @@ defmodule Network.Client do
   end
 
   def announce_preimage(pid, service_id, hash, length) do
-    message = <<service_id::32-little>> <> hash <> <<length::32-little>>
+    message = <<service_id::m(service_id)>> <> hash <> <<length::32-little>>
     send(pid, 142, message)
   end
 

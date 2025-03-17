@@ -339,7 +339,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       e({
         wr.specification,
         wr.refinement_context,
-        e_le(wr.core_index, 2),
+        t(wr.core_index),
         wr.authorizer_hash,
         vs(wr.output),
         wr.segment_root_lookup,

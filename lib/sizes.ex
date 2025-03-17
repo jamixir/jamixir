@@ -19,6 +19,8 @@ defmodule Sizes do
       @validator_index_size 2
       @export_segment_size Sizes.export_segment()
       @max_work_items Constants.max_work_items()
+      @service_index_size 4
+      @timeslot_size 4
     end
   end
 end

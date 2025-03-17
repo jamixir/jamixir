@@ -140,7 +140,7 @@ defmodule System.State.RecentHistory do
     MapSet.to_list(map)
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.map(fn {service, hash} ->
-      <<service::32-little, hash::binary>>
+      <<service::service(), hash::binary>>
     end)
   end
 

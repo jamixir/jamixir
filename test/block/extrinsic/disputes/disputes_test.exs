@@ -6,6 +6,7 @@ defmodule Block.Extrinsic.Disputes.Test do
   alias Util.{Hash, Time}
   import Jamixir.Factory
   use Sizes
+  use Codec.Encoder
 
   setup_all do
     # Generate and sort key pairs
@@ -70,9 +71,9 @@ defmodule Block.Extrinsic.Disputes.Test do
           Error.unsorted_verdicts(),
           %Disputes{
             verdicts: [
-              build(:verdict, work_report_hash: <<0xCC::256>>),
-              build(:verdict, work_report_hash: <<0xBB::256>>),
-              build(:verdict, work_report_hash: <<0xAA::256>>)
+              build(:verdict, work_report_hash: <<0xCC::hash()>>),
+              build(:verdict, work_report_hash: <<0xBB::hash()>>),
+              build(:verdict, work_report_hash: <<0xAA::hash()>>)
             ]
           }
         },

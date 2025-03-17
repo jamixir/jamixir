@@ -140,10 +140,94 @@ defmodule Codec.Encoder do
   defmacro __using__(_) do
     quote do
       alias Codec.VariableSize
+      import Codec.Encoder
       def e(value), do: Codec.Encoder.encode(value)
       def e_le(value, l), do: Codec.Encoder.encode_le(value, l)
       def vs(value), do: VariableSize.new(value)
       def h(value), do: Hash.default(value)
+    end
+  end
+
+  use Sizes
+
+  def binary_registry do
+    %{
+      # Use byte size * 8 for binary types
+      hash: "#{@hash_size * 8}",
+      signature: "#{@signature_size * 8}",
+      ed25519_key: "#{@hash_size * 8}",
+      ed25519_signature: "#{@signature_size * 8}",
+      bandersnatch_key: "#{@hash_size * 8}",
+      bandersnatch_signature: "#{Sizes.bandersnatch_signature() * 8}",
+      bandersnatch_proof: "#{Sizes.bandersnatch_proof() * 8}",
+      export_segment: "#{Sizes.export_segment() * 8}",
+      bitfield: "#{Sizes.bitfield() * 8}",
+      merkle_root: "#{Sizes.merkle_root() * 8}",
+
+      # Use byte size plus endianness for integer types
+      validator_index: "16-little",
+      core_index: "16-little",
+      epoch_index: "32-little",
+      timeslot: "32-little",
+      service_index: "32-little",
+      service_id: "32-little",
+      service: "32-little",
+      balance: "64-little",
+      gas: "64-little",
+      gas_result: "64-little",
+      register: "64-little",
+      max_age_timeslot_lookup_anchor: "32-little"
+    }
+  end
+
+  defmacro m(var) do
+    var_name =
+      case var do
+        {{:., _, [{_, _, _}, name]}, _, []} when is_atom(name) -> name
+        {name, _, _} -> name
+        name when is_atom(name) -> name
+      end
+
+    # quote do
+    case Map.get(binary_registry(), var_name) do
+      nil ->
+        # Not in registry, return as is
+        var
+
+      encoding when is_binary(encoding) ->
+        if String.contains?(encoding, "-") do
+          # For integer types with endianness (like "32-little")
+          [size, endianness] = String.split(encoding, "-")
+          size_int = String.to_integer(size)
+
+          case endianness do
+            "little" -> quote(do: size(unquote(size_int)) - little)
+            "big" -> quote(do: size(unquote(size_int)) - big)
+            _ -> quote(do: size(unquote(size_int)))
+          end
+        else
+          # For binary types with just size (like "256")
+          size_int = String.to_integer(encoding)
+          quote(do: size(unquote(size_int)))
+        end
+    end
+  end
+
+  defmacro t(var) do
+    quote do
+      <<unquote(var)::m(unquote(var))>>
+    end
+  end
+
+  defmacro hash do
+    quote do
+      m(hash)
+    end
+  end
+
+  defmacro service do
+    quote do
+      m(service)
     end
   end
 end

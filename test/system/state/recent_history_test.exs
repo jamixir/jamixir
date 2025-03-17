@@ -173,12 +173,12 @@ defmodule RecentHistoryTest do
     test "correctly updates RecentHistory when list is full" do
       # Create distinct recent blocks with unique work_reports_hashes for identification
       blocks =
-        for i <- 1..8 do
+        for hash <- 1..8 do
           %RecentHistory.RecentBlock{
-            header_hash: <<i::256>>,
-            accumulated_result_mmr: [<<i::256>>],
-            state_root: <<i::256>>,
-            work_report_hashes: %{<<i::256>> => Hash.zero()}
+            header_hash: t(hash),
+            accumulated_result_mmr: [t(hash)],
+            state_root: t(hash),
+            work_report_hashes: %{t(hash) => Hash.zero()}
           }
         end
 
@@ -189,7 +189,7 @@ defmodule RecentHistoryTest do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{
-            work_package_hash: <<9::256>>,
+            work_package_hash: <<9::hash()>>,
             exports_root: Hash.five()
           }
         }
@@ -212,14 +212,14 @@ defmodule RecentHistoryTest do
       # Verify that the oldest block was removed (i.e., the block with work_report_hashes == [Hash.one()])
       assert Enum.at(result.blocks, 0).work_report_hashes == %{Hash.two() => Hash.zero()}
 
-      # Verify that the newest block was added (i.e., the block with work_report_hashes == [<<9::256>>])
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::256>> => Hash.five()}
+      # Verify that the newest block was added (i.e., the block with work_report_hashes == [<<9::hash()>>])
+      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::hash()>> => Hash.five()}
     end
 
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
       beefy_commitment =
-        BeefyCommitmentMap.new([{1, <<11::256>>}, {2, <<22::256>>}])
+        BeefyCommitmentMap.new([{1, <<11::hash()>>}, {2, <<22::hash()>>}])
 
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
@@ -290,7 +290,7 @@ defmodule RecentHistoryTest do
           %Header{},
           %RecentHistory{},
           [guarantee],
-          BeefyCommitmentMap.new([{2, <<5::256>>}])
+          BeefyCommitmentMap.new([{2, Hash.five()}])
         )
 
       # Verify that the state root in the newly added block is all zeros
@@ -342,33 +342,33 @@ defmodule RecentHistoryTest do
       # Add assertions to verify the result
       assert block1 == %RecentBlock{
                header_hash:
-                 <<0x530EF4636FEDD498E99C7601581271894A53E965E901E8FA49581E525F165DAE::256>>,
+                 <<0x530EF4636FEDD498E99C7601581271894A53E965E901E8FA49581E525F165DAE::hash()>>,
                accumulated_result_mmr: [
-                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::256>>
+                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>
                ],
                state_root:
-                 <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::256>>,
+                 <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::hash()>>,
                work_report_hashes: %{
-                 <<0x016CB55EB7B84E0D495D40832C7238965BAEB468932C415DC2CEFFE0AFB039E5::256>> =>
-                   <<0x935F6DFEF36FA06E10A9BA820F933611C05C06A207B07141FE8D87465870C11C::256>>,
-                 <<0x76BCB24901299C331F0CA7342F4874F19B213EE72DF613D50699E7E25EDB82A6::256>> =>
-                   <<0xC825D16B7325CA90287123BD149D47843C999CE686ED51EAF8592DD2759272E3::256>>
+                 <<0x016CB55EB7B84E0D495D40832C7238965BAEB468932C415DC2CEFFE0AFB039E5::hash()>> =>
+                   <<0x935F6DFEF36FA06E10A9BA820F933611C05C06A207B07141FE8D87465870C11C::hash()>>,
+                 <<0x76BCB24901299C331F0CA7342F4874F19B213EE72DF613D50699E7E25EDB82A6::hash()>> =>
+                   <<0xC825D16B7325CA90287123BD149D47843C999CE686ED51EAF8592DD2759272E3::hash()>>
                }
              }
 
       # Check second block
       assert block2 == %RecentBlock{
                header_hash:
-                 <<0x241D129C6EDC2114E6DFBA7D556F7F7C66399B55CEEC3078A53D44C752BA7E9A::256>>,
+                 <<0x241D129C6EDC2114E6DFBA7D556F7F7C66399B55CEEC3078A53D44C752BA7E9A::hash()>>,
                accumulated_result_mmr: [
                  nil,
-                 <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::256>>
+                 <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::hash()>>
                ],
                state_root:
-                 <<0x0000000000000000000000000000000000000000000000000000000000000000::256>>,
+                 <<0x0000000000000000000000000000000000000000000000000000000000000000::hash()>>,
                work_report_hashes: %{
-                 <<0x3CC8D8C94E7B3EE01E678C63FD6B5DB894FC807DFF7FE10A11AB41E70194894D::256>> =>
-                   <<0xC0EDFE377D20B9F4ED7D9DF9511EF904C87E24467364F0F7F75F20CFE90DD8FB::256>>
+                 <<0x3CC8D8C94E7B3EE01E678C63FD6B5DB894FC807DFF7FE10A11AB41E70194894D::hash()>> =>
+                   <<0xC0EDFE377D20B9F4ED7D9DF9511EF904C87E24467364F0F7F75F20CFE90DD8FB::hash()>>
                }
              }
     end

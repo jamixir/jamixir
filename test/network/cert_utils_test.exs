@@ -3,6 +3,7 @@ defmodule Network.CertUtilsTest do
   use ExUnit.Case
 
   alias Network.CertUtils
+  alias Util.Hash
 
   describe "create valid certificate" do
     test "generate_self_signed_certificate" do
@@ -38,7 +39,7 @@ defmodule Network.CertUtilsTest do
   end
 
   def script do
-    {p, k} = :crypto.generate_key(:eddsa, :ed25519, <<0::256>>)
+    {p, k} = :crypto.generate_key(:eddsa, :ed25519, Hash.zero())
     {:ok, cert} = CertUtils.generate_self_signed_certificate(k)
     cert_key = CertUtils.cert_key(k, p)
     IO.puts(X509.PrivateKey.to_pem(cert_key))

@@ -384,7 +384,7 @@ defmodule PVM.Host.GeneralTest do
     setup do
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(28, "\0")
-      storage_key = Hash.default(<<1::32-little>> <> key)
+      storage_key = Hash.default(<<1::service()>> <> key)
       c = %ServiceAccount{storage: %{storage_key => value}, balance: 2000}
       g = 100
 

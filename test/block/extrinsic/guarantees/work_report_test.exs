@@ -1,5 +1,6 @@
 defmodule WorkReportTest do
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
@@ -8,7 +9,6 @@ defmodule WorkReportTest do
   alias System.State.Ready
   alias System.State.ServiceAccount
   alias Util.{Hash, Hex}
-  use Codec.Encoder
   import Mox
 
   setup_all do
@@ -59,7 +59,7 @@ defmodule WorkReportTest do
     test "returns false when segment_root_lookup has more than 8 entries" do
       invalid_wr =
         build(:work_report,
-          segment_root_lookup: for(i <- 1..9, into: %{}, do: {<<i::256>>, <<i::256>>})
+          segment_root_lookup: for(i <- 1..9, into: %{}, do: {<<i::hash()>>, <<i::hash()>>})
         )
 
       refute WorkReport.valid_size?(invalid_wr)
@@ -345,7 +345,7 @@ defmodule WorkReportTest do
         for i <- 1..4 do
           build(:work_report,
             core_index: i,
-            specification: %{work_package_hash: <<i::256>>, exports_root: <<i::256>>},
+            specification: %{work_package_hash: <<i::hash()>>, exports_root: <<i::hash()>>},
             refinement_context: %{prerequisite: MapSet.new()},
             segment_root_lookup: %{}
           )

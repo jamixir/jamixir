@@ -77,7 +77,7 @@ defmodule PVM.Host.General.Internal do
 
     storage_key =
       try do
-        (<<s_star::32-little>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
+        (<<s_star::service()>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
       rescue
         _ -> :error
       end
@@ -161,9 +161,9 @@ defmodule PVM.Host.General.Internal do
     }
   end
 
-  defp read_storage_key(memory, ko, kz, service_index) do
+  defp read_storage_key(memory, ko, kz, service_id) do
     try do
-      (<<service_index::32-little>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
+      (t(service_id) <> Memory.read!(memory, ko, kz)) |> Hash.default()
     rescue
       _ -> :error
     end
@@ -225,6 +225,4 @@ defmodule PVM.Host.General.Internal do
       context: context
     }
   end
-
-
 end

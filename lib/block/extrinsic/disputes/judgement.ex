@@ -1,4 +1,7 @@
 defmodule Block.Extrinsic.Disputes.Judgement do
+  use Sizes
+  use Codec.{Decoder, Encoder}
+
   @moduledoc """
   Formula (10.2) v0.6.2
   """
@@ -23,19 +26,13 @@ defmodule Block.Extrinsic.Disputes.Judgement do
     use Sizes
 
     def encode(j = %Block.Extrinsic.Disputes.Judgement{}) do
-      e(
-        {if(j.vote, do: 1, else: 0), <<j.validator_index::8*@validator_index_size-little>>,
-         j.signature}
-      )
+      e({if(j.vote, do: 1, else: 0), t(j.validator_index), j.signature})
     end
   end
 
-  use Sizes
-  use Codec.Decoder
-
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Judgement.t(), binary()}
   def decode(bin) do
-    <<vote::binary-size(1), validator_index::@validator_index_size*8-little,
+    <<vote::binary-size(1), validator_index::m(validator_index),
       signature::binary-size(@signature_size), rest::binary>> = bin
 
     {

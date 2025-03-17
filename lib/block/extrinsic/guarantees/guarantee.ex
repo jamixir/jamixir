@@ -281,7 +281,14 @@ defmodule Block.Extrinsic.Guarantee do
            ) do
     {g, prev_g} = {
       GuarantorAssignments.guarantors(n2_, t_, curr_validators_, offenders),
-      GuarantorAssignments.prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders)
+      GuarantorAssignments.prev_guarantors(
+        n2_,
+        n3_,
+        t_,
+        curr_validators_,
+        prev_validators_,
+        offenders
+      )
     }
 
     # ∀(w, t, a) ∈ EG,
@@ -290,7 +297,8 @@ defmodule Block.Extrinsic.Guarantee do
       {:ok, MapSet.new()},
       fn %__MODULE__{credentials: a, work_report: w = %WorkReport{core_index: wc}, timeslot: t},
          reporters_set ->
-        %GuarantorAssignments{assigned_cores: c, validators: validators} = choose_g(t, t_, g, prev_g)
+        %GuarantorAssignments{assigned_cores: c, validators: validators} =
+          choose_g(t, t_, g, prev_g)
 
         # ∀(v, s) ∈ a
         result =
@@ -385,10 +393,10 @@ defmodule Block.Extrinsic.Guarantee do
     alias Block.Extrinsic.Guarantee
 
     # Formula (C.16) v0.6.0
-    def encode(g = %Guarantee{}) do
+    def encode(g = %Guarantee{timeslot: timeslot}) do
       e({
         g.work_report,
-        <<g.timeslot::little-32>>,
+        t(timeslot),
         Guarantee.encode_cretentials(g.credentials)
       })
     end
@@ -402,7 +410,7 @@ defmodule Block.Extrinsic.Guarantee do
 
   def decode(bin) do
     {work_report, bin} = WorkReport.decode(bin)
-    <<timeslot::32-little, credentials_count::8, bin::binary>> = bin
+    <<timeslot::m(timeslot), credentials_count::8, bin::binary>> = bin
 
     {credentials, rest} =
       Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->

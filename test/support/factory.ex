@@ -121,7 +121,7 @@ defmodule Jamixir.Factory do
       work_package_hash: sequence(:work_package_hash, fn n -> <<n::256>> end),
       length: 2,
       erasure_root: Hash.three(),
-      exports_root: <<4::256>>,
+      exports_root: Hash.four(),
       segment_count: 2
     }
   end

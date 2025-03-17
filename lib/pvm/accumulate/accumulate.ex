@@ -8,9 +8,8 @@ defmodule PVM.Accumulate do
   alias PVM.{Accumulate.Operand, ArgInvoc}
   import PVM.Host.Gas
 
-
   alias PVM.Accumulate.Utils
-  import PVM.Constants.{HostCallId, HostCallResult  }
+  import PVM.Constants.{HostCallId, HostCallResult}
 
   use Codec.{Encoder, Decoder}
 
@@ -33,12 +32,15 @@ defmodule PVM.Accumulate do
         }
   def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn, opts \\ []) do
     # Get trace setting from environment variable
-    opts = case System.get_env("PVM_TRACE") do
-      "true" ->
-        Keyword.put(opts, :trace, true)
-        |> Keyword.put(:trace_name, System.get_env("TRACE_NAME"))
-      _ -> opts
-    end
+    opts =
+      case System.get_env("PVM_TRACE") do
+        "true" ->
+          Keyword.put(opts, :trace, true)
+          |> Keyword.put(:trace_name, System.get_env("TRACE_NAME"))
+
+        _ ->
+          opts
+      end
 
     # Formula (B.9) v0.6.0
     x = init_fn.(accumulation_state, service_index)
@@ -120,7 +122,7 @@ defmodule PVM.Accumulate do
 
     service_code = ServiceAccount.code(accumulation_state.services[service_index])
 
-    args = e({timeslot, service_index, vs(operands)})
+    args = e({t(timeslot), t(service_index), vs(operands)})
 
     if service_code == nil do
       {x.accumulation, [], nil, 0}
