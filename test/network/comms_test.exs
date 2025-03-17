@@ -5,8 +5,7 @@ defmodule CommsTest do
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Block.Extrinsic.Disputes.{Judgement, Verdict}
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
   alias Util.Hash
@@ -122,13 +121,13 @@ defmodule CommsTest do
     end
   end
 
-  describe "announce_verdict/2" do
-    test "announces verdict", %{client: client} do
-      sign = <<123::@signature_size*8>>
-      judgement = %Judgement{vote: 1, validator_index: 7, signature: sign}
-      verdict = %Verdict{epoch_index: 1, work_report_hash: Hash.two(), judgements: [judgement]}
-      Jamixir.NodeAPI.Mock |> expect(:save_verdict, 1, fn ^verdict -> :ok end)
-      {:ok, ""} = Peer.announce_verdict(client, verdict)
+  describe "announce_judgement/4" do
+    test "announces jedgement", %{client: client} do
+      hash = Hash.two()
+      epoch = 8
+      judgement = %Judgement{vote: 1, validator_index: 7, signature: <<123::@signature_size*8>>}
+      Jamixir.NodeAPI.Mock |> expect(:save_judgement, 1, fn ^epoch, ^hash, ^judgement -> :ok end)
+      {:ok, ""} = Peer.announce_judgement(client, epoch, hash, judgement)
       verify!()
     end
   end

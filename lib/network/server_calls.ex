@@ -1,7 +1,5 @@
 defmodule Network.ServerCalls do
-  alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Disputes.{Judgement, Verdict}
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
   use Codec.Encoder
 
@@ -52,22 +50,16 @@ defmodule Network.ServerCalls do
 
   def call(
         145,
-        <<epoch_index::32-little, validator_index::16-little, vote::8,
-          work_report_hash::binary-size(@hash_size), signature::binary-size(@signature_size)>>
+        <<epoch_index::m(epoch_index), validator_index::m(validator_index), vote::8,
+          hash::binary-size(@hash_size), signature::binary-size(@signature_size)>>
       ) do
-    verdict = %Verdict{
-      epoch_index: epoch_index,
-      judgements: [
-        %Judgement{
-          vote: vote,
-          validator_index: validator_index,
-          signature: signature
-        }
-      ],
-      work_report_hash: work_report_hash
+    judgement = %Judgement{
+      vote: vote,
+      validator_index: validator_index,
+      signature: signature
     }
 
-    Jamixir.NodeAPI.save_verdict(verdict)
+    :ok = Jamixir.NodeAPI.save_judgement(epoch_index, hash, judgement)
     <<>>
   end
 

@@ -124,7 +124,8 @@ defmodule Jamixir.Node do
     :ok
   end
 
-  def save_verdict(_verdict) do
+  @impl true
+  def save_judgement(_epoch, _hash, _judgement) do
     # TODO
     :ok
   end

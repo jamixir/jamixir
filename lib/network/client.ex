@@ -69,18 +69,10 @@ defmodule Network.Client do
     GenServer.cast(pid, {:announce_block, message, hash, timeslot})
   end
 
-  alias Block.Extrinsic.Disputes.Verdict
-
-  def announce_verdict(pid, %Verdict{
-        work_report_hash: <<_::m(hash)>> = hash,
-        epoch_index: epoch_index,
-        judgements: [
-          %Judgement{
-            vote: vote,
-            validator_index: validator_index,
-            signature: <<_::m(signature)>> = sign
-          }
-        ]
+  def announce_judgement(pid, epoch_index, <<_::m(hash)>> = hash, %Judgement{
+        vote: vote,
+        validator_index: validator_index,
+        signature: <<_::m(signature)>> = sign
       }) do
     message = t(epoch_index) <> t(validator_index) <> <<vote::8>> <> hash <> sign
 
