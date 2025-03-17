@@ -1,5 +1,6 @@
 defmodule Network.Client do
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
+  alias Block.Extrinsic.Assurance
   alias Network.PeerState
   import Quicer.Flags
   import Network.{MessageHandler, Codec, Config}
@@ -32,11 +33,13 @@ defmodule Network.Client do
 
   def distribute_assurance(
         pid,
-        <<_::@hash_size*8>> = header_hash,
-        <<_::@bitfield_size*8>> = bitfield,
-        <<_::@signature_size*8>> = signature
+        %Assurance{
+          hash: <<_::m(hash)>> = hash,
+          bitfield: <<_::m(bitfield)>> = bitfield,
+          signature: <<_::m(signature)>> = signature
+        }
       ) do
-    message = header_hash <> bitfield <> signature
+    message = hash <> bitfield <> signature
     send(pid, 141, message)
   end
 
@@ -58,12 +61,22 @@ defmodule Network.Client do
     send(pid, mode, message)
   end
 
-  def announce_block(pid, header, slot) do
-    log(:debug, "Announcing block at slot #{slot}")
+  def announce_block(pid, header, timeslot) do
+    log(:debug, "Announcing block at slot #{timeslot}")
     encoded_header = e(header)
     hash = h(encoded_header)
-    message = encoded_header <> hash <> <<slot::32>>
-    GenServer.cast(pid, {:announce_block, message, hash, slot})
+    message = encoded_header <> hash <> t(timeslot)
+    GenServer.cast(pid, {:announce_block, message, hash, timeslot})
+  end
+
+  def announce_judgement(pid, epoch_index, <<_::m(hash)>> = hash, %Judgement{
+        vote: vote,
+        validator_index: validator_index,
+        signature: <<_::m(signature)>> = sign
+      }) do
+    message = t(epoch_index) <> t(validator_index) <> <<vote::8>> <> hash <> sign
+
+    send(pid, 145, message)
   end
 
   def handle_cast(

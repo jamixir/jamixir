@@ -108,7 +108,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_assurance(_hash, _bitfield, _signature) do
+  def save_assurance(_assurance) do
     # TODO
     :ok
   end
@@ -120,6 +120,12 @@ defmodule Jamixir.Node do
   end
 
   def process_ticket(_mode = :validator, _epoch, _ticket) do
+    # TODO
+    :ok
+  end
+
+  @impl true
+  def save_judgement(_epoch, _hash, _judgement) do
     # TODO
     :ok
   end

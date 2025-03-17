@@ -1,5 +1,5 @@
 defmodule Network.ServerCalls do
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
   use Codec.Encoder
 
@@ -20,7 +20,10 @@ defmodule Network.ServerCalls do
           signature::binary-size(@signature_size)>>
       ) do
     log("Received assurance")
-    :ok = Jamixir.NodeAPI.save_assurance(hash, bitfield, signature)
+
+    assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
+
+    :ok = Jamixir.NodeAPI.save_assurance(assurance)
     <<>>
   end
 
@@ -44,6 +47,21 @@ defmodule Network.ServerCalls do
 
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
+
+  def call(
+        145,
+        <<epoch_index::m(epoch_index), validator_index::m(validator_index), vote::8,
+          hash::binary-size(@hash_size), signature::binary-size(@signature_size)>>
+      ) do
+    judgement = %Judgement{
+      vote: vote,
+      validator_index: validator_index,
+      signature: signature
+    }
+
+    :ok = Jamixir.NodeAPI.save_judgement(epoch_index, hash, judgement)
+    <<>>
+  end
 
   def call(0, _message) do
     log("Processing block announcement")

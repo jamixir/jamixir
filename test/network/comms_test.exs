@@ -1,12 +1,14 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Block.Extrinsic.Assurance
   use Codec.Encoder
   import Mox
   import Jamixir.Factory
   require Logger
-  alias Block.Extrinsic.TicketProof
+  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
+  alias Util.Hash
   use Sizes
 
   @base_port 9999
@@ -67,12 +69,15 @@ defmodule CommsTest do
 
   describe "distribute_assurance/4" do
     test "distributes assurance", %{client: client} do
-      bitfield = <<999::m(bitfield)>>
-      hash = Util.Hash.random()
-      sign = <<123::m(signature)>>
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^hash, ^bitfield, ^sign -> :ok end)
+      assurance = %Assurance{
+        bitfield: <<999::m(bitfield)>>,
+        hash: Util.Hash.random(),
+        signature: <<123::m(signature)>>
+      }
 
-      {:ok, ""} = Peer.distribute_assurance(client, hash, bitfield, sign)
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> :ok end)
+
+      {:ok, ""} = Peer.distribute_assurance(client, assurance)
 
       verify!()
     end
@@ -112,6 +117,17 @@ defmodule CommsTest do
       |> expect(:process_ticket, 1, fn :validator, 77, ^ticket -> :ok end)
 
       {:ok, ""} = Peer.distribute_ticket(client, :validator, 77, ticket)
+      verify!()
+    end
+  end
+
+  describe "announce_judgement/4" do
+    test "announces jedgement", %{client: client} do
+      hash = Hash.two()
+      epoch = 8
+      judgement = %Judgement{vote: 1, validator_index: 7, signature: <<123::@signature_size*8>>}
+      Jamixir.NodeAPI.Mock |> expect(:save_judgement, 1, fn ^epoch, ^hash, ^judgement -> :ok end)
+      {:ok, ""} = Peer.announce_judgement(client, epoch, hash, judgement)
       verify!()
     end
   end

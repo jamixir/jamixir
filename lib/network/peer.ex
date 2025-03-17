@@ -16,9 +16,10 @@ defmodule Network.Peer do
   defdelegate announce_preimage(pid, service_id, hash, length), to: Client
   defdelegate get_preimage(pid, hash), to: Client
 
-  defdelegate distribute_assurance(pid, hash, bitfield, signature), to: Client
+  defdelegate distribute_assurance(pid, assurance), to: Client
 
   defdelegate distribute_ticket(pid, mode, epoch, ticket), to: Client
+  defdelegate announce_judgement(pid, epoch, wr_hash, judgement), to: Client
 
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do

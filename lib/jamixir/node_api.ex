@@ -1,6 +1,6 @@
 defmodule Jamixir.NodeAPI do
-  alias Block.Extrinsic.TicketProof
-  alias Block.Extrinsic.WorkPackage
+  alias Block.Extrinsic.Disputes.Judgement
+  alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
   @callback add_block(binary) :: :ok | {:error, any}
   @callback inspect_state() :: {:ok, any} | {:error, any}
   @callback inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
@@ -19,9 +19,10 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback get_preimage(Types.hash()) :: {:ok, binary} | {:error, any}
   @callback save_preimage(binary()) :: :ok | {:error, any}
-  @callback save_assurance(Types.hash(), Types.bitfield(), Types.ed25519_signature()) ::
-              :ok | {:error, any}
   @callback process_ticket(:proxy | :validator, Types.epoch_index(), TicketProof.t()) ::
+              :ok | {:error, any}
+  @callback save_assurance(Assurance.t()) :: :ok | {:error, any}
+  @callback save_judgement(Types.epoch_index(), Types.hash(), Judgement.t()) ::
               :ok | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
@@ -36,11 +37,12 @@ defmodule Jamixir.NodeAPI do
   def get_preimage(hash), do: impl().get_preimage(hash)
   def save_preimage(preimage), do: impl().save_preimage(preimage)
 
-  def save_assurance(hash, bitfield, signature),
-    do: impl().save_assurance(hash, bitfield, signature)
+  def save_assurance(assurance), do: impl().save_assurance(assurance)
 
   def process_ticket(mode, epoch, ticket),
     do: impl().process_ticket(mode, epoch, ticket)
+
+  def save_judgement(epoch, hash, judgement), do: impl().save_judgement(epoch, hash, judgement)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end
