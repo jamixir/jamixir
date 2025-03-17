@@ -5,9 +5,12 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
-    keys_file = System.get_env("KEYS_FILE") || Application.get_env(:jamixir, :keys_file)
-    genesis_file = System.get_env("GENESIS_FILE") || Application.get_env(:jamixir, :genesis_file)
-    port = System.get_env("PORT") || Application.get_env(:jamixir, :port)
+    keys_file = System.get_env("JAMIXIR_KEYS_FILE") || Application.get_env(:jamixir, :keys_file)
+
+    genesis_file =
+      System.get_env("JAMIXIR_GENESIS_FILE") || Application.get_env(:jamixir, :genesis_file)
+
+    port = System.get_env("JAMIXIR_PORT") || Application.get_env(:jamixir, :port)
 
     Logger.info("Starting Jamixir node with keys #{keys_file} and genesis #{genesis_file}")
 

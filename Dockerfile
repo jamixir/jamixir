@@ -67,9 +67,9 @@ RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE="en_US:en"
 ENV LC_ALL="en_US.UTF-8"
-ENV KEYS_FILE="/node/keys/0.json"
-ENV GENESIS_FILE="/node/genesis/genesis.json"
-ENV PORT="9000"
+ENV JAMIXIR_KEYS_FILE="/node/keys/0.json"
+ENV JAMIXIR_GENESIS_FILE="/node/genesis/genesis.json"
+ENV JAMIXIR_PORT="9000"
 
 WORKDIR /node
 RUN chown -R nobody:nogroup /node

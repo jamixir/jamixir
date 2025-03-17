@@ -7,9 +7,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/0.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/0.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
@@ -27,9 +27,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/1.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/1.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
@@ -47,9 +47,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/2.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/2.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
@@ -67,9 +67,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/3.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/3.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
@@ -87,9 +87,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/4.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/4.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
@@ -107,9 +107,9 @@ services:
     environment:
       RELEASE_DAEMON: "false"
       MIX_ENV: "tiny"
-      KEYS_FILE: "/node/keys/5.json"
-      GENESIS_FILE: "/node/genesis/genesis.json"
-      PORT: 9900
+      JAMIXIR_KEYS_FILE: "/node/keys/5.json"
+      JAMIXIR_GENESIS_FILE: "/node/genesis/genesis.json"
+      JAMIXIR_PORT: 9900
     command: ["/node/jamixir/bin/jamixir", "start"]
     restart: unless-stopped
     expose:
