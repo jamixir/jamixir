@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Disputes.{Judgement, Verdict}
   alias Block.Extrinsic.TicketProof
   require Logger
@@ -21,7 +22,10 @@ defmodule Network.ServerCalls do
           signature::binary-size(@signature_size)>>
       ) do
     log("Received assurance")
-    :ok = Jamixir.NodeAPI.save_assurance(hash, bitfield, signature)
+
+    assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
+
+    :ok = Jamixir.NodeAPI.save_assurance(assurance)
     <<>>
   end
 

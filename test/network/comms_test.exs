@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Block.Extrinsic.Assurance
   use Codec.Encoder
   import Mox
   import Jamixir.Factory
@@ -69,12 +70,15 @@ defmodule CommsTest do
 
   describe "distribute_assurance/4" do
     test "distributes assurance", %{client: client} do
-      bitfield = <<999::m(bitfield)>>
-      hash = Util.Hash.random()
-      sign = <<123::m(signature)>>
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^hash, ^bitfield, ^sign -> :ok end)
+      assurance = %Assurance{
+        bitfield: <<999::m(bitfield)>>,
+        hash: Util.Hash.random(),
+        signature: <<123::m(signature)>>
+      }
 
-      {:ok, ""} = Peer.distribute_assurance(client, hash, bitfield, sign)
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> :ok end)
+
+      {:ok, ""} = Peer.distribute_assurance(client, assurance)
 
       verify!()
     end

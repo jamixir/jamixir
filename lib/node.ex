@@ -108,7 +108,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_assurance(_hash, _bitfield, _signature) do
+  def save_assurance(_assurance) do
     # TODO
     :ok
   end
