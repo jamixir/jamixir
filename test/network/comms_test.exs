@@ -121,6 +121,15 @@ defmodule CommsTest do
     end
   end
 
+  describe "distribute_guarantee/4" do
+    test "distributes guarantee", %{client: client} do
+      g = build(:guarantee)
+      Jamixir.NodeAPI.Mock |> expect(:save_guarantee, 1, fn ^g -> :ok end)
+      {:ok, ""} = Peer.distribute_guarantee(client, g)
+      verify!()
+    end
+  end
+
   describe "announce_judgement/4" do
     test "announces jedgement", %{client: client} do
       hash = Hash.two()

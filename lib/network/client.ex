@@ -79,6 +79,10 @@ defmodule Network.Client do
     send(pid, 145, message)
   end
 
+  def distribute_guarantee(pid, %Block.Extrinsic.Guarantee{} = guarantee) do
+    send(pid, 135, e(guarantee))
+  end
+
   def handle_cast(
         {:announce_block, message, hash, slot},
         %PeerState{up_streams: up_streams} = state

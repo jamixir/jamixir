@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
   use Codec.Encoder
@@ -10,6 +11,13 @@ defmodule Network.ServerCalls do
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, direction, max_blocks)
     blocks_bin = for b <- blocks, do: Encodable.encode(b)
     Enum.join(blocks_bin)
+  end
+
+  def call(135, message) do
+    log("Received guarantee")
+    {g, <<>>} = Guarantee.decode(message)
+    :ok = Jamixir.NodeAPI.save_guarantee(g)
+    <<>>
   end
 
   use Sizes

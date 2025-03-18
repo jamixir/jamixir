@@ -129,4 +129,10 @@ defmodule Jamixir.Node do
     # TODO
     :ok
   end
+
+  @impl true
+  def save_guarantee(_guarantee) do
+    # TODO
+    :ok
+  end
 end
