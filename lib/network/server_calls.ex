@@ -20,6 +20,15 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
+  def call(136, message) do
+    log("Requesting work report")
+
+    case Jamixir.NodeAPI.get_work_report(message) do
+      {:ok, report} -> e(report)
+      _ -> <<>>
+    end
+  end
+
   use Sizes
 
   def call(

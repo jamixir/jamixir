@@ -83,6 +83,10 @@ defmodule Network.Client do
     send(pid, 135, e(guarantee))
   end
 
+  def get_work_report(pid, <<_::m(hash)>> = hash) do
+    send(pid, 136, hash)
+  end
+
   def handle_cast(
         {:announce_block, message, hash, slot},
         %PeerState{up_streams: up_streams} = state
