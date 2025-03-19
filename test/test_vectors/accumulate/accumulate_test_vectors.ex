@@ -10,13 +10,16 @@ defmodule AccumulateTestVectors do
   def files_to_test,
     do:
       [
+        "accumulate_ready_queued_reports-1",
         for(i <- 1..4, do: "enqueue_and_unlock_chain-#{i}"),
         for(i <- 1..5, do: "enqueue_and_unlock_chain_wraps-#{i}"),
         for(i <- 1..2, do: "enqueue_and_unlock_simple-#{i}"),
         for(i <- 1..2, do: "enqueue_and_unlock_with_sr_lookup-#{i}"),
-        for(i <- 1..3, do: "enqueue_self_referential-#{i}"),
+        for(i <- 1..4, do: "enqueue_self_referential-#{i}"),
         "no_available_reports-1",
-        "process_one_immediate_report-1"
+        "process_one_immediate_report-1",
+        for(i <- 1..2, do: "queues_are_shifted-#{i}"),
+        for(i <- 1..3, do: "ready_queue_editing-#{i}")
       ]
       |> List.flatten()
 

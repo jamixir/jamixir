@@ -36,6 +36,10 @@ defmodule CheckVectorsCountTest do
     test "statistics" do
       assert_count(StatisticsTestVectors, "./statistics/tiny")
     end
+
+    test "accumulate" do
+      assert_count(AccumulateTestVectors, "./accumulate/tiny")
+    end
   end
 
   def assert_count(module, path) do
