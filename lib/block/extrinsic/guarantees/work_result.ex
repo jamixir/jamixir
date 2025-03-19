@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
   alias Util.Hash
-  use Codec.Encoder
+  use Codec.{Decoder, Encoder}
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
@@ -49,25 +49,22 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     use Codec.Encoder
     # Formula (C.23) v0.6.2
     def encode(%WorkResult{} = wr) do
-      e_le(wr.service, 4) <>
+      t(wr.service) <>
         e({wr.code_hash, wr.payload_hash}) <>
-        e_le(wr.gas_ratio, 8) <>
-        do_encode(wr.result)
-    end
-
-    # Formula (C.29) v0.6.2
-    defp do_encode({:ok, b}) do
-      e({0, vs(b)})
-    end
-
-    # Formula (C.29) v0.6.2
-    defp do_encode({:error, e}) do
-      e(WorkExecutionError.code(e))
+        t(wr.gas_ratio) <>
+        WorkResult.encode_result(wr.result)
     end
   end
 
-  use Sizes
-  use Codec.Decoder
+  # Formula (C.30) v0.6.4
+  def encode_result({:ok, b}) do
+    e({0, vs(b)})
+  end
+
+  # Formula (C.30) v0.6.4
+  def encode_result({:error, e}) do
+    e(WorkExecutionError.code(e))
+  end
 
   def decode(bin) do
     <<service::service(), code_hash::b(hash), payload_hash::b(hash), gas_ratio::m(gas),

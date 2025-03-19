@@ -11,7 +11,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
 
-  use Codec.Encoder
+  use Codec.{Decoder, Encoder}
   use MapUnion
   use SelectiveMock
 
@@ -44,12 +44,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             segment_root_lookup: %{},
             results: []
 
-  # Formula (11.3) v0.6.2
+  # Formula (11.3) v0.6.4
   # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    # Formula (11.3) v0.6.2
-    # Formula (11.8) v0.6.2
+    # Formula (11.3) v0.6.4
+    # Formula (11.8) v0.6.4
+    # ∀w ∈ W ∶∣wo∣ + ∑∣rd∣ ≤ WR
     map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
@@ -333,7 +334,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.24) v0.6.2
+    # Formula (C.24) v0.6.4
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do
       e({
@@ -348,7 +349,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  use Codec.{Decoder, Encoder}
   use Sizes
 
   def decode(bin) do
