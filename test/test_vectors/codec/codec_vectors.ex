@@ -5,23 +5,22 @@ defmodule CodecVectors do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Header
 
-  # TODO uncomment when vectors update to 0.6.4
   @tests [
     {"assurances_extrinsic", Assurance},
-    # {"block", Block},
+    {"block", Block},
     {"disputes_extrinsic", Disputes},
-    # {"extrinsic", Extrinsic},
-    # {"guarantees_extrinsic", Guarantee},
+    {"extrinsic", Extrinsic},
+    {"guarantees_extrinsic", Guarantee},
     {"header_0", Header},
     {"header_1", Header},
     {"preimages_extrinsic", Preimage},
     {"refine_context", RefinementContext},
     {"tickets_extrinsic", TicketProof},
     {"work_item", WorkItem},
-    {"work_package", WorkPackage}
-    # {"work_report", WorkReport}
-    # {"work_result_0", WorkResult},
-    # {"work_result_1", WorkResult}
+    {"work_package", WorkPackage},
+    {"work_report", WorkReport},
+    {"work_result_0", WorkResult},
+    {"work_result_1", WorkResult}
   ]
 
   def tests, do: @tests
