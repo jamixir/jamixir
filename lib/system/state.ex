@@ -31,7 +31,7 @@ defmodule System.State do
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
           validator_statistics: ValidatorStatistics.t(),
-          # Formula (12.3) v0.6.0
+          # Formula (12.3) v0.6.4
           ready_to_accumulate: list(list(Ready.t())),
           # Formula (12.1) v0.6.4
           accumulation_history: list(MapSet.t(Types.hash()))
@@ -137,7 +137,9 @@ defmodule System.State do
            ready_to_accumulate: ready_to_accumulate_,
            privileged_services: privileged_services_,
            accumulation_history: accumulation_history_,
-           beefy_commitment: beefy_commitment_
+           beefy_commitment: beefy_commitment_,
+           accumulation_stats: accumulation_stats,
+           deffered_transfers_stats: deffered_transfers_stats
          } =
            Accumulation.transition(
              available_work_reports,
@@ -173,7 +175,7 @@ defmodule System.State do
            ValidatorStatistics.transition(
              e,
              state.timeslot,
-             state.validator_statistics,
+             {state.validator_statistics, accumulation_stats, deffered_transfers_stats},
              curr_validators_,
              h,
              reporters_set,

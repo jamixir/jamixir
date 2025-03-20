@@ -145,7 +145,7 @@ defmodule System.State.Accumulation do
       accumulation_history: accumulation_history_,
       beefy_commitment: beefy_commitment,
       # Formula (12.24) v0.6.4
-      accumulate_statistics: accumulate_statistics(w_star_n),
+      accumulation_stats: accumulate_statistics(w_star_n),
       # Formula (12.30) v0.6.4
       deffered_transfers_stats: deferred_transfers_stats(deferred_transfers)
     }

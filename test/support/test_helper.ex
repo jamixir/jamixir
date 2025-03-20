@@ -25,6 +25,11 @@ defmodule TestHelper do
     end)
   end
 
+  def mock_statistics do
+    ValidatorStatisticsMock
+    |> stub(:do_transition, fn _, _, _, _, _, _, _ -> {:ok, "mockvalue"} end)
+  end
+
   def create_validator(index) do
     %Validator{
       bandersnatch: <<index::256>>,

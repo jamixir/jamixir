@@ -5,10 +5,11 @@ defmodule System.StateTest do
   import OriginalModules
   import Mox
   import Bitwise
-  alias Codec.State.Json
+  import TestHelper
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{NilDiscriminator, JsonEncoder}
+  alias Codec.{JsonEncoder, NilDiscriminator}
+  alias Codec.State.Json
   alias IO.ANSI
   alias System.State
   alias Util.Hash
@@ -216,10 +217,7 @@ defmodule System.StateTest do
         Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       end)
 
-      ValidatorStatisticsMock
-      |> expect(:do_transition, 1, fn _, _, _, _, _, _, _ ->
-        {:ok, "mockvalue"}
-      end)
+      mock_statistics()
 
       {:ok, state_} =
         State.add_block(state, build(:safrole_block, state: state, key_pairs: key_pairs))

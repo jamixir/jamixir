@@ -40,13 +40,8 @@ defmodule HistoryTestVectors do
 
     stub(MockAccumulation, :do_transition, fn _, _, _ ->
       %{
-        beefy_commitment: JsonDecoder.from_json(json_data[:input][:accumulate_root]),
-        authorizer_queue: [],
-        services: %{},
-        next_validators: [],
-        privileged_services: %{},
-        accumulation_history: %{},
-        ready_to_accumulate: %{}
+        accumulate_mock_return()
+        | beefy_commitment: JsonDecoder.from_json(json_data[:input][:accumulate_root])
       }
     end)
 
