@@ -32,7 +32,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # l
           segment_root_lookup: segment_root_lookup(),
           # r
-          results: list(WorkResult.t())
+          results: list(WorkResult.t()),
+          # g
+          auth_gas_used: Types.gas()
         }
 
   # Formula (11.2) v0.6.2
@@ -42,7 +44,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             authorizer_hash: Hash.zero(),
             output: "",
             segment_root_lookup: %{},
-            results: []
+            results: [],
+            auth_gas_used: 0
 
   # Formula (11.3) v0.6.4
   # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
@@ -344,7 +347,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         wr.authorizer_hash,
         vs(wr.output),
         wr.segment_root_lookup,
-        vs(wr.results)
+        vs(wr.results),
+        wr.auth_gas_used
       })
     end
   end
@@ -359,6 +363,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
     {results, rest} = VariableSize.decode(bin, WorkResult)
+    {auth_gas_used, rest} = Codec.Decoder.decode_integer(rest)
 
     {%__MODULE__{
        specification: specification,
@@ -367,7 +372,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
        segment_root_lookup: segment_root_lookup,
        authorizer_hash: authorizer_hash,
        output: output,
-       results: results
+       results: results,
+       auth_gas_used: auth_gas_used
      }, rest}
   end
 end

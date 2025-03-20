@@ -10,14 +10,14 @@ defmodule Codec.Decoder do
 
   def decode_le(encoded, length), do: decode_little_endian(encoded, length)
 
-  def decode_integer(<<0, _rest::binary>>), do: 0
+  def decode_integer(<<0, rest::binary>>), do: {0, rest}
 
-  def decode_integer(<<byte0, _rest::binary>>) when byte0 in 1..127 do
-    byte0
+  def decode_integer(<<byte0, rest::binary>>) when byte0 in 1..127 do
+    {byte0, rest}
   end
 
-  def decode_integer(<<255, value_bytes::binary-size(8), _rest::binary>>) do
-    decode_little_endian(value_bytes, 8)
+  def decode_integer(<<255, value_bytes::binary-size(8), rest::binary>>) do
+    {decode_little_endian(value_bytes, 8), rest}
   end
 
   def decode_integer(<<byte0, rest::binary>>) when byte0 in 128..254 do
