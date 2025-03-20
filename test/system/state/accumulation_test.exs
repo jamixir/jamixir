@@ -738,8 +738,14 @@ defmodule System.State.AccumulationTest do
       n0_: n0_
     } do
       work_reports = [
-        build(:work_report, results: [%{service: 1, gas_ratio: 10}], segment_root_lookup: %{}),
-        build(:work_report, results: [%{service: 2, gas_ratio: 20}], segment_root_lookup: %{})
+        build(:work_report,
+          results: [build(:work_result, service: 1, gas_ratio: 10)],
+          segment_root_lookup: %{}
+        ),
+        build(:work_report,
+          results: [build(:work_result, service: 2, gas_ratio: 20)],
+          segment_root_lookup: %{}
+        )
       ]
 
       # Set up expectations for the mock
@@ -748,8 +754,56 @@ defmodule System.State.AccumulationTest do
         %AccumulationResult{}
       end)
 
-    Accumulation.transition(work_reports, timeslot, n0_, state)
+      Accumulation.transition(work_reports, timeslot, n0_, state)
+    end
+  end
+
+  # Add this describe block in the AccumulationTest module
+  describe "accumulate_statistics/1" do
+    test "returns empty map for empty work reports" do
+      result = Accumulation.accumulate_statistics([])
+      assert result == %{}
     end
 
+    test "aggregates single service with single result" do
+      work_reports = [
+        %WorkReport{
+          results: [
+            %WorkResult{service: 1, refine_gas: 100}
+          ]
+        }
+      ]
+
+      result = Accumulation.accumulate_statistics(work_reports)
+      assert result == %{1 => {100, 1}}
+    end
+
+    test "aggregates multiple services across multiple work reports" do
+      work_reports = [
+        %WorkReport{
+          results: [
+            %WorkResult{service: 1, refine_gas: 100},
+            %WorkResult{service: 2, refine_gas: 200}
+          ]
+        },
+        %WorkReport{
+          results: [
+            %WorkResult{service: 1, refine_gas: 300},
+            %WorkResult{service: 3, refine_gas: 400}
+          ]
+        }
+      ]
+
+      result = Accumulation.accumulate_statistics(work_reports)
+
+      assert result == %{
+               # Total gas: 100 + 300, Count: 2
+               1 => {400, 2},
+               # Total gas: 200, Count: 1
+               2 => {200, 1},
+               # Total gas: 400, Count: 1
+               3 => {400, 1}
+             }
+    end
   end
 end
