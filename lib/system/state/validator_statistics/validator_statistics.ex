@@ -4,7 +4,7 @@ defmodule System.State.ValidatorStatistics do
   """
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.{Extrinsic, Header}
-  alias System.State.{CoreStatistic, Validator, ValidatorStatistic}
+  alias System.State.{CoreStatistic, ServiceStatistic, Validator, ValidatorStatistic}
   alias Util.Time
 
   @type t :: %__MODULE__{
@@ -13,9 +13,9 @@ defmodule System.State.ValidatorStatistics do
           # πL
           previous_epoch_statistics: list(ValidatorStatistic.t()),
           # πC
-          core_statistics: list(CoreStatistic.t())
+          core_statistics: list(CoreStatistic.t()),
           # πS
-          # service_statistics: %{Types.service_index() => ServiceStatistic.t()}
+          service_statistics: %{Types.service_index() => ServiceStatistic.t()}
         }
 
   def empty_epoc_stats do
@@ -27,7 +27,8 @@ defmodule System.State.ValidatorStatistics do
 
   defstruct current_epoch_statistics: @empty_epoch_stats,
             previous_epoch_statistics: @empty_epoch_stats,
-            core_statistics: @empty_core_stats
+            core_statistics: @empty_core_stats,
+            service_statistics: %{}
 
   @callback do_transition(
               Extrinsic.t(),
@@ -42,7 +43,7 @@ defmodule System.State.ValidatorStatistics do
   def transition(
         %Extrinsic{} = extrinsic,
         timeslot,
-        %__MODULE__{} = validator_statistics,
+        stats,
         curr_validators_,
         %Header{} = header,
         reporters_set,
@@ -53,7 +54,7 @@ defmodule System.State.ValidatorStatistics do
     module.do_transition(
       extrinsic,
       timeslot,
-      validator_statistics,
+      stats,
       curr_validators_,
       header,
       reporters_set,
@@ -64,7 +65,7 @@ defmodule System.State.ValidatorStatistics do
   def do_transition(
         %Extrinsic{} = extrinsic,
         timeslot,
-        %__MODULE__{} = validator_statistics,
+        {%__MODULE__{} = validator_statistics, accumulation_stats, deffered_transfers_stats},
         curr_validators_,
         %Header{} = header,
         reporters_set,
@@ -116,12 +117,20 @@ defmodule System.State.ValidatorStatistics do
             }
           end)
 
+        service_stats =
+          ServiceStatistic.calculate_stats(
+            available_work_reports,
+            accumulation_stats,
+            deffered_transfers_stats
+          )
+
         {:ok,
          %__MODULE__{
            current_epoch_statistics: current_epoc_stats_,
            previous_epoch_statistics: previous_epoc_stats_,
            core_statistics:
-             CoreStatistic.calculate_core_statistics(available_work_reports, extrinsic.assurances)
+             CoreStatistic.calculate_core_statistics(available_work_reports, extrinsic.assurances),
+           service_statistics: service_stats
          }}
 
       {:error, e} ->

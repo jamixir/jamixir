@@ -24,10 +24,7 @@ defmodule AssurancesTestVectorsTest do
 
     mock_header_seal()
     mock_accumulate()
-
-    stub(ValidatorStatisticsMock, :do_transition, fn _, _, _, _, _, _, _ ->
-      {:ok, "mockvalue"}
-    end)
+    mock_statistics()
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)

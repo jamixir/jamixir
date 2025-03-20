@@ -132,7 +132,9 @@ defmodule TestVectorUtil do
       next_validators: [],
       privileged_services: %{},
       accumulation_history: %{},
-      ready_to_accumulate: %{}
+      ready_to_accumulate: %{},
+      accumulation_stats: %{},
+      deffered_transfers_stats: %{}
     }
   end
 

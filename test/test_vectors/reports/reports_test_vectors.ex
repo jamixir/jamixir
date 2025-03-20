@@ -1,5 +1,6 @@
 defmodule ReportsTestVectors do
   import TestVectorUtil
+  import TestHelper
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   use ExUnit.Case
@@ -64,10 +65,7 @@ defmodule ReportsTestVectors do
 
     ok_output = json_data[:output][:ok]
 
-    ValidatorStatisticsMock
-    |> stub(:do_transition, fn _, _, _, _, _, _, _ ->
-      {:ok, "mockvalue"}
-    end)
+    mock_statistics()
 
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
