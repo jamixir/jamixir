@@ -243,9 +243,21 @@ defmodule System.State.ValidatorStatisticsTest do
       vs = build(:validator_statistics)
       json = JsonEncoder.encode(vs)
 
+      core_stat = %{
+        data_size: 0,
+        p: 0,
+        bundle_length: 0,
+        exported_segments: 0,
+        extrinsics_count: 0,
+        extrinsics_size: 0,
+        imported_segments: 0,
+        refine_gas: 0
+      }
+
       assert json == %{
                current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
-               last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s))
+               last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s)),
+               core_statistics: for(_ <- 1..Constants.core_count(), do: core_stat)
              }
     end
   end
