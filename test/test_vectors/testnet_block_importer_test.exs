@@ -19,7 +19,8 @@ defmodule TestnetBlockImporterTest do
 
   def trace_enabled?, do: System.get_env("PVM_TRACE") == "true"
 
-  @ignore_fields []
+  # TODO uncomment after JAM duna adds new statistics to blocks
+  @ignore_fields [:validator_statistics]
   @genesis_path "chainspecs/state_snapshots"
   @user "jamixir"
   @repo "jamtestnet"
@@ -56,12 +57,12 @@ defmodule TestnetBlockImporterTest do
 
       @tag mode: mode
       test "#{mode} mode block import", %{genesis_state: state, mode: mode} do
-
         Enum.reduce(1..4, state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
             if trace_enabled?() do
-            System.put_env("TRACE_NAME", "#{mode}_#{epoch}:#{timeslot}")
+              System.put_env("TRACE_NAME", "#{mode}_#{epoch}:#{timeslot}")
             end
+
             Logger.info("🧱 Processing block #{epoch}:#{timeslot}")
             timeslot = String.pad_leading("#{timeslot}", 3, "0")
 

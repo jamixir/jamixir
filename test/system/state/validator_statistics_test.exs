@@ -1,5 +1,6 @@
 defmodule System.State.ValidatorStatisticsTest do
   alias Codec.JsonEncoder
+  alias System.State.CoreStatistic
   alias System.State.ValidatorStatistics
   use ExUnit.Case
   import Jamixir.Factory
@@ -34,13 +35,15 @@ defmodule System.State.ValidatorStatisticsTest do
              reports_guaranteed: 15,
              availability_assurances: 16
            }
-         ]
+         ],
+         avaiable_work_reports: build_list(Constants.core_count(), :work_report)
        }}
     end
 
     test "updates previous epoch statistics when new epoc", %{
       current_stats: current_stats,
-      previous_stats: previous_stats
+      previous_stats: previous_stats,
+      avaiable_work_reports: avaiable_work_reports
     } do
       validator_statistics = %ValidatorStatistics{
         current_epoch_statistics: current_stats,
@@ -54,15 +57,20 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, timeslot: 1000),
-          MapSet.new()
+          MapSet.new(),
+          avaiable_work_reports
         )
 
       assert validator_stats_.previous_epoch_statistics == current_stats
+
+      assert validator_stats_.core_statistics ==
+               CoreStatistic.calculate_core_statistics(avaiable_work_reports, [])
     end
 
     test "previous epoch statistics remains the same when same epoc", %{
       current_stats: current_stats,
-      previous_stats: previous_stats
+      previous_stats: previous_stats,
+      avaiable_work_reports: avaiable_work_reports
     } do
       validator_statistics = %ValidatorStatistics{
         current_epoch_statistics: current_stats,
@@ -76,7 +84,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          avaiable_work_reports
         )
 
       assert validator_stats_.previous_epoch_statistics == previous_stats
@@ -96,7 +105,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: 1, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       updated_blocks_produced =
@@ -125,7 +135,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       assert Enum.with_index(
@@ -153,7 +164,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       assert Enum.with_index(
@@ -180,7 +192,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       assert Enum.with_index(
@@ -208,7 +221,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       assert Enum.with_index(
@@ -231,7 +245,8 @@ defmodule System.State.ValidatorStatisticsTest do
           validator_statistics,
           [],
           build(:header, block_author_key_index: 1000),
-          MapSet.new()
+          MapSet.new(),
+          [nil, nil]
         )
 
       assert msg == :author_stats_not_found
