@@ -217,7 +217,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_transition, 1, fn _, _, _, _, _, _ ->
+      |> expect(:do_transition, 1, fn _, _, _, _, _, _, _ ->
         {:ok, "mockvalue"}
       end)
 
@@ -236,7 +236,7 @@ defmodule System.StateTest do
       end)
 
       ValidatorStatisticsMock
-      |> expect(:do_transition, 1, fn _, _, _, _, _, _ ->
+      |> expect(:do_transition, 1, fn _, _, _, _, _, _, _ ->
         {:error, "message"}
       end)
 
@@ -270,7 +270,7 @@ defmodule System.StateTest do
       extrinsic =
         build(
           :extrinsic,
-          assurances: [build(:assurance, validator_index: 0, bitfield: <<0b1111::4>>)]
+          assurances: [build(:assurance, validator_index: 0, bitfield: <<0b1111::8>>)]
         )
 
       with_original_modules([:process_availability]) do

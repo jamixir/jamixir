@@ -176,7 +176,8 @@ defmodule System.State do
              state.validator_statistics,
              curr_validators_,
              h,
-             reporters_set
+             reporters_set,
+             available_work_reports
            ) do
       {:ok,
        %System.State{

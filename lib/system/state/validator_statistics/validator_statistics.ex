@@ -2,6 +2,7 @@ defmodule System.State.ValidatorStatistics do
   @moduledoc """
   Formula (13.1) v0.6.4
   """
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.{Extrinsic, Header}
   alias System.State.{CoreStatistic, Validator, ValidatorStatistic}
   alias Util.Time
@@ -34,7 +35,8 @@ defmodule System.State.ValidatorStatistics do
               __MODULE__.t(),
               list(Validator.t()),
               Header.t(),
-              list(Types.ed25519_key())
+              list(Types.ed25519_key()),
+              list(WorkReport.t())
             ) :: {:ok | :error, __MODULE__.t()}
 
   def transition(
@@ -43,7 +45,8 @@ defmodule System.State.ValidatorStatistics do
         %__MODULE__{} = validator_statistics,
         curr_validators_,
         %Header{} = header,
-        reporters_set
+        reporters_set,
+        available_work_reports
       ) do
     module = Application.get_env(:jamixir, :validator_statistics, __MODULE__)
 
@@ -53,7 +56,8 @@ defmodule System.State.ValidatorStatistics do
       validator_statistics,
       curr_validators_,
       header,
-      reporters_set
+      reporters_set,
+      available_work_reports
     )
   end
 
@@ -63,7 +67,8 @@ defmodule System.State.ValidatorStatistics do
         %__MODULE__{} = validator_statistics,
         curr_validators_,
         %Header{} = header,
-        reporters_set
+        reporters_set,
+        available_work_reports
       ) do
     # Formula (13.3) v0.6.4
     # Formula (13.4) v0.6.4
@@ -114,7 +119,9 @@ defmodule System.State.ValidatorStatistics do
         {:ok,
          %__MODULE__{
            current_epoch_statistics: current_epoc_stats_,
-           previous_epoch_statistics: previous_epoc_stats_
+           previous_epoch_statistics: previous_epoc_stats_,
+           core_statistics:
+             CoreStatistic.calculate_core_statistics(available_work_reports, extrinsic.assurances)
          }}
 
       {:error, e} ->
