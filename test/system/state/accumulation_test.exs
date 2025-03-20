@@ -806,4 +806,53 @@ defmodule System.State.AccumulationTest do
              }
     end
   end
+
+  # Add to filepath: /Users/danicuki/dev/jamixir/test/system/state/accumulation_test.exs
+
+  describe "deferred_transfers_stats/1" do
+    test "returns empty map for empty transfers" do
+      result = Accumulation.deferred_transfers_stats([])
+      assert result == %{}
+    end
+
+    test "aggregates single transfer" do
+      transfers = [
+        %DeferredTransfer{receiver: 1, amount: 100}
+      ]
+
+      result = Accumulation.deferred_transfers_stats(transfers)
+      assert result == %{1 => {1, 100}}
+    end
+
+    test "aggregates multiple transfers to same destination" do
+      transfers = [
+        %DeferredTransfer{receiver: 1, amount: 100},
+        %DeferredTransfer{receiver: 1, amount: 200}
+      ]
+
+      result = Accumulation.deferred_transfers_stats(transfers)
+      # count: 2, total_amount: 300
+      assert result == %{1 => {2, 300}}
+    end
+
+    test "aggregates transfers to multiple destinations" do
+      transfers = [
+        %DeferredTransfer{receiver: 1, amount: 100},
+        %DeferredTransfer{receiver: 2, amount: 200},
+        %DeferredTransfer{receiver: 1, amount: 300},
+        %DeferredTransfer{receiver: 3, amount: 400}
+      ]
+
+      result = Accumulation.deferred_transfers_stats(transfers)
+
+      assert result == %{
+               # count: 2, total_amount: 100 + 300
+               1 => {2, 400},
+               # count: 1, total_amount: 200
+               2 => {1, 200},
+               # count: 1, total_amount: 400
+               3 => {1, 400}
+             }
+    end
+  end
 end
