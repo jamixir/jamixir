@@ -144,7 +144,10 @@ defmodule System.State.Accumulation do
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
       beefy_commitment: beefy_commitment,
-      statistics: accumulate_statistics(w_star_n)
+      # Formula (12.24) v0.6.4
+      accumulate_statistics: accumulate_statistics(w_star_n),
+      # Formula (12.30) v0.6.4
+      deffered_transfers_stats: deferred_transfers_stats(deferred_transfers)
     }
   end
 
@@ -157,6 +160,21 @@ defmodule System.State.Accumulation do
         case Map.get(stat, r.service) do
           nil -> Map.put(stat, r.service, {r.refine_gas, 1})
           {total_gas, count} -> Map.put(stat, r.service, {total_gas + r.refine_gas, count + 1})
+        end
+    end
+  end
+
+  # Formula (12.29) v0.6.4
+  # Formula (12.30) v0.6.4
+  def deferred_transfers_stats(deferred_transfers) do
+    for t <- deferred_transfers, reduce: %{} do
+      stat ->
+        case Map.get(stat, t.receiver) do
+          nil ->
+            Map.put(stat, t.receiver, {1, t.amount})
+
+          {count, total_amount} ->
+            Map.put(stat, t.receiver, {count + 1, total_amount + t.amount})
         end
     end
   end
