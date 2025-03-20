@@ -33,7 +33,7 @@ defmodule System.State do
           validator_statistics: ValidatorStatistics.t(),
           # Formula (12.3) v0.6.0
           ready_to_accumulate: list(list(Ready.t())),
-          # Formula (12.1) v0.6.0
+          # Formula (12.1) v0.6.4
           accumulation_history: list(MapSet.t(Types.hash()))
         }
 

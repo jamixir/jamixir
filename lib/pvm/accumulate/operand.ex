@@ -3,7 +3,7 @@ defmodule PVM.Accumulate.Operand do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
 
-  # Formula (12.18) v0.6.3
+  # Formula (12.18) v0.6.4
   @type t :: %__MODULE__{
           h: Types.hash(),
           e: Types.hash(),
