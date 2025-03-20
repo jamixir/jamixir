@@ -33,7 +33,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_transition(list(), State.t(), ctx()) :: any()
 
-  # Formula (12.3) v0.6.3 - U
+  # Formula (12.13) v0.6.4 - U
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -73,7 +73,7 @@ defmodule System.State.Accumulation do
         },
         %{timeslot: timeslot_} = ctx
       ) do
-    # Formula (12.20) v0.6.3
+    # Formula (12.20) v0.6.4
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -97,6 +97,7 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
+    # TODO review v0.6.4
     # Formula (12.21) v0.6.3
     {n, o, deferred_transfers, beefy_commitment} =
       sequential_accumulation(
@@ -107,7 +108,7 @@ defmodule System.State.Accumulation do
         ctx
       )
 
-    # Formula (12.22) v0.6.3
+    # Formula (12.22) v0.6.4
     %__MODULE__{
       privileged_services: privileged_services_,
       services: services_intermediate,
@@ -115,16 +116,16 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue_
     } = o
 
-    # Formula (12.24) v0.6.3
+    # Formula (12.28) v0.6.4
     services_intermediate_2 =
       apply_transfers(services_intermediate, deferred_transfers, timeslot_)
 
-    # Formula (12.25) v0.6.3
+    # Formula (12.31) v0.6.4
     work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
-    # Formula (12.26) v0.6.3
+    # Formula (12.32) v0.6.4
     accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
     {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-    # Formula (12.27) v0.6.3
+    # Formula (12.33) v0.6.4
     ready_to_accumulate_ =
       build_ready_to_accumulate_(
         ready_to_accumulate,
@@ -145,6 +146,7 @@ defmodule System.State.Accumulation do
     }
   end
 
+  # TODO update to 0.6.4
   # Formula (12.16) v0.6.3
   @spec sequential_accumulation(
           non_neg_integer(),
@@ -206,6 +208,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula 12.17 v0.6.3
+  # TODO update to 0.6.4 - add U
   @spec parallelized_accumulation(
           t(),
           list(WorkReport.t()),
@@ -316,7 +319,7 @@ defmodule System.State.Accumulation do
     |> List.to_tuple()
   end
 
-  # Formula 12.19 v0.6.3
+  # Formula 12.19 v0.6.4
   def single_accumulation(acc_state, work_reports, service_dict, service, ctx) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
@@ -370,16 +373,20 @@ defmodule System.State.Accumulation do
     {total_gas, operands}
   end
 
-  # Formula (12.24) v0.6.3
+  # Formula (12.27) v0.6.4
+  # Formula (12.28) v0.6.4
   def apply_transfers(services_intermediate, transfers, timeslot) do
     Enum.reduce(Map.keys(services_intermediate), %{}, fn s, acc ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-      service_with_transfers_applied = PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers)
+
+      service_with_transfers_applied =
+        PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers)
+
       Map.put(acc, s, service_with_transfers_applied)
     end)
   end
 
-  # Formula (12.27) v0.6.3
+  # Formula (12.33) v0.6.4
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: list(WorkReport.t()),
