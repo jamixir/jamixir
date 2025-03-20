@@ -120,8 +120,9 @@ defmodule System.State.Accumulation do
     services_intermediate_2 =
       apply_transfers(services_intermediate, deferred_transfers, timeslot_)
 
+    w_star_n = Enum.take(accumulatable_reports, n)
     # Formula (12.31) v0.6.4
-    work_package_hashes = WorkReport.work_package_hashes(Enum.take(accumulatable_reports, n))
+    work_package_hashes = WorkReport.work_package_hashes(w_star_n)
     # Formula (12.32) v0.6.4
     accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
     {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
@@ -142,8 +143,22 @@ defmodule System.State.Accumulation do
       ready_to_accumulate: ready_to_accumulate_,
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
-      beefy_commitment: beefy_commitment
+      beefy_commitment: beefy_commitment,
+      statistics: accumulate_statistics(w_star_n)
     }
+  end
+
+  # Formula (12.23) v0.6.4
+  # Formula (12.24) v0.6.4
+  # Formula (12.25) v0.6.4
+  def accumulate_statistics(work_reports) do
+    for w <- work_reports, r <- w.results, reduce: %{} do
+      stat ->
+        case Map.get(stat, r.service) do
+          nil -> Map.put(stat, r.service, {r.refine_gas, 1})
+          {total_gas, count} -> Map.put(stat, r.service, {total_gas + r.refine_gas, count + 1})
+        end
+    end
   end
 
   # TODO update to 0.6.4
