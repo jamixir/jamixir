@@ -1,14 +1,20 @@
 defmodule System.State.ValidatorStatistics do
   @moduledoc """
-  Formula (13.1) v0.6.2
+  Formula (13.1) v0.6.4
   """
   alias Block.{Extrinsic, Header}
-  alias System.State.{Validator, ValidatorStatistic}
+  alias System.State.{CoreStatistic, Validator, ValidatorStatistic}
   alias Util.Time
 
   @type t :: %__MODULE__{
+          # πV
           current_epoch_statistics: list(ValidatorStatistic.t()),
-          previous_epoch_statistics: list(ValidatorStatistic.t())
+          # πL
+          previous_epoch_statistics: list(ValidatorStatistic.t()),
+          # πC
+          core_statistics: list(CoreStatistic.t())
+          # πS
+          # service_statistics: %{Types.service_index() => ServiceStatistic.t()}
         }
 
   def empty_epoc_stats do
@@ -16,9 +22,11 @@ defmodule System.State.ValidatorStatistics do
   end
 
   @empty_epoch_stats for _ <- 1..Constants.validator_count(), do: %ValidatorStatistic{}
+  @empty_core_stats for _ <- 1..Constants.core_count(), do: %CoreStatistic{}
 
   defstruct current_epoch_statistics: @empty_epoch_stats,
-            previous_epoch_statistics: @empty_epoch_stats
+            previous_epoch_statistics: @empty_epoch_stats,
+            core_statistics: @empty_core_stats
 
   @callback do_transition(
               Extrinsic.t(),
@@ -57,8 +65,8 @@ defmodule System.State.ValidatorStatistics do
         %Header{} = header,
         reporters_set
       ) do
-    # Formula (13.2) v0.6.0
-    # Formula (13.3) v0.6.0
+    # Formula (13.3) v0.6.4
+    # Formula (13.4) v0.6.4
     {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
         {empty_epoc_stats(), validator_statistics.current_epoch_statistics}

@@ -142,7 +142,12 @@ defmodule Jamixir.Factory do
       code_hash: Hash.one(),
       payload_hash: Hash.two(),
       gas_ratio: 3,
-      result: {:ok, <<4>>}
+      result: {:ok, <<4>>},
+      imported_segments: 5,
+      exported_segments: 6,
+      extrinsics_count: 7,
+      extrinsics_size: 8,
+      refine_gas: 9
     }
   end
 

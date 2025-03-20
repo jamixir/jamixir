@@ -19,7 +19,17 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           # g
           gas_ratio: non_neg_integer(),
           # d
-          result: {:ok, binary()} | {:error, WorkExecutionError.t()}
+          result: {:ok, binary()} | {:error, WorkExecutionError.t()},
+          # u
+          refine_gas: Types.gas(),
+          # i
+          imported_segments: non_neg_integer(),
+          # e
+          exported_segments: non_neg_integer(),
+          # x
+          extrinsics_count: non_neg_integer(),
+          # z
+          extrinsics_size: non_neg_integer()
         }
 
   # s
@@ -31,7 +41,17 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             # g
             gas_ratio: 0,
             # d
-            result: {:ok, <<>>}
+            result: {:ok, <<>>},
+            # u
+            refine_gas: 0,
+            # i
+            imported_segments: 0,
+            # e
+            exported_segments: 0,
+            # x
+            extrinsics_count: 0,
+            # b
+            extrinsics_size: 0
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
   def new(%WorkItem{} = wi, output) do
@@ -47,12 +67,25 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
     use Codec.Encoder
-    # Formula (C.23) v0.6.2
+    # Formula (C.23) v0.6.4
+    # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
+    @spec encode(Block.Extrinsic.Guarantee.WorkResult.t()) :: <<_::32, _::_*8>>
     def encode(%WorkResult{} = wr) do
-      t(wr.service) <>
-        e({wr.code_hash, wr.payload_hash}) <>
-        t(wr.gas_ratio) <>
-        WorkResult.encode_result(wr.result)
+      e(
+        {t(wr.service), wr.code_hash, wr.payload_hash, <<wr.gas_ratio::m(gas)>>,
+         do_encode(wr.result), wr.refine_gas, wr.imported_segments, wr.extrinsics_count,
+         wr.extrinsics_size, wr.exported_segments}
+      )
+    end
+
+    # Formula (C.29) v0.6.2
+    defp do_encode({:ok, b}) do
+      e({0, vs(b)})
+    end
+
+    # Formula (C.29) v0.6.2
+    defp do_encode({:error, e}) do
+      e(WorkExecutionError.code(e))
     end
   end
 
@@ -81,19 +114,38 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           {{:error, code}, temp_rest}
       end
 
+    <<refine_gas, imported_segments, extrinsics_count, extrinsics_size, exported_segments,
+      rest::binary>> = rest
+
     {%__MODULE__{
        service: service,
        code_hash: code_hash,
        payload_hash: payload_hash,
        gas_ratio: gas_ratio,
-       result: result
+       result: result,
+       refine_gas: refine_gas,
+       imported_segments: imported_segments,
+       extrinsics_count: extrinsics_count,
+       extrinsics_size: extrinsics_size,
+       exported_segments: exported_segments
      }, rest}
   end
 
   use JsonDecoder
 
   def json_mapping,
-    do: %{service: :service_id, gas_ratio: :accumulate_gas, result: &parse_result/1}
+    do: %{
+      service: :service_id,
+      gas_ratio: :accumulate_gas,
+      result: &parse_result/1,
+      exported_segments: &value_or_zero/1,
+      extrinsics_count: &value_or_zero/1,
+      extrinsics_size: &value_or_zero/1,
+      imported_segments: &value_or_zero/1,
+      refine_gas: &value_or_zero/1
+    }
+
+  def value_or_zero(v), do: v || 0
 
   def to_json_mapping,
     do: %{service: :service_id, gas_ratio: :accumulate_gas, result: {:result, &result_to_json/1}}

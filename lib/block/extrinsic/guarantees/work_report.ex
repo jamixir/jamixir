@@ -62,7 +62,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.16) v0.6.2 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (11.16) v0.6.4 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t() | nil)
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = for a <- assurances, do: Assurance.core_bits(a)

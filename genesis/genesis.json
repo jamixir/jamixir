@@ -500,6 +500,28 @@
         "guarantees": 0,
         "assurances": 0
       }
+    ],
+    "core_statistics": [
+      {
+        "data_size": 0,
+        "p": 0,
+        "bundle_length": 0,
+        "exported_segments": 0,
+        "extrinsics_count": 0,
+        "extrinsics_size": 0,
+        "imported_segments": 0,
+        "refine_gas": 0
+      },
+      {
+        "data_size": 0,
+        "p": 0,
+        "bundle_length": 0,
+        "exported_segments": 0,
+        "extrinsics_count": 0,
+        "extrinsics_size": 0,
+        "imported_segments": 0,
+        "refine_gas": 0
+      }
     ]
   },
   "theta": [[], [], [], [], [], [], [], [], [], [], [], []],

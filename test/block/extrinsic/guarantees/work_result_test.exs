@@ -11,14 +11,14 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   describe "encode/1" do
     test "encodes a work result", %{wr: wr} do
       assert Encodable.encode(wr) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\0\x01\x04"
+               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\0\x01\x04\t\x05\a\b\x06"
     end
 
     test "encode when output is an error", %{wr: wr} do
       wr = Map.put(wr, :result, {:error, :out_of_gas})
 
       assert Encodable.encode(wr) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\x01"
+               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x03\0\0\0\0\0\0\0\x01\t\x05\a\b\x06"
     end
   end
 
@@ -59,7 +59,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                payload_hash: Hex.encode16(wr.payload_hash, prefix: true),
                service_id: wr.service,
                accumulate_gas: wr.gas_ratio,
-               result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true)}
+               result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true)},
+               exported_segments: 6,
+               extrinsics_count: 7,
+               extrinsics_size: 8,
+               imported_segments: 5,
+               refine_gas: 9
              }
     end
 
@@ -72,7 +77,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                payload_hash: Hex.encode16(wr.payload_hash, prefix: true),
                service_id: wr.service,
                accumulate_gas: wr.gas_ratio,
-               result: %{:panic => nil}
+               result: %{:panic => nil},
+               imported_segments: 5,
+               exported_segments: 6,
+               extrinsics_count: 7,
+               extrinsics_size: 8,
+               refine_gas: 9
              }
     end
   end
