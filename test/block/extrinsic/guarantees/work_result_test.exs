@@ -35,7 +35,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
       wr = %{
         wr
         | refine_gas: big,
-          imported_segments: big,
+          imports: big,
           extrinsics_count: big,
           extrinsics_size: big,
           exported_segments: big
@@ -79,7 +79,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                exported_segments: 6,
                extrinsics_count: 7,
                extrinsics_size: 8,
-               imported_segments: 5,
+               imports: 5,
                refine_gas: 9
              }
     end
@@ -94,7 +94,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                service_id: wr.service,
                accumulate_gas: wr.gas_ratio,
                result: %{:panic => nil},
-               imported_segments: 5,
+               imports: 5,
                exported_segments: 6,
                extrinsics_count: 7,
                extrinsics_size: 8,

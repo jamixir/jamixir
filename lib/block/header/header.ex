@@ -164,7 +164,7 @@ defmodule Block.Header do
 
         {keys, cont} =
           decode_list(rest, Constants.validator_count(), fn bin ->
-            <<bkey::b(hash), edkey::b(hash), rest>> = bin
+            <<bkey::b(hash), edkey::b(hash), rest::binary>> = bin
             {{bkey, edkey}, rest}
           end)
 
@@ -227,10 +227,7 @@ defmodule Block.Header do
       JsonDecoder.from_json(tickets_entropy),
       for(
         v <- validators,
-        do: %Validator{
-          bandersnatch: JsonDecoder.from_json(v.bandersnatch),
-          ed25519: JsonDecoder.from_json(v.ed25519)
-        }
+        do: {JsonDecoder.from_json(v.bandersnatch), JsonDecoder.from_json(v.ed25519)}
       )
     }
   end

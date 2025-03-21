@@ -8,7 +8,7 @@ defmodule System.State.CoreStatisticTest do
     setup do
       result =
         build(:work_result,
-          imported_segments: 1,
+          imports: 1,
           exported_segments: 2,
           extrinsics_count: 3,
           extrinsics_size: 4,
@@ -32,7 +32,7 @@ defmodule System.State.CoreStatisticTest do
 
       assert CoreStatistic.calculate_core_statistics(available_work_reports, assurances) == [
                %CoreStatistic{
-                 imported_segments: 2,
+                 imports: 2,
                  exported_segments: 4,
                  extrinsics_count: 6,
                  extrinsics_size: 8,

@@ -265,13 +265,13 @@ defmodule System.State.ValidatorStatisticsTest do
         exported_segments: 0,
         extrinsics_count: 0,
         extrinsics_size: 0,
-        imported_segments: 0,
+        imports: 0,
         refine_gas: 0
       }
 
       assert json == %{
-               current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
-               last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s)),
+               vals_current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
+               vals_last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s)),
                core_statistics: for(_ <- 1..Constants.core_count(), do: core_stat),
                service_statistics: %{}
              }

@@ -5,7 +5,7 @@ defmodule System.State.RotateKeys do
   alias Util.Time
 
   @doc """
-  Formula (6.13) v0.6.2
+  Formula (6.13) v0.6.4
 
   returns tuple :{pending_, current_, prev_, epoch_root_}
   """

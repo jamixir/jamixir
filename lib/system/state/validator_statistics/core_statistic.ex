@@ -8,7 +8,7 @@ defmodule System.State.CoreStatistic do
 
   defstruct data_size: 0,
             p: 0,
-            imported_segments: 0,
+            imports: 0,
             exported_segments: 0,
             extrinsics_count: 0,
             extrinsics_size: 0,
@@ -20,7 +20,7 @@ defmodule System.State.CoreStatistic do
           p: non_neg_integer(),
           bundle_length: non_neg_integer(),
           # i
-          imported_segments: non_neg_integer(),
+          imports: non_neg_integer(),
           # e
           exported_segments: non_neg_integer(),
           # x
@@ -42,7 +42,7 @@ defmodule System.State.CoreStatistic do
         %__MODULE__{
           # Formula 13.8 v0.6.4
           # Formula 13.9 v0.6.4
-          imported_segments: sum(for(r <- w.results, do: r.imported_segments)),
+          imports: sum(for(r <- w.results, do: r.imports)),
           exported_segments: sum(for(r <- w.results, do: r.exported_segments)),
           extrinsics_count: sum(for(r <- w.results, do: r.extrinsics_count)),
           extrinsics_size: sum(for(r <- w.results, do: r.extrinsics_size)),

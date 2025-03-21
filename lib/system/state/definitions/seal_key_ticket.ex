@@ -1,6 +1,6 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
-  Formula (6.6) v0.6.2
+  Formula (6.6) v0.6.4
   """
 
   @type t :: %__MODULE__{id: Types.hash(), attempt: non_neg_integer()}
