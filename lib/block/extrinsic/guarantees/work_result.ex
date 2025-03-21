@@ -114,8 +114,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           {{:error, code}, temp_rest}
       end
 
-    <<refine_gas, imported_segments, extrinsics_count, extrinsics_size, exported_segments,
-      rest::binary>> = rest
+    {refine_gas, rest} = de_i(rest)
+    {imported_segments, rest} = de_i(rest)
+    {extrinsics_count, rest} = de_i(rest)
+    {extrinsics_size, rest} = de_i(rest)
+    {exported_segments, rest} = de_i(rest)
 
     {%__MODULE__{
        service: service,

@@ -25,7 +25,8 @@ defmodule Codec.Decoder do
     h = byte0 - a_l
     x_rest = decode_le(rest, l)
     x = h * :math.pow(256, l) + x_rest
-    trunc(x)
+    <<_::size(l)-unit(8), rest::binary>> = rest
+    {trunc(x), rest}
   end
 
   defp determine_l_and_a_l(byte0) do
@@ -87,6 +88,7 @@ defmodule Codec.Decoder do
   defmacro __using__(_) do
     quote do
       def de_le(value, l), do: Codec.Decoder.decode_le(value, l)
+      def de_i(value), do: Codec.Decoder.decode_integer(value)
     end
   end
 end

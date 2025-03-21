@@ -363,7 +363,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
     {results, rest} = VariableSize.decode(bin, WorkResult)
-    {auth_gas_used, rest} = Codec.Decoder.decode_integer(rest)
+    {auth_gas_used, rest} = de_i(rest)
 
     {%__MODULE__{
        specification: specification,

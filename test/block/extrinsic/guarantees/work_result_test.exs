@@ -2,6 +2,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
   alias Block.Extrinsic.Guarantee.WorkResult
   alias Util.{Hash, Hex}
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
 
   setup do
@@ -24,8 +25,23 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
 
   describe "decode/1" do
     test "decodes a work result", %{wr: wr} do
-      encoded = Encodable.encode(wr)
-      {decoded, _} = WorkResult.decode(encoded)
+      {decoded, _} = WorkResult.decode(e(wr))
+      assert decoded == wr
+    end
+
+    test "decodes a work result with big integer values", %{wr: wr} do
+      big = 2 ** 64 - 1
+
+      wr = %{
+        wr
+        | refine_gas: big,
+          imported_segments: big,
+          extrinsics_count: big,
+          extrinsics_size: big,
+          exported_segments: big
+      }
+
+      {decoded, _} = WorkResult.decode(e(wr))
       assert decoded == wr
     end
 
