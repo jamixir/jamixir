@@ -30,7 +30,7 @@ defmodule System.State.RotateKeys do
         %Judgements{offenders: offenders}
       ) do
     if Time.new_epoch?(timeslot, timeslot_) do
-      # Formula (6.13) v0.6.0 -  new epoch - rotate keys
+      # Formula (6.13) v0.6.4 -  new epoch - rotate keys
       # {γ_k', κ', λ', γ_z'} = {Φ(ι), γ_k, κ, z}
 
       # γ_k' = Φ(ι) (next -> pending)
@@ -44,7 +44,7 @@ defmodule System.State.RotateKeys do
 
       {pending_, current_, prev_, epoch_root_}
     else
-      # Formula (6.13) v0.6.0 -  same epoch - no rotation
+      # Formula (6.13) v0.6.4 -  same epoch - no rotation
       # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}
       {pending, curr_validators, prev_validators, epoch_root}
     end
