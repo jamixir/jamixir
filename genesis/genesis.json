@@ -401,7 +401,7 @@
   },
 
   "pi": {
-    "current": [
+    "vals_current": [
       {
         "blocks": 0,
         "tickets": 0,
@@ -451,7 +451,7 @@
         "assurances": 0
       }
     ],
-    "last": [
+    "vals_last": [
       {
         "blocks": 0,
         "tickets": 0,
@@ -509,7 +509,7 @@
         "exported_segments": 0,
         "extrinsics_count": 0,
         "extrinsics_size": 0,
-        "imported_segments": 0,
+        "imports": 0,
         "refine_gas": 0
       },
       {
@@ -519,7 +519,7 @@
         "exported_segments": 0,
         "extrinsics_count": 0,
         "extrinsics_size": 0,
-        "imported_segments": 0,
+        "imports": 0,
         "refine_gas": 0
       }
     ],

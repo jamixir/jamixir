@@ -5,7 +5,7 @@ defmodule System.State.ServiceStatistic do
             # r
             refine: {0, 0},
             # i
-            imported_segments: 0,
+            imports: 0,
             # e
             exported_segments: 0,
             # x
@@ -20,7 +20,7 @@ defmodule System.State.ServiceStatistic do
   @type t :: %__MODULE__{
           preimage: {non_neg_integer(), non_neg_integer()},
           refine: {non_neg_integer(), Types.gas()},
-          imported_segments: non_neg_integer(),
+          imports: non_neg_integer(),
           exported_segments: non_neg_integer(),
           extrinsics_count: non_neg_integer(),
           extrinsics_size: non_neg_integer(),

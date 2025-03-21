@@ -23,7 +23,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           # u
           refine_gas: Types.gas(),
           # i
-          imported_segments: non_neg_integer(),
+          imports: non_neg_integer(),
           # e
           exported_segments: non_neg_integer(),
           # x
@@ -45,7 +45,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             # u
             refine_gas: 0,
             # i
-            imported_segments: 0,
+            imports: 0,
             # e
             exported_segments: 0,
             # x
@@ -73,8 +73,8 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     def encode(%WorkResult{} = wr) do
       e(
         {t(wr.service), wr.code_hash, wr.payload_hash, <<wr.gas_ratio::m(gas)>>,
-         do_encode(wr.result), wr.refine_gas, wr.imported_segments, wr.extrinsics_count,
-         wr.extrinsics_size, wr.exported_segments}
+         do_encode(wr.result), wr.refine_gas, wr.imports, wr.extrinsics_count, wr.extrinsics_size,
+         wr.exported_segments}
       )
     end
 
@@ -115,7 +115,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       end
 
     {refine_gas, rest} = de_i(rest)
-    {imported_segments, rest} = de_i(rest)
+    {imports, rest} = de_i(rest)
     {extrinsics_count, rest} = de_i(rest)
     {extrinsics_size, rest} = de_i(rest)
     {exported_segments, rest} = de_i(rest)
@@ -127,7 +127,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
        gas_ratio: gas_ratio,
        result: result,
        refine_gas: refine_gas,
-       imported_segments: imported_segments,
+       imports: imports,
        extrinsics_count: extrinsics_count,
        extrinsics_size: extrinsics_size,
        exported_segments: exported_segments
@@ -144,7 +144,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       exported_segments: &value_or_zero/1,
       extrinsics_count: &value_or_zero/1,
       extrinsics_size: &value_or_zero/1,
-      imported_segments: &value_or_zero/1,
+      imports: &value_or_zero/1,
       refine_gas: &value_or_zero/1
     }
 

@@ -1,6 +1,6 @@
 defmodule System.State.Validator do
   @moduledoc """
-   # Formula (6.8) v0.6.2
+   # Formula (6.8) v0.6.4
   """
   alias System.State.Validator
 

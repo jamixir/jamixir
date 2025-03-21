@@ -143,7 +143,7 @@ defmodule Jamixir.Factory do
       payload_hash: Hash.two(),
       gas_ratio: 3,
       result: {:ok, <<4>>},
-      imported_segments: 5,
+      imports: 5,
       exported_segments: 6,
       extrinsics_count: 7,
       extrinsics_size: 8,
@@ -439,7 +439,7 @@ defmodule Jamixir.Factory do
         prior_state_root: Hash.random(),
         epoch_mark:
           {Hash.random(), Hash.random(),
-           for(_ <- 1..Constants.validator_count(), do: Hash.random())},
+           for(_ <- 1..Constants.validator_count(), do: {Hash.random(), Hash.random()})},
         vrf_signature: Hash.random(96),
         block_seal: Hash.random(96)
       })
