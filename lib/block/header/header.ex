@@ -23,7 +23,7 @@ defmodule Block.Header do
           # Formula (5.7) v0.6.0
           # Ht
           timeslot: integer(),
-          # Formula (5.10) v0.6.0
+          # Formula (5.10) v0.6.4
           # He
           epoch_mark: {Types.hash(), Types.hash(), list(Validator.t())} | nil,
           # Hw
@@ -162,7 +162,11 @@ defmodule Block.Header do
       NilDiscriminator.decode(bin, fn epoch_mark_bin ->
         <<entropy::b(hash), tickets_entropy::b(hash), rest::binary>> = epoch_mark_bin
 
-        {keys, cont} = decode_list(rest, :hash, Constants.validator_count())
+        {keys, cont} =
+          decode_list(rest, Constants.validator_count(), fn bin ->
+            <<bkey::b(hash), edkey::b(hash), rest>> = bin
+            {{bkey, edkey}, rest}
+          end)
 
         {{entropy, tickets_entropy, keys}, cont}
       end)
@@ -221,7 +225,13 @@ defmodule Block.Header do
     {
       JsonDecoder.from_json(entropy),
       JsonDecoder.from_json(tickets_entropy),
-      JsonDecoder.from_json(validators)
+      for(
+        v <- validators,
+        do: %Validator{
+          bandersnatch: JsonDecoder.from_json(v.bandersnatch),
+          ed25519: JsonDecoder.from_json(v.ed25519)
+        }
+      )
     }
   end
 

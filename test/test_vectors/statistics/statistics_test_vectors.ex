@@ -18,7 +18,7 @@ defmodule StatisticsTestVectors do
       fetch_and_parse_json(file_name <> ".json", path, @owner, @repo, @branch)
 
     mock_safrole = %{
-      gamma_k: json_data[:pre_state][:kappa_prime],
+      gamma_k: for(_ <- 1..Constants.validator_count(), do: %{}),
       gamma_s: %{keys: []},
       gamma_z: "0x00",
       gamma_a: []

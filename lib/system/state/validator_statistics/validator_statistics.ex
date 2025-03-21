@@ -147,12 +147,14 @@ defmodule System.State.ValidatorStatistics do
 
   def from_json(json_data) do
     %__MODULE__{
-      current_epoch_statistics: Enum.map(json_data[:current], &ValidatorStatistic.from_json/1),
-      previous_epoch_statistics: Enum.map(json_data[:last], &ValidatorStatistic.from_json/1)
+      current_epoch_statistics:
+        Enum.map(json_data[:vals_current], &ValidatorStatistic.from_json/1),
+      previous_epoch_statistics: Enum.map(json_data[:vals_last], &ValidatorStatistic.from_json/1)
     }
   end
 
-  def to_json_mapping, do: %{current_epoch_statistics: :current, previous_epoch_statistics: :last}
+  def to_json_mapping,
+    do: %{current_epoch_statistics: :vals_current, previous_epoch_statistics: :vals_last}
 
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
