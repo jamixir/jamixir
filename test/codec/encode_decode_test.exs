@@ -49,7 +49,10 @@ defmodule Codec.EncodeDecodeTest do
       ]
 
       Enum.each(test_cases, fn value ->
-        assert Decoder.decode_integer(Encoder.encode(value)) == value,
+        encoded = Encoder.encode(value)
+        {decoded, _} = Decoder.decode_integer(encoded)
+
+        assert decoded == value,
                "Failed for value: #{value}"
       end)
     end
@@ -57,9 +60,10 @@ defmodule Codec.EncodeDecodeTest do
     test "encode and decode works for random large integers" do
       Enum.each(1..100, fn _ ->
         value = :rand.uniform(1_000_000_000_000_000)
+        encoded = Encoder.encode(value)
+        {decoded, _} = Decoder.decode_integer(encoded)
 
-        assert Decoder.decode_integer(Encoder.encode(value)) == value,
-               "Failed for random value: #{value}"
+        assert decoded == value, "Failed for random value: #{value}"
       end)
     end
   end
