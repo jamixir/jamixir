@@ -26,7 +26,7 @@ defmodule System.Validators.Safrole do
   end
 
   def new_epoch_marker(n0, n1, pending_) do
-    {n0, n1, for(v <- pending_, do: v.bandersnatch)}
+    {n0, n1, for(v <- pending_, do: {v.bandersnatch, v.ed25519})}
   end
 
   def mock(:valid_epoch_marker, _), do: :ok
