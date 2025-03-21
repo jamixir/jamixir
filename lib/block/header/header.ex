@@ -11,16 +11,16 @@ defmodule Block.Header do
   import Codec.Decoder
 
   @type t :: %__MODULE__{
-          # Formula (5.2) v0.6.0
+          # Formula (5.2) v0.6.4
           # Hp
           parent_hash: Types.hash(),
-          # Formula (5.8) v0.6.0
+          # Formula (5.8) v0.6.4
           # Hr
           prior_state_root: Types.hash(),
-          # Formula (5.4) v0.6.0
+          # Formula (5.4) v0.6.4
           # Hx
           extrinsic_hash: Types.hash(),
-          # Formula (5.7) v0.6.0
+          # Formula (5.7) v0.6.4
           # Ht
           timeslot: integer(),
           # Formula (5.10) v0.6.4
@@ -30,7 +30,7 @@ defmodule Block.Header do
           winning_tickets_marker: list(SealKeyTicket.t()) | nil,
           # Ho
           offenders_marker: list(Types.hash()),
-          # Formula (5.9) v0.6.0
+          # Formula (5.9) v0.6.4
           # Hi
           block_author_key_index: Types.validator_index(),
           # Hv
@@ -39,7 +39,7 @@ defmodule Block.Header do
           block_seal: binary()
         }
 
-  # Formula (5.1) v0.6.0
+  # Formula (5.1) v0.6.4
   defstruct [
     # Hp
     parent_hash: Hash.zero(),
@@ -81,11 +81,11 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (5.4) v0.6.0
+  # Formula (5.4) v0.6.4
   def valid_extrinsic_hash?(header, extrinsic),
     do: header.extrinsic_hash == Extrinsic.calculate_hash(extrinsic)
 
-  # Formula (5.8) v0.6.0
+  # Formula (5.8) v0.6.4
   mockable validate_state_root(%__MODULE__{prior_state_root: r}, state) do
     state_root = Trie.state_root(state)
 
@@ -98,7 +98,7 @@ defmodule Block.Header do
 
   use MapUnion
 
-  # Formula (5.3) v0.6.0
+  # Formula (5.3) v0.6.4
   # h ∈ A ⇔ h = H ∨ (∃i ∈ A ∶ h = P (i))
   def ancestors(nil), do: []
 
