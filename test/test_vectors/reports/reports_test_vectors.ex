@@ -4,7 +4,6 @@ defmodule ReportsTestVectors do
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   use ExUnit.Case
-  import Mox
 
   def files_to_test,
     do:

@@ -63,30 +63,43 @@ defmodule System.State.ServiceStatistic do
   defp preimage_stats(previous_stats, preimages) do
     for %Preimage{service: s, blob: p} <- preimages, reduce: previous_stats do
       map ->
-        Map.update(map, s, previous_stats[s] || %ServiceStatistic{}, fn stat ->
-          {count, bytes} = stat.preimage
-          %ServiceStatistic{stat | preimage: {count + 1, bytes + byte_size(p)}}
-        end)
+        Map.update(
+          map,
+          s,
+          previous_stats[s] || %ServiceStatistic{preimage: {1, byte_size(p)}},
+          fn stat ->
+            {count, bytes} = stat.preimage
+            %ServiceStatistic{stat | preimage: {count + 1, bytes + byte_size(p)}}
+          end
+        )
     end
   end
 
   # t
   defp deferred_transfers_stats(previous_stats, deferred_transfers_stats) do
-    for {service, {count, total_gas}} <- deferred_transfers_stats, reduce: previous_stats do
+    for {service, t_stat} <- deferred_transfers_stats, reduce: previous_stats do
       map ->
-        Map.update(map, service, previous_stats[service] || %ServiceStatistic{}, fn stat ->
-          %ServiceStatistic{stat | transfers: {count, total_gas}}
-        end)
+        Map.update(
+          map,
+          service,
+          previous_stats[service] || %ServiceStatistic{transfers: t_stat},
+          fn stat ->
+            %ServiceStatistic{stat | transfers: t_stat}
+          end
+        )
     end
   end
 
   # a
   defp accumulation_stats(previous_stats, accumulation_stats) do
-    for {service, {total_gas, count}} <- accumulation_stats, reduce: previous_stats do
+    for {service, acc_stat} <- accumulation_stats, reduce: previous_stats do
       map ->
-        Map.update(map, service, previous_stats[service] || %ServiceStatistic{}, fn stat ->
-          %ServiceStatistic{stat | accumulation: {total_gas, count}}
-        end)
+        Map.update(
+          map,
+          service,
+          previous_stats[service] || %ServiceStatistic{accumulation: acc_stat},
+          &%ServiceStatistic{&1 | accumulation: acc_stat}
+        )
     end
   end
 
@@ -94,21 +107,19 @@ defmodule System.State.ServiceStatistic do
   defp refine_stats(available_work_reports) do
     for w <- available_work_reports, w != nil, r <- w.results, reduce: %{} do
       map ->
-        Map.update(map, r.service, %ServiceStatistic{}, fn
+        # put zeroed stats if not present
+        map = Map.update(map, r.service, %ServiceStatistic{}, & &1)
+
+        Map.update(map, r.service, %ServiceStatistic{}, fn previous ->
+          {rn, ru} = previous.refine
+
           %ServiceStatistic{
-            imports: i,
-            extrinsics_count: x,
-            extrinsics_size: z,
-            refine: {rn, ru},
-            exported_segments: e
-          } ->
-            %ServiceStatistic{
-              imports: i + r.imports,
-              extrinsics_count: x + r.extrinsics_count,
-              extrinsics_size: z + r.extrinsics_size,
-              exported_segments: e + r.exported_segments,
-              refine: {rn + 1, ru + r.refine_gas}
-            }
+            imports: previous.imports + r.imports,
+            extrinsics_count: previous.extrinsics_count + r.extrinsics_count,
+            extrinsics_size: previous.extrinsics_size + r.extrinsics_size,
+            exported_segments: previous.exported_segments + r.exported_segments,
+            refine: {rn + 1, ru + r.refine_gas}
+          }
         end)
     end
   end
