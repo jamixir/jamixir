@@ -165,7 +165,16 @@ defmodule TestVectorUtil do
         Enum.each(tested_keys, fn key ->
           our_result = fetch_key_from_state(state_, key)
           expected_result = fetch_key_from_state(expected_state, key)
-          if our_result != expected_result, do: IO.inspect(key)
+
+          if our_result != expected_result do
+            IO.inspect(key)
+
+            if is_binary(our_result) do
+              IO.inspect("our_result: #{Base.encode16(our_result)}")
+              IO.inspect("expected_result: #{Base.encode16(expected_result)}")
+            end
+          end
+
           assert our_result == expected_result
         end)
 
