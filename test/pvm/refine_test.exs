@@ -41,8 +41,9 @@ defmodule PVM.RefineIntegrationTest do
 
   describe "refine/2" do
     test "successfully processes a valid program" do
-      program = Services.Fibonacci.program()
-      |> PVM.Helper.init_bin()
+      program =
+        Services.Fibonacci.program()
+        |> PVM.Helper.init_bin()
 
       %{services: services, work_package: work_package} = make_executable_work_package(program)
 

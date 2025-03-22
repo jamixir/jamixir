@@ -9,7 +9,8 @@ defmodule PVM.Host.Refine.ExportTest do
 
   describe "export/5" do
     setup do
-      memory = PreMemory.init_nil_memory()
+      memory =
+        PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :read)
 
         |> PreMemory.finalize()
@@ -68,7 +69,9 @@ defmodule PVM.Host.Refine.ExportTest do
     } do
       test_data = "test_segment"
       test_data_size = byte_size(test_data)
-      memory = Memory.set_access_by_page(memory, 16, 1, :write)
+
+      memory =
+        Memory.set_access_by_page(memory, 16, 1, :write)
         |> Memory.write!(registers.r7, test_data)
         |> Memory.set_access_by_page(16, 1, :read)
 

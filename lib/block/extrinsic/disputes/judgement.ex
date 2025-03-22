@@ -25,7 +25,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
     use Codec.Encoder
     use Sizes
 
-    def encode(j = %Block.Extrinsic.Disputes.Judgement{}) do
+    def encode(%Block.Extrinsic.Disputes.Judgement{} = j) do
       e({if(j.vote, do: 1, else: 0), t(j.validator_index), j.signature})
     end
   end

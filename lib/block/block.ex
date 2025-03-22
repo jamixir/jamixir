@@ -52,29 +52,30 @@ defmodule Block do
 
     params = get_seal_components(header, state)
 
-    with {:ok, keypair} <-
-           get_signing_key(opts[:key_pairs], params.pubkey, params.entropy_pool, params.safrole_) do
-      {_, pubkey} = keypair
+    case get_signing_key(opts[:key_pairs], params.pubkey, params.entropy_pool, params.safrole_) do
+      {:ok, keypair} ->
+        {_, pubkey} = keypair
 
-      new_index =
-        Enum.find_index(params.curr_validators_, fn v -> v.bandersnatch == pubkey end)
+        new_index =
+          Enum.find_index(params.curr_validators_, fn v -> v.bandersnatch == pubkey end)
 
-      header = put_in(header.block_author_key_index, new_index)
-      Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
+        header = put_in(header.block_author_key_index, new_index)
+        Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
 
-      {:ok,
-       %__MODULE__{
-         header:
-           HeaderSeal.seal_header(
-             header,
-             params.safrole_.slot_sealers,
-             params.entropy_pool,
-             keypair
-           ),
-         extrinsic: extrinsic
-       }}
-    else
-      {:error, e} -> {:error, e}
+        {:ok,
+         %__MODULE__{
+           header:
+             HeaderSeal.seal_header(
+               header,
+               params.safrole_.slot_sealers,
+               params.entropy_pool,
+               keypair
+             ),
+           extrinsic: extrinsic
+         }}
+
+      {:error, e} ->
+        {:error, e}
     end
   end
 

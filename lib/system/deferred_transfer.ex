@@ -33,7 +33,7 @@ defmodule System.DeferredTransfer do
     use Codec.Encoder
     alias System.DeferredTransfer
 
-    def encode(t = %DeferredTransfer{}) do
+    def encode(%DeferredTransfer{} = t) do
       e({e_le(t.sender, 4), e_le(t.receiver, 4), e_le(t.amount, 8), t.memo, e_le(t.gas_limit, 8)})
     end
   end

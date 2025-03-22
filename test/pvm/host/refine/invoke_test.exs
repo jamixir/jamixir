@@ -31,11 +31,12 @@ defmodule PVM.Host.Refine.InvokeTest do
       }
 
       # gas
-      memory = PreMemory.init_nil_memory()
-        |> PreMemory.set_access(min_allowed_address(), page_size() +1 , :write)
-
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(min_allowed_address(), page_size() + 1, :write)
         |> PreMemory.finalize()
         |> Memory.write!(0x1_1000, <<100::64-little>>)
+
       gas = 100
 
       # Base registers setup
@@ -117,7 +118,6 @@ defmodule PVM.Host.Refine.InvokeTest do
       assert {:ok, ^registers_for_inner_execution} =
                Memory.read(memory_, registers.r8 + 8, 12 * 8)
     end
-
 
     @tag :skip
     # TODO, rely on simpler program, this is too much to maintain

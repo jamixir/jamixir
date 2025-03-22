@@ -21,7 +21,7 @@ defmodule Block.Extrinsic.Disputes.Fault do
     use Codec.Encoder
     alias Block.Extrinsic.Disputes.Fault
 
-    def encode(f = %Fault{}) do
+    def encode(%Fault{} = f) do
       dec = if f.vote, do: 1, else: 0
       e({f.work_report_hash, dec, f.key, f.signature})
     end

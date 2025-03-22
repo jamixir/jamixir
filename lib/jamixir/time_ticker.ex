@@ -5,7 +5,6 @@ defmodule Jamixir.TimeTicker do
 
   @default_tick_interval 500
 
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -13,7 +12,6 @@ defmodule Jamixir.TimeTicker do
   def subscribe do
     GenServer.call(__MODULE__, :subscribe)
   end
-
 
   @impl true
   def init(opts) do
@@ -52,7 +50,6 @@ defmodule Jamixir.TimeTicker do
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     {:noreply, %{state | subscribers: List.delete(state.subscribers, pid)}}
   end
-
 
   defp schedule_tick(interval) do
     Process.send_after(self(), :tick, interval)

@@ -18,7 +18,7 @@ defmodule PVM do
     module.do_authorized(p, core, services)
   end
 
-  def do_authorized(p = %WorkPackage{}, core_index, services) do
+  def do_authorized(%WorkPackage{} = p, core_index, services) do
     pc = WorkPackage.authorization_code(p, services)
 
     args = e({p, t(core_index)})
@@ -179,7 +179,7 @@ defmodule PVM do
 
     code = ServiceAccount.code(service)
 
-    if code == nil or length(transfers) == 0 do
+    if code == nil or Enum.empty?(transfers) do
       service
     else
       gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))

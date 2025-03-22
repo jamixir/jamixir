@@ -9,7 +9,8 @@ defmodule PVM.Host.Refine.PeekTest do
 
   describe "peek/4" do
     setup do
-      memory = PreMemory.init_nil_memory()
+      memory =
+        PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :write)
 
         |> PreMemory.finalize()
@@ -17,9 +18,10 @@ defmodule PVM.Host.Refine.PeekTest do
       context = %Context{}
       gas = 100
 
-
       test_data = String.duplicate("A", 32)
-      source_memory = PreMemory.init_nil_memory()
+
+      source_memory =
+        PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :read)
         |> PreMemory.write(a_0(), test_data)
 

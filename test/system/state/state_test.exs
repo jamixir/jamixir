@@ -10,7 +10,6 @@ defmodule System.StateTest do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.{JsonEncoder, NilDiscriminator}
   alias Codec.State.Json
-  alias IO.ANSI
   alias System.State
   alias Util.Hash
   setup :verify_on_exit!
@@ -325,31 +324,6 @@ defmodule System.StateTest do
       genesis_json = File.read!("genesis/genesis.json") |> Jason.decode!() |> Utils.atomize_keys()
 
       assert JsonEncoder.encode(Json.decode(genesis_json)) == genesis_json
-    end
-
-    @tag :skip
-    # genesis DOES NOT match key vals after remove the hardcoded values
-    # solve by
-    # a. use our own genesis
-    # b. have jam duna correctly encode service account
-    test "genesis matches key vals" do
-      {:ok, state} = Codec.State.from_genesis()
-      {:ok, content} = File.read("test/genesis-keyvals.json")
-      {:ok, json} = Jason.decode(content)
-      state_hex = Codec.State.Trie.serialize_hex(state)
-
-      for [k, v] <- json["keyvals"] do
-        my_k = String.replace(k, "0x", "") |> String.upcase()
-        my_v = String.replace(v, "0x", "") |> String.upcase()
-
-        if state_hex[my_k] == my_v do
-          # IO.puts("#{ANSI.green()} #{my_k} => #{my_v}\n")
-        else
-          IO.puts("#{ANSI.red()}> #{my_k} => #{my_v}")
-          IO.puts("#{ANSI.red()}< #{state_hex[my_k]}\n")
-          assert state_hex[my_k] == my_v
-        end
-      end
     end
   end
 

@@ -8,10 +8,10 @@ defmodule PVM.Host.Refine.FetchTest do
   import PVM.Memory.Constants, only: [min_allowed_address: 0]
   use Codec.Encoder
 
-
   describe "fetch/8" do
     setup do
-      memory = PreMemory.init_nil_memory()
+      memory =
+        PreMemory.init_nil_memory()
         |> PreMemory.set_access(min_allowed_address(), 32, :write)
 
         |> PreMemory.finalize()
