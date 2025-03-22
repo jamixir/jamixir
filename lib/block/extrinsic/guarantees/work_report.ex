@@ -259,7 +259,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   use Sizes
   # Formula 14.11 v0.6.2
-  # TODO update to v0.6.3
+  # TODO update to v0.6.4
   # I(p,j) ≡ ...
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
