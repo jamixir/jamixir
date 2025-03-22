@@ -9,12 +9,10 @@ defmodule PVM.Host.Refine.Result.Internal do
           context: Context.t()
         }
 
-  defstruct [
-    exit_reason: :continue,
-    registers: %Registers{},
-    memory: %Memory{},
-    context: %Context{}
-  ]
+  defstruct exit_reason: :continue,
+            registers: %Registers{},
+            memory: %Memory{},
+            context: %Context{}
 end
 
 defmodule PVM.Host.Refine.Result do

@@ -9,7 +9,6 @@ defmodule Util.MMR do
   @type t :: %MMR{roots: [Types.hash() | nil]}
   defstruct roots: []
 
-
   def new do
     %MMR{}
   end

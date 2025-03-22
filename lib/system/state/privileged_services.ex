@@ -28,7 +28,11 @@ defmodule System.State.PrivilegedServices do
 
     def encode(%PrivilegedServices{} = v) do
       e(
-        for s <- [v.privileged_services_service, v.authorizer_queue_service, v.next_validators_service] do
+        for s <- [
+              v.privileged_services_service,
+              v.authorizer_queue_service,
+              v.next_validators_service
+            ] do
           e_le(s, 4)
         end
       ) <> e(v.services_gas)

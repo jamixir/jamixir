@@ -47,7 +47,7 @@ defmodule PVM.OnTransferTest do
       assert result == service
     end
 
-    #TODO  - create a meaningful test
+    # TODO  - create a meaningful test
     @tag :skip
     test "executes all host functions when code_hash exists" do
       # transfer entry point is counter: 10

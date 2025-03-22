@@ -2,6 +2,7 @@
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
   use AccessStruct
+
   @type t :: %__MODULE__{
           # s: Service index
           service: non_neg_integer(),

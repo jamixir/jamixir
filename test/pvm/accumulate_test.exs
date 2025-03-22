@@ -65,7 +65,7 @@ defmodule PVM.AccumulateTest do
 
       operands = [
         %Operand{
-          d: {:error, :big},
+          d: {:error, :big}
         }
       ]
 

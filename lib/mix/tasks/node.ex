@@ -51,8 +51,10 @@ defmodule Mix.Tasks.Node do
     end
   end
 
+  # credo:disable-for-next-line
   defp handle_response({:ok, response}), do: IO.inspect(response, label: "Response")
   defp handle_response({:error, reason}), do: IO.puts("Error: #{inspect(reason)}")
+  # credo:disable-for-next-line
   defp handle_response(other), do: IO.inspect(other, label: "Response")
 
   def print_usage do

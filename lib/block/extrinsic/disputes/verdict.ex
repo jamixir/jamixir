@@ -26,7 +26,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     use Codec.Encoder
     alias Block.Extrinsic.Disputes.Verdict
 
-    def encode(v = %Verdict{}) do
+    def encode(%Verdict{} = v) do
       e({v.work_report_hash, e_le(v.epoch_index, 4), v.judgements})
     end
   end

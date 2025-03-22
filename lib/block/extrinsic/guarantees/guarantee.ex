@@ -393,7 +393,7 @@ defmodule Block.Extrinsic.Guarantee do
     alias Block.Extrinsic.Guarantee
 
     # Formula (C.16) v0.6.0
-    def encode(g = %Guarantee{timeslot: timeslot}) do
+    def encode(%Guarantee{timeslot: timeslot} = g) do
       e({
         g.work_report,
         t(timeslot),

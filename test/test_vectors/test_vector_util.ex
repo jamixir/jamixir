@@ -167,11 +167,11 @@ defmodule TestVectorUtil do
           expected_result = fetch_key_from_state(expected_state, key)
 
           if our_result != expected_result do
-            IO.inspect(key)
+            IO.puts(key)
 
             if is_binary(our_result) do
-              IO.inspect("our_result: #{Base.encode16(our_result)}")
-              IO.inspect("expected_result: #{Base.encode16(expected_result)}")
+              IO.puts("our_result: #{Base.encode16(our_result)}")
+              IO.puts("expected_result: #{Base.encode16(expected_result)}")
             end
           end
 
