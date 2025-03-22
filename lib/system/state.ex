@@ -117,7 +117,7 @@ defmodule System.State do
              e.assurances,
              h.parent_hash,
              h.timeslot,
-             curr_validators_,
+             state.curr_validators,
              core_reports_1
            ),
          {:ok, %{vrf_signature_output: vrf_output}} <-
