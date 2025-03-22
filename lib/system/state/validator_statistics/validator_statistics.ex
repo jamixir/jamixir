@@ -121,7 +121,8 @@ defmodule System.State.ValidatorStatistics do
           ServiceStatistic.calculate_stats(
             available_work_reports,
             accumulation_stats,
-            deffered_transfers_stats
+            deffered_transfers_stats,
+            extrinsic.preimages
           )
 
         {:ok,
