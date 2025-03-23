@@ -71,21 +71,17 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
     @spec encode(Block.Extrinsic.Guarantee.WorkResult.t()) :: <<_::32, _::_*8>>
     def encode(%WorkResult{} = wr) do
-      e(
-        {t(wr.service), wr.code_hash, wr.payload_hash, <<wr.gas_ratio::m(gas)>>,
-         do_encode(wr.result), wr.refine_gas, wr.imports, wr.extrinsics_count, wr.extrinsics_size,
-         wr.exported_segments}
-      )
-    end
-
-    # Formula (C.29) v0.6.2
-    defp do_encode({:ok, b}) do
-      e({0, vs(b)})
-    end
-
-    # Formula (C.29) v0.6.2
-    defp do_encode({:error, e}) do
-      e(WorkExecutionError.code(e))
+      t(wr.service) <>
+        e({wr.code_hash, wr.payload_hash}) <>
+        t(wr.gas_ratio) <>
+        WorkResult.encode_result(wr.result) <>
+        e({
+          wr.refine_gas,
+          wr.imports,
+          wr.extrinsics_count,
+          wr.extrinsics_size,
+          wr.exported_segments
+        })
     end
   end
 
