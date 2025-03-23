@@ -16,6 +16,22 @@ defmodule WorkPackageTest do
       assert WorkPackage.valid?(wp)
     end
 
+    test "validates invalid gas", %{wp: wp} do
+      assert WorkPackage.valid?(%{wp | work_items: [build(:work_item, refine_gas_limit: 1)]})
+
+      refute WorkPackage.valid?(%{
+               wp
+               | work_items: [build(:work_item, refine_gas_limit: Constants.gas_refine())]
+             })
+
+      refute WorkPackage.valid?(%{
+               wp
+               | work_items: [
+                   build(:work_item, accumulate_gas_limit: Constants.gas_accumulation())
+                 ]
+             })
+    end
+
     test "validates too many extrinsics", %{wp: wp} do
       half_size_extrinsic = for _ <- 1..div(Constants.max_extrinsics(), 2), do: {Hash.zero(), 1}
       wi = build(:work_item, extrinsic: half_size_extrinsic)
@@ -165,6 +181,20 @@ defmodule WorkPackageTest do
     test "encodes a work package", %{wp: wp} do
       assert Codec.Encoder.encode(wp) ==
                "\x01\x01\0\0\0\0\x03\x01\x04\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
+    end
+  end
+
+  describe "valid_gas?/1" do
+    test "validates maximum accumulation gas" do
+      item = build(:work_item, accumulate_gas_limit: Constants.gas_accumulation() - 1)
+      assert WorkPackage.valid_gas?(build(:work_package, work_items: [item]))
+      refute WorkPackage.valid_gas?(build(:work_package, work_items: [item, item]))
+    end
+
+    test "validates maximum refine gas" do
+      item = build(:work_item, refine_gas_limit: Constants.gas_refine() - 1)
+      assert WorkPackage.valid_gas?(build(:work_package, work_items: [item]))
+      refute WorkPackage.valid_gas?(build(:work_package, work_items: [item, item]))
     end
   end
 

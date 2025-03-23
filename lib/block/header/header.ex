@@ -6,8 +6,8 @@ defmodule Block.Header do
   alias System.State.{SealKeyTicket, Validator}
   alias Util.{Hash, Time}
   use SelectiveMock
-
-  use Codec.Encoder
+  use Sizes
+  use Codec.{Decoder, Encoder}
   import Codec.Decoder
 
   @type t :: %__MODULE__{
@@ -153,9 +153,6 @@ defmodule Block.Header do
       Header.unsigned_encode(header) <> e(header.block_seal)
     end
   end
-
-  use Sizes
-  use Codec.{Decoder, Encoder}
 
   def unsigned_decode(bin) do
     <<parent_hash::b(hash), prior_state_root::b(hash), extrinsic_hash::b(hash),

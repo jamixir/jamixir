@@ -5,9 +5,9 @@ defmodule Block.Extrinsic.WorkPackage do
   alias Block.Extrinsic.WorkItem
   alias System.State.ServiceAccount
   alias Util.Hash
-  use Codec.Encoder
-  use Codec.Decoder
   use AccessStruct
+  use Codec.{Decoder, Encoder}
+  use Sizes
 
   @type t :: %__MODULE__{
           # j
@@ -44,7 +44,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @maximum_size Constants.max_work_package_size()
 
   def valid?(wp) do
-    valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp)
+    valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp) && valid_gas?(wp)
   end
 
   def bundle_binary(%__MODULE__{} = wp) do
@@ -110,6 +110,14 @@ defmodule Block.Extrinsic.WorkPackage do
       extrinsic_sum <= Constants.max_extrinsics()
   end
 
+  # Formula 14.7 v0.6.4
+  def valid_gas?(%__MODULE__{work_items: work_items}) do
+    Enum.reduce(work_items, 0, fn w, acc -> acc + w.accumulate_gas_limit end) <
+      Constants.gas_accumulation() and
+      Enum.reduce(work_items, 0, fn w, acc -> acc + w.refine_gas_limit end) <
+        Constants.gas_refine()
+  end
+
   use JsonDecoder
 
   def json_mapping do
@@ -141,8 +149,6 @@ defmodule Block.Extrinsic.WorkPackage do
       })
     end
   end
-
-  use Sizes
 
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)

@@ -176,6 +176,7 @@ defmodule Codec.Encoder do
       balance: {64, :little},
       gas: {64, :little},
       gas_result: {64, :little},
+      gas_ratio: {64, :little},
       register: {64, :little},
       max_age_timeslot_lookup_anchor: {32, :little}
     }
