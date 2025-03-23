@@ -121,6 +121,35 @@ defmodule CommsTest do
     end
   end
 
+  describe "distribute_guarantee/4" do
+    test "distributes guarantee", %{client: client} do
+      g = build(:guarantee)
+      Jamixir.NodeAPI.Mock |> expect(:save_guarantee, 1, fn ^g -> :ok end)
+      {:ok, ""} = Peer.distribute_guarantee(client, g)
+      verify!()
+    end
+  end
+
+  describe "get_work_report/2" do
+    test "get work report", %{client: client} do
+      wr = build(:work_report)
+      hash = h(e(wr))
+
+      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:ok, wr} end)
+
+      {:ok, result} = Peer.get_work_report(client, hash)
+      assert result == wr
+      verify!()
+    end
+
+    test "work report not found", %{client: client} do
+      hash = Hash.one()
+      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:error, :not_found} end)
+      {:error, :not_found} = Peer.get_work_report(client, hash)
+      verify!()
+    end
+  end
+
   describe "announce_judgement/4" do
     test "announces jedgement", %{client: client} do
       hash = Hash.two()

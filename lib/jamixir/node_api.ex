@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeAPI do
+  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
   @callback add_block(binary) :: :ok | {:error, any}
@@ -24,6 +25,8 @@ defmodule Jamixir.NodeAPI do
   @callback save_assurance(Assurance.t()) :: :ok | {:error, any}
   @callback save_judgement(Types.epoch_index(), Types.hash(), Judgement.t()) ::
               :ok | {:error, any}
+  @callback save_guarantee(Guarantee.t()) :: :ok | {:error, any}
+  @callback get_work_report(Types.hash()) :: {:ok, binary} | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -44,5 +47,7 @@ defmodule Jamixir.NodeAPI do
 
   def save_judgement(epoch, hash, judgement), do: impl().save_judgement(epoch, hash, judgement)
 
+  def save_guarantee(guarantee), do: impl().save_guarantee(guarantee)
+  def get_work_report(hash), do: impl().get_work_report(hash)
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

@@ -403,7 +403,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   def encode_cretentials(creds) do
-    vs(for {i, s} <- creds, do: {<<i::16-little>>, s})
+    vs(for {i, s} <- creds, do: {<<i::m(validator_index)>>, s})
   end
 
   use Codec.Decoder
