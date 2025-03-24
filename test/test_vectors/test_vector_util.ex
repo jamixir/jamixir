@@ -134,7 +134,7 @@ defmodule TestVectorUtil do
       accumulation_history: %{},
       ready_to_accumulate: %{},
       accumulation_stats: %{},
-      deffered_transfers_stats: %{}
+      deferred_transfers_stats: %{}
     }
   end
 
