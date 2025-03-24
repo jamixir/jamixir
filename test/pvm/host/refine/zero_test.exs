@@ -14,7 +14,7 @@ defmodule PVM.Host.Refine.ZeroTest do
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(min_allowed_address(), page_size() + 2, :write)
         |> PreMemory.write(min_allowed_address(), test_data)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       machine = %Integrated{

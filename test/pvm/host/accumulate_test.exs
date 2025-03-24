@@ -43,7 +43,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), encoded_data)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+        
         |> PreMemory.finalize()
 
       registers = %Registers{
@@ -135,7 +135,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), <<255::256>>)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       context = %Context{
@@ -242,7 +242,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), test_data)
         |> PreMemory.set_access(a_0(), 336, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       registers = %Registers{r7: 0x1_0000}
@@ -339,7 +339,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), code_hash)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       # Initial context with service account having more than threshold balance
@@ -464,7 +464,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), Hash.one())
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       registers = %Registers{
@@ -538,7 +538,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), <<1::Constants.memo_size()*8>>)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       sender = %ServiceAccount{
@@ -690,7 +690,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), preimage_l_key |> elem(0))
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       # Service to be ejected
@@ -897,7 +897,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), hash)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       service_account = %ServiceAccount{
@@ -1044,7 +1044,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), hash)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       # Create service with test cases in preimage_storage_l
@@ -1198,7 +1198,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), hash)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       # Create service with test cases in preimage_storage_l
@@ -1374,7 +1374,7 @@ defmodule PVM.Host.AccumulateTest do
         PreMemory.init_nil_memory()
         |> PreMemory.write(a_0(), hash)
         |> PreMemory.set_access(a_0(), 32, :read)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       context = %Context{

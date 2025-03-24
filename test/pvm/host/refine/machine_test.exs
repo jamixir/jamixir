@@ -24,7 +24,7 @@ defmodule PVM.Host.Refine.MachineTest do
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(min_allowed_address(), 1, :write)
         |> PreMemory.write(min_allowed_address(), test_program)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       {:ok,

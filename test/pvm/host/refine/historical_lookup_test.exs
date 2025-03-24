@@ -14,7 +14,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), page_size() + 100, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       context = %Context{}
