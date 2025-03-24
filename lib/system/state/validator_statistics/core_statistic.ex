@@ -6,29 +6,29 @@ defmodule System.State.CoreStatistic do
   alias Block.Extrinsic.Guarantee.WorkReport
   import Enum
 
-  defstruct data_size: 0,
-            p: 0,
+  defstruct da_load: 0,
+            popularity: 0,
             imports: 0,
-            exported_segments: 0,
-            extrinsics_count: 0,
-            extrinsics_size: 0,
-            bundle_length: 0,
-            refine_gas: 0
+            exports: 0,
+            extrinsic_count: 0,
+            extrinsic_size: 0,
+            bundle_size: 0,
+            gas_used: 0
 
   @type t :: %__MODULE__{
-          data_size: non_neg_integer(),
-          p: non_neg_integer(),
-          bundle_length: non_neg_integer(),
+          da_load: non_neg_integer(),
+          popularity: non_neg_integer(),
+          bundle_size: non_neg_integer(),
           # i
           imports: non_neg_integer(),
           # e
-          exported_segments: non_neg_integer(),
+          exports: non_neg_integer(),
           # x
-          extrinsics_count: non_neg_integer(),
+          extrinsic_count: non_neg_integer(),
           # z
-          extrinsics_size: non_neg_integer(),
+          extrinsic_size: non_neg_integer(),
           # u
-          refine_gas: Types.gas()
+          gas_used: Types.gas()
         }
 
   @spec calculate_core_statistics(list(WorkReport.t() | nil), list(Assurance.t())) :: list(t())
@@ -43,16 +43,16 @@ defmodule System.State.CoreStatistic do
           # Formula 13.8 v0.6.4
           # Formula 13.9 v0.6.4
           imports: sum(for(r <- w.results, do: r.imports)),
-          exported_segments: sum(for(r <- w.results, do: r.exported_segments)),
-          extrinsics_count: sum(for(r <- w.results, do: r.extrinsics_count)),
-          extrinsics_size: sum(for(r <- w.results, do: r.extrinsics_size)),
-          refine_gas: sum(for(r <- w.results, do: r.refine_gas)),
-          bundle_length: w.specification.length,
+          exports: sum(for(r <- w.results, do: r.exports)),
+          extrinsic_count: sum(for(r <- w.results, do: r.extrinsic_count)),
+          extrinsic_size: sum(for(r <- w.results, do: r.extrinsic_size)),
+          gas_used: sum(for(r <- w.results, do: r.gas_used)),
+          bundle_size: w.specification.length,
           # Formula 13.10 v0.6.4
-          data_size:
+          da_load:
             w.specification.length +
               Constants.segment_size() * ceil(w.specification.segment_count * (65 / 64)),
-          p: sum(for(bits <- a_bits, do: elem(bits, c)))
+          popularity: sum(for(bits <- a_bits, do: elem(bits, c)))
         }
       end
     end

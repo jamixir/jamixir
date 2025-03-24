@@ -68,14 +68,14 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       test_data = "test_segment"
-      test_data_size = byte_size(test_data)
+      test_da_load = byte_size(test_data)
 
       memory =
         Memory.set_access_by_page(memory, 16, 1, :write)
         |> Memory.write!(registers.r7, test_data)
         |> Memory.set_access_by_page(16, 1, :read)
 
-      registers = %{registers | r8: test_data_size}
+      registers = %{registers | r8: test_da_load}
       context = %Context{e: [<<1>>, <<2>>, <<3>>, <<4>>, <<5>>]}
 
       expected_w7 = export_offset + length(context.e)

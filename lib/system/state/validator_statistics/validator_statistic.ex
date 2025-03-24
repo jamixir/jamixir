@@ -5,7 +5,7 @@ defmodule System.State.ValidatorStatistic do
   defstruct blocks_produced: 0,
             tickets_introduced: 0,
             preimages_introduced: 0,
-            data_size: 0,
+            da_load: 0,
             reports_guaranteed: 0,
             availability_assurances: 0
 
@@ -17,7 +17,7 @@ defmodule System.State.ValidatorStatistic do
           # p
           preimages_introduced: non_neg_integer(),
           # d
-          data_size: non_neg_integer(),
+          da_load: non_neg_integer(),
           # g
           reports_guaranteed: non_neg_integer(),
           # a
@@ -32,7 +32,7 @@ defmodule System.State.ValidatorStatistic do
         e_le(v.blocks_produced, 4),
         e_le(v.tickets_introduced, 4),
         e_le(v.preimages_introduced, 4),
-        e_le(v.data_size, 4),
+        e_le(v.da_load, 4),
         e_le(v.reports_guaranteed, 4),
         e_le(v.availability_assurances, 4)
       ]
@@ -46,7 +46,7 @@ defmodule System.State.ValidatorStatistic do
       blocks_produced: :blocks,
       tickets_introduced: :tickets,
       preimages_introduced: :pre_images,
-      data_size: :pre_images_size,
+      da_load: :pre_images_size,
       reports_guaranteed: :guarantees,
       availability_assurances: :assurances
     }

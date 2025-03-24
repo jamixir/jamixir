@@ -9,10 +9,10 @@ defmodule System.State.CoreStatisticTest do
       result =
         build(:work_result,
           imports: 1,
-          exported_segments: 2,
-          extrinsics_count: 3,
-          extrinsics_size: 4,
-          refine_gas: 5
+          exports: 2,
+          extrinsic_count: 3,
+          extrinsic_size: 4,
+          gas_used: 5
         )
 
       specification = build(:availability_specification, length: 7)
@@ -33,13 +33,13 @@ defmodule System.State.CoreStatisticTest do
       assert CoreStatistic.calculate_core_statistics(available_work_reports, assurances) == [
                %CoreStatistic{
                  imports: 2,
-                 exported_segments: 4,
-                 extrinsics_count: 6,
-                 extrinsics_size: 8,
-                 refine_gas: 10,
-                 bundle_length: 7,
+                 exports: 4,
+                 extrinsic_count: 6,
+                 extrinsic_size: 8,
+                 gas_used: 10,
+                 bundle_size: 7,
                  # 7 + 4104 * ⌈(2 * (65 / 64))⌉
-                 data_size: 12_319
+                 da_load: 12_319
                },
                %CoreStatistic{},
                %CoreStatistic{}

@@ -84,8 +84,8 @@ defmodule Block.Extrinsic.WorkPackage do
       byte_size(p.parameterization_blob) +
       Enum.reduce(work_items, 0, fn w, acc ->
         segments_size = length(w.import_segments) * Constants.segment_size()
-        extrinsics_size = Enum.sum(for {_, e} <- w.extrinsic, do: e)
-        acc + byte_size(w.payload) + segments_size + extrinsics_size
+        extrinsic_size = Enum.sum(for {_, e} <- w.extrinsic, do: e)
+        acc + byte_size(w.payload) + segments_size + extrinsic_size
       end) <= @maximum_size
   end
 

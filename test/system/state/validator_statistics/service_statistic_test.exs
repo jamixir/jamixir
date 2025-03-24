@@ -51,10 +51,10 @@ defmodule System.State.ServiceStatisticTest do
             %WorkResult{
               service: 1,
               imports: 5,
-              extrinsics_count: 10,
-              extrinsics_size: 1000,
-              exported_segments: 2,
-              refine_gas: 500
+              extrinsic_count: 10,
+              extrinsic_size: 1000,
+              exports: 2,
+              gas_used: 500
             }
           ]
         }
@@ -76,9 +76,9 @@ defmodule System.State.ServiceStatisticTest do
       assert result[1] == %ServiceStatistic{
                refine: {1, 500},
                imports: 5,
-               extrinsics_count: 10,
-               extrinsics_size: 1000,
-               exported_segments: 2,
+               extrinsic_count: 10,
+               extrinsic_size: 1000,
+               exports: 2,
                accumulation: {800, 3},
                transfers: {2, 200},
                preimage: {1, 4}
@@ -94,28 +94,28 @@ defmodule System.State.ServiceStatisticTest do
             %WorkResult{
               service: 1,
               imports: 5,
-              extrinsics_count: 10,
-              extrinsics_size: 1000,
-              exported_segments: 2,
-              refine_gas: 500
+              extrinsic_count: 10,
+              extrinsic_size: 1000,
+              exports: 2,
+              gas_used: 500
             },
             %WorkResult{
               # Same service to test aggregation
               service: 1,
               imports: 3,
-              extrinsics_count: 5,
-              extrinsics_size: 500,
-              exported_segments: 1,
-              refine_gas: 300
+              extrinsic_count: 5,
+              extrinsic_size: 500,
+              exports: 1,
+              gas_used: 300
             },
             %WorkResult{
               # Different service
               service: 2,
               imports: 1,
-              extrinsics_count: 2,
-              extrinsics_size: 200,
-              exported_segments: 0,
-              refine_gas: 100
+              extrinsic_count: 2,
+              extrinsic_size: 200,
+              exports: 0,
+              gas_used: 100
             }
           ]
         }
@@ -127,17 +127,17 @@ defmodule System.State.ServiceStatisticTest do
 
       assert result[1] == %ServiceStatistic{
                imports: 8,
-               extrinsics_count: 15,
-               extrinsics_size: 1500,
-               exported_segments: 3,
+               extrinsic_count: 15,
+               extrinsic_size: 1500,
+               exports: 3,
                refine: {2, 800}
              }
 
       assert result[2] == %ServiceStatistic{
                imports: 1,
-               extrinsics_count: 2,
-               extrinsics_size: 200,
-               exported_segments: 0,
+               extrinsic_count: 2,
+               extrinsic_size: 200,
+               exports: 0,
                refine: {1, 100}
              }
     end
@@ -188,18 +188,18 @@ defmodule System.State.ServiceStatisticTest do
             %WorkResult{
               service: 1,
               imports: 5,
-              extrinsics_count: 10,
-              extrinsics_size: 1000,
-              exported_segments: 2,
-              refine_gas: 500
+              extrinsic_count: 10,
+              extrinsic_size: 1000,
+              exports: 2,
+              gas_used: 500
             },
             %WorkResult{
               service: 2,
               imports: 1,
-              extrinsics_count: 2,
-              extrinsics_size: 200,
-              exported_segments: 0,
-              refine_gas: 100
+              extrinsic_count: 2,
+              extrinsic_size: 200,
+              exports: 0,
+              gas_used: 100
             }
           ]
         }
@@ -227,9 +227,9 @@ defmodule System.State.ServiceStatisticTest do
       assert result[1] == %ServiceStatistic{
                refine: {1, 500},
                imports: 5,
-               extrinsics_count: 10,
-               extrinsics_size: 1000,
-               exported_segments: 2,
+               extrinsic_count: 10,
+               extrinsic_size: 1000,
+               exports: 2,
                accumulation: {300, 2},
                transfers: {2, 200},
                preimage: {1, 4}
