@@ -147,7 +147,7 @@ defmodule System.State.Accumulation do
       # Formula (12.24) v0.6.4
       accumulation_stats: accumulate_statistics(w_star_n),
       # Formula (12.30) v0.6.4
-      deffered_transfers_stats: deferred_transfers_stats(deferred_transfers)
+      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers)
     }
   end
 

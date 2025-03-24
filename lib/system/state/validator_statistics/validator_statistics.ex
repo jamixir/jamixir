@@ -65,7 +65,7 @@ defmodule System.State.ValidatorStatistics do
   def do_transition(
         %Extrinsic{} = extrinsic,
         timeslot,
-        {%__MODULE__{} = validator_statistics, accumulation_stats, deffered_transfers_stats},
+        {%__MODULE__{} = validator_statistics, accumulation_stats, deferred_transfers_stats},
         curr_validators_,
         %Header{} = header,
         reporters_set,
@@ -121,7 +121,7 @@ defmodule System.State.ValidatorStatistics do
           ServiceStatistic.calculate_stats(
             available_work_reports,
             accumulation_stats,
-            deffered_transfers_stats,
+            deferred_transfers_stats,
             extrinsic.preimages
           )
 
