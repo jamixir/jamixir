@@ -78,7 +78,6 @@ defmodule PVM.Host.GeneralTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-
         |> PreMemory.finalize()
 
       value = "value" |> String.pad_trailing(32, "\0")
@@ -228,7 +227,6 @@ defmodule PVM.Host.GeneralTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-
         |> PreMemory.finalize()
 
       value = "value" |> String.pad_trailing(32, "\0")
@@ -489,7 +487,6 @@ defmodule PVM.Host.GeneralTest do
       m =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-
         |> PreMemory.finalize()
 
       service_account = %ServiceAccount{

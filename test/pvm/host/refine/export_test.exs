@@ -12,7 +12,6 @@ defmodule PVM.Host.Refine.ExportTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :read)
-
         |> PreMemory.finalize()
 
       export_offset = 0

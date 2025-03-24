@@ -135,4 +135,10 @@ defmodule Jamixir.Node do
     # TODO
     :ok
   end
+
+  @impl true
+  def get_work_report(_hash) do
+    # TODO
+    :ok
+  end
 end

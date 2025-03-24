@@ -13,7 +13,6 @@ defmodule PVM.Host.Refine.FetchTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(min_allowed_address(), 32, :write)
-
         |> PreMemory.finalize()
 
       context = %Context{}

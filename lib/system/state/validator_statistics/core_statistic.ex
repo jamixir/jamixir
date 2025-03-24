@@ -2,9 +2,7 @@ defmodule System.State.CoreStatistic do
   @moduledoc """
   Formula (13.6) v0.6.4
   """
-  alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Guarantee.WorkReport
-  import Enum
+  alias Block.Extrinsic.{Assurance, Guarantee.WorkReport}
 
   defstruct da_load: 0,
             popularity: 0,

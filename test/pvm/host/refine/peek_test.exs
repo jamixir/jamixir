@@ -12,7 +12,6 @@ defmodule PVM.Host.Refine.PeekTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :write)
-
         |> PreMemory.finalize()
 
       context = %Context{}
@@ -24,7 +23,6 @@ defmodule PVM.Host.Refine.PeekTest do
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :read)
         |> PreMemory.write(a_0(), test_data)
-
         |> PreMemory.finalize()
 
       machine = %Integrated{
