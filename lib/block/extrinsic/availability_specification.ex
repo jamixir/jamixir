@@ -73,12 +73,13 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
     # b♣ = H#(C ⌈ ∣b∣/WE ⌉(PWE (b)))
     b_clubs =
-      for x <-
-            erasure_code_chunk(
-              Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size()),
-              chunk_size
-            ),
-          do: Hash.default(x)
+      Enum.map(
+        erasure_code_chunk(
+          Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size()),
+          chunk_size
+        ),
+        &Hash.default/1
+      )
 
     # u = MB ([x ∣ x <− T[b♣,s♣]])
     MerkleTree.well_balanced_merkle_root(

@@ -225,9 +225,9 @@ defmodule Block.Header do
     {
       JsonDecoder.from_json(entropy),
       JsonDecoder.from_json(tickets_entropy),
-      for(
-        v <- validators,
-        do: {JsonDecoder.from_json(v.bandersnatch), JsonDecoder.from_json(v.ed25519)}
+      Enum.map(
+        validators,
+        &{JsonDecoder.from_json(&1.bandersnatch), JsonDecoder.from_json(&1.ed25519)}
       )
     }
   end

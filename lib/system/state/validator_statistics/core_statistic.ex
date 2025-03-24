@@ -33,7 +33,7 @@ defmodule System.State.CoreStatistic do
 
   @spec calculate_core_statistics(list(WorkReport.t() | nil), list(Assurance.t())) :: list(t())
   def calculate_core_statistics(available_work_reports, assurances) do
-    a_bits = for a <- assurances, do: Assurance.core_bits(a)
+    a_bits = Enum.map(assurances, &Assurance.core_bits/1)
 
     for {w, c} <- Enum.with_index(available_work_reports) do
       if w == nil do
