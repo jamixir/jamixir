@@ -15,13 +15,13 @@ defmodule PVM.Host.Refine.PokeTest do
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :read)
         |> PreMemory.write(a_0(), test_data)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       machine_memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 1, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       machine = %Integrated{

@@ -78,7 +78,7 @@ defmodule PVM.Host.GeneralTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       value = "value" |> String.pad_trailing(32, "\0")
@@ -228,7 +228,7 @@ defmodule PVM.Host.GeneralTest do
       memory =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       value = "value" |> String.pad_trailing(32, "\0")
@@ -401,7 +401,7 @@ defmodule PVM.Host.GeneralTest do
         |> PreMemory.write(a_0() + %Memory{}.page_size + 100, value)
         # |> PreMemory.set_access(a_0(), 32, :write)
         # |> PreMemory.set_access(a_0() + %Memory{}.page_size, 32, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       {:ok, m: m, c: c, g: g, registers: registers, storage_key: storage_key}
@@ -489,7 +489,7 @@ defmodule PVM.Host.GeneralTest do
       m =
         PreMemory.init_nil_memory()
         |> PreMemory.set_access(a_0(), 32, :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
 
       service_account = %ServiceAccount{

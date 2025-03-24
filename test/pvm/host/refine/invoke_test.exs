@@ -33,7 +33,7 @@ defmodule PVM.Host.Refine.InvokeTest do
       # gas
       memory = PreMemory.init_nil_memory()
         |> PreMemory.set_access(min_allowed_address(), page_size() +1 , :write)
-        |> PreMemory.resolve_overlaps()
+
         |> PreMemory.finalize()
         |> Memory.write!(0x1_1000, <<100::64-little>>)
       gas = 100
