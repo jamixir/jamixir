@@ -503,24 +503,24 @@
     ],
     "core_statistics": [
       {
-        "data_size": 0,
-        "p": 0,
-        "bundle_length": 0,
-        "exported_segments": 0,
-        "extrinsics_count": 0,
-        "extrinsics_size": 0,
+        "da_load": 0,
+        "popularity": 0,
+        "bundle_size": 0,
+        "exports": 0,
+        "extrinsic_count": 0,
+        "extrinsic_size": 0,
         "imports": 0,
-        "refine_gas": 0
+        "gas_used": 0
       },
       {
-        "data_size": 0,
-        "p": 0,
-        "bundle_length": 0,
-        "exported_segments": 0,
-        "extrinsics_count": 0,
-        "extrinsics_size": 0,
+        "da_load": 0,
+        "popularity": 0,
+        "bundle_size": 0,
+        "exports": 0,
+        "extrinsic_count": 0,
+        "extrinsic_size": 0,
         "imports": 0,
-        "refine_gas": 0
+        "gas_used": 0
       }
     ],
     "service_statistics": {}

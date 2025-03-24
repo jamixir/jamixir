@@ -9,11 +9,11 @@ defmodule System.State.ServiceStatistic do
             # i
             imports: 0,
             # e
-            exported_segments: 0,
+            exports: 0,
             # x
-            extrinsics_count: 0,
+            extrinsic_count: 0,
             # z
-            extrinsics_size: 0,
+            extrinsic_size: 0,
             # a
             accumulation: {0, 0},
             transfers: {0, 0}
@@ -23,9 +23,9 @@ defmodule System.State.ServiceStatistic do
           preimage: {non_neg_integer(), non_neg_integer()},
           refine: {non_neg_integer(), Types.gas()},
           imports: non_neg_integer(),
-          exported_segments: non_neg_integer(),
-          extrinsics_count: non_neg_integer(),
-          extrinsics_size: non_neg_integer(),
+          exports: non_neg_integer(),
+          extrinsic_count: non_neg_integer(),
+          extrinsic_size: non_neg_integer(),
           accumulation: {non_neg_integer(), Types.gas()},
           transfers: {non_neg_integer(), Types.gas()}
         }
@@ -115,10 +115,10 @@ defmodule System.State.ServiceStatistic do
 
           %ServiceStatistic{
             imports: previous.imports + r.imports,
-            extrinsics_count: previous.extrinsics_count + r.extrinsics_count,
-            extrinsics_size: previous.extrinsics_size + r.extrinsics_size,
-            exported_segments: previous.exported_segments + r.exported_segments,
-            refine: {rn + 1, ru + r.refine_gas}
+            extrinsic_count: previous.extrinsic_count + r.extrinsic_count,
+            extrinsic_size: previous.extrinsic_size + r.extrinsic_size,
+            exports: previous.exports + r.exports,
+            refine: {rn + 1, ru + r.gas_used}
           }
         end)
     end

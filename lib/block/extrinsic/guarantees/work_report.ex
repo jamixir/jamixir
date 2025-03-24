@@ -202,14 +202,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula 14.10 v0.6.2
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
-  def paged_proofs(exported_segments) do
-    segments_count = ceil(length(exported_segments) / 64)
+  def paged_proofs(exports) do
+    segments_count = ceil(length(exports) / 64)
 
     for i <- for(s <- 0..segments_count, do: 64 * s) do
       Utils.pad_binary_right(
         e({
-          vs(MerkleTree.justification(exported_segments, i, 6)),
-          vs(MerkleTree.justification_l(exported_segments, i, 6))
+          vs(MerkleTree.justification(exports, i, 6)),
+          vs(MerkleTree.justification_l(exports, i, 6))
         }),
         Constants.segment_size()
       )

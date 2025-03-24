@@ -90,8 +90,8 @@ defmodule System.State.ValidatorStatistics do
           | blocks_produced: author_stats.blocks_produced + 1,
             tickets_introduced: author_stats.tickets_introduced + length(extrinsic.tickets),
             preimages_introduced: author_stats.preimages_introduced + length(extrinsic.preimages),
-            data_size:
-              author_stats.data_size +
+            da_load:
+              author_stats.da_load +
                 Enum.sum(for preimage <- extrinsic.preimages, do: byte_size(preimage.blob))
         }
 

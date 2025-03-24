@@ -34,11 +34,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
 
       wr = %{
         wr
-        | refine_gas: big,
+        | gas_used: big,
           imports: big,
-          extrinsics_count: big,
-          extrinsics_size: big,
-          exported_segments: big
+          extrinsic_count: big,
+          extrinsic_size: big,
+          exports: big
       }
 
       {decoded, _} = WorkResult.decode(e(wr))
@@ -76,11 +76,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                service_id: wr.service,
                accumulate_gas: wr.gas_ratio,
                result: %{ok: Hex.encode16(elem(wr.result, 1), prefix: true)},
-               exported_segments: 6,
-               extrinsics_count: 7,
-               extrinsics_size: 8,
+               exports: 6,
+               extrinsic_count: 7,
+               extrinsic_size: 8,
                imports: 5,
-               refine_gas: 9
+               gas_used: 9
              }
     end
 
@@ -95,10 +95,10 @@ defmodule Block.Extrinsic.Guarantee.WorkResultTest do
                accumulate_gas: wr.gas_ratio,
                result: %{:panic => nil},
                imports: 5,
-               exported_segments: 6,
-               extrinsics_count: 7,
-               extrinsics_size: 8,
-               refine_gas: 9
+               exports: 6,
+               extrinsic_count: 7,
+               extrinsic_size: 8,
+               gas_used: 9
              }
     end
   end

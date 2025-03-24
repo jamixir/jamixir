@@ -21,7 +21,7 @@ defmodule System.State.ValidatorStatisticsTest do
              blocks_produced: 1,
              tickets_introduced: 2,
              preimages_introduced: 3,
-             data_size: 4,
+             da_load: 4,
              reports_guaranteed: 5,
              availability_assurances: 6
            }
@@ -31,7 +31,7 @@ defmodule System.State.ValidatorStatisticsTest do
              blocks_produced: 11,
              tickets_introduced: 12,
              preimages_introduced: 13,
-             data_size: 14,
+             da_load: 14,
              reports_guaranteed: 15,
              availability_assurances: 16
            }
@@ -183,7 +183,7 @@ defmodule System.State.ValidatorStatisticsTest do
       extrinsic = build(:extrinsic, preimages: build_list(4, :preimage))
       author_key_index = 1
 
-      initial_data_size = for s <- validator_statistics.current_epoch_statistics, do: s.data_size
+      initial_da_load = for s <- validator_statistics.current_epoch_statistics, do: s.da_load
 
       {:ok, validator_stats_} =
         ValidatorStatistics.transition(
@@ -198,10 +198,10 @@ defmodule System.State.ValidatorStatisticsTest do
 
       assert Enum.with_index(
                validator_stats_.current_epoch_statistics,
-               fn %{data_size: size}, idx ->
+               fn %{da_load: size}, idx ->
                  if idx == author_key_index,
-                   do: size == Enum.at(initial_data_size, idx) + 20,
-                   else: size == Enum.at(initial_data_size, idx)
+                   do: size == Enum.at(initial_da_load, idx) + 20,
+                   else: size == Enum.at(initial_da_load, idx)
                end
              )
     end
@@ -259,14 +259,14 @@ defmodule System.State.ValidatorStatisticsTest do
       json = JsonEncoder.encode(vs)
 
       core_stat = %{
-        data_size: 0,
-        p: 0,
-        bundle_length: 0,
-        exported_segments: 0,
-        extrinsics_count: 0,
-        extrinsics_size: 0,
+        da_load: 0,
+        popularity: 0,
+        bundle_size: 0,
+        exports: 0,
+        extrinsic_count: 0,
+        extrinsic_size: 0,
         imports: 0,
-        refine_gas: 0
+        gas_used: 0
       }
 
       assert json == %{

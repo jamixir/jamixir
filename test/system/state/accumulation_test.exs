@@ -769,7 +769,7 @@ defmodule System.State.AccumulationTest do
       work_reports = [
         %WorkReport{
           results: [
-            %WorkResult{service: 1, refine_gas: 100}
+            %WorkResult{service: 1, gas_used: 100}
           ]
         }
       ]
@@ -782,14 +782,14 @@ defmodule System.State.AccumulationTest do
       work_reports = [
         %WorkReport{
           results: [
-            %WorkResult{service: 1, refine_gas: 100},
-            %WorkResult{service: 2, refine_gas: 200}
+            %WorkResult{service: 1, gas_used: 100},
+            %WorkResult{service: 2, gas_used: 200}
           ]
         },
         %WorkReport{
           results: [
-            %WorkResult{service: 1, refine_gas: 300},
-            %WorkResult{service: 3, refine_gas: 400}
+            %WorkResult{service: 1, gas_used: 300},
+            %WorkResult{service: 3, gas_used: 400}
           ]
         }
       ]

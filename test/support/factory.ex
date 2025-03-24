@@ -144,10 +144,10 @@ defmodule Jamixir.Factory do
       gas_ratio: 3,
       result: {:ok, <<4>>},
       imports: 5,
-      exported_segments: 6,
-      extrinsics_count: 7,
-      extrinsics_size: 8,
-      refine_gas: 9
+      exports: 6,
+      extrinsic_count: 7,
+      extrinsic_size: 8,
+      gas_used: 9
     }
   end
 

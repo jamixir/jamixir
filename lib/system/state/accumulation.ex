@@ -158,8 +158,8 @@ defmodule System.State.Accumulation do
     for w <- work_reports, r <- w.results, reduce: %{} do
       stat ->
         case Map.get(stat, r.service) do
-          nil -> Map.put(stat, r.service, {r.refine_gas, 1})
-          {total_gas, count} -> Map.put(stat, r.service, {total_gas + r.refine_gas, count + 1})
+          nil -> Map.put(stat, r.service, {r.gas_used, 1})
+          {total_gas, count} -> Map.put(stat, r.service, {total_gas + r.gas_used, count + 1})
         end
     end
   end

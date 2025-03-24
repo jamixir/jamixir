@@ -21,15 +21,15 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
           # d
           result: {:ok, binary()} | {:error, WorkExecutionError.t()},
           # u
-          refine_gas: Types.gas(),
+          gas_used: Types.gas(),
           # i
           imports: non_neg_integer(),
           # e
-          exported_segments: non_neg_integer(),
+          exports: non_neg_integer(),
           # x
-          extrinsics_count: non_neg_integer(),
+          extrinsic_count: non_neg_integer(),
           # z
-          extrinsics_size: non_neg_integer()
+          extrinsic_size: non_neg_integer()
         }
 
   # s
@@ -43,15 +43,15 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             # d
             result: {:ok, <<>>},
             # u
-            refine_gas: 0,
+            gas_used: 0,
             # i
             imports: 0,
             # e
-            exported_segments: 0,
+            exports: 0,
             # x
-            extrinsics_count: 0,
+            extrinsic_count: 0,
             # b
-            extrinsics_size: 0
+            extrinsic_size: 0
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
   def new(%WorkItem{} = wi, output) do
@@ -76,11 +76,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
         t(wr.gas_ratio) <>
         WorkResult.encode_result(wr.result) <>
         e({
-          wr.refine_gas,
+          wr.gas_used,
           wr.imports,
-          wr.extrinsics_count,
-          wr.extrinsics_size,
-          wr.exported_segments
+          wr.extrinsic_count,
+          wr.extrinsic_size,
+          wr.exports
         })
     end
   end
@@ -112,9 +112,9 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
 
     {refine_gas, rest} = de_i(rest)
     {imports, rest} = de_i(rest)
-    {extrinsics_count, rest} = de_i(rest)
-    {extrinsics_size, rest} = de_i(rest)
-    {exported_segments, rest} = de_i(rest)
+    {extrinsic_count, rest} = de_i(rest)
+    {extrinsic_size, rest} = de_i(rest)
+    {exports, rest} = de_i(rest)
 
     {%__MODULE__{
        service: service,
@@ -122,11 +122,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
        payload_hash: payload_hash,
        gas_ratio: gas_ratio,
        result: result,
-       refine_gas: refine_gas,
+       gas_used: refine_gas,
        imports: imports,
-       extrinsics_count: extrinsics_count,
-       extrinsics_size: extrinsics_size,
-       exported_segments: exported_segments
+       extrinsic_count: extrinsic_count,
+       extrinsic_size: extrinsic_size,
+       exports: exports
      }, rest}
   end
 
@@ -137,11 +137,11 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       service: :service_id,
       gas_ratio: :accumulate_gas,
       result: &parse_result/1,
-      exported_segments: &value_or_zero/1,
-      extrinsics_count: &value_or_zero/1,
-      extrinsics_size: &value_or_zero/1,
+      exports: &value_or_zero/1,
+      extrinsic_count: &value_or_zero/1,
+      extrinsic_size: &value_or_zero/1,
       imports: &value_or_zero/1,
-      refine_gas: &value_or_zero/1
+      gas_used: &value_or_zero/1
     }
 
   def value_or_zero(v), do: v || 0
