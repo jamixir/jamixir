@@ -35,10 +35,11 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   end
 
   describe "from_execution/3" do
-    use Sizes
+    use Codec.Encoder
 
     test "calculates erasure root" do
-      segments = [<<0::@export_segment_size*8>>, <<1::@export_segment_size*8>>]
+      erasure_coded_piece = 1
+      segments = [t(erasure_coded_piece), t(erasure_coded_piece)]
 
       bundle_binary = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
       exp_erasure_root = AS.calculate_erasure_root(bundle_binary, segments)

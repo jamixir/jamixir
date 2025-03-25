@@ -161,6 +161,7 @@ defmodule Codec.Encoder do
       bandersnatch_signature: Sizes.bandersnatch_signature(),
       bandersnatch_proof: @bandersnatch_proof_size,
       export_segment: Sizes.export_segment(),
+      erasure_coded_piece: Sizes.erasure_coded_piece(),
       bitfield: Sizes.bitfield(),
       merkle_root: Sizes.merkle_root(),
 

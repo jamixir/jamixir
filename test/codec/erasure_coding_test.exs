@@ -155,9 +155,12 @@ defmodule ErasureCodingTest do
     end
   end
 
+  use Codec.Encoder
+
   describe "erasure_code/1" do
     test "smoke test" do
-      binary = <<1::684*8>>
+      erasure_coded_piece = 1
+      binary = t(erasure_coded_piece)
       result = ErasureCoding.erasure_code(binary)
       assert length(result) == 1023
       [first | _] = result

@@ -1,5 +1,6 @@
 defmodule ErasureCoding do
   # Formula (H.1) v0.6.0
+  @ec_size Constants.erasure_coded_piece_size()
 
   def split(data, n) when is_binary(data) and rem(byte_size(data), n) != 0 do
     raise ArgumentError, "Invalid data size"
@@ -79,7 +80,7 @@ defmodule ErasureCoding do
   def erasure_code(d) do
     for c <-
           Utils.transpose(
-            for p <- unzip(d, 684) do
+            for p <- unzip(d, @ec_size) do
               encode_bin(p)
             end
           ) do
@@ -88,7 +89,8 @@ defmodule ErasureCoding do
   end
 
   @spec encode_bin(binary) :: list(binary)
-  def encode_bin(data) when is_binary(data) and byte_size(data) == 684 do
+  def encode_bin(data)
+      when is_binary(data) and byte_size(data) == @ec_size do
     data
     |> :binary.bin_to_list()
     |> Enum.chunk_every(2)

@@ -8,7 +8,8 @@ defmodule Sizes do
 
   def bandersnatch_signature, do: 96
   def bandersnatch_proof, do: 784
-  def export_segment, do: 4104
+  def export_segment, do: Constants.erasure_coded_piece_size() * 6
+  def erasure_coded_piece, do: Constants.erasure_coded_piece_size()
 
   defmacro __using__(_) do
     quote do

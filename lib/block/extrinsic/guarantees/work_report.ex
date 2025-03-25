@@ -257,7 +257,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  use Sizes
   # Formula 14.11 v0.6.2
   # TODO update to v0.6.4
   # I(p,j) ≡ ...
@@ -283,7 +282,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  defp zero_segments(size), do: List.duplicate(<<0::@export_segment_size*8>>, size)
+  defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
   # Formula (14.12) v0.6.2
   # TODO ⊞ part

@@ -85,7 +85,7 @@ defmodule Constants do
   def max_work_package_size, do: 12_582_912
 
   @doc "WE - The basic size of our erasure-coded pieces."
-  def erasure_coded_piece_size, do: 684
+  def erasure_coded_piece_size, do: Jamixir.config()[:ec_size] || 684
 
   @doc "WR - The maximum size of an encoded work-report in octets."
   def max_work_report_size, do: 48 * 2 ** 10
