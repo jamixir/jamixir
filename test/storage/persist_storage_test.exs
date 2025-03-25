@@ -29,14 +29,14 @@ defmodule PersistStorageTest do
   test "basic persistence operations" do
     PersistStorage.put("key1", "value1")
     # Wait for async write
-    Process.sleep(100)
+    Process.sleep(10)
     assert PersistStorage.get("key1") == "value1"
   end
 
   test "multi-put operations" do
     map = %{"key1" => "value1", "key2" => "value2"}
     PersistStorage.put(map)
-    Process.sleep(100)
+    Process.sleep(10)
 
     assert PersistStorage.get("key1") == "value1"
     assert PersistStorage.get("key2") == "value2"
@@ -52,10 +52,10 @@ defmodule PersistStorageTest do
 
   test "delete operation" do
     PersistStorage.put("key1", "value1")
-    Process.sleep(100)
+    Process.sleep(10)
 
     PersistStorage.delete("key1")
-    Process.sleep(100)
+    Process.sleep(10)
 
     assert PersistStorage.get("key1") == nil
   end
@@ -63,10 +63,10 @@ defmodule PersistStorageTest do
   test "clear operation" do
     map = %{"key1" => "value1", "key2" => "value2"}
     PersistStorage.put(map)
-    Process.sleep(100)
+    Process.sleep(10)
 
     PersistStorage.clear()
-    Process.sleep(100)
+    Process.sleep(10)
 
     assert PersistStorage.get("key1") == nil
     assert PersistStorage.get("key2") == nil

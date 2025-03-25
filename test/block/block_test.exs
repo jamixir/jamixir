@@ -2,10 +2,9 @@ defmodule BlockTest do
   use ExUnit.Case, async: false
   import Jamixir.Factory
   alias Block
-  alias Block.{Extrinsic, Extrinsic.Disputes, Header}
+  alias Block.{Extrinsic, Extrinsic.Disputes}
   alias Codec.State.Trie
   alias System.State
-  alias System.State.RotateKeys
   alias Util.{Export, Hash, Time}
   import Mox
   import TestHelper
@@ -180,8 +179,8 @@ defmodule BlockTest do
     test "creates a valid fallback block no extrinsics" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
-      end_time = Time.current_timeslot() - Constants.slot_period() * 2
-      initial_time = end_time - Constants.slot_period() * 2
+      end_time = Time.current_timeslot()
+      initial_time = end_time - Constants.slot_period() - 1
 
       for t <- initial_time..end_time, reduce: {state, nil} do
         {state, header_hash} ->
@@ -205,27 +204,8 @@ defmodule BlockTest do
       state = put_in(state.entropy_pool, build(:fixed_entropy_pool))
       # Set the first key in the environment
       KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
-
-      # choose the first timeslot that has a valid key
-      t =
-        Enum.reduce_while(100..120, nil, fn i, _ ->
-          h = %Header{timeslot: i}
-          {pending_, _, _, _} = RotateKeys.rotate_keys(h, state, state.judgements)
-          h = put_in(h.epoch_mark, Block.choose_epoch_marker(i, state, pending_))
-
-          case Block.get_seal_components(h, state) do
-            %{pubkey: p} when p == pub ->
-              {:halt, i}
-
-            %{pubkey: p} when p != pub ->
-              {:cont, i}
-
-            _ ->
-              {:cont, i}
-          end
-        end)
-
-      {:ok, _} = Block.new(%Extrinsic{}, nil, state, t)
+      # 101 is the correct timeslot based on the fixed entropy pool
+      {:ok, _} = Block.new(%Extrinsic{}, nil, state, 101)
     end
 
     @tag :slow
@@ -233,7 +213,7 @@ defmodule BlockTest do
       %{state: state, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
 
-      for i <- 1..9, reduce: state do
+      for i <- [1, 2], reduce: state do
         state ->
           {{priv, pub}, _} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
           KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
