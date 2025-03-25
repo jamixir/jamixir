@@ -15,6 +15,12 @@ defmodule WorkReportTest do
     preimage = Hash.random()
     sa = ServiceAccount.store_preimage(build(:service_account), preimage, 0)
 
+    Application.put_env(:jamixir, :erasure_coding, ErasureCodingMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :erasure_coding)
+    end)
+
     {:ok,
      wp:
        build(:work_package,
@@ -457,6 +463,7 @@ defmodule WorkReportTest do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
       stub(MockPVM, :do_authorized, fn _, _, _ -> <<1>> end)
+      stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
 
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
         w = Enum.at(p.work_items, j)

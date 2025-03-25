@@ -77,7 +77,12 @@ defmodule ErasureCoding do
   def lace([]), do: <<>>
   def lace([c | _] = chunks) when is_list(chunks), do: lace(chunks, byte_size(c))
 
-  def erasure_code(d) do
+  def erasure_code(bin) do
+    Application.get_env(:jamixir, :erasure_coding, __MODULE__).do_erasure_code(bin)
+  end
+
+  @callback do_erasure_code(binary()) :: list(binary())
+  def do_erasure_code(d) do
     for c <-
           Utils.transpose(
             for p <- unzip(d, @ec_size) do

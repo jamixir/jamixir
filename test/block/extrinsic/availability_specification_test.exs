@@ -4,8 +4,16 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   alias Util.{Hash, Hex}
   use ExUnit.Case
   import Jamixir.Factory
+  import Mox
 
   setup do
+    Application.put_env(:jamixir, :erasure_coding, ErasureCodingMock)
+    stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :erasure_coding)
+    end)
+
     {:ok, availability: build(:availability_specification, work_package_hash: Hash.one())}
   end
 
