@@ -45,7 +45,7 @@ defmodule Types do
   @type gas :: non_neg_integer()
   # Formula (4.23) v0.6.4 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (4.23) v0.6.4 - NR - shoud be a 32-bit integer <= 2^32
+  # Formula (4.23) v0.6.4 - NR - shoud be a 64-bit integer <= 2^64
   @type register :: non_neg_integer()
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil

@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkResult do
   @moduledoc """
-  Formula (11.6) v0.6.3
+  Formula (11.6) v0.6.4
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
