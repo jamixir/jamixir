@@ -23,7 +23,7 @@ defmodule SigningContexts do
   @doc "XG - Ed25519 Guarantee statements context."
   def jam_guarantee, do: "jam_guarantee"
 
-  # Formula (17.11) v0.6.3
+  # Formula (17.11) v0.6.4
   @doc "XI - Ed25519 Audit announcement statements context."
   def jam_announce, do: "jam_announce"
 

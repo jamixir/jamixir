@@ -37,7 +37,7 @@ defmodule System.State do
           accumulation_history: list(MapSet.t(Types.hash()))
         }
 
-  # Formula (4.4) v0.6.0 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
+  # Formula (4.4) v0.6.4 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
   defstruct [
     # α
     authorizer_pool: List.duplicate([], Constants.core_count()),
@@ -77,20 +77,20 @@ defmodule System.State do
     accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length())
   ]
 
-  # Formula (4.1) v0.6.0
+  # Formula (4.1) v0.6.4
   @spec add_block(System.State.t(), Block.t()) ::
           {:error, System.State.t(), :atom | String.t()} | {:ok, System.State.t()}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
-    # Formula (4.5) v0.6.0
+    # Formula (4.5) v0.6.4
     # Formula (6.1) v0.6.4
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),
-         # ψ' Formula (4.12) v0.6.0
+         # ψ' Formula (4.11) v0.6.4
          {:ok, judgements_, bad_wonky_verdicts} <- Judgements.transition(h, e.disputes, state),
-         # ρ† Formula (4.13) v0.6.0
+         # ρ† Formula (4.12) v0.6.4
          core_reports_1 = CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
-         # ρ‡ Formula (4.14) v0.6.0
+         # ρ‡ Formula (4.13) v0.6.4
          core_reports_2 =
            CoreReport.process_availability(
              state.core_reports,
@@ -105,10 +105,10 @@ defmodule System.State do
              h.timeslot,
              state.authorizer_pool
            ),
-         # ρ' Formula (4.15) v0.6.0
+         # ρ' Formula (4.14) v0.6.4
          core_reports_ = CoreReport.transition(core_reports_2, e.guarantees, timeslot_),
          available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
-         # η' Formula (4.9) v0.6.0
+         # η' Formula (4.8) v0.6.4
          rotated_entropy_pool = EntropyPool.rotate(h, state.timeslot, state.entropy_pool),
          {curr_validators_, prev_validators_, safrole_} <-
            Safrole.transition(block, state, judgements_, rotated_entropy_pool),
@@ -128,8 +128,8 @@ defmodule System.State do
              rotated_entropy_pool
            ),
          entropy_pool_ = EntropyPool.transition(vrf_output, rotated_entropy_pool),
-         # Formula (4.16) v0.6.0
-         # Formula (4.17) v0.6.0
+         # Formula (4.15) v0.6.4 - W*
+         # Formula (4.16) v0.6.4 - (ϑ',ξ',δ‡,χ',ι',φ',C)≺ (W∗,ϑ,ξ,δ,χ,ι,φ,τ,τ′)
          %{
            services: services_intermediate_2,
            next_validators: next_validators_,
@@ -147,9 +147,9 @@ defmodule System.State do
              entropy_pool_.n0,
              state
            ),
-         # δ' Formula (4.18) v0.6.0
+         # δ' Formula (4.18) v0.6.4
          services_ = Services.transition(services_intermediate_2, e.preimages, timeslot_),
-         # α' Formula (4.19) v0.6.0
+         # α' Formula (4.19) v0.6.4
          authorizer_pool_ =
            AuthorizerPool.transition(
              e.guarantees,
@@ -157,7 +157,7 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # β' Formula (4.7) v0.6.0
+         # β' Formula (4.17) v0.6.4
          recent_history_ =
            RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
          {:ok, reporters_set} <-
@@ -169,7 +169,7 @@ defmodule System.State do
              prev_validators_,
              Judgements.union_all(judgements_)
            ),
-         # π' Formula (4.20) v0.6.0
+         # π' Formula (4.20) v0.6.4
          # π' ≺ (EG,EP,EA, ET,τ,κ',π,H)
          {:ok, validator_statistics_} <-
            ValidatorStatistics.transition(

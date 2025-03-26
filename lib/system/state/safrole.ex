@@ -33,9 +33,9 @@ defmodule System.State.Safrole do
         judgements_,
         rotated_history_entropy_pool
       ) do
-    # κ' Formula (4.10) v0.6.0
-    # λ' Formula (4.11) v0.6.0
-    # γ'(γ_k, γ_z) Formula (4.8) v0.6.0
+    # κ' Formula (4.9) v0.6.4
+    # λ' Formula (4.10) v0.6.4
+    # γ'(γ_k, γ_z) Formula (4.7) v0.6.4
     with {pending_, curr_validators_, prev_validators_, epoch_root_} <-
            RotateKeys.rotate_keys(h, state, judgements_),
          :ok <-

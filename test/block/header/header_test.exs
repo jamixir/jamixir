@@ -55,7 +55,7 @@ defmodule Block.HeaderTest do
     {:ok, header: %Header{block_seal: <<123::hash()>>}}
   end
 
-  # Formula (C.19) v0.6.0
+  # Formula (C.19) v0.6.4
   describe "encode/1" do
     test "encode header smoke test" do
       assert Encodable.encode(build(:header))

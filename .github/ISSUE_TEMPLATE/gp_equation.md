@@ -8,7 +8,7 @@ projects:
 ---
 
 **GP release**
-0.4.5
+0.6.4
 
 **Formula**
 

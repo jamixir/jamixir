@@ -30,7 +30,7 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (4.14) v0.6.0
+  # ρ‡ Formula (4.13) v0.6.4
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances, h_t) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
