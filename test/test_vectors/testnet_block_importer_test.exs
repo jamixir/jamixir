@@ -47,6 +47,7 @@ defmodule TestnetBlockImporterTest do
     for mode <- ["fallback", "safrole", "assurances"] do
       if Enum.member?(skip, mode) do
         IO.puts(
+          :stderr,
           IO.ANSI.yellow() <>
             "⚠️  Warning: #{mode} mode block import test is disabled" <> IO.ANSI.reset()
         )

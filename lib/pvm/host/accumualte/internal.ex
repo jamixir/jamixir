@@ -162,8 +162,11 @@ defmodule PVM.Host.Accumulate.Internal do
 
     c =
       case Memory.read(memory, o, 32) do
-        {:ok, data} -> data
-        _ -> :error
+        {:ok, data} ->
+          if l >= 0 and l < 0x1_0000_0000, do: data, else: :error
+
+        _ ->
+          :error
       end
 
     a =
