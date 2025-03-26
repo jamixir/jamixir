@@ -3,6 +3,7 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
+  alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.DataAvailability
   alias Block.Extrinsic.{Guarantee.WorkResult}
@@ -102,14 +103,25 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (14.8) v0.6.2
-  def to_work_result(%__MODULE__{} = wi, output) do
+  # Formula (14.8) v0.6.4
+  @spec to_work_result(
+          Block.Extrinsic.WorkItem.t(),
+          binary() | WorkExecutionError.t(),
+          Types.gas()
+        ) ::
+          Block.Extrinsic.Guarantee.WorkResult.t()
+  def to_work_result(%__MODULE__{} = wi, output, gas) do
     %WorkResult{
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: h(wi.payload),
       gas_ratio: wi.refine_gas_limit,
-      result: output
+      result: output,
+      gas_used: gas,
+      imports: length(wi.import_segments),
+      exports: wi.export_count,
+      extrinsic_count: length(wi.extrinsic),
+      extrinsic_size: Enum.sum(for {_, n} <- wi.extrinsic, do: n)
     }
   end
 

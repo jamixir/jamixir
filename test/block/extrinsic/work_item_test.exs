@@ -1,4 +1,5 @@
 defmodule WorkItemTest do
+  alias Block.Extrinsic.Guarantee.WorkResult
   alias Util.Hash
   alias Block.Extrinsic.WorkItem
   use ExUnit.Case
@@ -24,15 +25,26 @@ defmodule WorkItemTest do
           service: 1,
           code_hash: <<1, 2, 3>>,
           payload: <<4, 5>>,
-          refine_gas_limit: 6
+          refine_gas_limit: 6,
+          import_segments: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}],
+          export_count: 9,
+          extrinsic: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}]
         )
 
-      result = WorkItem.to_work_result(work_report, output)
-      assert result.service == 1
-      assert result.code_hash == <<1, 2, 3>>
-      assert result.payload_hash == Hash.default(<<4, 5>>)
-      assert result.gas_ratio == 6
-      assert result.result == output
+      result = WorkItem.to_work_result(work_report, output, 77)
+
+      assert result == %WorkResult{
+               service: 1,
+               code_hash: <<1, 2, 3>>,
+               payload_hash: Hash.default(<<4, 5>>),
+               gas_ratio: 6,
+               result: output,
+               gas_used: 77,
+               imports: 2,
+               exports: 9,
+               extrinsic_count: 2,
+               extrinsic_size: 8
+             }
     end
   end
 end

@@ -50,7 +50,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
             exports: 0,
             # x
             extrinsic_count: 0,
-            # b
+            # z
             extrinsic_size: 0
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t

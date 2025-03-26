@@ -418,7 +418,7 @@ defmodule WorkReportTest do
   describe "process_item/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>]} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :pvm, PVM)
@@ -431,18 +431,18 @@ defmodule WorkReportTest do
     test "processes a work item correct exports", %{wp: wp, state: state} do
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == <<1>>
       assert length(e) == 1
     end
 
     # case r not binary
     test "processes a work item error in PVM", %{wp: wp, state: state} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>]} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
 
       wi = build(:work_item, export_count: 4)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == :bad
       assert length(e) == 4
     end
@@ -451,7 +451,7 @@ defmodule WorkReportTest do
     test "processes a work item bad exports", %{wp: wp, state: state} do
       wi = build(:work_item, export_count: 4)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == :bad_exports
       assert length(e) == 4
     end
@@ -468,7 +468,7 @@ defmodule WorkReportTest do
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
         w = Enum.at(p.work_items, j)
 
-        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count)}
+        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
       on_exit(fn ->
@@ -520,7 +520,7 @@ defmodule WorkReportTest do
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>]} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
       [work_result | _] = wr.results
       assert work_result.result == :bad

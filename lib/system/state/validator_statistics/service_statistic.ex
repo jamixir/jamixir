@@ -1,7 +1,6 @@
 defmodule System.State.ServiceStatistic do
   alias Block.Extrinsic.Preimage
   alias System.State.ServiceStatistic
-  alias Block.Extrinsic
   # p
   defstruct preimage: {0, 0},
             # r
