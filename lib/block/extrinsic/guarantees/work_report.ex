@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
   @moduledoc """
-  Formula (11.2) v0.6.2
+  Formula (11.2) v0.6.4
   """
 
   alias System.State.ServiceAccount
@@ -17,7 +17,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (11.2) v0.6.2
+  # Formula (11.2) v0.6.4
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           auth_gas_used: Types.gas()
         }
 
-  # Formula (11.2) v0.6.2
+  # Formula (11.2) v0.6.4
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,

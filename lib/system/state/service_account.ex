@@ -1,6 +1,6 @@
 defmodule System.State.ServiceAccount do
   @moduledoc """
-  Formula (9.3) v0.6.2
+  Formula (9.3) v0.6.4
   """
   alias Codec.VariableSize
   alias System.State.ServiceAccount
@@ -34,7 +34,7 @@ defmodule System.State.ServiceAccount do
             gas_limit_g: 0,
             gas_limit_m: 0
 
-  # Formula (9.8) v0.6.0
+  # Formula (9.8) v0.6.4
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
     2 * length(Map.keys(l)) + length(Map.keys(s))
@@ -54,7 +54,7 @@ defmodule System.State.ServiceAccount do
       Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
   end
 
-  # Formula (9.4) v0.6.3
+  # Formula (9.4) v0.6.4
   def code(account) do
     {_, code} = code_and_metadata(account)
     code
@@ -74,8 +74,8 @@ defmodule System.State.ServiceAccount do
     end
   end
 
-  # Formula (9.5) v0.6.0
-  # Formula (9.6) v0.6.0
+  # Formula (9.5) v0.6.4
+  # Formula (9.6) v0.6.4
   def store_preimage(%__MODULE__{} = a, preimage, timeslot) do
     hash = h(preimage)
 
@@ -83,7 +83,7 @@ defmodule System.State.ServiceAccount do
     put_in(p2.preimage_storage_l[{hash, byte_size(preimage)}], [timeslot])
   end
 
-  # Formula (9.7) v0.6.0
+  # Formula (9.7) v0.6.4
   @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary() | nil
   def historical_lookup(
         %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},

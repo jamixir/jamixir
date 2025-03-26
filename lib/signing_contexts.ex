@@ -3,7 +3,7 @@ defmodule SigningContexts do
   Appendix I.4.5
   """
 
-  # Formula (11.14) v0.6.3
+  # Formula (11.14) v0.6.4
   @doc "XA - Ed25519 Availability assurances context."
   def jam_available, do: "jam_available"
 
@@ -35,11 +35,11 @@ defmodule SigningContexts do
   @doc "XU - Bandersnatch Audit selection entropy context."
   def jam_audit, do: "jam_audit"
 
-  # Formula (10.4) v0.6.3
+  # Formula (10.4) v0.6.4
   @doc "X⊺ - Ed25519 Judgements for valid work-reports context."
   def jam_valid, do: "jam_valid"
 
-  # Formula (10.4) v0.6.3
+  # Formula (10.4) v0.6.4
   @doc "X - Ed25519 Judgements for invalid work-reports context."
   def jam_invalid, do: "jam_invalid"
 end

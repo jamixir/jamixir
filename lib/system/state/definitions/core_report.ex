@@ -1,6 +1,6 @@
 defmodule System.State.CoreReport do
   @moduledoc """
-  Formula (11.1) v0.6.2
+  Formula (11.1) v0.6.4
   """
 
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -13,7 +13,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
 
-  # Formula (10.15) v0.6.0
+  # Formula (10.15) v0.6.4
   def process_disputes(core_reports, bad_wonky_verdicts) do
     for c <- core_reports do
       process_report(c, MapSet.new(bad_wonky_verdicts))
@@ -56,7 +56,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def transition(core_reports_2, guarantees, timeslot_) do
-    # Formula (11.43) v0.6.0
+    # Formula (11.43) v0.6.4
     Enum.with_index(core_reports_2, fn cr, index ->
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> cr

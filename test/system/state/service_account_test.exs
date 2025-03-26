@@ -83,7 +83,7 @@ defmodule System.State.ServiceAccountTest do
     end
   end
 
-  # Formula (9.7) v0.6.0
+  # Formula (9.7) v0.6.4
   describe "historical_lookup/3" do
     test "return nil when historical lookup does not exist", %{sa: sa} do
       assert ServiceAccount.historical_lookup(sa, 1, Hash.random()) == nil
