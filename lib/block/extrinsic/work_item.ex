@@ -113,21 +113,21 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (14.14) v0.6.0
+  # Formula (14.14) v0.6.4
   # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w) do
     for {r, n} <- w.extrinsic, d = Storage.get(r), byte_size(d) == n, do: d
   end
 
-  # Formula (14.14) v0.6.2
+  # Formula (14.14) v0.6.4
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
         do: DataAvailability.get_segment(WorkReport.segment_root(r), n)
   end
 
-  # Formula (14.14) v0.6.0
-  # J ( w ∈ I ) ≡ [ ↕ J0 ( s , n ) ∣ M ( s ) = L ( r ) , ( r , n ) <− w i ]
+  # Formula (14.14) v0.6.4
+  # J (w∈I) ≡ [↕J0(s,n) ∣ M(s) = L(r), (r,n) <− wi]
   def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
         s = DataAvailability.get_segment(WorkReport.segment_root(r), n),

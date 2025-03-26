@@ -7,7 +7,7 @@ defmodule SigningContexts do
   @doc "XA - Ed25519 Availability assurances context."
   def jam_available, do: "jam_available"
 
-  # Formula (18.2) v0.6.3
+  # Formula (18.2) v0.6.4
   @doc "XB - BLS Accumulate-result-root-mmr commitment context."
   def jam_beefy, do: "jam_beefy"
 
@@ -31,7 +31,7 @@ defmodule SigningContexts do
   @doc "XT - Bandersnatch RingVRF Ticket generation and regular block seal context."
   def jam_ticket_seal, do: "jam_ticket_seal"
 
-  # Formula (17.4) v0.6.3
+  # Formula (17.4) v0.6.4
   @doc "XU - Bandersnatch Audit selection entropy context."
   def jam_audit, do: "jam_audit"
 

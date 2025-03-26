@@ -79,8 +79,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (17.1) v0.6.2
-  # Formula (17.2) v0.6.2
+  # Formula (17.1) v0.6.4
+  # Formula (17.2) v0.6.4
   @spec auditable_work_reports(list(Assurance.t()), list(CoreReport.t()), list(CoreReport.t())) ::
           list(t() | nil)
   def auditable_work_reports(assurances, core_reports_intermediate_1, core_reports) do
@@ -237,7 +237,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           end
           |> Enum.unzip()
 
-        # Formula (14.15) v0.6.2
+        # Formula (14.15) v0.6.4
         s =
           AvailabilitySpecification.from_execution(
             h(e(wp)),
@@ -284,7 +284,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
-  # Formula (14.12) v0.6.2
+  # Formula (14.12) v0.6.4
   # TODO ⊞ part
   def segment_root(r) do
     r
