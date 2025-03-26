@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (14.3) v0.6.0
+  # Formula (14.3) v0.6.4
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,

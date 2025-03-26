@@ -38,15 +38,15 @@ defmodule System.State.CoreStatistic do
         %__MODULE__{}
       else
         %__MODULE__{
-          # Formula 13.8 v0.6.4
-          # Formula 13.9 v0.6.4
+          # Formula (13.8) v0.6.4
+          # Formula (13.9) v0.6.4
           imports: sum_field(w.results, :imports),
           exports: sum_field(w.results, :exports),
           extrinsic_count: sum_field(w.results, :extrinsic_count),
           extrinsic_size: sum_field(w.results, :extrinsic_size),
           gas_used: sum_field(w.results, :gas_used),
           bundle_size: w.specification.length,
-          # Formula 13.10 v0.6.4
+          # Formula (13.10) v0.6.4
           da_load:
             w.specification.length +
               Constants.segment_size() * ceil(w.specification.segment_count * (65 / 64)),
