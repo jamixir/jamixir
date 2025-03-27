@@ -79,7 +79,7 @@ defmodule Block.Extrinsic do
     h(e(for el <- a, do: h(el)))
   end
 
-  # Formula 5.6 v0.6.0
+  # Formula (5.6) v0.6.4
   def g(guarantees) do
     e(
       vs(

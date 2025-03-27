@@ -200,7 +200,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     immediate_work_reports ++ accumulation_priority_queue(q)
   end
 
-  # Formula 14.10 v0.6.2
+  # Formula (14.10) v0.6.4
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exports) do
     segments_count = ceil(length(exports) / 64)
@@ -288,7 +288,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     r
   end
 
-  # TODO 14.13 v0.6.2
+  # TODO 14.13 v0.6.4
   def get_import_segments(%WorkPackage{work_items: _wi}) do
     %{}
   end
