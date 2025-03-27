@@ -9,7 +9,7 @@ defmodule PVM do
   import PVM.Host.Gas
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (B.1) v0.6.0
+  # Formula (B.1) v0.6.4
   @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
               binary() | WorkExecutionError.t()
 
@@ -29,7 +29,7 @@ defmodule PVM do
     r
   end
 
-  # Formula (B.2) v0.6.0
+  # Formula (B.2) v0.6.4
   @spec authorized_f(non_neg_integer(), PVM.Types.host_call_state(), PVM.Types.context()) ::
           {PVM.Types.exit_reason(), PVM.Types.host_call_state(), PVM.Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
@@ -48,7 +48,7 @@ defmodule PVM do
     end
   end
 
-  # Formula (B.8) v0.6.0
+  # Formula (B.5) v0.6.4
   @callback do_refine(
               non_neg_integer(),
               WorkPackage.t(),

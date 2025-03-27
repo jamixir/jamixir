@@ -57,7 +57,7 @@ defmodule Utils do
 
   def pad_binary(value, _size), do: value
 
-  # Formula (14.17) v0.6.0
+  # Formula (14.17) v0.6.4
   def pad_binary_right(x, n) do
     start = rem(byte_size(x) + n - 1, n) + 1
     pad = for _ <- from_0_to(n - start), into: <<>>, do: <<0>>

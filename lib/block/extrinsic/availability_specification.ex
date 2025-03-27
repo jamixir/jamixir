@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           segment_count: non_neg_integer()
         }
 
-  # Formula (11.5) v0.6.0
+  # Formula (11.5) v0.6.4
   # h
   defstruct work_package_hash: Hash.zero(),
             # l
@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use Sizes
   use Codec.Decoder
 
-  # Formula (14.16) v0.6.2
+  # Formula (14.16) v0.6.4
   @spec from_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           __MODULE__.t()
   def from_execution(work_package_hash, bundle_binary, export_segments) do
@@ -56,7 +56,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     }
   end
 
-  # Formula (14.16) v0.6.2 - u
+  # Formula (14.16) v0.6.4 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   def calculate_erasure_root(bundle_binary, exports) do
     # C6# (s⌢P(s))

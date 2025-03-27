@@ -1,5 +1,5 @@
 defmodule System.Audit do
-  # Formula (17.3) v0.6.3 - s0
+  # Formula (17.3) v0.6.4 - s0
   @spec initial_tranche({binary(), binary()}, binary()) :: binary()
   def initial_tranche(keypair, seal_context) do
     block_seal_output = RingVrf.ietf_vrf_output(keypair, seal_context)
@@ -10,15 +10,15 @@ defmodule System.Audit do
     RingVrf.ietf_vrf_sign(keypair, SigningContexts.jam_audit() <> vrf_context, <<>>)
   end
 
-  # Formula (17.5) v0.6.3
+  # Formula (17.5) v0.6.4
   # a0 = { (c,w) ∣ (c,w) ∈ p⋅⋅⋅+10,w ≠ ∅}
   def initial_items_to_audit(keypair, s0, auditable_work_reports) do
     p = random_selection(keypair, s0, auditable_work_reports)
     for({c, w} <- p, w != nil, do: {c, w}) |> Enum.take(10)
   end
 
-  # Formula (17.6) v0.6.3
-  # Formula (17.7) v0.6.3
+  # Formula (17.6) v0.6.4
+  # Formula (17.7) v0.6.4
   # p = F([ (c,Qc) ∣ c <− NC], r)
   def random_selection(keypair, s0, auditable_work_reports) do
     r = RingVrf.ietf_vrf_output(keypair, s0)

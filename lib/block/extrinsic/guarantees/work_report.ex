@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
   @moduledoc """
-  Formula (11.2) v0.6.2
+  Formula (11.2) v0.6.4
   """
 
   alias System.State.ServiceAccount
@@ -17,7 +17,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (11.2) v0.6.2
+  # Formula (11.2) v0.6.4
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           auth_gas_used: Types.gas()
         }
 
-  # Formula (11.2) v0.6.2
+  # Formula (11.2) v0.6.4
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -79,8 +79,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (17.1) v0.6.2
-  # Formula (17.2) v0.6.2
+  # Formula (17.1) v0.6.4
+  # Formula (17.2) v0.6.4
   @spec auditable_work_reports(list(Assurance.t()), list(CoreReport.t()), list(CoreReport.t())) ::
           list(t() | nil)
   def auditable_work_reports(assurances, core_reports_intermediate_1, core_reports) do
@@ -216,7 +216,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula 14.11 v0.6.2
+  # Formula 14.11 v0.6.4
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
@@ -231,13 +231,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         {r, e} =
           for j <- 0..(length(wp.work_items) - 1) do
             # (r,e) = I(p,j)
-            {result, exports} = process_item(wp, j, o, import_segments, services, %{})
+            {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
             # C(pw [j],r), e)
-            {WorkItem.to_work_result(Enum.at(wp.work_items, j), result), exports}
+            {WorkItem.to_work_result(Enum.at(wp.work_items, j), result, gas), exports}
           end
           |> Enum.unzip()
 
-        # Formula (14.15) v0.6.2
+        # Formula (14.15) v0.6.4
         s =
           AvailabilitySpecification.from_execution(
             h(e(wp)),
@@ -257,34 +257,32 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula 14.11 v0.6.2
-  # TODO update to v0.6.4
-  # I(p,j) ≡ ...
+  # Formula (14.11) v0.6.4
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
     l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
-    {r, e} = PVM.refine(j, p, o, import_segments, l, services, preimages)
+    {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
-    case {r, e} do
+    case {r, e, u} do
       # otherwise if r ∈/ Y
-      {r, _} when not is_binary(r) ->
-        {r, zero_segments(w.export_count)}
+      {r, _, u} when not is_binary(r) ->
+        {r, u, zero_segments(w.export_count)}
 
       # if ∣e∣= we
-      {r, e} when length(e) == w.export_count ->
-        {r, e}
+      {r, e, u} when length(e) == w.export_count ->
+        {r, u, e}
 
       # otherwise
       _ ->
-        {:bad_exports, zero_segments(w.export_count)}
+        {:bad_exports, u, zero_segments(w.export_count)}
     end
   end
 
   defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
-  # Formula (14.12) v0.6.2
+  # Formula (14.12) v0.6.4
   # TODO ⊞ part
   def segment_root(r) do
     r

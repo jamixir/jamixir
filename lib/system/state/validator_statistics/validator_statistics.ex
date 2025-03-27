@@ -73,6 +73,7 @@ defmodule System.State.ValidatorStatistics do
       ) do
     # Formula (13.3) v0.6.4
     # Formula (13.4) v0.6.4
+    # Formula (13.5) v0.6.4
     {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
         {empty_epoc_stats(), validator_statistics.current_epoch_statistics}

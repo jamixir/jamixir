@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Culprit do
   @moduledoc """
-  Formula (10.2) v0.6.2
+  Formula (10.2) v0.6.4
   """
 
   alias Types

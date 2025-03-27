@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.GuarantorAssignments do
   @moduledoc """
-  # Formula (11.18) v0.6.2
+  # Formula (11.18) v0.6.4
   """
   alias System.State.Validator
   alias Util.Time
@@ -14,10 +14,10 @@ defmodule Block.Extrinsic.GuarantorAssignments do
             # d
             validators: []
 
-  # Formula (11.19) v0.6.0
+  # Formula (11.19) v0.6.4
   def rotate(c, n), do: for(x <- c, do: rem(x + n, Constants.core_count()))
 
-  # Formula (11.20) v0.6.0
+  # Formula (11.20) v0.6.4
   def permute(e, t) when is_list(e) or is_binary(e) do
     rotate(
       Shuffle.shuffle(
@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.GuarantorAssignments do
     )
   end
 
-  # Formula (11.21) v0.6.0
+  # Formula (11.21) v0.6.4
   def guarantors(n2_, time_stamp_, curr_validators_, offenders) do
     %__MODULE__{
       assigned_cores: permute(n2_, time_stamp_),
@@ -38,7 +38,7 @@ defmodule Block.Extrinsic.GuarantorAssignments do
     }
   end
 
-  # Formula (11.22) v0.6.0
+  # Formula (11.22) v0.6.4
   def prev_guarantors(n2_, n3_, t_, curr_validators_, prev_validators_, offenders) do
     {e, k} =
       if div(t_ - Constants.rotation_period(), Constants.epoch_length()) ==

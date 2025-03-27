@@ -1,7 +1,6 @@
 defmodule System.State.ServiceStatistic do
   alias Block.Extrinsic.Preimage
   alias System.State.ServiceStatistic
-  alias Block.Extrinsic
   # p
   defstruct preimage: {0, 0},
             # r
@@ -30,17 +29,8 @@ defmodule System.State.ServiceStatistic do
           transfers: {non_neg_integer(), Types.gas()}
         }
 
-  # Formula (13.13) v0.6.4
-  def work_results_services(work_reports) do
-    for w <- work_reports, r <- w.results, do: r.service, into: MapSet.new()
-  end
-
-  # Formula (13.14) v0.6.4
-  def preimage_services(%Extrinsic{preimages: preimages}) do
-    for preimage <- preimages, do: preimage.service, into: MapSet.new()
-  end
-
   # Formula (13.11) v0.6.4
+  # Formula (13.12) v0.6.4
   @spec calculate_stats(
           %{Types.service_index() => {}},
           list(AccumulationStatistic.t()),
@@ -53,13 +43,17 @@ defmodule System.State.ServiceStatistic do
         deferred_transfers_stats,
         preimages
       ) do
+    # Formula (13.13) v0.6.4
+    # Formula (13.15) v0.6.4
     refine_stats(available_work_reports)
+    # Formula (13.11) v0.6.4
     |> accumulation_stats(accumulation_stats)
     |> deferred_transfers_stats(deferred_transfers_stats)
+    # Formula (13.14) v0.6.4
     |> preimage_stats(preimages)
   end
 
-  # p
+  # Formula (13.14) v0.6.4 - p
   defp preimage_stats(previous_stats, preimages) do
     for %Preimage{service: s, blob: p} <- preimages, reduce: previous_stats do
       map ->

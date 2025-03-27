@@ -52,7 +52,6 @@ defmodule Util.MerkleTree do
 
   # Formula (E.6) v0.6.2
   # (v, i, H) ↦ [H($leaf ⌢ l) S l <− v2xi... min(2xi+2x,SvS)]
-  # note as of 0.5.3, the justification_l is not used anywhere
   def justification_l(v, i, x), do: justification_l(v, i, &Hash.default/1, x)
 
   @spec justification_l([binary()], integer(), (binary() -> Types.hash()), number()) :: list()

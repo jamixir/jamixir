@@ -10,6 +10,7 @@ defmodule PVM.Refine do
 
   @doc """
   ΨR: The Refine pvm invocation function.
+  # Formula (B.5) v0.6.4
   """
   @spec execute(
           non_neg_integer(),
@@ -20,7 +21,7 @@ defmodule PVM.Refine do
           %{integer() => ServiceAccount.t()},
           %{{Types.hash(), non_neg_integer()} => binary()}
         ) ::
-          {binary() | WorkExecutionError.t(), list(binary())}
+          {binary() | WorkExecutionError.t(), list(binary()), Types.gas()}
   def execute(
         work_item_index,
         work_package,
@@ -116,18 +117,18 @@ defmodule PVM.Refine do
       wph = h(e(work_package))
       args = e({t(service_id), wy, wph, px, implied_authorizer})
 
-      {_gas, result, %Refine.Context{e: exports}} =
+      {gas, result, %Refine.Context{e: exports}} =
         ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})
 
       if result in [:out_of_gas, :panic] do
-        {result, []}
+        {result, [], gas}
       else
-        {result, exports}
+        {result, exports, gas}
       end
     else
-      {:error, :service_not_found} -> {:bad, []}
-      {:error, :invalid_lookup} -> {:bad, []}
-      {:error, :code_too_large} -> {:big, []}
+      {:error, :service_not_found} -> {:bad, [], 0}
+      {:error, :invalid_lookup} -> {:bad, [], 0}
+      {:error, :code_too_large} -> {:big, [], 0}
     end
   end
 
