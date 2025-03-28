@@ -26,7 +26,7 @@ defmodule CommsTest do
     {:ok, server_pid} =
       PeerSupervisor.start_peer(:listener, "::1", port)
 
-    Process.sleep(30)
+    Process.sleep(20)
 
     {:ok, client_pid} =
       PeerSupervisor.start_peer(:initiator, "::1", port)
@@ -229,8 +229,6 @@ defmodule CommsTest do
 
       # Wait for all tasks to complete
       Task.await_many(tasks)
-      # Give time for cleanup
-      Process.sleep(10)
 
       # Verify state
       client_state = :sys.get_state(client)
@@ -275,11 +273,11 @@ defmodule CommsTest do
 
       # Send partial message without FIN
       {:ok, _} = :quicer.send(stream, <<@dummy_protocol_id, 0, 0, 5, 0>>, Flags.send_flag(:none))
-      Process.sleep(50)
+      Process.sleep(20)
 
       # Abruptly close stream
       :quicer.shutdown_stream(stream)
-      Process.sleep(50)
+      Process.sleep(20)
 
       assert Process.alive?(client), "Peer crashed on stream interruption"
     end

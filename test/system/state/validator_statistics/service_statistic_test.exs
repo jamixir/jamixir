@@ -1,8 +1,6 @@
 defmodule System.State.ServiceStatisticTest do
   use ExUnit.Case
-  alias Block.Extrinsic.Guarantee.WorkResult
-  alias Block.Extrinsic.Guarantee.WorkReport
-  alias Block.Extrinsic
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
   alias Block.Extrinsic.Preimage
   alias System.State.ServiceStatistic
 

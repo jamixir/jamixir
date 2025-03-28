@@ -506,6 +506,11 @@ defmodule WorkReportTest do
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
         gas_ratio: wi.refine_gas_limit,
+        exports: 1,
+        extrinsic_count: 1,
+        extrinsic_size: 7,
+        gas_used: 555,
+        imports: 1,
         result: <<1>>
       }
 
