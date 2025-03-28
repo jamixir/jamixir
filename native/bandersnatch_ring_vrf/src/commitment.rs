@@ -5,7 +5,7 @@ use rustler::NifResult;
 #[rustler::nif]
 pub fn create_commitment(
     ring: Vec<PublicBridge<Bandersnatch>>,
-) -> NifResult<FixedColumnsCommittedBridge<Bandersnatch>> {
+) -> NifResult<FixedColumnsCommittedBridge> {
     let pts: Vec<_> = ring
         .into_iter()
         .map(|pk| pk.0)

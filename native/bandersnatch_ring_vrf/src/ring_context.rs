@@ -1,11 +1,12 @@
-use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
-use ark_ec_vrfs::{prelude::ark_serialize, suites::bandersnatch::edwards::RingContext};
+use ark_ec_vrfs::{
+    reexports::ark_serialize,
+    suites::bandersnatch::{self, RingProofParams},
+};
 use ark_serialize::CanonicalDeserialize;
 use rustler::{Error, NifResult};
-use std::sync::OnceLock;
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, sync::OnceLock};
 
-static RING_CTX: OnceLock<RingContext> = OnceLock::new();
+static RING_CTX: OnceLock<RingProofParams> = OnceLock::new();
 
 #[rustler::nif]
 pub fn create_ring_context(file_path: String, ring_size: usize) -> NifResult<()> {
@@ -17,12 +18,13 @@ pub fn create_ring_context(file_path: String, ring_size: usize) -> NifResult<()>
 
         let pcs_params = bandersnatch::PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..])
             .expect("Failed to deserialize PCS parameters");
-        RingContext::from_srs(ring_size, pcs_params).expect("Failed to create RingContext")
+        RingProofParams::from_pcs_params(ring_size, pcs_params)
+            .expect("Failed to create RingContext")
     });
     Ok(())
 }
 
-pub fn ring_context() -> Result<RingContext, rustler::Error> {
+pub fn ring_context() -> Result<RingProofParams, rustler::Error> {
     RING_CTX
         .get()
         .ok_or(Error::Atom("ring_context_not_initialized"))

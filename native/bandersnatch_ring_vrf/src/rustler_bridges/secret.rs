@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{AffinePoint, Codec, ScalarField, Secret, Suite};
+use ark_ec_vrfs::{codec::Codec, AffinePoint, ScalarField, Secret, Suite};
 use rustler::{Decoder, Encoder, NifResult, Term};
 
 use crate::types::Bandersnatch;
@@ -13,9 +13,9 @@ pub struct SecretBridge<S: Suite> {
 
 impl<S: Suite> Encoder for SecretBridge<S> {
     fn encode<'b>(&self, env: rustler::Env<'b>) -> Term<'b> {
-        let mut scalar_buf: Vec<u8> = Vec::new();
+        let scalar_buf: Vec<u8> = Vec::new();
 
-        S::Codec::scalar_encode(&self.scalar, &mut scalar_buf);
+        S::Codec::scalar_encode(&self.scalar);
 
         let mut scalar_bin = rustler::OwnedBinary::new(scalar_buf.len()).unwrap();
         scalar_bin.as_mut_slice().copy_from_slice(&scalar_buf);
@@ -27,7 +27,9 @@ impl<S: Suite> Encoder for SecretBridge<S> {
 }
 
 impl<'a, S: Suite + 'a> Decoder<'a> for SecretBridge<S>
-where S: Suite<Affine = AffinePoint<Bandersnatch>> {
+where
+    S: Suite<Affine = AffinePoint<Bandersnatch>>,
+{
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let (scalar_bin, public_term): (rustler::Binary, Term<'a>) = term.decode()?;
 
@@ -52,7 +54,7 @@ impl<S: Suite> From<SecretBridge<S>> for Secret<S> {
     fn from(bridge: SecretBridge<S>) -> Self {
         Secret {
             scalar: bridge.scalar,
-            public: bridge.public.into(), // Convert the PublicBridge back to the original Public
+            public: bridge.public.into(),
         }
     }
 }
