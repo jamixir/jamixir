@@ -1,21 +1,25 @@
-use ark_ec::{pairing::Pairing, AffineRepr};
 use ark_ec_vrfs::{
-    prelude::{ark_ff::PrimeField, ark_serialize},
+    reexports::{
+        ark_ec::pairing::Pairing,
+        ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
+    },
     ring::{RingCommitment, RingSuite},
-    Suite,
+    suites::bandersnatch::BandersnatchSha512Ell2,
 };
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
 
 use crate::rustler_bridges::KzgCommitmentBridge;
 
-#[derive(Clone, CanonicalSerialize, CanonicalDeserialize, PartialEq, Eq, Debug)]
-pub struct FixedColumnsCommittedBridge<S: RingSuite> {
-    pub points: Vec<KzgCommitmentBridge<S::Pairing>>,
-    pub ring_selector: KzgCommitmentBridge<S::Pairing>,
+type BandersnatchPairing = <BandersnatchSha512Ell2 as RingSuite>::Pairing;
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct FixedColumnsCommittedBridge {
+    pub points: Vec<KzgCommitmentBridge<BandersnatchPairing>>,
+    pub ring_selector: KzgCommitmentBridge<BandersnatchPairing>,
 }
 
-impl<S: RingSuite> Encoder for FixedColumnsCommittedBridge<S> {
+impl Encoder for FixedColumnsCommittedBridge {
     fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
         let mut points_buf = Vec::new();
         for point in &self.points {
@@ -39,7 +43,7 @@ impl<S: RingSuite> Encoder for FixedColumnsCommittedBridge<S> {
     }
 }
 
-impl<'a, S: RingSuite + 'a> Decoder<'a> for FixedColumnsCommittedBridge<S> {
+impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let binary: rustler::Binary = term.decode()?;
         let mut reader = std::io::Cursor::new(binary.as_slice());
@@ -47,14 +51,15 @@ impl<'a, S: RingSuite + 'a> Decoder<'a> for FixedColumnsCommittedBridge<S> {
         // Deserialize points
         let mut points = Vec::new();
         for _ in 0..2 {
-            let point = <<S::Pairing as Pairing>::G1Affine>::deserialize_compressed(&mut reader)
-                .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
+            let point =
+                <BandersnatchPairing as Pairing>::G1Affine::deserialize_compressed(&mut reader)
+                    .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
             points.push(KzgCommitmentBridge(point));
         }
 
         // Deserialize ring_selector
         let ring_selector =
-            <<S::Pairing as Pairing>::G1Affine>::deserialize_compressed(&mut reader)
+            <<BandersnatchPairing as Pairing>::G1Affine>::deserialize_compressed(&mut reader)
                 .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
 
         Ok(FixedColumnsCommittedBridge {
@@ -64,11 +69,8 @@ impl<'a, S: RingSuite + 'a> Decoder<'a> for FixedColumnsCommittedBridge<S> {
     }
 }
 
-impl<S: RingSuite> From<FixedColumnsCommittedBridge<S>> for RingCommitment<S>
-where
-    <<S as Suite>::Affine as AffineRepr>::BaseField: PrimeField,
-{
-    fn from(bridge: FixedColumnsCommittedBridge<S>) -> Self {
+impl From<FixedColumnsCommittedBridge> for RingCommitment<BandersnatchSha512Ell2> {
+    fn from(bridge: FixedColumnsCommittedBridge) -> Self {
         Self {
             points: bridge
                 .points
@@ -83,11 +85,8 @@ where
     }
 }
 
-impl<S: RingSuite> From<RingCommitment<S>> for FixedColumnsCommittedBridge<S>
-where
-    <<S as Suite>::Affine as AffineRepr>::BaseField: PrimeField,
-{
-    fn from(commitment: RingCommitment<S>) -> Self {
+impl From<RingCommitment<BandersnatchSha512Ell2>> for FixedColumnsCommittedBridge {
+    fn from(commitment: RingCommitment<BandersnatchSha512Ell2>) -> Self {
         Self {
             points: commitment
                 .points

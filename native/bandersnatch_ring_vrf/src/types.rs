@@ -1,3 +1,3 @@
-use ark_ec_vrfs::suites::bandersnatch::edwards::{self as bandersnatch};
+use ark_ec_vrfs::suites::bandersnatch;
 
 pub type Bandersnatch = bandersnatch::BandersnatchSha512Ell2;
