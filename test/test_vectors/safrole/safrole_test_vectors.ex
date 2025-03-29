@@ -8,15 +8,12 @@ defmodule SafroleTestVectors do
   def files_to_test,
     do:
       [
-        # TODO fix bandersnatch commitment before uncommenting these tests
-        #  https://github.com/gavofyork/graypaper/pull/278/files
-
-        # for(i <- 1..4, do: "enact-epoch-change-with-no-tickets-#{i}")
-        # "enact-epoch-change-with-padding-1"
-        # for(i <- 1..9, do: "publish-tickets-no-mark-#{i}")
-        # for(i <- 1..5, do: "publish-tickets-with-mark-#{i}")
-        # "skip-epoch-tail-1",
-        # "skip-epochs-1"
+        for(i <- 1..4, do: "enact-epoch-change-with-no-tickets-#{i}"),
+        "enact-epoch-change-with-padding-1",
+        for(i <- 1..9, do: "publish-tickets-no-mark-#{i}"),
+        for(i <- 1..5, do: "publish-tickets-with-mark-#{i}"),
+        "skip-epoch-tail-1",
+        "skip-epochs-1"
       ]
       |> List.flatten()
 
