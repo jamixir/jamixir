@@ -82,7 +82,6 @@ pub fn ring_vrf_verify<'a>(
         .try_into()
         .map_err(|_| Error::Term(Box::new(atoms::hash_conversion_failed())))?;
 
-    // Create an OwnedBinary from the Vec<u8>
     let mut vrf_output_hash_bin = OwnedBinary::new(vrf_output_hash_vec.len()).unwrap();
     vrf_output_hash_bin
         .as_mut_slice()
@@ -193,7 +192,6 @@ pub fn ietf_vrf_verify<'a>(
 
     let public: Public = key.into();
 
-    // Attempt to verify the signature
     public
         .verify(input, output, aux_data.as_slice(), &signature.proof)
         .map_err(|_| Error::Term(Box::new(atoms::verification_failed())))?;
