@@ -13,12 +13,10 @@ pub struct SecretBridge<S: Suite> {
 
 impl<S: Suite> Encoder for SecretBridge<S> {
     fn encode<'b>(&self, env: rustler::Env<'b>) -> Term<'b> {
-        let scalar_buf: Vec<u8> = Vec::new();
+        let buf = S::Codec::scalar_encode(&self.scalar);
 
-        S::Codec::scalar_encode(&self.scalar);
-
-        let mut scalar_bin = rustler::OwnedBinary::new(scalar_buf.len()).unwrap();
-        scalar_bin.as_mut_slice().copy_from_slice(&scalar_buf);
+        let mut scalar_bin = rustler::OwnedBinary::new(buf.len()).unwrap();
+        scalar_bin.as_mut_slice().copy_from_slice(&buf);
 
         let public_term = self.public.encode(env);
 
