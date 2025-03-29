@@ -1,8 +1,6 @@
 use ark_ec_vrfs::{
     reexports::ark_serialize::{self, CanonicalDeserialize, CanonicalSerialize},
-    suites::bandersnatch::{
-        self, BandersnatchSha512Ell2, IetfProof, Input, Output, Public, RingProof,
-    },
+    suites::bandersnatch::{IetfProof, Input, Output, Public, RingProof},
     Secret,
 };
 
@@ -11,9 +9,9 @@ use rustler::{Atom, Binary, Env, Error, NifResult, OwnedBinary};
 use crate::{
     ring_context::ring_context,
     rustler_bridges::{FixedColumnsCommittedBridge, PublicBridge, SecretBridge},
+    types::Bandersnatch as S,
 };
 
-type S = BandersnatchSha512Ell2;
 type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
 mod atoms {
     rustler::atoms! {
@@ -40,9 +38,7 @@ struct IetfVrfSignature {
 }
 
 fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
-    let point =
-        <bandersnatch::BandersnatchSha512Ell2 as ark_ec_vrfs::Suite>::data_to_point(vrf_input_data)
-            .unwrap();
+    let point = <S as ark_ec_vrfs::Suite>::data_to_point(vrf_input_data).unwrap();
     Input::from(point)
 }
 

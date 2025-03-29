@@ -1,13 +1,9 @@
-use ark_ec_vrfs::{
-    reexports::ark_ff::PrimeField, suites::bandersnatch::BandersnatchSha512Ell2, ScalarField,
-    Secret,
-};
+use ark_ec_vrfs::{reexports::ark_ff::PrimeField, ScalarField, Secret};
 use rand_chacha::rand_core::SeedableRng;
 use rustler::NifResult;
 
 use crate::rustler_bridges::{PublicBridge, SecretBridge};
-
-type S = BandersnatchSha512Ell2;
+use crate::types::Bandersnatch as S;
 
 #[rustler::nif]
 fn generate_secret_from_seed(seed: Vec<u8>) -> NifResult<(SecretBridge<S>, PublicBridge<S>)> {
