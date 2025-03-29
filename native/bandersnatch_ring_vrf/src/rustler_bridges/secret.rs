@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{codec::Codec, AffinePoint, ScalarField, Secret, Suite};
+use ark_vrf::{codec::Codec, AffinePoint, ScalarField, Secret, Suite};
 use rustler::{Decoder, Encoder, NifResult, Term};
 
 use crate::types::Bandersnatch;

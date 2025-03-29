@@ -11,10 +11,8 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-
-ark-ec-vrfs = { version = "0.1.2", features = ["bandersnatch", "ring"] }
+ark-vrf = { version = "0.1.0", features = ["bandersnatch", "ring"] }
 ring-proof = { package = "w3f-ring-proof", version = "0.0.2", default-features = false }
-
 ark-ec = { version = "0.4", default-features = false }
 ark-serialize = { version = "0.4", default-features = false, features = [
     "derive",

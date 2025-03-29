@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{
+use ark_vrf::{
     reexports::ark_serialize::{self, CanonicalDeserialize, CanonicalSerialize},
     suites::bandersnatch::{IetfProof, Input, Output, Public, RingProof},
     Secret,
@@ -12,7 +12,7 @@ use crate::{
     types::Bandersnatch as S,
 };
 
-type RingCommitment = ark_ec_vrfs::ring::RingCommitment<S>;
+type RingCommitment = ark_vrf::ring::RingCommitment<S>;
 mod atoms {
     rustler::atoms! {
         ok,
@@ -38,7 +38,7 @@ struct IetfVrfSignature {
 }
 
 fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
-    let point = <S as ark_ec_vrfs::Suite>::data_to_point(vrf_input_data).unwrap();
+    let point = <S as ark_vrf::Suite>::data_to_point(vrf_input_data).unwrap();
     Input::from(point)
 }
 
@@ -50,7 +50,7 @@ pub fn ring_vrf_verify<'a>(
     aux_data: Binary,
     signature: Binary,
 ) -> NifResult<(Atom, Binary<'a>)> {
-    use ark_ec_vrfs::ring::Verifier as _;
+    use ark_vrf::ring::Verifier as _;
     let commitment: RingCommitment = commitment.into();
 
     let signature = RingVrfSignature::deserialize_compressed(signature.as_slice())
@@ -95,7 +95,7 @@ fn ring_vrf_sign<'a>(
     vrf_input_data: Binary,
     aux_data: Binary,
 ) -> NifResult<(Binary<'a>, Binary<'a>)> {
-    use ark_ec_vrfs::ring::Prover as _;
+    use ark_vrf::ring::Prover as _;
 
     let ring: Vec<Public> = ring.into_iter().map(|pk| pk.into()).collect();
 
@@ -140,7 +140,7 @@ fn ietf_vrf_sign<'a>(
     vrf_input_data: Binary,
     aux_data: Binary,
 ) -> NifResult<(Binary<'a>, Binary<'a>)> {
-    use ark_ec_vrfs::ietf::Prover as _;
+    use ark_vrf::ietf::Prover as _;
 
     let input = vrf_input_point(&vrf_input_data);
     let secret: Secret<S> = secret_bridge.into();
@@ -178,7 +178,7 @@ pub fn ietf_vrf_verify<'a>(
     aux_data: Binary,
     signature: Binary,
 ) -> NifResult<(Atom, Binary<'a>)> {
-    use ark_ec_vrfs::ietf::Verifier as _;
+    use ark_vrf::ietf::Verifier as _;
 
     let signature = IetfVrfSignature::deserialize_compressed(signature.as_slice())
         .map_err(|_e| Error::Term(Box::new(atoms::invalid_signature())))?;
