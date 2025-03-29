@@ -26,7 +26,7 @@ defmodule CommsTest do
     {:ok, server_pid} =
       PeerSupervisor.start_peer(:listener, "::1", port)
 
-    Process.sleep(20)
+    Process.sleep(30)
 
     {:ok, client_pid} =
       PeerSupervisor.start_peer(:initiator, "::1", port)
@@ -206,6 +206,23 @@ defmodule CommsTest do
       for i <- 1..10 do
         {:ok, _} = Peer.send(client, @dummy_protocol_id, "message#{i}")
       end
+
+      # Give some time for streams to close
+      Process.sleep(20)
+
+      # Get client's state
+      client_state = :sys.get_state(client)
+
+      # Verify outgoing streams were cleaned up
+      assert map_size(client_state.pending_responses) == 0,
+             "Expected outgoing streams to be cleaned up, but found: #{inspect(client_state.pending_responses)}"
+    end
+
+    # @tag :skip
+    test "can send a list of messages with just 1 FIN", %{client: client} do
+      # Send a list of messages
+      messages = ["message1", "message2", "message3"]
+      {:ok, _} = Peer.send(client, @dummy_protocol_id, messages)
 
       # Give some time for streams to close
       Process.sleep(20)
