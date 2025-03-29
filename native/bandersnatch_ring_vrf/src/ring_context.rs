@@ -1,6 +1,6 @@
 use ark_ec_vrfs::{
     reexports::ark_serialize,
-    suites::bandersnatch::{self, RingProofParams},
+    suites::bandersnatch::{PcsParams, RingProofParams},
 };
 use ark_serialize::CanonicalDeserialize;
 use rustler::{Error, NifResult};
@@ -16,7 +16,7 @@ pub fn create_ring_context(file_path: String, ring_size: usize) -> NifResult<()>
         file.read_to_end(&mut buf)
             .expect("Failed to read the SRS file");
 
-        let pcs_params = bandersnatch::PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..])
+        let pcs_params = PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..])
             .expect("Failed to deserialize PCS parameters");
         RingProofParams::from_pcs_params(ring_size, pcs_params)
             .expect("Failed to create RingContext")
