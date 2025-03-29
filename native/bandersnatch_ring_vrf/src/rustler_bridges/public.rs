@@ -9,8 +9,7 @@ pub struct PublicBridge<S: Suite>(pub AffinePoint<S>);
 
 impl<S: Suite> Encoder for PublicBridge<S> {
     fn encode<'b>(&self, env: Env<'b>) -> Term<'b> {
-        let buf = Vec::new();
-        S::Codec::point_encode(&self.0);
+        let buf = S::Codec::point_encode(&self.0);
 
         let mut point_bin = rustler::OwnedBinary::new(buf.len()).unwrap();
         point_bin.as_mut_slice().copy_from_slice(&buf);
