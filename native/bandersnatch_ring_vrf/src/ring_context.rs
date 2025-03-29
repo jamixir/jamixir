@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{
+use ark_vrf::{
     reexports::ark_serialize,
     suites::bandersnatch::{PcsParams, RingProofParams},
 };

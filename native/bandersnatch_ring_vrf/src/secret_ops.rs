@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{reexports::ark_ff::PrimeField, ScalarField, Secret};
+use ark_vrf::{reexports::ark_ff::PrimeField, ScalarField, Secret};
 use rand_chacha::rand_core::SeedableRng;
 use rustler::NifResult;
 

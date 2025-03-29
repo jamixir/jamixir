@@ -1,5 +1,5 @@
 use crate::types::Bandersnatch;
-use ark_ec_vrfs::{
+use ark_vrf::{
     codec::Codec, suites::bandersnatch::RingProofParams, AffinePoint, Public, Suite,
 };
 use rustler::{Decoder, Encoder, Env, NifResult, Term};

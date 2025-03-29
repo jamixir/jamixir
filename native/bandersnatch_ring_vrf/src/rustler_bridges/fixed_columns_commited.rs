@@ -1,4 +1,4 @@
-use ark_ec_vrfs::{
+use ark_vrf::{
     reexports::{
         ark_ec::pairing::Pairing,
         ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
