@@ -4,14 +4,13 @@ use ark_ec_vrfs::{
         ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
     },
     ring::{RingCommitment, RingSuite},
-    suites::bandersnatch::BandersnatchSha512Ell2,
 };
 
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
 
-use crate::rustler_bridges::KzgCommitmentBridge;
+use crate::{rustler_bridges::KzgCommitmentBridge, types::Bandersnatch as S};
 
-type BandersnatchPairing = <BandersnatchSha512Ell2 as RingSuite>::Pairing;
+type BandersnatchPairing = <S as RingSuite>::Pairing;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct FixedColumnsCommittedBridge {
@@ -69,7 +68,7 @@ impl<'a> Decoder<'a> for FixedColumnsCommittedBridge {
     }
 }
 
-impl From<FixedColumnsCommittedBridge> for RingCommitment<BandersnatchSha512Ell2> {
+impl From<FixedColumnsCommittedBridge> for RingCommitment<S> {
     fn from(bridge: FixedColumnsCommittedBridge) -> Self {
         Self {
             points: bridge
@@ -85,8 +84,8 @@ impl From<FixedColumnsCommittedBridge> for RingCommitment<BandersnatchSha512Ell2
     }
 }
 
-impl From<RingCommitment<BandersnatchSha512Ell2>> for FixedColumnsCommittedBridge {
-    fn from(commitment: RingCommitment<BandersnatchSha512Ell2>) -> Self {
+impl From<RingCommitment<S>> for FixedColumnsCommittedBridge {
+    fn from(commitment: RingCommitment<S>) -> Self {
         Self {
             points: commitment
                 .points

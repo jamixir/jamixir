@@ -1,7 +1,9 @@
-use ark_ec_vrfs::reexports::{ark_ec::pairing::Pairing, ark_serialize::{CanonicalSerialize, CanonicalDeserialize}};
+use ark_ec_vrfs::reexports::{
+    ark_ec::pairing::Pairing,
+    ark_serialize::{CanonicalDeserialize, CanonicalSerialize},
+};
 use ring_proof::pcs::kzg::commitment::KzgCommitment;
 use rustler::{Decoder, Encoder, Env, NifResult, Term};
-
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KzgCommitmentBridge<E: Pairing>(pub E::G1Affine);
@@ -17,7 +19,7 @@ impl<E: Pairing> Encoder for KzgCommitmentBridge<E> {
 impl<'a, E: Pairing> Decoder<'a> for KzgCommitmentBridge<E> {
     fn decode(term: Term<'a>) -> NifResult<Self> {
         let bytes: Vec<u8> = term.decode()?;
-        let affine = E::G1Affine::deserialize_compressed_unchecked(&*bytes)
+        let affine = E::G1Affine::deserialize_compressed(&*bytes)
             .map_err(|_| rustler::Error::Atom("deserialization_failed"))?;
         Ok(KzgCommitmentBridge(affine))
     }
