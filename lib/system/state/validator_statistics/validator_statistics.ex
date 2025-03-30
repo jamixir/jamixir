@@ -165,7 +165,9 @@ defmodule System.State.ValidatorStatistics do
     def encode(%ValidatorStatistics{} = v) do
       e({
         for(s <- v.current_epoch_statistics, do: e(s)),
-        for(s <- v.previous_epoch_statistics, do: e(s))
+        for(s <- v.previous_epoch_statistics, do: e(s)),
+        v.core_statistics,
+        v.service_statistics
       })
     end
   end
