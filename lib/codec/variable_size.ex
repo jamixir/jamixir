@@ -1,5 +1,6 @@
 defmodule Codec.VariableSize do
   import RangeMacros
+  use Codec.Decoder
   defstruct [:value, :size]
 
   def new(value) do
@@ -22,13 +23,13 @@ defmodule Codec.VariableSize do
   use Sizes
 
   def decode(bin, :binary) do
-    <<size::integer, rest::binary>> = bin
+    {size, rest} = de_i(bin)
     <<value::binary-size(size), rest::binary>> = rest
     {value, rest}
   end
 
   def decode(bin, :hash) do
-    <<count::integer, rest::binary>> = bin
+    {count, rest} = de_i(bin)
 
     Enum.reduce(from_0_to(count), {[], rest}, fn _, {acc, rest} ->
       <<value::binary-size(@hash_size), r::binary>> = rest
@@ -37,12 +38,12 @@ defmodule Codec.VariableSize do
   end
 
   def decode(bin, module) do
-    <<count::integer, rest::binary>> = bin
+    {count, rest} = de_i(bin)
     decode(rest, module, count)
   end
 
   def decode(bin, :mapset, value_size) do
-    <<count::integer, rest::binary>> = bin
+    {count, rest} = de_i(bin)
 
     Enum.reduce(from_0_to(count), {MapSet.new(), rest}, fn _, {acc, rest} ->
       <<value::binary-size(value_size), r::binary>> = rest
@@ -58,7 +59,7 @@ defmodule Codec.VariableSize do
   end
 
   def decode(bin, :map, key_size, value_size) do
-    <<count::8, rest::binary>> = bin
+    {count, rest} = de_i(bin)
 
     Enum.reduce(from_0_to(count), {%{}, rest}, fn _, {acc, rest} ->
       <<key::binary-size(key_size), value::binary-size(value_size), rest::binary>> = rest
@@ -67,7 +68,7 @@ defmodule Codec.VariableSize do
   end
 
   def decode(bin, :list_of_tuples, size0, size1) do
-    <<count::8, rest::binary>> = bin
+    {count, rest} = de_i(bin)
 
     Enum.reduce(from_0_to(count), {[], rest}, fn _, {acc, rest} ->
       <<key::binary-size(size0), value::binary-size(size1), rest::binary>> = rest
