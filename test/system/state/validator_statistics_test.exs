@@ -1,4 +1,5 @@
 defmodule System.State.ValidatorStatisticsTest do
+  alias System.State.ServiceStatistic
   alias Codec.JsonEncoder
   alias System.State.CoreStatistic
   alias System.State.ValidatorStatistics
@@ -8,7 +9,20 @@ defmodule System.State.ValidatorStatisticsTest do
   describe "encode/1" do
     test "encode smoke test" do
       assert Codec.Encoder.encode(build(:validator_statistics, count: 2)) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0"
+               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+    end
+
+    test "encode statistics with services stats" do
+      stat = build(:validator_statistics, count: 2)
+
+      stat =
+        put_in(stat.service_statistics, %{
+          1 => %ServiceStatistic{},
+          123_456 => %ServiceStatistic{}
+        })
+
+      assert Codec.Encoder.encode(stat) ==
+               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x01\0\0\0\0\0\0\0\0\0\0\0\0\xC1@\xE2\0\0\0\0\0\0\0\0\0\0\0\0"
     end
   end
 

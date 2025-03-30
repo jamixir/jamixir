@@ -2,6 +2,7 @@ defmodule System.State.CoreStatistic do
   @moduledoc """
   Formula (13.6) v0.6.4
   """
+  alias System.State.CoreStatistic
   alias Block.Extrinsic.{Assurance, Guarantee.WorkReport}
 
   defstruct da_load: 0,
@@ -62,4 +63,15 @@ defmodule System.State.CoreStatistic do
 
   def sum_field(enum, index) when is_integer(index) and index >= 0,
     do: Enum.reduce(enum, 0, fn item, acc -> acc + elem(item, index) end)
+
+  defimpl Encodable do
+    use Codec.Encoder
+
+    def encode(%CoreStatistic{} = c) do
+      e(
+        {c.da_load, c.popularity, c.bundle_size, c.imports, c.exports, c.extrinsic_count,
+         c.extrinsic_size, c.gas_used}
+      )
+    end
+  end
 end

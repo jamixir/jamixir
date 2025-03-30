@@ -117,4 +117,21 @@ defmodule System.State.ServiceStatistic do
         end)
     end
   end
+
+  defimpl Encodable do
+    use Codec.Encoder
+
+    def encode(%ServiceStatistic{} = c) do
+      e({
+        c.preimage,
+        c.refine,
+        c.imports,
+        c.exports,
+        c.extrinsic_count,
+        c.extrinsic_size,
+        c.accumulation,
+        c.transfers
+      })
+    end
+  end
 end
