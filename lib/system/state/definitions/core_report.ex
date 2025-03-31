@@ -34,7 +34,7 @@ defmodule System.State.CoreReport do
   mockable process_availability(core_reports, core_reports_intermediate_1, assurances, h_t) do
     w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
 
-    # Formula (11.71) v0.6.0
+    # Formula (11.17) v0.6.4
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil or intermediate == nil,
         do: nil,

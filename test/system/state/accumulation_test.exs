@@ -346,9 +346,9 @@ defmodule System.State.AccumulationTest do
           ctx
         )
 
-      assert {total_gas, updated_state, transfers, outputs} = result
+      assert {updated_state, transfers, outputs, total_gas} = result
 
-      assert total_gas == 150
+      assert total_gas == [{4, 40}, {5, 50}, {6, 60}]
 
       assert updated_state.privileged_services == :updated_privileged_services
       assert updated_state.next_validators == :updated_next_validators
@@ -430,7 +430,7 @@ defmodule System.State.AccumulationTest do
         }
       end)
 
-      {total_gas, updated_state, transfers, outputs} =
+      {updated_state, transfers, outputs, total_gas} =
         Accumulation.parallelized_accumulation(
           initial_state,
           work_reports,
@@ -439,7 +439,7 @@ defmodule System.State.AccumulationTest do
         )
 
       # Verify gas used
-      assert total_gas == 30
+      assert total_gas == [{4, 10}, {5, 20}]
 
       # Verify services map contains the right services
       assert map_size(updated_state.services) == 4
@@ -538,9 +538,10 @@ defmodule System.State.AccumulationTest do
           ctx
         )
 
-      assert {total_i, final_state, all_transfers, all_outputs} = result
+      assert {total_i, final_state, all_transfers, all_outputs, service_gas} = result
       # Only two work reports should be processed due to gas limit
       assert total_i == 2
+      assert service_gas == [{4, 30}, {5, 40}, {6, 20}]
       assert final_state.services == %{4 => :service4, 5 => :service5, 6 => :service6}
 
       # (30 + 40 + 20)

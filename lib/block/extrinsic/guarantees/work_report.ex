@@ -216,7 +216,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula 14.11 v0.6.4
+  # Formula (14.11) v0.6.4
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
@@ -288,7 +288,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     r
   end
 
-  # TODO 14.13 v0.6.4
+  # TODO (14.13) v0.6.4
   def get_import_segments(%WorkPackage{work_items: _wi}) do
     %{}
   end

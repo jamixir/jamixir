@@ -26,7 +26,7 @@ defmodule System.Audit do
     Shuffle.shuffle(list, r)
   end
 
-  # Formula 17.8 v0.6.3
+  # Formula (17.8) v0.6.4
   @spec current_trench(Types.timeslot(), Types.timeslot()) :: non_neg_integer()
   def current_trench(header_t, state_t) do
     div(state_t - Constants.slot_period() * header_t, Constants.audit_trenches_period())
@@ -34,14 +34,14 @@ defmodule System.Audit do
 
   alias Util.Crypto
   use Codec.Encoder
-  # Formula 17.10 v0.6.3
+  # Formula (17.10) v0.6.4
   # xn = E([E2(c)⌢H(w) ∣ (c,w) ∈ an])
   def encoded_announcements(n) do
     an = announcements(n)
     e(for {c, w} <- an, do: <<c::16-little>> <> h(w))
   end
 
-  # Formula 17.9 v0.6.3
+  # Formula (17.9) v0.6.4
   def announcements_signature(private_key, header, n) do
     Crypto.sign(sign_payload(header, n), private_key)
   end
