@@ -51,7 +51,7 @@ defmodule System.State.Accumulation do
             privileged_services: %PrivilegedServices{}
 
   @doc """
-  Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.3
+  Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.4
   """
   def transition(w, t_, n0_, s) do
     ctx_init_fn = PVM.Accumulate.Utils.initializer(n0_, t_)
@@ -97,9 +97,8 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue
     }
 
-    # TODO review v0.6.4
-    # Formula (12.21) v0.6.3
-    {n, o, deferred_transfers, beefy_commitment} =
+    # Formula (12.21) v0.6.4
+    {n, o, deferred_transfers, beefy_commitment, _u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -179,8 +178,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # TODO update to 0.6.4
-  # Formula (12.16) v0.6.3
+  # Formula (12.16) v0.6.4
   @spec sequential_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
@@ -188,7 +186,8 @@ defmodule System.State.Accumulation do
           %{non_neg_integer() => non_neg_integer()},
           ctx()
         ) ::
-          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}
+          {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
+           list({Types.service_index(), Types.gas()})}
 
   def sequential_accumulation(
         gas_limit,
@@ -200,9 +199,9 @@ defmodule System.State.Accumulation do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
 
     if i == 0 do
-      {0, acc_state, [], MapSet.new()}
+      {0, acc_state, [], MapSet.new(), []}
     else
-      {g_star, o_star, t_star, b_star} =
+      {o_star, t_star, b_star, u_star} =
         parallelized_accumulation(
           acc_state,
           Enum.take(work_reports, i),
@@ -210,7 +209,9 @@ defmodule System.State.Accumulation do
           ctx
         )
 
-      {j, o_prime, t, b} =
+      g_star = Enum.sum(for {_, g} <- u_star, do: g)
+
+      {j, o_prime, t, b, u} =
         sequential_accumulation(
           gas_limit - g_star,
           Enum.drop(work_reports, i),
@@ -219,7 +220,7 @@ defmodule System.State.Accumulation do
           ctx
         )
 
-      {i + j, o_prime, t_star ++ t, b_star ++ b}
+      {i + j, o_prime, t_star ++ t, b_star ++ b, u_star ++ u}
     end
   end
 
@@ -240,17 +241,15 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula 12.17 v0.6.3
-  # TODO update to 0.6.4 - add U
+  # Formula (12.17) v0.6.4
   @spec parallelized_accumulation(
           t(),
           list(WorkReport.t()),
-          %{
-            non_neg_integer() => non_neg_integer()
-          },
+          %{non_neg_integer() => non_neg_integer()},
           ctx()
         ) ::
-          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t()}
+          {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
+           list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(
         acc_state,
         work_reports,
@@ -270,11 +269,12 @@ defmodule System.State.Accumulation do
 
     d = acc_state.services
 
-    {gas_used, service_hash_pairs, transfers, n, m} =
-      Enum.reduce(services, {0, MapSet.new(), [], %{}, MapSet.new()}, fn service,
-                                                                         {acc_gas, acc_output,
-                                                                          acc_transfers, acc_n,
-                                                                          acc_m} ->
+    {service_hash_pairs, transfers, n, m, service_gas} =
+      Enum.reduce(services, {MapSet.new(), [], %{}, MapSet.new(), []}, fn service,
+                                                                          {acc_output,
+                                                                           acc_transfers, acc_n,
+                                                                           acc_m,
+                                                                           acc_service_gas} ->
         # ar stands for accumulation result
         ar =
           single_accumulation(
@@ -294,14 +294,14 @@ defmodule System.State.Accumulation do
           MapSet.difference(keys_set(d), keys_set(ar_services))
 
         {
-          acc_gas + ar.gas_used,
           if(is_binary(ar.output),
             do: MapSet.put(acc_output, {service, ar.output}),
             else: acc_output
           ),
           acc_transfers ++ ar.transfers,
           acc_n ++ service_n,
-          acc_m ++ service_m
+          acc_m ++ service_m,
+          acc_service_gas ++ [{service, ar.gas_used}]
         }
       end)
 
@@ -312,7 +312,7 @@ defmodule System.State.Accumulation do
       authorizer_queue: authorizer_queue_
     }
 
-    {gas_used, accumulation_state, List.flatten(transfers), service_hash_pairs}
+    {accumulation_state, List.flatten(transfers), service_hash_pairs, service_gas}
   end
 
   def collect_services(work_reports, always_acc_services) do
@@ -352,7 +352,7 @@ defmodule System.State.Accumulation do
     |> List.to_tuple()
   end
 
-  # Formula 12.19 v0.6.4
+  # Formula (12.19) v0.6.4
   def single_accumulation(acc_state, work_reports, service_dict, service, ctx) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 

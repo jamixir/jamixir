@@ -1,7 +1,4 @@
 defmodule System.State.Safrole do
-  @moduledoc """
-  Section 6.2 v0.6.2
-  """
   alias Block.Extrinsic.TicketProof
   alias Block.Header
   alias Codec.{Decoder, Encoder}
