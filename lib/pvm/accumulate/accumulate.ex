@@ -44,10 +44,10 @@ defmodule PVM.Accumulate do
 
     # Formula (B.10) v0.6.4
     x = init_fn.(accumulation_state, service_index)
-    # Formula (B.10) v0.6.1
+
     d = x.accumulation.services
     s = Context.accumulating_service(x)
-
+    # Formula (B.11) v0.6.4
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
         case host(n) do

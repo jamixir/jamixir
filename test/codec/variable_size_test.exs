@@ -2,7 +2,6 @@ defmodule Codec.VariableSizeTest do
   use ExUnit.Case
   alias Util.Hash
   alias Block.Extrinsic.Disputes.Culprit
-  alias System.State.Validator
   use Codec.Encoder
   use Sizes
   import Jamixir.Factory

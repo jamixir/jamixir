@@ -54,4 +54,16 @@ defmodule Types do
   @type bandersnatch_ring_root :: <<_::1152>>
   # L
   @type max_age_timeslot_lookup_anchor :: non_neg_integer()
+
+  @type segment_ref ::
+          hash()
+          | {:tagged_hash, hash()}
+
+  @spec is_tagged?(segment_ref()) :: boolean()
+  def is_tagged?(hash) when is_binary(hash), do: false
+  def is_tagged?({:tagged_hash, _}), do: true
+
+  @spec hash(segment_ref()) :: hash()
+  def hash(hash) when is_binary(hash), do: hash
+  def hash({:tagged_hash, hash}), do: hash
 end

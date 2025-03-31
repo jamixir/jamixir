@@ -1,6 +1,6 @@
 defmodule System.State.Safrole do
   @moduledoc """
-  Section 6.2 v0.6.2
+  Section 6.2 v0.6.4
   """
   alias Block.Extrinsic.TicketProof
   alias Block.Header
@@ -187,7 +187,7 @@ defmodule System.State.Safrole do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (D.2) v0.6.0 - C(4)
+    # Formula (D.2) v0.6.4 - C(4)
     # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
     def encode(safrole) do
       sealer_type =

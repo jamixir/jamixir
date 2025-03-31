@@ -107,7 +107,7 @@ defmodule System.State.ServiceAccount do
 
   defimpl Encodable do
     alias System.State.ServiceAccount
-    # Formula (D.2) v0.6.0
+    # Formula (D.2) v0.6.4
     # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
@@ -115,9 +115,9 @@ defmodule System.State.ServiceAccount do
       items_in_storage = ServiceAccount.items_in_storage(s)
 
       s.code_hash <>
-        <<s.balance::64-little>> <>
-        <<s.gas_limit_g::64-little>> <>
-        <<s.gas_limit_m::64-little>> <>
+        t(s.balance) <>
+        <<s.gas_limit_g::m(gas)>> <>
+        <<s.gas_limit_m::m(gas)>> <>
         <<octets_in_storage::64-little>> <>
         <<items_in_storage::32-little>>
     end

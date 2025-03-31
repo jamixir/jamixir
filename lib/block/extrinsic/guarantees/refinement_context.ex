@@ -33,7 +33,7 @@ defmodule RefinementContext do
   defimpl Encodable do
     alias Codec.VariableSize
     use Codec.Encoder
-    # Formula (C.21) v0.6.0
+    # Formula (C.21) v0.6.4
     def encode(%RefinementContext{
           anchor: a,
           state_root: s,
@@ -42,7 +42,7 @@ defmodule RefinementContext do
           timeslot: t,
           prerequisite: p
         }) do
-      e({a, s, b, l}) <> <<t::32-little>> <> e(vs(p))
+      e({a, s, b, l}) <> <<t::m(timeslot)>> <> e(vs(p))
     end
   end
 

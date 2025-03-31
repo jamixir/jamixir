@@ -12,6 +12,7 @@ defmodule Block.Extrinsic.WorkItem do
   use Codec.Decoder
   use Sizes
   use AccessStruct
+  import Bitwise, only: [&&&: 2]
 
   @type t :: %__MODULE__{
           # s
@@ -27,8 +28,7 @@ defmodule Block.Extrinsic.WorkItem do
           # e
           export_count: non_neg_integer(),
           # i
-          # TODO: update the type to be H ∪ (H⊞)
-          import_segments: list({Types.hash(), non_neg_integer()}),
+          import_segments: list({Types.segment_ref(), non_neg_integer()}),
           # x
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
@@ -56,24 +56,28 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     alias Codec.{Encoder, VariableSize}
-    # Formula (C.26) v0.6.0
+    # Formula (C.26) v0.6.4
     def encode(%WorkItem{} = wi) do
       Encoder.encode({
         t(wi.service),
         wi.code_hash,
         vs(wi.payload),
-        <<wi.refine_gas_limit::64-little>>,
-        <<wi.accumulate_gas_limit::64-little>>,
+        <<wi.refine_gas_limit::m(gas)>>,
+        <<wi.accumulate_gas_limit::m(gas)>>,
         vs(encode_import_segments(wi)),
         vs(encode_extrinsic(wi)),
-        <<wi.export_count::16-little>>
+        <<wi.export_count::m(segment_count)>>
       })
     end
 
     use Codec.Encoder
 
+    # Formula (C.31) v0.6.4
     defp encode_import_segments(work_item) do
-      for {h, i} <- work_item.import_segments, do: {h, e_le(i, 2)}
+      for {h, i} <- work_item.import_segments,
+          do:
+            {Types.hash(h),
+             <<i + if(Types.is_tagged?(h), do: 0x8000, else: 0)::m(segment_count)>>}
     end
 
     defp encode_extrinsic(work_item) do
@@ -81,15 +85,30 @@ defmodule Block.Extrinsic.WorkItem do
     end
   end
 
+  defp decode_import_segments_binary(segments) do
+    for {hash, index} <- segments do
+      tag = if (de_le(index, 2) &&& 0x8000) != 0, do: :tagged_hash, else: :hash
+
+      index = de_le(index, 2) &&& 0x7FFF
+
+      case tag do
+        :tagged_hash -> {{:tagged_hash, hash}, index}
+        :hash -> {hash, index}
+      end
+    end
+  end
+
   def decode(bin) do
     <<service::service(), bin::binary>> = bin
     <<code_hash::b(hash), bin::binary>> = bin
     {payload, bin} = VariableSize.decode(bin, :binary)
-    <<refine_gas_limit::64-little, bin::binary>> = bin
-    <<accumulate_gas_limit::64-little, bin::binary>> = bin
+    <<refine_gas_limit::m(gas), bin::binary>> = bin
+    <<accumulate_gas_limit::m(gas), bin::binary>> = bin
     {import_segments, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 2)
     {extrinsic, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
-    <<export_count::16-little, rest::binary>> = bin
+    <<export_count::m(segment_count), rest::binary>> = bin
+
+    import_segments = decode_import_segments_binary(import_segments)
 
     {%__MODULE__{
        service: service,
@@ -97,7 +116,7 @@ defmodule Block.Extrinsic.WorkItem do
        payload: payload,
        refine_gas_limit: refine_gas_limit,
        accumulate_gas_limit: accumulate_gas_limit,
-       import_segments: for({h, <<i::16-little>>} <- import_segments, do: {h, i}),
+       import_segments: import_segments,
        extrinsic: for({h, <<i::32-little>>} <- extrinsic, do: {h, i}),
        export_count: export_count
      }, rest}

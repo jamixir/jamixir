@@ -108,14 +108,14 @@ defmodule Block.Extrinsic.Assurance do
       Utils.pad_binary(value, size)
     end
 
-    # Formula (C.17) v0.6.0
-    def encode(%Assurance{} = a) do
-      e(a.hash) <>
-        e(pad(a.bitfield, Sizes.bitfield())) <>
-        t(a.validator_index) <>
-        e(pad(a.signature, @signature_size))
+      # Formula (C.17) v0.6.4
+      def encode(%Assurance{} = a) do
+        e(a.hash) <>
+          e(a.bitfield) <>
+          t(a.validator_index) <>
+          e(a.signature)
+      end
     end
-  end
 
   use Sizes
   use Codec.Decoder

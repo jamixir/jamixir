@@ -233,7 +233,7 @@ defmodule Block.Extrinsic.Disputes do
   defimpl Encodable do
     use Codec.Encoder
 
-    # Formula (C.18) v0.6.0
+    # Formula (C.18) v0.6.4
     def encode(%Disputes{} = d) do
       e({vs(d.verdicts), vs(d.culprits), vs(d.faults)})
     end

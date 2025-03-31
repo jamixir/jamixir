@@ -119,7 +119,7 @@ defmodule PVM do
     PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, init_fn)
   end
 
-  # Formula (B.14) v0.6.1
+  # Formula (B.14) v0.6.4
   @spec on_transfer(
           services :: %{integer() => ServiceAccount.t()},
           timeslot :: non_neg_integer(),
@@ -127,7 +127,7 @@ defmodule PVM do
           transfers :: list(DeferredTransfer.t())
         ) :: ServiceAccount.t()
   def on_transfer(services, timeslot, service_index, transfers) do
-    # Formula (B.16) v0.6.0
+    # Formula (B.16) v0.6.4
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
         case host(n) do
@@ -161,7 +161,7 @@ defmodule PVM do
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
-    # Formula (B.15) v0.6.0
+    # Formula (B.15) v0.6.4
     service = Map.get(services, service_index)
 
     service =

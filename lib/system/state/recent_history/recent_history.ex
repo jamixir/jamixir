@@ -146,13 +146,14 @@ defmodule System.State.RecentHistory do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (D.2) v0.6.0
+    import Codec.Encoder, only: [encode_mmr: 1]
+    # Formula (D.2) v0.6.4
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
       e(
         vs(
           for b <- rh.blocks do
-            {b.header_hash, Codec.Encoder.encode_mmr(b.accumulated_result_mmr), b.state_root,
+            {b.header_hash, encode_mmr(b.accumulated_result_mmr), b.state_root,
              e(b.work_report_hashes)}
           end
         )
