@@ -22,6 +22,6 @@ defmodule PVM.Accumulate.Operand do
     # Formula (C.29) v0.6.4
     def encode(%PVM.Accumulate.Operand{} = o),
       # TODO o.o should be vs, but accumulate vectors fail. Checking with Dav.
-      do: e({o.h, o.e, o.a, o.o, o.y}) <> WorkResult.encode_result(o.d)
+      do: e({o.h, o.e, o.a, vs(o.o), o.y}) <> WorkResult.encode_result(o.d)
   end
 end
