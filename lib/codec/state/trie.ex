@@ -5,11 +5,11 @@ defmodule Codec.State.Trie do
   use Codec.Encoder
   import Bitwise
 
-  # Formula (D.2) v0.6.0
+  # Formula (D.2) v0.6.4
   def state_keys(%State{} = s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
-      1 => e(for x <- s.authorizer_pool, do: vs(x)),
+      1 => e(Enum.map(s.authorizer_pool, &vs/1)),
       # C(2) ↦ E(φ)
       2 => e(s.authorizer_queue),
       # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
@@ -27,15 +27,15 @@ defmodule Codec.State.Trie do
       # C(9) ↦ E(λ)
       9 => e(s.prev_validators),
       # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ])
-      10 => e(for c <- s.core_reports, do: NilDiscriminator.new(c)),
+      10 => e(Enum.map(s.core_reports, &NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
-      11 => e_le(s.timeslot, 4),
+      11 => t(s.timeslot),
       # C(12) ↦ E4(χ)
       12 => e(s.privileged_services),
       # C(13) ↦ E4(π)
       13 => e(s.validator_statistics),
-      14 => e(for x <- s.accumulation_history, do: vs(x)),
-      15 => e(for x <- s.ready_to_accumulate, do: vs(x))
+      14 => e(Enum.map(s.accumulation_history, &vs/1)),
+      15 => e(Enum.map(s.ready_to_accumulate, &vs/1))
     }
     |> encode_accounts(s)
     |> encode_accounts_storage_s(s, :storage)
@@ -43,7 +43,7 @@ defmodule Codec.State.Trie do
     |> encode_accounts_preimage_storage_l(s)
   end
 
-  # Formula (D.1) v0.6.0 - C constructor
+  # Formula (D.1) v0.6.4 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)

@@ -4,15 +4,20 @@ defmodule WorkItemTest do
   alias Block.Extrinsic.WorkItem
   use ExUnit.Case
   import Jamixir.Factory
+  use Codec.Encoder
 
   setup do
     {:ok, wi: build(:work_item)}
   end
 
   describe "encode/1" do
-    test "encodes a work result", %{wi: wi} do
-      assert Codec.Encoder.encode(wi) ==
-               "\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
+    test "encodes/decodes a work item", %{wi: wi} do
+      assert WorkItem.decode(e(wi)) == {wi, <<>>}
+    end
+    test "encodes/decodes a work item with tagged hash variant", %{wi: wi} do
+      tagged = Enum.map(wi.import_segments, fn {h, i} -> {{:tagged_hash, h}, i} end)
+      wi = %{wi | import_segments: tagged}
+      assert WorkItem.decode(e(wi)) == {wi, <<>>}
     end
   end
 

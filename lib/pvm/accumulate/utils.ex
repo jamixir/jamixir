@@ -49,8 +49,7 @@ defmodule PVM.Accumulate.Utils do
     end
   end
 
-  # Formula (B.20) v0.6.0 / new = 9 host function
-
+  # Formula (B.20) v0.6.4 / new = 9 host function
   # bump(i) = 2^8 + (i - 2^8 + 42) mod (2^32 - 2^9)
   @spec bump(non_neg_integer()) :: non_neg_integer()
   def bump(i) do

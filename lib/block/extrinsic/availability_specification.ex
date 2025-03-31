@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           # h: hash of the work-package
           work_package_hash: Types.hash(),
           # l: auditable work bundle length
-          length: Types.max_age_timeslot_lookup_anchor(),
+          length: non_neg_integer(),
           # u: erasure-root
           erasure_root: Types.hash(),
           # e: segment-root
@@ -30,12 +30,12 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   defimpl Encodable do
     use Codec.Encoder
-    # Formula (C.22) v0.6.0
+    # Formula (C.22) v0.6.4
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
-        <<availability.length::m(max_age_timeslot_lookup_anchor)>> <>
+        <<availability.length::m(work_bundle_length)>> <>
         e({availability.erasure_root, availability.exports_root}) <>
-        <<availability.segment_count::16-little>>
+        t(availability.segment_count)
     end
   end
 

@@ -32,9 +32,10 @@ defmodule System.DeferredTransfer do
   defimpl Encodable do
     use Codec.Encoder
     alias System.DeferredTransfer
-
+    # Formula (C.28) v0.6.4
     def encode(%DeferredTransfer{} = t) do
-      e({e_le(t.sender, 4), e_le(t.receiver, 4), e_le(t.amount, 8), t.memo, e_le(t.gas_limit, 8)})
+      <<t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance), t.memo::binary,
+        t.gas_limit::m(gas)>>
     end
   end
 end

@@ -9,7 +9,9 @@ defmodule Block.Extrinsic.Guarantee do
   alias Util.{Collections, Crypto}
   use SelectiveMock
   use MapUnion
-  use Codec.Encoder
+  use JsonDecoder
+  use Codec.{Encoder, Decoder}
+  use Sizes
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
 
@@ -386,27 +388,23 @@ defmodule Block.Extrinsic.Guarantee do
     Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)) |> MapSet.new()
   end
 
-  use Sizes
-
   defimpl Encodable do
     use Codec.Encoder
     alias Block.Extrinsic.Guarantee
 
-    # Formula (C.16) v0.6.0
+    # Formula (C.16) v0.6.4
     def encode(%Guarantee{timeslot: timeslot} = g) do
       e({
         g.work_report,
         t(timeslot),
-        Guarantee.encode_cretentials(g.credentials)
+        Guarantee.encode_credentials(g.credentials)
       })
     end
   end
 
-  def encode_cretentials(creds) do
-    vs(for {i, s} <- creds, do: {<<i::m(validator_index)>>, s})
+  def encode_credentials(creds) do
+    vs(for {validator_index, s} <- creds, do: {t(validator_index), s})
   end
-
-  use Codec.Decoder
 
   def decode(bin) do
     {work_report, bin} = WorkReport.decode(bin)
@@ -414,15 +412,13 @@ defmodule Block.Extrinsic.Guarantee do
 
     {credentials, rest} =
       Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->
-        <<v::8*@validator_index_size-little, s::binary-size(@signature_size), b2::binary>> = b
+        <<v::m(validator_index), s::binary-size(@signature_size), b2::binary>> = b
 
         {acc ++ [{v, s}], b2}
       end)
 
     {%__MODULE__{work_report: work_report, timeslot: timeslot, credentials: credentials}, rest}
   end
-
-  use JsonDecoder
 
   def json_mapping,
     do: %{

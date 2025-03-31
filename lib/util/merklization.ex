@@ -7,9 +7,10 @@ defmodule Util.Merklization do
   """
 
   alias Util.Hash
+  use Codec.Encoder
 
   @doc """
-  Formula (D.3) v0.6.0:
+  Formula (D.3) v0.6.4:
      { (H, H) → B512
   B: { (l,r) → [0] ~ bits(l)1... ~ bits(r)
 
@@ -25,7 +26,7 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    Formula (D.4) v0.6.0
+    Formula (D.4) v0.6.4
     Encodes the leaf nodes distinguin between regular and embedded leafs.
       { (H, Y) → B512
     L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
@@ -38,8 +39,6 @@ defmodule Util.Merklization do
   32 bytes store the hash of the value.
   Formally, we define the encoding functions B and L:
   """
-
-  use Codec.Encoder
 
   def encode_leaf(key, value) do
     if byte_size(value) <= 32 do
@@ -58,7 +57,7 @@ defmodule Util.Merklization do
   @doc """
     Merklization State Function
 
-   Formula (D.5) v0.6.0
+   Formula (D.5) v0.6.4
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
   """
@@ -74,7 +73,7 @@ defmodule Util.Merklization do
   @doc """
     General Merklization Function
 
-   Formula (D.6) v0.6.0
+   Formula (D.6) v0.6.4
                        { H°                       if |d| = 0
     M(d:D(B → (H,Y))) ={ H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
                        { H(bits-1 (B(M(l), M(r)))) otherwise, where Vb,p: (b → p) ed → (b1.. → p) E { l   if bo = 0

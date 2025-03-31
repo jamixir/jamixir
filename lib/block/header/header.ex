@@ -131,15 +131,15 @@ defmodule Block.Header do
     end
   end
 
-  # Formula (C.20) v0.6.0
+  # Formula (C.20) v0.6.4
   def unsigned_encode(%Block.Header{} = header) do
     e({header.parent_hash, header.prior_state_root, header.extrinsic_hash}) <>
-      <<header.timeslot::m(timeslot)>> <>
+      t(header.timeslot) <>
       e({
         NilDiscriminator.new(header.epoch_mark),
         NilDiscriminator.new(header.winning_tickets_marker),
         vs(header.offenders_marker),
-        <<header.block_author_key_index::16-little>>,
+        <<header.block_author_key_index::m(validator_index)>>,
         header.vrf_signature
       })
   end
@@ -147,9 +147,8 @@ defmodule Block.Header do
   defimpl Encodable do
     use Codec.Encoder
     alias Block.Header
-    # Formula (C.19) v0.6.0
+    # Formula (C.19) v0.6.4
     def encode(%Block.Header{} = header) do
-      <<>>
       Header.unsigned_encode(header) <> e(header.block_seal)
     end
   end
