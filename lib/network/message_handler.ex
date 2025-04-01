@@ -80,19 +80,8 @@ defmodule Network.MessageHandler do
 
   defp check_message_complete(:ce, data, %{flags: flags}, log_tag) do
     if (flags &&& Flags.receive_flag(:fin)) != 0 do
-      case data do
-        <<length::32-little, _msg::binary-size(length), _rest::binary>> ->
-          Logger.debug("#{log_tag} CE message complete: size=#{length}")
-          {:complete, data, <<>>}
-
-        <<_protocol_id::8, length::32-little, _msg::binary-size(length), _rest::binary>> ->
-          Logger.debug("#{log_tag} CE message complete: size=#{length}")
-          {:complete, data, <<>>}
-
-        _ ->
-          Logger.error("#{log_tag} Invalid CE message format")
-          :invalid_format
-      end
+      Logger.debug("#{log_tag} CE message complete: size=#{byte_size(data)}")
+      {:complete, data, <<>>}
     else
       Logger.debug("#{log_tag} More data coming, buffering: #{byte_size(data)} bytes")
       {:need_more, data}
@@ -114,8 +103,8 @@ defmodule Network.MessageHandler do
          log_tag
        ) do
     Logger.info("#{log_tag} Processing complete #{mode} message: #{byte_size(message)} bytes")
-    message = decode_message(message)
-    on_complete.(protocol_id, message, stream)
+    messages = decode_messages(message)
+    on_complete.(protocol_id, messages, stream)
     new_state = %{state | stream_buffers: Map.delete(state.stream_buffers, stream)}
     {:noreply, new_state}
   end

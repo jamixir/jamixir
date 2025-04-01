@@ -6,6 +6,10 @@ defmodule Network.ServerCalls do
 
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
 
+  def call(protocol_id, [single_message]) do
+    call(protocol_id, single_message)
+  end
+
   def call(128, <<hash::32, direction::8, max_blocks::32>> = _message) do
     log("Sending #{max_blocks} blocks in direction #{direction}")
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, direction, max_blocks)
@@ -77,6 +81,14 @@ defmodule Network.ServerCalls do
     log("Processing block announcement")
     # TODO: Implement block processing
     :ok
+  end
+
+  def call(protocol_id, messages) when is_list(messages) do
+    Logger.warning(
+      "Received unknown message #{protocol_id} on server. Ignoring #{inspect(messages)}}"
+    )
+
+    IO.iodata_to_binary(messages)
   end
 
   def call(protocol_id, message) do
