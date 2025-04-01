@@ -87,6 +87,11 @@ defmodule Network.Client do
     send(pid, 136, hash)
   end
 
+  def send_work_package(pid, wp, core_index, extrinsics) do
+    messages = [t(core_index) <> e(wp), extrinsics]
+    send(pid, 133, messages)
+  end
+
   def handle_cast(
         {:announce_block, message, hash, slot},
         %PeerState{up_streams: up_streams} = state

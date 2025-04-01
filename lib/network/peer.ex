@@ -22,6 +22,7 @@ defmodule Network.Peer do
   defdelegate announce_judgement(pid, epoch, wr_hash, judgement), to: Client
   defdelegate distribute_guarantee(pid, guarantee), to: Client
   defdelegate get_work_report(pid, hash), to: Client
+  defdelegate send_work_package(pid, wp, core, extrinsics), to: Client
 
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do

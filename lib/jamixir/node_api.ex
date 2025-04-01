@@ -27,6 +27,8 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback save_guarantee(Guarantee.t()) :: :ok | {:error, any}
   @callback get_work_report(Types.hash()) :: {:ok, binary} | {:error, any}
+  @callback save_work_package(WorkPackage.t(), non_neg_integer(), binary()) ::
+              :ok | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -49,5 +51,9 @@ defmodule Jamixir.NodeAPI do
 
   def save_guarantee(guarantee), do: impl().save_guarantee(guarantee)
   def get_work_report(hash), do: impl().get_work_report(hash)
+
+  def save_work_package(wp, core, extrinsic),
+    do: impl().save_work_package(wp, core, extrinsic)
+
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

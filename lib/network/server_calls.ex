@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
@@ -61,6 +62,14 @@ defmodule Network.ServerCalls do
 
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
+
+  def call(133, [wp_and_core, extrinsic]) do
+    <<core_index::16-little, rest::binary>> = wp_and_core
+    {wp, _} = WorkPackage.decode(rest)
+    log("Received work package for service #{wp.service} core #{core_index}")
+    :ok = Jamixir.NodeAPI.save_work_package(wp, core_index, extrinsic)
+    <<>>
+  end
 
   def call(
         145,
