@@ -141,4 +141,10 @@ defmodule Jamixir.Node do
     # TODO
     :ok
   end
+
+  @impl true
+  def save_work_package(_wp, _core, _extrinsic) do
+    # TODO
+    :ok
+  end
 end

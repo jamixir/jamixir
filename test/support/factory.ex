@@ -167,7 +167,7 @@ defmodule Jamixir.Factory do
     %Block.Extrinsic.WorkPackage{
       authorization_token: <<1>>,
       service: 2,
-      authorization_code_hash: <<3>>,
+      authorization_code_hash: <<3::256>>,
       parameterization_blob: <<4>>,
       context: %RefinementContext{},
       work_items: [build(:work_item)]
