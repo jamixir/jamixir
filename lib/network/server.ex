@@ -46,14 +46,14 @@ defmodule Network.Server do
   def handle_data(protocol_id, data, stream, props, state) do
     handle_stream_data(protocol_id, data, stream, props, state,
       log_tag: "[QUIC_SERVER]",
-      on_complete: fn protocol_id, message, stream ->
+      on_complete: fn protocol_id, messages, stream ->
         if protocol_id >= 128 do
-          response = Network.ServerCalls.call(protocol_id, message)
+          response = Network.ServerCalls.call(protocol_id, messages)
 
           {:ok, _} =
             :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
         else
-          Task.start(fn -> Network.ServerCalls.call(protocol_id, message) end)
+          Task.start(fn -> Network.ServerCalls.call(protocol_id, messages) end)
         end
       end
     )

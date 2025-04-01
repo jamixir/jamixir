@@ -4,6 +4,10 @@ defmodule Network.ClientCalls do
 
   def log(message), do: Logger.log(:info, "[QUIC_CLIENT_CALLS] #{message}")
 
+  def call(protocol_id, [single_message]) do
+    call(protocol_id, single_message)
+  end
+
   def call(128, message) do
     log("Received block response")
     {:ok, Block.decode_list(message)}

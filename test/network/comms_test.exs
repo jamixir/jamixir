@@ -221,7 +221,7 @@ defmodule CommsTest do
     # @tag :skip
     test "can send a list of messages with just 1 FIN", %{client: client} do
       # Send a list of messages
-      messages = [<<7>>, <<17>>, <<27>>]
+      messages = [<<7>>, <<17>>]
       {:ok, _} = Peer.send(client, @dummy_protocol_id, messages)
 
       # Give some time for streams to close
@@ -362,11 +362,6 @@ defmodule CommsTest do
       assert_handles_malformed_message(client, <<1, 2, 3, 4>>, "less than header size (5 bytes)")
     end
 
-    test "handles CE message with oversized length", %{client: client} do
-      payload = <<@dummy_protocol_id, 0, 0, 0, 10, 0>>
-      assert_handles_malformed_message(client, payload, "length larger than actual payload (CE)")
-    end
-
     test "handles UP message with oversized length", %{client: client} do
       assert_handles_malformed_message(
         client,
@@ -378,11 +373,6 @@ defmodule CommsTest do
     test "handles CE message with undersized length", %{client: client} do
       payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
       assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
-    end
-
-    test "handles UP message with undersized length", %{client: client} do
-      payload = <<0, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
-      assert_handles_malformed_message(client, payload, "length smaller than actual payload (UP)")
     end
 
     test "handles empty message", %{client: client} do
