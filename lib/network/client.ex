@@ -118,36 +118,21 @@ defmodule Network.Client do
     handle_call({:send, protocol_id, [message]}, from, state)
   end
 
-  # send the last message if the list
-  def handle_call({:send, protocol_id, [message], stream}, from, %PeerState{} = state) do
-    log("sending message to server: #{protocol_id} #{inspect(message)}")
-    {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:fin))
+  def handle_call({:send, protocol_id, messages}, from, %PeerState{} = state)
+      when is_list(messages) do
+    {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
+
+    message_bytes =
+      for m <- messages, reduce: <<protocol_id::8>> do
+        acc -> acc <> encode_message(m)
+      end
+
+    {:ok, _} = :quicer.send(stream, message_bytes, send_flag(:fin))
 
     new_pending =
       Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
 
     {:noreply, %PeerState{state | pending_responses: new_pending}}
-  end
-
-  def handle_call({:send, protocol_id, [message]}, from, %PeerState{} = state) do
-    {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-
-    handle_call({:send, protocol_id, [message], stream}, from, state)
-  end
-
-  def handle_call({:send, protocol_id, messages}, from, %PeerState{} = state)
-      when is_list(messages) do
-    {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-
-    # split between all but last message
-    {messages, last_message} = Enum.split(messages, -1)
-
-    for message <- messages do
-      log("sending message to server: #{protocol_id} #{inspect(message)}")
-      {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message))
-    end
-
-    handle_call({:send, protocol_id, last_message, stream}, from, state)
   end
 
   def handle_data(protocol_id, data, stream, props, %PeerState{} = state) do

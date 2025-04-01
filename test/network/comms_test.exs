@@ -221,7 +221,7 @@ defmodule CommsTest do
     # @tag :skip
     test "can send a list of messages with just 1 FIN", %{client: client} do
       # Send a list of messages
-      messages = ["message1", "message2", "message3"]
+      messages = [<<7>>, <<17>>, <<27>>]
       {:ok, _} = Peer.send(client, @dummy_protocol_id, messages)
 
       # Give some time for streams to close
