@@ -92,6 +92,11 @@ defmodule Network.Client do
     send(pid, 133, messages)
   end
 
+  def send_work_package_bundle(pid, bundle, core_index, segment_roots) do
+    messages = [t(core_index) <> e(segment_roots), bundle]
+    send(pid, 134, messages)
+  end
+
   def handle_cast(
         {:announce_block, message, hash, slot},
         %PeerState{up_streams: up_streams} = state

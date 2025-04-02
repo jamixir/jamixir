@@ -71,6 +71,14 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
+  def call(134, [segments_and_core, bundle]) do
+    <<core_index::16-little, segments_bin::binary>> = segments_and_core
+    {segments, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
+    {:ok, {hash, sign}} = Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, segments)
+
+    hash <> sign
+  end
+
   def call(
         145,
         <<epoch_index::m(epoch_index), validator_index::m(validator_index), vote::8,
