@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
@@ -77,6 +78,31 @@ defmodule Network.ServerCalls do
     {:ok, {hash, sign}} = Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, segments)
 
     hash <> sign
+  end
+
+  def call(144, [message1, evidence_bin]) do
+    log("Received audit announcement")
+    <<header_hash::b(hash), tranche::8, announcements::binary>> = message1
+
+    {announcements, signature} =
+      VariableSize.decode(announcements, :list_of_tuples, 2, @hash_size)
+
+    announcements =
+      for {<<core::m(core_index)>>, hash} <- announcements do
+        {core, hash}
+      end
+
+    audit_announcement = %AuditAnnouncement{
+      tranche: tranche,
+      announcements: announcements,
+      header_hash: header_hash,
+      signature: signature,
+      evidence: evidence_bin
+    }
+
+    # {audit_announcement, <<>>} = AuditAnnouncement.decode(bin)
+    :ok = Jamixir.NodeAPI.save_audit(audit_announcement)
+    <<>>
   end
 
   def call(

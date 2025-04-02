@@ -1,7 +1,7 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
-  alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Assurance
+  alias Block.Extrinsic.WorkPackage
   use Codec.Encoder
   import Mox
   import Jamixir.Factory
@@ -9,6 +9,8 @@ defmodule CommsTest do
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
+  alias System.Audit.AuditAnnouncement
+
   alias Util.Hash
   use Sizes
 
@@ -180,6 +182,40 @@ defmodule CommsTest do
 
       {:ok, {^wr_hash, ^signature}} =
         Peer.send_work_package_bundle(client, wp_bundle, core, segment_root_mapping)
+
+      verify!()
+    end
+  end
+
+  describe "announce_audit/3" do
+    test "announces audit first tranche evidence", %{client: client} do
+      audit_announcement = %AuditAnnouncement{
+        tranche: 0,
+        announcements: for(i <- 1..Constants.core_count(), do: {i, <<i::m(hash)>>}),
+        header_hash: Hash.four(),
+        signature: <<8::m(signature)>>,
+        evidence: <<77::m(bandersnatch_signature)>>
+      }
+
+      Jamixir.NodeAPI.Mock |> expect(:save_audit, 1, fn ^audit_announcement -> :ok end)
+
+      {:ok, ""} = Peer.announce_audit(client, audit_announcement)
+
+      verify!()
+    end
+
+    test "announces audit tranche <> 0", %{client: client} do
+      audit_announcement = %AuditAnnouncement{
+        tranche: 1,
+        announcements: for(i <- 1..Constants.core_count(), do: {i, <<i::m(hash)>>}),
+        header_hash: Hash.four(),
+        signature: <<8::m(signature)>>,
+        evidence: <<>>
+      }
+
+      Jamixir.NodeAPI.Mock |> expect(:save_audit, 1, fn ^audit_announcement -> :ok end)
+
+      {:ok, ""} = Peer.announce_audit(client, audit_announcement)
 
       verify!()
     end

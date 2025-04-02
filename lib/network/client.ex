@@ -1,4 +1,5 @@
 defmodule Network.Client do
+  alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Block.Extrinsic.Assurance
   alias Network.PeerState
@@ -95,6 +96,32 @@ defmodule Network.Client do
   def send_work_package_bundle(pid, bundle, core_index, segment_roots) do
     messages = [t(core_index) <> e(segment_roots), bundle]
     send(pid, 134, messages)
+  end
+
+  def announce_audit(pid, %AuditAnnouncement{
+        tranche: tranche,
+        announcements: announcements,
+        header_hash: header_hash,
+        signature: signature,
+        evidence: evidence
+      }) do
+    announcements =
+      for {core_index, hash} <- announcements do
+        <<core_index::m(core_index)>> <> <<hash::b(hash)>>
+      end
+
+    m1 =
+      <<header_hash::b(hash)>> <>
+        <<tranche::8>> <> e(vs(announcements)) <> <<signature::b(signature)>>
+
+    m2 =
+      if tranche == 0 do
+        evidence
+      else
+        <<>>
+      end
+
+    send(pid, 144, [m1, m2])
   end
 
   def handle_cast(
