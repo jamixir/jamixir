@@ -1,6 +1,7 @@
 defmodule Network.ClientCalls do
   alias Block.Extrinsic.Guarantee.WorkReport
   require Logger
+  use Codec.Encoder
 
   def log(message), do: Logger.log(:info, "[QUIC_CLIENT_CALLS] #{message}")
 
@@ -11,6 +12,12 @@ defmodule Network.ClientCalls do
   def call(128, message) do
     log("Received block response")
     {:ok, Block.decode_list(message)}
+  end
+
+  def call(134, message) do
+    log("Received work report response")
+    <<hash::b(hash), signature::b(signature)>> = message
+    {:ok, {hash, signature}}
   end
 
   def call(136, message) when message == <<>>, do: {:error, :not_found}
