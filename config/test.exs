@@ -16,6 +16,8 @@ config :jamixir, Jamixir,
   # V
   validator_count: 6,
   # Y
-  ticket_submission_end: 10
+  ticket_submission_end: 10,
+  # GA
+  gas_accumulation: 1_000_000
 
 config :logger, level: :none
