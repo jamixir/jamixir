@@ -1,7 +1,8 @@
 defmodule Jamixir.NodeAPI do
-  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
+  alias Block.Extrinsic.Guarantee
+  alias System.Audit.AuditAnnouncement
   @callback add_block(binary) :: :ok | {:error, any}
   @callback inspect_state() :: {:ok, any} | {:error, any}
   @callback inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
@@ -31,31 +32,23 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback save_work_package_bundle(binary(), non_neg_integer(), %{Types.hash() => Types.hash()}) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
+  @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
   def get_blocks(hash, order, count), do: impl().get_blocks(hash, order, count)
   def add_ticket(epoch, attempt, proof), do: impl().add_ticket(epoch, attempt, proof)
   def add_work_package(core, wp, extrinsic), do: impl().add_work_package(core, wp, extrinsic)
-
-  def receive_preimage(service_id, hash, length),
-    do: impl().receive_preimage(service_id, hash, length)
-
+  def receive_preimage(service, hash, length), do: impl().receive_preimage(service, hash, length)
   def get_preimage(hash), do: impl().get_preimage(hash)
   def save_preimage(preimage), do: impl().save_preimage(preimage)
-
   def save_assurance(assurance), do: impl().save_assurance(assurance)
-
-  def process_ticket(mode, epoch, ticket),
-    do: impl().process_ticket(mode, epoch, ticket)
-
+  def process_ticket(mode, epoch, ticket), do: impl().process_ticket(mode, epoch, ticket)
   def save_judgement(epoch, hash, judgement), do: impl().save_judgement(epoch, hash, judgement)
-
   def save_guarantee(guarantee), do: impl().save_guarantee(guarantee)
   def get_work_report(hash), do: impl().get_work_report(hash)
-
-  def save_work_package(wp, core, extrinsic),
-    do: impl().save_work_package(wp, core, extrinsic)
+  def save_work_package(wp, core, extrinsic), do: impl().save_work_package(wp, core, extrinsic)
+  def save_audit(audit), do: impl().save_audit(audit)
 
   def save_work_package_bundle(bundle, core, segments),
     do: impl().save_work_package_bundle(bundle, core, segments)
