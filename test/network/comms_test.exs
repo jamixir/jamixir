@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Assurance
   use Codec.Encoder
   import Mox
@@ -160,6 +161,26 @@ defmodule CommsTest do
       |> expect(:save_work_package, 1, fn ^work_package, 3, ^extrinsics -> :ok end)
 
       {:ok, ""} = Peer.send_work_package(client, work_package, core, extrinsics)
+      verify!()
+    end
+  end
+
+  describe "send_work_package_bundle/4" do
+    test "sends work package bundle", %{client: client} do
+      wp_bundle = WorkPackage.bundle_binary(build(:work_package))
+      core = 3
+      segment_root_mapping = %{Hash.zero() => Hash.one(), Hash.one() => Hash.two()}
+      wr_hash = <<7::hash()>>
+      signature = <<8::m(signature)>>
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:save_work_package_bundle, 1, fn ^wp_bundle, ^core, ^segment_root_mapping ->
+        {:ok, {wr_hash, signature}}
+      end)
+
+      {:ok, {^wr_hash, ^signature}} =
+        Peer.send_work_package_bundle(client, wp_bundle, core, segment_root_mapping)
+
       verify!()
     end
   end
