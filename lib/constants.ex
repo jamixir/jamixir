@@ -40,7 +40,7 @@ defmodule Constants do
   defmockable(:max_work_report_dep_sum, do: 8)
 
   @doc "GA - The total gas allocated to a core for Accumulation."
-  defmockable(:gas_accumulation, do: 10_000_000)
+  defmockable(:gas_accumulation, do: Jamixir.config(:gas_accumulation))
 
   @doc "GI : The gas allocated to invoke a work-package's Is-Authorized logic."
   defmockable(:gas_is_authorized, do: 50_000_000)
