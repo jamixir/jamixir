@@ -100,7 +100,6 @@ defmodule Network.ServerCalls do
       evidence: evidence_bin
     }
 
-    # {audit_announcement, <<>>} = AuditAnnouncement.decode(bin)
     :ok = Jamixir.NodeAPI.save_audit(audit_announcement)
     <<>>
   end
