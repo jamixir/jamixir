@@ -114,14 +114,7 @@ defmodule Network.Client do
       <<header_hash::b(hash)>> <>
         <<tranche::8>> <> e(vs(announcements)) <> <<signature::b(signature)>>
 
-    m2 =
-      if tranche == 0 do
-        evidence
-      else
-        <<>>
-      end
-
-    send(pid, 144, [m1, m2])
+    send(pid, 144, [m1, evidence])
   end
 
   def handle_cast(

@@ -210,7 +210,9 @@ defmodule CommsTest do
         announcements: for(i <- 1..Constants.core_count(), do: {i, <<i::m(hash)>>}),
         header_hash: Hash.four(),
         signature: <<8::m(signature)>>,
-        evidence: <<>>
+        # keep this as binary to simplify now
+        # when audit is ready, review this
+        evidence: <<10::800>>
       }
 
       Jamixir.NodeAPI.Mock |> expect(:save_audit, 1, fn ^audit_announcement -> :ok end)
