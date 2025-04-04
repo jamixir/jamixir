@@ -119,6 +119,7 @@ defmodule Block.Header do
     else
       case Storage.get(header.parent_hash) do
         nil ->
+          IO.puts(Base.encode16(header.parent_hash))
           {:error, :no_parent}
 
         parent_header ->

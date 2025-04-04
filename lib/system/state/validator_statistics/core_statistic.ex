@@ -34,7 +34,9 @@ defmodule System.State.CoreStatistic do
   def calculate_core_statistics(available_work_reports, assurances) do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)
 
-    for {w, c} <- Enum.with_index(available_work_reports) do
+    for c <- 0..(Constants.core_count() - 1) do
+      w = Enum.at(available_work_reports, c)
+
       if w == nil do
         %__MODULE__{}
       else
