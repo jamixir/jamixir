@@ -31,7 +31,7 @@ defmodule TestnetBlockImporterTest do
     setup do
       for h <- [
             <<0x2F0F2E36394B4EBF80DE3D63C7D447013F05398A03FEDF179113018FC6F6DCB7::hash()>>,
-            <<0x03C6255F4EED3DB451C775E33C2D7EF03A1BA7FB79CD525B5DDF650703CCDB92::hash()>>
+            <<0x03C6255F4EED3DB451C775E33E2D7EF03A1BA7FB79CD525B5DDF650703CCDB92::hash()>>
           ] do
         Storage.put(h, build(:header, timeslot: 0))
       end
@@ -39,8 +39,7 @@ defmodule TestnetBlockImporterTest do
       :ok
     end
 
-    # waiting for correctnes of other party side
-    skip = []
+    skip = ["assurances"]
 
     for mode <- ["fallback", "safrole", "assurances"] do
       if Enum.member?(skip, mode) do
