@@ -29,20 +29,20 @@ defmodule TestnetBlockImporterTest do
 
   describe "blocks and states" do
     setup do
-      # put parent header to storage
-      Storage.put(
-        <<0x2F0F2E36394B4EBF80DE3D63C7D447013F05398A03FEDF179113018FC6F6DCB7::hash()>>,
-        build(:header, timeslot: 0)
-      )
+      for h <- [
+            <<0x2F0F2E36394B4EBF80DE3D63C7D447013F05398A03FEDF179113018FC6F6DCB7::hash()>>,
+            <<0x03C6255F4EED3DB451C775E33C2D7EF03A1BA7FB79CD525B5DDF650703CCDB92::hash()>>
+          ] do
+        Storage.put(h, build(:header, timeslot: 0))
+      end
 
       :ok
     end
 
     # waiting for correctnes of other party side
+    skip = []
 
-    skip = ["assurances"]
-
-    for mode <- ["safrole", "assurances"] do
+    for mode <- ["fallback", "safrole", "assurances"] do
       if Enum.member?(skip, mode) do
         IO.puts(
           :stderr,
@@ -55,10 +55,25 @@ defmodule TestnetBlockImporterTest do
 
       @tag mode: mode
       test "#{mode} mode block import", %{mode: mode} do
-        {:ok, genesis_json} = fetch_and_parse_json("genesis.json", state_path(mode), @user, @repo)
+        {:ok, genesis_json} =
+          case fetch_and_parse_json("genesis.json", state_path(mode), @user, @repo) do
+            {:error, _} ->
+              fetch_and_parse_json("genesis-tiny.json", @genesis_path, @user, @repo)
+
+            any ->
+              any
+          end
+
         state = Json.decode(genesis_json)
 
-        Enum.reduce(108_489..108_491, state, fn epoch, state ->
+        first_time =
+          if mode == "safrole" do
+            108_489
+          else
+            1
+          end
+
+        Enum.reduce(first_time..(first_time + 2), state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
             if trace_enabled?() do
               System.put_env("TRACE_NAME", "#{mode}_#{epoch}:#{timeslot}")
@@ -75,8 +90,6 @@ defmodule TestnetBlockImporterTest do
               fetch_and_parse_json("#{epoch}_#{timeslot}.json", state_path(mode), @user, @repo)
 
             expected_state = Json.decode(json)
-
-            Util.Export.export(state, "./priv")
 
             new_state =
               case State.add_block(state, block) do
