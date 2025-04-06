@@ -49,11 +49,10 @@ defmodule System.State.CoreReportTest do
 
   describe "transition/4" do
     test "transition smoke test" do
-      core_reports = [build(:core_report)]
-      guarantees = [build(:guarantee)]
+      core_reports = [nil, nil]
+      guarantees = []
 
-      assert core_reports ==
-               CoreReport.transition(core_reports, guarantees, 0)
+      assert core_reports == CoreReport.transition(core_reports, guarantees, 0)
     end
 
     test "add new work report in guarantees to core reports" do

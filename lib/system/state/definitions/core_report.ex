@@ -57,12 +57,14 @@ defmodule System.State.CoreReport do
   """
   def transition(core_reports_2, guarantees, timeslot_) do
     # Formula (11.43) v0.6.4
-    Enum.with_index(core_reports_2, fn cr, index ->
+    for index <- 0..(Constants.core_count() - 1) do
+      cr = Enum.at(core_reports_2, index)
+
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> cr
         w -> %CoreReport{work_report: w.work_report, timeslot: timeslot_}
       end
-    end)
+    end
   end
 
   defimpl Encodable do

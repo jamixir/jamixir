@@ -27,7 +27,7 @@ defmodule System.State.CoreStatisticTest do
     end
 
     test "calculate_core_statistics smoke test", %{work_report: wr} do
-      available_work_reports = [wr, nil, nil]
+      available_work_reports = [wr, nil]
       assurances = []
 
       assert CoreStatistic.calculate_core_statistics(available_work_reports, assurances) == [
@@ -41,7 +41,6 @@ defmodule System.State.CoreStatisticTest do
                  # 7 + 4104 * ⌈(2 * (65 / 64))⌉
                  da_load: 12_319
                },
-               %CoreStatistic{},
                %CoreStatistic{}
              ]
     end
