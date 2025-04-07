@@ -2,6 +2,7 @@ defmodule System.State.ValidatorStatistics do
   @moduledoc """
   Formula (13.1) v0.6.4
   """
+  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.{Extrinsic, Header}
   alias System.State.{CoreStatistic, ServiceStatistic, Validator, ValidatorStatistic}
@@ -118,9 +119,11 @@ defmodule System.State.ValidatorStatistics do
             }
           end)
 
+        incoming_work_reports = Guarantee.work_reports(extrinsic.guarantees)
+
         service_stats =
           ServiceStatistic.calculate_stats(
-            available_work_reports,
+            incoming_work_reports,
             accumulation_stats,
             deferred_transfers_stats,
             extrinsic.preimages
@@ -131,7 +134,11 @@ defmodule System.State.ValidatorStatistics do
            current_epoch_statistics: current_epoc_stats_,
            previous_epoch_statistics: previous_epoc_stats_,
            core_statistics:
-             CoreStatistic.calculate_core_statistics(available_work_reports, extrinsic.assurances),
+             CoreStatistic.calculate_core_statistics(
+               incoming_work_reports,
+               available_work_reports,
+               extrinsic.assurances
+             ),
            service_statistics: service_stats
          }}
 
@@ -151,12 +158,31 @@ defmodule System.State.ValidatorStatistics do
     %__MODULE__{
       current_epoch_statistics:
         Enum.map(json_data[:vals_current], &ValidatorStatistic.from_json/1),
-      previous_epoch_statistics: Enum.map(json_data[:vals_last], &ValidatorStatistic.from_json/1)
+      previous_epoch_statistics: Enum.map(json_data[:vals_last], &ValidatorStatistic.from_json/1),
+      core_statistics: Enum.map(json_data[:cores], &CoreStatistic.from_json/1),
+      service_statistics: parse_service_statistics(json_data[:services])
     }
   end
 
+  defp parse_service_statistics(nil), do: %{}
+
+  defp parse_service_statistics(services) do
+    services
+    |> Enum.map(fn %{id: id, record: record} -> {id, ServiceStatistic.from_json(record)} end)
+    |> Map.new()
+  end
+
   def to_json_mapping,
-    do: %{current_epoch_statistics: :vals_current, previous_epoch_statistics: :vals_last}
+    do: %{
+      current_epoch_statistics: :vals_current,
+      previous_epoch_statistics: :vals_last,
+      core_statistics: :cores,
+      service_statistics: {:services, fn stats ->
+        for {id, record} <- stats do
+          %{id: id, record: record}
+        end
+      end}
+    }
 
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
@@ -164,8 +190,8 @@ defmodule System.State.ValidatorStatistics do
 
     def encode(%ValidatorStatistics{} = v) do
       e({
-        for(s <- v.current_epoch_statistics, do: e(s)),
-        for(s <- v.previous_epoch_statistics, do: e(s)),
+        Enum.map(v.current_epoch_statistics, &e/1),
+        Enum.map(v.previous_epoch_statistics, &e/1),
         v.core_statistics,
         v.service_statistics
       })

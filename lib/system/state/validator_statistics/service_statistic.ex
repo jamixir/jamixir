@@ -1,6 +1,8 @@
 defmodule System.State.ServiceStatistic do
   alias Block.Extrinsic.Preimage
   alias System.State.ServiceStatistic
+  alias Block.Extrinsic.Guarantee.WorkReport
+
   # p
   defstruct preimage: {0, 0},
             # r
@@ -32,20 +34,20 @@ defmodule System.State.ServiceStatistic do
   # Formula (13.11) v0.6.4
   # Formula (13.12) v0.6.4
   @spec calculate_stats(
-          %{Types.service_index() => {}},
+          list(WorkReport.t()),
           list(AccumulationStatistic.t()),
           list(DefferedTransferStatistic.t()),
           list(Preimage.t())
         ) :: t
   def calculate_stats(
-        available_work_reports,
+        incoming_work_reports,
         accumulation_stats,
         deferred_transfers_stats,
         preimages
       ) do
     # Formula (13.13) v0.6.4
     # Formula (13.15) v0.6.4
-    refine_stats(available_work_reports)
+    refine_stats(incoming_work_reports)
     # Formula (13.11) v0.6.4
     |> accumulation_stats(accumulation_stats)
     |> deferred_transfers_stats(deferred_transfers_stats)
@@ -98,8 +100,8 @@ defmodule System.State.ServiceStatistic do
   end
 
   # i, x, z, e, r
-  defp refine_stats(available_work_reports) do
-    for w <- available_work_reports, w != nil, r <- w.results, reduce: %{} do
+  defp refine_stats(incoming_work_reports) do
+    for w <- incoming_work_reports, w != nil, r <- w.results, reduce: %{} do
       map ->
         # put zeroed stats if not present
         map = Map.update(map, r.service, %ServiceStatistic{}, & &1)
@@ -116,6 +118,28 @@ defmodule System.State.ServiceStatistic do
           }
         end)
     end
+  end
+
+  def from_json(json_data) do
+    %__MODULE__{
+      preimage: {json_data[:provided_count] || 0, json_data[:provided_size] || 0},
+      refine: {json_data[:refinement_count] || 0, json_data[:refinement_gas_used] || 0},
+      imports: json_data[:imports] || 0,
+      exports: json_data[:exports] || 0,
+      extrinsic_count: json_data[:extrinsic_count] || 0,
+      extrinsic_size: json_data[:extrinsic_size] || 0,
+      accumulation: {json_data[:accumulate_count] || 0, json_data[:accumulate_gas_used] || 0},
+      transfers: {json_data[:on_transfers_count] || 0, json_data[:on_transfers_gas_used] || 0}
+    }
+  end
+
+  def to_json_mapping do
+    %{
+      preimage: [:provided_count, :provided_size],
+      refine: [:refinement_count, :refinement_gas_used],
+      accumulation: [:accumulate_count, :accumulate_gas_used],
+      transfers: [:on_transfers_count, :on_transfers_gas_used]
+    }
   end
 
   defimpl Encodable do
