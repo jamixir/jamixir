@@ -31,8 +31,13 @@ defmodule System.State.CoreReport do
   Processes availability and updates the core reports accordingly.
   """
   # ρ‡ Formula (4.13) v0.6.4
-  mockable process_availability(core_reports, core_reports_intermediate_1, assurances, h_t) do
-    w = WorkReport.available_work_reports(assurances, core_reports_intermediate_1) |> MapSet.new()
+  mockable process_availability(
+             core_reports,
+             core_reports_intermediate_1,
+             available_work_reports,
+             h_t
+           ) do
+    w = MapSet.new(available_work_reports)
 
     # Formula (11.17) v0.6.4
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
