@@ -1,4 +1,5 @@
 defmodule System.State.CoreReportTest do
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.JsonEncoder
   alias System.State.CoreReport
   alias Util.Hash
@@ -93,9 +94,10 @@ defmodule System.State.CoreReportTest do
     test "core reports nil when member of W" do
       core_reports = build_list(2, :core_report)
       assurances = build_list(6, :assurance, bitfield: <<255>>)
+      available_work_reports = WorkReport.available_work_reports(assurances, core_reports)
 
       with_original_modules([:process_availability, :available_work_reports]) do
-        assert CoreReport.process_availability(core_reports, core_reports, assurances, 0) ==
+        assert CoreReport.process_availability(core_reports, core_reports, available_work_reports, 0) ==
                  [nil, nil]
       end
     end
