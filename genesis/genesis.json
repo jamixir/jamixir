@@ -501,7 +501,7 @@
         "assurances": 0
       }
     ],
-    "core_statistics": [
+    "cores": [
       {
         "da_load": 0,
         "popularity": 0,
@@ -523,7 +523,7 @@
         "gas_used": 0
       }
     ],
-    "service_statistics": {}
+    "services": []
   },
   "theta": [[], [], [], [], [], [], [], [], [], [], [], []],
   "xi": [[], [], [], [], [], [], [], [], [], [], [], []]

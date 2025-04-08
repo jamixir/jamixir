@@ -27,10 +27,10 @@ defmodule System.State.CoreStatisticTest do
     end
 
     test "calculate_core_statistics smoke test", %{work_report: wr} do
-      available_work_reports = [wr, nil]
+      work_reports = [wr, nil]
       assurances = []
 
-      assert CoreStatistic.calculate_core_statistics(available_work_reports, assurances) == [
+      assert CoreStatistic.calculate_core_statistics(work_reports, work_reports, assurances) == [
                %CoreStatistic{
                  imports: 2,
                  exports: 4,

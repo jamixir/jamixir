@@ -42,9 +42,9 @@ defmodule System.State.CoreStatistic do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)
 
     for c <- 0..(Constants.core_count() - 1) do
-      w_incoming = Enum.at(incoming_work_reports, c, %{})
+      w_incoming = Enum.at(incoming_work_reports, c, %{}) || %{}
       w_incoming_results = Map.get(w_incoming, :results)
-      w_newly_available = Enum.at(available_work_reports, c, %{})
+      w_newly_available = Enum.at(available_work_reports, c, %{}) || %{}
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
@@ -55,7 +55,7 @@ defmodule System.State.CoreStatistic do
         extrinsic_count: sum_field(w_incoming_results, :extrinsic_count),
         extrinsic_size: sum_field(w_incoming_results, :extrinsic_size),
         gas_used: sum_field(w_incoming_results, :gas_used),
-        bundle_size: Map.get(w_incoming, :specification, %{}) |> Map.get(:length, 0),
+        bundle_size: (Map.get(w_incoming, :specification) || %{}) |> Map.get(:length, 0),
         # Formula (13.10) v0.6.4
         da_load:
           Map.get(w_newly_available_specification, :length, 0) +
