@@ -18,6 +18,6 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 10,
   # GA
-  gas_accumulation: 1_000_000
+  gas_accumulation: 10_000_000
 
 config :logger, level: :none

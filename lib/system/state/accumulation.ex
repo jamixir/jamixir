@@ -285,13 +285,11 @@ defmodule System.State.Accumulation do
             ctx
           )
 
-        ar_services = Map.get(ar.state, :services)
-
-        keys_to_drop = Map.keys(Map.drop(d, [service]))
-        service_n = Map.drop(ar_services, keys_to_drop)
+        keys_to_drop = Map.keys(Map.delete(d, service))
+        service_n = Map.drop(ar.state.services, keys_to_drop)
 
         service_m =
-          MapSet.difference(keys_set(d), keys_set(ar_services))
+          MapSet.difference(keys_set(d), keys_set(ar.state.services))
 
         {
           if(is_binary(ar.output),

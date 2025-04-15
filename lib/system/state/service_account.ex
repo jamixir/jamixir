@@ -157,7 +157,7 @@ defmodule System.State.ServiceAccount do
       {{
          JsonDecoder.from_json(d[:key][:hash]),
          d[:key][:length]
-       }, d[:value]}
+       }, d[:value] || []}
     end
   end
 
