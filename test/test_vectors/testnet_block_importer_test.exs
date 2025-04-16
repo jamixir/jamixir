@@ -39,9 +39,9 @@ defmodule TestnetBlockImporterTest do
       :ok
     end
 
-    skip = ["assurances"]
+    skip = ["assurances", "orderedaccumulation"]
 
-    for mode <- ["fallback", "safrole", "assurances"] do
+    for mode <- ["fallback", "safrole", "assurances", "orderedaccumulation"] do
       if Enum.member?(skip, mode) do
         IO.puts(
           :stderr,

@@ -250,12 +250,7 @@ defmodule System.State.Accumulation do
         ) ::
           {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
-  def parallelized_accumulation(
-        acc_state,
-        work_reports,
-        always_acc_services,
-        ctx
-      ) do
+  def parallelized_accumulation(acc_state, work_reports, always_acc_services, ctx) do
     services = collect_services(work_reports, always_acc_services)
 
     # {x', i', q'}
