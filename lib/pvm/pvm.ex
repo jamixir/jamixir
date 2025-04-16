@@ -180,11 +180,11 @@ defmodule PVM do
     code = ServiceAccount.code(service)
 
     if code == nil or Enum.empty?(transfers) do
-      service
+      {service, 0}
     else
       gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))
 
-      {_, _, service_} =
+      {gas, _, service_} =
         ArgInvoc.execute(
           code,
           10,
@@ -194,7 +194,7 @@ defmodule PVM do
           service
         )
 
-      service_
+      {service_, gas}
     end
   end
 end

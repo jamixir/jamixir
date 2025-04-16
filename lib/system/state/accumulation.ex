@@ -116,8 +116,9 @@ defmodule System.State.Accumulation do
     } = o
 
     # Formula (12.28) v0.6.4
-    services_intermediate_2 =
-      apply_transfers(services_intermediate, deferred_transfers, timeslot_)
+    x = apply_transfers(services_intermediate, deferred_transfers, timeslot_)
+
+    services_intermediate_2 = for {s, {a, _gas}} <- x, into: %{}, do: {s, a}
 
     w_star_n = Enum.take(accumulatable_reports, n)
     # Formula (12.31) v0.6.4
@@ -146,7 +147,7 @@ defmodule System.State.Accumulation do
       # Formula (12.24) v0.6.4
       accumulation_stats: accumulate_statistics(w_star_n),
       # Formula (12.30) v0.6.4
-      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers)
+      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
     }
   end
 
@@ -157,23 +158,24 @@ defmodule System.State.Accumulation do
     for w <- work_reports, r <- w.results, reduce: %{} do
       stat ->
         case Map.get(stat, r.service) do
-          nil -> Map.put(stat, r.service, {r.gas_used, 1})
-          {total_gas, count} -> Map.put(stat, r.service, {total_gas + r.gas_used, count + 1})
+          nil -> Map.put(stat, r.service, {1, r.gas_used})
+          {count, total_gas} -> Map.put(stat, r.service, {count + 1, total_gas + r.gas_used})
         end
     end
   end
 
   # Formula (12.29) v0.6.4
   # Formula (12.30) v0.6.4
-  def deferred_transfers_stats(deferred_transfers) do
+  def deferred_transfers_stats(deferred_transfers, x) do
     for t <- deferred_transfers, reduce: %{} do
       stat ->
         case Map.get(stat, t.receiver) do
           nil ->
-            Map.put(stat, t.receiver, {1, t.amount})
+            {_, gas} = Map.get(x, t.receiver)
+            Map.put(stat, t.receiver, {1, gas})
 
-          {count, total_amount} ->
-            Map.put(stat, t.receiver, {count + 1, total_amount + t.amount})
+          {count, g} ->
+            Map.put(stat, t.receiver, {count + 1, g})
         end
     end
   end

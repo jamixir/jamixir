@@ -574,10 +574,12 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
-      assert result[1].balance == 200
-      assert result[2].balance == 250
-      assert result[3].balance == 375
+      %{1 => {s1, _}, 2 => {s2, _}, 3 => {s3, _}} =
+        Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
+
+      assert s1.balance == 200
+      assert s2.balance == 250
+      assert s3.balance == 375
     end
 
     test "handles empty transfers" do
@@ -586,9 +588,10 @@ defmodule System.State.AccumulationTest do
         2 => %ServiceAccount{balance: 200}
       }
 
-      result = Accumulation.apply_transfers(services_intermediate_2, [], 0)
+      %{1 => {s1, _}, 2 => {s2, _}} = Accumulation.apply_transfers(services_intermediate_2, [], 0)
 
-      assert result == services_intermediate_2
+      assert s1.balance == 100
+      assert s2.balance == 200
     end
 
     test "transfers to non-existent services is a noop" do
@@ -601,9 +604,13 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      result = Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
+      %{1 => {s1, g1}, 2 => {s2, g2}} =
+        Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
 
-      assert result == services_intermediate_2
+      assert s1.balance == 100
+      assert s2.balance == 200
+      assert g1 == 0
+      assert g2 == 0
     end
   end
 
@@ -776,7 +783,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       result = Accumulation.accumulate_statistics(work_reports)
-      assert result == %{1 => {100, 1}}
+      assert result == %{1 => {1, 100}}
     end
 
     test "aggregates multiple services across multiple work reports" do
@@ -799,11 +806,11 @@ defmodule System.State.AccumulationTest do
 
       assert result == %{
                # Total gas: 100 + 300, Count: 2
-               1 => {400, 2},
+               1 => {2, 400},
                # Total gas: 200, Count: 1
-               2 => {200, 1},
+               2 => {1, 200},
                # Total gas: 400, Count: 1
-               3 => {400, 1}
+               3 => {1, 400}
              }
     end
   end
@@ -812,7 +819,7 @@ defmodule System.State.AccumulationTest do
 
   describe "deferred_transfers_stats/1" do
     test "returns empty map for empty transfers" do
-      result = Accumulation.deferred_transfers_stats([])
+      result = Accumulation.deferred_transfers_stats([], %{})
       assert result == %{}
     end
 
@@ -821,8 +828,8 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers)
-      assert result == %{1 => {1, 100}}
+      result = Accumulation.deferred_transfers_stats(transfers, %{1 => {nil, 2}})
+      assert result == %{1 => {1, 2}}
     end
 
     test "aggregates multiple transfers to same destination" do
@@ -831,9 +838,9 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 200}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers)
+      result = Accumulation.deferred_transfers_stats(transfers, %{1 => {nil, 777}})
       # count: 2, total_amount: 300
-      assert result == %{1 => {2, 300}}
+      assert result == %{1 => {2, 777}}
     end
 
     test "aggregates transfers to multiple destinations" do
@@ -844,15 +851,20 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 3, amount: 400}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers)
+      result =
+        Accumulation.deferred_transfers_stats(transfers, %{
+          1 => {nil, 5},
+          2 => {nil, 10},
+          3 => {nil, 16}
+        })
 
       assert result == %{
                # count: 2, total_amount: 100 + 300
-               1 => {2, 400},
+               1 => {2, 5},
                # count: 1, total_amount: 200
-               2 => {1, 200},
+               2 => {1, 10},
                # count: 1, total_amount: 400
-               3 => {1, 400}
+               3 => {1, 16}
              }
     end
   end
