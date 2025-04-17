@@ -769,7 +769,7 @@ defmodule System.State.AccumulationTest do
   # Add this describe block in the AccumulationTest module
   describe "accumulate_statistics/1" do
     test "returns empty map for empty work reports" do
-      result = Accumulation.accumulate_statistics([])
+      result = Accumulation.accumulate_statistics([], [])
       assert result == %{}
     end
 
@@ -782,7 +782,9 @@ defmodule System.State.AccumulationTest do
         }
       ]
 
-      result = Accumulation.accumulate_statistics(work_reports)
+      u = [{1, 100}]
+
+      result = Accumulation.accumulate_statistics(work_reports, u)
       assert result == %{1 => {1, 100}}
     end
 
@@ -790,25 +792,26 @@ defmodule System.State.AccumulationTest do
       work_reports = [
         %WorkReport{
           results: [
-            %WorkResult{service: 1, gas_used: 100},
-            %WorkResult{service: 2, gas_used: 200}
+            %WorkResult{service: 1},
+            %WorkResult{service: 2}
           ]
         },
         %WorkReport{
           results: [
-            %WorkResult{service: 1, gas_used: 300},
-            %WorkResult{service: 3, gas_used: 400}
+            %WorkResult{service: 1},
+            %WorkResult{service: 3}
           ]
         }
       ]
 
-      result = Accumulation.accumulate_statistics(work_reports)
+      u = [{1, 100}, {1, 100}, {2, 500}, {3, 400}]
+      result = Accumulation.accumulate_statistics(work_reports, u)
 
       assert result == %{
-               # Total gas: 100 + 300, Count: 2
-               1 => {2, 400},
+               # Total gas: 100 + 100, Count: 2
+               1 => {2, 200},
                # Total gas: 200, Count: 1
-               2 => {1, 200},
+               2 => {1, 500},
                # Total gas: 400, Count: 1
                3 => {1, 400}
              }

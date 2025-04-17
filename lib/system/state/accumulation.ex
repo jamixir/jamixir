@@ -98,7 +98,7 @@ defmodule System.State.Accumulation do
     }
 
     # Formula (12.21) v0.6.4
-    {n, o, deferred_transfers, beefy_commitment, _u} =
+    {n, o, deferred_transfers, beefy_commitment, u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -145,7 +145,7 @@ defmodule System.State.Accumulation do
       accumulation_history: accumulation_history_,
       beefy_commitment: beefy_commitment,
       # Formula (12.24) v0.6.4
-      accumulation_stats: accumulate_statistics(w_star_n),
+      accumulation_stats: accumulate_statistics(w_star_n, u),
       # Formula (12.30) v0.6.4
       deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
     }
@@ -154,12 +154,21 @@ defmodule System.State.Accumulation do
   # Formula (12.23) v0.6.4
   # Formula (12.24) v0.6.4
   # Formula (12.25) v0.6.4
-  def accumulate_statistics(work_reports) do
+  def accumulate_statistics(work_reports, service_gas_used) do
+    gas_per_service =
+      for {s, u} <- service_gas_used, reduce: %{} do
+        stat ->
+          case Map.get(stat, s) do
+            nil -> Map.put(stat, s, u)
+            gas -> Map.put(stat, s, gas + u)
+          end
+      end
+
     for w <- work_reports, r <- w.results, reduce: %{} do
       stat ->
         case Map.get(stat, r.service) do
-          nil -> Map.put(stat, r.service, {1, r.gas_used})
-          {count, total_gas} -> Map.put(stat, r.service, {count + 1, total_gas + r.gas_used})
+          nil -> Map.put(stat, r.service, {1, Map.get(gas_per_service, r.service, 0)})
+          {count, total_gas} -> Map.put(stat, r.service, {count + 1, total_gas})
         end
     end
   end
