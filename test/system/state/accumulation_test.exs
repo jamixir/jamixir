@@ -189,28 +189,31 @@ defmodule System.State.AccumulationTest do
 
       assert p == [
                %Accumulate.Operand{
-                 o: "output1",
-                 d: "result1",
-                 e: zero(),
-                 a: two(),
-                 y: "hash1",
-                 h: "wph1"
+                 output: "output1",
+                 data: "result1",
+                 segment_root: zero(),
+                 authorizer: two(),
+                 payload_hash: "hash1",
+                 package_hash: "wph1",
+                 gas_limit: 10
                },
                %Accumulate.Operand{
-                 o: "output1",
-                 d: "result2",
-                 e: zero(),
-                 a: two(),
-                 y: "hash2",
-                 h: "wph1"
+                 output: "output1",
+                 data: "result2",
+                 segment_root: zero(),
+                 authorizer: two(),
+                 payload_hash: "hash2",
+                 package_hash: "wph1",
+                 gas_limit: 20
                },
                %Accumulate.Operand{
-                 o: "output2",
-                 d: "result3",
-                 e: zero(),
-                 a: two(),
-                 y: "hash3",
-                 h: "wph2"
+                 output: "output2",
+                 data: "result3",
+                 segment_root: zero(),
+                 authorizer: two(),
+                 payload_hash: "hash3",
+                 package_hash: "wph2",
+                 gas_limit: 30
                }
              ]
     end

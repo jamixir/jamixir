@@ -388,22 +388,23 @@ defmodule System.State.Accumulation do
     service_results =
       for %WorkReport{results: wr, output: wo, specification: ws, authorizer_hash: wa} <-
             work_reports,
-          %WorkResult{service: ^service, gas_ratio: gr, result: rd, payload_hash: ry} <- wr,
-          do: {gr, rd, ry, wo, ws, wa}
+          %WorkResult{service: ^service, gas_ratio: rg, result: rd, payload_hash: ry} <- wr,
+          do: {rg, rd, ry, wo, ws, wa}
 
     total_gas =
       initial_g +
         Enum.sum(Stream.map(service_results, &elem(&1, 0)))
 
     operands =
-      for {_, rd, ry, wo, ws, wa} <- service_results do
+      for {rg, rd, ry, wo, ws, wa} <- service_results do
         %Accumulate.Operand{
-          h: ws.work_package_hash,
-          e: ws.exports_root,
-          a: wa,
-          o: wo,
-          y: ry,
-          d: rd
+          package_hash: ws.work_package_hash,
+          segment_root: ws.exports_root,
+          authorizer: wa,
+          output: wo,
+          payload_hash: ry,
+          data: rd,
+          gas_limit: rg
         }
       end
 

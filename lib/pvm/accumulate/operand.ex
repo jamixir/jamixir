@@ -3,24 +3,44 @@ defmodule PVM.Accumulate.Operand do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
 
-  # Formula (12.18) v0.6.4
+  # Formula (12.18) v0.6.5
   @type t :: %__MODULE__{
-          h: Types.hash(),
-          e: Types.hash(),
-          a: Types.hash(),
-          o: binary(),
-          y: Types.hash(),
-          d: {:ok, binary()} | {:error, WorkExecutionError.t()}
+          # h
+          package_hash: Types.hash(),
+          # e
+          segment_root: Types.hash(),
+          # a
+          authorizer: Types.hash(),
+          # o
+          output: binary(),
+          # y
+          payload_hash: Types.hash(),
+          # g
+          gas_limit: Types.gas(),
+          # d
+          data: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
-  defstruct h: Hash.zero(), e: Hash.zero(), a: Hash.zero(), o: <<>>, y: Hash.zero(), d: <<>>
+  defstruct package_hash: Hash.zero(),
+            segment_root: Hash.zero(),
+            authorizer: Hash.zero(),
+            output: <<>>,
+            payload_hash: Hash.zero(),
+            gas_limit: 0,
+            data: <<>>
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.WorkResult
     use Codec.Encoder
 
-    # Formula (C.29) v0.6.4
+    #  \se(t¬payloadhash, x_\ot¬gaslimit, O(x_\ot¬data)) \\
+
+    # Formula (C.29) v0.6.5
     def encode(%PVM.Accumulate.Operand{} = o),
-      do: e({o.h, o.e, o.a, vs(o.o), o.y}) <> WorkResult.encode_result(o.d)
+      do:
+        e(
+          {o.package_hash, o.segment_root, o.authorizer, vs(o.output), o.payload_hash,
+           o.gas_limit}
+        ) <> WorkResult.encode_result(o.data)
   end
 end
