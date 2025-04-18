@@ -392,14 +392,15 @@ defmodule System.State.Accumulation do
         Enum.sum(Stream.map(service_results, &elem(&1, 0)))
 
     operands =
-      for {_, rd, ry, wo, ws, wa} <- service_results do
+      for {rg, rd, ry, wo, ws, wa} <- service_results do
         %Accumulate.Operand{
-          h: ws.work_package_hash,
-          e: ws.exports_root,
-          a: wa,
-          o: wo,
-          y: ry,
-          d: rd
+          package_hash: ws.work_package_hash,
+          segment_root: ws.exports_root,
+          authorizer: wa,
+          output: wo,
+          payload_hash: ry,
+          data: rd,
+          gas_limit: rg
         }
       end
 
