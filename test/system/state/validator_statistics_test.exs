@@ -78,7 +78,11 @@ defmodule System.State.ValidatorStatisticsTest do
       assert validator_stats_.previous_epoch_statistics == current_stats
 
       assert validator_stats_.core_statistics ==
-               CoreStatistic.calculate_core_statistics(avaiable_work_reports, [])
+               CoreStatistic.calculate_core_statistics(
+                 avaiable_work_reports,
+                 avaiable_work_reports,
+                 []
+               )
     end
 
     test "previous epoch statistics remains the same when same epoc", %{
@@ -286,8 +290,8 @@ defmodule System.State.ValidatorStatisticsTest do
       assert json == %{
                vals_current: for(s <- vs.current_epoch_statistics, do: JsonEncoder.encode(s)),
                vals_last: for(s <- vs.previous_epoch_statistics, do: JsonEncoder.encode(s)),
-               core_statistics: for(_ <- 1..Constants.core_count(), do: core_stat),
-               service_statistics: %{}
+               cores: for(_ <- 1..Constants.core_count(), do: core_stat),
+               services: []
              }
     end
   end

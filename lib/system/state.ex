@@ -90,12 +90,13 @@ defmodule System.State do
          {:ok, judgements_, bad_wonky_verdicts} <- Judgements.transition(h, e.disputes, state),
          # ρ† Formula (4.12) v0.6.4
          core_reports_1 = CoreReport.process_disputes(state.core_reports, bad_wonky_verdicts),
+         available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
          # ρ‡ Formula (4.13) v0.6.4
          core_reports_2 =
            CoreReport.process_availability(
              state.core_reports,
              core_reports_1,
-             e.assurances,
+             available_work_reports,
              h.timeslot
            ),
          :ok <-
@@ -107,7 +108,6 @@ defmodule System.State do
            ),
          # ρ' Formula (4.14) v0.6.4
          core_reports_ = CoreReport.transition(core_reports_2, e.guarantees, timeslot_),
-         available_work_reports = WorkReport.available_work_reports(e.assurances, core_reports_1),
          # η' Formula (4.8) v0.6.4
          rotated_entropy_pool = EntropyPool.rotate(h, state.timeslot, state.entropy_pool),
          {curr_validators_, prev_validators_, safrole_} <-

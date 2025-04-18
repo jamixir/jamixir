@@ -12,6 +12,7 @@ defmodule DisputesTestVectors do
         for(i <- 1..2, do: "progress_with_bad_signatures-#{i}"),
         for(i <- 1..7, do: "progress_with_culprits-#{i}"),
         for(i <- 1..7, do: "progress_with_faults-#{i}"),
+        for(i <- 1..2, do: "progress_with_invalid_keys-#{i}"),
         "progress_with_no_verdicts-1",
         for(i <- 1..2, do: "progress_with_verdict_signatures_from_previous_set-#{i}"),
         for(i <- 1..6, do: "progress_with_verdicts-#{i}")

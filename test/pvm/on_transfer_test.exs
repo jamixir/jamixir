@@ -29,7 +29,7 @@ defmodule PVM.OnTransferTest do
     } do
       services = %{1 => service}
 
-      result = PVM.on_transfer(services, 0, 1, [transfer])
+      {result, _g} = PVM.on_transfer(services, 0, 1, [transfer])
 
       expected_balance = service.balance + transfer.amount
 
@@ -42,7 +42,7 @@ defmodule PVM.OnTransferTest do
     test "returns service directly when transfer is empty", %{basic_service: service} do
       services = %{1 => service}
 
-      result = PVM.on_transfer(services, 0, 1, [])
+      {result, _} = PVM.on_transfer(services, 0, 1, [])
 
       assert result == service
     end

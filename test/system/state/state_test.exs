@@ -262,13 +262,9 @@ defmodule System.StateTest do
 
     test "state transition filter out available reports", %{state: state, key_pairs: key_pairs} do
       core_report = build(:core_report, work_report: %WorkReport{core_index: 0})
-      state = %{state | core_reports: [core_report]}
+      state = %{state | core_reports: [core_report, nil]}
 
-      extrinsic =
-        build(
-          :extrinsic,
-          assurances: [build(:assurance, validator_index: 0, bitfield: <<0b1111::8>>)]
-        )
+      extrinsic = build(:extrinsic, guarantees: [])
 
       with_original_modules([:process_availability]) do
         {:ok, new_state} =
