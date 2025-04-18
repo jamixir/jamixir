@@ -42,9 +42,9 @@ defmodule System.State.CoreStatistic do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)
 
     for c <- 0..(Constants.core_count() - 1) do
-      w_incoming = Enum.at(incoming_work_reports, c, %{}) || %{}
+      w_incoming = Enum.at(incoming_work_reports, c) || %{}
       w_incoming_results = Map.get(w_incoming, :results)
-      w_newly_available = Enum.at(available_work_reports, c, %{}) || %{}
+      w_newly_available = Enum.at(available_work_reports, c) || %{}
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
