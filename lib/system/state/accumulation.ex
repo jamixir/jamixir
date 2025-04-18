@@ -384,8 +384,8 @@ defmodule System.State.Accumulation do
     service_results =
       for %WorkReport{results: wr, output: wo, specification: ws, authorizer_hash: wa} <-
             work_reports,
-          %WorkResult{service: ^service, gas_ratio: gr, result: rd, payload_hash: ry} <- wr,
-          do: {gr, rd, ry, wo, ws, wa}
+          %WorkResult{service: ^service, gas_ratio: rg, result: rd, payload_hash: ry} <- wr,
+          do: {rg, rd, ry, wo, ws, wa}
 
     total_gas =
       initial_g +
