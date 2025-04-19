@@ -102,16 +102,9 @@ defmodule TestVectorUtil do
   defp fetch_from_url(url) do
     result =
       case HTTPoison.get(url, @headers) do
-        {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-          {:ok, body}
-
-        {:ok, %HTTPoison.Response{status_code: status_code}} ->
-          IO.puts("Failed to fetch file #{url}: HTTP #{status_code}")
-          {:error, :failed_to_fetch}
-
-        {:error, %HTTPoison.Error{reason: reason}} ->
-          IO.puts("Failed to fetch file #{url}: #{reason}")
-          {:error, :failed_to_fetch}
+        {:ok, %HTTPoison.Response{status_code: 200, body: body}} -> {:ok, body}
+        {:ok, %HTTPoison.Response{}} -> {:error, :failed_to_fetch}
+        {:error, %HTTPoison.Error{}} -> {:error, :failed_to_fetch}
       end
 
     case result do
