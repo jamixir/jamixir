@@ -104,9 +104,9 @@ defmodule Block.Extrinsic.WorkPackage do
          extrinsic_acc + length(item.extrinsic)}
       end)
 
-    # ∑we ≤ WM ^  ∑|wi| ≤ WM ^ ∑ ∣wx∣ ≤ T
-    exported_sum <= Constants.max_imports_and_exports() and
-      imported_sum <= Constants.max_imports_and_exports() and
+    # ∑we ≤ W_X ^  ∑|wi| ≤ W_M ^ ∑ ∣wx∣ ≤ T
+    exported_sum <= Constants.max_exports() and
+      imported_sum <= Constants.max_imports() and
       extrinsic_sum <= Constants.max_extrinsics()
   end
 
