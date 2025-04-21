@@ -18,6 +18,10 @@ defmodule Network.Client do
     GenServer.call(pid, {:send, protocol_id, message}, 500)
   end
 
+  def send(pid, protocol_id, messages) when is_list(messages) do
+    GenServer.call(pid, {:send, protocol_id, messages}, 500)
+  end
+
   def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
     message = hash <> <<direction::8>> <> <<max_blocks::32>>
     send(pid, 128, message)
@@ -150,14 +154,21 @@ defmodule Network.Client do
 
   def handle_call({:send, protocol_id, messages}, from, %PeerState{} = state)
       when is_list(messages) do
+    log(:debug, "sending messages #{inspect(messages)}")
     {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
 
-    message_bytes =
-      for m <- messages, reduce: <<protocol_id::8>> do
-        acc -> acc <> encode_message(m)
-      end
+    log(:debug, "sending protocol_id #{protocol_id}")
 
-    {:ok, _} = :quicer.send(stream, message_bytes, send_flag(:fin))
+    {:ok, _} = :quicer.send(stream, <<protocol_id::8>>, send_flag(:none))
+    {all_but_last, [last_message]} = Enum.split(messages, -1)
+
+    for {m, i} <- Enum.with_index(all_but_last) do
+      log(:debug, "sending message number #{i} of #{length(all_but_last)} #{inspect(m)}")
+      {:ok, _} = :quicer.send(stream, encode_message(m), send_flag(:none))
+    end
+
+    log(:debug, "sending last message #{inspect(last_message)}")
+    {:ok, _} = :quicer.send(stream, encode_message(last_message), send_flag(:fin))
 
     new_pending =
       Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
@@ -165,19 +176,29 @@ defmodule Network.Client do
     {:noreply, %PeerState{state | pending_responses: new_pending}}
   end
 
-  def handle_data(protocol_id, data, stream, props, %PeerState{} = state) do
-    handle_stream_data(protocol_id, data, stream, props, state,
-      log_tag: "[QUIC_CLIENT]",
-      on_complete: fn protocol_id, message, stream ->
-        case protocol_id >= 128 and Map.get(state.pending_responses, stream) do
-          %{from: from} ->
-            response = Network.ClientCalls.call(protocol_id, message)
-            GenServer.reply(from, response)
+  def handle_data(data, stream, _props, %PeerState{} = state) do
+    msg = decode_messages(data)
+    log(:debug, "received messages #{inspect(msg)}")
 
-          _ ->
-            Task.start(fn -> Network.ClientCalls.call(protocol_id, message) end)
-        end
-      end
-    )
+    case Map.get(state.pending_responses, stream) do
+      %{from: from, protocol_id: protocol_id} ->
+        response = Network.ClientCalls.call(protocol_id, msg)
+        log(:debug, "sending response #{inspect(response)}")
+        GenServer.reply(from, response)
+
+      _ ->
+        # This stream is not in pending_responses, that means that this is not a CE stream initiated by the client
+        # 1. unsolicited data from somewhere, not to handle
+        # 2. could be an up_stream, but we expect up stream to be used for cast, not waiting for response
+
+        # so finally we just ignore it
+        log(:debug, "ignoring unsolicited data from stream #{inspect(stream)}")
+        nil
+
+        # Task.start(fn -> Network.ClientCalls.call(protocol_id, msg) end)
+    end
+
+    state_ = %{state | pending_responses: Map.delete(state.pending_responses, stream)}
+    {:noreply, state_}
   end
 end

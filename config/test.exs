@@ -20,4 +20,4 @@ config :jamixir, Jamixir,
   # GA
   gas_accumulation: 10_000_000
 
-config :logger, level: :none
+config :logger, level: :debug
