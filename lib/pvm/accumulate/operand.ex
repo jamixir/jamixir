@@ -33,14 +33,13 @@ defmodule PVM.Accumulate.Operand do
     alias Block.Extrinsic.Guarantee.WorkResult
     use Codec.Encoder
 
-    #  \se(t¬payloadhash, x_\ot¬gaslimit, O(x_\ot¬data)) \\
-
     # Formula (C.29) v0.6.5
     def encode(%PVM.Accumulate.Operand{} = o),
       do:
-        e(
-          {o.package_hash, o.segment_root, o.authorizer, vs(o.output), o.payload_hash,
-           o.gas_limit}
-        ) <> WorkResult.encode_result(o.data)
+        e({o.package_hash, o.segment_root, o.authorizer, vs(o.output), o.payload_hash}) <>
+          WorkResult.encode_result(o.data)
+
+    # TODO there is a PVM BUG when o.gas_limit field is added to serialization.
+    # the correct formula should add it. Waiting for GP update
   end
 end

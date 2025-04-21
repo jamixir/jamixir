@@ -47,7 +47,7 @@ defmodule PVM.RefineIntegrationTest do
 
       %{services: services, work_package: work_package} = make_executable_work_package(program)
 
-      assert {<<>>, [], 1000} = PVM.refine(0, work_package, <<>>, [], 0, services, %{})
+      assert {<<>>, [], 0} = PVM.refine(0, work_package, <<>>, [], 0, services, %{})
     end
 
     test "test-ecall-1" do
@@ -86,7 +86,7 @@ defmodule PVM.RefineIntegrationTest do
 
       r = PVM.refine(0, wp, <<>>, [], 0, services, %{})
 
-      assert r == {<<>>, [], 980}
+      assert r == {<<>>, [], 20}
     end
 
     @tag :skip

@@ -63,11 +63,7 @@ defmodule PVM.AccumulateTest do
 
       accumulation = %{accumulation | services: %{256 => service_with_code}}
 
-      operands = [
-        %Operand{
-          data: {:error, :big}
-        }
-      ]
+      operands = [%Operand{data: {:error, :big}}]
 
       {result_acc, transfers, result_hash, gas} =
         PVM.accumulate(accumulation, 0, 256, 1000, operands, init_fn)
