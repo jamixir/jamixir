@@ -112,7 +112,7 @@ defmodule System.State.ValidatorStatistics do
                      |> if(do: 1, else: 0)),
                 # π0[v]g ≡ a[v]g +(κ'v ∈ R)
                 reports_guaranteed:
-                  author_stats.reports_guaranteed +
+                  stats.reports_guaranteed +
                     (reporters_set
                      |> Enum.any?(&(&1 == Enum.at(edkeys, index)))
                      |> if(do: 1, else: 0))
@@ -177,11 +177,13 @@ defmodule System.State.ValidatorStatistics do
       current_epoch_statistics: :vals_current,
       previous_epoch_statistics: :vals_last,
       core_statistics: :cores,
-      service_statistics: {:services, fn stats ->
-        for {id, record} <- stats do
-          %{id: id, record: record}
-        end
-      end}
+      service_statistics:
+        {:services,
+         fn stats ->
+           for {id, record} <- stats do
+             %{id: id, record: record}
+           end
+         end}
     }
 
   defimpl Encodable do
