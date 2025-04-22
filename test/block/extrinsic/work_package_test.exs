@@ -53,7 +53,7 @@ defmodule WorkPackageTest do
 
     test "invalid when the sum of export_count exceeds the maximum", %{wp: wp} do
       big_work_item =
-        build(:work_item, export_count: Constants.max_imports_and_exports() + 1)
+        build(:work_item, export_count: Constants.max_imports() + 1)
 
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end
@@ -209,7 +209,7 @@ defmodule WorkPackageTest do
     end
 
     test "export count sum is above limit" do
-      wi = build(:work_item, export_count: Constants.max_imports_and_exports() / 2)
+      wi = build(:work_item, export_count: Constants.max_imports() / 2)
       wp1 = build(:work_package, work_items: [wi])
       wp2 = build(:work_package, work_items: [wi, wi, wi])
 
@@ -218,7 +218,7 @@ defmodule WorkPackageTest do
     end
 
     test "segment size is abo limit" do
-      segments = for _ <- 1..div(Constants.max_imports_and_exports(), 2), do: {Hash.zero(), 256}
+      segments = for _ <- 1..div(Constants.max_imports(), 2), do: {Hash.zero(), 256}
       wi = build(:work_item, import_segments: segments)
       wp1 = build(:work_package, work_items: [wi])
       wp2 = build(:work_package, work_items: [wi, wi, wi])

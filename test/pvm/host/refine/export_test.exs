@@ -48,7 +48,7 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       # Fill context with max_manifest_size + 1 segments
-      max_size = Constants.max_imports_and_exports()
+      max_size = Constants.max_imports()
       context = %Context{e: List.duplicate("", max_size - 5)}
       full = full()
 
