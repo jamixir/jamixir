@@ -1,17 +1,17 @@
 defmodule System.State.Validator do
   @moduledoc """
-   # Formula (6.8) v0.6.4
+   # Formula (6.8) v0.6.5
   """
   alias System.State.Validator
 
   @type t :: %__MODULE__{
-          # Formula (6.9) v0.6.4 - b
+          # Formula (6.9) v0.6.5 - b
           bandersnatch: Types.bandersnatch_key(),
-          # Formula (6.10) v0.6.4 - e
+          # Formula (6.10) v0.6.5 - e
           ed25519: Types.ed25519_key(),
-          # Formula (6.11) v0.6.4 - BLS
+          # Formula (6.11) v0.6.5 - BLS
           bls: Types.bls_key(),
-          # Formula (6.12) v0.6.4 - m
+          # Formula (6.12) v0.6.5 - m
           metadata: <<_::1024>>
         }
 
@@ -27,7 +27,7 @@ defmodule System.State.Validator do
     end
   end
 
-  # Formula (6.14) v0.6.4
+  # Formula (6.14) v0.6.5
   @spec nullify_offenders(
           list(Validator.t()),
           MapSet.t(Types.ed25519_key())

@@ -38,7 +38,7 @@ defmodule Util.Time do
   mockable validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
-    # Formula (5.7) v0.6.4
+    # Formula (5.7) v0.6.5
     if valid_block_time?(block_time) do
       :ok
     else
@@ -69,13 +69,13 @@ defmodule Util.Time do
 
   @doc """
   Determines the epoch index of a given timeslot.
-  Formula (6.2) v0.6.4
+  Formula (6.2) v0.6.5
   """
   def epoch_index(timeslot), do: div(timeslot, Constants.epoch_length())
 
   @doc """
   Determines the phase of a given timeslot within an epoch.
-  Formula (6.2) v0.6.4
+  Formula (6.2) v0.6.5
   """
   def epoch_phase(timeslot), do: rem(timeslot, Constants.epoch_length())
 

@@ -1,4 +1,4 @@
-# Formula (B.22) v0.6.4
+# Formula (B.22) v0.6.5
 defmodule PVM.Host.Refine.Internal do
   alias Block.Extrinsic.WorkPackage
   alias System.State.ServiceAccount

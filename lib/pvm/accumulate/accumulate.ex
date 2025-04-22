@@ -14,7 +14,7 @@ defmodule PVM.Accumulate do
   use Codec.{Encoder, Decoder}
 
   @doc """
-  Formula (B.9) v0.6.4
+  Formula (B.9) v0.6.5
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
@@ -42,11 +42,11 @@ defmodule PVM.Accumulate do
           opts
       end
 
-    # Formula (B.10) v0.6.4
+    # Formula (B.10) v0.6.5
     x = init_fn.(accumulation_state, service_index)
 
     d = x.accumulation.services
-    # Formula (B.11) v0.6.4
+    # Formula (B.11) v0.6.5
     f = fn n, %{gas: gas, registers: registers, memory: memory}, {x, _y} = context ->
       s = Context.accumulating_service(x)
 

@@ -19,7 +19,7 @@ defmodule System.State.ServiceStatistic do
             accumulation: {0, 0},
             transfers: {0, 0}
 
-  # Formula (13.7) v0.6.4
+  # Formula (13.7) v0.6.5
   @type t :: %__MODULE__{
           preimage: {non_neg_integer(), non_neg_integer()},
           refine: {non_neg_integer(), Types.gas()},
@@ -31,8 +31,8 @@ defmodule System.State.ServiceStatistic do
           transfers: {non_neg_integer(), Types.gas()}
         }
 
-  # Formula (13.11) v0.6.4
-  # Formula (13.12) v0.6.4
+  # Formula (13.11) v0.6.5
+  # Formula (13.12) v0.6.5
   @spec calculate_stats(
           list(WorkReport.t()),
           list(AccumulationStatistic.t()),
@@ -45,17 +45,17 @@ defmodule System.State.ServiceStatistic do
         deferred_transfers_stats,
         preimages
       ) do
-    # Formula (13.13) v0.6.4
-    # Formula (13.15) v0.6.4
+    # Formula (13.13) v0.6.5
+    # Formula (13.15) v0.6.5
     refine_stats(incoming_work_reports)
-    # Formula (13.11) v0.6.4
+    # Formula (13.11) v0.6.5
     |> accumulation_stats(accumulation_stats)
     |> deferred_transfers_stats(deferred_transfers_stats)
-    # Formula (13.14) v0.6.4
+    # Formula (13.14) v0.6.5
     |> preimage_stats(preimages)
   end
 
-  # Formula (13.14) v0.6.4 - p
+  # Formula (13.14) v0.6.5 - p
   defp preimage_stats(previous_stats, preimages) do
     for %Preimage{service: s, blob: p} <- preimages, reduce: previous_stats do
       map ->

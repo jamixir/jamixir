@@ -1,4 +1,4 @@
-# Formula (B.20) v0.6.4
+# Formula (B.20) v0.6.5
 
 defmodule PVM.Host.Accumulate.Internal do
   alias System.DeferredTransfer

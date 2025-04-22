@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Fault do
   @moduledoc """
-  Formula (10.2) v0.6.4
+  Formula (10.2) v0.6.5
   """
   alias Types
 
