@@ -2,7 +2,7 @@ defmodule Network.Peer do
   use GenServer
   alias Network.{Client, PeerState, Server}
   require Logger
-  import Network.{Config, Codec}
+  import Network.Config
 
   @log_context "[QUIC_PEER]"
 
@@ -88,6 +88,8 @@ defmodule Network.Peer do
   def handle_info({:quic, data, stream, props}, state) when is_binary(data) do
     is_client_stream = Map.has_key?(state.pending_responses, stream)
 
+    # we expect incoming data for the client only on ce stream resposne.
+    # UP streams are used for "cast" i.e. broadcast data one-way, without expecting a response
     if is_client_stream do
       Client.handle_data(data, stream, props, state)
     else
@@ -103,7 +105,7 @@ defmodule Network.Peer do
     new_state = %{
       state
       | pending_responses: Map.delete(state.pending_responses, stream),
-        server_streams: Map.delete(state.server_streams, stream)
+        ce_streams: Map.delete(state.ce_streams, stream)
     }
 
     {:noreply, new_state}

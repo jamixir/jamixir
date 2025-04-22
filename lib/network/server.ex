@@ -1,8 +1,9 @@
 defmodule Network.Server do
   require Logger
   alias Quicer.Flags
-  import Network.{MessageHandler, Codec}
+  import Network.{Codec, UpStreamManager}
   import Bitwise, only: [&&&: 2]
+  alias Network.MessageParsers
 
   @log_context "[QUIC_SERVER]"
 
@@ -44,153 +45,111 @@ defmodule Network.Server do
     end
   end
 
-  defp parse_messages(<<>>, acc) do
-    log(:debug, "PARSE_MESSAGES: Empty binary, returning accumulated messages: #{length(acc)}")
-    Enum.reverse(acc)
+  defp get_stream(stream, state) do
+    cond do
+      Map.has_key?(state.ce_streams, stream) ->
+        {:ce, Map.get(state.ce_streams, stream)}
+
+      Map.has_key?(state.up_stream_data, stream) ->
+        {:up, Map.get(state.up_stream_data, stream)}
+
+      true ->
+        :new_stream
+    end
   end
 
-  defp parse_messages(buffer, acc) do
-    log(
-      :debug,
-      "PARSE_MESSAGES: Processing buffer of size #{byte_size(buffer)}, current messages: #{length(acc)}"
-    )
+  def handle_ce_stream(
+        new_data,
+        stream,
+        props,
+        server_state,
+        %{protocol_id: protocol_id, buffer: buffer} = stream_data
+      ) do
+    log(:debug, "CE STREAM: #{inspect(new_data)}")
+    updated_buffer = buffer <> new_data
 
-    case buffer do
-      <<length::32-little, rest::binary>> ->
-        log(
-          :debug,
-          "PARSE_MESSAGES: Message length: #{length}, remaining buffer size: #{byte_size(rest)}"
-        )
+    state_ =
+      if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
+        messages = MessageParsers.parse_ce_messages(updated_buffer)
+        response = Network.ServerCalls.call(protocol_id, messages)
 
-        case rest do
-          <<message::binary-size(length), remaining::binary>> ->
-            log(
-              :debug,
-              "PARSE_MESSAGES: Extracted message of size #{byte_size(message)}, remaining buffer size: #{byte_size(remaining)}"
-            )
+        :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
 
-            message_preview =
-              if byte_size(message) > 0 do
-                inspect(binary_part(message, 0, min(16, byte_size(message))))
-              else
-                "empty"
-              end
+        %{server_state | ce_streams: Map.delete(server_state.ce_streams, stream)}
+      else
+        updated_stream = put_in(stream_data.buffer, updated_buffer)
 
-            log(:debug, "PARSE_MESSAGES: Message preview: #{message_preview}")
+        %{
+          server_state
+          | ce_streams: Map.put(server_state.ce_streams, stream, updated_stream)
+        }
+      end
 
-            parse_messages(remaining, [message | acc])
+    {:noreply, state_}
+  end
 
-          _ ->
-            log(
-              :error,
-              "PARSE_MESSAGES: Buffer incomplete. Length header: #{length}, but only #{byte_size(rest)} bytes available"
-            )
+  def handle_up_stream(
+        data,
+        stream,
+        state,
+        %{protocol_id: protocol_id, buffer: buffer} = stream_data
+      ) do
+    log(:debug, "UP STREAM: #{inspect(data)}")
+    updated_buffer = buffer <> data
 
-            # Not enough data for a complete message - shouldn't happen with FIN flag
-            log(:debug, "PARSE_MESSAGES: Returning accumulated messages: #{length(acc)}")
-            Enum.reverse(acc)
-        end
+    case MessageParsers.parse_up_message(updated_buffer) do
+      {:complete, message, remaining} ->
+        Network.ServerCalls.call(protocol_id, message)
 
-      malformed ->
-        log(
-          :error,
-          "PARSE_MESSAGES: Malformed buffer without proper length header. Size: #{byte_size(malformed)}, Preview: #{inspect(binary_part(malformed, 0, min(16, byte_size(malformed))))}"
-        )
+        state_ = %{
+          state
+          | up_stream_data:
+              Map.put(state.up_stream_data, stream, %{stream_data | buffer: remaining})
+        }
 
-        Enum.reverse(acc)
+        {:noreply, state_}
+
+      {:need_more, buffer} ->
+        {:noreply, put_in(state.up_stream_data[stream].buffer, buffer)}
     end
   end
 
   def handle_data(data, stream, props, state) do
-    stream_id = "#{inspect(stream)}"
+    stream_data = get_stream(stream, state)
 
-    log(
-      :debug,
-      "RECEIVE: Stream #{stream_id}, data size: #{byte_size(data)}, FIN: #{(props.flags &&& Flags.receive_flag(:fin)) != 0}"
-    )
+    case stream_data do
+      {:ce, stream_state} ->
+        handle_ce_stream(data, stream, props, state, stream_state)
 
-    server_stream = Map.get(state.server_streams, stream)
+      {:up, stream_state} ->
+        protocol_id = Map.get(stream_state, :protocol_id)
 
-    # Check if this is an existing stream or a new one
-    if server_stream do
-      protocol_id = server_stream.protocol_id
-      existing_buffer = server_stream.buffer
+        {{:ok, stream_state}, new_state} =
+          manage_up_stream(protocol_id, stream, state, @log_context)
 
-      updated_buffer =
-        existing_buffer <> data
+        handle_up_stream(data, stream, new_state, stream_state)
 
-      updated_state = %{
-        state
-        | server_streams:
-            Map.put(state.server_streams, stream, %{server_stream | buffer: updated_buffer})
-      }
+      :new_stream ->
+        case data do
+          <<protocol_id::8, rest::binary>> ->
+            if protocol_id >= 128 do
+              handle_ce_stream(rest, stream, props, state, %{
+                protocol_id: protocol_id,
+                buffer: <<>>
+              })
+            else
+              case manage_up_stream(protocol_id, stream, state, @log_context) do
+                {{:ok, stream_data}, new_state} ->
+                  handle_up_stream(data, stream, new_state, stream_data)
 
-      # Check if this is the final data chunk (FIN flag)
-      if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
-        log(:debug, "FIN FLAG DETECTED - processing buffer of size #{byte_size(updated_buffer)}")
+                :reject ->
+                  {:noreply, state}
+              end
+            end
 
-        # Parse all messages from the buffer with detailed logging
-        messages = parse_messages(updated_buffer, [])
-        log(:debug, "Parsed #{length(messages)} messages from buffer")
-
-        # Call server to process messages and get response
-        response = Network.ServerCalls.call(protocol_id, messages)
-
-        :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
-        log(:debug, "Response sent, size: #{byte_size(encode_message(response))}")
-
-        # Clean up state
-        cleaned_state = %{
-          updated_state
-          | server_streams: Map.delete(updated_state.server_streams, stream)
-        }
-
-        {:noreply, cleaned_state}
-      else
-        # Not finished yet, just update buffer
-        log(:debug, "Partial data received (no FIN), buffer size: #{byte_size(updated_buffer)}")
-        {:noreply, updated_state}
-      end
-    else
-      # New stream handling
-      case data do
-        <<protocol_id::8, rest::binary>> ->
-          log(:debug, "NEW STREAM: Protocol ID #{protocol_id}, data size: #{byte_size(rest)}")
-
-          # Create new stream entry
-          updated_state = %{
-            state
-            | server_streams:
-                Map.put(state.server_streams, stream, %{protocol_id: protocol_id, buffer: rest})
-          }
-
-          # If FIN flag is set, process immediately
-          if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
-            log(:debug, "FIN FLAG on new stream - processing immediately")
-
-            messages = parse_messages(rest, [])
-            log(:debug, "Parsed #{length(messages)} messages from new stream")
-
-            # Process messages and respond
-            response = Network.ServerCalls.call(protocol_id, messages)
-            :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
-
-            # Clean up state
-            cleaned_state = %{
-              updated_state
-              | server_streams: Map.delete(updated_state.server_streams, stream)
-            }
-
-            {:noreply, cleaned_state}
-          else
-            {:noreply, updated_state}
-          end
-
-        _invalid_data ->
-          log(:error, "INVALID DATA FORMAT: Expected protocol ID byte")
-          :quicer.send(stream, "INVALID_FORMAT", Flags.send_flag(:fin))
-          {:noreply, state}
-      end
+          _ ->
+            {:noreply, state}
+        end
     end
   end
 end
