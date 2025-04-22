@@ -276,12 +276,13 @@ defmodule System.State.Accumulation do
 
     d = acc_state.services
 
-    {service_hash_pairs, transfers, n, m, service_gas} =
-      Enum.reduce(services, {MapSet.new(), [], %{}, MapSet.new(), []}, fn service,
-                                                                          {acc_output,
-                                                                           acc_transfers, acc_n,
-                                                                           acc_m,
-                                                                           acc_service_gas} ->
+    {service_hash_pairs, transfers, n, m, service_gas, service_preimages} =
+      Enum.reduce(services, {MapSet.new(), [], %{}, MapSet.new(), [], []}, fn service,
+                                                                              {acc_output,
+                                                                               acc_transfers,
+                                                                               acc_n, acc_m,
+                                                                               acc_service_gas,
+                                                                               acc_preimages} ->
         # ar stands for accumulation result
         ar =
           single_accumulation(
@@ -306,12 +307,14 @@ defmodule System.State.Accumulation do
           acc_transfers ++ ar.transfers,
           acc_n ++ service_n,
           acc_m ++ service_m,
-          acc_service_gas ++ [{service, ar.gas_used}]
+          acc_service_gas ++ [{service, ar.gas_used}],
+          acc_preimages ++ ar.preimages
         }
       end)
 
     accumulation_state = %__MODULE__{
-      services: Map.drop(d ++ n, MapSet.to_list(m)),
+      services:
+        integrate_preimages(Map.drop(d ++ n, MapSet.to_list(m)), service_preimages, ctx.timeslot),
       privileged_services: privileged_services_,
       next_validators: next_validators_,
       authorizer_queue: authorizer_queue_
