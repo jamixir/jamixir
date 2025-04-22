@@ -18,6 +18,7 @@ defmodule System.State.Accumulation do
   alias Types
   use MapUnion
   use AccessStruct
+  use Codec.Encoder
   import Utils
 
   # (Accumulation.t(), service_index) -> PVM.Host.Accumulate.Context.t()
@@ -317,6 +318,32 @@ defmodule System.State.Accumulation do
     }
 
     {accumulation_state, List.flatten(transfers), service_hash_pairs, service_gas}
+  end
+
+  # Formula (12.18) v0.6.5
+  @spec integrate_preimages(
+          %{Types.service_index() => ServiceAccount.t()},
+          list({Types.service_index(), binary()}),
+          Types.timeslot()
+        ) ::
+          %{Types.service_index() => ServiceAccount.t()}
+  def integrate_preimages(service_states, services_hashes, timeslot_) do
+    for {s, i} <- services_hashes, reduce: service_states do
+      acc ->
+        case Map.get(acc, s) do
+          nil ->
+            acc
+
+          %ServiceAccount{preimage_storage_l: l} = sa ->
+            if Map.get(l, {h(i), byte_size(i)}, []) == [] do
+              sa = put_in(sa, [:preimage_storage_l, {h(i), byte_size(i)}], timeslot_)
+              sa = put_in(sa, [:preimage_storage_p, h(i)], i)
+              Map.put(acc, s, sa)
+            else
+              acc
+            end
+        end
+    end
   end
 
   def collect_services(work_reports, always_acc_services) do
