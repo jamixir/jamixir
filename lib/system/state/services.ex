@@ -3,10 +3,10 @@ defmodule System.State.Services do
   alias Block.Extrinsic.Preimage
 
   @doc """
-  Formula (12.39) v0.6.4
+  Formula (12.40) v0.6.5
   """
   def transition(services_intermediate_2, preimages, timeslot_) do
-    # Formula (12.38) v0.6.4
+    # Formula (12.39) v0.6.5
     not_provided_preimages =
       Enum.filter(preimages, &Preimage.not_provided?(&1, services_intermediate_2))
 

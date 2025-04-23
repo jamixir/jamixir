@@ -10,9 +10,11 @@ defmodule System.AccumulationResult do
           # b
           output: Types.hash() | nil,
           # u
-          gas_used: non_neg_integer()
+          gas_used: non_neg_integer(),
+          # p
+          preimages: list({Types.service_index(), binary()})
         }
-  defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0
+  defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: []
 
   def new({state, transfers, output, gas_used}) do
     %__MODULE__{

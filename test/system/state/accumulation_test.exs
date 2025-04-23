@@ -874,4 +874,44 @@ defmodule System.State.AccumulationTest do
              }
     end
   end
+
+  describe "integrate_preimages/3" do
+    setup do
+      services = %{
+        1 => build(:service_account),
+        2 => build(:service_account)
+      }
+
+      {:ok, services: services}
+    end
+
+    test "return services dict when no preimages in list", %{services: services} do
+      assert Accumulation.integrate_preimages(services, [], 9) == services
+    end
+
+    test "return service dict when added preimage is not in services", %{services: services} do
+      assert Accumulation.integrate_preimages(services, [{3, "hash1"}], 9) == services
+    end
+
+    test "dont update when preimage_storage_l alread exists", %{services: services} do
+      new_services = put_in(services, [1, :preimage_storage_l, {h("hash1"), 5}], 9)
+      updated_services = Accumulation.integrate_preimages(new_services, [{1, "hash1"}], 9)
+
+      assert new_services == updated_services
+    end
+
+    test "add preimage hash to service account", %{services: services} do
+      preimages = [{1, "hash1"}, {2, "hash2"}]
+
+      updated_services = Accumulation.integrate_preimages(services, preimages, 9)
+
+      expected_services = put_in(services, [1, :preimage_storage_l, {h("hash1"), 5}], 9)
+      expected_services = put_in(expected_services, [1, :preimage_storage_p, h("hash1")], "hash1")
+
+      expected_services = put_in(expected_services, [2, :preimage_storage_l, {h("hash2"), 5}], 9)
+      expected_services = put_in(expected_services, [2, :preimage_storage_p, h("hash2")], "hash2")
+
+      assert updated_services == expected_services
+    end
+  end
 end

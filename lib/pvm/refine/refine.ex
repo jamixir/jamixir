@@ -10,7 +10,7 @@ defmodule PVM.Refine do
 
   @doc """
   ΨR: The Refine pvm invocation function.
-  # Formula (B.5) v0.6.4
+  # Formula (B.5) v0.6.5
   """
   @spec execute(
           non_neg_integer(),

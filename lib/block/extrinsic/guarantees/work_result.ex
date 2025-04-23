@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkResult do
   @moduledoc """
-  Formula (11.6) v0.6.4
+  Formula (11.6) v0.6.5
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
@@ -67,7 +67,7 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
     use Codec.Encoder
-    # Formula (C.23) v0.6.4
+    # Formula (C.23) v0.6.5
     # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
     @spec encode(Block.Extrinsic.Guarantee.WorkResult.t()) :: <<_::32, _::_*8>>
     def encode(%WorkResult{} = wr) do
@@ -85,12 +85,12 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
     end
   end
 
-  # Formula (C.30) v0.6.4
+  # Formula (C.30) v0.6.5
   def encode_result({:ok, b}) do
     e({0, vs(b)})
   end
 
-  # Formula (C.30) v0.6.4
+  # Formula (C.30) v0.6.5
   def encode_result({:error, e}) do
     e(WorkExecutionError.code(e))
   end

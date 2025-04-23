@@ -1,5 +1,5 @@
 defmodule ErasureCoding do
-  # Formula (H.1) v0.6.4
+  # Formula (H.1) v0.6.5
   @ec_size Constants.erasure_coded_piece_size()
 
   def split(data, n) when is_binary(data) and rem(byte_size(data), n) != 0 do
@@ -16,7 +16,7 @@ defmodule ErasureCoding do
     |> Enum.map(&:binary.list_to_bin/1)
   end
 
-  # Formula (H.2) v0.6.4
+  # Formula (H.2) v0.6.5
   def join(chunks, n) when is_list(chunks) do
     Enum.reduce(chunks, <<>>, fn chunk, acc ->
       if byte_size(chunk) != n do
@@ -37,7 +37,7 @@ defmodule ErasureCoding do
     join(for c <- chunks, do: :binary.list_to_bin(c))
   end
 
-  # Formula (H.3) v0.6.4
+  # Formula (H.3) v0.6.5
   def unzip(<<>>, _), do: []
 
   def unzip(data, n) when rem(byte_size(data), n) != 0 do
@@ -55,7 +55,7 @@ defmodule ErasureCoding do
     end
   end
 
-  # Formula (H.4) v0.6.4
+  # Formula (H.4) v0.6.5
   def lace([], _), do: <<>>
 
   def lace(chunks, n) when is_list(chunks) do

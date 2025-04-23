@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   use Codec.{Decoder, Encoder}
 
   @moduledoc """
-  Formula (10.2) v0.6.4
+  Formula (10.2) v0.6.5
   """
   @type t :: %__MODULE__{
           # v
@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
 
   defstruct [:vote, :validator_index, :signature]
 
-  # Formula (10.4) v0.6.4
+  # Formula (10.4) v0.6.5
   def signature_base(%__MODULE__{vote: vote}) do
     if vote, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
   end

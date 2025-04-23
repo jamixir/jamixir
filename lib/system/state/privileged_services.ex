@@ -1,6 +1,6 @@
 defmodule System.State.PrivilegedServices do
   @moduledoc """
-  Formula (9.9) v0.6.4
+  Formula (9.9) v0.6.5
   """
   alias Codec.JsonEncoder
 

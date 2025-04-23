@@ -1,7 +1,7 @@
 defmodule System.State.AuthorizerPool do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
-  # Formula (8.2) v0.6.4
+  # Formula (8.2) v0.6.5
   def transition(
         guarantees,
         authorizer_queue_,
@@ -22,7 +22,7 @@ defmodule System.State.AuthorizerPool do
     end
   end
 
-  # Formula (8.3) v0.6.4 F(c)
+  # Formula (8.3) v0.6.5 F(c)
   def remove_oldest_used_authorizer(core_index, current_pool, guarantees) do
     case Enum.find(guarantees, &(&1.work_report.core_index == core_index)) do
       nil ->
