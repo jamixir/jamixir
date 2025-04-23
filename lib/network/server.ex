@@ -1,7 +1,9 @@
 defmodule Network.Server do
   require Logger
   alias Quicer.Flags
-  import Network.{MessageHandler, Codec}
+  import Network.{Codec, UpStreamManager}
+  import Bitwise, only: [&&&: 2]
+  alias Network.MessageParsers
 
   @log_context "[QUIC_SERVER]"
 
@@ -43,19 +45,111 @@ defmodule Network.Server do
     end
   end
 
-  def handle_data(protocol_id, data, stream, props, state) do
-    handle_stream_data(protocol_id, data, stream, props, state,
-      log_tag: "[QUIC_SERVER]",
-      on_complete: fn protocol_id, messages, stream ->
-        if protocol_id >= 128 do
-          response = Network.ServerCalls.call(protocol_id, messages)
-
-          {:ok, _} =
-            :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
-        else
-          Task.start(fn -> Network.ServerCalls.call(protocol_id, messages) end)
+  defp get_stream(stream, state) do
+    case Map.get(state.ce_streams, stream) do
+      nil ->
+        case Map.get(state.up_stream_data, stream) do
+          nil -> :new_stream
+          up -> {:up, up}
         end
+
+      ce ->
+        {:ce, ce}
+    end
+  end
+
+  def handle_ce_stream(
+        new_data,
+        stream,
+        props,
+        server_state,
+        %{protocol_id: protocol_id, buffer: buffer} = stream_data
+      ) do
+    log(:debug, "CE STREAM: #{inspect(new_data)}")
+    updated_buffer = buffer <> new_data
+
+    state_ =
+      if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
+        messages = MessageParsers.parse_ce_messages(updated_buffer)
+        response = Network.ServerCalls.call(protocol_id, messages)
+
+        :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
+
+        %{server_state | ce_streams: Map.delete(server_state.ce_streams, stream)}
+      else
+        updated_stream = put_in(stream_data.buffer, updated_buffer)
+
+        %{
+          server_state
+          | ce_streams: Map.put(server_state.ce_streams, stream, updated_stream)
+        }
       end
-    )
+
+    {:noreply, state_}
+  end
+
+  def handle_up_stream(
+        data,
+        stream,
+        state,
+        %{protocol_id: protocol_id, buffer: buffer} = stream_data
+      ) do
+    log(:debug, "UP STREAM: #{inspect(data)}")
+    updated_buffer = buffer <> data
+
+    case MessageParsers.parse_up_message(updated_buffer) do
+      {:complete, message, remaining} ->
+        Network.ServerCalls.call(protocol_id, message)
+
+        state_ = %{
+          state
+          | up_stream_data:
+              Map.put(state.up_stream_data, stream, %{stream_data | buffer: remaining})
+        }
+
+        {:noreply, state_}
+
+      {:need_more, buffer} ->
+        {:noreply, put_in(state.up_stream_data[stream].buffer, buffer)}
+    end
+  end
+
+  def handle_data(data, stream, props, state) do
+    stream_data = get_stream(stream, state)
+
+    case stream_data do
+      {:ce, stream_state} ->
+        handle_ce_stream(data, stream, props, state, stream_state)
+
+      {:up, stream_state} ->
+        protocol_id = Map.get(stream_state, :protocol_id)
+
+        {{:ok, stream_state}, new_state} =
+          manage_up_stream(protocol_id, stream, state, @log_context)
+
+        handle_up_stream(data, stream, new_state, stream_state)
+
+      :new_stream ->
+        case data do
+          <<protocol_id::8, rest::binary>> ->
+            if protocol_id >= 128 do
+              handle_ce_stream(rest, stream, props, state, %{
+                protocol_id: protocol_id,
+                buffer: <<>>
+              })
+            else
+              case manage_up_stream(protocol_id, stream, state, @log_context) do
+                {{:ok, stream_data}, new_state} ->
+                  handle_up_stream(data, stream, new_state, stream_data)
+
+                :reject ->
+                  {:noreply, state}
+              end
+            end
+
+          _ ->
+            {:noreply, state}
+        end
+    end
   end
 end

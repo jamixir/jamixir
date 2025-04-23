@@ -291,7 +291,6 @@ defmodule CommsTest do
              "Expected outgoing streams to be cleaned up, but found: #{inspect(client_state.pending_responses)}"
     end
 
-    # @tag :skip
     test "can send a list of messages with just 1 FIN", %{client: client} do
       # Send a list of messages
       messages = [<<7::800>>, <<17::1600>>]
@@ -328,9 +327,9 @@ defmodule CommsTest do
     end
   end
 
-  @tag :skip
   # this test passing about 90% of the time, when running as mix test,
   #  about 10% of the time it times out, some unknown race condition i guess
+  @tag :skip
   test "handles concurrent malformed and valid messages", %{client: client} do
     client_state = :sys.get_state(client)
     valid_msg = fn -> Peer.send(client, @dummy_protocol_id, "valid message") end
@@ -443,17 +442,17 @@ defmodule CommsTest do
       )
     end
 
-    # test "handles CE message with undersized length", %{client: client} do
-    #   payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
-    #   assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
-    # end
+    test "handles CE message with undersized length", %{client: client} do
+      payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
+      assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
+    end
 
     test "handles empty message", %{client: client} do
       assert_handles_malformed_message(client, <<>>, "empty message")
     end
   end
 
-  # Helper function to reduce duplication
+  #    Helper function to reduce duplication
   defp assert_handles_malformed_message(client, payload, description) do
     client_state = :sys.get_state(client)
     {:ok, stream} = :quicer.start_stream(client_state.connection, Config.default_stream_opts())
@@ -461,7 +460,7 @@ defmodule CommsTest do
     assert Process.alive?(client), "Peer crashed on #{description}"
   end
 
-  # Helper function to start multiple peers
+  #    Helper function to start multiple peers
   defp start_multiple_peers(mode, ports) do
     peers =
       for port <- ports do

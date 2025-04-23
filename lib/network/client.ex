@@ -1,14 +1,16 @@
 defmodule Network.Client do
+  alias Network.MessageParsers
+  alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Block.Extrinsic.Assurance
   alias Network.PeerState
   import Quicer.Flags
-  import Network.{MessageHandler, Codec, Config}
+  import Network.{Codec, Config}
   require Logger
   use Codec.Encoder
   use Sizes
-
+  import Bitwise, only: [&&&: 2]
   @log_context "[QUIC_CLIENT]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
@@ -16,6 +18,10 @@ defmodule Network.Client do
 
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
     GenServer.call(pid, {:send, protocol_id, message}, 500)
+  end
+
+  def send(pid, protocol_id, messages) when is_list(messages) do
+    GenServer.call(pid, {:send, protocol_id, messages}, 500)
   end
 
   def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
@@ -135,6 +141,10 @@ defmodule Network.Client do
           log("Creating new UP stream for block announcements")
           {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
           state_ = put_in(state.up_streams[protocol_id], %{stream: stream})
+
+          state_ =
+            put_in(state_.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
+
           {stream, state_}
       end
 
@@ -152,32 +162,56 @@ defmodule Network.Client do
       when is_list(messages) do
     {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
 
-    message_bytes =
-      for m <- messages, reduce: <<protocol_id::8>> do
-        acc -> acc <> encode_message(m)
-      end
+    {:ok, _} = :quicer.send(stream, <<protocol_id::8>>, send_flag(:none))
+    {all_but_last, [last_message]} = Enum.split(messages, -1)
 
-    {:ok, _} = :quicer.send(stream, message_bytes, send_flag(:fin))
+    Enum.each(all_but_last, fn m ->
+      {:ok, _} = :quicer.send(stream, encode_message(m), send_flag(:none))
+    end)
+
+    {:ok, _} = :quicer.send(stream, encode_message(last_message), send_flag(:fin))
 
     new_pending =
-      Map.put(state.pending_responses, stream, %{from: from, protocol_id: protocol_id})
+      Map.put(state.pending_responses, stream, %{
+        from: from,
+        protocol_id: protocol_id,
+        buffer: <<>>
+      })
 
     {:noreply, %PeerState{state | pending_responses: new_pending}}
   end
 
-  def handle_data(protocol_id, data, stream, props, %PeerState{} = state) do
-    handle_stream_data(protocol_id, data, stream, props, state,
-      log_tag: "[QUIC_CLIENT]",
-      on_complete: fn protocol_id, message, stream ->
-        case protocol_id >= 128 and Map.get(state.pending_responses, stream) do
-          %{from: from} ->
-            response = Network.ClientCalls.call(protocol_id, message)
-            GenServer.reply(from, response)
+  def handle_data(data, stream, props, %PeerState{} = state) do
+    state_ =
+      case Map.get(state.pending_responses, stream) do
+        nil ->
+          # This stream is not in pending_responses, that means that this is not a CE stream initiated by the client
+          # 1. unsolicited data from somewhere, not to handle
+          # 2. could be an up_stream, but we expect up stream to be used for cast, not waiting for response
 
-          _ ->
-            Task.start(fn -> Network.ClientCalls.call(protocol_id, message) end)
-        end
+          # so finally we just ignore it
+          log(:debug, "ignoring unsolicited data from stream #{inspect(stream)}")
+          state
+
+        # Task.start(fn -> Network.ClientCalls.call(protocol_id, msg) end)
+        stream_data ->
+          updated_buffer = stream_data.buffer <> data
+
+          if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
+            messages = MessageParsers.parse_ce_messages(updated_buffer)
+            response = Network.ClientCalls.call(stream_data.protocol_id, messages)
+
+            GenServer.reply(stream_data.from, response)
+            %{state | pending_responses: Map.delete(state.pending_responses, stream)}
+          else
+            %{
+              state
+              | pending_responses:
+                  Map.put(state.pending_responses, stream, %{stream_data | buffer: updated_buffer})
+            }
+          end
       end
-    )
+
+    {:noreply, state_}
   end
 end
