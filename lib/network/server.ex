@@ -46,15 +46,15 @@ defmodule Network.Server do
   end
 
   defp get_stream(stream, state) do
-    cond do
-      Map.has_key?(state.ce_streams, stream) ->
-        {:ce, Map.get(state.ce_streams, stream)}
+    case Map.get(state.ce_streams, stream) do
+      nil ->
+        case Map.get(state.up_stream_data, stream) do
+          nil -> :new_stream
+          up -> {:up, up}
+        end
 
-      Map.has_key?(state.up_stream_data, stream) ->
-        {:up, Map.get(state.up_stream_data, stream)}
-
-      true ->
-        :new_stream
+      ce ->
+        {:ce, ce}
     end
   end
 

@@ -442,17 +442,17 @@ defmodule CommsTest do
       )
     end
 
-    # test "handles CE message with undersized length", %{client: client} do
-    #   payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
-    #   assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
-    # end
+    test "handles CE message with undersized length", %{client: client} do
+      payload = <<@dummy_protocol_id, 0, 0, 1, 0, 1, 2, 3, 4, 5>>
+      assert_handles_malformed_message(client, payload, "length smaller than actual payload (CE)")
+    end
 
     test "handles empty message", %{client: client} do
       assert_handles_malformed_message(client, <<>>, "empty message")
     end
   end
 
-  #   # Helper function to reduce duplication
+  #    Helper function to reduce duplication
   defp assert_handles_malformed_message(client, payload, description) do
     client_state = :sys.get_state(client)
     {:ok, stream} = :quicer.start_stream(client_state.connection, Config.default_stream_opts())
@@ -460,7 +460,7 @@ defmodule CommsTest do
     assert Process.alive?(client), "Peer crashed on #{description}"
   end
 
-  #   # Helper function to start multiple peers
+  #    Helper function to start multiple peers
   defp start_multiple_peers(mode, ports) do
     peers =
       for port <- ports do
