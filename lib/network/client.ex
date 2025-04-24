@@ -94,6 +94,11 @@ defmodule Network.Client do
     send(pid, 136, hash)
   end
 
+  def request_segment(pid, erasure_root, segment_index) do
+    message = erasure_root <> <<segment_index::16-little>>
+    send(pid, 137, message)
+  end
+
   def send_work_package(pid, wp, core_index, extrinsics) do
     messages = [t(core_index) <> e(wp), extrinsics]
     send(pid, 133, messages)

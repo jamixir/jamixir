@@ -71,9 +71,19 @@ defmodule Network.Server do
     state_ =
       if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
         messages = MessageParsers.parse_ce_messages(updated_buffer)
-        response = Network.ServerCalls.call(protocol_id, messages)
 
-        :quicer.send(stream, encode_message(response), Flags.send_flag(:fin))
+        responses =
+          case Network.ServerCalls.call(protocol_id, messages) do
+            m when is_list(m) -> m
+            m when is_binary(m) -> [m]
+          end
+
+        all_but_last = Enum.drop(responses, -1)
+
+        for r <- all_but_last,
+            do: :quicer.send(stream, encode_message(r), Flags.send_flag(:none))
+
+        :quicer.send(stream, encode_message(List.last(responses)), Flags.send_flag(:fin))
 
         %{server_state | ce_streams: Map.delete(server_state.ce_streams, stream)}
       else
