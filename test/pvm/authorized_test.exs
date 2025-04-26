@@ -28,11 +28,11 @@ defmodule PVM.AuthorizedTest do
       # 4. halts and returns the message
       message = "Hello Jamixir PVM"
       start_addr = 0x1_0000
-      end_addr = start_addr + byte_size(message)
+      mem_size = byte_size(message)
 
       # r11 = 100 + message length
       program =
-        <<op(:load_imm_64), 8, end_addr::64-little, op(:ecalli), host(:gas), op(:fallthrough),
+        <<op(:load_imm_64), 8, mem_size::64-little, op(:ecalli), host(:gas), op(:fallthrough),
           op(:load_imm_64), 7, start_addr::64-little, op(:fallthrough)>>
 
       bitmask = <<128, 44, 1>>

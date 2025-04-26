@@ -34,8 +34,8 @@ defmodule Codec.State.Trie do
       12 => e(s.privileged_services),
       # C(13) ↦ E4(π)
       13 => e(s.validator_statistics),
-      14 => e(Enum.map(s.accumulation_history, &vs/1)),
-      15 => e(Enum.map(s.ready_to_accumulate, &vs/1))
+      14 => e(Enum.map(s.ready_to_accumulate, &vs/1)),
+      15 => e(Enum.map(s.accumulation_history, &vs/1))
     }
     |> encode_accounts(s)
     |> encode_accounts_storage_s(s, :storage)
