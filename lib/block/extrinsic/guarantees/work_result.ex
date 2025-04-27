@@ -138,10 +138,10 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       gas_ratio: :accumulate_gas,
       result: &parse_result/1,
       exports: &value_or_zero/1,
-      extrinsic_count: &value_or_zero/1,
-      extrinsic_size: &value_or_zero/1,
+      extrinsic_count: [fn v -> v.extrinsic_count end, :refine_load],
+      extrinsic_size: [fn v -> v.extrinsic_size end, :refine_load],
       imports: &value_or_zero/1,
-      gas_used: &value_or_zero/1
+      gas_used: [fn v -> v.gas_used end, :refine_load]
     }
 
   def value_or_zero(v), do: v || 0
