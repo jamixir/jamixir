@@ -151,8 +151,8 @@ defmodule System.State.ServiceStatistic do
         c.refine,
         c.imports,
         c.exports,
-        c.extrinsic_count,
         c.extrinsic_size,
+        c.extrinsic_count,
         c.accumulation,
         c.transfers
       })

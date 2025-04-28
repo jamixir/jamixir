@@ -137,10 +137,10 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
       service: :service_id,
       gas_ratio: :accumulate_gas,
       result: &parse_result/1,
-      exports: &value_or_zero/1,
+      exports: [fn v -> v.exports end, :refine_load],
       extrinsic_count: [fn v -> v.extrinsic_count end, :refine_load],
       extrinsic_size: [fn v -> v.extrinsic_size end, :refine_load],
-      imports: &value_or_zero/1,
+      imports: [fn v -> v.imports end, :refine_load],
       gas_used: [fn v -> v.gas_used end, :refine_load]
     }
 
