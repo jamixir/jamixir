@@ -3,7 +3,9 @@ defmodule System.State.Ready do
   use JsonDecoder
 
   @type t :: %__MODULE__{
+          # w
           work_report: WorkReport.t(),
+          # d
           dependencies: MapSet.t(Types.hash())
         }
 
@@ -28,5 +30,13 @@ defmodule System.State.Ready do
 
   def parse_dependencies(deps) do
     MapSet.new(for d <- deps, do: JsonDecoder.from_json(d))
+  end
+
+  defimpl Encodable do
+    alias System.State.Ready
+    use Codec.Encoder
+
+    # Formula (C.13) v0.6.5
+    def encode(%Ready{work_report: w, dependencies: d}), do: e({w, vs(d)})
   end
 end
