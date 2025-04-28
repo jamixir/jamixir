@@ -204,7 +204,12 @@ defmodule Network.Client do
 
           if (props.flags &&& Flags.receive_flag(:fin)) != 0 do
             messages = MessageParsers.parse_ce_messages(updated_buffer)
-            response = Network.ClientCalls.call(stream_data.protocol_id, messages)
+
+            # Apply protocol-specific message parsing
+            processed_messages =
+              MessageParsers.parse_protocol_specific_messages(stream_data.protocol_id, messages)
+
+            response = Network.ClientCalls.call(stream_data.protocol_id, processed_messages)
 
             GenServer.reply(stream_data.from, response)
             %{state | pending_responses: Map.delete(state.pending_responses, stream)}

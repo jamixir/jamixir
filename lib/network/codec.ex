@@ -1,9 +1,14 @@
 defmodule Network.Codec do
   def get_protocol_id(<<protocol_id::8, _::binary>>), do: protocol_id
 
-  def encode_message(message) do
+  def encode_message(message) when is_binary(message) do
     length = byte_size(message)
     <<length::32-little, message::binary>>
+  end
+
+  def encode_message(msg) when is_list(msg) do
+    msg = Enum.join(msg, <<>>)
+    encode_message(msg)
   end
 
   def encode_message(protocol_id, message) do

@@ -1,6 +1,6 @@
 defmodule Network.MessageParsers do
   require Logger
-
+  import Codec.Encoder
   def log(level, message), do: Logger.log(level, " #{message}")
   def log(message), do: Logger.log(:info, " #{message}")
 
@@ -64,6 +64,20 @@ defmodule Network.MessageParsers do
         Enum.reverse(acc)
     end
   end
+
+  def parse_protocol_specific_messages(137, [first, second, third]) do
+    chunk_size = binary_registry().segment_bytes
+
+    shards =
+      for <<shard::binary-size(chunk_size) <- second>> do
+        shard
+      end
+
+    [first, shards, third]
+  end
+
+  # Default implementation for all other protocol IDs
+  def parse_protocol_specific_messages(_protocol_id, messages), do: messages
 
   def parse_up_message(buffer) do
     log_tag = "PARSE_UP_MESSAGE"
