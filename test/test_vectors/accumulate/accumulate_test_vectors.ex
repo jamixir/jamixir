@@ -19,7 +19,8 @@ defmodule AccumulateTestVectors do
         "no_available_reports-1",
         "process_one_immediate_report-1",
         for(i <- 1..2, do: "queues_are_shifted-#{i}"),
-        for(i <- 1..3, do: "ready_queue_editing-#{i}")
+        for(i <- 1..3, do: "ready_queue_editing-#{i}"),
+        "same_code_different_services-1"
       ]
       |> List.flatten()
 

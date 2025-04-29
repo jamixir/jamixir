@@ -1,4 +1,5 @@
 defmodule AccumulateTestVectorsTest do
+  alias System.State.ValidatorStatistic
   use ExUnit.Case
   import Mox
   import AccumulateTestVectors
@@ -9,16 +10,15 @@ defmodule AccumulateTestVectorsTest do
 
   setup_all do
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
-    Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
 
     Application.put_env(:jamixir, :original_modules, [
       Accumulation,
-      WorkReport
+      WorkReport,
+      ValidatorStatistics
     ])
 
     on_exit(fn ->
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
-      Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
     end)
   end
