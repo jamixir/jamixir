@@ -284,6 +284,7 @@ defmodule System.State.Accumulation do
                                                                                acc_service_gas,
                                                                                acc_preimages} ->
         # ar stands for accumulation result
+        # ∆1(o,w,f,s)
         ar =
           single_accumulation(
             acc_state,
@@ -293,9 +294,13 @@ defmodule System.State.Accumulation do
             ctx
           )
 
+        # K(d ∖{s})
         keys_to_drop = Map.keys(Map.delete(d, service))
+        # ar.state.services = ∆1(o,w,f,s)_o_d
+        # ∆1(o,w,f,s)_o_d ∖ K(d ∖ {s})
         service_n = Map.drop(ar.state.services, keys_to_drop)
 
+        # K(d) \ K(∆1(o,w,f,s)_o_d)
         service_m =
           MapSet.difference(keys_set(d), keys_set(ar.state.services))
 
