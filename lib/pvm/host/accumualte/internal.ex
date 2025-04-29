@@ -6,6 +6,7 @@ defmodule PVM.Host.Accumulate.Internal do
   alias System.State.PrivilegedServices
   alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.{Context, Result}
+  alias PVM.Host.Gas
   alias PVM.{Memory, Registers}
   import PVM.{Constants.HostCallResult}
   import Codec.Encoder
@@ -140,12 +141,13 @@ defmodule PVM.Host.Accumulate.Internal do
         ) ::
           Result.Internal.t()
   def checkpoint_internal(registers, memory, {x, _y}, gas) do
-    {_exit_reason, remaining_gas} = PVM.Host.Gas.check_gas(gas)
+    {exit_reason, remaining_gas} = Gas.check_gas(gas)
 
     %Result.Internal{
       registers: Registers.set(registers, :r7, remaining_gas),
       memory: memory,
-      context: {x, x}
+      context: {x, x},
+      exit_reason: exit_reason
     }
   end
 
