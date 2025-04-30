@@ -5,6 +5,7 @@ defmodule Network.ServerCalls do
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
   use Codec.Encoder
+  use Sizes
 
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
 
@@ -17,6 +18,25 @@ defmodule Network.ServerCalls do
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, direction, max_blocks)
     blocks_bin = for b <- blocks, do: Encodable.encode(b)
     Enum.join(blocks_bin)
+  end
+
+  def call(131, m), do: process_ticket_message(:proxy, m)
+  def call(132, m), do: process_ticket_message(:validator, m)
+
+  def call(133, [wp_and_core, extrinsic]) do
+    <<core_index::16-little, rest::binary>> = wp_and_core
+    {wp, _} = WorkPackage.decode(rest)
+    log("Received work package for service #{wp.service} core #{core_index}")
+    :ok = Jamixir.NodeAPI.save_work_package(wp, core_index, extrinsic)
+    <<>>
+  end
+
+  def call(134, [segments_and_core, bundle]) do
+    <<core_index::16-little, segments_bin::binary>> = segments_and_core
+    {segments, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
+    {:ok, {hash, sign}} = Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, segments)
+
+    hash <> sign
   end
 
   def call(135, message) do
@@ -35,7 +55,18 @@ defmodule Network.ServerCalls do
     end
   end
 
-  use Sizes
+  def call(137, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
+    log("Requesting segment")
+
+    case Jamixir.NodeAPI.get_segment(erasure_root, segment_index) do
+      {:ok, {bundle_shard, segments, justification}} ->
+        [bundle_shard, segments, justification]
+
+      _ ->
+        IO.puts("Received segment 2")
+        <<>>
+    end
+  end
 
   def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
     log("Received assurance")
@@ -59,25 +90,6 @@ defmodule Network.ServerCalls do
       {:ok, preimage} -> preimage
       _ -> <<>>
     end
-  end
-
-  def call(131, m), do: process_ticket_message(:proxy, m)
-  def call(132, m), do: process_ticket_message(:validator, m)
-
-  def call(133, [wp_and_core, extrinsic]) do
-    <<core_index::16-little, rest::binary>> = wp_and_core
-    {wp, _} = WorkPackage.decode(rest)
-    log("Received work package for service #{wp.service} core #{core_index}")
-    :ok = Jamixir.NodeAPI.save_work_package(wp, core_index, extrinsic)
-    <<>>
-  end
-
-  def call(134, [segments_and_core, bundle]) do
-    <<core_index::16-little, segments_bin::binary>> = segments_and_core
-    {segments, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
-    {:ok, {hash, sign}} = Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, segments)
-
-    hash <> sign
   end
 
   def call(144, [message1, evidence_bin]) do

@@ -273,6 +273,29 @@ defmodule CommsTest do
     end
   end
 
+  # CE 137
+  describe "request_segment/3" do
+    test "request segment, single hash justification", %{client: client} do
+      erasure_root = <<1::hash()>>
+      index = 8
+      bundle_shard = <<1, 2, 3, 4>>
+      segments = [<<1::m(segment_bytes)>>, <<2::m(segment_bytes)>>]
+      justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+        {:ok, {bundle_shard, segments, justification}}
+      end)
+
+      {:ok, {b, s, j}} = Peer.request_segment(client, erasure_root, index)
+      verify!()
+
+      assert b == bundle_shard
+      assert s == segments
+      assert j == justification
+    end
+  end
+
   describe "stream cleanup" do
     test "cleans up outgoing streams after completion", %{client: client} do
       # Send multiple messages

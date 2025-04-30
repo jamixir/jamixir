@@ -33,6 +33,8 @@ defmodule Jamixir.NodeAPI do
   @callback save_work_package_bundle(binary(), non_neg_integer(), %{Types.hash() => Types.hash()}) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
+  @callback get_segment(Types.hash(), non_neg_integer()) ::
+              {:ok, {binary(), list(binary()), binary()}} | :error
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -49,6 +51,9 @@ defmodule Jamixir.NodeAPI do
   def get_work_report(hash), do: impl().get_work_report(hash)
   def save_work_package(wp, core, extrinsic), do: impl().save_work_package(wp, core, extrinsic)
   def save_audit(audit), do: impl().save_audit(audit)
+
+  def get_segment(erasure_root, segment_index),
+    do: impl().get_segment(erasure_root, segment_index)
 
   def save_work_package_bundle(bundle, core, segments),
     do: impl().save_work_package_bundle(bundle, core, segments)
