@@ -1,6 +1,7 @@
 defmodule Network.MessageParsers do
   require Logger
   import Codec.Encoder
+  use Codec.Encoder
   def log(level, message), do: Logger.log(level, " #{message}")
   def log(message), do: Logger.log(:info, " #{message}")
 
@@ -73,7 +74,15 @@ defmodule Network.MessageParsers do
         shard
       end
 
-    [first, shards, third]
+    justification =
+      Stream.unfold(third, fn
+        <<0, h::b(hash), rest::binary>> -> {<<0>> <> h, rest}
+        <<1, h1::b(hash), h2::b(hash), rest::binary>> -> {<<1>> <> h1 <> h2, rest}
+        <<>> -> nil
+      end)
+      |> Enum.to_list()
+
+    [first, shards, justification]
   end
 
   # Default implementation for all other protocol IDs
