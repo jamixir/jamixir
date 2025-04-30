@@ -1,4 +1,6 @@
 defmodule Network.Codec do
+  require Logger
+
   def get_protocol_id(<<protocol_id::8, _::binary>>), do: protocol_id
 
   def encode_message(message) when is_binary(message) do
@@ -18,14 +20,24 @@ defmodule Network.Codec do
 
   def decode_messages(<<>>), do: []
 
-  def decode_messages(<<_protocol_id::8, length::32-little, message::binary-size(length)>>),
-    do: [message]
+  def decode_messages(data) do
+    decode_messages([], data)
+  end
 
-  def decode_messages(
-        <<_protocol_id::8, l1::32-little, m1::binary-size(l1), l2::32-little,
-          m2::binary-size(l2)>>
-      ),
-      do: [m1, m2]
+  defp decode_messages(acc, <<>>), do: Enum.reverse(acc)
 
-  def decode_messages(<<length::32-little, message::binary-size(length)>>), do: [message]
+  defp decode_messages(_acc, <<len::32-little, rest::binary>>) when byte_size(rest) < len do
+    # Not enough data to read full message
+    {:need_more, <<len::32-little, rest::binary>>}
+  end
+
+  defp decode_messages(acc, <<len::32-little, rest::binary>>) when byte_size(rest) >= len do
+    <<msg::binary-size(len), remaining::binary>> = rest
+    decode_messages([msg | acc], remaining)
+  end
+
+  defp decode_messages(_acc, malformed) do
+    Logger.error("Malformed message or unsupported format: #{inspect(malformed)}")
+    []
+  end
 end

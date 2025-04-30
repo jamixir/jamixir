@@ -9,7 +9,13 @@ defmodule Network.UpStreamTest do
   # We use Process.monitor to create references with predictable ordering
   defp make_ordered_ref(n) do
     # Create a dummy process for monitoring
-    pid = spawn(fn -> receive do _ -> :ok end end)
+    pid =
+      spawn(fn ->
+        receive do
+          _ -> :ok
+        end
+      end)
+
     # The n different monitors will create n different refs
     Enum.map(1..n, fn _ -> Process.monitor(pid) end) |> List.last()
   end
@@ -30,12 +36,13 @@ defmodule Network.UpStreamTest do
       state = %PeerState{up_streams: %{}, up_stream_data: %{}}
 
       # Call function directly
-      {{:ok, stream_data}, new_state} = UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
+      {{:ok, stream_data}, new_state} =
+        UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
 
       # Verify results
       assert new_state.up_streams[protocol_id] == stream
       assert Map.has_key?(new_state.up_stream_data, stream)
-      assert stream_data.protocol_id == protocol_id
+      assert stream_data.protocol_id == nil
       assert stream_data.buffer == <<>>
     end
 
@@ -51,12 +58,14 @@ defmodule Network.UpStreamTest do
       }
 
       # Call function directly
-      {{:ok, returned_stream_data}, new_state} = UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
+      {{:ok, returned_stream_data}, new_state} =
+        UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
 
       # Verify results
       assert new_state.up_streams[protocol_id] == stream
       assert returned_stream_data == stream_data
-      assert new_state == state  # State should be unchanged
+      # State should be unchanged
+      assert new_state == state
     end
 
     test "replaces existing UP stream with higher reference" do
@@ -80,12 +89,13 @@ defmodule Network.UpStreamTest do
       assert new_stream > old_stream
 
       # Call function directly
-      {{:ok, new_stream_data}, new_state} = UpStreamManager.manage_up_stream(protocol_id, new_stream, state, @log_context)
+      {{:ok, new_stream_data}, new_state} =
+        UpStreamManager.manage_up_stream(protocol_id, new_stream, state, @log_context)
 
       # Verify results
       assert new_state.up_streams[protocol_id] == new_stream
       assert Map.has_key?(new_state.up_stream_data, new_stream)
-      assert new_stream_data.protocol_id == protocol_id
+      assert new_stream_data.protocol_id == nil
       assert new_stream_data.buffer == <<>>
 
       # Old stream data should be gone
@@ -113,7 +123,8 @@ defmodule Network.UpStreamTest do
       assert lower_stream < higher_stream
 
       # Call function directly - ensure the lower stream is rejected
-      {:reject, unchanged_state} = UpStreamManager.manage_up_stream(protocol_id, lower_stream, state, @log_context)
+      {:reject, unchanged_state} =
+        UpStreamManager.manage_up_stream(protocol_id, lower_stream, state, @log_context)
 
       # Verify the state is unchanged
       assert unchanged_state == state

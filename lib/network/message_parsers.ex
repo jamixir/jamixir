@@ -99,12 +99,12 @@ defmodule Network.MessageParsers do
 
     cond do
       byte_size(buffer) < 1 ->
-        Logger.debug("#{log_tag}: Buffer too small for protocol ID")
+        log(:debug, "#{log_tag}: Buffer too small for protocol ID")
         {:need_more, buffer}
 
       true ->
         <<protocol_id::8, rest::binary>> = buffer
-        Logger.debug("#{log_tag}: Protocol ID #{protocol_id} extracted")
+        log(:debug, "#{log_tag}: Protocol ID #{protocol_id} extracted")
         {:protocol, protocol_id, rest}
     end
   end
@@ -114,7 +114,7 @@ defmodule Network.MessageParsers do
 
     cond do
       byte_size(buffer) < 4 ->
-        Logger.debug("#{log_tag}: Buffer too small for message length")
+        log(:debug, "#{log_tag}: Buffer too small for message length")
         {:need_more, buffer}
 
       true ->
@@ -122,10 +122,11 @@ defmodule Network.MessageParsers do
 
         if byte_size(rest) >= length do
           <<message::binary-size(length), remaining::binary>> = rest
-          Logger.debug("#{log_tag}: Parsed complete message of size #{length}")
+          log(:debug, "#{log_tag}: Parsed complete message of size #{length}")
           {:complete, message, remaining}
         else
-          Logger.debug(
+          log(
+            :debug,
             "#{log_tag}: Incomplete message, needed #{length}, have #{byte_size(rest)}"
           )
 
