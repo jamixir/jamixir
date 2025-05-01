@@ -26,6 +26,7 @@ defmodule Network.Peer do
   defdelegate send_work_package_bundle(pid, bundle, core, segment_roots), to: Client
   defdelegate announce_audit(pid, audit_announcement), to: Client
   defdelegate request_segment(pid, erasure_root, segment_index), to: Client
+  defdelegate request_audit_shard(pid, erasure_root, segment_index), to: Client
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)

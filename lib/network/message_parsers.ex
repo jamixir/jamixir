@@ -67,26 +67,32 @@ defmodule Network.MessageParsers do
   end
 
   def parse_protocol_specific_messages(137, [first, second, third]) do
-    chunk_size = binary_registry().segment_bytes
+    [first, parse_shards(second), parse_justification(third)]
+  end
 
-    shards =
-      for <<shard::binary-size(chunk_size) <- second>> do
-        shard
-      end
-
-    justification =
-      Stream.unfold(third, fn
-        <<0, h::b(hash), rest::binary>> -> {<<0>> <> h, rest}
-        <<1, h1::b(hash), h2::b(hash), rest::binary>> -> {<<1>> <> h1 <> h2, rest}
-        <<>> -> nil
-      end)
-      |> Enum.to_list()
-
-    [first, shards, justification]
+  def parse_protocol_specific_messages(138, [first, second]) do
+    [first, parse_justification(second)]
   end
 
   # Default implementation for all other protocol IDs
   def parse_protocol_specific_messages(_protocol_id, messages), do: messages
+
+  defp parse_shards(binary) do
+    chunk_size = binary_registry().segment_bytes
+
+    for <<shard::binary-size(chunk_size) <- binary>> do
+      shard
+    end
+  end
+
+  defp parse_justification(binary) do
+    Stream.unfold(binary, fn
+      <<0, h::b(hash), rest::binary>> -> {<<0>> <> h, rest}
+      <<1, h1::b(hash), h2::b(hash), rest::binary>> -> {<<1>> <> h1 <> h2, rest}
+      <<>> -> nil
+    end)
+    |> Enum.to_list()
+  end
 
   def parse_up_message(buffer) do
     log_tag = "PARSE_UP_MESSAGE"

@@ -33,6 +33,11 @@ defmodule Network.ClientCalls do
     {:ok, {bundle_shard, segments, justification}}
   end
 
+  def call(138, [bundle_shard, justification]) do
+    log("Received shard")
+    {:ok, {bundle_shard, justification}}
+  end
+
   def call(143, message) do
     case message do
       <<>> ->
