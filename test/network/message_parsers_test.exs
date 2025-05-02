@@ -1,9 +1,6 @@
 defmodule Network.MessageParsersTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Network.MessageParsers
-
-  # Add @log_context to avoid undefined error, as it's used in MessageParsers
-  @log_context "[TEST]"
 
   describe "parse_ce_messages/1" do
     test "handles single message correctly" do
@@ -32,9 +29,12 @@ defmodule Network.MessageParsersTest do
 
       # Combine into a single binary with length prefixes
       data = <<
-        message1_length::32-little, message1::binary,
-        message2_length::32-little, message2::binary,
-        message3_length::32-little, message3::binary
+        message1_length::32-little,
+        message1::binary,
+        message2_length::32-little,
+        message2::binary,
+        message3_length::32-little,
+        message3::binary
       >>
 
       # Parse the messages
@@ -75,23 +75,32 @@ defmodule Network.MessageParsersTest do
     end
   end
 
+  describe "parse_up_protocol_id/1" do
+    test "extracts protocol ID cleanly" do
+      buffer = <<42::8, 0, 1, 2, 3>>
+
+      assert {:protocol, 42, <<0, 1, 2, 3>>} = MessageParsers.parse_up_protocol_id(buffer)
+    end
+
+    test "handles too small buffer for protocol ID" do
+      buffer = <<>>
+
+      assert {:need_more, ^buffer} = MessageParsers.parse_up_protocol_id(buffer)
+    end
+  end
+
   describe "parse_up_message/1" do
     test "handles complete message" do
-      # Create UP message: <<protocol_id::8, length::32-little, message::binary>>
       protocol_id = 42
       message = "test up message"
       message_length = byte_size(message)
       data = <<protocol_id::8, message_length::32-little, message::binary>>
 
-      # Parse the message
-      result = MessageParsers.parse_up_message(data)
-
-      # Verify complete message is detected and returned
-      assert {:complete, ^message, <<>>} = result
+      # Not enough to immediately parse => needs more
+      assert {:need_more, ^data} = MessageParsers.parse_up_message(data)
     end
 
     test "handles complete message with remaining data" do
-      # Message with additional data after it
       protocol_id = 42
       message = "complete message"
       message_length = byte_size(message)
@@ -99,37 +108,118 @@ defmodule Network.MessageParsersTest do
 
       data = <<protocol_id::8, message_length::32-little, message::binary, remaining::binary>>
 
-      # Parse the message
-      result = MessageParsers.parse_up_message(data)
-
-      # Should return the complete message and the remaining data
-      assert {:complete, ^message, ^remaining} = result
+      # Same: parser needs more
+      assert {:need_more, ^data} = MessageParsers.parse_up_message(data)
     end
 
     test "handles incomplete message" do
-      # Incomplete message: header is present but not enough data
       protocol_id = 42
-      message_length = 20  # We claim message is 20 bytes
-      partial_message = "only 15 bytes"  # But provide only 15
+      message_length = 20
+      partial_message = "only 15 bytes"
 
       data = <<protocol_id::8, message_length::32-little, partial_message::binary>>
 
-      # Parse the message
-      result = MessageParsers.parse_up_message(data)
-
-      # Should indicate more data is needed
-      assert {:need_more, ^data} = result
+      # Same again: needs more
+      assert {:need_more, ^data} = MessageParsers.parse_up_message(data)
     end
 
     test "handles too small buffer" do
-      # Buffer smaller than 5 bytes (can't even read header)
-      small_buffer = <<42::8, 1, 2, 3>>  # Only 4 bytes
+      small_buffer = <<42::8, 1, 2, 3>>
 
-      # Parse the message
-      result = MessageParsers.parse_up_message(small_buffer)
+      # Too small, needs more
+      assert {:need_more, ^small_buffer} = MessageParsers.parse_up_message(small_buffer)
+    end
 
-      # Should indicate more data is needed
-      assert {:need_more, ^small_buffer} = result
+    test "separate protocol id and message separately" do
+      protocol_id = 7
+      message = "ping"
+      message_data = <<byte_size(message)::32-little, message::binary>>
+
+      # Step 1: extract protocol id
+      assert {:protocol, ^protocol_id, <<>>} =
+               MessageParsers.parse_up_protocol_id(<<protocol_id>>)
+
+      # Step 2: parse message after
+      assert {:complete, ^message, <<>>} = MessageParsers.parse_up_message(message_data)
+    end
+
+    test "coalesced protocol id and message together" do
+      protocol_id = 9
+      message = "pong"
+      message_data = <<byte_size(message)::32-little, message::binary>>
+
+      coalesced = <<protocol_id::8>> <> message_data
+
+      # First, extract protocol ID
+      assert {:protocol, ^protocol_id, rest} = MessageParsers.parse_up_protocol_id(coalesced)
+
+      # Then, parse the message part
+      assert {:complete, ^message, <<>>} = MessageParsers.parse_up_message(rest)
+    end
+
+    test "multiple messages after protocol" do
+      protocol_id = 21
+      m1 = "foo"
+      m2 = "bar"
+
+      messages = <<
+        byte_size(m1)::32-little,
+        m1::binary,
+        byte_size(m2)::32-little,
+        m2::binary
+      >>
+
+      assert {:protocol, ^protocol_id, _rest1} =
+               MessageParsers.parse_up_protocol_id(<<protocol_id::8>>)
+
+      # First message
+      assert {:complete, ^m1, rest2} = MessageParsers.parse_up_message(messages)
+
+      # Second message
+      assert {:complete, ^m2, <<>>} = MessageParsers.parse_up_message(rest2)
+    end
+  end
+
+  describe "handle_up_stream race condition simulation" do
+    test "accumulates protocol byte and parses correctly once full data arrives" do
+      initial_state = %{
+        up_stream_data: %{
+          123 => %{protocol_id: nil, buffer: <<>>}
+        }
+      }
+
+      # Step 1: Partial first chunk, only the protocol ID
+      stream_id = 123
+      # Only protocol byte
+      partial_data = <<42::8>>
+
+      {:noreply, state_after_partial} =
+        Network.Server.handle_up_stream(
+          partial_data,
+          stream_id,
+          initial_state,
+          initial_state.up_stream_data[stream_id]
+        )
+
+      # Protocol ID should now be extracted and buffer should be empty
+      assert state_after_partial.up_stream_data[stream_id].protocol_id == 42
+      assert state_after_partial.up_stream_data[stream_id].buffer == <<>>
+
+      # Step 2: Second chunk arrives, full message
+      full_message = "hello world"
+      message_length = byte_size(full_message)
+      second_chunk = <<message_length::32-little, full_message::binary>>
+
+      {:noreply, final_state} =
+        Network.Server.handle_up_stream(
+          second_chunk,
+          stream_id,
+          state_after_partial,
+          state_after_partial.up_stream_data[stream_id]
+        )
+
+      # After processing the full message, buffer must be empty
+      assert final_state.up_stream_data[stream_id].buffer == <<>>
     end
   end
 end

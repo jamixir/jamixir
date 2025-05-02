@@ -18,31 +18,14 @@ defmodule Network.Codec do
 
   def decode_messages(<<>>), do: []
 
-  def decode_messages(data) do
-    decode_messages([], data)
-  end
+  def decode_messages(<<_protocol_id::8, length::32-little, message::binary-size(length)>>),
+    do: [message]
 
-  # reversed because we were prepending the messages: [msg | acc]
-  defp decode_messages(acc, <<>>), do: Enum.reverse(acc)
+  def decode_messages(
+        <<_protocol_id::8, l1::32-little, m1::binary-size(l1), l2::32-little,
+          m2::binary-size(l2)>>
+      ),
+      do: [m1, m2]
 
-  defp decode_messages(acc, <<len::32-little, rest::binary>>) when byte_size(rest) < len do
-    {:need_more, <<len::32-little, rest::binary>>}
-  end
-
-  defp decode_messages(acc, <<len::32-little, msg::binary-size(len), rest::binary>>) do
-    decode_messages([msg | acc], rest)
-  end
-
-  # def decode_messages(<<>>), do: []
-
-  # def decode_messages(<<_protocol_id::8, length::32-little, message::binary-size(length)>>),
-  #   do: [message]
-
-  # def decode_messages(
-  #       <<_protocol_id::8, l1::32-little, m1::binary-size(l1), l2::32-little,
-  #         m2::binary-size(l2)>>
-  #     ),
-  #     do: [m1, m2]
-
-  # def decode_messages(<<length::32-little, message::binary-size(length)>>), do: [message]
+  def decode_messages(<<length::32-little, message::binary-size(length)>>), do: [message]
 end

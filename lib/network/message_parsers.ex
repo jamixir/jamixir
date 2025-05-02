@@ -94,26 +94,41 @@ defmodule Network.MessageParsers do
     |> Enum.to_list()
   end
 
+  def parse_up_protocol_id(buffer) do
+    log_tag = "PARSE_UP_PROTOCOL_ID"
+
+    cond do
+      byte_size(buffer) < 1 ->
+        Logger.debug("#{log_tag}: Buffer too small for protocol ID")
+        {:need_more, buffer}
+
+      true ->
+        <<protocol_id::8, rest::binary>> = buffer
+        Logger.debug("#{log_tag}: Protocol ID #{protocol_id} extracted")
+        {:protocol, protocol_id, rest}
+    end
+  end
+
   def parse_up_message(buffer) do
     log_tag = "PARSE_UP_MESSAGE"
 
     cond do
-      byte_size(buffer) < 5 ->
-        log(:debug, "#{log_tag} Buffer too small: #{byte_size(buffer)} bytes")
+      byte_size(buffer) < 4 ->
+        Logger.debug("#{log_tag}: Buffer too small for message length")
         {:need_more, buffer}
 
-      byte_size(buffer) >= 5 ->
-        <<_protocol_id::8, message_size::32-little, rest::binary>> = buffer
+      true ->
+        <<length::32-little, rest::binary>> = buffer
 
-        log(
-          :debug,
-          "#{log_tag} Message header: size=#{message_size}, rest=#{byte_size(rest)} bytes"
-        )
-
-        if byte_size(rest) >= message_size do
-          <<message::binary-size(message_size), remaining::binary>> = rest
+        if byte_size(rest) >= length do
+          <<message::binary-size(length), remaining::binary>> = rest
+          Logger.debug("#{log_tag}: Parsed complete message of size #{length}")
           {:complete, message, remaining}
         else
+          Logger.debug(
+            "#{log_tag}: Incomplete message, needed #{length}, have #{byte_size(rest)}"
+          )
+
           {:need_more, buffer}
         end
     end
