@@ -145,7 +145,16 @@ defmodule Network.Client do
       %{stream: stream} ->
         log(:debug, "Reusing existing UP stream for block announcement")
         log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
-        {:ok, _} = :quicer.send(stream, encode_message(message), send_flag(:none))
+
+        case :quicer.send(stream, encode_message(message), send_flag(:none)) do
+          {:ok, _} ->
+            {:noreply, state}
+
+          {:error, reason} ->
+            log(:error, "Failed to send QUIC message: #{inspect(reason)}")
+            {:noreply, state}
+        end
+
         {:noreply, state}
 
       # No stream yet - send protocol ID first, then the message

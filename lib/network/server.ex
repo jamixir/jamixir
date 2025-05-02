@@ -126,6 +126,7 @@ defmodule Network.Server do
         state,
         %{protocol_id: protocol_id, buffer: buffer} = _stream_data
       ) do
+    server_calls_impl = Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
     log(:debug, "UP STREAM (protocol known): #{inspect(data)}")
     updated_buffer = buffer <> data
 
@@ -135,7 +136,7 @@ defmodule Network.Server do
 
       messages when is_list(messages) ->
         Enum.each(messages, fn message ->
-          Network.ServerCalls.call(protocol_id, message)
+          server_calls_impl.call(protocol_id, message)
         end)
 
         {:noreply, put_in(state.up_stream_data[stream].buffer, <<>>)}
@@ -180,4 +181,6 @@ defmodule Network.Server do
         end
     end
   end
+
+  defp server_calls, do: Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
 end

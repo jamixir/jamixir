@@ -1,6 +1,21 @@
 defmodule Network.MessageParsersTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias Network.MessageParsers
+
+  import Mox
+
+  setup :set_mox_global
+
+  setup do
+    Application.put_env(:jamixir, :server_calls, ServerCallsMock)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :server_calls)
+      Mox.verify!()
+    end)
+
+    :ok
+  end
 
   describe "parse_ce_messages/1" do
     test "handles single message correctly" do
@@ -192,6 +207,9 @@ defmodule Network.MessageParsersTest do
       stream_id = 123
       # Only protocol byte
       partial_data = <<42::8>>
+
+      ServerCallsMock
+      |> expect(:call, fn 42, "hello world" -> :ok end)
 
       {:noreply, state_after_partial} =
         Network.Server.handle_up_stream(

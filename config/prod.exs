@@ -19,3 +19,5 @@ config :jamixir, Jamixir,
   ticket_submission_end: 500,
   # GA
   gas_accumulation: 10_000_000
+
+config :jamixir, :server_calls, Network.ServerCalls
