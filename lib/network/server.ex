@@ -82,9 +82,9 @@ defmodule Network.Server do
         all_but_last = Enum.drop(responses, -1)
 
         for r <- all_but_last,
-            do: :quicer.send(stream, encode_message(r), Flags.send_flag(:none))
+            do: :quicer.send(stream, Codec.encode_message(r), Flags.send_flag(:none))
 
-        :quicer.send(stream, encode_message(List.last(responses)), Flags.send_flag(:fin))
+        :quicer.send(stream, Codec.encode_message(List.last(responses)), Flags.send_flag(:fin))
 
         %{server_state | ce_streams: Map.delete(server_state.ce_streams, stream)}
       else
