@@ -74,6 +74,15 @@ defmodule Network.MessageParsers do
     [first, parse_justification(second)]
   end
 
+  def parse_protocol_specific_messages(129, [bounderies_bin, trie_bin]) do
+    bounderies =
+      for <<b::binary-size(512) <- bounderies_bin>> do
+        b
+      end
+
+    [bounderies, trie_bin]
+  end
+
   # Default implementation for all other protocol IDs
   def parse_protocol_specific_messages(_protocol_id, messages), do: messages
 

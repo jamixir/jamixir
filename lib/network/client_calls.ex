@@ -14,6 +14,23 @@ defmodule Network.ClientCalls do
     {:ok, Block.decode_list(message)}
   end
 
+  def call(129, [bounderies, trie_bin]) do
+    log("Received state response")
+
+    trie =
+      Stream.unfold(trie_bin, fn
+        <<>> ->
+          nil
+
+        <<k::binary-size(31), rest::binary>> ->
+          {value, rest} = VariableSize.decode(rest, :binary)
+          {{k, value}, rest}
+      end)
+      |> Enum.into(%{})
+
+    {:ok, {bounderies, trie}}
+  end
+
   def call(134, message) do
     log("Received work report response")
     <<hash::b(hash), signature::b(signature)>> = message

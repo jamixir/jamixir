@@ -2,6 +2,7 @@ defmodule CommsTest do
   use ExUnit.Case, async: false
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
+  alias Codec.State.Trie
   use Codec.Encoder
   import Mox
   import Jamixir.Factory
@@ -38,6 +39,8 @@ defmodule CommsTest do
       if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
       if Process.alive?(client_pid), do: GenServer.stop(client_pid, :normal)
     end)
+
+    %{state: state} = build(:genesis_state_with_safrole)
 
     {:ok, client: client_pid, port: port}
   end
@@ -80,6 +83,74 @@ defmodule CommsTest do
       result = Peer.request_blocks(client, <<1::32>>, 1, 2)
       verify!()
       assert {:ok, ^blocks} = result
+    end
+  end
+
+  describe "request_state/5" do
+    setup do
+      %{state: state} = build(:genesis_state_with_safrole)
+      {:ok, state_trie: Trie.serialize(state)}
+    end
+
+    test "requests state smoke test", %{client: client, state_trie: state_trie} do
+      block_hash = <<1::hash()>>
+      start_key = Map.keys(state_trie) |> Enum.at(2)
+      end_key = Map.keys(state_trie) |> Enum.at(5)
+      bounderies = [<<1::4096>>, <<2::4096>>]
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_state_trie, 1, fn ^block_hash -> {:ok, {state_trie, bounderies}} end)
+
+      {:ok, {result_bounderies, result_trie}} =
+        Peer.request_state(client, block_hash, start_key, end_key, 400_000)
+
+      verify!()
+      assert bounderies == result_bounderies
+
+      assert map_size(result_trie) == 4
+
+      for {key, value} <- state_trie, key >= start_key, key <= end_key do
+        <<key31::binary-size(31), _::8>> = key
+        assert Map.get(result_trie, key31) == value
+      end
+    end
+
+    test "return only first state key/value when size is bigger than max_size", %{
+      client: client,
+      state_trie: state_trie
+    } do
+      [start_key, end_key] = Map.keys(state_trie) |> Enum.take(2)
+      max_size = byte_size(state_trie[start_key])
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_state_trie, 1, fn _ -> {:ok, {state_trie, []}} end)
+
+      {:ok, {_, result_trie}} =
+        Peer.request_state(client, <<1::hash()>>, start_key, end_key, max_size)
+
+      verify!()
+
+      assert map_size(result_trie) == 1
+      <<start_key31::binary-size(31), _::8>> = start_key
+
+      assert result_trie[start_key31] == state_trie[start_key]
+    end
+
+    test "single key state request", %{client: client, state_trie: state_trie} do
+      [start_key | _] = Map.keys(state_trie)
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_state_trie, 1, fn _ -> {:ok, {state_trie, []}} end)
+
+      {:ok, {_, result_trie}} =
+        Peer.request_state(client, <<1::hash()>>, start_key, start_key, 1000)
+
+      verify!()
+
+      assert map_size(result_trie) == 1
+      <<start_key31::binary-size(31), _::8>> = start_key
+
+      assert result_trie[start_key31] == state_trie[start_key]
     end
   end
 

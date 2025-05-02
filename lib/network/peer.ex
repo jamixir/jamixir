@@ -27,6 +27,7 @@ defmodule Network.Peer do
   defdelegate announce_audit(pid, audit_announcement), to: Client
   defdelegate request_segment(pid, erasure_root, segment_index), to: Client
   defdelegate request_audit_shard(pid, erasure_root, segment_index), to: Client
+  defdelegate request_state(pid, block_hash, start_key, end_key, max_size), to: Client
   # Starts the peer handler and connects to a remote peer
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
