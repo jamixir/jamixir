@@ -20,6 +20,39 @@ defmodule Network.ServerCalls do
     Enum.join(blocks_bin)
   end
 
+  def call(
+        129,
+        <<block_hash::b(hash), start_key::binary-size(31), end_key::binary-size(31),
+          max_size::32-little>>
+      ) do
+    log("Sending state")
+    {:ok, {state_trie, bounderies}} = Jamixir.NodeAPI.get_state_trie(block_hash)
+
+    # First filter the state trie to get the relevant keys
+    result_map =
+      Map.filter(state_trie, fn {k, _v} ->
+        k >= start_key <> <<0>> && k <= end_key <> <<255>>
+      end)
+
+    # Then, we need to limit the size of the result_map to max_size
+    {result_map, _} =
+      Enum.reduce_while(result_map, {%{}, 0}, fn {k, v}, {map_acc, byte_count} ->
+        if byte_count + byte_size(v) > max_size do
+          {:halt, {map_acc, byte_count}}
+        else
+          {:cont, {Map.put(map_acc, k, v), byte_count + byte_size(v)}}
+        end
+      end)
+
+    # Convert the result_map to a binary format
+    trie_bin =
+      for {<<k::binary-size(31), _::8>>, v} <- result_map, reduce: <<>> do
+        acc -> acc <> k <> e(vs(v))
+      end
+
+    [bounderies, trie_bin]
+  end
+
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
 

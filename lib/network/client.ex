@@ -29,6 +29,17 @@ defmodule Network.Client do
     send(pid, 128, message)
   end
 
+  def request_state(
+        pid,
+        <<block_hash::b(hash)>>,
+        <<start_key::binary-size(31), _::8>>,
+        <<end_key::binary-size(31), _::8>>,
+        max_size
+      ) do
+    message = block_hash <> start_key <> end_key <> <<max_size::32-little>>
+    send(pid, 129, message)
+  end
+
   def announce_preimage(pid, service_id, hash, length) do
     message = <<service_id::m(service_id)>> <> hash <> <<length::32-little>>
     send(pid, 142, message)
