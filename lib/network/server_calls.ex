@@ -68,6 +68,19 @@ defmodule Network.ServerCalls do
     end
   end
 
+  def call(138, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
+    log("Requesting segment")
+
+    case Jamixir.NodeAPI.get_segment(erasure_root, segment_index) do
+      {:ok, {bundle_shard, _, justification}} ->
+        [bundle_shard, justification]
+
+      _ ->
+        IO.puts("Received segment 2")
+        <<>>
+    end
+  end
+
   def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
     log("Received assurance")
 

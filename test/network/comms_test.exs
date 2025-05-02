@@ -62,50 +62,29 @@ defmodule CommsTest do
     assert length(results) == number_of_messages
   end
 
-  describe "announce_preimage/4" do
-    test "announces preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::hash()>>, 1 -> :ok end)
-      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::hash()>>, 1)
-      verify!()
-    end
-  end
-
-  describe "distribute_assurance/4" do
-    test "distributes assurance", %{client: client} do
-      assurance = %Assurance{
-        bitfield: <<999::m(bitfield)>>,
-        hash: Util.Hash.random(),
-        signature: <<123::m(signature)>>
-      }
-
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> :ok end)
-
-      {:ok, ""} = Peer.distribute_assurance(client, assurance)
-
-      verify!()
-    end
-  end
-
-  describe "get_preimage/2" do
-    test "get existing preimage", %{client: client} do
+  # CE 128
+  describe "request_blocks/4" do
+    test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
-      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:ok, <<1, 2, 3>>} end)
+      |> expect(:get_blocks, fn 0, 0, 9 -> {:ok, blocks} end)
 
-      Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3>> -> :ok end)
-      :ok = Peer.get_preimage(client, <<45::hash()>>)
+      result = Peer.request_blocks(client, <<0::32>>, 0, 9)
       verify!()
+      assert {:ok, ^blocks} = result
     end
 
-    test "get unexisting preimage", %{client: client} do
+    test "requests 2 blocks in descending order", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
-      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:error, :not_found} end)
+      |> expect(:get_blocks, fn 1, 1, 2 -> {:ok, blocks} end)
 
-      {:error, :not_found} = Peer.get_preimage(client, <<45::hash()>>)
+      result = Peer.request_blocks(client, <<1::32>>, 1, 2)
       verify!()
+      assert {:ok, ^blocks} = result
     end
   end
 
   describe "distribute_ticket/3" do
+    # CE 131
     test "distributes proxy ticket", %{client: client} do
       ticket = %TicketProof{attempt: 0, signature: <<9::m(bandersnatch_proof)>>}
       Jamixir.NodeAPI.Mock |> expect(:process_ticket, 1, fn :proxy, 77, ^ticket -> :ok end)
@@ -113,6 +92,7 @@ defmodule CommsTest do
       verify!()
     end
 
+    # CE 132
     test "distributes validator ticket", %{client: client} do
       ticket = %TicketProof{attempt: 1, signature: <<10::m(bandersnatch_proof)>>}
 
@@ -124,35 +104,7 @@ defmodule CommsTest do
     end
   end
 
-  describe "distribute_guarantee/4" do
-    test "distributes guarantee", %{client: client} do
-      g = build(:guarantee)
-      Jamixir.NodeAPI.Mock |> expect(:save_guarantee, 1, fn ^g -> :ok end)
-      {:ok, ""} = Peer.distribute_guarantee(client, g)
-      verify!()
-    end
-  end
-
-  describe "get_work_report/2" do
-    test "get work report", %{client: client} do
-      wr = build(:work_report)
-      hash = h(e(wr))
-
-      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:ok, wr} end)
-
-      {:ok, result} = Peer.get_work_report(client, hash)
-      assert result == wr
-      verify!()
-    end
-
-    test "work report not found", %{client: client} do
-      hash = Hash.one()
-      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:error, :not_found} end)
-      {:error, :not_found} = Peer.get_work_report(client, hash)
-      verify!()
-    end
-  end
-
+  # CE 133
   describe "send_work_package/4" do
     test "sends work package", %{client: client} do
       work_package = build(:work_package)
@@ -167,6 +119,7 @@ defmodule CommsTest do
     end
   end
 
+  # CE 134
   describe "send_work_package_bundle/4" do
     test "sends work package bundle", %{client: client} do
       wp_bundle = WorkPackage.bundle_binary(build(:work_package))
@@ -187,6 +140,128 @@ defmodule CommsTest do
     end
   end
 
+  # CE 135
+  describe "distribute_guarantee/4" do
+    test "distributes guarantee", %{client: client} do
+      g = build(:guarantee)
+      Jamixir.NodeAPI.Mock |> expect(:save_guarantee, 1, fn ^g -> :ok end)
+      {:ok, ""} = Peer.distribute_guarantee(client, g)
+      verify!()
+    end
+  end
+
+  # CE 136
+  describe "get_work_report/2" do
+    test "get work report", %{client: client} do
+      wr = build(:work_report)
+      hash = h(e(wr))
+
+      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:ok, wr} end)
+
+      {:ok, result} = Peer.get_work_report(client, hash)
+      assert result == wr
+      verify!()
+    end
+
+    test "work report not found", %{client: client} do
+      hash = Hash.one()
+      Jamixir.NodeAPI.Mock |> expect(:get_work_report, 1, fn ^hash -> {:error, :not_found} end)
+      {:error, :not_found} = Peer.get_work_report(client, hash)
+      verify!()
+    end
+  end
+
+  # CE 137
+  describe "request_segment/3" do
+    test "request segment, single hash justification", %{client: client} do
+      erasure_root = <<1::hash()>>
+      index = 8
+      bundle_shard = <<1, 2, 3, 4>>
+      segments = [<<1::m(segment_bytes)>>, <<2::m(segment_bytes)>>]
+      justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+        {:ok, {bundle_shard, segments, justification}}
+      end)
+
+      {:ok, {b, s, j}} = Peer.request_segment(client, erasure_root, index)
+      verify!()
+
+      assert b == bundle_shard
+      assert s == segments
+      assert j == justification
+    end
+  end
+
+  # CE 138
+  describe "request_audit_shard/3" do
+    test "request audit shard", %{client: client} do
+      erasure_root = <<1::hash()>>
+      index = 8
+      bundle_shard = <<1, 2, 3, 4>>
+      justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+        {:ok, {bundle_shard, [], justification}}
+      end)
+
+      {:ok, {b, j}} = Peer.request_audit_shard(client, erasure_root, index)
+      verify!()
+
+      assert b == bundle_shard
+      assert j == justification
+    end
+  end
+
+  # CE 141
+  describe "distribute_assurance/4" do
+    test "distributes assurance", %{client: client} do
+      assurance = %Assurance{
+        bitfield: <<999::m(bitfield)>>,
+        hash: Util.Hash.random(),
+        signature: <<123::m(signature)>>
+      }
+
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> :ok end)
+
+      {:ok, ""} = Peer.distribute_assurance(client, assurance)
+
+      verify!()
+    end
+  end
+
+  # CE 142
+  describe "announce_preimage/4" do
+    test "announces preimage", %{client: client} do
+      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::hash()>>, 1 -> :ok end)
+      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::hash()>>, 1)
+      verify!()
+    end
+  end
+
+  # CE 143
+  describe "get_preimage/2" do
+    test "get existing preimage", %{client: client} do
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:ok, <<1, 2, 3>>} end)
+
+      Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3>> -> :ok end)
+      :ok = Peer.get_preimage(client, <<45::hash()>>)
+      verify!()
+    end
+
+    test "get unexisting preimage", %{client: client} do
+      Jamixir.NodeAPI.Mock
+      |> expect(:get_preimage, 1, fn <<45::hash()>> -> {:error, :not_found} end)
+
+      {:error, :not_found} = Peer.get_preimage(client, <<45::hash()>>)
+      verify!()
+    end
+  end
+
+  # CE 144
   describe "announce_audit/3" do
     test "announces audit first tranche evidence", %{client: client} do
       audit_announcement = %AuditAnnouncement{
@@ -223,6 +298,7 @@ defmodule CommsTest do
     end
   end
 
+  # CE 145
   describe "announce_judgement/4" do
     test "announces jedgement", %{client: client} do
       hash = Hash.two()
@@ -231,26 +307,6 @@ defmodule CommsTest do
       Jamixir.NodeAPI.Mock |> expect(:save_judgement, 1, fn ^epoch, ^hash, ^judgement -> :ok end)
       {:ok, ""} = Peer.announce_judgement(client, epoch, hash, judgement)
       verify!()
-    end
-  end
-
-  describe "request_blocks/4" do
-    test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
-      Jamixir.NodeAPI.Mock
-      |> expect(:get_blocks, fn 0, 0, 9 -> {:ok, blocks} end)
-
-      result = Peer.request_blocks(client, <<0::32>>, 0, 9)
-      verify!()
-      assert {:ok, ^blocks} = result
-    end
-
-    test "requests 2 blocks in descending order", %{client: client, blocks: blocks, port: _port} do
-      Jamixir.NodeAPI.Mock
-      |> expect(:get_blocks, fn 1, 1, 2 -> {:ok, blocks} end)
-
-      result = Peer.request_blocks(client, <<1::32>>, 1, 2)
-      verify!()
-      assert {:ok, ^blocks} = result
     end
   end
 
@@ -270,29 +326,6 @@ defmodule CommsTest do
       # Verify the stream is valid
       %{stream: stream} = client_state.up_streams[0]
       assert is_reference(stream)
-    end
-  end
-
-  # CE 137
-  describe "request_segment/3" do
-    test "request segment, single hash justification", %{client: client} do
-      erasure_root = <<1::hash()>>
-      index = 8
-      bundle_shard = <<1, 2, 3, 4>>
-      segments = [<<1::m(segment_bytes)>>, <<2::m(segment_bytes)>>]
-      justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
-
-      Jamixir.NodeAPI.Mock
-      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
-        {:ok, {bundle_shard, segments, justification}}
-      end)
-
-      {:ok, {b, s, j}} = Peer.request_segment(client, erasure_root, index)
-      verify!()
-
-      assert b == bundle_shard
-      assert s == segments
-      assert j == justification
     end
   end
 
