@@ -35,6 +35,8 @@ defmodule Jamixir.NodeAPI do
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
   @callback get_segment(Types.hash(), non_neg_integer()) ::
               {:ok, {binary(), list(binary()), binary()}} | :error
+  @callback get_segment_shards(Types.hash(), non_neg_integer(), list(non_neg_integer())) ::
+              {:ok, list(binary())} | :error
   @callback get_state_trie(Types.hash()) :: {:ok, %{binary() => binary()}} | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
@@ -55,6 +57,9 @@ defmodule Jamixir.NodeAPI do
 
   def get_segment(erasure_root, segment_index),
     do: impl().get_segment(erasure_root, segment_index)
+
+  def get_segment_shards(erasure_root, segment_index, share_index),
+    do: impl().get_segment_shards(erasure_root, segment_index, share_index)
 
   def save_work_package_bundle(bundle, core, segments),
     do: impl().save_work_package_bundle(bundle, core, segments)

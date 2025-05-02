@@ -22,6 +22,7 @@ defmodule Sizes do
       @max_work_items Constants.max_work_items()
       @service_index_size 4
       @timeslot_size 4
+      @segment_shard_size div(Sizes.export_segment(), Constants.core_count())
     end
   end
 end

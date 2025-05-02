@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Network.Types.SegmentShardsRequest
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Guarantee
@@ -6,6 +7,7 @@ defmodule Network.ServerCalls do
   require Logger
   use Codec.Encoder
   use Sizes
+  import RangeMacros
 
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
 
@@ -112,6 +114,45 @@ defmodule Network.ServerCalls do
         IO.puts("Received segment 2")
         <<>>
     end
+  end
+
+  def call(139, requests_bin) do
+    log("Requesting segment shards")
+
+    for r <- decode_requests(requests_bin, []) do
+      log("Requesting segment shards for erasure root #{inspect(r.erasure_root)}")
+
+      {:ok, shards} =
+        Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.segment_index, r.shard_indexes)
+
+      shards
+    end
+    |> List.flatten()
+    |> Enum.join(<<>>)
+  end
+
+  use Codec.Decoder
+  defp decode_requests(<<>>, acc), do: Enum.reverse(acc)
+
+  defp decode_requests(bin, acc) do
+    <<erasure_root::binary-size(@hash_size), rest::binary>> = bin
+    <<segment_index::16-little, rest::binary>> = rest
+    {indexes_count, rest} = de_i(rest)
+
+    {shard_indexes, rest} =
+      Enum.reduce(from_0_to(indexes_count), {[], rest}, fn _, {acc, rest} ->
+        <<value::16-little, r::binary>> = rest
+        {acc ++ [value], r}
+      end)
+
+    request = %SegmentShardsRequest{
+      erasure_root: erasure_root,
+      segment_index: segment_index,
+      shard_indexes: shard_indexes
+    }
+
+    # Continue decoding the rest
+    decode_requests(rest, [request | acc])
   end
 
   def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do

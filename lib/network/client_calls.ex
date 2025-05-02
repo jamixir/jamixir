@@ -2,7 +2,7 @@ defmodule Network.ClientCalls do
   alias Block.Extrinsic.Guarantee.WorkReport
   require Logger
   use Codec.Encoder
-
+  use Sizes
   def log(message), do: Logger.log(:info, "[QUIC_CLIENT_CALLS] #{message}")
 
   def call(protocol_id, [single_message]) do
@@ -53,6 +53,16 @@ defmodule Network.ClientCalls do
   def call(138, [bundle_shard, justification]) do
     log("Received shard")
     {:ok, {bundle_shard, justification}}
+  end
+
+  def call(139, segments_bin) do
+    segments =
+      segments_bin
+      |> :binary.bin_to_list()
+      |> Enum.chunk_every(@segment_shard_size)
+      |> Enum.map(&:binary.list_to_bin/1)
+
+    {:ok, segments}
   end
 
   def call(143, message) do

@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Network.Types.SegmentShardsRequest
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
@@ -86,6 +87,7 @@ defmodule CommsTest do
     end
   end
 
+  # CE 129
   describe "request_state/5" do
     setup do
       %{state: state} = build(:genesis_state_with_safrole)
@@ -244,11 +246,11 @@ defmodule CommsTest do
 
   # CE 137
   describe "request_segment/3" do
-    test "request segment, single hash justification", %{client: client} do
+    test "request segment based on erasure_root and index", %{client: client} do
       erasure_root = <<1::hash()>>
       index = 8
       bundle_shard = <<1, 2, 3, 4>>
-      segments = [<<1::m(segment_bytes)>>, <<2::m(segment_bytes)>>]
+      segments = [<<1::m(segment_shard)>>, <<2::m(segment_shard)>>]
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
@@ -283,6 +285,39 @@ defmodule CommsTest do
 
       assert b == bundle_shard
       assert j == justification
+    end
+  end
+
+  describe "request_segment_shard/4" do
+    # CE 139
+    test "request segment shard", %{client: client} do
+      ids = [1, 4, 7, 9]
+      shards = for(i <- ids, do: <<i::m(segment_shard)>>)
+
+      request1 = %SegmentShardsRequest{
+        erasure_root: <<1::hash()>>,
+        segment_index: 8,
+        shard_indexes: ids
+      }
+
+      request2 = %SegmentShardsRequest{
+        erasure_root: <<2::hash()>>,
+        segment_index: 9,
+        shard_indexes: [1, 2]
+      }
+
+      expect(Jamixir.NodeAPI.Mock, :get_segment_shards, 1, fn <<1::hash()>>, 8, ^ids ->
+        {:ok, shards}
+      end)
+
+      expect(Jamixir.NodeAPI.Mock, :get_segment_shards, 1, fn <<2::hash()>>, 9, [1, 2] ->
+        {:ok, shards |> Enum.take(2)}
+      end)
+
+      {:ok, result} = Peer.request_segment_shards(client, [request1, request2])
+
+      verify!()
+      assert result == shards ++ Enum.take(shards, 2)
     end
   end
 
