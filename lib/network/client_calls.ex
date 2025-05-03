@@ -55,14 +55,12 @@ defmodule Network.ClientCalls do
     {:ok, {bundle_shard, justification}}
   end
 
-  def call(139, segments_bin) do
-    segments =
-      segments_bin
-      |> :binary.bin_to_list()
-      |> Enum.chunk_every(@segment_shard_size)
-      |> Enum.map(&:binary.list_to_bin/1)
+  def call(139, shards_bin) do
+    {:ok, split_shards(shards_bin)}
+  end
 
-    {:ok, segments}
+  def call(140, [shards_bin | justifications]) do
+    {:ok, {split_shards(shards_bin), justifications}}
   end
 
   def call(143, message) do
@@ -84,5 +82,12 @@ defmodule Network.ClientCalls do
   def call(protocol_id, message) do
     log("Received protocol #{protocol_id} message")
     {:ok, message}
+  end
+
+  defp split_shards(shards_bin) do
+    shards_bin
+    |> :binary.bin_to_list()
+    |> Enum.chunk_every(@segment_shard_size)
+    |> Enum.map(&:binary.list_to_bin/1)
   end
 end

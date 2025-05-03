@@ -73,78 +73,95 @@ defmodule Jamixir.Node do
 
   @impl true
   def add_ticket(_epoch, _attempt, _proof) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def add_work_package(_core, _wp, _extrinsic) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def get_blocks(_hash, _order, _count) do
-    # TODO
-    {:ok, []}
+    {:error, :not_implemented}
   end
 
   @impl true
   def receive_preimage(_service_id, _hash, _length) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def get_preimage(_hash) do
-    # TODO
-    {:ok, <<>>}
+    {:error, :not_implemented}
   end
 
   @impl true
   def save_preimage(_preimage) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def save_assurance(_assurance) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def process_ticket(:proxy = _mode, _epoch, _ticket) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   def process_ticket(:validator = _mode, _epoch, _ticket) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def save_judgement(_epoch, _hash, _judgement) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def save_guarantee(_guarantee) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def get_work_report(_hash) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
   end
 
   @impl true
   def save_work_package(_wp, _core, _extrinsic) do
-    # TODO
-    :ok
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def save_work_package_bundle(_bundle, _core, _segments) do
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def save_audit(_audit) do
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def get_segment(_erasure_root, _segment_index) do
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def get_segment_shards(_erasure_root, _segment_index, _share_index) do
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def get_state_trie(_header_hash) do
+    {:error, :not_implemented}
+  end
+
+  @impl true
+  def get_justification(_erasure_root, _segment_index, _shard_index) do
+    {:error, :not_implemented}
   end
 end

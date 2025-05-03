@@ -116,7 +116,7 @@ defmodule Network.Client do
     send(pid, protocol_id, message)
   end
 
-  def request_segment_shards(pid, requests) do
+  def request_segment_shards(pid, requests, with_justification) do
     message =
       for r <- requests, reduce: <<>> do
         acc ->
@@ -134,7 +134,9 @@ defmodule Network.Client do
           acc <> req_bin
       end
 
-    send(pid, 139, message)
+    protocol_id = if(with_justification, do: 140, else: 139)
+
+    send(pid, protocol_id, message)
   end
 
   def send_work_package(pid, wp, core_index, extrinsics) do

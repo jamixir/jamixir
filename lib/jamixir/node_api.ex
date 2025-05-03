@@ -34,10 +34,12 @@ defmodule Jamixir.NodeAPI do
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
   @callback get_segment(Types.hash(), non_neg_integer()) ::
-              {:ok, {binary(), list(binary()), binary()}} | :error
+              {:ok, {binary(), list(binary()), binary()}} | {:error, any}
   @callback get_segment_shards(Types.hash(), non_neg_integer(), list(non_neg_integer())) ::
-              {:ok, list(binary())} | :error
+              {:ok, list(binary())} | {:error, any}
   @callback get_state_trie(Types.hash()) :: {:ok, %{binary() => binary()}} | {:error, any}
+  @callback get_justification(Types.hash(), non_neg_integer(), non_neg_integer()) ::
+              {:ok, binary()} | {:error, any}
   def add_block(a), do: impl().add_block(a)
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
@@ -65,6 +67,9 @@ defmodule Jamixir.NodeAPI do
     do: impl().save_work_package_bundle(bundle, core, segments)
 
   def get_state_trie(header_hash), do: impl().get_state_trie(header_hash)
+
+  def get_justification(erasure_root, segment_index, shard_index),
+    do: impl().get_justification(erasure_root, segment_index, shard_index)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end
