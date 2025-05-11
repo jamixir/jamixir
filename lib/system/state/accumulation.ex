@@ -330,18 +330,20 @@ defmodule System.State.Accumulation do
           Types.timeslot()
         ) ::
           %{Types.service_index() => ServiceAccount.t()}
-  def integrate_preimages(service_states, services_hashes, timeslot_) do
-    for {s, i} <- services_hashes, reduce: service_states do
+  def integrate_preimages(services, preimages, timeslot_) do
+    for {service_index, preimage} <- preimages, reduce: services do
       acc ->
-        case Map.get(acc, s) do
+        case Map.get(acc, service_index) do
           nil ->
             acc
 
           %ServiceAccount{preimage_storage_l: l} = sa ->
-            if Map.get(l, {h(i), byte_size(i)}, []) == [] do
-              sa = put_in(sa, [:preimage_storage_l, {h(i), byte_size(i)}], timeslot_)
-              sa = put_in(sa, [:preimage_storage_p, h(i)], i)
-              Map.put(acc, s, sa)
+            if Map.get(l, {h(preimage), byte_size(preimage)}, []) == [] do
+              sa =
+                put_in(sa, [:preimage_storage_l, {h(preimage), byte_size(preimage)}], timeslot_)
+
+              sa = put_in(sa, [:preimage_storage_p, h(preimage)], preimage)
+              Map.put(acc, service_index, sa)
             else
               acc
             end
