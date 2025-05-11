@@ -216,16 +216,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (14.11) v0.6.5
+  # Formula (14.11) v0.6.6
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
-    # o = ΨI (p,c)
+    # {o, g} = ΨI (p,c)
     case PVM.authorized(wp, core, services) do
-      error when is_atom(error) ->
+      {error, _} when is_atom(error) ->
         error
 
-      o ->
+      {o, _gas_used} ->
         import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
