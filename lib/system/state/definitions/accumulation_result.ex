@@ -16,12 +16,13 @@ defmodule System.AccumulationResult do
         }
   defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: []
 
-  def new({state, transfers, output, gas_used}) do
+  def new({state, transfers, output, gas_used, preimages}) do
     %__MODULE__{
       state: state,
       transfers: transfers,
       output: output,
-      gas_used: gas_used
+      gas_used: gas_used,
+      preimages: preimages
     }
   end
 end
