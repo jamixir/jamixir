@@ -7,6 +7,9 @@ defmodule Network.ServerCalls do
   use Codec.Encoder
   use Sizes
 
+  @behaviour Network.ServerCallsBehaviour
+  @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
+
   def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
 
   def call(protocol_id, [single_message]) do

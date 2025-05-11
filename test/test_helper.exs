@@ -13,4 +13,7 @@ Mox.defmock(MockAccumulation, for: System.State.Accumulation)
 Mox.defmock(MockPVM, for: PVM)
 Mox.defmock(Jamixir.NodeAPI.Mock, for: Jamixir.NodeAPI)
 Mox.defmock(ErasureCodingMock, for: ErasureCoding)
+Mox.defmock(ServerCallsMock, for: Network.ServerCallsBehaviour)
+
+# Optional: remove or move to test setup unless needed globally
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)

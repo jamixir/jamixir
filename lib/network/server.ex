@@ -1,7 +1,8 @@
 defmodule Network.Server do
   require Logger
   alias Quicer.Flags
-  import Network.{Codec, UpStreamManager}
+  alias Network.Codec
+  alias Network.UpStreamManager
   import Bitwise, only: [&&&: 2]
   alias Network.MessageParsers
 
@@ -81,9 +82,9 @@ defmodule Network.Server do
         all_but_last = Enum.drop(responses, -1)
 
         for r <- all_but_last,
-            do: :quicer.send(stream, encode_message(r), Flags.send_flag(:none))
+            do: :quicer.send(stream, Codec.encode_message(r), Flags.send_flag(:none))
 
-        :quicer.send(stream, encode_message(List.last(responses)), Flags.send_flag(:fin))
+        :quicer.send(stream, Codec.encode_message(List.last(responses)), Flags.send_flag(:fin))
 
         %{server_state | ce_streams: Map.delete(server_state.ce_streams, stream)}
       else
@@ -98,29 +99,47 @@ defmodule Network.Server do
     {:noreply, state_}
   end
 
+  # Protocol ID is nil, parse it from data
+  def handle_up_stream(data, stream, state, %{protocol_id: nil, buffer: buffer} = stream_data) do
+    log(:debug, "UP STREAM (protocol not set yet): #{inspect(data)}")
+    updated_buffer = buffer <> data
+
+    case MessageParsers.parse_up_protocol_id(updated_buffer) do
+      {:need_more, new_buffer} ->
+        {:noreply, put_in(state.up_stream_data[stream].buffer, new_buffer)}
+
+      {:protocol, protocol_id, rest} ->
+        log(:debug, "Received protocol ID #{protocol_id} for stream #{inspect(stream)}")
+
+        # Update stream with extracted protocol_id
+        stream_data = %{stream_data | protocol_id: protocol_id, buffer: rest}
+        state = put_in(state.up_stream_data[stream], stream_data)
+
+        handle_up_stream(<<>>, stream, state, stream_data)
+    end
+  end
+
+  # Protocol ID is known, decode message
   def handle_up_stream(
         data,
         stream,
         state,
-        %{protocol_id: protocol_id, buffer: buffer} = stream_data
+        %{protocol_id: protocol_id, buffer: buffer} = _stream_data
       ) do
-    log(:debug, "UP STREAM: #{inspect(data)}")
+    server_calls_impl = Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
+    log(:debug, "UP STREAM (protocol known): #{inspect(data)}")
     updated_buffer = buffer <> data
 
-    case MessageParsers.parse_up_message(updated_buffer) do
-      {:complete, message, remaining} ->
-        Network.ServerCalls.call(protocol_id, message)
+    case Codec.decode_messages(updated_buffer) do
+      {:need_more, new_buffer} ->
+        {:noreply, put_in(state.up_stream_data[stream].buffer, new_buffer)}
 
-        state_ = %{
-          state
-          | up_stream_data:
-              Map.put(state.up_stream_data, stream, %{stream_data | buffer: remaining})
-        }
+      messages when is_list(messages) ->
+        Enum.each(messages, fn message ->
+          server_calls_impl.call(protocol_id, message)
+        end)
 
-        {:noreply, state_}
-
-      {:need_more, buffer} ->
-        {:noreply, put_in(state.up_stream_data[stream].buffer, buffer)}
+        {:noreply, put_in(state.up_stream_data[stream].buffer, <<>>)}
     end
   end
 
@@ -135,7 +154,7 @@ defmodule Network.Server do
         protocol_id = Map.get(stream_state, :protocol_id)
 
         {{:ok, stream_state}, new_state} =
-          manage_up_stream(protocol_id, stream, state, @log_context)
+          UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
 
         handle_up_stream(data, stream, new_state, stream_state)
 
@@ -148,7 +167,7 @@ defmodule Network.Server do
                 buffer: <<>>
               })
             else
-              case manage_up_stream(protocol_id, stream, state, @log_context) do
+              case UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context) do
                 {{:ok, stream_data}, new_state} ->
                   handle_up_stream(data, stream, new_state, stream_data)
 
@@ -162,4 +181,6 @@ defmodule Network.Server do
         end
     end
   end
+
+  defp server_calls, do: Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
 end

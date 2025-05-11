@@ -24,7 +24,8 @@ defmodule Network.UpStreamManager do
           Logger.info("#{log_tag} Registering new UP stream: #{inspect(stream_ref)}")
         end
 
-        stream_data = %{protocol_id: protocol_id, buffer: <<>>}
+        # The first time the stream is open, protocol ID is not yet recieved => nil
+        stream_data = %{protocol_id: nil, buffer: <<>>}
 
         updated_up_stream_data =
           state.up_stream_data

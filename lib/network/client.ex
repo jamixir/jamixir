@@ -151,28 +151,36 @@ defmodule Network.Client do
       ) do
     protocol_id = 0
 
-    {stream, state_} =
-      case Map.get(up_streams, protocol_id) do
-        # Existing stream - use it without state update
-        %{stream: stream} ->
-          log(:debug, "Reusing existing UP stream for block announcement")
-          {stream, state}
+    case Map.get(up_streams, protocol_id) do
+      # Existing stream - reuse it and send only the message
+      %{stream: stream} ->
+        log(:debug, "Reusing existing UP stream for block announcement")
+        log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
 
-        # No stream - create new one and update state
-        nil ->
-          log("Creating new UP stream for block announcements")
-          {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-          state_ = put_in(state.up_streams[protocol_id], %{stream: stream})
+        case :quicer.send(stream, encode_message(message), send_flag(:none)) do
+          {:ok, _} ->
+            {:noreply, state}
 
-          state_ =
-            put_in(state_.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
+          {:error, reason} ->
+            log(:error, "Failed to send QUIC message: #{inspect(reason)}")
+            {:noreply, state}
+        end
 
-          {stream, state_}
-      end
+        {:noreply, state}
 
-    log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
-    {:ok, _} = :quicer.send(stream, encode_message(protocol_id, message), send_flag(:none))
-    {:noreply, state_}
+      # No stream yet - send protocol ID first, then the message
+      nil ->
+        log("Creating new UP stream for block announcements")
+        {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
+        state = put_in(state.up_streams[protocol_id], %{stream: stream})
+        state = put_in(state.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
+
+        log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+        {:ok, _} = :quicer.send(stream, <<protocol_id::8>>, send_flag(:none))
+        {:ok, _} = :quicer.send(stream, encode_message(message), send_flag(:none))
+
+        {:noreply, state}
+    end
   end
 
   def handle_call({:send, protocol_id, message}, from, %PeerState{} = state)

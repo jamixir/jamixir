@@ -21,3 +21,5 @@ config :jamixir, Jamixir,
   gas_accumulation: 1_000_000
 
 config :logger, level: :debug
+
+config :jamixir, :server_calls, Network.ServerCalls

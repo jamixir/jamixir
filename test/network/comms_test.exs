@@ -382,6 +382,28 @@ defmodule CommsTest do
   end
 
   describe "announce_block/3" do
+    setup :set_mox_global
+
+    setup do
+      port = 20_000 + System.unique_integer([:positive])
+      {:ok, _server} = PeerSupervisor.start_peer(:listener, "::1", port)
+      Process.sleep(30)
+
+      case PeerSupervisor.start_peer(:initiator, "::1", port) do
+        {:ok, client} ->
+          Application.put_env(:jamixir, :server_calls, ServerCallsMock)
+
+          on_exit(fn ->
+            Application.delete_env(:jamixir, :server_calls)
+          end)
+
+          {:ok, client: client}
+
+        {:error, reason} ->
+          flunk("Failed to start client: #{inspect(reason)}")
+      end
+    end
+
     test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 
@@ -389,14 +411,35 @@ defmodule CommsTest do
         Peer.announce_block(client, %{header | timeslot: slot}, slot)
       end
 
-      # Verify we have exactly one UP stream
+      assert Process.alive?(client), "Expected client to be alive after announcements"
+
+      # time for async handling
+      Process.sleep(50)
+
+      # State assertions
       client_state = :sys.get_state(client)
       assert map_size(client_state.up_streams) == 1
       assert Map.has_key?(client_state.up_streams, 0)
 
-      # Verify the stream is valid
       %{stream: stream} = client_state.up_streams[0]
       assert is_reference(stream)
+    end
+
+    # Ensure that announce_block/3 results in exactly `n` ServerCalls.call/2 invocations
+    test "calls ServerCalls.call N times", %{client: client} do
+      n = 10
+      header = build(:decodable_header)
+
+      ServerCallsMock
+      |> expect(:call, n, fn 0, _ -> :ok end)
+
+      for slot <- 1..n do
+        Peer.announce_block(client, %{header | timeslot: slot}, slot)
+      end
+
+      # Wait for async delivery
+      Process.sleep(100)
+      verify!()
     end
   end
 
