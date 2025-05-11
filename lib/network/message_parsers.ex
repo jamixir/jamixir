@@ -87,9 +87,7 @@ defmodule Network.MessageParsers do
   def parse_protocol_specific_messages(_protocol_id, messages), do: messages
 
   defp parse_shards(binary) do
-    chunk_size = binary_registry().segment_bytes
-
-    for <<shard::binary-size(chunk_size) <- binary>> do
+    for <<shard::b(segment_shard) <- binary>> do
       shard
     end
   end

@@ -164,7 +164,7 @@ defmodule Codec.Encoder do
       erasure_coded_piece: Sizes.erasure_coded_piece(),
       bitfield: Sizes.bitfield(),
       merkle_root: Sizes.merkle_root(),
-      segment_bytes: 12,
+      segment_shard: @segment_shard_size,
       # Use byte size plus endianness for integer types
       validator_index: {16, :little},
       core_index: {16, :little},

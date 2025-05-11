@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Network.Types.SegmentShardsRequest
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Guarantee
@@ -6,6 +7,7 @@ defmodule Network.ServerCalls do
   require Logger
   use Codec.Encoder
   use Sizes
+  import RangeMacros
 
   @behaviour Network.ServerCallsBehaviour
   @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
@@ -117,6 +119,46 @@ defmodule Network.ServerCalls do
     end
   end
 
+  def call(139, requests_bin) do
+    log("Requesting segment shards")
+
+    for r <- decode_requests(requests_bin, []) do
+      log("Requesting segment shards for erasure root #{inspect(r.erasure_root)}")
+
+      {:ok, shards} =
+        Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.segment_index, r.shard_indexes)
+
+      shards
+    end
+    |> List.flatten()
+    |> Enum.join(<<>>)
+  end
+
+  def call(140, requests_bin) do
+    log("Requesting segment shards with justification")
+
+    {shards_bin, justifications} =
+      for r <- decode_requests(requests_bin, []), reduce: {<<>>, []} do
+        {shards_bin, justifications_acc} ->
+          log("Requesting segment shards for erasure root #{inspect(r.erasure_root)}")
+
+          {:ok, shards} =
+            Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.segment_index, r.shard_indexes)
+
+          justifications =
+            for shard_index <- r.shard_indexes do
+              {:ok, justification} =
+                Jamixir.NodeAPI.get_justification(r.erasure_root, r.segment_index, shard_index)
+
+              justification
+            end
+
+          {shards_bin <> Enum.join(shards, <<>>), justifications_acc ++ justifications}
+      end
+
+    [shards_bin | justifications]
+  end
+
   def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
     log("Received assurance")
 
@@ -200,6 +242,30 @@ defmodule Network.ServerCalls do
     )
 
     message
+  end
+
+  use Codec.Decoder
+  defp decode_requests(<<>>, acc), do: Enum.reverse(acc)
+
+  defp decode_requests(bin, acc) do
+    <<erasure_root::binary-size(@hash_size), rest::binary>> = bin
+    <<segment_index::16-little, rest::binary>> = rest
+    {indexes_count, rest} = de_i(rest)
+
+    {shard_indexes, rest} =
+      Enum.reduce(from_0_to(indexes_count), {[], rest}, fn _, {acc, rest} ->
+        <<value::16-little, r::binary>> = rest
+        {acc ++ [value], r}
+      end)
+
+    request = %SegmentShardsRequest{
+      erasure_root: erasure_root,
+      segment_index: segment_index,
+      shard_indexes: shard_indexes
+    }
+
+    # Continue decoding the rest
+    decode_requests(rest, [request | acc])
   end
 
   defp process_ticket_message(

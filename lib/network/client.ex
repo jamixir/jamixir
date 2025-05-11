@@ -116,6 +116,29 @@ defmodule Network.Client do
     send(pid, protocol_id, message)
   end
 
+  def request_segment_shards(pid, requests, with_justification) do
+    message =
+      for r <- requests, reduce: <<>> do
+        acc ->
+          indexes =
+            for index <- r.shard_indexes, reduce: <<>> do
+              acc -> acc <> <<index::16-little>>
+            end
+
+          req_bin =
+            <<r.erasure_root::b(hash)>> <>
+              <<r.segment_index::16-little>> <>
+              e(length(r.shard_indexes)) <>
+              indexes
+
+          acc <> req_bin
+      end
+
+    protocol_id = if(with_justification, do: 140, else: 139)
+
+    send(pid, protocol_id, message)
+  end
+
   def send_work_package(pid, wp, core_index, extrinsics) do
     messages = [t(core_index) <> e(wp), extrinsics]
     send(pid, 133, messages)
