@@ -29,7 +29,7 @@ defmodule PVM.AccumulateTest do
 
     test "handles service without code", %{accumulation: accumulation, init_fn: init_fn} do
       assert(
-        {^accumulation, [], nil, 0} =
+        {^accumulation, [], nil, 0, []} =
           PVM.accumulate(accumulation, 1, 256, 1000, [], init_fn)
       )
     end
@@ -40,7 +40,7 @@ defmodule PVM.AccumulateTest do
         services: %{}
       }
 
-      assert {^accumulation, [], nil, 0} =
+      assert {^accumulation, [], nil, 0, []} =
                Accumulate.execute(accumulation, 0, 256, 1000, [], init_fn)
     end
 
