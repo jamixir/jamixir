@@ -118,12 +118,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "passes when gas accumulation is within limits", %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 400)
-      wr2 = build(:work_result, service: 2, gas_ratio: 300)
+      wr1 = build(:work_digest, service: 1, gas_ratio: 400)
+      wr2 = build(:work_digest, service: 2, gas_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.results, [wr1]),
-        put_in(g2.work_report.results, [wr2])
+        put_in(g1.work_report.digests, [wr1]),
+        put_in(g2.work_report.digests, [wr2])
       ]
 
       s =
@@ -137,13 +137,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when a work result references a non-existent service",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 400)
+      wr1 = build(:work_digest, service: 1, gas_ratio: 400)
       # Non-existent service
-      wr2 = build(:work_result, service: 3, gas_ratio: 300)
+      wr2 = build(:work_digest, service: 3, gas_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.results, [wr1]),
-        put_in(g2.work_report.results, [wr2])
+        put_in(g1.work_report.digests, [wr1]),
+        put_in(g2.work_report.digests, [wr2])
       ]
 
       s =
@@ -157,13 +157,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when total gas exceeds Constants.gas_accumulation()",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 9_999_000)
-      wr2 = build(:work_result, service: 2, gas_ratio: 6_000_000)
-      wr3 = build(:work_result, service: 1, gas_ratio: 4_001_000)
+      wr1 = build(:work_digest, service: 1, gas_ratio: 9_999_000)
+      wr2 = build(:work_digest, service: 2, gas_ratio: 6_000_000)
+      wr3 = build(:work_digest, service: 1, gas_ratio: 4_001_000)
 
       guarantees = [
-        put_in(g1.work_report.results, [wr1]),
-        put_in(g2.work_report.results, [wr2, wr3])
+        put_in(g1.work_report.digests, [wr1]),
+        put_in(g2.work_report.digests, [wr2, wr3])
       ]
 
       s =
@@ -178,12 +178,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
     test "fails when gas_ratio is less than service's gas_limit_g",
          %{state: state, g1: g1, g2: g2} do
-      wr1 = build(:work_result, service: 1, gas_ratio: 299)
-      wr2 = build(:work_result, service: 2, gas_ratio: 300)
+      wr1 = build(:work_digest, service: 1, gas_ratio: 299)
+      wr2 = build(:work_digest, service: 2, gas_ratio: 300)
 
       guarantees = [
-        put_in(g1.work_report.results, [wr1]),
-        put_in(g2.work_report.results, [wr2])
+        put_in(g1.work_report.digests, [wr1]),
+        put_in(g2.work_report.digests, [wr2])
       ]
 
       s =

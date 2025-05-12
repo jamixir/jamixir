@@ -1,7 +1,7 @@
 defmodule CodecVectors do
   alias Block.Extrinsic
   alias Block.Extrinsic.{Disputes, Guarantee, TicketProof}
-  alias Block.Extrinsic.{Assurance, Guarantee.WorkResult, Preimage, WorkItem, WorkPackage}
+  alias Block.Extrinsic.{Assurance, Guarantee.WorkDigest, Preimage, WorkItem, WorkPackage}
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Header
 
@@ -19,8 +19,8 @@ defmodule CodecVectors do
     {"work_item", WorkItem},
     {"work_package", WorkPackage},
     {"work_report", WorkReport},
-    {"work_result_0", WorkResult},
-    {"work_result_1", WorkResult}
+    {"work_result_0", WorkDigest},
+    {"work_result_1", WorkDigest}
   ]
 
   def tests, do: @tests

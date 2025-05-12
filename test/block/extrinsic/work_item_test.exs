@@ -1,5 +1,5 @@
 defmodule WorkItemTest do
-  alias Block.Extrinsic.Guarantee.WorkResult
+  alias Block.Extrinsic.Guarantee.WorkDigest
   alias Util.Hash
   alias Block.Extrinsic.WorkItem
   use ExUnit.Case
@@ -38,7 +38,7 @@ defmodule WorkItemTest do
 
       result = WorkItem.to_work_result(work_report, output, 77)
 
-      assert result == %WorkResult{
+      assert result == %WorkDigest{
                service: 1,
                code_hash: <<1, 2, 3>>,
                payload_hash: Hash.default(<<4, 5>>),

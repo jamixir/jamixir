@@ -3,7 +3,7 @@ defmodule WorkReportTest do
   use Codec.Encoder
   import Jamixir.Factory
   alias Block.Extrinsic.AvailabilitySpecification
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
   alias System.State.Ready
@@ -83,7 +83,7 @@ defmodule WorkReportTest do
       invalid_wr =
         build(:work_report,
           output: limit_output,
-          results: build_list(2, :work_result, result: {:ok, <<1>>})
+          digests: build_list(2, :work_digest, result: {:ok, <<1>>})
         )
 
       refute WorkReport.valid_size?(invalid_wr)
@@ -95,7 +95,7 @@ defmodule WorkReportTest do
       invalid_wr =
         build(:work_report,
           output: <<>>,
-          results: build_list(2, :work_result, result: {:ok, limit_output})
+          digests: build_list(2, :work_digest, result: {:ok, limit_output})
         )
 
       refute WorkReport.valid_size?(invalid_wr)
@@ -462,7 +462,7 @@ defmodule WorkReportTest do
   describe "execute_work_package/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
-      stub(MockPVM, :do_authorized, fn _, _, _ -> <<1>> end)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> {<<1>>, 0} end)
       stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
 
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
@@ -501,7 +501,7 @@ defmodule WorkReportTest do
       assert wr.output == <<1>>
       assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
 
-      expected_work_result = %WorkResult{
+      expected_work_result = %WorkDigest{
         service: 1,
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
@@ -514,12 +514,12 @@ defmodule WorkReportTest do
         result: <<1>>
       }
 
-      assert wr.results == [expected_work_result]
+      assert wr.digests == [expected_work_result]
       %AvailabilitySpecification{} = wr.specification
     end
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
-      stub(MockPVM, :do_authorized, fn _, _, _ -> :bad end)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
       assert wr == :bad
     end
@@ -527,8 +527,8 @@ defmodule WorkReportTest do
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
-      [work_result | _] = wr.results
-      assert work_result.result == :bad
+      [work_digest | _] = wr.digests
+      assert work_digest.result == :bad
     end
   end
 
@@ -549,7 +549,7 @@ defmodule WorkReportTest do
                    segment_tree_root: Hex.encode16(Hash.two(), prefix: true)
                  }
                ],
-               results: for(r <- wr.results, do: JsonEncoder.encode(r)),
+               digests: for(r <- wr.digests, do: JsonEncoder.encode(r)),
                auth_gas_used: 0
              }
     end

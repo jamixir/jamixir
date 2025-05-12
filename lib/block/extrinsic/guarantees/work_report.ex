@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
   alias System.State.{CoreReport, Ready}
@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # l
           segment_root_lookup: segment_root_lookup(),
           # r
-          results: list(WorkResult.t()),
+          digests: list(WorkDigest.t()),
           # g
           auth_gas_used: Types.gas()
         }
@@ -44,7 +44,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             authorizer_hash: Hash.zero(),
             output: "",
             segment_root_lookup: %{},
-            results: [],
+            digests: [],
             auth_gas_used: 0
 
   # Formula (11.3) v0.6.5
@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
         Enum.sum(
-          for %WorkResult{result: {_, o}} <- wr.results,
+          for %WorkDigest{result: {_, o}} <- wr.digests,
               do: byte_size(o)
         ) <=
         Constants.max_work_report_size()
@@ -252,7 +252,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           authorizer_hash: WorkPackage.implied_authorizer(wp, services),
           output: o,
           segment_root_lookup: get_import_segments(wp),
-          results: r
+          digests: r
         }
     end
   end
@@ -298,15 +298,17 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec json_mapping() :: %{
           output: :auth_output,
           refinement_context: %{f: :context, m: RefinementContext},
-          results: [Block.Extrinsic.Guarantee.WorkResult, ...],
+          results: [Block.Extrinsic.Guarantee.WorkDigest, ...],
           specification: %{f: :package_spec, m: Block.Extrinsic.AvailabilitySpecification}
         }
   def json_mapping do
+    IO.puts("json_mapping")
+
     %{
       specification: %{m: AvailabilitySpecification, f: :package_spec},
       refinement_context: %{m: RefinementContext, f: :context},
       output: :auth_output,
-      results: [WorkResult],
+      digests: [[WorkDigest], :results],
       segment_root_lookup: &decode_segment_root_lookup/1
     }
   end
@@ -344,7 +346,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         wr.authorizer_hash,
         vs(wr.output),
         wr.segment_root_lookup,
-        vs(wr.results),
+        vs(wr.digests),
         wr.auth_gas_used
       })
     end
@@ -359,7 +361,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     <<authorizer_hash::b(hash), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
-    {results, rest} = VariableSize.decode(bin, WorkResult)
+    {digests, rest} = VariableSize.decode(bin, WorkDigest)
     {auth_gas_used, rest} = de_i(rest)
 
     {%__MODULE__{
@@ -369,7 +371,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
        segment_root_lookup: segment_root_lookup,
        authorizer_hash: authorizer_hash,
        output: output,
-       results: results,
+       digests: digests,
        auth_gas_used: auth_gas_used
      }, rest}
   end

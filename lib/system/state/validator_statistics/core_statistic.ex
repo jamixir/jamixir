@@ -43,18 +43,18 @@ defmodule System.State.CoreStatistic do
 
     for c <- 0..(Constants.core_count() - 1) do
       w_incoming = Enum.at(incoming_work_reports, c) || %{}
-      w_incoming_results = Map.get(w_incoming, :results)
+      w_incoming_digests = Map.get(w_incoming, :digests)
       w_newly_available = Enum.at(available_work_reports, c) || %{}
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
         # Formula (13.8) v0.6.5
         # Formula (13.9) v0.6.5
-        imports: sum_field(w_incoming_results, :imports),
-        exports: sum_field(w_incoming_results, :exports),
-        extrinsic_count: sum_field(w_incoming_results, :extrinsic_count),
-        extrinsic_size: sum_field(w_incoming_results, :extrinsic_size),
-        gas_used: sum_field(w_incoming_results, :gas_used),
+        imports: sum_field(w_incoming_digests, :imports),
+        exports: sum_field(w_incoming_digests, :exports),
+        extrinsic_count: sum_field(w_incoming_digests, :extrinsic_count),
+        extrinsic_size: sum_field(w_incoming_digests, :extrinsic_size),
+        gas_used: sum_field(w_incoming_digests, :gas_used),
         bundle_size: (Map.get(w_incoming, :specification) || %{}) |> Map.get(:length, 0),
         # Formula (13.10) v0.6.5
         da_load:

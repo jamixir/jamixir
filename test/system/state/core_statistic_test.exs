@@ -6,8 +6,8 @@ defmodule System.State.CoreStatisticTest do
 
   describe "calculate_core_statistics/1" do
     setup do
-      result =
-        build(:work_result,
+      digest =
+        build(:work_digest,
           imports: 1,
           exports: 2,
           extrinsic_count: 3,
@@ -20,7 +20,7 @@ defmodule System.State.CoreStatisticTest do
       work_report =
         build(:work_report,
           specification: specification,
-          results: [result, result]
+          digests: [digest, digest]
         )
 
       {:ok, work_report: work_report}
@@ -29,8 +29,9 @@ defmodule System.State.CoreStatisticTest do
     test "calculate_core_statistics smoke test", %{work_report: wr} do
       work_reports = [wr, nil]
       assurances = []
+      stat = CoreStatistic.calculate_core_statistics(work_reports, work_reports, assurances)
 
-      assert CoreStatistic.calculate_core_statistics(work_reports, work_reports, assurances) == [
+      assert stat == [
                %CoreStatistic{
                  imports: 2,
                  exports: 4,

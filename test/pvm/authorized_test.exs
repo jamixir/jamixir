@@ -52,7 +52,7 @@ defmodule PVM.AuthorizedTest do
         authorization_code_hash: hash
       }
 
-      result = PVM.authorized(work_package, 0, %{1 => service_account})
+      {result, _gas_used} = PVM.authorized(work_package, 0, %{1 => service_account})
       assert result == message
     end
 
@@ -88,7 +88,7 @@ defmodule PVM.AuthorizedTest do
         authorization_code_hash: hash
       }
 
-      result = PVM.authorized(work_package, 0, %{1 => service_account})
+      {result, _gas_used} = PVM.authorized(work_package, 0, %{1 => service_account})
       assert result == :panic
     end
   end

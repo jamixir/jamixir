@@ -136,20 +136,20 @@ defmodule Block.Extrinsic.Guarantee do
   # ∀w∈w∶ ∑(rg)≤GA ∧ ∀r∈wr ∶ rg ≥δ[rs]g
   mockable validate_gas_accumulation(w, services) do
     Enum.reduce_while(w, :ok, fn work_report, _acc ->
-      total_gas = Enum.reduce(work_report.results, 0, &(&1.gas_ratio + &2))
+      total_gas = Enum.reduce(work_report.digests, 0, &(&1.gas_ratio + &2))
 
       cond do
         total_gas > Constants.gas_accumulation() ->
           {:halt, {:error, :work_report_gas_too_high}}
 
-        Enum.any?(work_report.results, fn result ->
-          Map.get(services, result.service) == nil
+        Enum.any?(work_report.digests, fn digest ->
+          Map.get(services, digest.service) == nil
         end) ->
           {:halt, {:error, :bad_service_id}}
 
-        Enum.any?(work_report.results, fn result ->
-          service = Map.get(services, result.service)
-          result.gas_ratio < service.gas_limit_g
+        Enum.any?(work_report.digests, fn digest ->
+          service = Map.get(services, digest.service)
+          digest.gas_ratio < service.gas_limit_g
         end) ->
           {:halt, {:error, :insufficient_gas_ratio}}
 
@@ -161,8 +161,8 @@ defmodule Block.Extrinsic.Guarantee do
 
   # Formula (11.42) v0.6.5
   mockable validate_work_result_cores(w, services) do
-    if Enum.any?(Enum.flat_map(w, & &1.results), fn r ->
-         r.code_hash != Map.get(services, r.service, %ServiceAccount{}).code_hash
+    if Enum.any?(Enum.flat_map(w, & &1.digests), fn digest ->
+         digest.code_hash != Map.get(services, digest.service, %ServiceAccount{}).code_hash
        end) do
       {:error, :bad_code_hash}
     else

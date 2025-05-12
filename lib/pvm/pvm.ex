@@ -22,12 +22,13 @@ defmodule PVM do
     pc = WorkPackage.authorization_code(p, services)
 
     args = e({p, t(core_index)})
+    w_a = Constants.max_is_authorized_code_size()
 
     case pc do
       nil ->
         {:bad, 0}
 
-      bytes when byte_size(bytes) > Constants.max_is_authorized_code_size() ->
+      bytes when byte_size(bytes) > w_a ->
         {:big, 0}
 
       _ ->

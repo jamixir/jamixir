@@ -1,6 +1,6 @@
-defmodule Block.Extrinsic.Guarantee.WorkResult do
+defmodule Block.Extrinsic.Guarantee.WorkDigest do
   @moduledoc """
-  Formula (11.6) v0.6.5
+  Formula (11.6) v0.6.6
   """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
@@ -65,22 +65,22 @@ defmodule Block.Extrinsic.Guarantee.WorkResult do
   end
 
   defimpl Encodable do
-    alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkResult}
+    alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkDigest}
     use Codec.Encoder
     # Formula (C.23) v0.6.5
     # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
-    @spec encode(Block.Extrinsic.Guarantee.WorkResult.t()) :: <<_::32, _::_*8>>
-    def encode(%WorkResult{} = wr) do
-      t(wr.service) <>
-        e({wr.code_hash, wr.payload_hash}) <>
-        t(wr.gas_ratio) <>
-        WorkResult.encode_result(wr.result) <>
+    @spec encode(Block.Extrinsic.Guarantee.WorkDigest.t()) :: <<_::32, _::_*8>>
+    def encode(%WorkDigest{} = wd) do
+      t(wd.service) <>
+        e({wd.code_hash, wd.payload_hash}) <>
+        t(wd.gas_ratio) <>
+        WorkDigest.encode_result(wd.result) <>
         e({
-          wr.gas_used,
-          wr.imports,
-          wr.extrinsic_count,
-          wr.extrinsic_size,
-          wr.exports
+          wd.gas_used,
+          wd.imports,
+          wd.extrinsic_count,
+          wd.extrinsic_size,
+          wd.exports
         })
     end
   end

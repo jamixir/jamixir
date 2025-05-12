@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.WorkItem do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.DataAvailability
-  alias Block.Extrinsic.{Guarantee.WorkResult}
+  alias Block.Extrinsic.{Guarantee.WorkDigest}
   alias Util.{Hash, MerkleTree}
   use Codec.Encoder
   use Codec.Decoder
@@ -128,9 +128,9 @@ defmodule Block.Extrinsic.WorkItem do
           binary() | WorkExecutionError.t(),
           Types.gas()
         ) ::
-          Block.Extrinsic.Guarantee.WorkResult.t()
+          Block.Extrinsic.Guarantee.WorkDigest.t()
   def to_work_result(%__MODULE__{} = wi, output, gas) do
-    %WorkResult{
+    %WorkDigest{
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: h(wi.payload),
