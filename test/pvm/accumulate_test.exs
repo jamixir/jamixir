@@ -65,7 +65,7 @@ defmodule PVM.AccumulateTest do
 
       operands = [%Operand{data: {:error, :big}}]
 
-      {result_acc, transfers, result_hash, gas} =
+      {result_acc, transfers, result_hash, gas, _} =
         PVM.accumulate(accumulation, 0, 256, 1000, operands, init_fn)
 
       assert result_acc.services[256].balance == 100

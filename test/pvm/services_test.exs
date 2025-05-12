@@ -4,6 +4,7 @@ defmodule PVM.ServicesTest do
   alias PVM.Accumulate
   alias PVM.Host.Accumulate.Context
   alias System.State.{Accumulation, ServiceAccount}
+  use Codec.Encoder
   use ExUnit.Case
 
   import PVM.Utils.AddInstruction
@@ -11,12 +12,15 @@ defmodule PVM.ServicesTest do
   def make_accumulate_args(bin) do
     code_hash = Util.Hash.default(bin)
 
+    mock_metadata = <<1, 2, 3>>
+    bin_with_metadata = e(vs(mock_metadata)) <> bin
+
     accumulation = %Accumulation{
       services: %{
         0 => %ServiceAccount{
           code_hash: code_hash,
-          preimage_storage_p: %{code_hash => bin},
-          preimage_storage_l: %{{code_hash, byte_size(bin)} => bin}
+          preimage_storage_p: %{code_hash => bin_with_metadata},
+          preimage_storage_l: %{{code_hash, byte_size(bin_with_metadata)} => bin_with_metadata}
         }
       }
     }
@@ -75,6 +79,6 @@ defmodule PVM.ServicesTest do
 
     {accumulation, timeslot, service_index, gas, operands, init_fn} = make_accumulate_args(bin)
     result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, init_fn)
-    assert match?({%Accumulation{}, [], nil, _gas}, result)
+    assert match?({accumulation, [], nil, _gas, [{0, ^bin}]}, result)
   end
 end
