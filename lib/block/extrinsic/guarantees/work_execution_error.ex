@@ -1,11 +1,11 @@
 defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   alias Util.Collections
-  # Formula (11.7) v0.6.5
-  # J ∈         {∞,           ☇,          ⊚,        BAD,   BIG}
-  @type t :: :out_of_gas | :panic | :bad_exports | :bad | :big
+  # Formula (11.7) v0.6.6
+  # J ∈         {∞,           ☇,          ⊚,             ⊖      BAD,   BIG}
+  @type t :: :out_of_gas | :panic | :bad_exports |  :oversize | :bad | :big
 
-  # Formula (C.30) v0.6.5
-  @codes %{out_of_gas: 1, panic: 2, bad_exports: 3, bad: 4, big: 5}
+  # Formula (C.30) v0.6.6
+  @codes %{out_of_gas: 1, panic: 2, bad_exports: 3,  oversize: 4, bad: 5, big: 6}
 
   def code(error) do
     @codes[error]

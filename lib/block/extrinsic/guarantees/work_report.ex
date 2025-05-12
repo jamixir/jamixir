@@ -221,9 +221,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
     # {o, g} = ΨI (p,c)
+    w_r = Constants.max_work_report_size()
+
     case PVM.authorized(wp, core, services) do
-      {error, _} when is_atom(error) ->
-        error
+      {o, _} when is_atom(o) or byte_size(o) > w_r ->
+        :error
 
       {o, _gas_used} ->
         import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
@@ -257,7 +259,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (14.11) v0.6.5
+  # Formula (14.11) v0.6.6
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
@@ -266,17 +268,38 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e, u} do
-      # otherwise if r ∈/ Y
+      # First, check export count
+      {_, e, u} when length(e) != w.export_count ->
+        {:bad_exports, u, zero_segments(w.export_count)}
+
+      # Then, check if r is binary
       {r, _, u} when not is_binary(r) ->
         {r, u, zero_segments(w.export_count)}
 
-      # if ∣e∣= we
-      {r, e, u} when length(e) == w.export_count ->
-        {r, u, e}
+      # Then, check size
+      {r, _, u} ->
+        # optimization note: this is probably expensive, can cache maybe?
+        z =
+          byte_size(o) +
+            if j == 0 do
+              0
+            else
+              Enum.sum(
+                for k <- 0..(j - 1) do
+                  {r_k, _, _} = process_item(p, k, o, import_segments, services, preimages)
+                  if is_binary(r_k), do: byte_size(r_k), else: 0
+                end
+              )
+            end
 
-      # otherwise
-      _ ->
-        {:bad_exports, u, zero_segments(w.export_count)}
+        w_r = Constants.max_work_report_size()
+
+        # smaller then (<) looks suspicious, should confirm in matrix channel (Luke, May 12, 2025)
+        if byte_size(r) + z < w_r do
+          {:oversize, u, zero_segments(w.export_count)}
+        else
+          {r, u, e}
+        end
     end
   end
 

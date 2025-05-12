@@ -427,33 +427,48 @@ defmodule WorkReportTest do
       :ok
     end
 
-    # case |e| = we
-    test "processes a work item correct exports", %{wp: wp, state: state} do
-      wi = build(:work_item, export_count: 1)
+    # case |e| != we
+    test "bad exports", %{wp: wp, state: state} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
+
+      wi = build(:work_item, export_count: 4)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
-      assert r == <<1>>
-      assert length(e) == 1
+      {r, _u, _e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      assert r == :bad_exports
     end
 
     # case r not binary
     test "processes a work item error in PVM", %{wp: wp, state: state} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
 
-      wi = build(:work_item, export_count: 4)
+      wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
       {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == :bad
-      assert length(e) == 4
+      assert length(e) == 1
     end
 
-    # case r binary
-    test "processes a work item bad exports", %{wp: wp, state: state} do
-      wi = build(:work_item, export_count: 4)
+    # case r binary too small
+    test "oversize", %{wp: wp, state: state} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<>>, [<<1>>], 555} end)
+      wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
       {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
-      assert r == :bad_exports
-      assert length(e) == 4
+      assert r == :oversize
+      assert length(e) == 1
+    end
+
+    # case r binary and o(auhtorizer output) is correct size
+    test "all good", %{wp: wp, state: state} do
+      w_r = Constants.max_work_report_size()
+      o = String.duplicate(<<1>>, w_r + 1)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
+      wi = build(:work_item, export_count: 1)
+      wp = %WorkPackage{wp | work_items: [wi]}
+
+      {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
+      assert r == <<2>>
+      assert length(e) == 1
     end
   end
 
@@ -468,7 +483,7 @@ defmodule WorkReportTest do
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
         w = Enum.at(p.work_items, j)
 
-        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
+        {String.duplicate(<<1>>, Constants.max_work_report_size()), List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
       on_exit(fn ->
@@ -511,7 +526,7 @@ defmodule WorkReportTest do
         extrinsic_size: 7,
         gas_used: 555,
         imports: 1,
-        result: <<1>>
+        result: String.duplicate(<<1>>, Constants.max_work_report_size())
       }
 
       assert wr.digests == [expected_work_result]
@@ -521,7 +536,7 @@ defmodule WorkReportTest do
     test "PVM return error on authorized", %{wp: wp, services: services} do
       stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
-      assert wr == :bad
+      assert wr == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
