@@ -123,13 +123,13 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   # Formula (14.8) v0.6.5
-  @spec to_work_result(
+  @spec to_work_digest(
           Block.Extrinsic.WorkItem.t(),
           binary() | WorkExecutionError.t(),
           Types.gas()
         ) ::
           Block.Extrinsic.Guarantee.WorkDigest.t()
-  def to_work_result(%__MODULE__{} = wi, output, gas) do
+  def to_work_digest(%__MODULE__{} = wi, output, gas) do
     %WorkDigest{
       service: wi.service,
       code_hash: wi.code_hash,

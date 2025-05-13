@@ -19,8 +19,8 @@ defmodule CodecVectors do
     {"work_item", WorkItem},
     {"work_package", WorkPackage},
     {"work_report", WorkReport},
-    {"work_result_0", WorkDigest},
-    {"work_result_1", WorkDigest}
+    {"work_digest_0", WorkDigest},
+    {"work_digest_1", WorkDigest}
   ]
 
   def tests, do: @tests

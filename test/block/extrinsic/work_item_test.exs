@@ -21,8 +21,8 @@ defmodule WorkItemTest do
     end
   end
 
-  describe "to_work_result/2" do
-    test "transform work report in work result" do
+  describe "to_work_digest/2" do
+    test "transform work report in work digest" do
       output = {:ok, "output"}
 
       work_report =
@@ -36,7 +36,7 @@ defmodule WorkItemTest do
           extrinsic: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}]
         )
 
-      result = WorkItem.to_work_result(work_report, output, 77)
+      result = WorkItem.to_work_digest(work_report, output, 77)
 
       assert result == %WorkDigest{
                service: 1,

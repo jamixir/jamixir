@@ -516,7 +516,7 @@ defmodule WorkReportTest do
       assert wr.output == <<1>>
       assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
 
-      expected_work_result = %WorkDigest{
+      expected_work_digest = %WorkDigest{
         service: 1,
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
@@ -529,7 +529,7 @@ defmodule WorkReportTest do
         result: String.duplicate(<<1>>, Constants.max_work_report_size())
       }
 
-      assert wr.digests == [expected_work_result]
+      assert wr.digests == [expected_work_digest]
       %AvailabilitySpecification{} = wr.specification
     end
 

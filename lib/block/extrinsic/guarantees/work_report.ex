@@ -235,7 +235,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             # (r,e) = I(p,j)
             {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
             # C(pw [j],r), e)
-            {WorkItem.to_work_result(Enum.at(wp.work_items, j), result, gas), exports}
+            {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
           end
           |> Enum.unzip()
 
@@ -292,10 +292,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
               )
             end
 
-        w_r = Constants.max_work_report_size()
-
         # smaller then (<) looks suspicious, should confirm in matrix channel (Luke, May 12, 2025)
-        if byte_size(r) + z < w_r do
+        if byte_size(r) + z < Constants.max_work_report_size() do
           {:oversize, u, zero_segments(w.export_count)}
         else
           {r, u, e}

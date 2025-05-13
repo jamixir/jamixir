@@ -48,7 +48,7 @@ defmodule Block.Extrinsic.Guarantee do
          # Formula (11.34) v0.6.5
          :ok <- validate_refine_context_timeslot(guarantees, t),
          # Formula (11.42) v0.6.5
-         :ok <- validate_work_result_cores(w, state.services),
+         :ok <- validate_work_digest_cores(w, state.services),
          # Formula (11.38) v0.6.5
          :ok <-
            validate_new_work_packages(
@@ -160,7 +160,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (11.42) v0.6.5
-  mockable validate_work_result_cores(w, services) do
+  mockable validate_work_digest_cores(w, services) do
     if Enum.any?(Enum.flat_map(w, & &1.digests), fn digest ->
          digest.code_hash != Map.get(services, digest.service, %ServiceAccount{}).code_hash
        end) do
@@ -435,7 +435,7 @@ defmodule Block.Extrinsic.Guarantee do
   def mock(:reporters_set, _), do: {:ok, MapSet.new()}
   def mock(:validate_anchor_block, _), do: :ok
   def mock(:validate_gas_accumulation, _), do: :ok
-  def mock(:validate_work_result_cores, _), do: :ok
+  def mock(:validate_work_digest_cores, _), do: :ok
   def mock(:validate_new_work_packages, _), do: :ok
   def mock(:validate_prerequisites, _), do: :ok
   def mock(:validate_segment_root_lookups, _), do: :ok
