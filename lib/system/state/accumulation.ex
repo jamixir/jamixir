@@ -345,7 +345,7 @@ defmodule System.State.Accumulation do
           %ServiceAccount{preimage_storage_l: l} = sa ->
             if Map.get(l, {h(preimage), byte_size(preimage)}, []) == [] do
               sa =
-                put_in(sa, [:preimage_storage_l, {h(preimage), byte_size(preimage)}], timeslot_)
+                put_in(sa, [:preimage_storage_l, {h(preimage), byte_size(preimage)}], [timeslot_])
 
               sa = put_in(sa, [:preimage_storage_p, h(preimage)], preimage)
               Map.put(acc, service_index, sa)
