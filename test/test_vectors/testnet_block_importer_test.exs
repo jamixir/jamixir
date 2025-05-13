@@ -65,12 +65,7 @@ defmodule TestnetBlockImporterTest do
 
         state = Json.decode(genesis_json)
 
-        first_time =
-          if mode == "safrole" do
-            108_489
-          else
-            1
-          end
+        first_time = 1
 
         Enum.reduce(first_time..(first_time + 2), state, fn epoch, state ->
           Enum.reduce(0..(Constants.epoch_length() - 1), state, fn timeslot, state ->
