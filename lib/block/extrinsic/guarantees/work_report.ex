@@ -323,8 +323,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           specification: %{f: :package_spec, m: Block.Extrinsic.AvailabilitySpecification}
         }
   def json_mapping do
-    IO.puts("json_mapping")
-
     %{
       specification: %{m: AvailabilitySpecification, f: :package_spec},
       refinement_context: %{m: RefinementContext, f: :context},
