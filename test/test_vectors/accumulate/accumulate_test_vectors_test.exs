@@ -1,5 +1,4 @@
 defmodule AccumulateTestVectorsTest do
-  alias System.State.ValidatorStatistic
   use ExUnit.Case
   import Mox
   import AccumulateTestVectors
