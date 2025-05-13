@@ -9,7 +9,7 @@ defmodule PVM do
   import PVM.Host.Gas
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (B.1) v0.6.5
+  # Formula (B.1) v0.6.6
   @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
               binary() | WorkExecutionError.t()
 
@@ -22,11 +22,21 @@ defmodule PVM do
     pc = WorkPackage.authorization_code(p, services)
 
     args = e({p, t(core_index)})
+    w_a = Constants.max_is_authorized_code_size()
 
-    {_g, r, nil} =
-      ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, &authorized_f/3, nil)
+    case pc do
+      nil ->
+        {:bad, 0}
 
-    r
+      bytes when byte_size(bytes) > w_a ->
+        {:big, 0}
+
+      _ ->
+        {used_gas, result, nil} =
+          ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, &authorized_f/3, nil)
+
+        {result, used_gas}
+    end
   end
 
   # Formula (B.2) v0.6.5

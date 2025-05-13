@@ -1,5 +1,5 @@
 defmodule WorkItemTest do
-  alias Block.Extrinsic.Guarantee.WorkResult
+  alias Block.Extrinsic.Guarantee.WorkDigest
   alias Util.Hash
   alias Block.Extrinsic.WorkItem
   use ExUnit.Case
@@ -21,8 +21,8 @@ defmodule WorkItemTest do
     end
   end
 
-  describe "to_work_result/2" do
-    test "transform work report in work result" do
+  describe "to_work_digest/2" do
+    test "transform work report in work digest" do
       output = {:ok, "output"}
 
       work_report =
@@ -36,9 +36,9 @@ defmodule WorkItemTest do
           extrinsic: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}]
         )
 
-      result = WorkItem.to_work_result(work_report, output, 77)
+      result = WorkItem.to_work_digest(work_report, output, 77)
 
-      assert result == %WorkResult{
+      assert result == %WorkDigest{
                service: 1,
                code_hash: <<1, 2, 3>>,
                payload_hash: Hash.default(<<4, 5>>),

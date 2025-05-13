@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
   alias System.State.{CoreReport, Ready}
@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           # l
           segment_root_lookup: segment_root_lookup(),
           # r
-          results: list(WorkResult.t()),
+          digests: list(WorkDigest.t()),
           # g
           auth_gas_used: Types.gas()
         }
@@ -44,7 +44,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             authorizer_hash: Hash.zero(),
             output: "",
             segment_root_lookup: %{},
-            results: [],
+            digests: [],
             auth_gas_used: 0
 
   # Formula (11.3) v0.6.5
@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
         Enum.sum(
-          for %WorkResult{result: {_, o}} <- wr.results,
+          for %WorkDigest{result: {_, o}} <- wr.digests,
               do: byte_size(o)
         ) <=
         Constants.max_work_report_size()
@@ -216,16 +216,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (14.11) v0.6.5
+  # Formula (14.11) v0.6.6
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           WorkReport.t()
   def execute_work_package(%WorkPackage{} = wp, core, services) do
-    # o = ΨI (p,c)
-    case PVM.authorized(wp, core, services) do
-      error when is_atom(error) ->
-        error
+    # {o, g} = ΨI (p,c)
+    w_r = Constants.max_work_report_size()
 
-      o ->
+    case PVM.authorized(wp, core, services) do
+      {o, _} when is_atom(o) or byte_size(o) > w_r ->
+        :error
+
+      {o, _gas_used} ->
         import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
         {r, e} =
@@ -233,7 +235,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             # (r,e) = I(p,j)
             {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
             # C(pw [j],r), e)
-            {WorkItem.to_work_result(Enum.at(wp.work_items, j), result, gas), exports}
+            {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
           end
           |> Enum.unzip()
 
@@ -252,12 +254,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           authorizer_hash: WorkPackage.implied_authorizer(wp, services),
           output: o,
           segment_root_lookup: get_import_segments(wp),
-          results: r
+          digests: r
         }
     end
   end
 
-  # Formula (14.11) v0.6.5
+  # Formula (14.11) v0.6.6
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
@@ -266,17 +268,36 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e, u} do
-      # otherwise if r ∈/ Y
+      # First, check export count
+      {_, e, u} when length(e) != w.export_count ->
+        {:bad_exports, u, zero_segments(w.export_count)}
+
+      # Then, check if r is binary
       {r, _, u} when not is_binary(r) ->
         {r, u, zero_segments(w.export_count)}
 
-      # if ∣e∣= we
-      {r, e, u} when length(e) == w.export_count ->
-        {r, u, e}
+      # Then, check size
+      {r, _, u} ->
+        # optimization note: this is probably expensive, can cache maybe?
+        z =
+          byte_size(o) +
+            if j == 0 do
+              0
+            else
+              Enum.sum(
+                for k <- 0..(j - 1) do
+                  {r_k, _, _} = process_item(p, k, o, import_segments, services, preimages)
+                  if is_binary(r_k), do: byte_size(r_k), else: 0
+                end
+              )
+            end
 
-      # otherwise
-      _ ->
-        {:bad_exports, u, zero_segments(w.export_count)}
+        # smaller then (<) looks suspicious, should confirm in matrix channel (Luke, May 12, 2025)
+        if byte_size(r) + z < Constants.max_work_report_size() do
+          {:oversize, u, zero_segments(w.export_count)}
+        else
+          {r, u, e}
+        end
     end
   end
 
@@ -298,7 +319,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   @spec json_mapping() :: %{
           output: :auth_output,
           refinement_context: %{f: :context, m: RefinementContext},
-          results: [Block.Extrinsic.Guarantee.WorkResult, ...],
+          results: [Block.Extrinsic.Guarantee.WorkDigest, ...],
           specification: %{f: :package_spec, m: Block.Extrinsic.AvailabilitySpecification}
         }
   def json_mapping do
@@ -306,7 +327,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       specification: %{m: AvailabilitySpecification, f: :package_spec},
       refinement_context: %{m: RefinementContext, f: :context},
       output: :auth_output,
-      results: [WorkResult],
+      digests: [[WorkDigest], :results],
       segment_root_lookup: &decode_segment_root_lookup/1
     }
   end
@@ -344,7 +365,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         wr.authorizer_hash,
         vs(wr.output),
         wr.segment_root_lookup,
-        vs(wr.results),
+        vs(wr.digests),
         wr.auth_gas_used
       })
     end
@@ -359,7 +380,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     <<authorizer_hash::b(hash), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
-    {results, rest} = VariableSize.decode(bin, WorkResult)
+    {digests, rest} = VariableSize.decode(bin, WorkDigest)
     {auth_gas_used, rest} = de_i(rest)
 
     {%__MODULE__{
@@ -369,7 +390,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
        segment_root_lookup: segment_root_lookup,
        authorizer_hash: authorizer_hash,
        output: output,
-       results: results,
+       digests: digests,
        auth_gas_used: auth_gas_used
      }, rest}
   end

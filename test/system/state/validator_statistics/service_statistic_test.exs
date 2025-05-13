@@ -1,6 +1,6 @@
 defmodule System.State.ServiceStatisticTest do
   use ExUnit.Case
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.Preimage
   alias System.State.ServiceStatistic
 
@@ -13,8 +13,8 @@ defmodule System.State.ServiceStatisticTest do
     test "integrates all statistics correctly" do
       available_work_reports = [
         %WorkReport{
-          results: [
-            %WorkResult{
+          digests: [
+            %WorkDigest{
               service: 1,
               imports: 5,
               extrinsic_count: 10,
@@ -56,8 +56,8 @@ defmodule System.State.ServiceStatisticTest do
     test "correctly aggregates refine-related statistics" do
       available_work_reports = [
         %WorkReport{
-          results: [
-            %WorkResult{
+          digests: [
+            %WorkDigest{
               service: 1,
               imports: 5,
               extrinsic_count: 10,
@@ -65,7 +65,7 @@ defmodule System.State.ServiceStatisticTest do
               exports: 2,
               gas_used: 500
             },
-            %WorkResult{
+            %WorkDigest{
               # Same service to test aggregation
               service: 1,
               imports: 3,
@@ -74,7 +74,7 @@ defmodule System.State.ServiceStatisticTest do
               exports: 1,
               gas_used: 300
             },
-            %WorkResult{
+            %WorkDigest{
               # Different service
               service: 2,
               imports: 1,
@@ -150,8 +150,8 @@ defmodule System.State.ServiceStatisticTest do
     test "aggregates stats correctly for multiple services" do
       available_work_reports = [
         %WorkReport{
-          results: [
-            %WorkResult{
+          digests: [
+            %WorkDigest{
               service: 1,
               imports: 5,
               extrinsic_count: 10,
@@ -159,7 +159,7 @@ defmodule System.State.ServiceStatisticTest do
               exports: 2,
               gas_used: 500
             },
-            %WorkResult{
+            %WorkDigest{
               service: 2,
               imports: 1,
               extrinsic_count: 2,

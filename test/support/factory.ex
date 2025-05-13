@@ -3,7 +3,7 @@ defmodule Jamixir.Factory do
   alias System.HeaderSeal
   alias System.State.Ready
   alias Encodable.System.State.RecentHistory
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
@@ -112,7 +112,7 @@ defmodule Jamixir.Factory do
       authorizer_hash: Hash.two(),
       output: <<3>>,
       segment_root_lookup: %{},
-      results: build_list(2, :work_result)
+      digests: build_list(2, :work_digest)
     }
   end
 
@@ -136,8 +136,8 @@ defmodule Jamixir.Factory do
     }
   end
 
-  def work_result_factory do
-    %WorkResult{
+  def work_digest_factory do
+    %WorkDigest{
       service: 0,
       code_hash: Hash.one(),
       payload_hash: Hash.two(),

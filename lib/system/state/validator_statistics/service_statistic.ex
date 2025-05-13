@@ -101,20 +101,20 @@ defmodule System.State.ServiceStatistic do
 
   # i, x, z, e, r
   defp refine_stats(incoming_work_reports) do
-    for w <- incoming_work_reports, w != nil, r <- w.results, reduce: %{} do
+    for w <- incoming_work_reports, w != nil, d <- w.digests, reduce: %{} do
       map ->
         # put zeroed stats if not present
-        map = Map.update(map, r.service, %ServiceStatistic{}, & &1)
+        map = Map.update(map, d.service, %ServiceStatistic{}, & &1)
 
-        Map.update(map, r.service, %ServiceStatistic{}, fn previous ->
+        Map.update(map, d.service, %ServiceStatistic{}, fn previous ->
           {rn, ru} = previous.refine
 
           %ServiceStatistic{
-            imports: previous.imports + r.imports,
-            extrinsic_count: previous.extrinsic_count + r.extrinsic_count,
-            extrinsic_size: previous.extrinsic_size + r.extrinsic_size,
-            exports: previous.exports + r.exports,
-            refine: {rn + 1, ru + r.gas_used}
+            imports: previous.imports + d.imports,
+            extrinsic_count: previous.extrinsic_count + d.extrinsic_count,
+            extrinsic_size: previous.extrinsic_size + d.extrinsic_size,
+            exports: previous.exports + d.exports,
+            refine: {rn + 1, ru + d.gas_used}
           }
         end)
     end

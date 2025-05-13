@@ -3,7 +3,7 @@ defmodule System.State.Accumulation do
   Chapter 12 - accumulation
   """
 
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
 
@@ -165,11 +165,11 @@ defmodule System.State.Accumulation do
           end
       end
 
-    for w <- work_reports, r <- w.results, reduce: %{} do
+    for w <- work_reports, d <- w.digests, reduce: %{} do
       stat ->
-        case Map.get(stat, r.service) do
-          nil -> Map.put(stat, r.service, {1, Map.get(gas_per_service, r.service, 0)})
-          {count, total_gas} -> Map.put(stat, r.service, {count + 1, total_gas})
+        case Map.get(stat, d.service) do
+          nil -> Map.put(stat, d.service, {1, Map.get(gas_per_service, d.service, 0)})
+          {count, total_gas} -> Map.put(stat, d.service, {count + 1, total_gas})
         end
     end
   end
@@ -242,7 +242,7 @@ defmodule System.State.Accumulation do
     Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
         Enum.sum(
-          for r <- Enum.flat_map(Enum.take(work_reports, i), & &1.results), do: r.gas_ratio
+          for d <- Enum.flat_map(Enum.take(work_reports, i), & &1.digests), do: d.gas_ratio
         )
 
       if sum <= gas_limit do
@@ -358,8 +358,8 @@ defmodule System.State.Accumulation do
 
   def collect_services(work_reports, always_acc_services) do
     for(
-      r <- Enum.flat_map(work_reports, & &1.results),
-      do: r.service,
+      d <- Enum.flat_map(work_reports, & &1.digests),
+      do: d.service,
       into: MapSet.new()
     ) ++ keys_set(always_acc_services)
   end
@@ -423,9 +423,9 @@ defmodule System.State.Accumulation do
     initial_g = Map.get(service_dict, service, 0)
 
     service_results =
-      for %WorkReport{results: wr, output: wo, specification: ws, authorizer_hash: wa} <-
+      for %WorkReport{digests: wr, output: wo, specification: ws, authorizer_hash: wa} <-
             work_reports,
-          %WorkResult{service: ^service, gas_ratio: rg, result: rd, payload_hash: ry} <- wr,
+          %WorkDigest{service: ^service, gas_ratio: rg, result: rd, payload_hash: ry} <- wr,
           do: {rg, rd, ry, wo, ws, wa}
 
     total_gas =

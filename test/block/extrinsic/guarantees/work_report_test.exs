@@ -3,7 +3,7 @@ defmodule WorkReportTest do
   use Codec.Encoder
   import Jamixir.Factory
   alias Block.Extrinsic.AvailabilitySpecification
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
   alias System.State.Ready
@@ -83,7 +83,7 @@ defmodule WorkReportTest do
       invalid_wr =
         build(:work_report,
           output: limit_output,
-          results: build_list(2, :work_result, result: {:ok, <<1>>})
+          digests: build_list(2, :work_digest, result: {:ok, <<1>>})
         )
 
       refute WorkReport.valid_size?(invalid_wr)
@@ -95,7 +95,7 @@ defmodule WorkReportTest do
       invalid_wr =
         build(:work_report,
           output: <<>>,
-          results: build_list(2, :work_result, result: {:ok, limit_output})
+          digests: build_list(2, :work_digest, result: {:ok, limit_output})
         )
 
       refute WorkReport.valid_size?(invalid_wr)
@@ -427,33 +427,48 @@ defmodule WorkReportTest do
       :ok
     end
 
-    # case |e| = we
-    test "processes a work item correct exports", %{wp: wp, state: state} do
-      wi = build(:work_item, export_count: 1)
+    # case |e| != we
+    test "bad exports", %{wp: wp, state: state} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
+
+      wi = build(:work_item, export_count: 4)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
-      assert r == <<1>>
-      assert length(e) == 1
+      {r, _u, _e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      assert r == :bad_exports
     end
 
     # case r not binary
     test "processes a work item error in PVM", %{wp: wp, state: state} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
 
-      wi = build(:work_item, export_count: 4)
+      wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
       {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
       assert r == :bad
-      assert length(e) == 4
+      assert length(e) == 1
     end
 
-    # case r binary
-    test "processes a work item bad exports", %{wp: wp, state: state} do
-      wi = build(:work_item, export_count: 4)
+    # case r binary too small
+    test "oversize", %{wp: wp, state: state} do
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<>>, [<<1>>], 555} end)
+      wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
       {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
-      assert r == :bad_exports
-      assert length(e) == 4
+      assert r == :oversize
+      assert length(e) == 1
+    end
+
+    # case r binary and o(auhtorizer output) is correct size
+    test "all good", %{wp: wp, state: state} do
+      w_r = Constants.max_work_report_size()
+      o = String.duplicate(<<1>>, w_r + 1)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
+      wi = build(:work_item, export_count: 1)
+      wp = %WorkPackage{wp | work_items: [wi]}
+
+      {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
+      assert r == <<2>>
+      assert length(e) == 1
     end
   end
 
@@ -462,13 +477,13 @@ defmodule WorkReportTest do
   describe "execute_work_package/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
-      stub(MockPVM, :do_authorized, fn _, _, _ -> <<1>> end)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> {<<1>>, 0} end)
       stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
 
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
         w = Enum.at(p.work_items, j)
 
-        {<<1>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
+        {String.duplicate(<<1>>, Constants.max_work_report_size()), List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
       on_exit(fn ->
@@ -501,7 +516,7 @@ defmodule WorkReportTest do
       assert wr.output == <<1>>
       assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
 
-      expected_work_result = %WorkResult{
+      expected_work_digest = %WorkDigest{
         service: 1,
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
@@ -511,24 +526,24 @@ defmodule WorkReportTest do
         extrinsic_size: 7,
         gas_used: 555,
         imports: 1,
-        result: <<1>>
+        result: String.duplicate(<<1>>, Constants.max_work_report_size())
       }
 
-      assert wr.results == [expected_work_result]
+      assert wr.digests == [expected_work_digest]
       %AvailabilitySpecification{} = wr.specification
     end
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
-      stub(MockPVM, :do_authorized, fn _, _, _ -> :bad end)
+      stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
-      assert wr == :bad
+      assert wr == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
       wr = WorkReport.execute_work_package(wp, 0, services)
-      [work_result | _] = wr.results
-      assert work_result.result == :bad
+      [work_digest | _] = wr.digests
+      assert work_digest.result == :bad
     end
   end
 
@@ -549,7 +564,7 @@ defmodule WorkReportTest do
                    segment_tree_root: Hex.encode16(Hash.two(), prefix: true)
                  }
                ],
-               results: for(r <- wr.results, do: JsonEncoder.encode(r)),
+               digests: for(r <- wr.digests, do: JsonEncoder.encode(r)),
                auth_gas_used: 0
              }
     end

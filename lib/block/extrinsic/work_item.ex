@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.WorkItem do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.DataAvailability
-  alias Block.Extrinsic.{Guarantee.WorkResult}
+  alias Block.Extrinsic.{Guarantee.WorkDigest}
   alias Util.{Hash, MerkleTree}
   use Codec.Encoder
   use Codec.Decoder
@@ -123,14 +123,14 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   # Formula (14.8) v0.6.5
-  @spec to_work_result(
+  @spec to_work_digest(
           Block.Extrinsic.WorkItem.t(),
           binary() | WorkExecutionError.t(),
           Types.gas()
         ) ::
-          Block.Extrinsic.Guarantee.WorkResult.t()
-  def to_work_result(%__MODULE__{} = wi, output, gas) do
-    %WorkResult{
+          Block.Extrinsic.Guarantee.WorkDigest.t()
+  def to_work_digest(%__MODULE__{} = wi, output, gas) do
+    %WorkDigest{
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: h(wi.payload),

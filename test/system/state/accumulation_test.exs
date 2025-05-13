@@ -1,6 +1,6 @@
 defmodule System.State.AccumulationTest do
   alias Block.Extrinsic.AvailabilitySpecification
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkResult}
+  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias System.{AccumulationResult, DeferredTransfer}
   alias PVM.Accumulate
   alias System.State
@@ -33,20 +33,20 @@ defmodule System.State.AccumulationTest do
 
   setup_all do
     service = 1
-    base_work_result = build(:work_result, service: service, gas_ratio: 0)
-    base_work_report = build(:work_report, results: [base_work_result])
+    base_work_digest = build(:work_digest, service: service, gas_ratio: 0)
+    base_work_report = build(:work_report, digests: [base_work_digest])
 
     {:ok,
-     service: service, base_work_result: base_work_result, base_work_report: base_work_report}
+     service: service, base_work_digest: base_work_digest, base_work_report: base_work_report}
   end
 
   describe "number_of_work_reports_to_accumumulate/2" do
     setup do
       work_reports = [
-        %WorkReport{results: [%{gas_ratio: 10}]},
-        %WorkReport{results: [%{gas_ratio: 20}]},
-        %WorkReport{results: [%{gas_ratio: 30}]},
-        %WorkReport{results: [%{gas_ratio: 40}]}
+        %WorkReport{digests: [%{gas_ratio: 10}]},
+        %WorkReport{digests: [%{gas_ratio: 20}]},
+        %WorkReport{digests: [%{gas_ratio: 30}]},
+        %WorkReport{digests: [%{gas_ratio: 40}]}
       ]
 
       {:ok, work_reports: work_reports}
@@ -70,8 +70,8 @@ defmodule System.State.AccumulationTest do
   describe "collect_services/2" do
     test "returns a MapSet with keys from both inputs" do
       work_reports = [
-        %WorkReport{results: [%{service: 1}, %{service: 2}]},
-        %WorkReport{results: [%{service: 3}]}
+        %WorkReport{digests: [%{service: 1}, %{service: 2}]},
+        %WorkReport{digests: [%{service: 3}]}
       ]
 
       always_acc_services = %{4 => 100, 5 => 200}
@@ -85,7 +85,7 @@ defmodule System.State.AccumulationTest do
 
       assert MapSet.new([3, 4]) ==
                Accumulation.collect_services(
-                 [%WorkReport{results: [%{service: 3}, %{service: 4}]}],
+                 [%WorkReport{digests: [%{service: 3}, %{service: 4}]}],
                  %{}
                )
 
@@ -93,7 +93,7 @@ defmodule System.State.AccumulationTest do
     end
 
     test "handles key collisions correctly" do
-      work_reports = [%WorkReport{results: [%{service: 1}, %{service: 2}]}]
+      work_reports = [%WorkReport{digests: [%{service: 1}, %{service: 2}]}]
       always_acc_services = %{2 => 100, 3 => 200}
 
       assert MapSet.new([1, 2, 3]) ==
@@ -121,21 +121,21 @@ defmodule System.State.AccumulationTest do
     test "g is sum of all gas_ratio values for the service", %{
       service: service,
       base_work_report: base_wr,
-      base_work_result: base_wr_result
+      base_work_digest: base_wr_digest
     } do
       service_dict = %{}
 
       work_reports = [
         %{
           base_wr
-          | results: [
-              put_in(base_wr_result.gas_ratio, 10),
-              put_in(base_wr_result.gas_ratio, 20)
+          | digests: [
+              put_in(base_wr_digest.gas_ratio, 10),
+              put_in(base_wr_digest.gas_ratio, 20)
             ]
         },
-        %{base_wr | results: [put_in(base_wr_result.gas_ratio, 30)]},
+        %{base_wr | digests: [put_in(base_wr_digest.gas_ratio, 30)]},
         # Should be ignored
-        %{base_wr | results: [%{base_wr_result | gas_ratio: 40, service: 2}]}
+        %{base_wr | digests: [%{base_wr_digest | gas_ratio: 40, service: 2}]}
       ]
 
       {g, _p} = Accumulation.pre_single_accumulation(work_reports, service_dict, service)
@@ -145,22 +145,22 @@ defmodule System.State.AccumulationTest do
     test "p contains correct o_tuples", %{
       service: service,
       base_work_report: base_wr,
-      base_work_result: base_wr_result
+      base_work_digest: base_wr_digest
     } do
       service_dict = %{}
 
       work_reports = [
         %WorkReport{
           base_wr
-          | results: [
-              %WorkResult{
-                base_wr_result
+          | digests: [
+              %WorkDigest{
+                base_wr_digest
                 | gas_ratio: 10,
                   result: "result1",
                   payload_hash: "hash1"
               },
-              %WorkResult{
-                base_wr_result
+              %WorkDigest{
+                base_wr_digest
                 | gas_ratio: 20,
                   result: "result2",
                   payload_hash: "hash2"
@@ -171,9 +171,9 @@ defmodule System.State.AccumulationTest do
         },
         %WorkReport{
           base_wr
-          | results: [
-              %WorkResult{
-                base_wr_result
+          | digests: [
+              %WorkDigest{
+                base_wr_digest
                 | gas_ratio: 30,
                   result: "result3",
                   payload_hash: "hash3"
@@ -229,16 +229,16 @@ defmodule System.State.AccumulationTest do
     test "handles service not present in any WorkReport", %{
       service: service,
       base_work_report: base_wr,
-      base_work_result: base_wr_result
+      base_work_digest: base_wr_digest
     } do
       service_dict = %{}
 
       work_reports = [
         %{
           base_wr
-          | results: [
-              %{base_wr_result | service: 2, gas_ratio: 10},
-              %{base_wr_result | service: 2, gas_ratio: 20}
+          | digests: [
+              %{base_wr_digest | service: 2, gas_ratio: 10},
+              %{base_wr_digest | service: 2, gas_ratio: 20}
             ]
         }
       ]
@@ -320,8 +320,8 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 10}]},
-        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 20}]}
+        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 10}]},
+        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 20}]}
       ]
 
       always_acc_services = %{6 => 30}
@@ -387,8 +387,8 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 10}]},
-        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 20}]}
+        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 10}]},
+        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 20}]}
       ]
 
       always_acc_services = %{}
@@ -511,9 +511,9 @@ defmodule System.State.AccumulationTest do
       }
 
       work_reports = [
-        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 30}]},
-        %WorkReport{results: [%WorkResult{service: 5, gas_ratio: 40}]},
-        %WorkReport{results: [%WorkResult{service: 4, gas_ratio: 50}]}
+        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 30}]},
+        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 40}]},
+        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 50}]}
       ]
 
       always_acc_services = %{6 => 20}
@@ -750,11 +750,11 @@ defmodule System.State.AccumulationTest do
     } do
       work_reports = [
         build(:work_report,
-          results: [build(:work_result, service: 1, gas_ratio: 10)],
+          digests: [build(:work_digest, service: 1, gas_ratio: 10)],
           segment_root_lookup: %{}
         ),
         build(:work_report,
-          results: [build(:work_result, service: 2, gas_ratio: 20)],
+          digests: [build(:work_digest, service: 2, gas_ratio: 20)],
           segment_root_lookup: %{}
         )
       ]
@@ -779,8 +779,8 @@ defmodule System.State.AccumulationTest do
     test "aggregates single service with single result" do
       work_reports = [
         %WorkReport{
-          results: [
-            %WorkResult{service: 1, gas_used: 100}
+          digests: [
+            %WorkDigest{service: 1, gas_used: 100}
           ]
         }
       ]
@@ -794,15 +794,15 @@ defmodule System.State.AccumulationTest do
     test "aggregates multiple services across multiple work reports" do
       work_reports = [
         %WorkReport{
-          results: [
-            %WorkResult{service: 1},
-            %WorkResult{service: 2}
+          digests: [
+            %WorkDigest{service: 1},
+            %WorkDigest{service: 2}
           ]
         },
         %WorkReport{
-          results: [
-            %WorkResult{service: 1},
-            %WorkResult{service: 3}
+          digests: [
+            %WorkDigest{service: 1},
+            %WorkDigest{service: 3}
           ]
         }
       ]
