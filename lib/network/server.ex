@@ -181,6 +181,4 @@ defmodule Network.Server do
         end
     end
   end
-
-  defp server_calls, do: Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
 end

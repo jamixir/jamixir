@@ -32,8 +32,8 @@ defmodule Network.Client do
   def request_state(
         pid,
         <<block_hash::b(hash)>>,
-        <<start_key::binary-size(31), _::8>>,
-        <<end_key::binary-size(31), _::8>>,
+        <<start_key::binary-size(31)>>,
+        <<end_key::binary-size(31)>>,
         max_size
       ) do
     message = block_hash <> start_key <> end_key <> <<max_size::32-little>>

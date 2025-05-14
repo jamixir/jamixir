@@ -36,7 +36,7 @@ defmodule Network.ServerCalls do
     # First filter the state trie to get the relevant keys
     result_map =
       Map.filter(state_trie, fn {k, _v} ->
-        k >= start_key <> <<0>> && k <= end_key <> <<255>>
+        k >= start_key && k <= end_key
       end)
 
     # Then, we need to limit the size of the result_map to max_size
@@ -51,7 +51,7 @@ defmodule Network.ServerCalls do
 
     # Convert the result_map to a binary format
     trie_bin =
-      for {<<k::binary-size(31), _::8>>, v} <- result_map, reduce: <<>> do
+      for {<<k::binary-size(31)>>, v} <- result_map, reduce: <<>> do
         acc -> acc <> k <> e(vs(v))
       end
 
