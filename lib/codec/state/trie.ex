@@ -45,24 +45,24 @@ defmodule Codec.State.Trie do
 
   # Formula (D.1) v0.6.5 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
-  def key_to_32_octet({i, s}) when i < 256 and s < 4_294_967_296 do
+  def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)
-    <<i::8>> <> <<n0, 0, n1, 0, n2, 0, n3, 0>> <> <<0::184>>
+    <<i::8>> <> <<n0, 0, n1, 0, n2, 0, n3, 0>> <> <<0::176>>
   end
 
   # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
-  def key_to_32_octet({s, h}) do
+  def key_to_31_octet({s, h}) do
     <<n0, n1, n2, n3>> = e_le(s, 4)
-    <<h_part::binary-size(28), _rest::binary>> = h
+    <<h_part::binary-size(27), _rest::binary>> = h
     <<h0, h1, h2, h3, rest::binary>> = h_part
     <<n0, h0, n1, h1, n2, h2, n3, h3>> <> rest
   end
 
   # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
-  def key_to_32_octet(key) when key < 256, do: <<key::8, 0::248>>
+  def key_to_31_octet(key) when key < 256, do: <<key::8, 0::240>>
 
   def serialize(state) do
-    for({k, v} <- state_keys(state), do: {key_to_32_octet(k), v}, into: %{})
+    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
   end
 
   def serialize_hex(state, opts \\ []) do

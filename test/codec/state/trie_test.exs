@@ -1,0 +1,170 @@
+defmodule Codec.State.TrieTest do
+  use ExUnit.Case
+  import Jamixir.Factory
+  import Codec.State.Trie
+  import Bitwise
+  alias Codec.NilDiscriminator
+  alias System.State
+  alias Util.Hash
+
+  setup_all do
+    %{state: state} = build(:genesis_state_with_safrole)
+
+    {:ok, %{state: state, h1: unique_hash_factory(), h2: unique_hash_factory()}}
+  end
+
+  # C Constructor
+  # Formula (D.1) v0.6.6
+  describe "key_to_31_octet" do
+    test "convert integer" do
+      assert key_to_31_octet(0) == :binary.copy(<<0>>, 31)
+      assert key_to_31_octet(7) == <<7>> <> :binary.copy(<<0>>, 30)
+      assert key_to_31_octet(255) == <<255>> <> :binary.copy(<<0>>, 30)
+    end
+
+    test "convert 255 and service id" do
+      assert key_to_31_octet({255, 1}) == <<255>> <> <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 26)
+
+      assert key_to_31_octet({255, 1024}) ==
+               <<255>> <> <<0, 0, 4, 0, 0, 0, 0, 0>> <> :binary.copy(<<0>>, 22)
+
+      assert key_to_31_octet({255, 4_294_967_295}) ==
+               <<255>> <> <<255, 0, 255, 0, 255, 0, 255, 0>> <> :binary.copy(<<0>>, 22)
+    end
+
+    test "error" do
+      key =
+        {1,
+         <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+           0, 0, 3>>}
+
+      assert key_to_31_octet(key) == <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 27)
+    end
+
+    test "convert service id and hash" do
+      hash = "01234567890123456789012345678901"
+
+      assert key_to_31_octet({1, hash}) ==
+               <<1>> <>
+                 "0" <> <<0>> <> "1" <> <<0>> <> "2" <> <<0>> <> "345678901234567890123456"
+
+      assert key_to_31_octet({1024, hash}) ==
+               <<0>> <>
+                 "0" <> <<4>> <> "1" <> <<0>> <> "2" <> <<0>> <> "345678901234567890123456"
+
+      assert key_to_31_octet({4_294_967_295, hash}) ==
+               <<255>> <>
+                 "0" <> <<255>> <> "1" <> <<255>> <> "2" <> <<255>> <> "345678901234567890123456"
+    end
+
+    test "all state keys are encodable with key_to_31_octet", %{state: state} do
+      state_keys(state)
+      |> Enum.each(fn {k, _} -> assert key_to_31_octet(k) end)
+    end
+  end
+
+  describe "state_keys/1" do
+    test "authorizer_pool serialization - C(1)", %{h1: h1, h2: h2} do
+      state = %State{authorizer_pool: [[h1, h2], [h1]]}
+      assert state_keys(state)[1] == <<2>> <> h1 <> h2 <> <<1>> <> h1
+    end
+
+    test "authorizer_queue serialization - C(2)", %{h1: h1, h2: h2} do
+      state = %State{authorizer_queue: [[h1, h2], [h1]]}
+
+      assert state_keys(state)[2] == h1 <> h2 <> h1
+    end
+
+    test "recent_history serialization - C(3)", %{state: state} do
+      assert state_keys(state)[3] == e(state.recent_history)
+    end
+
+    test "safrole serialization - C(4)", %{state: state} do
+      assert state_keys(state)[4] == e(state.safrole)
+    end
+
+    test "judgements serialization - C(5)", %{state: state} do
+      assert state_keys(state)[5] == e(state.judgements)
+    end
+
+    test "entropy pool serialization - C(6)", %{state: state} do
+      assert state_keys(state)[6] == e(state.entropy_pool)
+    end
+
+    test "next validators serialization - C(7)", %{state: state} do
+      assert state_keys(state)[7] == e(state.next_validators)
+    end
+
+    test "next validators serialization - C(8)", %{state: state} do
+      assert state_keys(state)[8] == e(state.curr_validators)
+    end
+
+    test "previous validators serialization - C(9)", %{state: state} do
+      assert state_keys(state)[9] == e(state.prev_validators)
+    end
+
+    test "core reports serialization - C(10)", %{state: state} do
+      s = %{state | core_reports: build_list(1, :core_report) ++ [nil]}
+
+      expected_to_encode = for c <- s.core_reports, do: NilDiscriminator.new(c)
+
+      assert state_keys(s)[10] == e(expected_to_encode)
+    end
+
+    test "timeslot serialization - C(11)", %{state: state} do
+      assert state_keys(state)[11] == <<state.timeslot::32-little>>
+    end
+
+    test "privileged services serialization - C(12)", %{state: state} do
+      assert state_keys(state)[12] == e(state.privileged_services)
+    end
+
+    test "validator statistics serialization - C(13)", %{state: state} do
+      assert state_keys(state)[13] == e(state.validator_statistics)
+    end
+
+    test "validator accumulation history serialization - C(14)", %{state: state} do
+      assert state_keys(state)[14] == e(for a <- state.accumulation_history, do: vs(a))
+    end
+
+    test "validator ready to accumulate serialization - C(15)", %{state: state} do
+      assert state_keys(state)[15] == e(for a <- state.ready_to_accumulate, do: vs(a))
+    end
+
+    test "service accounts storage serialization", %{state: state} do
+      # Test storage encoding (2^32 - 1 prefix)
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        Map.get(service_account, :storage)
+        |> Enum.each(fn {h, v} ->
+          key = {s, <<(1 <<< 32) - 1::32-little>> <> binary_slice(h, 0, 28)}
+          assert state_keys(state)[key] == v
+        end)
+      end)
+    end
+
+    test "service accounts preimage_storage_p serialization", %{state: state} do
+      # Test preimage storage encoding (2^32 - 2 prefix)
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        Map.get(service_account, :preimage_storage_p)
+        |> Enum.each(fn {h, v} ->
+          key = {s, <<(1 <<< 32) - 2::32-little>> <> binary_slice(h, 1, 28)}
+          assert state_keys(state)[key] == v
+        end)
+      end)
+    end
+
+    test "service accounts preimage_storage_l serialization", %{state: state} do
+      state.services
+      |> Enum.each(fn {s, service_account} ->
+        service_account.preimage_storage_l
+        |> Enum.each(fn {{h, l}, t} ->
+          key = <<l::32-little>> <> (Hash.default(h) |> binary_slice(2, 28))
+          value = e(vs(for x <- t, do: <<x::32-little>>))
+          assert state_keys(state)[{s, key}] == value
+        end)
+      end)
+    end
+  end
+end

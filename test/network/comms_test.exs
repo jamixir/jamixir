@@ -110,8 +110,7 @@ defmodule CommsTest do
       assert map_size(result_trie) == 4
 
       for {key, value} <- state_trie, key >= start_key, key <= end_key do
-        <<key31::binary-size(31), _::8>> = key
-        assert Map.get(result_trie, key31) == value
+        assert Map.get(result_trie, key) == value
       end
     end
 
@@ -131,9 +130,8 @@ defmodule CommsTest do
       verify!()
 
       assert map_size(result_trie) == 1
-      <<start_key31::binary-size(31), _::8>> = start_key
 
-      assert result_trie[start_key31] == state_trie[start_key]
+      assert result_trie[start_key] == state_trie[start_key]
     end
 
     test "single key state request", %{client: client, state_trie: state_trie} do
@@ -148,9 +146,7 @@ defmodule CommsTest do
       verify!()
 
       assert map_size(result_trie) == 1
-      <<start_key31::binary-size(31), _::8>> = start_key
-
-      assert result_trie[start_key31] == state_trie[start_key]
+      assert result_trie[start_key] == state_trie[start_key]
     end
   end
 
