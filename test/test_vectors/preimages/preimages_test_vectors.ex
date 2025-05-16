@@ -19,7 +19,12 @@ defmodule PreimagesTestVectors do
       ]
       |> List.flatten()
 
-  def tested_keys, do: [:services]
+  def tested_keys,
+    do: [:services, {:validator_statistics, :service_statistics, &extract_preimage_from_stats/1}]
+
+  def extract_preimage_from_stats(stats) do
+    Map.values(stats) |> Enum.map(& &1.preimage)
+  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} =
@@ -41,6 +46,8 @@ defmodule PreimagesTestVectors do
     end)
 
     json_data = put_in(json_data[:pre_state][:tau], json_data[:input][:slot])
+
+    json_data = put_vector_services_stats_on_state(json_data)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end

@@ -117,8 +117,8 @@ defmodule TestVectorUtil do
     end
   end
 
-  def accumulate_mock_return do
-    %{
+  def accumulate_mock_return,
+    do: %{
       beefy_commitment: <<>>,
       authorizer_queue: [],
       services: %{},
@@ -129,10 +129,39 @@ defmodule TestVectorUtil do
       accumulation_stats: %{},
       deferred_transfers_stats: %{}
     }
-  end
+
+  def stats_mock,
+    do: %{
+      blocks: 0,
+      tickets: 0,
+      pre_images: 0,
+      pre_images_size: 0,
+      guarantees: 0,
+      assurances: 0
+    }
 
   def mock_accumulate do
     stub(MockAccumulation, :do_transition, fn _, _, _ -> accumulate_mock_return() end)
+  end
+
+  def put_vector_services_stats_on_state(json_data) do
+    json_data =
+      put_in(json_data[:post_state][:statistics], %{
+        services: json_data[:post_state][:statistics],
+        vals_current: [],
+        vals_last: [],
+        cores: []
+      })
+
+    json_data =
+      put_in(json_data[:pre_state][:statistics], %{
+        services: [],
+        vals_current: for(_ <- 1..6, do: stats_mock()),
+        vals_last: for(_ <- 1..6, do: stats_mock()),
+        cores: []
+      })
+
+    json_data
   end
 
   def assert_expected_results(json_data, tested_keys, file_name, extrinsic \\ nil, header \\ nil) do
@@ -160,7 +189,7 @@ defmodule TestVectorUtil do
           expected_result = fetch_key_from_state(expected_state, key)
 
           if our_result != expected_result do
-            IO.puts(key)
+            # IO.puts(key)
 
             if is_binary(our_result) do
               IO.puts("our_result: #{Base.encode16(our_result)}")
@@ -202,8 +231,14 @@ defmodule TestVectorUtil do
 
   defp fetch_key_from_state(state, key) do
     case key do
-      {namespace, subkey} -> Map.get(Map.get(state, namespace), subkey)
-      simple_key -> Map.get(state, simple_key)
+      {namespace, subkey} ->
+        Map.get(Map.get(state, namespace), subkey)
+
+      {namespace, subkey, func} when is_function(func) ->
+        func.(Map.get(Map.get(state, namespace), subkey))
+
+      simple_key ->
+        Map.get(state, simple_key)
     end
   end
 
@@ -213,6 +248,7 @@ defmodule TestVectorUtil do
     |> Map.put(:disputes, Map.from_struct(%Disputes{}))
   end
 
+  defp format_key({namespace, subkey, _}), do: "#{namespace}.#{subkey}"
   defp format_key({namespace, subkey}), do: "#{namespace}.#{subkey}"
   defp format_key(key), do: "#{key}"
 end
