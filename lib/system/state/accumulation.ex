@@ -253,7 +253,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.17) v0.6.5
+  # Formula (12.17) v0.6.6
   @spec parallelized_accumulation(
           t(),
           list(WorkReport.t()),
