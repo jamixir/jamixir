@@ -201,9 +201,28 @@ defmodule System.State.Safrole do
     end
   end
 
+  use Codec.Encoder
+
   def decode(bin) do
-    # TODO
-    {%Safrole{}, <<>>}
+    {pending, rest} = Decoder.decode_list(bin, Constants.validator_count(), Validator)
+    <<epoch_root::b(bls_key), rest::binary>> = rest
+    <<sealer_type::8, rest::binary>> = rest
+
+    {slot_sealers, rest} =
+      case sealer_type do
+        0 -> Decoder.decode_list(rest, Constants.epoch_length(), SealKeyTicket)
+        1 -> Decoder.decode_list(rest, :hash, Constants.epoch_length())
+      end
+
+    {ticket_accumulator, rest} =
+      VariableSize.decode(rest, SealKeyTicket)
+
+    {%__MODULE__{
+       pending: pending,
+       epoch_root: epoch_root,
+       slot_sealers: slot_sealers,
+       ticket_accumulator: ticket_accumulator
+     }, rest}
   end
 
   @spec validate_new_tickets(t(), MapSet.t()) :: :ok | {:error, String.t()}

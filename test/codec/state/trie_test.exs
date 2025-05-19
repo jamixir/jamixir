@@ -208,7 +208,7 @@ defmodule Codec.State.TrieTest do
 
       # assert recovered_state.authorizer_pool == trie_state.authorizer_pool
       assert recovered_state.recent_history == trie_state.recent_history
-      # assert recovered_state.safrole == trie_state.safrole
+      assert recovered_state.safrole == trie_state.safrole
       # assert recovered_state.services == trie_state.services
       assert recovered_state.entropy_pool == trie_state.entropy_pool
       assert recovered_state.next_validators == trie_state.next_validators
