@@ -198,7 +198,12 @@ defmodule Codec.State.Trie do
   def decode_value(12, value), do: decode_from_module(PrivilegedServices, value)
   def decode_value(13, value), do: decode_from_module(ValidatorStatistics, value)
   def decode_value(14, _value), do: []
-  def decode_value(15, _value), do: []
+
+  # accumulation_history
+  def decode_value(15, value) do
+    Decoder.decode_list(value, Constants.epoch_length(), &VariableSize.decode(&1, :mapset, 32))
+    |> elem(0)
+  end
 
   defp decode_validators(v),
     do: elem(Decoder.decode_list(v, Constants.validator_count(), Validator), 0)
