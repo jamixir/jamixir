@@ -3,6 +3,7 @@ defmodule System.State.Validator do
    # Formula (6.8) v0.6.5
   """
   alias System.State.Validator
+  use Codec.Encoder
 
   @type t :: %__MODULE__{
           # Formula (6.9) v0.6.5 - b
@@ -25,6 +26,21 @@ defmodule System.State.Validator do
     def encode(%Validator{} = v) do
       Validator.key(v)
     end
+  end
+
+  def decode(<<
+        bandersnatch::b(bandersnatch_key),
+        ed25519::b(ed25519_key),
+        bls::b(bls_key),
+        metadata::b(metadata),
+        rest::binary
+      >>) do
+    {%__MODULE__{
+       bandersnatch: bandersnatch,
+       ed25519: ed25519,
+       bls: bls,
+       metadata: metadata
+     }, rest}
   end
 
   # Formula (6.14) v0.6.5

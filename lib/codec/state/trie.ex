@@ -1,4 +1,5 @@
 defmodule Codec.State.Trie do
+  alias System.State.Validator
   alias System.State.ValidatorStatistics
   alias System.State.PrivilegedServices
   alias System.State.EntropyPool
@@ -175,17 +176,22 @@ defmodule Codec.State.Trie do
         Constants.core_count()
       )
 
-  def decode_value(3, value), do: RecentHistory.decode(value)
+  def decode_value(3, value), do: decode_from_module(RecentHistory, value)
   def decode_value(4, value), do: Safrole.decode(value)
   def decode_value(5, value), do: Judgements.decode(value)
   def decode_value(6, value), do: EntropyPool.decode(value)
-  def decode_value(7, _value), do: []
-  def decode_value(8, _value), do: []
-  def decode_value(9, _value), do: []
+  def decode_value(7, value), do: decode_validators(value)
+  def decode_value(8, value), do: decode_validators(value)
+  def decode_value(9, value), do: decode_validators(value)
   def decode_value(10, _value), do: []
   def decode_value(11, value), do: de_le(value, 4)
-  def decode_value(12, value), do: PrivilegedServices.decode(value)
+  def decode_value(12, value), do: decode_from_module(PrivilegedServices, value)
   def decode_value(13, value), do: ValidatorStatistics.decode(value)
   def decode_value(14, _value), do: []
   def decode_value(15, _value), do: []
+
+  defp decode_validators(v),
+    do: elem(Decoder.decode_list(v, Constants.validator_count(), Validator), 0)
+
+  defp decode_from_module(module, value), do: elem(module.decode(value), 0)
 end
