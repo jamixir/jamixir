@@ -263,6 +263,7 @@ defmodule System.State.Accumulation do
           {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(acc_state, work_reports, always_acc_services, ctx) do
+    #s
     services = collect_services(work_reports, always_acc_services)
 
     # {x', i', q'}
@@ -318,17 +319,21 @@ defmodule System.State.Accumulation do
       end)
 
     accumulation_state = %__MODULE__{
+      # d'
       services:
         integrate_preimages(Map.drop(d ++ n, MapSet.to_list(m)), service_preimages, ctx.timeslot),
+      # χ'
       privileged_services: privileged_services_,
+      # ι'
       next_validators: next_validators_,
+      # q'
       authorizer_queue: authorizer_queue_
     }
 
     {accumulation_state, List.flatten(transfers), service_hash_pairs, service_gas}
   end
 
-  # Formula (12.18) v0.6.5
+  # Formula (12.18) v0.6.6
   @spec integrate_preimages(
           %{Types.service_index() => ServiceAccount.t()},
           list({Types.service_index(), binary()}),
