@@ -1,4 +1,6 @@
 defmodule Codec.Decoder do
+  alias Codec.NilDiscriminator
+  alias Codec.VariableSize
   use Sizes
 
   defp decode_little_endian(binary, l) do
@@ -69,6 +71,13 @@ defmodule Codec.Decoder do
     Enum.reduce(1..list_length, {[], bin}, fn _, {acc, remaining} ->
       {value, rest} = module.decode(remaining)
       {acc ++ [value], rest}
+    end)
+  end
+
+  @spec decode_mmr(binary()) :: list(Types.hash() | nil)
+  def decode_mmr(bin) do
+    VariableSize.decode(bin, fn b ->
+      NilDiscriminator.decode(b, :hash)
     end)
   end
 

@@ -315,6 +315,13 @@ defmodule RecentHistoryTest do
     end
   end
 
+  describe "decode/1" do
+    test "decodes recent history " do
+      recent_history = build(:recent_history)
+      assert RecentHistory.decode(e(recent_history)) == {recent_history, <<>>}
+    end
+  end
+
   describe "get_well_balanced_merkle_root/1" do
     test "returns Hash.zero() for nil input" do
       assert RecentHistory.get_well_balanced_merkle_root(nil) == Hash.zero()
