@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.WorkItem do
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
-    # c: The code hash of the service at the time of reporting
+    # h: The code hash of the service at the time of reporting
     code_hash: Hash.zero(),
     # y: A payload blob
     payload: <<>>,
@@ -83,6 +83,19 @@ defmodule Block.Extrinsic.WorkItem do
     defp encode_extrinsic(work_item) do
       for {h, i} <- work_item.extrinsic, do: {h, e_le(i, 4)}
     end
+  end
+
+  def encode_for_fetch_host_call(%__MODULE__{} = wi) do
+    Encoder.encode({
+      t(wi.service),
+      wi.code_hash,
+      <<wi.refine_gas_limit::m(gas)>>,
+      <<wi.accumulate_gas_limit::m(gas)>>,
+      <<wi.export_count::m(segment_count)>>,
+      <<length(wi.import_segments)::m(segment_count)>>,
+      <<length(wi.extrinsic)::m(segment_count)>>,
+      <<byte_size(wi.payload)::32-little>>
+    })
   end
 
   defp decode_import_segments_binary(segments) do
