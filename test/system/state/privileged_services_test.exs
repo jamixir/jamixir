@@ -1,12 +1,22 @@
 defmodule System.State.PrivilegedServicesTest do
+  alias System.State.PrivilegedServices
   alias Codec.JsonEncoder
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
 
   describe "encode/1" do
     test "encode smoke test" do
       assert Codec.Encoder.encode(build(:privileged_services)) ==
                <<1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 3, 1, 131, 232, 2, 135, 208, 3, 139, 184>>
+    end
+  end
+
+  describe "decode/1" do
+    test "decode smoke test" do
+      ps = build(:privileged_services)
+
+      assert PrivilegedServices.decode(e(ps)) == {ps, <<>>}
     end
   end
 
