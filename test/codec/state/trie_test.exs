@@ -201,7 +201,10 @@ defmodule Codec.State.TrieTest do
         state
         | services: %{},
           core_reports: [nil, build(:core_report)],
-          judgements: build(:judgements)
+          judgements: build(:judgements),
+          accumulation_history:
+            for(_ <- 1..(Constants.epoch_length() - 1), do: MapSet.new([Hash.random()])) ++
+              [MapSet.new()]
       }
 
       recovered_state = serialize(trie_state) |> trie_to_state()
@@ -221,7 +224,7 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.judgements == trie_state.judgements
       # assert recovered_state.validator_statistics == trie_state.validator_statistics
       # assert recovered_state.ready_to_accumulate == trie_state.ready_to_accumulate
-      # assert recovered_state.accumulation_history == trie_state.accumulation_history
+      assert recovered_state.accumulation_history == trie_state.accumulation_history
 
       # assert recovered_state == trie_state
     end
