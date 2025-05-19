@@ -52,6 +52,9 @@ defmodule Codec.State.Json.DecodeField do
 
   def decode_field(:psi, value), do: [{:judgements, Judgements.from_json(value)}]
 
+  def decode_field(:statistics, value),
+    do: [{:validator_statistics, ValidatorStatistics.from_json(value)}]
+
   def decode_field(:pi, value),
     do: [{:validator_statistics, ValidatorStatistics.from_json(value)}]
 

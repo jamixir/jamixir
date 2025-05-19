@@ -31,8 +31,16 @@ defmodule AccumulateTestVectors do
       :services,
       :ready_to_accumulate,
       :accumulation_history,
-      :privileged_services
+      :privileged_services,
+      {:validator_statistics, :service_statistics, &extract_accumulation_count_from_stats/1}
     ]
+
+  def extract_accumulation_count_from_stats(stats) do
+    case Map.values(stats) |> Enum.at(0) do
+      nil -> nil
+      v -> elem(v.accumulation, 0)
+    end
+  end
 
   def execute_test(file_name, path) do
     {:ok, json_data} =
@@ -72,6 +80,8 @@ defmodule AccumulateTestVectors do
         json_data[:post_state][:entropy],
         for(_ <- 1..4, do: json_data[:post_state][:entropy])
       )
+
+    json_data = put_vector_services_stats_on_state(json_data)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
