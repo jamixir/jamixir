@@ -161,6 +161,11 @@ defmodule System.State.RecentHistory do
     end
   end
 
+  def decode(bin) do
+    # TODO
+    %__MODULE__{}
+  end
+
   def from_json(json_data) do
     case json_data do
       nil -> %RecentHistory{}

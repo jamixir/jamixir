@@ -201,6 +201,11 @@ defmodule System.State.Safrole do
     end
   end
 
+  def decode(bin) do
+    # TODO
+    %Safrole{}
+  end
+
   @spec validate_new_tickets(t(), MapSet.t()) :: :ok | {:error, String.t()}
   def validate_new_tickets(%__MODULE__{ticket_accumulator: ticket_accumulator}, new_ticket_hashes) do
     accumulator_set = MapSet.new(ticket_accumulator, & &1.id)

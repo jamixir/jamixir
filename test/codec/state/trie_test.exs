@@ -42,24 +42,51 @@ defmodule Codec.State.TrieTest do
     end
 
     test "convert service id and hash" do
-      hash = "01234567890123456789012345678901"
+      hash = "012345678901234567890123456"
 
       assert key_to_31_octet({1, hash}) ==
-               <<1>> <>
-                 "0" <> <<0>> <> "1" <> <<0>> <> "2" <> <<0>> <> "345678901234567890123456"
+               <<1, "0", 0, "1", 0, "2", 0>> <> "345678901234567890123456"
 
       assert key_to_31_octet({1024, hash}) ==
-               <<0>> <>
-                 "0" <> <<4>> <> "1" <> <<0>> <> "2" <> <<0>> <> "345678901234567890123456"
+               <<0, "0", 4, "1", 0, "2", 0>> <> "345678901234567890123456"
 
       assert key_to_31_octet({4_294_967_295, hash}) ==
-               <<255>> <>
-                 "0" <> <<255>> <> "1" <> <<255>> <> "2" <> <<255>> <> "345678901234567890123456"
+               <<255, "0", 255, "1", 255, "2", 255>> <> "345678901234567890123456"
     end
 
     test "all state keys are encodable with key_to_31_octet", %{state: state} do
       state_keys(state)
       |> Enum.each(fn {k, _} -> assert key_to_31_octet(k) end)
+    end
+  end
+
+  describe "octet31_to_key" do
+    test "convert binary to integer" do
+      assert octet31_to_key(:binary.copy(<<0>>, 31)) == 0
+      assert octet31_to_key(<<7>> <> :binary.copy(<<0>>, 30)) == 7
+      assert octet31_to_key(<<255>> <> :binary.copy(<<0>>, 30)) == 255
+    end
+
+    test "convert binary to {integer, service id}" do
+      assert octet31_to_key(<<255, 1, 0, 0, 0>> <> :binary.copy(<<0>>, 26)) == {255, 1}
+
+      assert octet31_to_key(<<255, 0, 0, 4, 0>> <> :binary.copy(<<0>>, 26)) == {255, 1024}
+
+      assert octet31_to_key(<<255>> <> <<255, 0, 255, 0, 255, 0, 255>> <> :binary.copy(<<0>>, 23)) ==
+               {255, 4_294_967_295}
+    end
+
+    test "convert binary to {service id, hash}" do
+      hash = "012345678901234567890123456"
+
+      assert octet31_to_key(<<1, "0", 0, "1", 0, "2", 0>> <> "345678901234567890123456") ==
+               {1, hash}
+
+      assert octet31_to_key(<<0, "0", 4, "1", 0, "2", 0>> <> "345678901234567890123456") ==
+               {1024, hash}
+
+      assert octet31_to_key(<<255, "0", 255, "1", 255, "2", 255>> <> "345678901234567890123456") ==
+               {4_294_967_295, hash}
     end
   end
 
@@ -165,6 +192,14 @@ defmodule Codec.State.TrieTest do
           assert state_keys(state)[{s, key}] == value
         end)
       end)
+    end
+  end
+
+  describe "trie_to_state/1" do
+    test "trie_to_state/1 smoke", %{state: state} do
+      state_with_no_services = %State{state | services: %{}}
+      recovered_state = serialize(state_with_no_services) |> trie_to_state()
+      assert recovered_state == state_with_no_services
     end
   end
 end

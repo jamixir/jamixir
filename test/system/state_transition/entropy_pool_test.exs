@@ -63,6 +63,14 @@ defmodule System.StateTransition.EntropyPoolTest do
     end
   end
 
+  describe "decode/1" do
+    test "decodes entropy pool from binary" do
+      [h1, h2, h3, h4] = for _ <- 1..4, do: Hash.random()
+      bin = h1 <> h2 <> h3 <> h4
+      assert EntropyPool.decode(bin) == %EntropyPool{n0: h1, n1: h2, n2: h3, n3: h4}
+    end
+  end
+
   describe "randmoness accumaltor" do
     test "correct entropy accumulations", %{state: state, key_pairs: key_pairs} do
       block = build(:safrole_block, state: state, key_pairs: key_pairs)

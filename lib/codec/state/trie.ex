@@ -1,8 +1,17 @@
 defmodule Codec.State.Trie do
+  alias System.State.ValidatorStatistics
+  alias System.State.PrivilegedServices
+  alias System.State.EntropyPool
+  alias System.State.Judgements
+  alias System.State.Safrole
+  alias Codec.Decoder
+  alias System.State.RecentHistory
+  alias Util.Hash
   alias Codec.NilDiscriminator
   alias System.State
   alias Util.{Hex, Merklization}
   use Codec.Encoder
+  use Codec.Decoder
   import Bitwise
 
   # Formula (D.2) v0.6.5
@@ -61,6 +70,19 @@ defmodule Codec.State.Trie do
   # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
   def key_to_31_octet(key) when key < 256, do: <<key::8, 0::240>>
 
+  def octet31_to_key(<<key::8, 0::240>>) when key < 256, do: key
+
+  def octet31_to_key(<<i::8, n0, 0, n1, 0, n2, 0, n3, 0, 0::176>>) do
+    s = de_le(<<n0, n1, n2, n3>>, 4)
+    {i, s}
+  end
+
+  def octet31_to_key(<<n0, h0, n1, h1, n2, h2, n3, h3, rest::binary-size(23)>>) do
+    s = de_le(<<n0, n1, n2, n3>>, 4)
+    h = <<h0, h1, h2, h3>> <> rest
+    {s, h}
+  end
+
   def serialize(state) do
     for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
   end
@@ -117,4 +139,53 @@ defmodule Codec.State.Trie do
       end)
     end)
   end
+
+  def trie_to_state(trie) do
+    dict =
+      for {k, v} <- trie, into: %{} do
+        id = octet31_to_key(k)
+        {id, decode_value(id, v)}
+      end
+
+    %State{
+      authorizer_pool: dict[1],
+      authorizer_queue: dict[2],
+      recent_history: dict[3],
+      safrole: dict[4],
+      judgements: dict[5],
+      entropy_pool: dict[6],
+      next_validators: dict[7],
+      curr_validators: dict[8],
+      prev_validators: dict[9],
+      core_reports: dict[10],
+      timeslot: dict[11],
+      privileged_services: dict[12],
+      validator_statistics: dict[13],
+      ready_to_accumulate: dict[14],
+      accumulation_history: dict[15]
+    }
+  end
+
+  def decode_value(1, _value), do: List.duplicate([], Constants.core_count())
+
+  def decode_value(2, _value),
+    do:
+      List.duplicate(
+        List.duplicate(Hash.zero(), Constants.max_authorization_queue_items()),
+        Constants.core_count()
+      )
+
+  def decode_value(3, value), do: RecentHistory.decode(value)
+  def decode_value(4, value), do: Safrole.decode(value)
+  def decode_value(5, value), do: Judgements.decode(value)
+  def decode_value(6, value), do: EntropyPool.decode(value)
+  def decode_value(7, _value), do: []
+  def decode_value(8, _value), do: []
+  def decode_value(9, _value), do: []
+  def decode_value(10, _value), do: []
+  def decode_value(11, value), do: de_le(value, 4)
+  def decode_value(12, value), do: PrivilegedServices.decode(value)
+  def decode_value(13, value), do: ValidatorStatistics.decode(value)
+  def decode_value(14, _value), do: []
+  def decode_value(15, _value), do: []
 end

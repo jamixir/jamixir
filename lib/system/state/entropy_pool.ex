@@ -39,6 +39,10 @@ defmodule System.State.EntropyPool do
     end
   end
 
+  def decode(<<n0::b(hash), n1::b(hash), n2::b(hash), n3::b(hash)>>) do
+    %__MODULE__{n0: n0, n1: n1, n2: n2, n3: n3}
+  end
+
   def from_json(json) do
     [n0, n1, n2, n3] = JsonDecoder.from_json(json)
     %__MODULE__{n0: n0, n1: n1, n2: n2, n3: n3}

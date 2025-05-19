@@ -199,4 +199,9 @@ defmodule System.State.ValidatorStatistics do
       })
     end
   end
+
+  def decode(bin) do
+    # TODO
+    %__MODULE__{}
+  end
 end
