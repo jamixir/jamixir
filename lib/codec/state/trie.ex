@@ -1,4 +1,5 @@
 defmodule Codec.State.Trie do
+  alias System.State.CoreReport
   alias System.State.Validator
   alias System.State.ValidatorStatistics
   alias System.State.PrivilegedServices
@@ -183,7 +184,16 @@ defmodule Codec.State.Trie do
   def decode_value(7, value), do: decode_validators(value)
   def decode_value(8, value), do: decode_validators(value)
   def decode_value(9, value), do: decode_validators(value)
-  def decode_value(10, _value), do: []
+
+  def decode_value(10, value),
+    do:
+      elem(
+        Decoder.decode_list(value, Constants.core_count(), fn c ->
+          NilDiscriminator.decode(c, &CoreReport.decode/1)
+        end),
+        0
+      )
+
   def decode_value(11, value), do: de_le(value, 4)
   def decode_value(12, value), do: decode_from_module(PrivilegedServices, value)
   def decode_value(13, value), do: ValidatorStatistics.decode(value)

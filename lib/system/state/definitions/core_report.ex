@@ -80,6 +80,12 @@ defmodule System.State.CoreReport do
     end
   end
 
+  def decode(bin) do
+    {wr, rest} = WorkReport.decode(bin)
+    <<timeslot::m(timeslot), rest::binary>> = rest
+    {%CoreReport{work_report: wr, timeslot: timeslot}, rest}
+  end
+
   use JsonDecoder
 
   def json_mapping do
