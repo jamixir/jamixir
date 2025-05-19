@@ -72,6 +72,9 @@ defmodule Constants do
   @doc "R - The rotation period of validator-core assignments, in timeslots."
   defmockable(:rotation_period, do: Jamixir.config(:rotation_period))
 
+  @doc "S - The maximum number of entries in the accumulation queue."
+  def max_accumulation_queue_items, do: 1024
+
   @doc "T - The maximum number of extrinsics in a work-package."
   def max_extrinsics, do: 128
 
@@ -99,6 +102,9 @@ defmodule Constants do
 
   @doc "W_M - The maximum number of imports and exports in a work-package"
   def max_imports, do: 3_072
+
+  @doc "W_P - The number of erasure-coded pieces in a segment."
+  def erasure_coded_pieces_per_segment, do: 6
 
   @doc "W_R - The maximum size of an encoded work-report in octets."
   def max_work_report_size, do: 48 * 2 ** 10
