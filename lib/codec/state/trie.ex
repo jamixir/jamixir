@@ -178,9 +178,9 @@ defmodule Codec.State.Trie do
       )
 
   def decode_value(3, value), do: decode_from_module(RecentHistory, value)
-  def decode_value(4, value), do: Safrole.decode(value)
-  def decode_value(5, value), do: Judgements.decode(value)
-  def decode_value(6, value), do: EntropyPool.decode(value)
+  def decode_value(4, value), do: decode_from_module(Safrole, value)
+  def decode_value(5, value), do: decode_from_module(Judgements, value)
+  def decode_value(6, value), do: decode_from_module(EntropyPool, value)
   def decode_value(7, value), do: decode_validators(value)
   def decode_value(8, value), do: decode_validators(value)
   def decode_value(9, value), do: decode_validators(value)
@@ -196,7 +196,7 @@ defmodule Codec.State.Trie do
 
   def decode_value(11, value), do: de_le(value, 4)
   def decode_value(12, value), do: decode_from_module(PrivilegedServices, value)
-  def decode_value(13, value), do: ValidatorStatistics.decode(value)
+  def decode_value(13, value), do: decode_from_module(ValidatorStatistics, value)
   def decode_value(14, _value), do: []
   def decode_value(15, _value), do: []
 

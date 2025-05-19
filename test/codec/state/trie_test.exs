@@ -197,7 +197,13 @@ defmodule Codec.State.TrieTest do
 
   describe "trie_to_state/1" do
     test "trie_to_state/1 smoke", %{state: state} do
-      trie_state = %State{state | services: %{}, core_reports: [nil, build(:core_report)]}
+      trie_state = %State{
+        state
+        | services: %{},
+          core_reports: [nil, build(:core_report)],
+          judgements: build(:judgements)
+      }
+
       recovered_state = serialize(trie_state) |> trie_to_state()
 
       # assert recovered_state.authorizer_pool == trie_state.authorizer_pool
@@ -212,7 +218,7 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.timeslot == trie_state.timeslot
       # assert recovered_state.authorizer_queue == trie_state.authorizer_queue
       assert recovered_state.privileged_services == trie_state.privileged_services
-      # assert recovered_state.judgements == trie_state.judgements
+      assert recovered_state.judgements == trie_state.judgements
       # assert recovered_state.validator_statistics == trie_state.validator_statistics
       # assert recovered_state.ready_to_accumulate == trie_state.ready_to_accumulate
       # assert recovered_state.accumulation_history == trie_state.accumulation_history
