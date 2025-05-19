@@ -4,11 +4,10 @@ defmodule System.StateTest do
   import Codec.State.Trie
   import OriginalModules
   import Mox
-  import Bitwise
   import TestHelper
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
-  alias Codec.{JsonEncoder, NilDiscriminator}
+  alias Codec.JsonEncoder
   alias Codec.State.Json
   alias System.State
   alias Util.Hash
