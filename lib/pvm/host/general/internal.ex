@@ -1,7 +1,7 @@
-# Formula (B.18) v0.6.5
-
+# Formula (B.18) v0.6.6
 defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
+  alias System.DeferredTransfer
   alias Block.Extrinsic.WorkItem
   alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
@@ -10,6 +10,7 @@ defmodule PVM.Host.General.Internal do
   alias Util.Hash
   use Codec.Encoder
   import PVM.Host.Util
+  import Constants
   require Logger
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
@@ -18,20 +19,19 @@ defmodule PVM.Host.General.Internal do
   @spec fetch_internal(
           Registers.t(),
           Memory.t(),
-          any(),
           WorkPackage,
           binary(),
-          any(),
+          binary(),
           non_neg_integer(),
           list(list(binary())),
           list(list({Types.hash(), non_neg_integer()})),
           list(Operand.t()),
+          list(DeferredTransfer.t()),
           any()
         ) :: Result.Internal.t()
   def fetch_internal(
         registers,
         memory,
-        context,
         work_package,
         n,
         authorizer_output,
@@ -39,14 +39,49 @@ defmodule PVM.Host.General.Internal do
         import_segments,
         extrinsics,
         operands,
-        transfers
+        transfers,
+        context
       ) do
     [w10, w11, w12] = Registers.get(registers, [10, 11, 12])
 
     v =
       cond do
         w10 == 0 ->
-          <<0, 1, 2>>
+          <<
+            additional_minimum_balance_per_item()::m(balance),         # E8(B_I)
+            additional_minimum_balance_per_octet()::m(balance),        # E8(B_L)
+            service_minimum_balance()::m(balance),                     # E8(B_S)
+            core_count()::m(core_index),                               # E2(C)
+            forget_delay()::m(timeslot),                               # E4(D)
+            epoch_length()::m(epoch),                                  # E4(E)
+            gas_accumulation()::m(gas),                                # E8(G_A)
+            gas_is_authorized()::m(gas),                               # E8(G_I)
+            gas_refine()::m(gas),                                      # E8(G_R)
+            gas_total_accumulation()::m(gas),                          # E8(G_T)
+            recent_history_size()::16-little,                          # E2(H)
+            max_work_items()::16-little,                               # E2(I)
+            max_work_report_dep_sum()::16-little,                      # E2(J)
+            max_age_lookup_anchor()::m(timeslot),                      # E4(L)
+            max_authorizations_items()::16-little,                     # E2(O)
+            slot_period()::16-little,                                  # E2(P)
+            max_authorization_queue_items()::16-little,                # E2(Q)
+            rotation_period()::16-little,                              # E2(R)
+            max_accumulation_queue_items()::16-little,                 # E2(S)
+            max_extrinsics()::16-little,                               # E2(T)
+            unavailability_period()::16-little,                        # E2(U)
+            validator_count()::16-little,                              # E2(V)
+            max_is_authorized_code_size()::32-little,                  # E4(W_A)
+            max_work_package_size()::32-little,                        # E4(W_B)
+            max_service_code_size()::32-little,                        # E4(W_C)
+            erasure_coded_piece_size()::32-little,                     # E4(W_E)
+            segment_size()::32-little,                                 # E4(W_G)
+            max_imports()::32-little,                                  # E4(W_M)
+            erasure_coded_pieces_per_segment()::32-little,             # E4(W_P)
+            max_work_report_size()::32-little,                         # E4(W_R)
+            memo_size()::32-little,                                    # E4(W_T)
+            max_exports()::32-little,                                  # E4(W_X)
+            ticket_submission_end()::32-little                         # E4(Y)
+          >>
 
         n != nil and w10 == 1 ->
           n
