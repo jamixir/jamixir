@@ -145,6 +145,11 @@ defmodule System.State.Judgements do
     end
   end
 
+  def decode(bin) do
+    # TODO
+    %__MODULE__{}
+  end
+
   use JsonDecoder
 
   def json_mapping do

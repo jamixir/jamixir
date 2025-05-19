@@ -39,6 +39,10 @@ defmodule System.State.PrivilegedServices do
     end
   end
 
+  def decode(bin) do
+    %__MODULE__{}
+  end
+
   def json_mapping do
     %{
       privileged_services_service: :chi_m,
