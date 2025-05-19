@@ -25,7 +25,6 @@ defmodule System.State.PrivilegedServices do
   defimpl Encodable do
     use Codec.Encoder
     alias System.State.PrivilegedServices
-    alias Codec.Decoder
 
     def encode(%PrivilegedServices{} = v) do
       <<v.privileged_services_service::m(service), v.authorizer_queue_service::m(service),

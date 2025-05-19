@@ -1,5 +1,6 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
   alias System.State.EntropyPool
   alias System.State.Safrole
@@ -163,7 +164,7 @@ defmodule System.State.SafroleTest do
   describe "encode/1" do
     test "encodes a safrole smoke test" do
       safrole = build(:safrole)
-      Encodable.encode(safrole)
+      e(safrole)
     end
 
     test "encode with seal type 1" do
@@ -175,7 +176,21 @@ defmodule System.State.SafroleTest do
           ticket_accumulator: []
         )
 
-      assert Encodable.encode(safrole) == "\0\x01\x02\0"
+      assert e(safrole) == "\0\x01\x02\0"
+    end
+  end
+
+  describe "decode/1" do
+    test "decodes a safrole smoke test" do
+      safrole = build(:safrole)
+      assert Safrole.decode(e(safrole)) == {safrole, <<>>}
+    end
+
+    test "decodes with seal type 1" do
+      safrole =
+        build(:safrole, slot_sealers: for(_ <- 1..Constants.epoch_length(), do: Hash.random()))
+
+      assert Safrole.decode(e(safrole)) == {safrole, <<>>}
     end
   end
 end
