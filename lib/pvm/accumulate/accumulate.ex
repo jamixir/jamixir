@@ -11,7 +11,7 @@ defmodule PVM.Accumulate do
   use Codec.{Encoder, Decoder}
 
   @doc """
-  Formula (B.9) v0.6.5
+  Formula (B.9) v0.6.6
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
