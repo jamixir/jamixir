@@ -466,8 +466,8 @@ defmodule Jamixir.Factory do
     %RecentBlock{
       header_hash: Hash.random(),
       state_root: Hash.random(),
-      accumulated_result_mmr: [Hash.random()],
-      work_report_hashes: [Hash.random()]
+      accumulated_result_mmr: [Hash.random(), nil, nil],
+      work_report_hashes: %{Hash.random() => Hash.random()}
     }
   end
 

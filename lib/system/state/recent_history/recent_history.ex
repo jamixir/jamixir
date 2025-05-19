@@ -4,6 +4,7 @@ defmodule System.State.RecentHistory do
   """
 
   alias Block.Header
+  alias Codec.Decoder
   alias System.State.RecentHistory
   alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, MMR}
@@ -162,8 +163,24 @@ defmodule System.State.RecentHistory do
   end
 
   def decode(bin) do
-    # TODO
-    %__MODULE__{}
+    {blocks, rest} = VariableSize.decode(bin, &decode_recent_block/1)
+    {%__MODULE__{blocks: blocks}, rest}
+  end
+
+  use Sizes
+
+  def decode_recent_block(bin) do
+    <<header_hash::b(hash), rest::binary>> = bin
+    {accumulated_result_mmr, rest} = Decoder.decode_mmr(rest)
+    <<state_root::b(hash), rest::binary>> = rest
+    {work_report_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
+
+    {%RecentBlock{
+       header_hash: header_hash,
+       accumulated_result_mmr: accumulated_result_mmr,
+       state_root: state_root,
+       work_report_hashes: work_report_hashes
+     }, rest}
   end
 
   def from_json(json_data) do

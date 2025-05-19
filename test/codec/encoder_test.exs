@@ -1,5 +1,6 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
+  alias Codec.Decoder
   use Codec.Encoder
   use Sizes
 
@@ -111,6 +112,19 @@ defmodule CodecEncoderTest do
       assert Encoder.encode_mmr([2, 3]) == <<2, 1, 2, 1, 3>>
       assert Encoder.encode_mmr([nil, 3]) == <<2, 0, 1, 3>>
       assert Encoder.encode_mmr([nil, nil]) == <<2, 0, 0>>
+    end
+  end
+
+  describe "decode_mmr/1" do
+    test "decode mmr cases" do
+      assert Decoder.decode_mmr(<<0, 7>>) == {[], <<7>>}
+      assert Decoder.decode_mmr(<<1, 1, 2::hash()>>) == {[<<2::hash()>>], <<>>}
+
+      assert Decoder.decode_mmr(<<2, 1, <<2::hash()>>, 1, <<3::hash()>>, 4, 4, 4>>) ==
+               {[<<2::hash()>>, <<3::hash()>>], <<4, 4, 4>>}
+
+      assert Decoder.decode_mmr(<<2, 0, 1, 3::hash()>>) == {[nil, <<3::hash()>>], <<>>}
+      assert Decoder.decode_mmr(<<2, 0, 0, 7, 7, 7>>) == {[nil, nil], <<7, 7, 7>>}
     end
   end
 

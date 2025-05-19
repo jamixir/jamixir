@@ -37,9 +37,13 @@ defmodule Codec.VariableSize do
     end)
   end
 
-  def decode(bin, module) do
+  def decode(bin, func) when is_function(func) do
     {count, rest} = de_i(bin)
-    decode(rest, module, count)
+    decode(rest, func, count)
+  end
+
+  def decode(bin, module) do
+    decode(bin, &module.decode/1)
   end
 
   def decode(bin, :mapset, value_size) do
@@ -51,11 +55,15 @@ defmodule Codec.VariableSize do
     end)
   end
 
-  def decode(bin, module, count) do
+  def decode(bin, func, count) when is_function(func) do
     Enum.reduce(from_0_to(count), {[], bin}, fn _, {acc, bin} ->
-      {value, r} = module.decode(bin)
+      {value, r} = func.(bin)
       {acc ++ [value], r}
     end)
+  end
+
+  def decode(bin, module, count) do
+    decode(bin, &module.decode/1, count)
   end
 
   def decode(bin, :map, key_size, value_size) do
