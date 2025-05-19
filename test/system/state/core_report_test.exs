@@ -16,6 +16,14 @@ defmodule System.State.CoreReportTest do
     end
   end
 
+  describe "decode/1" do
+    test "decode core report smoke test" do
+      core_report = build(:core_report)
+
+      assert CoreReport.decode(e(core_report)) == {core_report, <<>>}
+    end
+  end
+
   describe "initial_core_reports/0" do
     test "initial_core_reports smoke test" do
       assert length(CoreReport.initial_core_reports()) == Constants.core_count()
@@ -97,7 +105,12 @@ defmodule System.State.CoreReportTest do
       available_work_reports = WorkReport.available_work_reports(assurances, core_reports)
 
       with_original_modules([:process_availability, :available_work_reports]) do
-        assert CoreReport.process_availability(core_reports, core_reports, available_work_reports, 0) ==
+        assert CoreReport.process_availability(
+                 core_reports,
+                 core_reports,
+                 available_work_reports,
+                 0
+               ) ==
                  [nil, nil]
       end
     end
