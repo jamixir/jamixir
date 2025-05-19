@@ -3,7 +3,7 @@ defmodule System.State.PrivilegedServices do
   Formula (9.9) v0.6.5
   """
   alias Codec.JsonEncoder
-
+  use Codec.Encoder
   use JsonDecoder
 
   @type t :: %__MODULE__{
@@ -25,22 +25,29 @@ defmodule System.State.PrivilegedServices do
   defimpl Encodable do
     use Codec.Encoder
     alias System.State.PrivilegedServices
+    alias Codec.Decoder
 
     def encode(%PrivilegedServices{} = v) do
-      e(
-        for s <- [
-              v.privileged_services_service,
-              v.authorizer_queue_service,
-              v.next_validators_service
-            ] do
-          e_le(s, 4)
-        end
-      ) <> e(v.services_gas)
+      <<v.privileged_services_service::m(service), v.authorizer_queue_service::m(service),
+        v.next_validators_service::m(service)>> <>
+        e(v.services_gas)
     end
   end
 
+  use Sizes
+
   def decode(bin) do
-    %__MODULE__{}
+    <<privileged_services_service::m(service), authorizer_queue_service::m(service),
+      next_validators_service::m(service), rest::binary>> = bin
+
+    {services_gas, rest} = VariableSize.decode(rest, :map_int)
+
+    {%__MODULE__{
+       privileged_services_service: privileged_services_service,
+       authorizer_queue_service: authorizer_queue_service,
+       next_validators_service: next_validators_service,
+       services_gas: services_gas
+     }, rest}
   end
 
   def json_mapping do

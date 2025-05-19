@@ -37,6 +37,16 @@ defmodule Codec.VariableSize do
     end)
   end
 
+  def decode(bin, :map_int) do
+    {count, rest} = de_i(bin)
+
+    Enum.reduce(from_0_to(count), {%{}, rest}, fn _, {acc, rest} ->
+      {key, rest} = de_i(rest)
+      {value, rest} = de_i(rest)
+      {Map.put(acc, key, value), rest}
+    end)
+  end
+
   def decode(bin, func) when is_function(func) do
     {count, rest} = de_i(bin)
     decode(rest, func, count)
