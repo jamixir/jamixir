@@ -2,6 +2,7 @@ defmodule System.State.Judgements do
   @moduledoc """
   Formula (10.1) v0.6.5
   """
+  alias Codec.VariableSize
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.{Error, Verdict}
   alias Block.Header
@@ -145,9 +146,20 @@ defmodule System.State.Judgements do
     end
   end
 
+  use Sizes
+
   def decode(bin) do
-    # TODO
-    %__MODULE__{}
+    {good, rest} = VariableSize.decode(bin, :mapset, @hash_size)
+    {bad, rest} = VariableSize.decode(rest, :mapset, @hash_size)
+    {wonky, rest} = VariableSize.decode(rest, :mapset, @hash_size)
+    {offenders, rest} = VariableSize.decode(rest, :mapset, @hash_size)
+
+    {%__MODULE__{
+       good: good,
+       bad: bad,
+       wonky: wonky,
+       offenders: offenders
+     }, rest}
   end
 
   use JsonDecoder

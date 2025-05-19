@@ -203,7 +203,7 @@ defmodule System.State.Safrole do
 
   def decode(bin) do
     # TODO
-    %Safrole{}
+    {%Safrole{}, <<>>}
   end
 
   @spec validate_new_tickets(t(), MapSet.t()) :: :ok | {:error, String.t()}
