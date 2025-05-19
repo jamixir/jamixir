@@ -34,7 +34,6 @@ defmodule PVM.Host.General.Internal do
   def fetch_internal(
         registers,
         memory,
-        context,
         work_package,
         n,
         authorizer_output,
@@ -42,7 +41,8 @@ defmodule PVM.Host.General.Internal do
         import_segments,
         preimages,
         operands,
-        transfers
+        transfers,
+        context
       ) do
     [w10, w11, w12] = Registers.get(registers, [10, 11, 12])
 
