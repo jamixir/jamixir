@@ -2,6 +2,8 @@
 
 defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
+  alias Block.Extrinsic.WorkItem
+  alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
   alias PVM.{Memory, Registers}
   alias System.State.ServiceAccount
@@ -11,6 +13,123 @@ defmodule PVM.Host.General.Internal do
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
+
+  @spec fetch_internal(
+          Registers.t(),
+          Memory.t(),
+          any(),
+          WorkPackage,
+          binary(),
+          any(),
+          non_neg_integer(),
+          list(list(binary())),
+          list(list({Types.hash(), non_neg_integer()})),
+          list(Operand.t()),
+          any()
+        ) :: Result.Internal.t()
+  def fetch_internal(
+        registers,
+        memory,
+        context,
+        work_package,
+        n,
+        authorizer_output,
+        service_index,
+        import_segments,
+        extrinsics,
+        operands,
+        transfers
+      ) do
+    [w10, w11, w12] = Registers.get(registers, [10, 11, 12])
+
+    v =
+      cond do
+        w10 == 0 ->
+          <<0, 1, 2>>
+
+        n != nil and w10 == 1 ->
+          n
+
+        authorizer_output != nil and w10 == 2 ->
+          authorizer_output
+
+        service_index != nil and w10 == 3 and w11 < length(extrinsics) and
+            w12 < length(Enum.at(extrinsics, w11)) ->
+          extrinsics |> Enum.at(w11) |> Enum.at(w12)
+
+        service_index != nil and w10 == 4 and w11 < length(Enum.at(extrinsics, service_index)) ->
+          extrinsics |> Enum.at(service_index) |> Enum.at(w11)
+
+        service_index != nil and w10 == 5 and w11 < length(import_segments) and
+            w12 < length(Enum.at(import_segments, w11)) ->
+          import_segments |> Enum.at(w11) |> Enum.at(w12)
+
+        service_index != nil and w10 == 6 and
+            w11 < length(Enum.at(import_segments, service_index)) ->
+          import_segments |> Enum.at(service_index) |> Enum.at(w11)
+
+        work_package != nil and w10 == 7 ->
+          e(work_package)
+
+        work_package != nil and w10 == 8 ->
+          e({work_package.authorization_code_hash, vs(work_package.parameterization_blob)})
+
+        work_package != nil and w10 == 9 ->
+          work_package.authorization_token
+
+        work_package != nil and w10 == 10 ->
+          work_package.refinement_context
+
+        work_package != nil and w10 == 11 ->
+          e(vs(for wi <- work_package.work_items, do: WorkItem.encode_for_fetch_host_call(wi)))
+
+        work_package != nil and w10 == 12 and w11 < length(work_package.work_items) ->
+          WorkItem.encode_for_fetch_host_call(Enum.at(work_package.work_items, w11))
+
+        work_package != nil and w10 == 13 and w11 < length(work_package.work_items) ->
+          work_package.work_items |> Enum.at(w11) |> Map.get(:payload)
+
+        operands != nil and w10 == 14 ->
+          e(vs(operands))
+
+        operands != nil and w10 == 15 and w11 < length(operands) ->
+          e(Enum.at(operands, w11))
+
+        transfers != nil and w10 == 16 ->
+          e(vs(transfers))
+
+        transfers != nil and w10 == 17 and w11 < length(transfers) ->
+          e(Enum.at(transfers, w11))
+
+        true ->
+          nil
+      end
+
+    [o, w8, w9] = Registers.get(registers, [7, 8, 9])
+    f = min(w8, safe_byte_size(v))
+    l = min(w9, safe_byte_size(v) - f)
+
+    is_writable = Memory.check_range_access?(memory, o, l, :write)
+
+    {exit_reason_, w7_, memory__} =
+      cond do
+        !is_writable ->
+          {:panic, registers.r7, memory}
+
+        is_nil(v) ->
+          {:continue, none(), memory}
+
+        true ->
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
+      end
+
+    %Result.Internal{
+      exit_reason: exit_reason_,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory__,
+      context: context
+    }
+  end
 
   @spec lookup_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), services()) ::
           Result.Internal.t()
