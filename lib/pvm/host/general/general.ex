@@ -36,23 +36,37 @@ defmodule PVM.Host.General do
           non_neg_integer(),
           Registers,
           Memory,
-          # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
-          any(),
           WorkPackage,
           binary(),
-          any(),
+          binary(),
           non_neg_integer(),
           list(list(binary())),
           list(list({Types.hash(), non_neg_integer()})),
           list(Operand.t()),
-          list(DeferredTransfer.t())
+          list(DeferredTransfer.t()),
+          # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
+          any()
         ) ::
           nil
   def fetch(
         gas,
         registers,
         memory,
-        context,
+        work_package,
+        n,
+        authorizer_output,
+        service_index,
+        import_segments,
+        extrinsics,
+        operands,
+        transfers,
+        context
+      ) do
+    with_gas(
+      General.Result,
+      {gas, registers, memory, context},
+      &fetch_internal/11,
+      [
         work_package,
         n,
         authorizer_output,
@@ -61,12 +75,7 @@ defmodule PVM.Host.General do
         extrinsics,
         operands,
         transfers
-      ) do
-    with_gas(
-      General.Result,
-      {gas, registers, memory, context},
-      &fetch_internal/11,
-      [work_package, n, authorizer_output, service_index, import_segments, extrinsics, operands, transfers]
+      ]
     )
   end
 

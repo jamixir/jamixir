@@ -21,8 +21,45 @@ defmodule PVM do
   def do_authorized(%WorkPackage{} = p, core_index, services) do
     pc = WorkPackage.authorization_code(p, services)
 
-    args = e({p, t(core_index)})
+    args = e(t(core_index))
     w_a = Constants.max_is_authorized_code_size()
+
+    # Formula (B.2) v0.6.6
+    f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
+      host_call_result =
+        case host(n) do
+          :gas ->
+            Host.General.gas(gas, registers, memory, nil)
+
+          :fetch ->
+            Host.General.fetch(
+              gas,
+              registers,
+              memory,
+              p,
+              p,
+              nil,
+              nil,
+              nil,
+              nil,
+              nil,
+              nil,
+              nil
+            )
+
+          _ ->
+            %General.Result{
+              exit_reason: :continue,
+              gas: gas - default_gas(),
+              registers: Registers.set(registers, 7, what()),
+              memory: memory
+            }
+        end
+
+      %{exit_reason: e, gas: g, registers: r, memory: m, context: _c} = host_call_result
+
+      {e, %{gas: g, registers: r, memory: m}, nil}
+    end
 
     case pc do
       nil ->
@@ -33,28 +70,9 @@ defmodule PVM do
 
       _ ->
         {used_gas, result, nil} =
-          ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, &authorized_f/3, nil)
+          ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, f, nil)
 
         {result, used_gas}
-    end
-  end
-
-  # Formula (B.2) v0.6.5
-  @spec authorized_f(non_neg_integer(), PVM.Types.host_call_state(), PVM.Types.context()) ::
-          {PVM.Types.exit_reason(), PVM.Types.host_call_state(), PVM.Types.context()}
-  def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
-    if host(n) == :gas do
-      %{exit_reason: exit_reason, gas: gas_, registers: registers_, memory: memory} =
-        Host.General.gas(gas, registers, memory, nil)
-
-      {exit_reason, %{gas: gas_, registers: registers_, memory: memory}, nil}
-    else
-      {:continue,
-       %{
-         gas: gas - default_gas(),
-         registers: Registers.set(registers, 7, what()),
-         memory: memory
-       }, nil}
     end
   end
 
