@@ -91,7 +91,18 @@ defmodule Codec.State.Trie do
   end
 
   def serialize(state) do
-    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
+    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{}) |> add_extra_keys()
+  end
+
+  # This is a workaround to add extra keys to the trie
+  def add_extra_keys(dict) do
+    case Application.get_env(:jamixir, :extra_trie, nil) do
+      nil ->
+        dict
+
+      extra ->
+        Map.merge(dict, extra)
+    end
   end
 
   def serialize_hex(state, opts \\ []) do
@@ -100,6 +111,14 @@ defmodule Codec.State.Trie do
     for {k, v} <- serialize(state),
         do: {Hex.encode16(k, prefix: prefix), Hex.encode16(v, prefix: prefix)},
         into: %{}
+  end
+
+  def from_json(json) do
+    for item <- json, into: %{} do
+      dict = JsonDecoder.from_json(item)
+
+      {dict[:key], dict[:value]}
+    end
   end
 
   def state_root(state), do: Merklization.merkelize_state(serialize(state))
@@ -261,5 +280,9 @@ defmodule Codec.State.Trie do
     VariableSize.decode(bin, fn <<x::little-32, rest::binary>> ->
       {x, rest}
     end)
+  end
+
+  def decode_value(_, value) do
+    {nil, <<>>}
   end
 end
