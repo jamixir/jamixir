@@ -1,16 +1,16 @@
 defmodule Codec.State.Trie do
-  alias System.State.CoreReport
-  alias System.State.Validator
-  alias System.State.ValidatorStatistics
-  alias System.State.PrivilegedServices
-  alias System.State.EntropyPool
-  alias System.State.Judgements
-  alias System.State.Safrole
   alias Codec.Decoder
-  alias System.State.RecentHistory
-  alias Util.Hash
   alias Codec.NilDiscriminator
   alias System.State
+  alias System.State.CoreReport
+  alias System.State.EntropyPool
+  alias System.State.Judgements
+  alias System.State.PrivilegedServices
+  alias System.State.Ready
+  alias System.State.RecentHistory
+  alias System.State.Safrole
+  alias System.State.Validator
+  alias System.State.ValidatorStatistics
   alias Util.{Hex, Merklization}
   use Codec.Encoder
   use Codec.Decoder
@@ -146,7 +146,7 @@ defmodule Codec.State.Trie do
     dict =
       for {k, v} <- trie, into: %{} do
         id = octet31_to_key(k)
-        {id, decode_value(id, v)}
+        {id, elem(decode_value(id, v), 0)}
       end
 
     %State{
@@ -168,45 +168,42 @@ defmodule Codec.State.Trie do
     }
   end
 
-  def decode_value(1, _value), do: List.duplicate([], Constants.core_count())
+  # authorizer_pool
+  def decode_value(1, v),
+    do: Decoder.decode_list(v, Constants.core_count(), &VariableSize.decode(&1, :hash))
 
-  def decode_value(2, _value),
+  # authorizer_queue
+  def decode_value(2, v),
     do:
-      List.duplicate(
-        List.duplicate(Hash.zero(), Constants.max_authorization_queue_items()),
-        Constants.core_count()
+      Decoder.decode_list(
+        v,
+        Constants.core_count(),
+        &Decoder.decode_list(&1, :hash, Constants.max_authorization_queue_items())
       )
 
-  def decode_value(3, value), do: decode_from_module(RecentHistory, value)
-  def decode_value(4, value), do: decode_from_module(Safrole, value)
-  def decode_value(5, value), do: decode_from_module(Judgements, value)
-  def decode_value(6, value), do: decode_from_module(EntropyPool, value)
-  def decode_value(7, value), do: decode_validators(value)
-  def decode_value(8, value), do: decode_validators(value)
-  def decode_value(9, value), do: decode_validators(value)
+  def decode_value(3, v), do: RecentHistory.decode(v)
+  def decode_value(4, v), do: Safrole.decode(v)
+  def decode_value(5, v), do: Judgements.decode(v)
+  def decode_value(6, v), do: EntropyPool.decode(v)
+  def decode_value(7, v), do: Decoder.decode_list(v, Constants.validator_count(), Validator)
+  def decode_value(8, v), do: Decoder.decode_list(v, Constants.validator_count(), Validator)
+  def decode_value(9, v), do: Decoder.decode_list(v, Constants.validator_count(), Validator)
 
-  def decode_value(10, value),
+  def decode_value(10, v),
     do:
-      elem(
-        Decoder.decode_list(value, Constants.core_count(), fn c ->
-          NilDiscriminator.decode(c, &CoreReport.decode/1)
-        end),
-        0
-      )
+      Decoder.decode_list(v, Constants.core_count(), fn c ->
+        NilDiscriminator.decode(c, &CoreReport.decode/1)
+      end)
 
-  def decode_value(11, value), do: de_le(value, 4)
-  def decode_value(12, value), do: decode_from_module(PrivilegedServices, value)
-  def decode_value(13, value), do: decode_from_module(ValidatorStatistics, value)
-  def decode_value(14, _value), do: []
+  def decode_value(11, value), do: {de_le(value, 4), <<>>}
+  def decode_value(12, value), do: PrivilegedServices.decode(value)
+  def decode_value(13, value), do: ValidatorStatistics.decode(value)
+
+  def decode_value(14, value),
+    do: Decoder.decode_list(value, Constants.epoch_length(), &VariableSize.decode(&1, Ready))
 
   # accumulation_history
   def decode_value(15, value) do
     Decoder.decode_list(value, Constants.epoch_length(), &VariableSize.decode(&1, :mapset, 32))
-    |> elem(0)
   end
-
-  defp decode_validators(v),
-    do: elem(Decoder.decode_list(v, Constants.validator_count(), Validator), 0)
-
-  defp decode_from_module(module, value), do: elem(module.decode(value), 0)
 end
