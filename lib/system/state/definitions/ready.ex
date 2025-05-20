@@ -1,5 +1,6 @@
 defmodule System.State.Ready do
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Codec.VariableSize
   use JsonDecoder
 
   @type t :: %__MODULE__{
@@ -38,5 +39,13 @@ defmodule System.State.Ready do
 
     # Formula (C.13) v0.6.5
     def encode(%Ready{work_report: w, dependencies: d}), do: e({w, vs(d)})
+  end
+
+  use Sizes
+
+  def decode(bin) do
+    {work_report, rest} = WorkReport.decode(bin)
+    {dependencies, rest} = VariableSize.decode(rest, :mapset, @hash_size)
+    {%__MODULE__{work_report: work_report, dependencies: dependencies}, rest}
   end
 end

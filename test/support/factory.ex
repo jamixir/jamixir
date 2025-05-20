@@ -1,21 +1,20 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
-  alias System.HeaderSeal
-  alias System.State.Ready
   alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}
+  alias System.HeaderSeal
   alias System.State.{RecentHistory.RecentBlock, SealKeyTicket}
   alias Util.{Crypto, Hash, Time}
   use ExMachina
   use Sizes
 
-  @cores Constants.validator_count()
+  @cores Constants.core_count()
   @validator_count Constants.validator_count()
   @max_authorizers_per_core 2
-  @max_authorize_queue_items 4
+  @max_authorize_queue_items Constants.max_authorization_queue_items()
 
   # Validator Key Pairs Factory
   def validators_and_bandersnatch_keys(count \\ @validator_count) do
@@ -106,7 +105,7 @@ defmodule Jamixir.Factory do
 
   def work_report_factory do
     %WorkReport{
-      specification: build(:availability_specification),
+      specification: build(:availability_specification, work_package_hash: Hash.random()),
       refinement_context: build(:refinement_context),
       core_index: 1,
       authorizer_hash: Hash.two(),
@@ -502,13 +501,14 @@ defmodule Jamixir.Factory do
   end
 
   def ready_to_accumulate_factory(_attrs) do
-    for(
-      _ <- 1..Constants.epoch_length(),
-      do: %Ready{
-        work_report: work_report_factory(),
-        dependencies: MapSet.new([Hash.random()])
-      }
-    )
+    for(_ <- 1..Constants.epoch_length(), do: build_list(1, :ready))
+  end
+
+  def ready_factory do
+    %System.State.Ready{
+      work_report: build(:work_report),
+      dependencies: MapSet.new([Hash.random(), Hash.random()])
+    }
   end
 
   def accumulation_history_factory(_attrs) do
