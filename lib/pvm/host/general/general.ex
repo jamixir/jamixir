@@ -41,7 +41,7 @@ defmodule PVM.Host.General do
           binary(),
           non_neg_integer(),
           list(list(binary())),
-          list(list({Types.hash(), non_neg_integer()})),
+          list(list(binary())),
           list(Operand.t()),
           list(DeferredTransfer.t()),
           # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
@@ -57,7 +57,7 @@ defmodule PVM.Host.General do
         authorizer_output,
         service_index,
         import_segments,
-        extrinsics,
+        preimages,
         operands,
         transfers,
         context
@@ -72,7 +72,7 @@ defmodule PVM.Host.General do
         authorizer_output,
         service_index,
         import_segments,
-        extrinsics,
+        preimages,
         operands,
         transfers
       ]
