@@ -359,13 +359,51 @@ defmodule Jamixir.Factory do
 
     %System.State.ValidatorStatistics{
       current_epoch_statistics: build_list(count, :statistics),
-      previous_epoch_statistics: build_list(count, :statistics)
+      previous_epoch_statistics: build_list(count, :statistics),
+      core_statistics: attrs[:core_statistics] || build_list(@cores, :core_statistics),
+      service_statistics:
+        attrs[:service_statistics] ||
+          %{
+            1 => build(:service_statistics),
+            2 => build(:service_statistics)
+          }
+    }
+  end
+
+  def service_statistics_factory do
+    %System.State.ServiceStatistic{
+      preimage: {10, 1000},
+      refine: {10_000, 500_000},
+      imports: 1_000_000,
+      exports: 10_000_000,
+      extrinsic_count: 100_000_000,
+      extrinsic_size: 1,
+      accumulation: {9, 1},
+      transfers: {1000, 100_000}
+    }
+  end
+
+  def core_statistics_factory do
+    %System.State.CoreStatistic{
+      da_load: 1,
+      popularity: 10,
+      imports: 100,
+      exports: 1_000,
+      extrinsic_size: 10_000,
+      extrinsic_count: 100_000,
+      bundle_size: 1_000_000,
+      gas_used: 1_000_000_000
     }
   end
 
   def statistics_factory do
     %System.State.ValidatorStatistic{
-      availability_assurances: 6
+      availability_assurances: 6,
+      blocks_produced: 100,
+      da_load: 1000,
+      preimages_introduced: 100_000,
+      reports_guaranteed: 1_000_000,
+      tickets_introduced: 1000
     }
   end
 

@@ -98,4 +98,28 @@ defmodule System.State.CoreStatistic do
       )
     end
   end
+
+  use Codec.Decoder
+
+  def decode(bin) do
+    {da_load, rest} = de_i(bin)
+    {popularity, rest} = de_i(rest)
+    {imports, rest} = de_i(rest)
+    {exports, rest} = de_i(rest)
+    {extrinsic_size, rest} = de_i(rest)
+    {extrinsic_count, rest} = de_i(rest)
+    {bundle_size, rest} = de_i(rest)
+    {gas_used, rest} = de_i(rest)
+
+    {%__MODULE__{
+       da_load: da_load,
+       popularity: popularity,
+       imports: imports,
+       exports: exports,
+       extrinsic_size: extrinsic_size,
+       extrinsic_count: extrinsic_count,
+       bundle_size: bundle_size,
+       gas_used: gas_used
+     }, rest}
+  end
 end

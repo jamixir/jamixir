@@ -158,4 +158,32 @@ defmodule System.State.ServiceStatistic do
       })
     end
   end
+
+  use Codec.Decoder
+
+  def decode(bin) do
+    {preimage, rest} = de_i(bin)
+    {preimage_g, rest} = de_i(rest)
+    {refine, rest} = de_i(rest)
+    {refine_g, rest} = de_i(rest)
+    {imports, rest} = de_i(rest)
+    {exports, rest} = de_i(rest)
+    {extrinsic_size, rest} = de_i(rest)
+    {extrinsic_count, rest} = de_i(rest)
+    {accumulation, rest} = de_i(rest)
+    {accumulation_g, rest} = de_i(rest)
+    {transfers, rest} = de_i(rest)
+    {transfers_g, rest} = de_i(rest)
+
+    {%__MODULE__{
+       preimage: {preimage, preimage_g},
+       refine: {refine, refine_g},
+       imports: imports,
+       exports: exports,
+       extrinsic_size: extrinsic_size,
+       extrinsic_count: extrinsic_count,
+       accumulation: {accumulation, accumulation_g},
+       transfers: {transfers, transfers_g}
+     }, rest}
+  end
 end

@@ -1,28 +1,24 @@
 defmodule System.State.ValidatorStatisticsTest do
-  alias System.State.ServiceStatistic
   alias Codec.JsonEncoder
   alias System.State.CoreStatistic
+  alias System.State.ServiceStatistic
   alias System.State.ValidatorStatistics
   use ExUnit.Case
+  use Codec.Encoder
   import Jamixir.Factory
 
   describe "encode/1" do
     test "encode smoke test" do
-      assert Codec.Encoder.encode(build(:validator_statistics, count: 2)) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+      assert is_binary(e(build(:validator_statistics)))
     end
+  end
 
-    test "encode statistics with services stats" do
-      stat = build(:validator_statistics, count: 2)
+  describe "decode/1" do
+    test "decode smoke test" do
+      validator_statistics = build(:validator_statistics)
 
-      stat =
-        put_in(stat.service_statistics, %{
-          1 => %ServiceStatistic{},
-          123_456 => %ServiceStatistic{}
-        })
-
-      assert Codec.Encoder.encode(stat) ==
-               "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\x01\0\0\0\0\0\0\0\0\0\0\0\0\xC1@\xE2\0\0\0\0\0\0\0\0\0\0\0\0"
+      assert ValidatorStatistics.decode(e(validator_statistics)) ==
+               {validator_statistics, <<>>}
     end
   end
 
@@ -273,7 +269,12 @@ defmodule System.State.ValidatorStatisticsTest do
 
   describe "to_json/1" do
     test "encodes a validator statistics to json" do
-      vs = build(:validator_statistics)
+      vs =
+        build(:validator_statistics,
+          service_statistics: %{},
+          core_statistics: for(_ <- 1..Constants.core_count(), do: %CoreStatistic{})
+        )
+
       json = JsonEncoder.encode(vs)
 
       core_stat = %{

@@ -2,6 +2,8 @@ defmodule System.State.ValidatorStatistics do
   @moduledoc """
   Formula (13.1) v0.6.5
   """
+  alias Codec.VariableSize
+  alias Codec.Decoder
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.{Extrinsic, Header}
@@ -200,8 +202,29 @@ defmodule System.State.ValidatorStatistics do
     end
   end
 
+  use Codec.Decoder
+
   def decode(bin) do
-    # TODO
-    {%__MODULE__{}, <<>>}
+    {current_epoch_statistics, rest} =
+      Decoder.decode_list(bin, Constants.validator_count(), ValidatorStatistic)
+
+    {previous_epoch_statistics, rest} =
+      Decoder.decode_list(rest, Constants.validator_count(), ValidatorStatistic)
+
+    {core_statistics, rest} = Decoder.decode_list(rest, Constants.core_count(), CoreStatistic)
+
+    {service_statistics, rest} =
+      VariableSize.decode(rest, fn b ->
+        {service_id, r} = de_i(b)
+        {service_stat, r} = ServiceStatistic.decode(r)
+        {{service_id, service_stat}, r}
+      end)
+
+    {%__MODULE__{
+       current_epoch_statistics: current_epoch_statistics,
+       previous_epoch_statistics: previous_epoch_statistics,
+       core_statistics: core_statistics,
+       service_statistics: Map.new(service_statistics)
+     }, rest}
   end
 end
