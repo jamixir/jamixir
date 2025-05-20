@@ -213,7 +213,7 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.authorizer_pool == trie_state.authorizer_pool
       assert recovered_state.recent_history == trie_state.recent_history
       assert recovered_state.safrole == trie_state.safrole
-      # assert recovered_state.services == trie_state.services
+      assert recovered_state.services == trie_state.services
       assert recovered_state.entropy_pool == trie_state.entropy_pool
       assert recovered_state.next_validators == trie_state.next_validators
       assert recovered_state.curr_validators == trie_state.curr_validators
@@ -223,11 +223,11 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.authorizer_queue == trie_state.authorizer_queue
       assert recovered_state.privileged_services == trie_state.privileged_services
       assert recovered_state.judgements == trie_state.judgements
-      # assert recovered_state.validator_statistics == trie_state.validator_statistics
+      assert recovered_state.validator_statistics == trie_state.validator_statistics
       assert recovered_state.ready_to_accumulate == trie_state.ready_to_accumulate
       assert recovered_state.accumulation_history == trie_state.accumulation_history
 
-      # assert recovered_state == trie_state
+      assert recovered_state == trie_state
     end
   end
 end

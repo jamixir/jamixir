@@ -39,6 +39,25 @@ defmodule System.State.ValidatorStatistic do
     end
   end
 
+  def decode(<<
+        blocks_produced::little-32,
+        tickets_introduced::little-32,
+        preimages_introduced::little-32,
+        da_load::little-32,
+        reports_guaranteed::little-32,
+        availability_assurances::little-32,
+        rest::binary
+      >>) do
+    {%__MODULE__{
+       blocks_produced: blocks_produced,
+       tickets_introduced: tickets_introduced,
+       preimages_introduced: preimages_introduced,
+       da_load: da_load,
+       reports_guaranteed: reports_guaranteed,
+       availability_assurances: availability_assurances
+     }, rest}
+  end
+
   use JsonDecoder
 
   def json_mapping do
