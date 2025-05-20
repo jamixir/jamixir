@@ -1,4 +1,5 @@
 defmodule PVM.Refine do
+  alias Util.Hash
   alias PVM.Registers
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
@@ -12,6 +13,12 @@ defmodule PVM.Refine do
   ΨR: The Refine pvm invocation function.
   # Formula (B.5) v0.6.5
   """
+
+  # see here about where the preimages comes from , it is not in the GP
+  # but knowledge of it is assume,
+  # this is a repeating pattern in refine logic (in-core, off-chain)
+  # it is up to us to figure out what data/maps we are to store and where/when to store it
+  # https://matrix.to/#/!ddsEwXlCWnreEGuqXZ:polkadot.io/$2BY5KB1iDMI3RxikTBLj0iMYJbf7L5EhZjXl0xRKlBw?via=polkadot.io&via=matrix.org&via=parity.io
   @spec execute(
           non_neg_integer(),
           WorkPackage.t(),
@@ -29,6 +36,9 @@ defmodule PVM.Refine do
         import_segments,
         export_segment_offset,
         services,
+        # preimages needs to come from DA layer
+        # and satisy: x = [[x S (H(x), SxS) <− wx] S w <− pw
+        # https://graypaper.fluffylabs.dev/#/9a08063/2fd6002fd600?v=0.6.6
         preimages
       ) do
     work_item = Enum.at(work_package.work_items, work_item_index)
@@ -41,6 +51,25 @@ defmodule PVM.Refine do
       f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
         host_call_result =
           case host(n) do
+            :gas ->
+              General.gas(gas, registers, memory, context)
+
+            :fetch ->
+              General.fetch(
+                gas,
+                registers,
+                memory,
+                work_package,
+                Hash.zero(),
+                authorizer_output,
+                work_item_index,
+                import_segments,
+                preimages,
+                nil,
+                nil,
+                context
+              )
+
             :historical_lookup ->
               Refine.historical_lookup(
                 gas,
@@ -52,24 +81,8 @@ defmodule PVM.Refine do
                 px.timeslot
               )
 
-            :fetch ->
-              Refine.fetch(
-                gas,
-                registers,
-                memory,
-                context,
-                work_item_index,
-                work_package,
-                authorizer_output,
-                import_segments,
-                preimages
-              )
-
             :export ->
               Refine.export(gas, registers, memory, context, export_segment_offset)
-
-            :gas ->
-              General.gas(gas, registers, memory, context)
 
             :machine ->
               Refine.machine(gas, registers, memory, context)
@@ -116,9 +129,7 @@ defmodule PVM.Refine do
         {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
       end
 
-      implied_authorizer = WorkPackage.implied_authorizer(work_package, services)
-      wph = h(e(work_package))
-      args = e({service_id, wy, wph, px, implied_authorizer})
+      args = e({work_item_index, service_id, vs(wy), h(e(work_package))})
 
       {gas, result, %Refine.Context{e: exports}} =
         ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})
