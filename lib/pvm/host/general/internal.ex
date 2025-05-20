@@ -24,7 +24,7 @@ defmodule PVM.Host.General.Internal do
           binary(),
           non_neg_integer(),
           list(list(binary())),
-          list(list({Types.hash(), non_neg_integer()})),
+          list(list(binary())),
           list(Operand.t()),
           list(DeferredTransfer.t()),
           any()
@@ -37,7 +37,7 @@ defmodule PVM.Host.General.Internal do
         authorizer_output,
         service_index,
         import_segments,
-        extrinsics,
+        preimages,
         operands,
         transfers,
         context
@@ -89,12 +89,12 @@ defmodule PVM.Host.General.Internal do
         authorizer_output != nil and w10 == 2 ->
           authorizer_output
 
-        service_index != nil and w10 == 3 and w11 < length(extrinsics) and
-            w12 < length(Enum.at(extrinsics, w11)) ->
-          extrinsics |> Enum.at(w11) |> Enum.at(w12)
+        service_index != nil and w10 == 3 and w11 < length(preimages) and
+            w12 < length(Enum.at(preimages, w11)) ->
+          preimages |> Enum.at(w11) |> Enum.at(w12)
 
-        service_index != nil and w10 == 4 and w11 < length(Enum.at(extrinsics, service_index)) ->
-          extrinsics |> Enum.at(service_index) |> Enum.at(w11)
+        service_index != nil and w10 == 4 and w11 < length(Enum.at(preimages, service_index)) ->
+          preimages |> Enum.at(service_index) |> Enum.at(w11)
 
         service_index != nil and w10 == 5 and w11 < length(import_segments) and
             w12 < length(Enum.at(import_segments, w11)) ->
