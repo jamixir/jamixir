@@ -256,10 +256,7 @@ defmodule Codec.State.TrieTest do
       trie_state = %State{
         state
         | services: %{
-            1_234_567 =>
-              build(:service_account,
-                preimage_storage_l: %{}
-              )
+            1_234_567 => build(:service_account)
           }
       }
 

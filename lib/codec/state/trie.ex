@@ -169,10 +169,19 @@ defmodule Codec.State.Trie do
               {Hash.default(v), v}
             end
 
+          preimage_storage_l =
+            for {h, p} <- preimage_storage_p, into: %{} do
+              l = byte_size(p)
+              key = e_le(l, 4) <> (h(h) |> binary_slice(2, 23))
+              {{h, l}, p}
+              {{h, l}, dict[{service_id, key}]}
+            end
+
           Map.put(acc, service_id, %ServiceAccount{
             v
             | storage: storage,
-              preimage_storage_p: preimage_storage_p
+              preimage_storage_p: preimage_storage_p,
+              preimage_storage_l: preimage_storage_l
           })
       end
 
@@ -243,6 +252,14 @@ defmodule Codec.State.Trie do
   def decode_value({_service_id, <<@storage_prefix::little-32, _::binary>>}, bin),
     do: {bin, <<>>}
 
+  # preimage_p
   def decode_value({_service_id, <<@preimage_prefix::little-32, _::binary>>}, bin),
     do: {bin, <<>>}
+
+  # preimage_l
+  def decode_value({_service_id, <<b::binary>>}, bin) do
+    VariableSize.decode(bin, fn <<x::little-32, rest::binary>> ->
+      {x, rest}
+    end)
+  end
 end
