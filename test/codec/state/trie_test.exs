@@ -3,6 +3,7 @@ defmodule Codec.State.TrieTest do
   import Jamixir.Factory
   import Codec.State.Trie
   import Bitwise
+  alias System.State.ServiceAccount
   alias Codec.NilDiscriminator
   alias System.State
   alias Util.Hash
@@ -228,6 +229,27 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.accumulation_history == trie_state.accumulation_history
 
       assert recovered_state == trie_state
+    end
+
+    test "trie_to_state/1 - service accounts no storage", %{state: state} do
+      trie_state = %State{
+        state
+        | services: %{
+            1_234_567 => %ServiceAccount{
+              storage: %{},
+              preimage_storage_p: %{},
+              preimage_storage_l: %{},
+              code_hash: Hash.random(),
+              balance: 900,
+              gas_limit_g: 90_000,
+              gas_limit_m: 20_000_000
+            }
+          }
+      }
+
+      recovered_state = serialize(trie_state) |> trie_to_state()
+
+      assert recovered_state.services == trie_state.services
     end
   end
 end
