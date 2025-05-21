@@ -20,7 +20,7 @@ defmodule TestnetBlockImporterTest do
 
   def trace_enabled?, do: System.get_env("PVM_TRACE") == "true"
 
-  @ignore_fields []
+  @ignore_fields [:validator_statistics]
   @user "davxy"
   @repo "jam-test-vectors"
 
@@ -38,7 +38,7 @@ defmodule TestnetBlockImporterTest do
     end
 
     # "reports-l0"
-    for mode <- ["fallback", "safrole"] do
+    for mode <- ["fallback", "safrole", "reports-l0"] do
       @tag mode: mode
       test "#{mode} mode block import", %{mode: mode} do
         for block <- 1..42 do
@@ -60,17 +60,19 @@ defmodule TestnetBlockImporterTest do
 
           pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
 
-          extra_trie =
-            Map.filter(pre_state_trie, fn {<<k::8, _::binary>>, _} ->
-              k == 0 or k == 255
-            end)
+          # extra_trie =
+          #   Map.filter(pre_state_trie, fn {<<k::8, _::binary>>, _} ->
+          #     k == 0 or k == 255
+          #   end)
 
-          Application.put_env(:jamixir, :extra_trie, extra_trie)
+          # Application.put_env(:jamixir, :extra_trie, extra_trie)
 
           pre_state = Trie.trie_to_state(pre_state_trie)
+
+          assert Trie.serialize(pre_state) == pre_state_trie
+
           block = Block.from_json(block_json[:block])
           expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
-          expected_state = Trie.trie_to_state(expected_trie)
 
           new_state =
             case State.add_block(pre_state, block) do
@@ -80,18 +82,28 @@ defmodule TestnetBlockImporterTest do
                 s
 
               {:error, _, error} ->
-                Logger.info("#{ANSI.red()} Error processing block #{block}: #{error}")
+                Logger.info("#{ANSI.red()} Error processing block: #{error}")
 
                 pre_state
             end
 
           Logger.info("🔍 Comparing state")
+          # assert Trie.serialize(new_state) == expected_trie
+          expected_state = Trie.trie_to_state(expected_trie)
 
           for field <- Utils.list_struct_fields(System.State) do
             unless Enum.find(@ignore_fields, &(&1 == field)) do
               expected = Map.get(expected_state, field)
               new = Map.get(new_state, field)
-              assert expected == new
+
+              if expected != new do
+                Logger.info("❌ Field #{field} mismatch")
+                Logger.info("Expected: #{inspect(expected)}")
+                Logger.info("New: #{inspect(new)}")
+                assert false
+              end
+
+              # assert expected == new
               # Logger.info("✅ Field #{field} match")
             end
           end

@@ -193,16 +193,24 @@ defmodule System.State.ValidatorStatistics do
     use Codec.Encoder
 
     def encode(%ValidatorStatistics{} = v) do
+      services_bin =
+        for {k, v} <- Enum.sort_by(v.service_statistics, fn {k, _v} -> k end),
+            do: {
+              <<k::m(service)>>,
+              Codec.Encoder.encode(v)
+            }
+
       e({
         Enum.map(v.current_epoch_statistics, &e/1),
         Enum.map(v.previous_epoch_statistics, &e/1),
         v.core_statistics,
-        v.service_statistics
+        vs(services_bin)
       })
     end
   end
 
   use Codec.Decoder
+  use Codec.Encoder
 
   def decode(bin) do
     {current_epoch_statistics, rest} =
@@ -215,7 +223,7 @@ defmodule System.State.ValidatorStatistics do
 
     {service_statistics, rest} =
       VariableSize.decode(rest, fn b ->
-        {service_id, r} = de_i(b)
+        <<service_id::m(service), r::binary>> = b
         {service_stat, r} = ServiceStatistic.decode(r)
         {{service_id, service_stat}, r}
       end)
