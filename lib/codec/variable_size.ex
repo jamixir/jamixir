@@ -78,6 +78,7 @@ defmodule Codec.VariableSize do
 
   def decode(bin, :map, key_size, value_size) do
     {count, rest} = de_i(bin)
+    IO.puts("count: #{count}")
 
     Enum.reduce(from_0_to(count), {%{}, rest}, fn _, {acc, rest} ->
       <<key::binary-size(key_size), value::binary-size(value_size), rest::binary>> = rest
