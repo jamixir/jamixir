@@ -1,4 +1,5 @@
 defmodule Codec.State.Trie do
+  alias Util.Hash
   alias System.State.ServiceAccount
   alias Codec.Decoder
   alias Codec.NilDiscriminator
@@ -16,6 +17,9 @@ defmodule Codec.State.Trie do
   use Codec.Encoder
   use Codec.Decoder
   import Bitwise
+
+  @storage_prefix (1 <<< 32) - 1
+  @preimage_prefix (1 <<< 32) - 2
 
   # Formula (D.2) v0.6.5
   def state_keys(%State{} = s) do
@@ -114,7 +118,7 @@ defmodule Codec.State.Trie do
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le((1 <<< 32) - 1, 4) <> binary_slice(h, 0, 28)}, v)
+        Map.put(ac, {s, e_le(@storage_prefix, 4) <> binary_slice(h, 0, 28)}, v)
       end)
     end)
   end
@@ -125,7 +129,7 @@ defmodule Codec.State.Trie do
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le((1 <<< 32) - 2, 4) <> binary_slice(h, 1, 28)}, v)
+        Map.put(ac, {s, e_le(@preimage_prefix, 4) <> binary_slice(h, 1, 28)}, v)
       end)
     end)
   end
@@ -151,15 +155,25 @@ defmodule Codec.State.Trie do
       end
 
     services =
-      for {k, v} <- dict, reduce: %{} do
+      for {{255, service_id}, v} <- dict, reduce: %{} do
         acc ->
-          case k do
-            {255, service_id} ->
-              Map.put(acc, service_id, v)
+          storage =
+            for {{^service_id, <<@storage_prefix::little-32, _::binary>>}, v} <- dict,
+                into: %{} do
+              {Hash.default(v), v}
+            end
 
-            _ ->
-              acc
-          end
+          preimage_storage_p =
+            for {{^service_id, <<@preimage_prefix::little-32, _::binary>>}, v} <- dict,
+                into: %{} do
+              {Hash.default(v), v}
+            end
+
+          Map.put(acc, service_id, %ServiceAccount{
+            v
+            | storage: storage,
+              preimage_storage_p: preimage_storage_p
+          })
       end
 
     %State{
@@ -224,4 +238,11 @@ defmodule Codec.State.Trie do
   def decode_value({255, _service_id}, bin) do
     ServiceAccount.decode(bin)
   end
+
+  # storage item
+  def decode_value({_service_id, <<@storage_prefix::little-32, _::binary>>}, bin),
+    do: {bin, <<>>}
+
+  def decode_value({_service_id, <<@preimage_prefix::little-32, _::binary>>}, bin),
+    do: {bin, <<>>}
 end
