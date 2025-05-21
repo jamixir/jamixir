@@ -239,13 +239,15 @@ defmodule Jamixir.Factory do
   end
 
   def service_account_factory do
-    rh = Hash.random()
+    storage_value = <<0xDEADBEEF::32>>
+    preimage_value = <<0xBEEFCAFE::32>>
+    hash = Hash.default(preimage_value)
 
     %System.State.ServiceAccount{
-      storage: %{Hash.random() => <<0xDEADBEEF::32>>},
-      preimage_storage_p: %{rh => <<0x00FEBABE::32>>},
-      preimage_storage_l: %{{rh, 4} => [1, 2, 3]},
-      code_hash: rh,
+      storage: %{Hash.default(storage_value) => storage_value},
+      preimage_storage_p: %{hash => preimage_value},
+      preimage_storage_l: %{{hash, 4} => [1, 2, 3]},
+      code_hash: Hash.default(storage_value),
       balance: 1000,
       gas_limit_g: 5000,
       gas_limit_m: 10_000

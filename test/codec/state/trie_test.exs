@@ -3,9 +3,9 @@ defmodule Codec.State.TrieTest do
   import Jamixir.Factory
   import Codec.State.Trie
   import Bitwise
-  alias System.State.ServiceAccount
   alias Codec.NilDiscriminator
   alias System.State
+  alias System.State.ServiceAccount
   alias Util.Hash
 
   setup_all do
@@ -244,6 +244,22 @@ defmodule Codec.State.TrieTest do
               gas_limit_g: 90_000,
               gas_limit_m: 20_000_000
             }
+          }
+      }
+
+      recovered_state = serialize(trie_state) |> trie_to_state()
+
+      assert recovered_state.services == trie_state.services
+    end
+
+    test "trie_to_state/1 - service accounts with storage", %{state: state} do
+      trie_state = %State{
+        state
+        | services: %{
+            1_234_567 =>
+              build(:service_account,
+                preimage_storage_l: %{}
+              )
           }
       }
 
