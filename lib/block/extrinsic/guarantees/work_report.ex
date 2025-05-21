@@ -361,7 +361,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       e({
         wr.specification,
         wr.refinement_context,
-        wr.core_index,
+        t(wr.core_index),
         wr.authorizer_hash,
         vs(wr.output),
         wr.segment_root_lookup,
@@ -376,7 +376,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def decode(bin) do
     {specification, bin} = AvailabilitySpecification.decode(bin)
     {refinement_context, bin} = RefinementContext.decode(bin)
-    {core_index, bin} = de_i(bin)
+    <<core_index::little-16, bin::binary>> = bin
     <<authorizer_hash::b(hash), bin::binary>> = bin
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
