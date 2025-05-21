@@ -77,7 +77,7 @@ defmodule Codec.State.Trie do
   # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
   def key_to_31_octet(key) when key < 256, do: <<key::8, 0::240>>
 
-  def octet31_to_key(<<key::8, 0::240>>) when key < 256, do: key
+  def octet31_to_key(<<key::8, 0::240>>) when key < 255, do: key
 
   def octet31_to_key(<<i::8, n0, 0, n1, 0, n2, 0, n3, 0, 0::176>>) do
     s = de_le(<<n0, n1, n2, n3>>, 4)
