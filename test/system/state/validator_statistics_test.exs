@@ -1,7 +1,6 @@
 defmodule System.State.ValidatorStatisticsTest do
   alias Codec.JsonEncoder
   alias System.State.CoreStatistic
-  alias System.State.ServiceStatistic
   alias System.State.ValidatorStatistics
   use ExUnit.Case
   use Codec.Encoder

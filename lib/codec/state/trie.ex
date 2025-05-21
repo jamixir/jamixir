@@ -1,4 +1,5 @@
 defmodule Codec.State.Trie do
+  alias System.State.ServiceAccount
   alias Codec.Decoder
   alias Codec.NilDiscriminator
   alias System.State
@@ -149,6 +150,18 @@ defmodule Codec.State.Trie do
         {id, elem(decode_value(id, v), 0)}
       end
 
+    services =
+      for {k, v} <- dict, reduce: %{} do
+        acc ->
+          case k do
+            {255, service_id} ->
+              Map.put(acc, service_id, v)
+
+            _ ->
+              acc
+          end
+      end
+
     %State{
       authorizer_pool: dict[1],
       authorizer_queue: dict[2],
@@ -164,7 +177,8 @@ defmodule Codec.State.Trie do
       privileged_services: dict[12],
       validator_statistics: dict[13],
       ready_to_accumulate: dict[14],
-      accumulation_history: dict[15]
+      accumulation_history: dict[15],
+      services: services
     }
   end
 
@@ -205,5 +219,9 @@ defmodule Codec.State.Trie do
   # accumulation_history
   def decode_value(15, value) do
     Decoder.decode_list(value, Constants.epoch_length(), &VariableSize.decode(&1, :mapset, 32))
+  end
+
+  def decode_value({255, _service_id}, bin) do
+    ServiceAccount.decode(bin)
   end
 end

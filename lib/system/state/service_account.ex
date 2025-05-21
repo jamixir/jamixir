@@ -123,6 +123,18 @@ defmodule System.State.ServiceAccount do
     end
   end
 
+  def decode(
+        <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
+          rest::binary>>
+      ) do
+    {%__MODULE__{
+       code_hash: code_hash,
+       balance: balance,
+       gas_limit_g: gas_limit_g,
+       gas_limit_m: gas_limit_m
+     }, rest}
+  end
+
   use JsonDecoder
 
   def json_mapping do
