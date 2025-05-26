@@ -199,7 +199,7 @@ defmodule PVM do
           code,
           10,
           gas_limit,
-          e({t(timeslot), t(service_index), vs(transfers)}),
+          e({timeslot, service_index, vs(transfers)}),
           f,
           service
         )

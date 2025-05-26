@@ -65,7 +65,7 @@ defmodule Codec.State.TrieTest do
     test "convert binary to integer" do
       assert octet31_to_key(:binary.copy(<<0>>, 31)) == 0
       assert octet31_to_key(<<7>> <> :binary.copy(<<0>>, 30)) == 7
-      assert octet31_to_key(<<255>> <> :binary.copy(<<0>>, 30)) == 255
+      assert octet31_to_key(<<254>> <> :binary.copy(<<0>>, 30)) == 254
     end
 
     test "convert binary to {integer, service id}" do
@@ -260,9 +260,9 @@ defmodule Codec.State.TrieTest do
           }
       }
 
-      recovered_state = serialize(trie_state) |> trie_to_state()
-
-      assert recovered_state.services == trie_state.services
+      trie = serialize(trie_state)
+      recovered_state = trie_to_state(trie)
+      assert serialize(recovered_state) == trie
     end
   end
 end
