@@ -115,7 +115,7 @@ defmodule PVM.Refine do
 
       implied_authorizer = WorkPackage.implied_authorizer(work_package, services)
       wph = h(e(work_package))
-      args = e({t(service_id), wy, wph, px, implied_authorizer})
+      args = e({service_id, wy, wph, px, implied_authorizer})
 
       {gas, result, %Refine.Context{e: exports}} =
         ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})

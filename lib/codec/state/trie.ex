@@ -177,9 +177,9 @@ defmodule Codec.State.Trie do
       for {{255, service_id}, v} <- dict, reduce: %{} do
         acc ->
           storage =
-            for {{^service_id, <<@storage_prefix::little-32, _::binary>>}, v} <- dict,
+            for {{^service_id, <<@storage_prefix::little-32, k::binary>>}, v} <- dict,
                 into: %{} do
-              {Hash.default(v), v}
+              {k, v}
             end
 
           preimage_storage_p =
@@ -282,7 +282,9 @@ defmodule Codec.State.Trie do
     end)
   end
 
-  def decode_value(_, value) do
+  def decode_value(key, value) do
+    IO.inspect(key, label: "Unknown key")
+    IO.inspect(value, label: "Unknown value")
     {nil, <<>>}
   end
 end
