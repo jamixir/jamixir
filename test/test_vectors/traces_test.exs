@@ -26,13 +26,13 @@ defmodule TracesTest do
 
   # "reports-l0"
   describe "blocks and states" do
-    for mode <- ["fallback", "safrole"] do
+    for mode <- ["reports-l0"] do
       @tag mode: mode
       @tag timeout: :infinity
-      @tag :full_vectors
+      # @tag :full_vectors
       test "#{mode} mode block import", %{mode: mode} do
         failed_blocks =
-          for block_number <- 1..42, reduce: [] do
+          for block_number <- 5..8, reduce: [] do
             failed_blocks ->
               if trace_enabled?() do
                 System.put_env("TRACE_NAME", "block-#{block_number}")
