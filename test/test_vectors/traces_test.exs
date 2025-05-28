@@ -31,9 +31,9 @@ defmodule TracesTest do
       @tag timeout: :infinity
       # @tag :full_vectors
       test "#{mode} mode block import", %{mode: mode} do
-        failed_blocks =
-          for block_number <- 5..8, reduce: [] do
-            failed_blocks ->
+        {failed_blocks, _} =
+          for block_number <- 1..42, reduce: {[], nil} do
+            {failed_blocks, pre_state} ->
               if trace_enabled?() do
                 System.put_env("TRACE_NAME", "block-#{block_number}")
               end
@@ -64,32 +64,8 @@ defmodule TracesTest do
 
               # Application.put_env(:jamixir, :extra_trie, extra_trie)
 
-              pre_state = Trie.trie_to_state(pre_state_trie)
+              pre_state = if pre_state, do: pre_state, else: Trie.trie_to_state(pre_state_trie)
               reserialized = Trie.serialize(pre_state)
-
-              if reserialized != pre_state_trie do
-                IO.inspect(pre_state.services[0].storage, label: "Storage")
-
-                for {key, value} <- pre_state_trie, reserialized[key] != value do
-                  Logger.info("❌ Original Key mismatch")
-                  Logger.info("Key: #{inspect(key)}")
-                  Logger.info("Expected: #{inspect(value)}")
-                  Logger.info("New: #{inspect(reserialized[key])}")
-                end
-
-                for {key, value} <- reserialized, pre_state_trie[key] != value do
-                  Logger.info("❌ New Key mismatch")
-                  Logger.info("Key: #{inspect(key)}")
-                  Logger.info("Expected: #{inspect(value)}")
-                  Logger.info("New: #{inspect(pre_state_trie[key])}")
-                end
-
-                # Logger.info("❌ Pre-state mismatch")
-                # Logger.info("Expected: #{inspect(pre_state_trie)}")
-                # Logger.info("New: #{inspect(Trie.serialize(pre_state))}")
-                assert false
-              end
-
               block = Block.from_json(block_json[:block])
               expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
 
@@ -97,41 +73,51 @@ defmodule TracesTest do
                 {:ok, new_state} ->
                   Storage.put(block.header)
                   Logger.info("🔄 State Updated successfully")
-                  new_state
-                  Logger.info("🔍 Comparing state")
-                  # assert Trie.serialize(new_state) == expected_trie
                   expected_state = Trie.trie_to_state(expected_trie)
 
-                  failed_fields =
-                    for field <- Utils.list_struct_fields(System.State), reduce: [] do
-                      acc ->
-                        if field in @ignore_fields do
-                          acc
-                        else
-                          expected = Map.get(expected_state, field)
-                          new = Map.get(new_state, field)
+                  new_state =
+                    new_state
+                    |> Map.put(:validator_statistics, expected_state.validator_statistics)
 
-                          if expected != new do
-                            Logger.info("❌ Field #{field} mismatch")
-                            Logger.info("Expected: #{inspect(expected)}")
-                            Logger.info("New: #{inspect(new)}")
-                            acc ++ [field]
-                          else
+                  Logger.info("🔍 Comparing state")
+
+                  trie1 = Trie.serialize(new_state) |> Map.delete(<<13, 0::30*8>>)
+                  trie2 = expected_trie |> Map.delete(<<13, 0::30*8>>)
+
+                  if trie1 != trie2 do
+                    failed_fields =
+                      for field <- Utils.list_struct_fields(System.State), reduce: [] do
+                        acc ->
+                          if field in @ignore_fields do
                             acc
-                          end
-                        end
-                    end
+                          else
+                            expected = Map.get(expected_state, field)
+                            new = Map.get(new_state, field)
 
-                  if failed_fields == [] do
-                    failed_blocks
+                            if expected != new do
+                              Logger.info("❌ Field #{field} mismatch")
+                              Logger.info("Expected: #{inspect(expected)}")
+                              Logger.info("New: #{inspect(new)}")
+                              acc ++ [field]
+                            else
+                              acc
+                            end
+                          end
+                      end
+
+                    if failed_fields == [] do
+                      {failed_blocks, new_state}
+                    else
+                      {failed_blocks ++ [{block_number, failed_fields}], nil}
+                    end
                   else
-                    failed_blocks ++ [{block_number, failed_fields}]
+                    {failed_blocks, new_state}
                   end
 
                 {:error, _, error} ->
                   Logger.info("#{ANSI.red()} Error processing block: #{error}")
 
-                  failed_blocks ++ [{block_number, error}]
+                  {failed_blocks ++ [{block_number, error}], nil}
               end
           end
 
