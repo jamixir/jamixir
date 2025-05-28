@@ -109,7 +109,9 @@ defmodule PVM.Accumulate do
           _ ->
             %Accumulate.Result{
               exit_reason: :continue,
-              gas: gas - default_gas(),
+              # GP says it should be gas - default_gas()
+              # but traces dont do the same
+              gas: gas,
               registers: Registers.set(registers, 7, what()),
               memory: memory,
               context: context

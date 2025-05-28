@@ -18,7 +18,7 @@ defmodule TracesTest do
 
   def trace_enabled?, do: System.get_env("PVM_TRACE") == "true"
 
-  @ignore_fields [:validator_statistics]
+  @ignore_fields []
   @user "davxy"
   @repo "jam-test-vectors"
 
@@ -57,15 +57,9 @@ defmodule TracesTest do
 
               pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
 
-              # extra_trie =
-              #   Map.filter(pre_state_trie, fn {<<k::8, _::binary>>, _} ->
-              #     k == 0 or k == 255
-              #   end)
-
-              # Application.put_env(:jamixir, :extra_trie, extra_trie)
-
               pre_state = if pre_state, do: pre_state, else: Trie.trie_to_state(pre_state_trie)
               reserialized = Trie.serialize(pre_state)
+
               block = Block.from_json(block_json[:block])
               expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
 
@@ -75,14 +69,13 @@ defmodule TracesTest do
                   Logger.info("🔄 State Updated successfully")
                   expected_state = Trie.trie_to_state(expected_trie)
 
-                  new_state =
-                    new_state
-                    |> Map.put(:validator_statistics, expected_state.validator_statistics)
-
+                  #
                   Logger.info("🔍 Comparing state")
-
-                  trie1 = Trie.serialize(new_state) |> Map.delete(<<13, 0::30*8>>)
-                  trie2 = expected_trie |> Map.delete(<<13, 0::30*8>>)
+                  # uncomment to delete statistics from state trie
+                  # |> Map.delete(<<13, 0::30*8>>)
+                  trie1 = Trie.serialize(new_state)
+                  # |> Map.delete(<<13, 0::30*8>>)
+                  trie2 = expected_trie
 
                   if trie1 != trie2 do
                     failed_fields =
