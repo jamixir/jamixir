@@ -11,6 +11,10 @@ jobs:
   test:
     name: Build and run test vectors
     runs-on: ubuntu-latest
+    env:
+      VECTORS_OWNER: davxy
+      VECTORS_REPO: jam-test-vectors
+      VECTORS_BRANCH: traces
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,8 +28,8 @@ jobs:
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.17.2'
-          otp-version: '27.0.1'
+          elixir-version: "1.17.2"
+          otp-version: "27.0.1"
 
       - name: Restore cached build
         id: cache-build-restore
@@ -58,11 +62,10 @@ jobs:
             priv/native
           key: ${{ runner.os }}-mix-${{ hashFiles('mix.lock') }}-${{ hashFiles('native/**/Cargo.lock') }}
 
-
       - name: Get latest test vectors commit hash
         id: get-vector-hash
         run: |
-          LATEST_HASH=$(git ls-remote https://github.com/davxy/jam-test-vectors.git refs/heads/polkajam-vectors | awk '{ print $1 }')
+          LATEST_HASH=$(git ls-remote https://github.com/${{ env.VECTORS_OWNER }}/${{ env.VECTORS_REPO }}.git refs/heads/${{ env.VECTORS_BRANCH }} | awk '{ print $1 }')
           echo "LATEST_HASH=$LATEST_HASH" >> $GITHUB_ENV
 
       - name: Restore test vectors cache
@@ -75,7 +78,7 @@ jobs:
       - name: Clone test vectors if repo is updated
         if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         run: |
-          git clone -b polkajam-vectors https://github.com/davxy/jam-test-vectors.git jam-test-vectors-cache
+          git clone -b ${{ env.VECTORS_BRANCH }} https://github.com/${{ env.VECTORS_OWNER }}/${{ env.VECTORS_REPO }}.git jam-test-vectors-cache
           git -C jam-test-vectors-cache rev-parse HEAD > jam-test-vectors-cache/latest_commit.txt
 
       - name: cache test vectors repo if it's updated
@@ -84,7 +87,7 @@ jobs:
         with:
           path: jam-test-vectors-cache
           key: test-vectors-${{ env.LATEST_HASH }}
-      
+
       - name: Move cached test vectors to expected location
         run: mv jam-test-vectors-cache ../jam-test-vectors
 
@@ -94,3 +97,5 @@ jobs:
         env:
           MIX_ENV: full_test
         run: mix test --only full_vectors
+      - name: Run slow tests
+        run: mix test --only slow
