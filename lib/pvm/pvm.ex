@@ -19,11 +19,6 @@ defmodule PVM do
   end
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
-    pc = WorkPackage.authorization_code(p, services)
-
-    args = e(t(core_index))
-    w_a = Constants.max_is_authorized_code_size()
-
     # Formula (B.2) v0.6.6
     f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
       host_call_result =
@@ -37,7 +32,7 @@ defmodule PVM do
               registers,
               memory,
               p,
-              p,
+              e(p),
               nil,
               nil,
               nil,
@@ -64,6 +59,10 @@ defmodule PVM do
       {e, %{gas: g, registers: r, memory: m}, nil}
     end
 
+    pc = WorkPackage.authorization_code(p, services)
+
+    w_a = Constants.max_is_authorized_code_size()
+
     case pc do
       nil ->
         {:bad, 0}
@@ -72,6 +71,8 @@ defmodule PVM do
         {:big, 0}
 
       _ ->
+        args = e(t(core_index))
+
         {used_gas, result, nil} =
           ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, f, nil)
 
