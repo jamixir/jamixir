@@ -224,7 +224,7 @@ defmodule PVM.Host.Refine.Internal do
           {:panic, registers.r7, context}
 
         true ->
-          case PVM.Decoder.decode_program(p) do
+          case PVM.Decoder.deblob(p) do
             {:ok, _} ->
               machine = %Integrated{program: p, memory: u, counter: i}
               {:continue, n, %{context | m: Map.put(m, n, machine)}}

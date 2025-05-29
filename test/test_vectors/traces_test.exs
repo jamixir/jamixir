@@ -26,10 +26,10 @@ defmodule TracesTest do
 
   # "reports-l0"
   describe "blocks and states" do
-    for mode <- ["reports-l0"] do
+    for mode <- ["fallback", "safrole", "reports-l0"] do
       @tag mode: mode
       @tag timeout: :infinity
-      # @tag :full_vectors
+      @tag :full_vectors
       test "#{mode} mode block import", %{mode: mode} do
         {failed_blocks, _} =
           for block_number <- 1..42, reduce: {[], nil} do
@@ -58,7 +58,6 @@ defmodule TracesTest do
               pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
 
               pre_state = if pre_state, do: pre_state, else: Trie.trie_to_state(pre_state_trie)
-              reserialized = Trie.serialize(pre_state)
 
               block = Block.from_json(block_json[:block])
               expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
