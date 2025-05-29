@@ -63,4 +63,14 @@ defmodule PVM.Host.General do
       [service_index, services]
     )
   end
+
+  def log(gas, registers, memory, context, core_index \\ nil, service_index \\ nil) do
+    with_gas(
+      General.Result,
+      {gas, registers, memory, context},
+      &log_internal/5,
+      [core_index, service_index],
+      0
+    )
+  end
 end

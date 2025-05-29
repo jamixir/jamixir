@@ -6,6 +6,7 @@ defmodule PVM.Host.GeneralTest do
   alias Util.Hash
   import PVM.Constants.HostCallResult
   use Codec.Encoder
+  import ExUnit.CaptureIO
 
   @doc """
   Returns the base memory address used in tests.
@@ -588,6 +589,115 @@ defmodule PVM.Host.GeneralTest do
         )
 
       assert Memory.read!(memory_, a_0(), byte_size(expected_mem_value)) == expected_mem_value
+    end
+  end
+
+  describe "log/6" do
+    setup do
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.set_access(a_0() + 0x1000, 32, :write)
+        |> PreMemory.set_access(a_0() + 0x2000, 32, :write)
+        |> PreMemory.finalize()
+
+      target = "bootstrap-refine"
+      message = "Hello world!"
+      core_index = 1
+      service_index = 42
+
+      memory =
+        Memory.write!(memory, a_0() + 0x1000, target)
+        |> Memory.write!(a_0() + 0x2000, message)
+        |> Memory.set_access(a_0() + 0x1000, 32, :read)
+        |> Memory.set_access(a_0() + 0x2000, 32, :read)
+
+      {:ok,
+       memory: memory,
+       target: target,
+       message: message,
+       core_index: core_index,
+       service_index: service_index}
+    end
+
+    @tag :log
+    test "logs with DEBUG level and all parts", %{
+      memory: memory,
+      target: target,
+      message: message,
+      core_index: core_index,
+      service_index: service_index
+    } do
+      g = 100
+
+      r = %Registers{
+        r7: 1,
+        r8: a_0() + 0x1000,
+        r9: byte_size(target),
+        r10: a_0() + 0x2000,
+        r11: byte_size(message)
+      }
+
+      output =
+        capture_io(fn ->
+          assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^memory, context: nil} =
+                   General.log(g, r, memory, nil, core_index, service_index)
+        end)
+
+      assert output =~ "DEBUG@1#42 [#{target}] #{message}"
+    end
+
+    @tag :log
+    test "logs with missing core and service indices", %{
+      memory: memory,
+      message: message,
+      target: target
+    } do
+      g = 100
+
+      r = %Registers{
+        r7: 2,
+        r8: a_0() + 0x1000,
+        r9: byte_size(target),
+        r10: a_0() + 0x2000,
+        r11: byte_size(message)
+      }
+
+      output =
+        capture_io(fn ->
+          assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^memory, context: nil} =
+                   General.log(g, r, memory, nil, nil, nil)
+        end)
+
+      assert output =~ "INFO [#{target}] #{message}"
+    end
+
+    @tag :log
+    test "handles memory read errors gracefully" do
+      mem = PreMemory.init_nil_memory() |> PreMemory.finalize()
+      g = 100
+      r = %Registers{r7: 4, r8: a_0() + 0x1000, r9: 10, r10: a_0() + 0x2000, r11: 15}
+
+      output =
+        capture_io(fn ->
+          assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^mem, context: nil} =
+                   General.log(g, r, mem, nil, 5, 99)
+        end)
+
+      assert output == ""
+    end
+
+    @tag :log
+    test "logs with zero target address and length", %{memory: memory, message: message} do
+      g = 100
+      r = %Registers{r7: 2, r8: 0, r9: 0, r10: a_0() + 0x2000, r11: byte_size(message)}
+
+      output =
+        capture_io(fn ->
+          assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^memory, context: nil} =
+                   General.log(g, r, memory, nil, 1, 42)
+        end)
+
+      assert output =~ "INFO@1#42 #{message}"
     end
   end
 end

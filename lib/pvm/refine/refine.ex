@@ -92,6 +92,9 @@ defmodule PVM.Refine do
             :expunge ->
               Refine.expunge(gas, registers, memory, context)
 
+            :log ->
+              General.log(gas, registers, memory, context, work_item_index, service_id)
+
             _ ->
               %Refine.Result{
                 exit_reason: :continue,
