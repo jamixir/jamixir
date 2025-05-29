@@ -29,7 +29,7 @@ defmodule TracesTest do
     for mode <- ["fallback", "safrole", "reports-l0"] do
       @tag mode: mode
       @tag timeout: :infinity
-      @tag :full_vectors
+      @tag :slow
       test "#{mode} mode block import", %{mode: mode} do
         {failed_blocks, _} =
           for block_number <- 1..42, reduce: {[], nil} do
