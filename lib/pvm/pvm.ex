@@ -65,45 +65,7 @@ defmodule PVM do
 
     w_a = Constants.max_is_authorized_code_size()
 
-    # Formula (B.2) v0.6.6
-    f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
-      host_call_result =
-        case host(n) do
-          :gas ->
-            Host.General.gas(gas, registers, memory, nil)
 
-          :fetch ->
-            Host.General.fetch(
-              gas,
-              registers,
-              memory,
-              p,
-              p,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil
-            )
-
-          :log ->
-            Host.General.log(gas, registers, memory, nil)
-
-          _ ->
-            %General.Result{
-              exit_reason: :continue,
-              gas: gas - default_gas(),
-              registers: Registers.set(registers, 7, what()),
-              memory: memory
-            }
-        end
-
-      %{exit_reason: e, gas: g, registers: r, memory: m, context: _c} = host_call_result
-
-      {e, %{gas: g, registers: r, memory: m}, nil}
-    end
 
     case pc do
       nil ->
