@@ -42,7 +42,13 @@ defmodule TracesTest do
               file = String.pad_leading("#{block_number}", 8, "0")
 
               {:ok, block_json} =
-                case fetch_and_parse_json("#{file}.json", block_path(mode), @user, @repo) do
+                case fetch_and_parse_json(
+                       "#{file}.json",
+                       block_path(mode),
+                       @user,
+                       @repo,
+                       "traces"
+                     ) do
                   {:error, _} ->
                     throw("Error fetching #{file}.json")
 
