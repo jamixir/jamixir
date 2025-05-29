@@ -4,7 +4,7 @@ defmodule PVM.Accumulate do
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
-
+  import PVM.Host.Gas
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}
 
@@ -102,6 +102,10 @@ defmodule PVM.Accumulate do
 
           :yield ->
             Accumulate.yield(gas, registers, memory, context)
+
+          :log ->
+            General.log(gas, registers, memory, s, nil, x.service)
+            |> Utils.replace_service(context)
 
           _ ->
             %Accumulate.Result{

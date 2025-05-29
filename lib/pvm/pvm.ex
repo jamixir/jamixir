@@ -43,18 +43,26 @@ defmodule PVM do
   @spec authorized_f(non_neg_integer(), PVM.Types.host_call_state(), PVM.Types.context()) ::
           {PVM.Types.exit_reason(), PVM.Types.host_call_state(), PVM.Types.context()}
   def authorized_f(n, %{gas: gas, registers: registers, memory: memory}, _context) do
-    if host(n) == :gas do
-      %{exit_reason: exit_reason, gas: gas_, registers: registers_, memory: memory} =
-        Host.General.gas(gas, registers, memory, nil)
+    case host(n) do
+      :gas ->
+        %{exit_reason: exit_reason, gas: gas_, registers: registers_, memory: memory} =
+          Host.General.gas(gas, registers, memory, nil)
 
-      {exit_reason, %{gas: gas_, registers: registers_, memory: memory}, nil}
-    else
-      {:continue,
-       %{
-         gas: gas - default_gas(),
-         registers: Registers.set(registers, 7, what()),
-         memory: memory
-       }, nil}
+        {exit_reason, %{gas: gas_, registers: registers_, memory: memory}, nil}
+
+      :log ->
+        %{exit_reason: exit_reason, gas: gas_, registers: registers_, memory: memory_} =
+          Host.General.log(gas, registers, memory, nil)
+
+        {exit_reason, %{gas: gas_, registers: registers_, memory: memory_}, nil}
+
+      _ ->
+        {:continue,
+         %{
+           gas: gas - default_gas(),
+           registers: Registers.set(registers, 7, what()),
+           memory: memory
+         }, nil}
     end
   end
 
@@ -155,6 +163,9 @@ defmodule PVM do
 
           :info ->
             General.info(gas, registers, memory, context, service_index, services)
+
+          :log ->
+            General.log(gas, registers, memory, context, nil, service_index)
 
           _ ->
             %{

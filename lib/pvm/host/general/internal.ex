@@ -225,4 +225,74 @@ defmodule PVM.Host.General.Internal do
       context: context
     }
   end
+
+  @spec log_internal(Registers.t(), Memory.t(), any(), integer() | nil, integer() | nil) ::
+          Result.Internal.t()
+  def log_internal(registers, memory, context, core_index, service_index) do
+
+    [log_level, target_addr, target_len, message_addr, message_len] =
+      Registers.get(registers, [7, 8, 9, 10, 11])
+
+    target =
+      if target_len == 0 and target_addr == 0 do
+        ""
+      else
+        case Memory.read(memory, target_addr, target_len) do
+          {:ok, target} -> target
+          {:error, _} -> :error
+        end
+      end
+
+    message = case Memory.read(memory, message_addr, message_len) do
+      {:ok, message} -> message
+      {:error, _} -> :error
+    end
+
+    # Only print if both target and message are not :error
+    if target != :error and message != :error do
+      print_log_message(log_level, target, message, core_index, service_index)
+    end
+
+    # Return original registers unchanged
+    %Result.Internal{
+      exit_reason: :continue,
+      registers: registers,
+      memory: memory,
+      context: context
+    }
+  end
+
+  defp print_log_message(log_level, target, message, core_index, service_index) do
+    # Map log level numbers to strings
+    level_string =
+      case log_level do
+        0 -> "TRACE"
+        1 -> "DEBUG"
+        2 -> "INFO"
+        3 -> "WARN"
+        4 -> "ERROR"
+        _ -> "UNKNOWN"
+      end
+
+    # Format timestamp
+    {{year, month, day}, {hour, minute, second}} = :calendar.universal_time()
+
+    timestamp =
+      :io_lib.format(
+        "~4..0w/~2..0w/~2..0w ~2..0w:~2..0w:~2..0w",
+        [year, month, day, hour, minute, second]
+      )
+
+    # Build log message parts
+    core_part = if core_index != nil, do: "@#{core_index}", else: ""
+    service_part = if service_index != nil, do: "##{service_index}", else: ""
+    target_part = if target != "", do: " [#{target}]", else: ""
+
+    # Create final log message
+    log_message =
+      "#{timestamp} #{level_string}#{core_part}#{service_part}#{target_part} #{message}"
+
+    # Print the log message
+    IO.puts(log_message)
+  end
 end
