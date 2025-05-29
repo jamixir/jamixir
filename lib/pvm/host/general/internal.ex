@@ -113,7 +113,7 @@ defmodule PVM.Host.General.Internal do
           work_package.authorization_token
 
         work_package != nil and w10 == 10 ->
-          work_package.refinement_context
+          e(work_package.refinement_context)
 
         work_package != nil and w10 == 11 ->
           e(vs(for wi <- work_package.work_items, do: WorkItem.encode_for_fetch_host_call(wi)))
