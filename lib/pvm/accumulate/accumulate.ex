@@ -1,12 +1,9 @@
 defmodule PVM.Accumulate do
+  alias PVM.Host.{Accumulate, Accumulate.Context, General}
   alias PVM.Registers
-  alias System.State.ServiceAccount
-  alias PVM.Host.Accumulate.Context
-  alias PVM.Host.{Accumulate, General}
   alias System.DeferredTransfer
-  alias System.State.Accumulation
+  alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
-  import PVM.Host.Gas
 
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}

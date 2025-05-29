@@ -41,6 +41,9 @@ defmodule System.State.CoreStatistic do
   def calculate_core_statistics(incoming_work_reports, available_work_reports, assurances) do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)
 
+    incoming_work_reports = for w <- incoming_work_reports, w != nil, do: w
+    available_work_reports = for w <- available_work_reports, w != nil, do: w
+
     for c <- 0..(Constants.core_count() - 1) do
       w_incoming =
         Enum.find(incoming_work_reports, fn wr -> wr.core_index == c end) || %{}

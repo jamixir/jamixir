@@ -32,6 +32,7 @@ defmodule System.State.CoreStatisticTest do
       stat = CoreStatistic.calculate_core_statistics(work_reports, work_reports, assurances)
 
       assert stat == [
+               %CoreStatistic{},
                %CoreStatistic{
                  imports: 2,
                  exports: 4,
@@ -41,8 +42,7 @@ defmodule System.State.CoreStatisticTest do
                  bundle_size: 7,
                  # 7 + 4104 * ⌈(2 * (65 / 64))⌉
                  da_load: 12_319
-               },
-               %CoreStatistic{}
+               }
              ]
     end
   end

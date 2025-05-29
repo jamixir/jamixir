@@ -276,7 +276,7 @@ defmodule Codec.State.Trie do
     do: {bin, <<>>}
 
   # preimage_l
-  def decode_value({_service_id, <<b::binary>>}, bin) do
+  def decode_value({_service_id, <<_::binary>>}, bin) do
     VariableSize.decode(bin, fn <<x::little-32, rest::binary>> ->
       {x, rest}
     end)
