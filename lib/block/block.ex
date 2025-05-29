@@ -60,7 +60,7 @@ defmodule Block do
           Enum.find_index(params.curr_validators_, fn v -> v.bandersnatch == pubkey end)
 
         header = put_in(header.block_author_key_index, new_index)
-        Logger.debug("timeslot pubkey: #{inspect(Util.Hex.encode16(params.pubkey))}")
+        Logger.debug("timeslot pubkey: #{inspect(params.pubkey)}")
 
         {:ok,
          %__MODULE__{
