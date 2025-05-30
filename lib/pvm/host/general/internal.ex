@@ -18,14 +18,14 @@ defmodule PVM.Host.General.Internal do
   @spec fetch_internal(
           Registers.t(),
           Memory.t(),
-          WorkPackage,
-          binary(),
-          binary(),
-          non_neg_integer(),
-          list(list(binary())),
-          list(list(binary())),
-          list(Operand.t()),
-          list(DeferredTransfer.t()),
+          WorkPackage | nil,
+          binary() | nil,
+          binary() | nil,
+          non_neg_integer() | nil,
+          list(list(binary())) | nil,
+          list(list(binary())) | nil,
+          list(Operand.t()) | nil,
+          list(DeferredTransfer.t()) | nil,
           any()
         ) :: Result.Internal.t()
   def fetch_internal(
