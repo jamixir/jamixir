@@ -23,16 +23,16 @@ defmodule System.State.Accumulation do
 
   # (Accumulation.t(), service_index) -> PVM.Host.Accumulate.Context.t()
   @type ctx_init_fn :: (t(), non_neg_integer() -> PVM.Host.Accumulate.Context.t())
-  @type ctx :: %{timeslot: non_neg_integer(), ctx_init_fn: ctx_init_fn()}
+  @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   @callback do_single_accumulation(
               t(),
               list(),
               map(),
               non_neg_integer(),
-              ctx()
+              extra_args()
             ) ::
               AccumulationResult.t()
-  @callback do_transition(list(), State.t(), ctx()) :: any()
+  @callback do_transition(list(), State.t(), extra_args()) :: any()
 
   # Formula (12.13) v0.6.5 - U
   @type t :: %__MODULE__{
@@ -55,10 +55,8 @@ defmodule System.State.Accumulation do
   Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.5
   """
   def transition(w, t_, n0_, s) do
-    ctx_init_fn = PVM.Accumulate.Utils.initializer(n0_, t_)
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
-    ctx = %{timeslot: t_, ctx_init_fn: ctx_init_fn}
-    module.do_transition(w, s, ctx)
+    module.do_transition(w, s, %{timeslot_: t_, n0_: n0_})
   end
 
   def do_transition(
@@ -72,7 +70,7 @@ defmodule System.State.Accumulation do
           services: services,
           timeslot: timeslot
         },
-        %{timeslot: timeslot_} = ctx
+        %{timeslot_: timeslot_} = extra_args
       ) do
     # Formula (12.21) v0.6.5
     gas_limit =
@@ -105,7 +103,7 @@ defmodule System.State.Accumulation do
         accumulatable_reports,
         initial_state,
         privileged_services.services_gas,
-        ctx
+        extra_args
       )
 
     # Formula (12.23) v0.6.5
@@ -196,9 +194,9 @@ defmodule System.State.Accumulation do
           list(WorkReport.t()),
           t(),
           %{non_neg_integer() => non_neg_integer()},
-          ctx()
+          extra_args()
         ) ::
-          {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
+          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
 
   def sequential_accumulation(
@@ -206,7 +204,7 @@ defmodule System.State.Accumulation do
         work_reports,
         acc_state,
         always_acc_services,
-        ctx
+        extra_args
       ) do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
 
@@ -218,7 +216,7 @@ defmodule System.State.Accumulation do
           acc_state,
           Enum.take(work_reports, i),
           always_acc_services,
-          ctx
+          extra_args
         )
 
       g_star = Enum.sum(for {_, g} <- u_star, do: g)
@@ -229,7 +227,7 @@ defmodule System.State.Accumulation do
           Enum.drop(work_reports, i),
           o_star,
           Map.new(),
-          ctx
+          extra_args
         )
 
       {i + j, o_prime, t_star ++ t, b_star ++ b, u_star ++ u}
@@ -258,11 +256,11 @@ defmodule System.State.Accumulation do
           t(),
           list(WorkReport.t()),
           %{non_neg_integer() => non_neg_integer()},
-          ctx()
+          extra_args()
         ) ::
           {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
-  def parallelized_accumulation(acc_state, work_reports, always_acc_services, ctx) do
+  def parallelized_accumulation(acc_state, work_reports, always_acc_services, extra_args) do
     #s
     services = collect_services(work_reports, always_acc_services)
 
@@ -272,7 +270,7 @@ defmodule System.State.Accumulation do
         acc_state,
         work_reports,
         always_acc_services,
-        ctx
+        extra_args
       )
 
     d = acc_state.services
@@ -292,7 +290,7 @@ defmodule System.State.Accumulation do
             work_reports,
             services,
             service,
-            ctx
+            extra_args
           )
 
         # K(d ∖{s})
@@ -321,7 +319,7 @@ defmodule System.State.Accumulation do
     accumulation_state = %__MODULE__{
       # d'
       services:
-        integrate_preimages(Map.drop(d ++ n, MapSet.to_list(m)), service_preimages, ctx.timeslot),
+        integrate_preimages(Map.drop(d ++ n, MapSet.to_list(m)), service_preimages, extra_args.timeslot_),
       # χ'
       privileged_services: privileged_services_,
       # ι'
@@ -373,7 +371,7 @@ defmodule System.State.Accumulation do
         acc_state,
         work_reports,
         always_acc_services,
-        ctx
+        extra_args
       ) do
     %__MODULE__{
       privileged_services: ps
@@ -390,7 +388,7 @@ defmodule System.State.Accumulation do
           work_reports,
           always_acc_services,
           service,
-          ctx
+          extra_args
         )
 
       Map.get(state, key)
@@ -399,7 +397,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (12.20) v0.6.5
-  def single_accumulation(acc_state, work_reports, service_dict, service, ctx) do
+  def single_accumulation(acc_state, work_reports, service_dict, service, extra_args) do
     module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
     module.do_single_accumulation(
@@ -407,7 +405,7 @@ defmodule System.State.Accumulation do
       work_reports,
       service_dict,
       service,
-      ctx
+      extra_args
     )
   end
 
@@ -416,11 +414,11 @@ defmodule System.State.Accumulation do
         work_reports,
         service_dict,
         service,
-        %{timeslot: timeslot_, ctx_init_fn: ctx_init_fn}
+        %{timeslot_: timeslot_, n0_: n0_}
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, service_dict, service)
 
-    PVM.accumulate(acc_state, timeslot_, service, gas, operands, ctx_init_fn)
+    PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
     |> AccumulationResult.new()
   end
 
@@ -469,7 +467,7 @@ defmodule System.State.Accumulation do
   # Formula (12.34) v0.6.5
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
-          w_star :: list(WorkReport.t()),
+          w_star :: MapSet.t(WorkReport.t()),
           w_q :: list({WorkReport.t(), MapSet.t(Types.hash())}),
           header_timeslot :: non_neg_integer(),
           state_timeslot :: non_neg_integer()
