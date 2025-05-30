@@ -230,7 +230,6 @@ defmodule PVM.Host.General.Internal do
   @spec log_internal(Registers.t(), Memory.t(), any(), integer() | nil, integer() | nil) ::
           Result.Internal.t()
   def log_internal(registers, memory, context, core_index, service_index) do
-
     [log_level, target_addr, target_len, message_addr, message_len] =
       Registers.get(registers, [7, 8, 9, 10, 11])
 
@@ -244,10 +243,11 @@ defmodule PVM.Host.General.Internal do
         end
       end
 
-    message = case Memory.read(memory, message_addr, message_len) do
-      {:ok, message} -> message
-      {:error, _} -> :error
-    end
+    message =
+      case Memory.read(memory, message_addr, message_len) do
+        {:ok, message} -> message
+        {:error, _} -> :error
+      end
 
     if target != :error and message != :error do
       print_log_message(log_level, target, message, core_index, service_index)
@@ -262,17 +262,8 @@ defmodule PVM.Host.General.Internal do
     }
   end
 
+  # According to https://github.com/polkadot-fellows/JIPs/pull/6/files
   defp print_log_message(log_level, target, message, core_index, service_index) do
-    logger_level =
-      case log_level do
-        0 -> :debug  # TRACE
-        1 -> :debug  # DEBUG
-        2 -> :info   # INFO
-        3 -> :warn   # WARN
-        4 -> :error  # ERROR
-        _ -> :info   # UNKNOWN defaults to info
-      end
-
     # Format timestamp
     {{year, month, day}, {hour, minute, second}} = :calendar.universal_time()
 
@@ -282,18 +273,16 @@ defmodule PVM.Host.General.Internal do
         [year, month, day, hour, minute, second]
       )
 
-    core_part = if core_index != nil, do: "@#{core_index}", else: ""
-    service_part = if service_index != nil, do: "##{service_index}", else: ""
-    target_part = if target != "", do: " [#{target}]", else: ""
+    target = if target != "", do: " [#{target}]", else: ""
 
-    log_message =
-      "#{timestamp}#{core_part}#{service_part}#{target_part} #{message}"
+    message =
+      "#{timestamp}#{prefixed(core_index, "@")}#{prefixed(service_index, "#")}#{target} #{message}"
 
-    case logger_level do
-      :debug -> Logger.debug(log_message)
-      :info -> Logger.info(log_message)
-      :warn -> Logger.warn(log_message)
-      :error -> Logger.error(log_message)
-    end
+    level =
+      %{0 => :debug, 1 => :debug, 2 => :info, 3 => :warning, 4 => :error}[log_level] || :info
+
+    Logger.bare_log(level, message)
   end
+
+  defp prefixed(s, prefix), do: if(s != nil, do: "#{prefix}#{s}", else: "")
 end
