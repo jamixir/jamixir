@@ -20,14 +20,15 @@ defmodule PVM.Accumulate do
           service_index :: non_neg_integer(),
           gas :: non_neg_integer(),
           operands :: list(Operand.t()),
-          init_fn :: (Accumulation.t(), non_neg_integer() -> Context.t())
+          extra_args :: %{n0_: Types.hash()}
         ) :: {
           Accumulation.t(),
           list(DeferredTransfer.t()),
           Types.hash() | nil,
-          non_neg_integer()
+          non_neg_integer(),
+          list({Types.service_index(), binary()})
         }
-  def execute(accumulation_state, timeslot, service_index, gas, operands, init_fn, opts \\ []) do
+  def execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}, opts \\ []) do
     # Get trace setting from environment variable
     opts =
       case System.get_env("PVM_TRACE") do
@@ -39,16 +40,35 @@ defmodule PVM.Accumulate do
           opts
       end
 
-    # Formula (B.10) v0.6.5
-    x = init_fn.(accumulation_state, service_index)
+    # Formula (B.10) v0.6.6
+    x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
 
     d = x.accumulation.services
-    # Formula (B.11) v0.6.5
+    # Formula (B.11) v0.6.6
     f = fn n, %{gas: gas, registers: registers, memory: memory}, {x, _y} = context ->
       s = Context.accumulating_service(x)
 
       host_call_result =
         case host(n) do
+          :gas ->
+            General.gas(gas, registers, memory, context)
+
+          :fetch ->
+            General.fetch(
+              gas,
+              registers,
+              memory,
+              nil,
+              n0_,
+              nil,
+              nil,
+              nil,
+              nil,
+              operands,
+              nil,
+              context
+            )
+
           :read ->
             General.read(gas, registers, memory, s, x.service, d)
             |> Utils.replace_service(context)
@@ -59,9 +79,6 @@ defmodule PVM.Accumulate do
           :lookup ->
             General.lookup(gas, registers, memory, s, x.service, d)
             |> Utils.replace_service(context)
-
-          :gas ->
-            General.gas(gas, registers, memory, context)
 
           :info ->
             General.info(gas, registers, memory, s, x.service, d)
