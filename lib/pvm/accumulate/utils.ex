@@ -53,13 +53,13 @@ defmodule PVM.Accumulate.Utils do
   @spec collapse({Types.gas(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
           {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, Types.gas(), list({Types.service_index(), binary()})}
   def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
-    do: {y.accumulation, y.transfers, y.accumulation_trie_result, gas, y.preimages}
+    do: {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
 
   def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
-    do: {x.accumulation, x.transfers, output, gas, x.preimages}
+    do: {x.accumulation, x.transfers, output, gas, MapSet.to_list(x.preimages)}
 
   def collapse({gas, _output, {x, _y}}),
-    do: {x.accumulation, x.transfers, x.accumulation_trie_result, gas, x.preimages}
+    do: {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
 
   # Formula (B.12) v0.6.6
   @spec replace_service(

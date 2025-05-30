@@ -119,7 +119,7 @@ defmodule PVM.Accumulate.UtilsTest do
         },
         computed_service: 257,
         transfers: [%DeferredTransfer{amount: 100, gas_limit: 1000}],
-        preimages: [{257, "some_preimage"}]
+        preimages: MapSet.new([{257, "some_preimage"}])
       }
 
       y = %Context{
@@ -135,7 +135,7 @@ defmodule PVM.Accumulate.UtilsTest do
         },
         computed_service: 258,
         transfers: [],
-        preimages: [{300, "some_preimage_y"}]
+        preimages: MapSet.new([{300, "some_preimage_y"}])
       }
 
       {:ok, ctx: {x, y}}
@@ -154,7 +154,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert transfers == x.transfers
       assert hash == Hash.two()
       assert remaining_gas == gas
-      assert preimages == x.preimages
+      assert preimages == MapSet.to_list(x.preimages)
     end
 
     test "handles non-32-byte output", %{ctx: ctx} do
@@ -169,7 +169,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert transfers == x.transfers
       assert hash == nil
       assert remaining_gas == gas
-      assert preimages == x.preimages
+      assert preimages == MapSet.to_list(x.preimages)
     end
 
     test "handles panic output", %{ctx: ctx} do
@@ -182,7 +182,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert transfers == y.transfers
       assert hash == nil
       assert remaining_gas == gas
-      assert preimages == y.preimages
+      assert preimages == MapSet.to_list(y.preimages)
     end
   end
 

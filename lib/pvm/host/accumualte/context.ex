@@ -15,7 +15,7 @@ defmodule PVM.Host.Accumulate.Context do
           # y: accumulation trie result
           accumulation_trie_result: Types.hash() | nil,
           # p: preimages
-          preimages: list({Types.service_index(), binary()})
+          preimages: MapSet.t({Types.service_index(), binary()})
         }
 
   defstruct services: %{},
@@ -24,7 +24,7 @@ defmodule PVM.Host.Accumulate.Context do
             computed_service: nil,
             transfers: [],
             accumulation_trie_result: nil,
-            preimages: []
+            preimages: MapSet.new()
 
   # Formula (B.8) v0.6.6
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
