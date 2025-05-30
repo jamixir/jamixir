@@ -578,7 +578,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       %{1 => {s1, _}, 2 => {s2, _}, 3 => {s3, _}} =
-        Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
+        Accumulation.apply_transfers(services_intermediate_2, transfers, 0, %{n0_: Util.Hash.one()})
 
       assert s1.balance == 200
       assert s2.balance == 250
@@ -591,7 +591,8 @@ defmodule System.State.AccumulationTest do
         2 => %ServiceAccount{balance: 200}
       }
 
-      %{1 => {s1, _}, 2 => {s2, _}} = Accumulation.apply_transfers(services_intermediate_2, [], 0)
+      %{1 => {s1, _}, 2 => {s2, _}} =
+        Accumulation.apply_transfers(services_intermediate_2, [], 0, %{n0_: Util.Hash.one()})
 
       assert s1.balance == 100
       assert s2.balance == 200
@@ -608,7 +609,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       %{1 => {s1, g1}, 2 => {s2, g2}} =
-        Accumulation.apply_transfers(services_intermediate_2, transfers, 0)
+        Accumulation.apply_transfers(services_intermediate_2, transfers, 0, %{n0_: Util.Hash.one()})
 
       assert s1.balance == 100
       assert s2.balance == 200
