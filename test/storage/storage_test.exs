@@ -6,7 +6,6 @@ defmodule StorageTest do
   import Jamixir.Factory
 
   setup_all do
-    # Just clear the storage data instead of stopping/starting since Storage is now in supervision tree
     Storage.remove_all()
 
     :ok
