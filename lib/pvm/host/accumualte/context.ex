@@ -1,4 +1,4 @@
-# Formula (B.7) v0.6.5
+# Formula (B.7) v0.6.6
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
   use AccessStruct
@@ -13,7 +13,9 @@ defmodule PVM.Host.Accumulate.Context do
           # t: List of deferred transfers
           transfers: list(System.DeferredTransfer.t()),
           # y: accumulation trie result
-          accumulation_trie_result: Types.hash() | nil
+          accumulation_trie_result: Types.hash() | nil,
+          # p: preimages
+          preimages: list({Types.service_index(), binary()})
         }
 
   defstruct services: %{},
@@ -21,9 +23,10 @@ defmodule PVM.Host.Accumulate.Context do
             accumulation: %Accumulation{},
             computed_service: nil,
             transfers: [],
-            accumulation_trie_result: nil
+            accumulation_trie_result: nil,
+            preimages: []
 
-  # Formula (B.8) v0.6.5
+  # Formula (B.8) v0.6.6
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
   def accumulating_service(%__MODULE__{} = x), do: x.accumulation.services[x.service]
 
