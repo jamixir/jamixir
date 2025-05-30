@@ -1414,4 +1414,205 @@ defmodule PVM.Host.AccumulateTest do
       assert x_.accumulation_trie_result == Hash.one()
     end
   end
+
+  describe "provide/5" do
+    setup do
+      preimage_data = "test_preimage_data"
+      hash_of_data = h(preimage_data)
+
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.write(a_0(), preimage_data)
+        |> PreMemory.set_access(a_0(), byte_size(preimage_data), :read)
+        |> PreMemory.finalize()
+
+      # Service that exists in accumulation
+      service_account = %ServiceAccount{
+        balance: 1000,
+        preimage_storage_l: %{
+          # This preimage already exists
+          {hash_of_data, byte_size(preimage_data)} => [42, 17]
+        }
+      }
+
+      # Service without the preimage
+      clean_service = %ServiceAccount{
+        balance: 1000,
+        preimage_storage_l: %{}
+      }
+
+      context = %Context{
+        service: 123,
+        accumulation: %Accumulation{
+          services: %{
+            123 => service_account,
+            456 => clean_service
+          }
+        },
+        preimages: MapSet.new()
+      }
+
+      service_index = 456
+      registers = %Registers{
+        r7: service_index,
+        r8: a_0(),
+        r9: byte_size(preimage_data)
+      }
+
+
+
+      {:ok,
+       memory: memory,
+       context: {context, context},
+       gas: 100,
+       registers: registers,
+       service_index: service_index,
+       preimage_data: preimage_data,
+       hash_of_data: hash_of_data}
+    end
+
+    test "returns :panic when memory is not readable", %{
+      context: context,
+      gas: gas,
+      registers: registers,
+      service_index: service_index
+    } do
+      memory = Memory.set_access(%Memory{}, a_0(), 10, nil)
+
+      assert %{
+               exit_reason: :panic,
+               registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.provide(gas, registers, memory, context, service_index)
+    end
+
+    test "returns {:continue, who()} when service doesn't exist", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      # Use service index that doesn't exist in services
+      registers = %{registers | r7: 999}
+      service_index = 999
+      who = who()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who},
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.provide(gas, registers, memory, context, service_index)
+    end
+
+    test "returns {:continue, huh()} when preimage already exists in service preimage storage_l", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers,
+    } do
+      # Use r7 that points to service 123 which has the preimage
+      registers = %{registers | r7: 123}
+      huh = huh()
+      unused_service_index = 999
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.provide(gas, registers, memory, context, unused_service_index)
+    end
+
+    test "returns {:continue, huh()} when preimage already exists in context preimages", %{
+      memory: memory,
+      context: {x, y},
+      gas: gas,
+      registers: registers,
+      preimage_data: preimage_data
+    } do
+      # Add preimage to context preimages set
+      x = %{x | preimages: MapSet.put(x.preimages, {456, preimage_data})}
+
+      # Use r7 that points to service 456 (clean service)
+      registers = %{registers | r7: 456}
+      huh = huh()
+      unused_service_index = 999
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: {^x, ^y}
+             } = Accumulate.provide(gas, registers, memory, {x, y}, unused_service_index)
+    end
+
+    test "successful provide with r7 pointing to existing service", %{
+      memory: memory,
+      context: {x, y},
+      gas: gas,
+      registers: registers,
+      preimage_data: preimage_data
+    } do
+      # Use r7 that points to service 456 (clean service)
+      registers = %{registers | r7: 456}
+      ok = ok()
+      unused_service_index = 999
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^ok},
+               memory: ^memory,
+               context: {x_, ^y}
+             } = Accumulate.provide(gas, registers, memory, {x, y}, unused_service_index)
+
+      # Verify preimage was added to context
+      assert MapSet.member?(x_.preimages, {456, preimage_data})
+    end
+
+    test "successful provide with r7 = max_64_bit_value uses service_index", %{
+      memory: memory,
+      context: {x, y},
+      gas: gas,
+      registers: registers,
+      preimage_data: preimage_data
+    } do
+      # Use max 64-bit value to trigger service_index usage
+      registers = %{registers | r7: 0xFFFF_FFFF_FFFF_FFFF}
+      # Use service 456 (clean service) as service_index
+      service_index = 456
+      ok = ok()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^ok},
+               memory: ^memory,
+               context: {x_, ^y}
+             } = Accumulate.provide(gas, registers, memory, {x, y}, service_index)
+
+      # Verify preimage was added to context using service_index
+      assert MapSet.member?(x_.preimages, {service_index, preimage_data})
+    end
+
+    test "returns {:continue, who()} when service_index doesn't exist and r7 = max_64_bit_value",
+         %{
+           memory: memory,
+           context: context,
+           gas: gas,
+           registers: registers
+         } do
+      registers = %{registers | r7: 0xFFFF_FFFF_FFFF_FFFF}
+      # Use non-existent service_index
+      service_index = 999
+      who = who()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^who},
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.provide(gas, registers, memory, context, service_index)
+    end
+  end
 end
