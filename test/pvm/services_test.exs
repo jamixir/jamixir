@@ -2,7 +2,6 @@ defmodule PVM.ServicesTest do
   alias PVM.ArgInvoc
   alias PVM.Host.Refine
   alias PVM.Accumulate
-  alias PVM.Host.Accumulate.Context
   alias System.State.{Accumulation, ServiceAccount}
   use Codec.Encoder
   use ExUnit.Case
@@ -25,13 +24,6 @@ defmodule PVM.ServicesTest do
       }
     }
 
-    init_fn = fn acc, service_idx ->
-      %Context{
-        accumulation: acc,
-        service: service_idx
-      }
-    end
-
     # Return tuple with all necessary args in order
     {
       # accumulation_state
@@ -44,8 +36,8 @@ defmodule PVM.ServicesTest do
       10000,
       # operands
       [],
-      # init_fn
-      init_fn
+      # extra_args
+      %{n0_: Util.Hash.one()}
     }
   end
 
@@ -77,8 +69,8 @@ defmodule PVM.ServicesTest do
       |> insert_instruction(2, [0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
       |> PVM.Helper.init_bin()
 
-    {accumulation, timeslot, service_index, gas, operands, init_fn} = make_accumulate_args(bin)
-    result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, init_fn)
+    {accumulation, timeslot, service_index, gas, operands, extra_args} = make_accumulate_args(bin)
+    result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, extra_args)
     assert match?({^accumulation, [], nil, _gas, [{0, ^bin}]}, result)
   end
 end

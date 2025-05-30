@@ -30,20 +30,16 @@ defmodule PVM.Accumulate.UtilsTest do
        service_state: service_state}
     end
 
-    test "creates initialization function", %{n0_: n0_, header_timeslot: header_timeslot} do
-      init_fn = Utils.initializer(n0_, header_timeslot)
-      assert is_function(init_fn, 2)
-    end
+
 
     test "initializes context correctly", %{
       n0_: n0_,
       header_timeslot: header_timeslot,
       accumulation: accumulation
     } do
-      init_fn = Utils.initializer(n0_, header_timeslot)
       service_index = 256
 
-      context = init_fn.(accumulation, service_index)
+      context = Utils.initializer(n0_, header_timeslot, accumulation, service_index)
 
       assert %{
                service: ^service_index,
