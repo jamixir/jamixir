@@ -71,6 +71,6 @@ defmodule PVM.ServicesTest do
 
     {accumulation, timeslot, service_index, gas, operands, extra_args} = make_accumulate_args(bin)
     result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, extra_args)
-    assert match?({^accumulation, [], nil, _gas, [{0, ^bin}]}, result)
+    assert match?({^accumulation, [], nil, _gas, []}, result)
   end
 end

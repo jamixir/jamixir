@@ -20,16 +20,19 @@ defmodule PVM.OnTransferTest do
         gas_limit: 1000
       }
 
-      {:ok, basic_service: basic_service, transfer: transfer}
+      extra_args = %{n0_: Hash.one()}
+
+      {:ok, basic_service: basic_service, transfer: transfer, extra_args: extra_args}
     end
 
     test "returns service directly when code is not found", %{
       basic_service: service,
-      transfer: transfer
+      transfer: transfer,
+      extra_args: extra_args
     } do
       services = %{1 => service}
 
-      {result, _g} = PVM.on_transfer(services, 0, 1, [transfer])
+      {result, _g} = PVM.on_transfer(services, 0, 1, [transfer], extra_args)
 
       expected_balance = service.balance + transfer.amount
 
@@ -39,80 +42,15 @@ defmodule PVM.OnTransferTest do
       assert result.balance == expected_balance
     end
 
-    test "returns service directly when transfer is empty", %{basic_service: service} do
+    test "returns service directly when transfer is empty", %{
+      basic_service: service,
+      extra_args: extra_args
+    } do
       services = %{1 => service}
 
-      {result, _} = PVM.on_transfer(services, 0, 1, [])
+      {result, _} = PVM.on_transfer(services, 0, 1, [], extra_args)
 
       assert result == service
-    end
-
-    # TODO  - create a meaningful test
-    @tag :skip
-    test "executes all host functions when code_hash exists" do
-      # transfer entry point is counter: 10
-      program =
-        <<0::80>> <>
-          <<
-            # gas
-            op(:ecalli),
-            0,
-            op(:fallthrough),
-            # lookup
-            op(:ecalli),
-            1,
-            op(:fallthrough),
-            # read
-            op(:ecalli),
-            2,
-            op(:fallthrough),
-            # write
-            op(:ecalli),
-            3,
-            op(:fallthrough),
-            # info
-            op(:ecalli),
-            4,
-            op(:fallthrough),
-            # fallback case
-            op(:ecalli),
-            5,
-            op(:fallthrough)
-          >>
-
-      bitmask =
-        <<0::80>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>> <>
-          <<1, 0, 1>>
-
-      binary = PVM.Helper.init(program, bitmask)
-      hash = Hash.default(binary)
-
-      service = %ServiceAccount{
-        code_hash: hash,
-        balance: 100,
-        preimage_storage_p: %{hash => binary},
-        preimage_storage_l: %{{hash, byte_size(binary)} => [0]}
-      }
-
-      transfer = %DeferredTransfer{
-        amount: 50,
-        # Enough gas for all operations
-        gas_limit: 10000
-      }
-
-      services = %{1 => service}
-
-      result = PVM.on_transfer(services, 0, 1, [transfer])
-
-      # Basic assertions
-      assert result.balance == 150
-      assert result.code_hash == hash
-      # The program should have executed successfully through all host calls
     end
   end
 end
