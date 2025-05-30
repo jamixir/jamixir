@@ -22,11 +22,6 @@ defmodule PVM do
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
     # Formula (B.2) v0.6.6
-    @spec f(
-            non_neg_integer(),
-            PVM.Types.host_call_state(),
-            any()
-          ) :: {PVM.Types.exit_reason(), PVM.Types.host_call_state(), any()}
     f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
       host_call_result =
         case host(n) do
