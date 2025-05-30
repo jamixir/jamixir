@@ -17,7 +17,6 @@ defmodule Jamixir.NodeCLIServer do
   @impl true
   def init(_) do
     TimeTicker.subscribe()
-    init_storage()
     RingVrf.init_ring_context()
     {:ok, %{jam_state: init_jam_state(), server_pid: init_network_listener()}}
   end
@@ -34,18 +33,6 @@ defmodule Jamixir.NodeCLIServer do
     port = Application.get_env(:jamixir, :port, 9999)
     {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
     server_pid
-  end
-
-  defp init_storage do
-    case Storage.start_link(persist: true) do
-      {:ok, _} ->
-        Logger.info("🗃️ Storage initialized")
-        {:ok, nil}
-
-      error ->
-        Logger.error("Failed to initialize storage: #{inspect(error)}")
-        {:stop, error}
-    end
   end
 
   @impl true

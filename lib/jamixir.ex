@@ -4,6 +4,7 @@ defmodule Jamixir do
   @impl true
   def start(_type, _args) do
     children = [
+      {Storage, [persist: Mix.env() != :test]},
       Network.PeerRegistry,
       Network.PeerSupervisor,
       Jamixir.TimeTicker
