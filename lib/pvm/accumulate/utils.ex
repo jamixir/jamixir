@@ -8,31 +8,24 @@ defmodule PVM.Accumulate.Utils do
 
   @hash_size 32
 
-  # Formula (B.10) v0.6.5
-  # first part of the initializer function is expected to be called in the context that calls
-  # the accumulate inocation, this is where n0_, and header_timeslot are known
-  # the second part is called internally in accumulate.execute
-  # n0_ and timeslot are needed to calculate i (computed_service_index)
-  @spec initializer(Types.hash(), non_neg_integer()) ::
-          (Accumulation.t(), non_neg_integer() -> Context.t())
-  def initializer(n0_, header_timeslot) do
-    fn accumulation_state, service_index ->
-      computed_service_index =
-        <<service_index::m(service_index), n0_::binary, header_timeslot::m(timeslot)>>
-        |> Hash.default()
-        |> de_le(4)
-        |> rem(0xFFFFFE00)
-        |> Kernel.+(256)
-        |> check(accumulation_state)
+  # Formula (B.10) v0.6.6
+  @spec initializer(Types.hash(), non_neg_integer(), Accumulation.t(), non_neg_integer()) :: Context.t()
+  def initializer(n0_, header_timeslot, accumulation_state, service_index) do
+    computed_service_index =
+      <<service_index::m(service_index), n0_::binary, header_timeslot::m(timeslot)>>
+      |> Hash.default()
+      |> de_le(4)
+      |> rem(0xFFFFFE00)
+      |> Kernel.+(256)
+      |> check(accumulation_state)
 
-      %Context{
-        service: service_index,
-        accumulation: accumulation_state,
-        computed_service: computed_service_index,
-        transfers: [],
-        accumulation_trie_result: nil
-      }
-    end
+    %Context{
+      service: service_index,
+      accumulation: accumulation_state,
+      computed_service: computed_service_index,
+      transfers: [],
+      accumulation_trie_result: nil
+    }
   end
 
   @dialyzer {:no_return, check: 2}

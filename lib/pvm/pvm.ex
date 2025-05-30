@@ -2,7 +2,7 @@ defmodule PVM do
   alias PVM.Host.General
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
-  alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers, Host.Accumulate}
+  alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers}
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
@@ -140,15 +140,16 @@ defmodule PVM do
           service_index :: non_neg_integer(),
           gas :: non_neg_integer(),
           operands :: list(Operand.t()),
-          init_fn :: (Accumulation.t(), non_neg_integer() -> Accumulate.Context.t())
+          extra_args :: %{n0_: Types.hash()}
         ) :: {
           Accumulation.t(),
           list(DeferredTransfer.t()),
           Types.hash() | nil,
-          non_neg_integer()
+          non_neg_integer(),
+          list({Types.service_index(), binary()})
         }
-  def accumulate(accumulation_state, timeslot, service_index, gas, operands, init_fn) do
-    PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, init_fn)
+  def accumulate(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}) do
+    PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_})
   end
 
   # Formula (B.14) v0.6.5
