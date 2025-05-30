@@ -120,6 +120,9 @@ defmodule PVM.Accumulate do
           :yield ->
             Accumulate.yield(gas, registers, memory, context)
 
+          :provide ->
+            Accumulate.provide(gas, registers, memory, context, service_index)
+
           _ ->
             %Accumulate.Result{
               exit_reason: :continue,

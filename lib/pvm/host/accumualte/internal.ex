@@ -10,6 +10,8 @@ defmodule PVM.Host.Accumulate.Internal do
   use Codec.{Encoder, Decoder}
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
 
+  @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
+
   @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def bless_internal(registers, memory, {x, _y} = context_pair) do
@@ -572,6 +574,59 @@ defmodule PVM.Host.Accumulate.Internal do
 
         true ->
           {:continue, ok(), %{x | accumulation_trie_result: h}}
+      end
+
+    %Result.Internal{
+      exit_reason: exit_reason,
+      registers: Registers.set(registers, :r7, w7_),
+      memory: memory,
+      context: put_elem(context_pair, 0, x_)
+    }
+  end
+
+  @spec provide_internal(
+          Registers.t(),
+          Memory.t(),
+          {Context.t(), Context.t()},
+          Types.service_index()
+        ) ::
+          Result.Internal.t()
+  def provide_internal(registers, memory, {x, _y} = context_pair, service_index) do
+    [o, z] = Registers.get(registers, [7, 8])
+    # d
+    services = x.accumulation.services
+
+    s_star =
+      cond do
+        registers.r7 == @max_64_bit_value -> service_index
+        true -> registers.r7
+      end
+
+    i =
+      case Memory.read(memory, o, z) do
+        {:ok, data} -> data
+        _ -> :error
+      end
+
+    # a
+    service = Map.get(services, s_star, nil)
+
+    {exit_reason, w7_, x_} =
+      cond do
+        i  == :error ->
+          {:panic, registers.r7, x}
+
+        service == nil ->
+          {:continue, who(), x}
+
+        Map.get(service.preimage_storage_l, {h(i), z}) != nil ->
+          {:continue, huh(), x}
+
+        MapSet.member?(x.preimages, {s_star, i}) ->
+          {:continue, huh(), x}
+
+        true ->
+          {:continue, ok(), put_in(x, [:preimages], MapSet.put(x.preimages, {s_star, i}))}
       end
 
     %Result.Internal{

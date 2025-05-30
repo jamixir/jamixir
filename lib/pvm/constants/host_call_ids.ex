@@ -26,7 +26,8 @@ defmodule PVM.Constants.HostCallId do
     23 => :zero,
     24 => :void,
     25 => :invoke,
-    26 => :expunge
+    26 => :expunge,
+    27 => :provide
   }
 
   for {byte, call} <- @host_calls do
