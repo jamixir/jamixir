@@ -303,9 +303,9 @@ defmodule System.State.AccumulationTest do
     end
 
     test "performs parallelized_accumulation correctly" do
-      ctx = %{
-        timeslot: Enum.random(1..1000),
-        ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
+      extra_args = %{
+        timeslot_: Enum.random(1..1000),
+        n0_: Util.Hash.one()
       }
 
       initial_state = %Accumulation{
@@ -346,7 +346,7 @@ defmodule System.State.AccumulationTest do
           initial_state,
           work_reports,
           always_acc_services,
-          ctx
+          extra_args
         )
 
       assert {updated_state, transfers, outputs, total_gas} = result
@@ -365,9 +365,9 @@ defmodule System.State.AccumulationTest do
     end
 
     test "correctly handles n (new services) and m (removed services)" do
-      ctx = %{
-        timeslot: Enum.random(1..1000),
-        ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
+      extra_args = %{
+        timeslot_: Enum.random(1..1000),
+        n0_: Util.Hash.one()
       }
 
       # Initial state with services 1, 2, 3
@@ -438,7 +438,7 @@ defmodule System.State.AccumulationTest do
           initial_state,
           work_reports,
           always_acc_services,
-          ctx
+          extra_args
         )
 
       # Verify gas used
@@ -494,9 +494,9 @@ defmodule System.State.AccumulationTest do
     test "performs basic outer accumulation correctly" do
       gas_limit = 100
 
-      ctx = %{
-        timeslot: Enum.random(1..1000),
-        ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
+      extra_args = %{
+        timeslot_: Enum.random(1..1000),
+        n0_: Util.Hash.one()
       }
 
       initial_state = %Accumulation{
@@ -538,7 +538,7 @@ defmodule System.State.AccumulationTest do
           work_reports,
           initial_state,
           always_acc_services,
-          ctx
+          extra_args
         )
 
       assert {total_i, final_state, all_transfers, all_outputs, service_gas} = result
