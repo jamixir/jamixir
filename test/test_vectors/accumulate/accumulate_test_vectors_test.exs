@@ -1,8 +1,6 @@
 defmodule AccumulateTestVectorsTest do
   use ExUnit.Case
   import Mox
-  import AccumulateTestVectors
-  import TestVectorUtil
   import TestHelper
 
   setup :verify_on_exit!
