@@ -1,4 +1,4 @@
-# Formula (B.22) v0.6.5
+# Formula (B.22) v0.6.6
 defmodule PVM.Host.Refine.Internal do
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
