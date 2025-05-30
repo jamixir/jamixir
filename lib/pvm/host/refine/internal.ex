@@ -1,6 +1,5 @@
 # Formula (B.22) v0.6.5
 defmodule PVM.Host.Refine.Internal do
-  alias Block.Extrinsic.WorkPackage
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
   use Codec.{Decoder, Encoder}
