@@ -150,7 +150,6 @@ defmodule PVM.Accumulate do
     else
       ArgInvoc.execute(service_code, 5, gas, args, f, {x, x}, opts)
       |> Utils.collapse()
-      |> Tuple.append([{service_index, service_code}])
     end
   end
 end

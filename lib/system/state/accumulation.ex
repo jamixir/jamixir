@@ -115,7 +115,7 @@ defmodule System.State.Accumulation do
     } = o
 
     # Formula (12.29) v0.6.5
-    x = apply_transfers(services_intermediate, deferred_transfers, timeslot_)
+    x = apply_transfers(services_intermediate, deferred_transfers, timeslot_, extra_args)
 
     services_intermediate_2 = for {s, {a, _gas}} <- x, into: %{}, do: {s, a}
 
@@ -453,12 +453,12 @@ defmodule System.State.Accumulation do
 
   # Formula (12.28) v0.6.5
   # Formula (12.29) v0.6.5
-  def apply_transfers(services_intermediate, transfers, timeslot) do
+  def apply_transfers(services_intermediate, transfers, timeslot, extra_args) do
     Enum.reduce(Map.keys(services_intermediate), %{}, fn s, acc ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
 
       service_with_transfers_applied =
-        PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers)
+        PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers, extra_args)
 
       Map.put(acc, s, service_with_transfers_applied)
     end)
