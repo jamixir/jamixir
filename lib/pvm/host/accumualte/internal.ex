@@ -592,7 +592,7 @@ defmodule PVM.Host.Accumulate.Internal do
         ) ::
           Result.Internal.t()
   def provide_internal(registers, memory, {x, _y} = context_pair, service_index) do
-    [o, z] = Registers.get(registers, [7, 8])
+    [o, z] = Registers.get(registers, [8, 9])
     # d
     services = x.accumulation.services
 
