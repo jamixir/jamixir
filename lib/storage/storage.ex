@@ -12,6 +12,16 @@ defmodule Storage do
   def state_root_key, do: @state_root_key
   def latest_timeslot, do: @latest_timeslot
 
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
+  end
+
   def start_link(opts) do
     case KVStorage.start_link(opts) do
       {:ok, pid} ->
