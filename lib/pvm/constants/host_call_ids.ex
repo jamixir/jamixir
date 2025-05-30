@@ -27,6 +27,7 @@ defmodule PVM.Constants.HostCallId do
     24 => :void,
     25 => :invoke,
     26 => :expunge,
+    27 => :provide,
     100 => :log
   }
 
