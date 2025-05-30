@@ -36,18 +36,18 @@ defmodule PVM.Host.General do
           non_neg_integer(),
           Registers,
           Memory,
-          WorkPackage,
-          binary(),
-          binary(),
-          non_neg_integer(),
-          list(list(binary())),
-          list(list(binary())),
-          list(Operand.t()),
-          list(DeferredTransfer.t()),
+          WorkPackage | nil,
+          binary() | nil,
+          binary() | nil,
+          non_neg_integer() | nil,
+          list(list(binary())) | nil,
+          list(list(binary())) | nil,
+          list(Operand.t()) | nil,
+          list(DeferredTransfer.t()) | nil,
           # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
           any()
         ) ::
-          nil
+          General.Result.t()
   def fetch(
         gas,
         registers,
