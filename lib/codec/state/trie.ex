@@ -91,18 +91,7 @@ defmodule Codec.State.Trie do
   end
 
   def serialize(state) do
-    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{}) |> add_extra_keys()
-  end
-
-  # This is a workaround to add extra keys to the trie
-  def add_extra_keys(dict) do
-    case Application.get_env(:jamixir, :extra_trie, nil) do
-      nil ->
-        dict
-
-      extra ->
-        Map.merge(dict, extra)
-    end
+    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
   end
 
   def serialize_hex(state, opts \\ []) do
