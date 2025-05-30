@@ -8,6 +8,7 @@ defmodule PVM.Host.General.Internal do
   alias Util.Hash
   use Codec.Encoder
   import PVM.Host.Util
+  require Logger
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
@@ -248,7 +249,6 @@ defmodule PVM.Host.General.Internal do
       {:error, _} -> :error
     end
 
-    # Only print if both target and message are not :error
     if target != :error and message != :error do
       print_log_message(log_level, target, message, core_index, service_index)
     end
@@ -263,15 +263,14 @@ defmodule PVM.Host.General.Internal do
   end
 
   defp print_log_message(log_level, target, message, core_index, service_index) do
-    # Map log level numbers to strings
-    level_string =
+    logger_level =
       case log_level do
-        0 -> "TRACE"
-        1 -> "DEBUG"
-        2 -> "INFO"
-        3 -> "WARN"
-        4 -> "ERROR"
-        _ -> "UNKNOWN"
+        0 -> :debug  # TRACE
+        1 -> :debug  # DEBUG
+        2 -> :info   # INFO
+        3 -> :warn   # WARN
+        4 -> :error  # ERROR
+        _ -> :info   # UNKNOWN defaults to info
       end
 
     # Format timestamp
@@ -283,16 +282,18 @@ defmodule PVM.Host.General.Internal do
         [year, month, day, hour, minute, second]
       )
 
-    # Build log message parts
     core_part = if core_index != nil, do: "@#{core_index}", else: ""
     service_part = if service_index != nil, do: "##{service_index}", else: ""
     target_part = if target != "", do: " [#{target}]", else: ""
 
-    # Create final log message
     log_message =
-      "#{timestamp} #{level_string}#{core_part}#{service_part}#{target_part} #{message}"
+      "#{timestamp}#{core_part}#{service_part}#{target_part} #{message}"
 
-    # Print the log message
-    IO.puts(log_message)
+    case logger_level do
+      :debug -> Logger.debug(log_message)
+      :info -> Logger.info(log_message)
+      :warn -> Logger.warn(log_message)
+      :error -> Logger.error(log_message)
+    end
   end
 end
