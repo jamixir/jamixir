@@ -7,6 +7,7 @@ defmodule PVM do
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
   import PVM.Host.Gas
+  import Util.Math
 
   # ΨI : The Is-Authorized pvm invocation function.
   # Formula (B.1) v0.6.6
@@ -20,6 +21,11 @@ defmodule PVM do
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
     # Formula (B.2) v0.6.6
+    @spec f(
+            non_neg_integer(),
+            PVM.Types.host_call_state(),
+            any()
+          ) :: {PVM.Types.exit_reason(), PVM.Types.host_call_state(), any()}
     f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
       host_call_result =
         case host(n) do
@@ -80,7 +86,7 @@ defmodule PVM do
     end
   end
 
-  # Formula (B.5) v0.6.5
+  # Formula (B.5) v0.6.6
   @callback do_refine(
               non_neg_integer(),
               WorkPackage.t(),
@@ -152,18 +158,38 @@ defmodule PVM do
     PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_})
   end
 
-  # Formula (B.14) v0.6.5
+  # Formula (B.15) v0.6.6
   @spec on_transfer(
           services :: %{integer() => ServiceAccount.t()},
           timeslot :: non_neg_integer(),
           service_index :: non_neg_integer(),
-          transfers :: list(DeferredTransfer.t())
-        ) :: ServiceAccount.t()
-  def on_transfer(services, timeslot, service_index, transfers) do
-    # Formula (B.16) v0.6.5
+          transfers :: list(DeferredTransfer.t()),
+          extra_args :: %{n0_: Types.hash()}
+        ) :: {ServiceAccount.t(), non_neg_integer()}
+  def on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
+    # Formula (B.16) v0.6.6
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
         case host(n) do
+          :gas ->
+            General.gas(gas, registers, memory, context)
+
+          :fetch ->
+            General.fetch(
+              gas,
+              registers,
+              memory,
+              nil,
+              n0_,
+              nil,
+              nil,
+              nil,
+              nil,
+              nil,
+              transfers,
+              context
+            )
+
           :lookup ->
             General.lookup(gas, registers, memory, context, service_index, services)
 
@@ -172,9 +198,6 @@ defmodule PVM do
 
           :write ->
             General.write(gas, registers, memory, context, service_index)
-
-          :gas ->
-            General.gas(gas, registers, memory, context)
 
           :info ->
             General.info(gas, registers, memory, context, service_index, services)
@@ -199,7 +222,7 @@ defmodule PVM do
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
-    # Formula (B.15) v0.6.5
+    # Formula (B.15) v0.6.6
     service = Map.get(services, service_index)
 
     service =
@@ -207,9 +230,7 @@ defmodule PVM do
         update_in(
           service,
           [:balance],
-          &for t <- transfers, reduce: &1 do
-            acc -> acc + t.amount
-          end
+          fn balance -> balance + sum_field(transfers, :amount) end
         )
       else
         nil
@@ -217,10 +238,11 @@ defmodule PVM do
 
     code = ServiceAccount.code(service)
 
-    if code == nil or Enum.empty?(transfers) do
+    if code == nil or byte_size(code) > Constants.max_service_code_size() or
+         Enum.empty?(transfers) do
       {service, 0}
     else
-      gas_limit = Enum.sum(Enum.map(transfers, & &1.gas_limit))
+      gas_limit = sum_field(transfers, :gas_limit)
 
       {gas, _, service_} =
         ArgInvoc.execute(
