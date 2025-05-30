@@ -8,8 +8,7 @@ defmodule Block.Extrinsic.WorkItem do
   alias System.DataAvailability
   alias Block.Extrinsic.{Guarantee.WorkDigest}
   alias Util.{Hash, MerkleTree}
-  use Codec.Encoder
-  use Codec.Decoder
+  use Codec.{Encoder, Decoder}
   use Sizes
   use AccessStruct
   import Bitwise, only: [&&&: 2]
@@ -86,7 +85,7 @@ defmodule Block.Extrinsic.WorkItem do
   end
 
   def encode_for_fetch_host_call(%__MODULE__{} = wi) do
-    Encoder.encode({
+    e({
       t(wi.service),
       wi.code_hash,
       <<wi.refine_gas_limit::m(gas)>>,
