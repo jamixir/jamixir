@@ -109,4 +109,13 @@ defmodule PVM.Host.Accumulate do
         {gas, registers, memory, context_pair},
         &yield_internal/3
       )
+
+  def provide(gas, registers, memory, context_pair, service_index) do
+    with_gas(
+      Result,
+      {gas, registers, memory, context_pair},
+      &provide_internal/4,
+      [service_index]
+    )
+  end
 end
