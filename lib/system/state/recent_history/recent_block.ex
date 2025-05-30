@@ -1,4 +1,6 @@
 defmodule System.State.RecentHistory.RecentBlock do
+  alias Codec.Decoder
+
   @type t :: %__MODULE__{
           # h
           header_hash: Types.hash(),
@@ -36,6 +38,23 @@ defmodule System.State.RecentHistory.RecentBlock do
 
       {JsonDecoder.from_json(report[f1]), JsonDecoder.from_json(report[f2])}
     end
+  end
+
+  use Sizes
+  use Codec.Encoder
+
+  def decode(bin) do
+    <<header_hash::b(hash), rest::binary>> = bin
+    {accumulated_result_mmr, rest} = Decoder.decode_mmr(rest)
+    <<state_root::b(hash), rest::binary>> = rest
+    {work_report_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
+
+    {%__MODULE__{
+       header_hash: header_hash,
+       accumulated_result_mmr: accumulated_result_mmr,
+       state_root: state_root,
+       work_report_hashes: work_report_hashes
+     }, rest}
   end
 
   def to_json_mapping do
