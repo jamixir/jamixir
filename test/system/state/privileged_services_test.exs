@@ -25,8 +25,8 @@ defmodule System.State.PrivilegedServicesTest do
       ps = build(:privileged_services)
 
       assert JsonEncoder.encode(ps) == %{
-               chi_m: ps.privileged_services_service,
-               chi_a: ps.authorizer_queue_service,
+               chi_m: ps.manager,
+               chi_a: ps.assigners,
                chi_v: ps.next_validators_service,
                chi_g: [
                  %{service: 1, gas: 1000},

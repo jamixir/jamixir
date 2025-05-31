@@ -47,9 +47,9 @@ defmodule PVM.Host.AccumulateTest do
         |> PreMemory.finalize()
 
       registers = %Registers{
-        # privileged_services_service
+        # manager
         r7: 1,
-        # authorizer_queue_service
+        # assigners
         r8: 2,
         # next_validators_service
         r9: 3,
@@ -118,8 +118,8 @@ defmodule PVM.Host.AccumulateTest do
 
       # Verify privileged services in context
       expected_privileged = %PrivilegedServices{
-        privileged_services_service: 1,
-        authorizer_queue_service: 2,
+        manager: 1,
+        assigners: 2,
         next_validators_service: 3,
         services_gas: gas_map
       }

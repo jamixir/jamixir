@@ -15,10 +15,10 @@ defmodule System.State.AccumulationTest do
   defp mock_privileged_services(privileged_services) do
     Enum.each(
       [
-        {privileged_services.privileged_services_service, :privileged_services,
+        {privileged_services.manager, :privileged_services,
          :updated_privileged_services},
         {privileged_services.next_validators_service, :next_validators, :updated_next_validators},
-        {privileged_services.authorizer_queue_service, :authorizer_queue,
+        {privileged_services.assigners, :authorizer_queue,
          :updated_authorizer_queue}
       ],
       fn {service, field, value} ->
@@ -268,8 +268,8 @@ defmodule System.State.AccumulationTest do
 
       initial_state = %Accumulation{
         privileged_services: %PrivilegedServices{
-          privileged_services_service: 1,
-          authorizer_queue_service: 3,
+          manager: 1,
+          assigners: 3,
           next_validators_service: 2
         },
         services: %{1 => :service1, 2 => :service2, 3 => :service3, 4 => :service4},
@@ -312,9 +312,9 @@ defmodule System.State.AccumulationTest do
       initial_state = %Accumulation{
         services: %{4 => :service4, 5 => :service5, 6 => :service6},
         privileged_services: %PrivilegedServices{
-          privileged_services_service: 1,
+          manager: 1,
           next_validators_service: 2,
-          authorizer_queue_service: 3
+          assigners: 3
         },
         next_validators: :initial_next_validators,
         authorizer_queue: :initial_authorizer_queue
@@ -379,9 +379,9 @@ defmodule System.State.AccumulationTest do
           6 => %ServiceAccount{balance: 300}
         },
         privileged_services: %PrivilegedServices{
-          privileged_services_service: 1,
+          manager: 1,
           next_validators_service: 2,
-          authorizer_queue_service: 3
+          assigners: 3
         },
         next_validators: :initial_next_validators,
         authorizer_queue: :initial_authorizer_queue
@@ -503,8 +503,8 @@ defmodule System.State.AccumulationTest do
       initial_state = %Accumulation{
         services: %{4 => :service4, 5 => :service5, 6 => :service6},
         privileged_services: %PrivilegedServices{
-          privileged_services_service: 1,
-          authorizer_queue_service: 2,
+          manager: 1,
+          assigners: 2,
           next_validators_service: 3
         },
         next_validators: :initial_next_validators,
@@ -721,8 +721,8 @@ defmodule System.State.AccumulationTest do
     setup do
       state = %State{
         privileged_services: %PrivilegedServices{
-          privileged_services_service: 1,
-          authorizer_queue_service: 2,
+          manager: 1,
+          assigners: 2,
           next_validators_service: 2,
           services_gas: %{1 => 100, 2 => 100}
         },
