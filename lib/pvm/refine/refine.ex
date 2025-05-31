@@ -33,7 +33,7 @@ defmodule PVM.Refine do
   def execute(
         work_item_index,
         work_package,
-        authorizer_output,
+        authorizer_trace,
         import_segments,
         export_segment_offset,
         services,
@@ -62,7 +62,7 @@ defmodule PVM.Refine do
                 memory: memory,
                 work_package: work_package,
                 n: Hash.zero(),
-                authorizer_output: authorizer_output,
+                authorizer_output: authorizer_trace,
                 index: work_item_index,
                 import_segments: import_segments,
                 preimages: preimages,
