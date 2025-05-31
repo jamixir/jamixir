@@ -34,7 +34,7 @@ defmodule PVM do
               registers: registers,
               memory: memory,
               work_package: p,
-              n: e(p),
+              n: nil,
               authorizer_output: nil,
               index: nil,
               import_segments: nil,
