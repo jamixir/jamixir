@@ -369,9 +369,9 @@ defmodule System.State.Accumulation do
     } = acc_state
 
     for {service, key} <- [
-          {ps.privileged_services_service, :privileged_services},
+          {ps.manager, :privileged_services},
           {ps.next_validators_service, :next_validators},
-          {ps.authorizer_queue_service, :authorizer_queue}
+          {ps.assigners, :authorizer_queue}
         ] do
       %{state: state} =
         single_accumulation(
