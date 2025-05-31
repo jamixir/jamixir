@@ -446,10 +446,10 @@ defmodule WorkReportTest do
       assert length(e) == 1
     end
 
-    # case r binary too small
+    # case r binary too large
     test "oversize", %{wp: wp, state: state} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<>>, [<<1>>], 555} end)
       o = String.duplicate(<<1>>, Constants.max_work_report_size() + 1)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {o, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
       {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
@@ -459,11 +459,13 @@ defmodule WorkReportTest do
 
     # case r binary and o(auhtorizer output) is correct size
     test "all good", %{wp: wp, state: state} do
+      # Use smaller sizes that won't exceed the limit
+      o = <<1>>
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi, wi]}
 
-      {r, _u, e} = WorkReport.process_item(wp, 1, <<1>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 1, o, [], state.services, %{})
       assert r == <<2>>
       assert length(e) == 1
     end
