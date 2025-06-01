@@ -293,9 +293,9 @@ defmodule Jamixir.Factory do
   def privileged_services_factory do
     %System.State.PrivilegedServices{
       manager: 1,
-      assigners: 2,
-      next_validators_service: 3,
-      services_gas: %{1 => 1000, 2 => 2000, 3 => 3000}
+      assigners: [2, 3],
+      next_validators_service: 4,
+      services_gas: %{1 => 1000, 2 => 2000, 3 => 3000, 4 => 4000}
     }
   end
 
