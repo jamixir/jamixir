@@ -190,7 +190,7 @@ defmodule System.State.Accumulation do
         gas_limit,
         work_reports,
         acc_state,
-        always_acc_services,
+        services_gas,
         extra_args
       ) do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
@@ -202,7 +202,7 @@ defmodule System.State.Accumulation do
         parallelized_accumulation(
           acc_state,
           Enum.take(work_reports, i),
-          always_acc_services,
+          services_gas,
           extra_args
         )
 
@@ -247,18 +247,45 @@ defmodule System.State.Accumulation do
         ) ::
           {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
-  def parallelized_accumulation(acc_state, work_reports, always_acc_services, extra_args) do
+  def parallelized_accumulation(acc_state, work_reports, services_gas, extra_args) do
     # s
-    services = collect_services(work_reports, always_acc_services)
+    services = collect_services(work_reports, services_gas)
 
-    # {x', i', q'}
-    {privileged_services_, next_validators_, authorizer_queue_} =
+    # {m′, a′, v′, z′}
+    privileged_services_ =
       accumulate_privileged_services(
         acc_state,
         work_reports,
-        always_acc_services,
+        services_gas,
         extra_args
       )
+      |> Map.get(:state)
+
+    # i′ = (∆1(o, w, f , i)o)i
+    next_validators_ =
+      single_accumulation(
+        acc_state,
+        work_reports,
+        services_gas,
+        acc_state.privileged_services.next_validators_service,
+        extra_args
+      )
+      |> Map.get(:state)
+      |> Map.get(:next_validators)
+
+    # q′ = (∆1(o, w, f , a_c)o)q
+    authorizer_queue_ =
+      for a_c <- acc_state.privileged_services.assigners do
+        single_accumulation(
+          acc_state,
+          work_reports,
+          services_gas,
+          a_c,
+          extra_args
+        )
+        |> Map.get(:state)
+        |> Map.get(:authorizer_queue)
+      end
 
     d = acc_state.services
 
@@ -350,41 +377,72 @@ defmodule System.State.Accumulation do
     end
   end
 
-  def collect_services(work_reports, always_acc_services) do
+  def collect_services(work_reports, services_gas) do
     for(
       d <- Enum.flat_map(work_reports, & &1.digests),
       do: d.service,
       into: MapSet.new()
-    ) ++ keys_set(always_acc_services)
+    ) ++ keys_set(services_gas)
   end
 
   def accumulate_privileged_services(
         acc_state,
         work_reports,
-        always_acc_services,
+        services_gas,
         extra_args
       ) do
     %__MODULE__{
-      privileged_services: ps
+      privileged_services: %{manager: manager}
     } = acc_state
 
-    for {service, key} <- [
-          {ps.manager, :privileged_services},
-          {ps.next_validators_service, :next_validators},
-          {ps.assigners, :authorizer_queue}
-        ] do
-      %{state: state} =
-        single_accumulation(
-          acc_state,
-          work_reports,
-          always_acc_services,
-          service,
-          extra_args
-        )
+    # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
+    %{
+      # m′
+      manager: manager_,
+      # a∗
+      assigners: assigners_star,
+      # v∗
+      next_validators_service: next_validators_service_star,
+      # z′
+      services_gas: services_gas_
+    } =
+      single_accumulation(acc_state, work_reports, services_gas, manager, extra_args)
+      |> Map.get(:state)
+      |> Map.get(:privileged_services)
 
-      Map.get(state, key)
-    end
-    |> List.to_tuple()
+    #     ∀c ∈ NC ∶ a′ c = ((∆1(o, w, f , a∗ c )o)a)c
+    assigners_ =
+      for {a_c_star, index} <- Enum.with_index(assigners_star) do
+        # (∆1(o, w, f , a∗ c)
+        single_accumulation(acc_state, work_reports, services_gas, a_c_star, extra_args)
+        # o
+        |> Map.get(:state)
+        |> Map.get(:privileged_services)
+        # a
+        |> Map.get(:assigners)
+        # c
+        |> Enum.at(index)
+      end
+
+    # v′ = (∆1(o, w, f , v∗)o)v
+    next_validators_service_ =
+      single_accumulation(
+        acc_state,
+        work_reports,
+        services_gas,
+        next_validators_service_star,
+        extra_args
+      )
+      |> Map.get(:state)
+      |> Map.get(:privileged_services)
+      |> Map.get(:next_validators_service)
+
+    %PrivilegedServices{
+      manager: manager_,
+      assigners: assigners_,
+      next_validators_service: next_validators_service_,
+      services_gas: services_gas_
+    }
   end
 
   # Formula (12.20) v0.6.5
