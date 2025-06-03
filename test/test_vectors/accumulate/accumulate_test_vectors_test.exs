@@ -34,6 +34,6 @@ defmodule AccumulateTestVectorsTest do
     # end
 
     # TODO accumulate vectors are failing after traces
-    # define_vector_tests("accumulate")
+    define_vector_tests("accumulate")
   end
 end
