@@ -14,7 +14,7 @@ jobs:
     env:
       VECTORS_OWNER: davxy
       VECTORS_REPO: jam-test-vectors
-      VECTORS_BRANCH: traces
+      VECTORS_BRANCH: master
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,6 +78,7 @@ jobs:
       - name: Clone test vectors if repo is updated
         if: steps.cache-vectors-restore.outputs.cache-hit != 'true'
         run: |
+          rm -rf jam-test-vectors-cache
           git clone -b ${{ env.VECTORS_BRANCH }} https://github.com/${{ env.VECTORS_OWNER }}/${{ env.VECTORS_REPO }}.git jam-test-vectors-cache
           git -C jam-test-vectors-cache rev-parse HEAD > jam-test-vectors-cache/latest_commit.txt
 
