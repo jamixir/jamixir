@@ -4,7 +4,8 @@ defmodule TestVectorUtil do
   alias Codec.State
   use ExUnit.Case
   import Mox
-
+  import Codec.Encoder
+  alias Util.Hash
   Application.put_env(:elixir, :ansi_enabled, true)
 
   @owner "w3f"
@@ -188,14 +189,12 @@ defmodule TestVectorUtil do
           our_result = fetch_key_from_state(state_, key)
           expected_result = fetch_key_from_state(expected_state, key)
 
-          if our_result != expected_result do
-            # IO.puts(key)
-
-            if is_binary(our_result) do
-              IO.puts("our_result: #{Base.encode16(our_result)}")
-              IO.puts("expected_result: #{Base.encode16(expected_result)}")
+          {our_result, expected_result} =
+            if key == :services do
+              transform_services_storage(our_result, expected_result)
+            else
+              {our_result, expected_result}
             end
-          end
 
           assert our_result == expected_result
         end)
@@ -227,6 +226,31 @@ defmodule TestVectorUtil do
     end
 
     :ok
+  end
+
+  defp transform_services_storage(our_result, expected_result) do
+    {transform_services(our_result), transform_services(expected_result)}
+  end
+
+  # the key traformation logic comes from Chapter B.6 (General functions)
+  # read host call https://graypaper.fluffylabs.dev/#/cc517d7/30bb0130c201?v=0.6.5
+  defp transform_services(services) do
+    for {service_id, service_account} <- services, into: %{} do
+      updated_storage =
+        for {storage_key, storage_value} <- service_account.storage, into: %{} do
+          new_key =
+            if byte_size(storage_key) == 32 do
+              storage_key
+            else
+              Hash.default(<<service_id::m(service_id)>> <> storage_key)
+            end
+
+          {new_key, storage_value}
+        end
+
+      updated_service_account = %{service_account | storage: updated_storage}
+      {service_id, updated_service_account}
+    end
   end
 
   defp fetch_key_from_state(state, key) do
