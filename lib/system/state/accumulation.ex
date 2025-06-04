@@ -51,9 +51,7 @@ defmodule System.State.Accumulation do
             authorizer_queue: [[]],
             privileged_services: %PrivilegedServices{}
 
-  @doc """
-  Handles the accumulation process as described in Formula (12.21) and (12.22) v0.6.5
-  """
+
   def transition(w, t_, n0_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
     module.do_transition(w, s, %{timeslot_: t_, n0_: n0_})
