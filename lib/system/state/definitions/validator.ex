@@ -3,7 +3,7 @@ defmodule System.State.Validator do
    # Formula (6.8) v0.6.5
   """
   alias System.State.Validator
-  use Codec.Encoder
+  import Codec.Encoder
 
   @type t :: %__MODULE__{
           # Formula (6.9) v0.6.5 - b

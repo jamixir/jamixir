@@ -2,7 +2,7 @@ defmodule System.State.ServiceAccountTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
   alias Codec.JsonEncoder
 

@@ -1,5 +1,5 @@
 defmodule CodecVectorsTest do
-  use Codec.Encoder
+  import Codec.Encoder
   use ExUnit.Case
   import TestVectorUtil
 

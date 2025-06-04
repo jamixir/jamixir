@@ -4,7 +4,7 @@ defmodule CommsTest do
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
-  use Codec.Encoder
+  import Codec.Encoder
   import Mox
   import Jamixir.Factory
   require Logger

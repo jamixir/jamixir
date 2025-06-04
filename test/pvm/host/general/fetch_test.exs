@@ -9,7 +9,7 @@ defmodule PVM.Host.General.FetchTest do
   alias Util.Hash
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants, only: [min_allowed_address: 0]
-  use Codec.Encoder
+  import Codec.Encoder
   import Constants
 
   describe "fetch/12" do

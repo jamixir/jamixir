@@ -18,7 +18,7 @@ defmodule Block.Extrinsic.Disputes.Fault do
   defstruct work_report_hash: <<>>, vote: true, key: <<>>, signature: <<>>
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias Block.Extrinsic.Disputes.Fault
 
     def encode(%Fault{} = f) do
@@ -27,7 +27,7 @@ defmodule Block.Extrinsic.Disputes.Fault do
     end
   end
 
-  use Codec.Encoder
+  import Codec.Encoder
 
   @spec decode(binary()) :: {Block.Extrinsic.Disputes.Fault.t(), binary()}
   def decode(bin) do

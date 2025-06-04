@@ -2,7 +2,7 @@ defmodule System.State.PrivilegedServicesTest do
   alias System.State.PrivilegedServices
   alias Codec.JsonEncoder
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
 
   describe "encode/1" do

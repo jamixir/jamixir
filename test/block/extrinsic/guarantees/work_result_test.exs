@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.Guarantee.WorkDigestTest do
   alias Block.Extrinsic.Guarantee.WorkDigest
   alias Util.{Hash, Hex}
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
 
   setup do

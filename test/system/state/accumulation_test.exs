@@ -8,6 +8,7 @@ defmodule System.State.AccumulationTest do
   import Jamixir.Factory
   import Mox
   import Util.Hash
+  import Codec.Encoder
   use ExUnit.Case
   setup :verify_on_exit!
 

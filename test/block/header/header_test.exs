@@ -1,6 +1,6 @@
 defmodule Block.HeaderTest do
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import TestHelper
   import Jamixir.Factory
 

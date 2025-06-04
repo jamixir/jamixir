@@ -1,6 +1,6 @@
 defmodule WorkReportTest do
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}

@@ -1,6 +1,6 @@
 defmodule Util.Hash do
   use Sizes
-  use Codec.Encoder
+  import Codec.Encoder
 
   def blake2b_n(data, n) do
     binary_part(blake2b_256(data), 0, n)

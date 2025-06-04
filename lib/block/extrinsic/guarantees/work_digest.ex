@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
   alias Util.Hash
-  use Codec.{Decoder, Encoder}
+  import Codec.{Decoder, Encoder}
 
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
@@ -66,7 +66,7 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkDigest}
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (C.23) v0.6.5
     # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
     @spec encode(Block.Extrinsic.Guarantee.WorkDigest.t()) :: <<_::32, _::_*8>>

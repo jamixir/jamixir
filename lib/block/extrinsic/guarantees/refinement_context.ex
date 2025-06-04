@@ -31,8 +31,8 @@ defmodule RefinementContext do
             prerequisite: MapSet.new()
 
   defimpl Encodable do
-    alias Codec.VariableSize
-    use Codec.Encoder
+    import Codec.Encoder, only: [e: 1, vs: 1, m: 1]
+
     # Formula (C.21) v0.6.5
     def encode(%RefinementContext{
           anchor: a,
@@ -47,11 +47,10 @@ defmodule RefinementContext do
   end
 
   use Sizes
-  use Codec.Decoder
-  use Codec.Encoder
+  import Codec.Encoder, only: [b: 1, m: 1]
+  alias Codec.VariableSize
 
   def decode(bin) do
-    alias Codec.VariableSize
 
     <<anchor::b(hash), state_root::b(hash), beefy_root::b(hash), lookup_anchor::b(hash),
       timeslot::m(timeslot), temp_rest::binary>> = bin

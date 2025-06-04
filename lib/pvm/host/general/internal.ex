@@ -9,7 +9,7 @@ defmodule PVM.Host.General.Internal do
   alias PVM.{Memory, Registers}
   alias System.State.ServiceAccount
   alias Util.Hash
-  use Codec.Encoder
+  import Codec.Encoder
   import PVM.Host.Util
   import Constants
   require Logger

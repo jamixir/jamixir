@@ -2,7 +2,7 @@ defmodule Block.Extrinsic.Preimage do
   alias Codec.VariableSize
   alias Util.Collections
   import SelectiveMock
-  use Codec.Encoder
+  import Codec.Encoder
 
   # Formula (12.35) v0.6.5
   @type t :: %__MODULE__{
@@ -65,7 +65,7 @@ defmodule Block.Extrinsic.Preimage do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     # Formula (C.15) v0.6.5
     def encode(%Block.Extrinsic.Preimage{service: service_index, blob: p}) do
@@ -73,7 +73,6 @@ defmodule Block.Extrinsic.Preimage do
     end
   end
 
-  use Codec.Decoder
 
   def decode(bin) do
     <<service_index::m(service_index), bin::binary>> = bin

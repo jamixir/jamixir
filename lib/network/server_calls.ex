@@ -5,7 +5,8 @@ defmodule Network.ServerCalls do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   require Logger
-  use Codec.Encoder
+  import Codec.Encoder
+  alias Codec.VariableSize
   use Sizes
   import RangeMacros
 
@@ -244,7 +245,7 @@ defmodule Network.ServerCalls do
     message
   end
 
-  use Codec.Decoder
+  import Codec.Decoder
   defp decode_requests(<<>>, acc), do: Enum.reverse(acc)
 
   defp decode_requests(bin, acc) do

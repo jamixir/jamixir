@@ -35,7 +35,7 @@ defmodule System.State.Ready do
 
   defimpl Encodable do
     alias System.State.Ready
-    use Codec.Encoder
+    import Codec.Encoder
 
     # Formula (C.13) v0.6.5
     def encode(%Ready{work_report: w, dependencies: d}), do: e({w, vs(d)})

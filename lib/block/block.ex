@@ -177,7 +177,7 @@ defmodule Block do
   def mock(:validate_extrinsic_hash, _), do: :ok
   def mock(:validate_refinement_context, _), do: :ok
 
-  use Codec.Encoder
+  import Codec.Encoder
   # Formula (11.35) v0.6.5
   mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
     Enum.reduce_while(guarantees, :ok, fn g, _ ->
@@ -193,7 +193,7 @@ defmodule Block do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder, only: [e: 1]
 
     # Formula (C.13) v0.6.5
     def encode(%Block{extrinsic: e, header: h}), do: e({h, e})

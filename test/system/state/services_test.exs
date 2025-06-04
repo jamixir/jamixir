@@ -3,7 +3,6 @@ defmodule System.State.ServicesTest do
   alias System.State.{ServiceAccount, Services}
   alias Block.Extrinsic.{Assurance, Preimage}
   alias Util.Hash
-  use Codec.Encoder
 
   import TestHelper
 

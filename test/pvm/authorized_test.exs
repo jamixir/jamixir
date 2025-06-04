@@ -4,7 +4,6 @@ defmodule PVM.AuthorizedTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   use PVM.Instructions
-  use Codec.{Encoder, Decoder}
   import PVM.Constants.HostCallId
 
   describe "authorized/3" do

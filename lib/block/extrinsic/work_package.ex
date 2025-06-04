@@ -6,7 +6,8 @@ defmodule Block.Extrinsic.WorkPackage do
   alias System.State.ServiceAccount
   alias Util.Hash
   use AccessStruct
-  use Codec.{Decoder, Encoder}
+  import Codec.Encoder
+  alias Codec.VariableSize
   use Sizes
 
   @type t :: %__MODULE__{
@@ -136,7 +137,7 @@ defmodule Block.Extrinsic.WorkPackage do
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (C.25) v0.6.5
     def encode(%WorkPackage{} = wp) do
       e({

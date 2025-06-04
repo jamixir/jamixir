@@ -1,6 +1,5 @@
 defmodule StorageTest do
   use ExUnit.Case, async: false
-  use Codec.Encoder
   alias System.State
   alias Util.Hash
   import Jamixir.Factory

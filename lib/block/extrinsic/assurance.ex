@@ -9,7 +9,7 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
-  use Codec.Encoder
+  import Codec.Encoder
   # Formula (11.10) v0.6.5
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
@@ -101,7 +101,7 @@ defmodule Block.Extrinsic.Assurance do
 
   defimpl Encodable do
     use Sizes
-    use Codec.Encoder
+    import Codec.Encoder
     alias Block.Extrinsic.Assurance
 
     def pad(value, size) do
@@ -118,7 +118,6 @@ defmodule Block.Extrinsic.Assurance do
     end
 
   use Sizes
-  use Codec.Decoder
   # defimpl Decodable do
   def decode(bin) do
     # this size needs to be defined in runtime because of mocked core count

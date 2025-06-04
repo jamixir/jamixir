@@ -1,6 +1,6 @@
 defmodule System.State.SafroleTest do
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
   alias System.State.EntropyPool
   alias System.State.Safrole

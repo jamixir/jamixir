@@ -23,7 +23,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder, only: [e: 1, e_le: 2]
     alias Block.Extrinsic.Disputes.Verdict
 
     def encode(%Verdict{} = v) do
@@ -31,7 +31,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
     end
   end
 
-  use Codec.{Decoder, Encoder}
+  import Codec.Encoder, only: [b: 1, m: 1]
 
   def decode(bin) do
     judgements_count = div(2 * Constants.validator_count(), 3) + 1

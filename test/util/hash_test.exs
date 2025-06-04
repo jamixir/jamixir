@@ -1,7 +1,7 @@
 defmodule Util.HashTest do
   use ExUnit.Case
   use Sizes
-  use Codec.Encoder
+  import Codec.Encoder
   alias Util.Hash
 
   describe "blake2b_n/2" do

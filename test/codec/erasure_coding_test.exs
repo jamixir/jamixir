@@ -155,7 +155,7 @@ defmodule ErasureCodingTest do
     end
   end
 
-  use Codec.Encoder
+  import Codec.Encoder
 
   describe "erasure_code/1" do
     test "smoke test" do

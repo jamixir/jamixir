@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic.Disputes.JudgementTest do
   alias Block.Extrinsic.Disputes.Judgement
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
 
   describe "encode/decode" do

@@ -143,7 +143,7 @@ defmodule System.State.ServiceStatistic do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     def encode(%ServiceStatistic{} = c) do
       e({
@@ -159,7 +159,7 @@ defmodule System.State.ServiceStatistic do
     end
   end
 
-  use Codec.Decoder
+  import Codec.Decoder
 
   def decode(bin) do
     {preimage, rest} = de_i(bin)

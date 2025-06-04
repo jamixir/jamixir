@@ -2,7 +2,7 @@ defmodule Storage do
   alias Block.Header
   alias System.State
   alias Util.Hash
-  use Codec.Encoder
+  import Codec.Encoder
 
   @state_key "state"
   @state_root_key "state_root"

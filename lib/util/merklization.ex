@@ -7,7 +7,7 @@ defmodule Util.Merklization do
   """
 
   alias Util.Hash
-  use Codec.Encoder
+  import Codec.Encoder
 
   @doc """
   Formula (D.3) v0.6.5:

@@ -5,7 +5,7 @@ defmodule System.State.ServiceAccount do
   alias Codec.VariableSize
   alias System.State.ServiceAccount
   alias Util.Hash
-  use Codec.Encoder
+  import Codec.Encoder
   use AccessStruct
   import Codec.JsonEncoder
 

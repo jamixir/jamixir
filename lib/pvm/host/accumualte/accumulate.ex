@@ -2,7 +2,6 @@ defmodule PVM.Host.Accumulate do
   alias PVM.Host.Accumulate.Result
   alias System.State.ServiceAccount
   import PVM.Host.{GasHandler, Accumulate.Internal}
-  use Codec.Encoder
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 

@@ -4,7 +4,6 @@ defmodule PVM.OnTransferTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   use PVM.Instructions
-  use Codec.Encoder
 
   describe "on_transfer/4" do
     setup do
