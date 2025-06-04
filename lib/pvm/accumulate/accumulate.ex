@@ -4,7 +4,6 @@ defmodule PVM.Accumulate do
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
-  import PVM.Host.Gas
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}
 
