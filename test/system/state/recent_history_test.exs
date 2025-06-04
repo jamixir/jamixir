@@ -8,7 +8,7 @@ defmodule RecentHistoryTest do
   alias System.State.{BeefyCommitmentMap, RecentHistory}
   alias Util.{Hash, MerkleTree, MMR}
   import Jamixir.Factory
-  use Codec.Encoder
+  import Codec.Encoder
 
   describe "update_latest_state_root/2" do
     test "returns empty list when given nil" do

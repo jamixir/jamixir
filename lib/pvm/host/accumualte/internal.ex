@@ -7,7 +7,7 @@ defmodule PVM.Host.Accumulate.Internal do
   alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.{Memory, Registers}
   import PVM.{Constants.HostCallResult}
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
 
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF

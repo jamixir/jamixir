@@ -30,7 +30,7 @@ defmodule System.DeferredTransfer do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias System.DeferredTransfer
     # Formula (C.28) v0.6.5
     def encode(%DeferredTransfer{} = t) do

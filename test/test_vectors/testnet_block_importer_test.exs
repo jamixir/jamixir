@@ -6,7 +6,7 @@ defmodule TestnetBlockImporterTest do
   import TestVectorUtil
   import Jamixir.Factory
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   require Logger
 
   setup_all do

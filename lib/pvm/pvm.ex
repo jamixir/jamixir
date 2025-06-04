@@ -4,7 +4,7 @@ defmodule PVM do
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers}
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
   import PVM.Host.Gas
   import Util.Math

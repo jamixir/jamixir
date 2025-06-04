@@ -3,7 +3,7 @@ defmodule System.State.ValidatorStatisticsTest do
   alias System.State.CoreStatistic
   alias System.State.ValidatorStatistics
   use ExUnit.Case
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
 
   describe "encode/1" do

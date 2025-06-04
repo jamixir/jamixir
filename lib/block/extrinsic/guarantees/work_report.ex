@@ -10,8 +10,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Codec.JsonEncoder
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
-
-  use Codec.{Decoder, Encoder}
+  alias Codec.VariableSize
+  import Codec.{Decoder, Encoder}
   use MapUnion
   use SelectiveMock
 
@@ -354,7 +354,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (C.24) v0.6.5
     # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
     def encode(%WorkReport{} = wr) do

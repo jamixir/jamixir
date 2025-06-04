@@ -1,6 +1,4 @@
 defmodule System.Audit.AuditAnnouncement do
-  use Codec.Encoder
-
   @type t :: %__MODULE__{
           tranche: non_neg_integer(),
           announcements: list({non_neg_integer(), Types.hash()}),

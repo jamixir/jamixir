@@ -1,5 +1,4 @@
 defmodule PVM.Helper do
-  use Codec.Encoder
   alias PVM.Utils.ProgramUtils
 
   @doc """

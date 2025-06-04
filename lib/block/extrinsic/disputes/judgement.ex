@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Judgement do
   use Sizes
-  use Codec.{Decoder, Encoder}
+  import Codec.Encoder, only: [m: 1]
 
   @moduledoc """
   Formula (10.2) v0.6.5
@@ -22,7 +22,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder, only: [e: 1, t: 1, m: 1]
     use Sizes
 
     def encode(%Block.Extrinsic.Disputes.Judgement{} = j) do

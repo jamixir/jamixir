@@ -1,6 +1,5 @@
 defmodule Util.ShuffleTest do
   use ExUnit.Case
-  use Codec.Encoder
   import Jamixir.Factory
   alias Shuffle
   alias Util.Hash

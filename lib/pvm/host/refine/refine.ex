@@ -2,7 +2,6 @@ defmodule PVM.Host.Refine do
   alias System.State.ServiceAccount
   alias PVM.{Memory, Registers, Host.Refine.Context}
   alias PVM.Host.Refine.Result
-  use Codec.{Decoder, Encoder}
   import PVM.Host.{Refine.Internal}
   import PVM.Host.GasHandler
 

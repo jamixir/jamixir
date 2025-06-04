@@ -10,7 +10,7 @@ defmodule Block.Extrinsic.Guarantee do
   use SelectiveMock
   use MapUnion
   use JsonDecoder
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
   use Sizes
   # {validator_index, ed25519 signature}
   @type credential :: {Types.validator_index(), Types.ed25519_signature()}
@@ -389,7 +389,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias Block.Extrinsic.Guarantee
 
     # Formula (C.16) v0.6.5

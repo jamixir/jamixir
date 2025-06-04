@@ -4,7 +4,7 @@ defmodule Block.Extrinsic.Disputes.Culprit do
   """
 
   alias Types
-  use Codec.Encoder
+  import Codec.Encoder
 
   @type t :: %__MODULE__{
           # r
@@ -18,7 +18,7 @@ defmodule Block.Extrinsic.Disputes.Culprit do
   defstruct work_report_hash: <<>>, key: <<>>, signature: <<>>
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias Block.Extrinsic.Disputes.Culprit
 
     def encode(%Culprit{} = d) do

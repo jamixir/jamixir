@@ -3,7 +3,8 @@ defmodule System.State.ValidatorStatistics do
   Formula (13.1) v0.6.5
   """
   alias Codec.VariableSize
-  alias Codec.Decoder
+  import Codec.{Encoder, Decoder}
+
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.{Extrinsic, Header}
@@ -190,7 +191,7 @@ defmodule System.State.ValidatorStatistics do
 
   defimpl Encodable do
     alias System.State.{ValidatorStatistic, ValidatorStatistics}
-    use Codec.Encoder
+    import Codec.Encoder
 
     def encode(%ValidatorStatistics{} = v) do
       services_bin =
@@ -209,17 +210,14 @@ defmodule System.State.ValidatorStatistics do
     end
   end
 
-  use Codec.Decoder
-  use Codec.Encoder
-
   def decode(bin) do
     {current_epoch_statistics, rest} =
-      Decoder.decode_list(bin, Constants.validator_count(), ValidatorStatistic)
+      decode_list(bin, Constants.validator_count(), ValidatorStatistic)
 
     {previous_epoch_statistics, rest} =
-      Decoder.decode_list(rest, Constants.validator_count(), ValidatorStatistic)
+      decode_list(rest, Constants.validator_count(), ValidatorStatistic)
 
-    {core_statistics, rest} = Decoder.decode_list(rest, Constants.core_count(), CoreStatistic)
+    {core_statistics, rest} = decode_list(rest, Constants.core_count(), CoreStatistic)
 
     {service_statistics, rest} =
       VariableSize.decode(rest, fn b ->

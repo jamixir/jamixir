@@ -9,7 +9,7 @@ defmodule BlockTest do
   import Mox
   import TestHelper
   import OriginalModules
-  use Codec.Encoder
+  import Codec.Encoder
   setup :verify_on_exit!
 
   setup do

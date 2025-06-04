@@ -1,5 +1,5 @@
 defmodule Shuffle do
-  use Codec.Encoder
+  import Codec.Encoder
   # Formula (F.1) v0.6.5
   @spec shuffle(list(any()), list(integer()) | Types.hash()) :: list(any())
   def shuffle([], _), do: []
@@ -17,8 +17,6 @@ defmodule Shuffle do
   def shuffle(list, hash) when is_binary(hash) and bit_size(hash) == 256 do
     shuffle(list, hash_to_sequence(hash, length(list)))
   end
-
-  use Codec.Decoder
 
   # Formula (F.2) v0.6.5
   defp hash_to_sequence(hash, l) do

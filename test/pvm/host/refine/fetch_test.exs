@@ -6,7 +6,7 @@
 #   alias Util.Hash
 #   import PVM.Constants.HostCallResult
 #   import PVM.Memory.Constants, only: [min_allowed_address: 0]
-#   use Codec.Encoder
+#   import Codec.Encoder
 
 #   describe "fetch/8" do
 #     setup do

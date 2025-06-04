@@ -3,7 +3,8 @@ defmodule System.State.PrivilegedServices do
   Formula (9.9) v0.6.5
   """
   alias Codec.JsonEncoder
-  use Codec.Encoder
+  import Codec.Encoder
+  alias Codec.VariableSize
   use JsonDecoder
 
   @type t :: %__MODULE__{
@@ -23,7 +24,7 @@ defmodule System.State.PrivilegedServices do
             services_gas: %{}
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias System.State.PrivilegedServices
 
     def encode(%PrivilegedServices{} = v) do

@@ -1,7 +1,7 @@
 defmodule Network.MessageParsers do
   require Logger
   import Codec.Encoder
-  use Codec.Encoder
+  import Codec.Encoder
   def log(level, message), do: Logger.log(level, " #{message}")
   def log(message), do: Logger.log(:info, " #{message}")
 

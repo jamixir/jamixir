@@ -18,7 +18,7 @@ defmodule System.State.Accumulation do
   alias Types
   use MapUnion
   use AccessStruct
-  use Codec.Encoder
+  import Codec.Encoder
   import Utils
 
   # (Accumulation.t(), service_index) -> PVM.Host.Accumulate.Context.t()

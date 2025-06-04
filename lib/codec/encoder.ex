@@ -2,6 +2,7 @@ defmodule Codec.Encoder do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   alias Util.Hash
+  use Sizes
 
   @spec encode(any()) :: binary()
   def encode(value) do
@@ -23,8 +24,6 @@ defmodule Codec.Encoder do
   def encode_mmr(mmr) do
     do_encode(VariableSize.new(Enum.map(mmr, &NilDiscriminator.new/1)))
   end
-
-  use Sizes
 
   # Formula (E.10) v0.6.5
   def super_peak_mmr(b) do
@@ -137,18 +136,10 @@ defmodule Codec.Encoder do
     |> Enum.reduce(0, fn {bit, i}, acc -> acc + bit * 2 ** i end)
   end
 
-  defmacro __using__(_) do
-    quote do
-      alias Codec.VariableSize
-      import Codec.Encoder
-      def e(value), do: Codec.Encoder.encode(value)
-      def e_le(value, l), do: Codec.Encoder.encode_le(value, l)
-      def vs(value), do: VariableSize.new(value)
-      def h(value), do: Hash.default(value)
-    end
-  end
-
-  use Sizes
+  def e(value), do: encode(value)
+  def e_le(value, l), do: encode_le(value, l)
+  def vs(value), do: VariableSize.new(value)
+  def h(value), do: Hash.default(value)
 
   def binary_registry do
     %{

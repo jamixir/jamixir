@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic.AvailabilitySpecification do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Util.{Collections, Hash, MerkleTree}
-  use Codec.Encoder
+  import Codec.Encoder
 
   @type t :: %__MODULE__{
           # h: hash of the work-package
@@ -29,7 +29,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
             segment_count: 0
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (C.22) v0.6.5
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
@@ -41,7 +41,6 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   use JsonDecoder
   use Sizes
-  use Codec.Decoder
 
   # Formula (14.16) v0.6.5
   @spec from_execution(Types.hash(), binary(), list(Types.export_segment())) ::

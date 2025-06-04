@@ -43,7 +43,7 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   end
 
   describe "from_execution/3" do
-    use Codec.Encoder
+    import Codec.Encoder
 
     test "calculates erasure root" do
       erasure_coded_piece = 1

@@ -97,7 +97,7 @@ defmodule System.State.CoreStatistic do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     def encode(%CoreStatistic{} = c) do
       e(
@@ -107,7 +107,7 @@ defmodule System.State.CoreStatistic do
     end
   end
 
-  use Codec.Decoder
+  import Codec.Decoder
 
   def decode(bin) do
     {da_load, rest} = de_i(bin)

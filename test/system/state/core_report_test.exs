@@ -6,7 +6,7 @@ defmodule System.State.CoreReportTest do
   use ExUnit.Case
   import Jamixir.Factory
   import OriginalModules
-  use Codec.Encoder
+  import Codec.Encoder
 
   describe "encode/1" do
     test "encode core report smoke test" do

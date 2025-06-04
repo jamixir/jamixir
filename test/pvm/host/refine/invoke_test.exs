@@ -3,7 +3,6 @@ defmodule PVM.Host.Refine.InvokeTest do
   alias PVM.Host.Refine
   alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils, PreMemory}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
-  use Codec.Decoder
   import Util.Hex
   import PVM.Memory.Constants
 

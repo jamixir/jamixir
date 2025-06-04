@@ -4,7 +4,7 @@ defmodule PVM.Accumulate.Utils do
   alias PVM.Host
   alias PVM.Host.Accumulate.Context
   alias Util.Hash
-  use Codec.{Encoder, Decoder}
+  import Codec.{Encoder, Decoder}
 
   @hash_size 32
 

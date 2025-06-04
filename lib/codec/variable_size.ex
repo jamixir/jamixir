@@ -1,6 +1,6 @@
 defmodule Codec.VariableSize do
   import RangeMacros
-  use Codec.Decoder
+  import Codec.Decoder
   defstruct [:value, :size]
 
   def new(value) do
@@ -15,7 +15,7 @@ defmodule Codec.VariableSize do
   defp size(_value), do: 0
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (C.8) v0.6.5
     def encode(%Codec.VariableSize{} = x), do: e(x.size) <> e(x.value)
   end

@@ -1,6 +1,6 @@
 defmodule System.State.ReadyTest do
   use ExUnit.Case, async: true
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Factory
   alias System.State.Ready
 

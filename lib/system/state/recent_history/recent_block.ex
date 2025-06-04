@@ -41,7 +41,7 @@ defmodule System.State.RecentHistory.RecentBlock do
   end
 
   use Sizes
-  use Codec.Encoder
+  import Codec.Encoder
 
   def decode(bin) do
     <<header_hash::b(hash), rest::binary>> = bin

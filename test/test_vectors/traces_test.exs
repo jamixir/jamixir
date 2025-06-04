@@ -5,7 +5,6 @@ defmodule TracesTest do
   import TestVectorUtil
   import Jamixir.Factory
   use ExUnit.Case
-  use Codec.Encoder
   require Logger
 
   setup_all do

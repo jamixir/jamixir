@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Disputes.Test do
   alias Util.{Hash, Time}
   import Jamixir.Factory
   use Sizes
-  use Codec.Encoder
+  import Codec.Encoder
 
   setup_all do
     # Generate and sort key pairs

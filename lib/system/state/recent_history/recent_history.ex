@@ -7,7 +7,8 @@ defmodule System.State.RecentHistory do
   alias System.State.RecentHistory
   alias System.State.RecentHistory.RecentBlock
   alias Util.{Hash, MMR}
-  use Codec.Encoder
+  import Codec.Encoder
+  alias Codec.VariableSize
   use SelectiveMock
 
   @max_length Constants.recent_history_size()
@@ -143,8 +144,7 @@ defmodule System.State.RecentHistory do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
-    import Codec.Encoder, only: [encode_mmr: 1]
+    import Codec.Encoder, only: [encode_mmr: 1, e: 1, vs: 1]
     # Formula (D.2) v0.6.5
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
