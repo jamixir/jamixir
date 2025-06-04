@@ -2,7 +2,6 @@
 defmodule PVM.Host.Refine.Internal do
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
-  use Codec.{Decoder, Encoder}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult, Host.Util}
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 

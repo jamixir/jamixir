@@ -6,7 +6,7 @@ defmodule System.State.CoreReport do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.State.CoreReport
   use SelectiveMock
-  use Codec.Encoder
+  import Codec.Encoder
 
   @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
 
@@ -72,7 +72,7 @@ defmodule System.State.CoreReport do
 
   defimpl Encodable do
     alias System.State.CoreReport
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (D.2) v0.6.5
     # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
     def encode(%CoreReport{} = c) do

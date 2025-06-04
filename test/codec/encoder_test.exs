@@ -1,7 +1,7 @@
 defmodule CodecEncoderTest do
   use ExUnit.Case
   alias Codec.Decoder
-  use Codec.Encoder
+  import Codec.Encoder
   use Sizes
 
   alias Codec.Encoder

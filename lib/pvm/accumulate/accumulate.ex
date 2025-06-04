@@ -8,8 +8,7 @@ defmodule PVM.Accumulate do
   import PVM.Host.Gas
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}
-
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
 
   @doc """
   Formula (B.9) v0.6.6

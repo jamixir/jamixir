@@ -8,7 +8,7 @@ defmodule PVM.Refine do
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
   import PVM.Types
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
 
   @doc """
   ΨR: The Refine pvm invocation function.

@@ -1,7 +1,8 @@
 defmodule System.State.Safrole do
   alias Block.Extrinsic.TicketProof
   alias Block.Header
-  alias Codec.{Decoder, Encoder}
+  import Codec.{Encoder, Decoder}
+  alias Codec.VariableSize
   alias System.State.{EntropyPool, RotateKeys, Safrole, SealKeyTicket, Validator}
   use SelectiveMock
   alias Util.{Hash, Time}
@@ -176,14 +177,14 @@ defmodule System.State.Safrole do
 
   @spec generate_index_using_entropy(binary(), integer(), integer()) :: integer()
   def generate_index_using_entropy(entropy, i, validator_set_size) do
-    (entropy <> Encoder.encode_le(i, 4))
+    (entropy <> e_le(i, 4))
     |> Hash.blake2b_n(4)
-    |> Decoder.decode_le(4)
+    |> de_le(4)
     |> rem(validator_set_size)
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     # Formula (D.2) v0.6.5 - C(4)
     # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
     def encode(safrole) do
@@ -201,17 +202,15 @@ defmodule System.State.Safrole do
     end
   end
 
-  use Codec.Encoder
-
   def decode(bin) do
-    {pending, rest} = Decoder.decode_list(bin, Constants.validator_count(), Validator)
+    {pending, rest} = decode_list(bin, Constants.validator_count(), Validator)
     <<epoch_root::b(bls_key), rest::binary>> = rest
     <<sealer_type::8, rest::binary>> = rest
 
     {slot_sealers, rest} =
       case sealer_type do
-        0 -> Decoder.decode_list(rest, Constants.epoch_length(), SealKeyTicket)
-        1 -> Decoder.decode_list(rest, :hash, Constants.epoch_length())
+        0 -> decode_list(rest, Constants.epoch_length(), SealKeyTicket)
+        1 -> decode_list(rest, :hash, Constants.epoch_length())
       end
 
     {ticket_accumulator, rest} =

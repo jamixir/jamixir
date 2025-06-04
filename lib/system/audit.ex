@@ -33,7 +33,7 @@ defmodule System.Audit do
   end
 
   alias Util.Crypto
-  use Codec.Encoder
+  import Codec.Encoder
   # Formula (17.10) v0.6.5
   # xn = E([E2(c)⌢H(w) ∣ (c,w) ∈ an])
   def encoded_announcements(n) do

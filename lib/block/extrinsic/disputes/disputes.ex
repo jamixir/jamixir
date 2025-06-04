@@ -231,7 +231,7 @@ defmodule Block.Extrinsic.Disputes do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     # Formula (C.18) v0.6.5
     def encode(%Disputes{} = d) do

@@ -5,7 +5,7 @@ defmodule PVM.Host.GeneralTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   import PVM.Constants.HostCallResult
-  use Codec.Encoder
+  import Codec.Encoder
 
   @doc """
   Returns the base memory address used in tests.

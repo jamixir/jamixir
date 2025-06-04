@@ -5,7 +5,7 @@ defmodule PVM do
   alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers}
   alias PVM.Host.General.FetchArgs
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
-  use Codec.{Encoder, Decoder}
+  import Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
   import PVM.Host.Gas
   import Util.Collections, only: [sum_field: 2]

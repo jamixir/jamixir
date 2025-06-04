@@ -4,7 +4,6 @@ defmodule PVM.AccumulateTest do
   alias PVM.{Accumulate, Accumulate.Operand}
   alias Util.Hash
   use PVM.Instructions
-  use Codec.Encoder
 
   describe "accumulate /6" do
     setup do

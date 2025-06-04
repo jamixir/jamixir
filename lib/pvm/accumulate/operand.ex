@@ -31,7 +31,7 @@ defmodule PVM.Accumulate.Operand do
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.WorkDigest
-    use Codec.Encoder
+    import Codec.Encoder
 
     # Formula (C.29) v0.6.6
     def encode(%PVM.Accumulate.Operand{} = o),

@@ -44,7 +44,7 @@ defmodule Block.Extrinsic do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     # Formula (C.13) v0.6.5
     def encode(%Block.Extrinsic{} = ex),
@@ -63,7 +63,7 @@ defmodule Block.Extrinsic do
         })
   end
 
-  use Codec.Encoder
+  import Codec.Encoder
   # Formula (5.4) v0.6.5
   # Formula (5.5) v0.6.5
   # Formula (5.6) v0.6.5

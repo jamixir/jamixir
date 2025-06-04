@@ -6,7 +6,7 @@ defmodule System.StateTransition.EntropyPoolTest do
   alias System.State.EntropyPool
   alias Util.{Hash, Hex}
   import Mox
-  use Codec.Encoder
+  import Codec.Encoder
 
   setup :verify_on_exit!
 

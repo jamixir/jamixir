@@ -8,7 +8,7 @@ defmodule Network.Client do
   import Quicer.Flags
   import Network.{Codec, Config}
   require Logger
-  use Codec.Encoder
+  import Codec.Encoder
   use Sizes
   import Bitwise, only: [&&&: 2]
   @log_context "[QUIC_CLIENT]"

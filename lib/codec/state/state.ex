@@ -1,6 +1,5 @@
 defmodule Codec.State do
   alias Codec.State.Json
-  use Codec.Encoder
   require Logger
 
   def from_file(file) do

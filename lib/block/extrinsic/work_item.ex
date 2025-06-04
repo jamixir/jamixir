@@ -8,7 +8,8 @@ defmodule Block.Extrinsic.WorkItem do
   alias System.DataAvailability
   alias Block.Extrinsic.{Guarantee.WorkDigest}
   alias Util.{Hash, MerkleTree}
-  use Codec.{Encoder, Decoder}
+  import Codec.{Encoder, Decoder}
+  alias Codec.VariableSize
   use Sizes
   use AccessStruct
   import Bitwise, only: [&&&: 2]
@@ -54,10 +55,10 @@ defmodule Block.Extrinsic.WorkItem do
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
-    alias Codec.{Encoder, VariableSize}
+    import Codec.Encoder
     # Formula (C.26) v0.6.5
     def encode(%WorkItem{} = wi) do
-      Encoder.encode({
+      e({
         t(wi.service),
         wi.code_hash,
         vs(wi.payload),
@@ -69,7 +70,7 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
-    use Codec.Encoder
+
 
     # Formula (C.31) v0.6.5
     defp encode_import_segments(work_item) do

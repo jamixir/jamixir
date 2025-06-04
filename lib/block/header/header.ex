@@ -7,7 +7,7 @@ defmodule Block.Header do
   alias Util.{Hash, Time}
   use SelectiveMock
   use Sizes
-  use Codec.{Decoder, Encoder}
+  import Codec.{Decoder, Encoder}
   import Codec.Decoder
 
   @type t :: %__MODULE__{
@@ -145,7 +145,7 @@ defmodule Block.Header do
   end
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     alias Block.Header
     # Formula (C.19) v0.6.5
     def encode(%Block.Header{} = header) do

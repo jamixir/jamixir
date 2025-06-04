@@ -17,7 +17,7 @@ defmodule Codec.NilDiscriminator do
     end
   end
 
-  use Codec.Encoder
+  import Codec.Encoder
 
   def decode(bin, :hash) do
     decode(bin, fn <<p::b(hash), r::binary>> -> {p, r} end)

@@ -4,7 +4,7 @@ defmodule WorkItemTest do
   alias Block.Extrinsic.WorkItem
   use ExUnit.Case
   import Jamixir.Factory
-  use Codec.Encoder
+  import Codec.Encoder
 
   setup do
     {:ok, wi: build(:work_item)}

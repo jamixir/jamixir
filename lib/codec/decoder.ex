@@ -94,10 +94,6 @@ defmodule Codec.Decoder do
 
   defp do_decode_hashes(_, acc), do: acc
 
-  defmacro __using__(_) do
-    quote do
-      def de_le(value, l), do: Codec.Decoder.decode_le(value, l)
-      def de_i(value), do: Codec.Decoder.decode_integer(value)
-    end
-  end
+  def de_le(value, l), do: decode_le(value, l)
+  def de_i(value), do: decode_integer(value)
 end

@@ -25,7 +25,7 @@ defmodule System.State.ValidatorStatistic do
         }
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     def encode(%System.State.ValidatorStatistic{} = v) do
       [

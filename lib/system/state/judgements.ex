@@ -135,7 +135,7 @@ defmodule System.State.Judgements do
   def mock(:valid_header_markers?, _), do: true
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
     # E(↕[x^x ∈ ψg],↕[x^x ∈ ψb],↕[x^x ∈ ψw],↕[x^x ∈ ψo])
     def encode(%Judgements{} = j) do
       e({sorted_vs(j.good), sorted_vs(j.bad), sorted_vs(j.wonky), sorted_vs(j.offenders)})

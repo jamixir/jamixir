@@ -3,7 +3,7 @@ defmodule PVM.ServicesTest do
   alias PVM.Host.Refine
   alias PVM.Accumulate
   alias System.State.{Accumulation, ServiceAccount}
-  use Codec.Encoder
+  import Codec.Encoder
   use ExUnit.Case
 
   import PVM.Utils.AddInstruction

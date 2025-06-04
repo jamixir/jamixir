@@ -7,6 +7,7 @@ defmodule Codec.State.TrieTest do
   alias System.State
   alias System.State.ServiceAccount
   alias Util.Hash
+  import Codec.Encoder
 
   setup_all do
     %{state: state} = build(:genesis_state_with_safrole)

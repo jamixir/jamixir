@@ -111,7 +111,7 @@ defmodule Block.Extrinsic.TicketProof do
   use JsonDecoder
 
   defimpl Encodable do
-    use Codec.Encoder
+    import Codec.Encoder
 
     def encode(%Block.Extrinsic.TicketProof{} = tp) do
       e({tp.attempt, tp.signature})
@@ -119,7 +119,7 @@ defmodule Block.Extrinsic.TicketProof do
   end
 
   use Sizes
-  use Codec.Encoder
+  import Codec.Encoder
 
   def decode(bin) do
     <<attempt::integer, signature::b(bandersnatch_proof), rest::binary>> = bin
