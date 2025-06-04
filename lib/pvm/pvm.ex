@@ -7,7 +7,7 @@ defmodule PVM do
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
   import PVM.Host.Gas
-  import Util.Math
+  import Util.Collections, only: [sum_field: 2]
 
   # ΨI : The Is-Authorized pvm invocation function.
   # Formula (B.1) v0.6.6
