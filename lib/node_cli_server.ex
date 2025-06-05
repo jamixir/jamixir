@@ -1,6 +1,6 @@
 defmodule Jamixir.NodeCLIServer do
   alias Network.PeerSupervisor
-  alias System.State.Validator
+  import System.State.Validator
   alias Jamixir.TimeTicker
   use GenServer
   require Logger
@@ -20,9 +20,9 @@ defmodule Jamixir.NodeCLIServer do
     RingVrf.init_ring_context()
     jam_state = init_jam_state()
     server_pid = init_network_listener()
-    Logger.info("Waiting 10s for clients to connect...")
-    Process.sleep(10_000)
-    cliend_pids = init_clients(jam_state.curr_validators)
+    Logger.info("Waiting 5s for clients to start...")
+    Process.sleep(5_000)
+    cliend_pids = connect_clients(jam_state.curr_validators, %{})
     {:ok, %{jam_state: jam_state, server_pid: server_pid, client_pids: cliend_pids}}
   end
 
@@ -34,17 +34,28 @@ defmodule Jamixir.NodeCLIServer do
     jam_state
   end
 
-  defp init_clients(validators) do
-    for v <- validators do
-      case PeerSupervisor.start_peer(:initiator, Validator.address(v), Validator.port(v)) do
-        {:ok, pid} ->
-          Logger.info("📡 Client started for validator: #{inspect(v)}")
-          pid
+  defp connect_clients(validators, current_clients_pids) do
+    for v <- validators, into: %{} do
+      address = address(v)
 
-        error ->
-          Logger.error("Failed to start client for validator: #{inspect(v)}: #{inspect(error)}")
-          nil
-      end
+      pid =
+        case current_clients_pids[address] do
+          nil ->
+            case PeerSupervisor.start_peer(:initiator, ip_address(v), port(v)) do
+              {:ok, pid} ->
+                Logger.info("📡 Client started for validator: #{address}")
+                pid
+
+              _ ->
+                Logger.warning("Failed to connect to validator: #{address}.")
+                nil
+            end
+
+          p ->
+            p
+        end
+
+      {address, pid}
     end
   end
 
@@ -87,8 +98,13 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
+  def handle_info(
+        {:new_timeslot, timeslot},
+        %{jam_state: jam_state, client_pids: cliend_pids} = state
+      ) do
     Logger.debug("Node received new timeslot: #{timeslot}")
+
+    connect_clients(jam_state.curr_validators, cliend_pids)
 
     jam_state =
       case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
@@ -119,7 +135,7 @@ defmodule Jamixir.NodeCLIServer do
     Logger.debug("📢 Announcing block to peers")
 
     for v <- validators do
-      case Validator.address(v) do
+      case address(v) do
         nil -> Logger.warning("No address found for this validator: #{encode16(v.bandersnatch)}")
         address -> Logger.debug("📢 Announcing block to peer: #{address}")
       end
