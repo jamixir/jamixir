@@ -38,21 +38,22 @@ defmodule Jamixir.NodeCLIServer do
     for v <- validators, into: %{} do
       address = address(v)
 
+      current_pid = current_clients_pids[address]
+
       pid =
-        case current_clients_pids[address] do
-          nil ->
-            case PeerSupervisor.start_peer(:initiator, ip_address(v), port(v)) do
-              {:ok, pid} ->
-                Logger.info("📡 Client started for validator: #{address}")
-                pid
+        if current_pid == nil or !Process.alive?(current_pid) do
+          case PeerSupervisor.start_peer(:initiator, ip_address(v), port(v)) do
+            {:ok, pid} ->
+              Logger.info("📡 Client started for validator: #{address}")
+              pid
 
-              _ ->
-                Logger.warning("Failed to connect to validator: #{address}.")
-                nil
-            end
-
-          p ->
-            p
+            e ->
+              Logger.warning("Failed to connect to validator: #{address}.")
+              Logger.warning(inspect(e))
+              nil
+          end
+        else
+          current_pid
         end
 
       {address, pid}
