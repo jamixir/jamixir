@@ -25,7 +25,7 @@ defmodule Network.Client do
   end
 
   def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
-    message = hash <> <<direction::8>> <> <<max_blocks::32>>
+    message = hash <> <<direction::8>> <> <<max_blocks::32-little>>
     send(pid, 128, message)
   end
 

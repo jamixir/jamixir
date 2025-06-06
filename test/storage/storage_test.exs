@@ -2,7 +2,9 @@ defmodule StorageTest do
   use ExUnit.Case, async: false
   alias System.State
   alias Util.Hash
+  use StoragePrefix
   import Jamixir.Factory
+  import TestHelper
 
   setup_all do
     Storage.remove_all()
@@ -110,6 +112,18 @@ defmodule StorageTest do
     test "get latest header when key is empty" do
       Storage.remove("latest_timeslot")
       assert Storage.get_latest_header() == nil
+    end
+  end
+
+  describe "put and get block" do
+    setup_validators(1)
+
+    test "put and get block" do
+      block = build(:decodable_block)
+      {:ok, _key} = Storage.put(block)
+      header_hash = h(e(block.header))
+      assert Storage.get_block(header_hash) == block
+      assert Storage.get("#{@p_child}#{block.header.parent_hash}") == header_hash
     end
   end
 end

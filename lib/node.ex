@@ -1,5 +1,7 @@
 defmodule Jamixir.Node do
+  alias Util.Hash
   alias System.State
+  use StoragePrefix
   require Logger
 
   @behaviour Jamixir.NodeAPI
@@ -14,7 +16,7 @@ defmodule Jamixir.Node do
       case State.add_block(app_state, block) do
         {:ok, new_app_state} ->
           Storage.put(new_app_state)
-          Storage.put(block.header)
+          Storage.put(block)
           Logger.info("🔄 State Updated successfully")
           Logger.debug("🔄 New State: #{inspect(new_app_state)}")
           {:ok, new_app_state}
@@ -82,8 +84,44 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def get_blocks(_hash, _order, _count) do
-    {:error, :not_implemented}
+
+  def get_blocks(_, _, 0), do: {:ok, []}
+
+  def get_blocks(header_hash, :descending, count) do
+    {blocks, _} =
+      Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
+        case Storage.get_block(next_hash) do
+          nil ->
+            {:halt, {blocks, nil}}
+
+          block ->
+            {:cont, {blocks ++ [block], block.header.parent_hash}}
+        end
+      end)
+
+    {:ok, blocks}
+  end
+
+  def get_blocks(header_hash, :ascending, count) do
+    {blocks, _} =
+      Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
+        case Storage.get("#{@p_child}#{next_hash}") do
+          nil ->
+            {:halt, {blocks, nil}}
+
+          child_hash ->
+            case Storage.get_block(child_hash) do
+              nil ->
+                {:halt, {blocks, nil}}
+
+              block ->
+                next_hash = Hash.default(Encodable.encode(block.header))
+                {:cont, {[block | blocks], next_hash}}
+            end
+        end
+      end)
+
+    {:ok, Enum.reverse(blocks)}
   end
 
   @impl true

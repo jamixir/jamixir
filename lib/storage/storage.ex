@@ -3,6 +3,7 @@ defmodule Storage do
   alias System.State
   alias Util.Hash
   import Codec.Encoder
+  use StoragePrefix
 
   @state_key "state"
   @state_root_key "state_root"
@@ -34,11 +35,25 @@ defmodule Storage do
     end
   end
 
+  def put(%Block{} = block) do
+    {:ok, header_hash} = put(block.header)
+
+    key = "#{@p_block}#{header_hash}"
+
+    {:ok, _} =
+      KVStorage.put(%{
+        key => Encodable.encode(block)
+      })
+
+    {:ok, key}
+  end
+
   def put(%Header{} = header) do
     hash = h(e(header))
 
     KVStorage.put(%{
       hash => header,
+      "#{@p_child}#{header.parent_hash}" => hash,
       "t:#{header.timeslot}" => header,
       @latest_timeslot => header.timeslot
     })
@@ -115,6 +130,17 @@ defmodule Storage do
           nil -> nil
           header -> {slot, header}
         end
+    end
+  end
+
+  def get_block(header_hash) do
+    case KVStorage.get("#{@p_block}#{header_hash}") do
+      nil ->
+        nil
+
+      bin ->
+        {block, _} = Block.decode(bin)
+        block
     end
   end
 

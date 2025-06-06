@@ -416,6 +416,22 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def decodable_block_factory(attrs) do
+    extrinsic = build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
+    parent_hash = Map.get(attrs, :parent_hash, Hash.random())
+
+    header =
+      build(:decodable_header,
+        extrinsic_hash: Hash.default(Encodable.encode(extrinsic)),
+        parent_hash: parent_hash
+      )
+
+    build(
+      :block,
+      merge_attributes(Map.delete(attrs, :parent_hash), %{header: header, extrinsic: extrinsic})
+    )
+  end
+
   def safrole_block_factory(attrs) do
     state = attrs[:state]
     timeslot = attrs[:timeslot] || 1
