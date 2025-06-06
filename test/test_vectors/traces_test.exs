@@ -29,10 +29,10 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..42,
-    modes: ["fallback", "safrole", "reports-l0"]
+    modes: ["fallback", "safrole", "reports-l0", "reports-l1"]
   }
 
-  jam_duna = %{
+  _jam_duna = %{
     user: "jamixir",
     repo: "jamtestnet",
     branch: "master",
