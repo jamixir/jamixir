@@ -68,18 +68,18 @@ defmodule CommsTest do
   describe "request_blocks/4" do
     test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
-      |> expect(:get_blocks, fn 0, 0, 9 -> {:ok, blocks} end)
+      |> expect(:get_blocks, fn <<0::hash()>>, :ascending, 9 -> {:ok, blocks} end)
 
-      result = Peer.request_blocks(client, <<0::32>>, 0, 9)
+      result = Peer.request_blocks(client, <<0::hash()>>, 0, 9)
       verify!()
       assert {:ok, ^blocks} = result
     end
 
     test "requests 2 blocks in descending order", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
-      |> expect(:get_blocks, fn 1, 1, 2 -> {:ok, blocks} end)
+      |> expect(:get_blocks, fn <<1::hash()>>, :descending, 2 -> {:ok, blocks} end)
 
-      result = Peer.request_blocks(client, <<1::32>>, 1, 2)
+      result = Peer.request_blocks(client, <<1::hash()>>, 1, 2)
       verify!()
       assert {:ok, ^blocks} = result
     end
