@@ -130,13 +130,20 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def get_preimage(_hash) do
-    {:error, :not_implemented}
+  def get_preimage(hash) do
+    case Storage.get("#{@p_preimage}#{hash}") do
+      nil ->
+        {:error, :not_found}
+
+      preimage ->
+        {:ok, preimage}
+    end
   end
 
   @impl true
-  def save_preimage(_preimage) do
-    {:error, :not_implemented}
+  def save_preimage(preimage) do
+    Storage.put("#{@p_preimage}#{Hash.default(preimage)}", preimage)
+    :ok
   end
 
   @impl true

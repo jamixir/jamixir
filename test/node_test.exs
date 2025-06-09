@@ -109,4 +109,20 @@ defmodule Jamixir.NodeTest do
       assert length(blocks) == 2
     end
   end
+
+  describe "get and save preimage" do
+    test "get_preimage with empty storage" do
+      assert {:error, :not_found} = get_preimage(Hash.random())
+    end
+
+    test "save and get preimage" do
+      preimage = <<1, 2, 3, 4, 5>>
+      assert :ok = save_preimage(preimage)
+      assert {:ok, ^preimage} = get_preimage(Hash.default(preimage))
+    end
+
+    test "get_preimage with non-existing hash" do
+      assert {:error, :not_found} = get_preimage(Hash.random())
+    end
+  end
 end

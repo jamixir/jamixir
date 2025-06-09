@@ -3,6 +3,7 @@ defmodule StoragePrefix do
     quote do
       @p_child "c"
       @p_block "b"
+      @p_preimage "p"
     end
   end
 end
