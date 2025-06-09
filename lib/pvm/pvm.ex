@@ -3,6 +3,7 @@ defmodule PVM do
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers}
+  alias PVM.Host.General.FetchArgs
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   use Codec.{Encoder, Decoder}
   import PVM.Constants.{HostCallId, HostCallResult}
@@ -28,20 +29,20 @@ defmodule PVM do
             Host.General.gas(gas, registers, memory, nil)
 
           :fetch ->
-            Host.General.fetch(
-              gas,
-              registers,
-              memory,
-              p,
-              e(p),
-              nil,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil
-            )
+            Host.General.fetch(%FetchArgs{
+              gas: gas,
+              registers: registers,
+              memory: memory,
+              work_package: p,
+              n: e(p),
+              authorizer_output: nil,
+              index: nil,
+              import_segments: nil,
+              preimages: nil,
+              operands: nil,
+              transfers: nil,
+              context: nil
+            })
 
           :log ->
             Host.General.log(gas, registers, memory, nil)
@@ -170,20 +171,20 @@ defmodule PVM do
             General.gas(gas, registers, memory, context)
 
           :fetch ->
-            General.fetch(
-              gas,
-              registers,
-              memory,
-              nil,
-              n0_,
-              nil,
-              nil,
-              nil,
-              nil,
-              nil,
-              transfers,
-              context
-            )
+            General.fetch(%FetchArgs{
+              gas: gas,
+              registers: registers,
+              memory: memory,
+              work_package: nil,
+              n: n0_,
+              authorizer_output: nil,
+              index: nil,
+              import_segments: nil,
+              preimages: nil,
+              operands: nil,
+              transfers: transfers,
+              context: context
+            })
 
           :lookup ->
             General.lookup(gas, registers, memory, context, service_index, services)

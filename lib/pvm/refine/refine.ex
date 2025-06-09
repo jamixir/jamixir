@@ -4,6 +4,7 @@ defmodule PVM.Refine do
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
   alias PVM.{ArgInvoc, Host.Refine, Host.General}
+  alias PVM.Host.General.FetchArgs
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
   import PVM.Types
@@ -55,20 +56,20 @@ defmodule PVM.Refine do
               General.gas(gas, registers, memory, context)
 
             :fetch ->
-              General.fetch(
-                gas,
-                registers,
-                memory,
-                work_package,
-                Hash.zero(),
-                authorizer_output,
-                work_item_index,
-                import_segments,
-                preimages,
-                nil,
-                nil,
-                context
-              )
+              General.fetch(%FetchArgs{
+                gas: gas,
+                registers: registers,
+                memory: memory,
+                work_package: work_package,
+                n: Hash.zero(),
+                authorizer_output: authorizer_output,
+                index: work_item_index,
+                import_segments: import_segments,
+                preimages: preimages,
+                operands: nil,
+                transfers: nil,
+                context: context
+              })
 
             :historical_lookup ->
               Refine.historical_lookup(
