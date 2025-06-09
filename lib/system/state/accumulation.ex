@@ -395,6 +395,9 @@ defmodule System.State.Accumulation do
       privileged_services: %{manager: manager}
     } = acc_state
 
+    sac = single_accumulation(acc_state, work_reports, services_gas, manager, extra_args)
+    IO.inspect(sac)
+
     # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
     %{
       # m′

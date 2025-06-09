@@ -62,7 +62,7 @@ defmodule PVM.Refine do
                 memory: memory,
                 work_package: work_package,
                 n: Hash.zero(),
-                authorizer_output: authorizer_trace,
+                authorizer_trace: authorizer_trace,
                 index: work_item_index,
                 import_segments: import_segments,
                 preimages: preimages,

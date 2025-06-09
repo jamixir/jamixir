@@ -37,7 +37,7 @@ defmodule PVM.Host.General.Internal do
         context,
         work_package,
         n,
-        authorizer_output,
+        authorizer_trace,
         service_index,
         import_segments,
         preimages,
@@ -121,8 +121,8 @@ defmodule PVM.Host.General.Internal do
         n != nil and w10 == 1 ->
           n
 
-        authorizer_output != nil and w10 == 2 ->
-          authorizer_output
+        authorizer_trace != nil and w10 == 2 ->
+          authorizer_trace
 
         service_index != nil and w10 == 3 and w11 < length(preimages) and
             w12 < length(Enum.at(preimages, w11)) ->

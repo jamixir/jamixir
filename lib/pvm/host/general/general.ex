@@ -38,7 +38,7 @@ defmodule PVM.Host.General do
       [
         args.work_package,
         args.n,
-        args.authorizer_output,
+        args.authorizer_trace,
         args.index,
         args.import_segments,
         args.preimages,
