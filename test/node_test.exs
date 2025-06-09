@@ -4,7 +4,7 @@ defmodule Jamixir.NodeTest do
   alias Storage
   import Jamixir.Factory
   import TestHelper
-  use Codec.Encoder
+  import Codec.Encoder
   import Jamixir.Node
 
   @genesis_file "genesis/genesis.json"

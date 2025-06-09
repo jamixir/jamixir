@@ -4,6 +4,7 @@ defmodule StorageTest do
   alias Util.Hash
   use StoragePrefix
   import Jamixir.Factory
+  import Codec.Encoder
   import TestHelper
 
   setup_all do
