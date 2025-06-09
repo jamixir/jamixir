@@ -1,4 +1,9 @@
 defmodule PVM.Host.General.FetchArgs do
+  alias PVM.{Registers, Memory}
+  alias Block.Extrinsic.WorkPackage
+  alias System.DeferredTransfer
+  alias PVM.Accumulate.Operand
+
   @type t :: %__MODULE__{
           gas: non_neg_integer(),
           registers: Registers.t(),
