@@ -152,10 +152,10 @@ defmodule PVM.Host.General.Internal do
           e(work_package.context)
 
         work_package != nil and w10 == 11 ->
-          e(vs(for wi <- work_package.work_items, do: WorkItem.encode_for_fetch_host_call(wi)))
+          e(vs(for wi <- work_package.work_items, do: WorkItem.encode(wi, :fetch_host_call)))
 
         work_package != nil and w10 == 12 and w11 < length(work_package.work_items) ->
-          WorkItem.encode_for_fetch_host_call(Enum.at(work_package.work_items, w11))
+          WorkItem.encode(Enum.at(work_package.work_items, w11), :fetch_host_call)
 
         work_package != nil and w10 == 13 and w11 < length(work_package.work_items) ->
           work_package.work_items |> Enum.at(w11) |> Map.get(:payload)

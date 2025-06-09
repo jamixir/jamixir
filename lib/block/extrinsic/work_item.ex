@@ -70,8 +70,6 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
-
-
     # Formula (C.31) v0.6.5
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments,
@@ -85,7 +83,7 @@ defmodule Block.Extrinsic.WorkItem do
     end
   end
 
-  def encode_for_fetch_host_call(%__MODULE__{} = wi) do
+  def encode(%__MODULE__{} = wi, :fetch_host_call) do
     e({
       t(wi.service),
       wi.code_hash,
