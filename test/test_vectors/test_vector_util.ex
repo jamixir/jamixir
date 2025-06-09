@@ -78,7 +78,7 @@ defmodule TestVectorUtil do
     quote do
       @owner "davxy"
       @repo "jam-test-vectors"
-      @branch "polkajam-vectors"
+      @branch "master"
     end
   end
 

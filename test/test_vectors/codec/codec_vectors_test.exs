@@ -5,24 +5,43 @@ defmodule CodecVectorsTest do
 
   define_repo_variables()
 
+  #   for vector_type <- [:tiny, :full] do
+  #   for file_name <- files_to_test() do
+  #     @tag file_name: file_name
+  #     @tag vector_type: vector_type
+  #     @tag :"#{vector_type}_vectors"
+  #     test "verify #{unquote(type)} #{vector_type} vectors #{file_name}", %{
+  #       file_name: file_name,
+  #       vector_type: vector_type
+  #     } do
+  #       execute_test(file_name, "#{unquote(type)}/#{vector_type}")
+  #     end
+  #   end
+  # end
+
   describe "encode vectors" do
-    Enum.each(CodecVectors.tests(), fn {file_name, module_name} ->
-      @tag file_name: file_name
-      @tag module_name: module_name
-      test "vector #{file_name} for #{module_name}", %{
-        file_name: file_name,
-        module_name: module_name
-      } do
-        assert_correctly_encoded(file_name, module_name)
+    for vector_type <- [:tiny, :full] do
+      for {file_name, module_name} <- CodecVectors.tests() do
+        @tag file_name: file_name
+        @tag module_name: module_name
+        @tag vector_type: vector_type
+        @tag :"#{vector_type}_vectors"
+        test "#{vector_type} vector #{file_name} for #{module_name}", %{
+          file_name: file_name,
+          module_name: module_name,
+          vector_type: vector_type
+        } do
+          assert_correctly_encoded(file_name, module_name, vector_type)
+        end
       end
-    end)
+    end
   end
 
-  def assert_correctly_encoded(file_name, module) do
+  def assert_correctly_encoded(file_name, module, vector_type) do
     {:ok, json_data} =
-      fetch_and_parse_json("#{file_name}.json", "codec/data", @owner, @repo, @branch)
+      fetch_and_parse_json("#{file_name}.json", "codec/#{vector_type}", @owner, @repo, @branch)
 
-    expected = fetch_binary("#{file_name}.bin", "codec/data", @owner, @repo, @branch)
+    expected = fetch_binary("#{file_name}.bin", "codec/#{vector_type}", @owner, @repo, @branch)
 
     case json_data do
       %{} ->
