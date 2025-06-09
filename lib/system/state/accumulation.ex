@@ -21,8 +21,6 @@ defmodule System.State.Accumulation do
   import Codec.Encoder
   import Utils
 
-  # (Accumulation.t(), service_index) -> PVM.Host.Accumulate.Context.t()
-  @type ctx_init_fn :: (t(), non_neg_integer() -> PVM.Host.Accumulate.Context.t())
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   @callback do_single_accumulation(
               t(),
@@ -50,7 +48,6 @@ defmodule System.State.Accumulation do
             next_validators: [],
             authorizer_queue: [[]],
             privileged_services: %PrivilegedServices{}
-
 
   def transition(w, t_, n0_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
@@ -259,7 +256,7 @@ defmodule System.State.Accumulation do
           {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
            list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(acc_state, work_reports, always_acc_services, extra_args) do
-    #s
+    # s
     services = collect_services(work_reports, always_acc_services)
 
     # {x', i', q'}
@@ -317,7 +314,11 @@ defmodule System.State.Accumulation do
     accumulation_state = %__MODULE__{
       # d'
       services:
-        integrate_preimages(Map.drop(d ++ n, MapSet.to_list(m)), service_preimages, extra_args.timeslot_),
+        integrate_preimages(
+          Map.drop(d ++ n, MapSet.to_list(m)),
+          service_preimages,
+          extra_args.timeslot_
+        ),
       # χ'
       privileged_services: privileged_services_,
       # ι'
