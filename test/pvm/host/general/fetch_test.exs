@@ -342,7 +342,7 @@ defmodule PVM.Host.General.FetchTest do
       args = %{args | registers: %{args.registers | r10: 11}}
 
       encoded =
-        e(vs(for wi <- args.work_package.work_items, do: WorkItem.encode_for_fetch_host_call(wi)))
+        e(vs(for wi <- args.work_package.work_items, do: WorkItem.encode(wi, :fetch_host_call)))
 
       l = byte_size(encoded)
       context = args.context
@@ -362,7 +362,7 @@ defmodule PVM.Host.General.FetchTest do
       args: args
     } do
       args = %{args | registers: %{args.registers | r10: 12, r11: 0}}
-      encoded = WorkItem.encode_for_fetch_host_call(Enum.at(args.work_package.work_items, 0))
+      encoded = WorkItem.encode(Enum.at(args.work_package.work_items, 0), :fetch_host_call)
       l = byte_size(encoded)
       context = args.context
 
