@@ -40,10 +40,7 @@ defmodule Storage do
 
     key = "#{@p_block}#{header_hash}"
 
-    {:ok, _} =
-      KVStorage.put(%{
-        key => Encodable.encode(block)
-      })
+    {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
 
     {:ok, key}
   end

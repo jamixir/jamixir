@@ -93,7 +93,7 @@ defmodule TestVectorUtil do
             file_name: file_name,
             vector_type: vector_type
           } do
-            execute_test(file_name, "#{unquote(type)}/#{vector_type}")
+            execute_test(file_name, "stf/#{unquote(type)}/#{vector_type}")
           end
         end
       end

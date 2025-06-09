@@ -32,7 +32,7 @@ defmodule PreimagesTestVectorsTest do
     Enum.each(files_to_test(), fn file_name ->
       @tag file_name: file_name
       test "verify preimages vectors #{file_name}", %{file_name: file_name} do
-        execute_test(file_name, "preimages/data")
+        execute_test(file_name, "stf/preimages/data")
       end
     end)
   end

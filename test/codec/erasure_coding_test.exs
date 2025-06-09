@@ -1,9 +1,6 @@
 defmodule ErasureCodingTest do
   use ExUnit.Case
   alias ErasureCoding
-  import Util.Hex
-  import TestVectorUtil
-  import Codec.Encoder
 
   describe "encode/1" do
     core_count = %{"tiny" => 2, "full" => 342}
