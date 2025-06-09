@@ -1,63 +1,62 @@
-use reed_solomon::ReedSolomonEncoder;
+#![allow(non_snake_case)]
+
+mod erasure_codec;
+
+// Re-export the core functions for use by other Rust code
+pub use erasure_codec::{do_encode, do_decode};
+
+#[cfg(feature = "nif")]
 use rustler::NifResult;
+#[cfg(feature = "nif")]
+use rustler::Binary;
 
+#[cfg(feature = "nif")]
 #[rustler::nif]
-fn encode(data: Vec<Vec<u8>>) -> NifResult<Vec<Vec<u8>>> {
-    let result = do_encode(data);
-
-    result.map_err(|_| rustler::Error::Atom("error"))
-}
-
-fn do_encode(data: Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>, reed_solomon::Error> {
-    if data.len() != 342 {
-        return Err(reed_solomon::Error::NotEnoughShards {
-            original_count: 342,
-            original_received_count: data.len(),
-            recovery_received_count: 1023,
-        });
-    }
-
-    // TODO this is temporary until we can get the erasure coding to work with 2 bytes
-    let padded_data: Vec<Vec<u8>> = data
-        .into_iter()
-        .map(|v| {
-            let mut padded = vec![0u8; 64]; // Create vector with 64 zeros
-            padded[..v.len()].copy_from_slice(&v); // Copy original bytes to start
-            padded
+fn encode<'a>(
+    env: rustler::Env<'a>,
+    data_binary: Binary<'a>,
+    c: usize,
+) -> NifResult<Vec<Binary<'a>>> {
+    let data = data_binary.as_slice().to_vec();
+    let result = do_encode(data, c)
+        .map(|shards| {
+            shards
+                .into_iter()
+                .map(|shard| {
+                    let mut owned_binary = rustler::OwnedBinary::new(shard.len()).unwrap();
+                    owned_binary.as_mut_slice().copy_from_slice(&shard);
+                    Binary::from_owned(owned_binary, env)
+                })
+                .collect()
         })
+        .map_err(|_| rustler::Error::Atom("error"));
+
+    result
+}
+
+#[cfg(feature = "nif")]
+#[rustler::nif]
+fn decode<'a>(
+    env: rustler::Env<'a>,
+    shards: Vec<Binary<'a>>,
+    indexes: Vec<usize>,
+    original_size: usize,
+    c: usize,
+) -> NifResult<Binary<'a>> {
+    let shards_binaries: Vec<Vec<u8>> = shards
+        .into_iter()
+        .map(|shard| shard.as_slice().to_vec())
         .collect();
+    let result = do_decode(shards_binaries, indexes, original_size, c)
+        .map(|decoded| {
+            let mut owned_binary = rustler::OwnedBinary::new(decoded.len()).unwrap();
+            owned_binary.as_mut_slice().copy_from_slice(&decoded);
+            Binary::from_owned(owned_binary, env)
+        })
+        .map_err(|_| rustler::Error::Atom("error"));
 
-    let mut encoder = ReedSolomonEncoder::new(
-        342,  // total number of original shards
-        1023, // total number of recovery shards
-        64,   // shard size in bytes
-    )?;
-
-    for shard in padded_data {
-        encoder.add_original_shard(shard)?;
-    }
-
-    // let result = reed_solomon::encode(382, 1023, data)?;
-    let result = encoder.encode()?;
-
-    let recovery: Vec<Vec<u8>> = result.recovery_iter().map(|s| s.to_vec()).collect();
-
-    Ok(recovery)
+    result
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_encode() {
-        let data: Vec<Vec<u8>> = (1..=342)
-            .map(|x: u16| vec![(x % 255) as u8, (x % 255) as u8])
-            .collect();
-        let result = do_encode(data).unwrap();
-        assert_eq!(1, 1);
-        assert_eq!(result.len(), 1023);
-    }
-}
-
+#[cfg(feature = "nif")]
 rustler::init!("Elixir.ErasureCoding");

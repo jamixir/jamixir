@@ -54,22 +54,20 @@ defmodule PVM.Accumulate do
             General.gas(gas, registers, memory, context)
 
           :fetch ->
-            General.fetch(
-              %FetchArgs{
-                gas: gas,
-                registers: registers,
-                memory: memory,
-                work_package: nil,
-                n: n0_,
-                authorizer_output: nil,
-                index: nil,
-                import_segments: nil,
-                preimages: nil,
-                operands: operands,
-                transfers: nil,
-                context: context
-              }
-            )
+            General.fetch(%FetchArgs{
+              gas: gas,
+              registers: registers,
+              memory: memory,
+              work_package: nil,
+              n: n0_,
+              authorizer_output: nil,
+              index: nil,
+              import_segments: nil,
+              preimages: nil,
+              operands: operands,
+              transfers: nil,
+              context: context
+            })
 
           :read ->
             General.read(gas, registers, memory, s, x.service, d)
