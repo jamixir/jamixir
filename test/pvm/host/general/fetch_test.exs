@@ -74,7 +74,7 @@ defmodule PVM.Host.General.FetchTest do
         memory: memory,
         work_package: work_package,
         n: "encoded_n",
-        authorizer_output: "auth_output",
+        authorizer_trace: "auth_output",
         index: 0,
         import_segments: [["seg1_1", "seg1_2"], ["seg2_1"]],
         preimages: [["preimage1", "preimage2"], ["preimage3"]],
@@ -164,7 +164,7 @@ defmodule PVM.Host.General.FetchTest do
     test "w10 = 2 returns authorizer output when provided", %{
       args: args
     } do
-      l = byte_size(args.authorizer_output)
+      l = byte_size(args.authorizer_trace)
       args = %{args | registers: %{args.registers | r10: 2}}
       context = args.context
 
@@ -176,7 +176,7 @@ defmodule PVM.Host.General.FetchTest do
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == args.authorizer_output
+      assert Memory.read!(memory_, args.registers.r7, l) == args.authorizer_trace
     end
 
     test "w10 = 3 returns preimage from specified work item", %{
@@ -530,9 +530,9 @@ defmodule PVM.Host.General.FetchTest do
       # Test partial read with offset and length
       # w10=2 for authorizer_output, offset=2, length=3
       args = %{args | registers: %{args.registers | r10: 2, r8: 2, r9: 3}}
-      expected_partial = binary_part(args.authorizer_output, 2, 3)
+      expected_partial = binary_part(args.authorizer_trace, 2, 3)
       l = byte_size(expected_partial)
-      v_size = byte_size(args.authorizer_output)
+      v_size = byte_size(args.authorizer_trace)
       context = args.context
 
       assert %{

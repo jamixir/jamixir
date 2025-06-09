@@ -60,7 +60,7 @@ defmodule PVM.Accumulate do
               memory: memory,
               work_package: nil,
               n: n0_,
-              authorizer_output: nil,
+              authorizer_trace: nil,
               index: nil,
               import_segments: nil,
               preimages: nil,
