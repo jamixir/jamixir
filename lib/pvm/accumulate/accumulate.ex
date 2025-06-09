@@ -4,6 +4,7 @@ defmodule PVM.Accumulate do
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
+  alias PVM.Host.General.FetchArgs
   import PVM.Host.Gas
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}
@@ -55,18 +56,20 @@ defmodule PVM.Accumulate do
 
           :fetch ->
             General.fetch(
-              gas,
-              registers,
-              memory,
-              nil,
-              n0_,
-              nil,
-              nil,
-              nil,
-              nil,
-              operands,
-              nil,
-              context
+              %FetchArgs{
+                gas: gas,
+                registers: registers,
+                memory: memory,
+                work_package: nil,
+                n: n0_,
+                authorizer_output: nil,
+                index: nil,
+                import_segments: nil,
+                preimages: nil,
+                operands: operands,
+                transfers: nil,
+                context: context
+              }
             )
 
           :read ->

@@ -1,13 +1,10 @@
 defmodule PVM.Host.General do
-  alias System.DeferredTransfer
-  alias PVM.Accumulate.Operand
-  alias Block.Extrinsic.WorkPackage
-  alias PVM.Memory
-  alias PVM.Host.General
   alias System.State.ServiceAccount
   alias PVM.Registers
   import PVM.Host.Gas
   import PVM.Host.General.Internal
+  alias PVM.Host.General
+  alias PVM.Host.General.FetchArgs
   import PVM.Host.GasHandler
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
@@ -32,49 +29,21 @@ defmodule PVM.Host.General do
   end
 
   # ΩY (ϱ, ω, µ, (m, e), p, n, r, i, i, x, o, t)
-  @spec fetch(
-          non_neg_integer(),
-          Registers,
-          Memory,
-          WorkPackage | nil,
-          binary() | nil,
-          binary() | nil,
-          non_neg_integer() | nil,
-          list(list(binary())) | nil,
-          list(list(binary())) | nil,
-          list(Operand.t()) | nil,
-          list(DeferredTransfer.t()) | nil,
-          # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
-          any()
-        ) ::
-          General.Result.t()
-  def fetch(
-        gas,
-        registers,
-        memory,
-        work_package,
-        n,
-        authorizer_output,
-        service_index,
-        import_segments,
-        preimages,
-        operands,
-        transfers,
-        context
-      ) do
+  @spec fetch(FetchArgs.t()) :: General.Result.t()
+  def fetch(%FetchArgs{} = args) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {args.gas, args.registers, args.memory, args.context},
       &fetch_internal/11,
       [
-        work_package,
-        n,
-        authorizer_output,
-        service_index,
-        import_segments,
-        preimages,
-        operands,
-        transfers
+        args.work_package,
+        args.n,
+        args.authorizer_output,
+        args.index,
+        args.import_segments,
+        args.preimages,
+        args.operands,
+        args.transfers
       ]
     )
   end
