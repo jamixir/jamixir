@@ -259,7 +259,6 @@ defmodule System.State.Accumulation do
         services_gas,
         extra_args
       )
-      |> Map.get(:state)
 
     # i′ = (∆1(o, w, f , i)o)i
     next_validators_ =
@@ -394,9 +393,6 @@ defmodule System.State.Accumulation do
     %__MODULE__{
       privileged_services: %{manager: manager}
     } = acc_state
-
-    sac = single_accumulation(acc_state, work_reports, services_gas, manager, extra_args)
-    IO.inspect(sac)
 
     # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
     %{
