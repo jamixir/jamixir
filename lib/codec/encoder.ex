@@ -9,7 +9,7 @@ defmodule Codec.Encoder do
     do_encode(value)
   end
 
-  # Formula (C.5) v0.6.5
+  # Formula (C.5) v0.6.6
   @spec encode_little_endian(integer(), integer()) :: binary()
   def encode_little_endian(_, 0), do: <<>>
 
@@ -18,14 +18,14 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (E.9) v0.6.5
+  # Formula (E.9) v0.6.6
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
     do_encode(VariableSize.new(Enum.map(mmr, &NilDiscriminator.new/1)))
   end
 
-  # Formula (E.10) v0.6.5
+  # Formula (E.10) v0.6.6
   def super_peak_mmr(b) do
     case for h <- b, h != nil, do: h do
       [] ->
@@ -47,14 +47,14 @@ defmodule Codec.Encoder do
   defp bit_list?([1 | rest]), do: bit_list?(rest)
   defp bit_list?(_), do: false
 
-  # Formula (C.1) v0.6.5
+  # Formula (C.1) v0.6.6
   defp do_encode(nil), do: <<>>
-  # Formula (C.2) v0.6.5
+  # Formula (C.2) v0.6.6
   defp do_encode(value) when is_binary(value) or is_bitstring(value), do: value
-  # Formula (C.3) v0.6.5
+  # Formula (C.3) v0.6.6
   defp do_encode(value) when is_tuple(value), do: value |> Tuple.to_list() |> encode_list()
 
-  # Formula (C.7) v0.6.5
+  # Formula (C.7) v0.6.6
   defp do_encode(value) when is_list(value) do
     if bit_list?(value) do
       encode_bits(value)
@@ -63,7 +63,7 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (C.11) v0.6.5
+  # Formula (C.11) v0.6.6
   defp do_encode(%MapSet{} = m), do: MapSet.to_list(m) |> do_encode()
 
   defp do_encode(value) when is_struct(value) do
@@ -74,7 +74,7 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (C.11) v0.6.5
+  # Formula (C.11) v0.6.6
   defp do_encode(value) when is_map(value) and not is_struct(value) do
     encoded_pairs =
       for {k, v} <- Enum.sort_by(value, fn {k, _v} -> k end), do: {encode(k), encode(v)}
@@ -93,7 +93,7 @@ defmodule Codec.Encoder do
   # l = 2 => 2^14 <= x < 2^21
   # ...
   # l = 7 => 2^49 <= x < 2^56
-  # Formula (C.6) v0.6.5
+  # Formula (C.6) v0.6.6
   defp exists_l_in_n8(x) do
     l = trunc(:math.log2(x) / 7)
 
@@ -104,10 +104,10 @@ defmodule Codec.Encoder do
     end
   end
 
-  # Formula (C.6) v0.6.5
+  # Formula (C.6) v0.6.6
   defp encode_integer(0), do: <<0>>
 
-  # Formula (C.6) v0.6.5
+  # Formula (C.6) v0.6.6
   defp encode_integer(x) do
     if x >= 2 ** 64, do: raise(ArgumentError, "Integer value is too large to encode")
 
@@ -121,7 +121,7 @@ defmodule Codec.Encoder do
     Enum.map_join(value, &do_encode/1)
   end
 
-  # Formula (C.10) v0.6.5
+  # Formula (C.10) v0.6.6
   defp encode_bits([]), do: <<>>
 
   defp encode_bits(bits) do

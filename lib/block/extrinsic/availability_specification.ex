@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           segment_count: non_neg_integer()
         }
 
-  # Formula (11.5) v0.6.5
+  # Formula (11.5) v0.6.6
   # h
   defstruct work_package_hash: Hash.zero(),
             # l
@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.22) v0.6.5
+    # Formula (C.22) v0.6.6
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
         <<availability.length::m(work_bundle_length)>> <>
@@ -42,7 +42,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use JsonDecoder
   use Sizes
 
-  # Formula (14.16) v0.6.5
+  # Formula (14.16) v0.6.6
   @spec from_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           __MODULE__.t()
   def from_execution(work_package_hash, bundle_binary, export_segments) do
@@ -55,7 +55,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     }
   end
 
-  # Formula (14.16) v0.6.5 - u
+  # Formula (14.16) v0.6.6 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   def calculate_erasure_root(bundle_binary, exports) do
     # C6# (s⌢P(s))

@@ -1,6 +1,7 @@
 # Formula (B.20) v0.6.6
 
 defmodule PVM.Host.Accumulate.Internal do
+  alias System.State.Validator
   alias System.DeferredTransfer
   alias System.State.PrivilegedServices
   alias System.State.ServiceAccount
@@ -106,15 +107,8 @@ defmodule PVM.Host.Accumulate.Internal do
       case Memory.read(memory, registers.r7, 336 * Constants.validator_count()) do
         {:ok, data} ->
           for <<validator_data::binary-size(336) <- data>> do
-            <<bandersnatch::binary-size(32), ed25519::binary-size(32), bls::binary-size(144),
-              metadata::binary-size(128)>> = validator_data
-
-            %System.State.Validator{
-              bandersnatch: bandersnatch,
-              ed25519: ed25519,
-              bls: bls,
-              metadata: metadata
-            }
+            {v, _} = Validator.decode(validator_data)
+            v
           end
 
         _ ->
@@ -613,7 +607,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, w7_, x_} =
       cond do
-        i  == :error ->
+        i == :error ->
           {:panic, registers.r7, x}
 
         service == nil ->

@@ -1,6 +1,6 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
-  Formula (6.6) v0.6.5
+  Formula (6.6) v0.6.6
   """
 
   @type t :: %__MODULE__{id: Types.hash(), attempt: non_neg_integer()}
@@ -9,7 +9,7 @@ defmodule System.State.SealKeyTicket do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.27) v0.6.5
+    # Formula (C.27) v0.6.6
     def encode(%System.State.SealKeyTicket{} = skt) do
       e({skt.id, skt.attempt})
     end

@@ -1,6 +1,6 @@
 defmodule Shuffle do
   import Codec.Encoder
-  # Formula (F.1) v0.6.5
+  # Formula (F.1) v0.6.6
   @spec shuffle(list(any()), list(integer()) | Types.hash()) :: list(any())
   def shuffle([], _), do: []
 
@@ -13,12 +13,12 @@ defmodule Shuffle do
     [element | shuffle(Enum.take(new_list, l - 1), Enum.drop(r, 1))]
   end
 
-  # Formula (F.3) v0.6.5
+  # Formula (F.3) v0.6.6
   def shuffle(list, hash) when is_binary(hash) and bit_size(hash) == 256 do
     shuffle(list, hash_to_sequence(hash, length(list)))
   end
 
-  # Formula (F.2) v0.6.5
+  # Formula (F.2) v0.6.6
   defp hash_to_sequence(hash, l) do
     for i <- 0..l do
       <<n::32-little>> = :binary.part(h(hash <> e_le(div(i, 8), 4)), rem(4 * i, 32), 4)

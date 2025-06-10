@@ -29,7 +29,7 @@ defmodule Types do
 
   # @hash_size
 
-  # Formula (14.1) v0.6.5 - G ≡ YWG
+  # Formula (14.1) v0.6.6 - G ≡ YWG
   # (4104 * 8)
   def_bin_type(:export_segment, :export_segment)
 
@@ -37,15 +37,15 @@ defmodule Types do
   @type bls_key :: <<_::1152>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
-  # Formula (4.28) v0.6.5 - should be guarded as <= 2^32
+  # Formula (4.28) v0.6.6 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
-  # Formula (4.21) v0.6.5 - NB - should be guarded as <= 2^64
+  # Formula (4.21) v0.6.6 - NB - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
-  # Formula (4.23) v0.6.5 - NG - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.6.6 - NG - shoud be a 64-bit integer <= 2^64
   @type gas :: non_neg_integer()
-  # Formula (4.23) v0.6.5 - ZG - shoud be a 64-bit signed (-2^63..2^63)
+  # Formula (4.23) v0.6.6 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (4.23) v0.6.5 - NR - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.6.6 - NR - shoud be a 64-bit integer <= 2^64
   @type register :: non_neg_integer()
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil

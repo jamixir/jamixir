@@ -33,7 +33,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (14.3) v0.6.5
+  # Formula (14.3) v0.6.6
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
@@ -56,7 +56,7 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     import Codec.Encoder
-    # Formula (C.26) v0.6.5
+    # Formula (C.26) v0.6.6
     def encode(%WorkItem{} = wi) do
       e({
         t(wi.service),
@@ -70,7 +70,7 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
-    # Formula (C.31) v0.6.5
+    # Formula (C.31) v0.6.6
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments,
           do:
@@ -133,7 +133,7 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (14.8) v0.6.5
+  # Formula (14.8) v0.6.6
   @spec to_work_digest(
           Block.Extrinsic.WorkItem.t(),
           binary() | WorkExecutionError.t(),
@@ -155,20 +155,20 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (14.14) v0.6.5
+  # Formula (14.14) v0.6.6
   # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w) do
     for {r, n} <- w.extrinsic, d = Storage.get(r), byte_size(d) == n, do: d
   end
 
-  # Formula (14.14) v0.6.5
+  # Formula (14.14) v0.6.6
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
         do: DataAvailability.get_segment(WorkReport.segment_root(r), n)
   end
 
-  # Formula (14.14) v0.6.5
+  # Formula (14.14) v0.6.6
   # J (w∈I) ≡ [↕J0(s,n) ∣ M(s) = L(r), (r,n) <− wi]
   def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,

@@ -53,7 +53,7 @@ defmodule System.State.RecentHistory do
   def mock(:transition, context), do: context[:recent_history]
 
   @doc """
-  Formula (7.1) v0.6.5
+  Formula (7.1) v0.6.6
   """
   def update_latest_state_root(nil, _), do: %__MODULE__{}
 
@@ -73,7 +73,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  Formula (7.3) v0.6.5
+  Formula (7.3) v0.6.6
   """
   mockable transition(
              %Header{prior_state_root: prior_state_root} = header,
@@ -81,7 +81,7 @@ defmodule System.State.RecentHistory do
              guarantees,
              beefy_commitment
            ) do
-    # β† Formula (4.6) v0.6.5
+    # β† Formula (4.6) v0.6.6
     recent_history =
       RecentHistory.update_latest_state_root(recent_history, prior_state_root)
 
@@ -90,12 +90,12 @@ defmodule System.State.RecentHistory do
     header_hash = calculate_header_hash(header)
 
     # r - the merkle tree root of (service, commitment_hash) pairs derived from the beefy commitments map
-    # Formula (7.3) v0.6.5
+    # Formula (7.3) v0.6.6
 
     well_balanced_merkle_root = get_well_balanced_merkle_root(beefy_commitment)
 
     # b - accumulated result mmr of the most recent block, appended with the well-balanced merkle root (r)
-    # Formula (7.3) v0.6.5
+    # Formula (7.3) v0.6.6
 
     mmr_roots =
       case recent_history.blocks do
@@ -116,7 +116,7 @@ defmodule System.State.RecentHistory do
           do: {spec.work_package_hash, spec.exports_root},
           into: %{}
 
-    # Formula (7.4) v0.6.5
+    # Formula (7.4) v0.6.6
     RecentHistory.add(recent_history, header_hash, state_root_, mmr_roots, wp_hashes)
   end
 
@@ -145,7 +145,7 @@ defmodule System.State.RecentHistory do
 
   defimpl Encodable do
     import Codec.Encoder, only: [encode_mmr: 1, e: 1, vs: 1]
-    # Formula (D.2) v0.6.5
+    # Formula (D.2) v0.6.6
     # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
     def encode(%RecentHistory{} = rh) do
       e(

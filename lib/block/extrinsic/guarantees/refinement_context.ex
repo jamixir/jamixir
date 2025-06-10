@@ -16,7 +16,7 @@ defmodule RefinementContext do
           prerequisite: MapSet.t(Types.hash())
         }
 
-  # Formula (11.4) v0.6.5
+  # Formula (11.4) v0.6.6
   # a - anchor header hash
   defstruct anchor: Hash.zero(),
             # s - posterior state root
@@ -33,7 +33,7 @@ defmodule RefinementContext do
   defimpl Encodable do
     import Codec.Encoder, only: [e: 1, vs: 1, m: 1]
 
-    # Formula (C.21) v0.6.5
+    # Formula (C.21) v0.6.6
     def encode(%RefinementContext{
           anchor: a,
           state_root: s,
@@ -51,7 +51,6 @@ defmodule RefinementContext do
   alias Codec.VariableSize
 
   def decode(bin) do
-
     <<anchor::b(hash), state_root::b(hash), beefy_root::b(hash), lookup_anchor::b(hash),
       timeslot::m(timeslot), temp_rest::binary>> = bin
 

@@ -233,7 +233,7 @@ defmodule TestVectorUtil do
   end
 
   # the key traformation logic comes from Chapter B.6 (General functions)
-  # read host call https://graypaper.fluffylabs.dev/#/cc517d7/30bb0130c201?v=0.6.5
+  # read host call https://graypaper.fluffylabs.dev/#/cc517d7/30bb0130c201?v=0.6.6
   defp transform_services(services) do
     for {service_id, service_account} <- services, into: %{} do
       updated_storage =

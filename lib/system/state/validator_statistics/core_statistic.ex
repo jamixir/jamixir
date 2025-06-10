@@ -1,6 +1,6 @@
 defmodule System.State.CoreStatistic do
   @moduledoc """
-  Formula (13.6) v0.6.5
+  Formula (13.6) v0.6.6
   """
   alias System.State.CoreStatistic
   alias Block.Extrinsic.{Assurance, Guarantee.WorkReport}
@@ -56,15 +56,15 @@ defmodule System.State.CoreStatistic do
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
-        # Formula (13.8) v0.6.5
-        # Formula (13.9) v0.6.5
+        # Formula (13.8) v0.6.6
+        # Formula (13.9) v0.6.6
         imports: sum_field(w_incoming_digests, :imports),
         exports: sum_field(w_incoming_digests, :exports),
         extrinsic_count: sum_field(w_incoming_digests, :extrinsic_count),
         extrinsic_size: sum_field(w_incoming_digests, :extrinsic_size),
         gas_used: sum_field(w_incoming_digests, :gas_used),
         bundle_size: (Map.get(w_incoming, :specification) || %{}) |> Map.get(:length, 0),
-        # Formula (13.10) v0.6.5
+        # Formula (13.10) v0.6.6
         da_load:
           Map.get(w_newly_available_specification, :length, 0) +
             Constants.segment_size() *

@@ -68,7 +68,7 @@ defmodule Util.Collections do
 
   def mock(:validate_unique_and_ordered, _), do: :ok
 
-  # Formula (3.11) v0.6.5
+  # Formula (3.11) v0.6.6
   @spec union([map()]) :: map()
   def union([]), do: %{}
 

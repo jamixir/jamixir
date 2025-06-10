@@ -34,9 +34,13 @@ defmodule PVM.Accumulate.Operand do
     import Codec.Encoder
 
     # Formula (C.29) v0.6.6
+    @spec encode(PVM.Accumulate.Operand.t()) :: binary()
     def encode(%PVM.Accumulate.Operand{} = o),
       do:
-        e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
-          WorkDigest.encode_result(o.data) <> e(vs(o.output))
+        e(
+          {o.package_hash, o.segment_root, o.authorizer, vs(o.output), o.payload_hash,
+           o.gas_limit}
+        ) <>
+          WorkDigest.encode_result(o.data)
   end
 end

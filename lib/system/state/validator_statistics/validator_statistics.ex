@@ -1,6 +1,6 @@
 defmodule System.State.ValidatorStatistics do
   @moduledoc """
-  Formula (13.1) v0.6.5
+  Formula (13.1) v0.6.6
   """
   alias Codec.VariableSize
   import Codec.{Encoder, Decoder}
@@ -75,9 +75,9 @@ defmodule System.State.ValidatorStatistics do
         reporters_set,
         available_work_reports
       ) do
-    # Formula (13.3) v0.6.5
-    # Formula (13.4) v0.6.5
-    # Formula (13.5) v0.6.5
+    # Formula (13.3) v0.6.6
+    # Formula (13.4) v0.6.6
+    # Formula (13.5) v0.6.6
     {current_epoc_stats_, previous_epoc_stats_} =
       if Time.new_epoch?(timeslot, header.timeslot) do
         {empty_epoc_stats(), validator_statistics.current_epoch_statistics}
@@ -89,7 +89,7 @@ defmodule System.State.ValidatorStatistics do
     case get_author_stats(current_epoc_stats_, header.block_author_key_index) do
       {:ok, author_stats} ->
         edkeys = curr_validators_ |> Enum.map(& &1.ed25519)
-        # Formula (13.4) v0.6.5
+        # Formula (13.4) v0.6.6
         author_stats_ = %{
           author_stats
           | blocks_produced: author_stats.blocks_produced + 1,

@@ -87,7 +87,7 @@ defmodule CodecEncoderTest do
     end
   end
 
-  # Formula (C.6) v0.6.5
+  # Formula (C.6) v0.6.6
   describe "encode_le/2" do
     test "base case when l = 0" do
       assert Encoder.encode_le(0, 0) == <<>>

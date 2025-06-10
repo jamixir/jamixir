@@ -12,12 +12,7 @@ defmodule TestHelper do
     div(Time.current_time() + 10, Constants.slot_period())
   end
 
-  def nullified?(%Validator{} = validator) do
-    validator.bandersnatch == Hash.zero() and
-      validator.ed25519 == Hash.zero() and
-      validator.bls == <<0::1152>> and
-      validator.metadata == <<0::1024>>
-  end
+  def nullified?(%Validator{} = validator), do: Validator.key(validator) == <<0::336*8>>
 
   def mock_header_seal do
     stub(HeaderSealMock, :do_validate_header_seals, fn _, _, _, _ ->
