@@ -7,11 +7,13 @@ defmodule CommsTest do
   import Codec.Encoder
   import Mox
   import Jamixir.Factory
+  import TestHelper
   require Logger
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.{Config, Peer, PeerSupervisor}
   alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
+  import ExUnit.Assertions
 
   alias Util.Hash
   use Sizes
@@ -19,22 +21,15 @@ defmodule CommsTest do
   @base_port 9999
   @dummy_protocol_id 242
 
-  setup_all do
-    blocks = for _ <- 1..300, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
-    {:ok, blocks: blocks}
-  end
-
   setup context do
     # Use a different port for each test based on its line number
     port = @base_port + (context.line || 0)
 
-    {:ok, server_pid} =
-      PeerSupervisor.start_peer(:listener, "::1", port)
+    {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
+    {:ok, client_pid} = PeerSupervisor.start_peer(:initiator, "::1", port)
 
-    Process.sleep(30)
-
-    {:ok, client_pid} =
-      PeerSupervisor.start_peer(:initiator, "::1", port)
+    wait(fn -> Process.alive?(client_pid) end)
+    wait(fn -> Process.alive?(server_pid) end)
 
     on_exit(fn ->
       if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
@@ -46,26 +41,57 @@ defmodule CommsTest do
 
   setup :set_mox_from_context
 
-  test "parallel streams", %{client: client} do
-    number_of_messages = 5
+  describe "basic messages" do
+    test "parallel streams", %{client: client} do
+      number_of_messages = 5
 
-    tasks =
-      for i <- 1..number_of_messages do
-        Task.async(fn ->
-          message = "Hello, server#{i}!"
-          {:ok, response} = Peer.send(client, @dummy_protocol_id, message)
-          Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
-          assert response == message
-          i
-        end)
+      tasks =
+        for i <- 1..number_of_messages do
+          Task.async(fn ->
+            message = "Hello, server#{i}!"
+            {:ok, response} = Peer.send(client, @dummy_protocol_id, message)
+            Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
+            assert response == message
+            i
+          end)
+        end
+
+      results = Task.await_many(tasks, 5000)
+      assert length(results) == number_of_messages
+    end
+
+    # this test passing about 90% of the time, when running as mix test,
+    #  about 10% of the time it times out, some unknown race condition i guess
+    test "handles concurrent malformed and valid messages", %{client: client} do
+      client_state = :sys.get_state(client)
+      valid_msg = fn -> Peer.send(client, @dummy_protocol_id, "valid message") end
+
+      invalid_msg = fn ->
+        {:ok, stream} =
+          :quicer.start_stream(client_state.connection, Config.default_stream_opts())
+
+        {:ok, _} = :quicer.send(stream, <<1>>, Flags.send_flag(:fin))
       end
 
-    results = Task.await_many(tasks, 5000)
-    assert length(results) == number_of_messages
+      tasks =
+        for _ <- 1..40 do
+          task = if :rand.uniform() > 0.5, do: valid_msg, else: invalid_msg
+
+          Task.async(task)
+        end
+
+      Task.await_many(tasks, 10_000)
+      assert Process.alive?(client), "Peer crashed during mixed message handling"
+    end
   end
 
   # CE 128
   describe "request_blocks/4" do
+    setup do
+      blocks = for _ <- 1..300, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
+      {:ok, blocks: blocks}
+    end
+
     test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn <<0::hash()>>, :ascending, 9 -> {:ok, blocks} end)
@@ -552,31 +578,6 @@ defmodule CommsTest do
       assert map_size(client_state.pending_responses) == 0,
              "Stream leak detected: #{map_size(client_state.pending_responses)} streams remaining"
     end
-  end
-
-  # this test passing about 90% of the time, when running as mix test,
-  #  about 10% of the time it times out, some unknown race condition i guess
-  @tag :skip
-  test "handles concurrent malformed and valid messages", %{client: client} do
-    client_state = :sys.get_state(client)
-    valid_msg = fn -> Peer.send(client, @dummy_protocol_id, "valid message") end
-
-    invalid_msg = fn ->
-      {:ok, stream} =
-        :quicer.start_stream(client_state.connection, Config.default_stream_opts())
-
-      {:ok, _} = :quicer.send(stream, <<1>>, Flags.send_flag(:fin))
-    end
-
-    tasks =
-      for _ <- 1..20 do
-        task = if :rand.uniform() > 0.5, do: valid_msg, else: invalid_msg
-
-        Task.async(task)
-      end
-
-    Task.await_many(tasks, 5000)
-    assert Process.alive?(client), "Peer crashed during mixed message handling"
   end
 
   describe "error handling" do

@@ -171,7 +171,7 @@ defmodule Network.Server do
                 {{:ok, stream_data}, new_state} ->
                   handle_up_stream(data, stream, new_state, stream_data)
 
-                :reject ->
+                {:reject, _} ->
                   {:noreply, state}
               end
             end
