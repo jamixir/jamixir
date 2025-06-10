@@ -13,23 +13,59 @@ defmodule System.State.AccumulationTest do
   setup :verify_on_exit!
 
   defp mock_privileged_services(privileged_services) do
-    Enum.each(
-      [
-        {privileged_services.manager, :privileged_services,
-         :updated_privileged_services},
-        {privileged_services.next_validators_service, :next_validators, :updated_next_validators},
-        {privileged_services.assigners, :authorizer_queue,
-         :updated_authorizer_queue}
-      ],
-      fn {service, field, value} ->
-        MockAccumulation
-        |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
-          %AccumulationResult{
-            state: struct(Accumulation, [{field, value}])
+    # Mock the manager service to return the full privileged_services structure
+    # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
+    MockAccumulation
+    |> expect(:do_single_accumulation, fn _, _, _, service, _
+                                          when service == privileged_services.manager ->
+      %AccumulationResult{
+        state: %Accumulation{
+          privileged_services: %PrivilegedServices{
+            manager: :updated_manager,
+            # assigners_star - service IDs that will be accumulated
+            assigners: [99, 100],
+            # next_validators_service_star - service ID that will be accumulated
+            next_validators_service: 101,
+            services_gas: :updated_services_gas
           }
-        end)
-      end
-    )
+        }
+      }
+    end)
+
+    # Mock the assigners_star services (99, 100) to return arrays in their assigners field
+    MockAccumulation
+    |> expect(:do_single_accumulation, fn _, _, _, 99, _ ->
+      %AccumulationResult{
+        state: %Accumulation{
+          privileged_services: %PrivilegedServices{
+            assigners: [:assigner_99_result_1, :assigner_99_result_2]
+          }
+        }
+      }
+    end)
+
+    MockAccumulation
+    |> expect(:do_single_accumulation, fn _, _, _, 100, _ ->
+      %AccumulationResult{
+        state: %Accumulation{
+          privileged_services: %PrivilegedServices{
+            assigners: [:assigner_100_result_1, :assigner_100_result_2]
+          }
+        }
+      }
+    end)
+
+    # Mock the next_validators_service_star service (101) to return a value in its next_validators_service field
+    MockAccumulation
+    |> expect(:do_single_accumulation, fn _, _, _, 101, _ ->
+      %AccumulationResult{
+        state: %Accumulation{
+          privileged_services: %PrivilegedServices{
+            next_validators_service: :updated_next_validators_service
+          }
+        }
+      }
+    end)
   end
 
   setup_all do
@@ -269,7 +305,7 @@ defmodule System.State.AccumulationTest do
       initial_state = %Accumulation{
         privileged_services: %PrivilegedServices{
           manager: 1,
-          assigners: 3,
+          assigners: [3],
           next_validators_service: 2
         },
         services: %{1 => :service1, 2 => :service2, 3 => :service3, 4 => :service4},
@@ -282,7 +318,12 @@ defmodule System.State.AccumulationTest do
 
       mock_privileged_services(initial_state.privileged_services)
 
-      assert {:updated_privileged_services, :updated_next_validators, :updated_authorizer_queue} =
+      assert %PrivilegedServices{
+               manager: :updated_manager,
+               assigners: [:assigner_99_result_1, :assigner_100_result_2],
+               next_validators_service: :updated_next_validators_service,
+               services_gas: :updated_services_gas
+             } =
                Accumulation.accumulate_privileged_services(
                  initial_state,
                  work_reports,
@@ -313,8 +354,8 @@ defmodule System.State.AccumulationTest do
         services: %{4 => :service4, 5 => :service5, 6 => :service6},
         privileged_services: %PrivilegedServices{
           manager: 1,
-          next_validators_service: 2,
-          assigners: 3
+          assigners: [3],
+          next_validators_service: 2
         },
         next_validators: :initial_next_validators,
         authorizer_queue: :initial_authorizer_queue
@@ -327,19 +368,91 @@ defmodule System.State.AccumulationTest do
 
       always_acc_services = %{6 => 30}
 
-      mock_privileged_services(initial_state.privileged_services)
+      # Single stub that handles all services
+      MockAccumulation
+      |> stub(:do_single_accumulation, fn _, _, _, service, _ ->
+        case service do
+          # Regular services (4, 5, 6)
+          s when s in [4, 5, 6] ->
+            %AccumulationResult{
+              state: %{initial_state | services: %{service => :"updated_service#{service}"}},
+              transfers: [%{amount: service * 10}],
+              output: "output#{service}",
+              gas_used: service * 10
+            }
 
-      # Mock for accumulate_services (regular services)
-      Enum.each([4, 5, 6], fn service ->
-        MockAccumulation
-        |> expect(:do_single_accumulation, fn _, _, _, ^service, _ ->
-          %AccumulationResult{
-            state: %{initial_state | services: %{service => :"updated_service#{service}"}},
-            transfers: [%{amount: service * 10}],
-            output: "output#{service}",
-            gas_used: service * 10
-          }
-        end)
+          # Manager service (1) - should return updated privileged services
+          1 ->
+            %AccumulationResult{
+              state: %{
+                initial_state
+                | privileged_services: %PrivilegedServices{
+                    manager: :updated_manager,
+                    # assigners_star - service IDs that will be accumulated
+                    assigners: [99, 100],
+                    # next_validators_service_star
+                    next_validators_service: 101,
+                    services_gas: :updated_services_gas
+                  }
+              },
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+
+          # Assigners_star services (99, 100) - return values for assigners field
+          s when s in [99, 100] ->
+            %AccumulationResult{
+              state: %{
+                initial_state
+                | privileged_services: %PrivilegedServices{
+                    assigners: [:assigner_result_for_service, s]
+                  }
+              },
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+
+          # Next_validators_service_star (101) - return value for next_validators_service field
+          101 ->
+            %AccumulationResult{
+              state: %{
+                initial_state
+                | privileged_services: %PrivilegedServices{
+                    next_validators_service: :updated_next_validators_service
+                  }
+              },
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+
+          # Other privileged services (3, 27) - should return updated field values
+          3 ->
+            %AccumulationResult{
+              state: %{initial_state | authorizer_queue: :updated_authorizer_queue},
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+
+          2 ->
+            %AccumulationResult{
+              state: %{initial_state | next_validators: :updated_next_validators},
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+
+          _ ->
+            %AccumulationResult{
+              state: initial_state,
+              transfers: [],
+              output: nil,
+              gas_used: 0
+            }
+        end
       end)
 
       result =
@@ -354,9 +467,15 @@ defmodule System.State.AccumulationTest do
 
       assert total_gas == [{4, 40}, {5, 50}, {6, 60}]
 
-      assert updated_state.privileged_services == :updated_privileged_services
+      assert %PrivilegedServices{
+               manager: :updated_manager,
+               assigners: [:assigner_result_for_service, 100],
+               next_validators_service: :updated_next_validators_service,
+               services_gas: :updated_services_gas
+             } = updated_state.privileged_services
+
       assert updated_state.next_validators == :updated_next_validators
-      assert updated_state.authorizer_queue == :updated_authorizer_queue
+      assert updated_state.authorizer_queue == [:updated_authorizer_queue]
       assert transfers == [%{amount: 40}, %{amount: 50}, %{amount: 60}]
       assert MapSet.size(outputs) == 3
 
