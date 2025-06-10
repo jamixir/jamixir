@@ -65,8 +65,6 @@ defmodule PVM do
 
     w_a = Constants.max_is_authorized_code_size()
 
-
-
     case pc do
       nil ->
         {:bad, 0}

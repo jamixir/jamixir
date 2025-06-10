@@ -1,6 +1,6 @@
 defmodule Codec.State.Trie do
-  alias Util.Hash
   alias System.State
+  alias Util.Hash
 
   alias System.State.{
     CoreReport,
@@ -274,9 +274,7 @@ defmodule Codec.State.Trie do
     end)
   end
 
-  def decode_value(key, value) do
-    IO.inspect(key, label: "Unknown key")
-    IO.inspect(value, label: "Unknown value")
+  def decode_value(_key, _value) do
     {nil, <<>>}
   end
 end

@@ -1,12 +1,13 @@
 defmodule PVM.Host.AccumulateTest do
   use ExUnit.Case
-  alias System.DeferredTransfer
-  alias System.State.{Accumulation, ServiceAccount, PrivilegedServices}
-  alias Util.Hash
   alias PVM.Host.Accumulate
+  alias System.DeferredTransfer
+  alias System.State.{Accumulation, PrivilegedServices, ServiceAccount}
+  alias Util.Hash
 
   alias PVM.{
     Memory,
+    Memory.Constants,
     Host.Accumulate.Context,
     Registers,
     Host.Accumulate.Result,
@@ -17,7 +18,7 @@ defmodule PVM.Host.AccumulateTest do
   import PVM.Constants.HostCallResult
   import Codec.Encoder
 
-  def a_0, do: PVM.Memory.Constants.min_allowed_address()
+  def a_0, do: Constants.min_allowed_address()
 
   setup_all do
     {:ok, context: {%Context{}, %Context{}}}
@@ -1453,13 +1454,12 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       service_index = 456
+
       registers = %Registers{
         r7: service_index,
         r8: a_0(),
         r9: byte_size(preimage_data)
       }
-
-
 
       {:ok,
        memory: memory,
@@ -1506,12 +1506,13 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.provide(gas, registers, memory, context, service_index)
     end
 
-    test "returns {:continue, huh()} when preimage already exists in service preimage storage_l", %{
-      memory: memory,
-      context: context,
-      gas: gas,
-      registers: registers,
-    } do
+    test "returns {:continue, huh()} when preimage already exists in service preimage storage_l",
+         %{
+           memory: memory,
+           context: context,
+           gas: gas,
+           registers: registers
+         } do
       # Use r7 that points to service 123 which has the preimage
       registers = %{registers | r7: 123}
       huh = huh()

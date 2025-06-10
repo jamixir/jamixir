@@ -73,9 +73,7 @@ defmodule Block.Extrinsic.WorkItem do
     # Formula (C.31) v0.6.6
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments,
-          do:
-            {Types.hash(h),
-             <<i + if(Types.is_tagged?(h), do: 0x8000, else: 0)::m(segment_count)>>}
+          do: {Types.hash(h), <<i + if(Types.tagged?(h), do: 0x8000, else: 0)::m(segment_count)>>}
     end
 
     defp encode_extrinsic(work_item) do

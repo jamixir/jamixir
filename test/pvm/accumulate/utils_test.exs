@@ -30,8 +30,6 @@ defmodule PVM.Accumulate.UtilsTest do
        service_state: service_state}
     end
 
-
-
     test "initializes context correctly", %{
       n0_: n0_,
       header_timeslot: header_timeslot,

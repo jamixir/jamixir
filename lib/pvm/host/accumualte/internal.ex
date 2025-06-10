@@ -404,17 +404,10 @@ defmodule PVM.Host.Accumulate.Internal do
               two_32 = 0x1_0000_0000
 
               case a do
-                [] ->
-                  {:continue, 0, 0}
-
-                [x] ->
-                  {:continue, 1 + two_32 * x, 0}
-
-                [x, y] ->
-                  {:continue, 2 + two_32 * x, y}
-
-                [x, y, z] ->
-                  {:continue, 3 + two_32 * x, y + two_32 * z}
+                [] -> {:continue, 0, 0}
+                [x] -> {:continue, 1 + two_32 * x, 0}
+                [x, y] -> {:continue, 2 + two_32 * x, y}
+                [x, y, z] -> {:continue, 3 + two_32 * x, y + two_32 * z}
               end
           end
       end

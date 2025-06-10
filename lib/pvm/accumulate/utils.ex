@@ -9,7 +9,8 @@ defmodule PVM.Accumulate.Utils do
   @hash_size 32
 
   # Formula (B.10) v0.6.6
-  @spec initializer(Types.hash(), non_neg_integer(), Accumulation.t(), non_neg_integer()) :: Context.t()
+  @spec initializer(Types.hash(), non_neg_integer(), Accumulation.t(), non_neg_integer()) ::
+          Context.t()
   def initializer(n0_, header_timeslot, accumulation_state, service_index) do
     computed_service_index =
       <<service_index::m(service_index), n0_::binary, header_timeslot::m(timeslot)>>
@@ -33,12 +34,12 @@ defmodule PVM.Accumulate.Utils do
   # Formula (B.14) v0.6.6
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
-    if i not in Map.keys(services) do
-      i
-    else
+    if i in Map.keys(services) do
       # check((i - 2^8 + 1) mod (2^32 - 2^9) + 2^8)
       new_i = rem(i - 0x100 + 1, 0xFFFFFE00) + 0x100
       check(new_i, accumulation)
+    else
+      i
     end
   end
 
@@ -51,15 +52,18 @@ defmodule PVM.Accumulate.Utils do
 
   # Formula (B.13) v0.6.6
   @spec collapse({Types.gas(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
-          {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, Types.gas(), list({Types.service_index(), binary()})}
+          {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, Types.gas(),
+           list({Types.service_index(), binary()})}
   def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
-    do: {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
+    do:
+      {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
 
   def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
     do: {x.accumulation, x.transfers, output, gas, MapSet.to_list(x.preimages)}
 
   def collapse({gas, _output, {x, _y}}),
-    do: {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
+    do:
+      {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
 
   # Formula (B.12) v0.6.6
   @spec replace_service(

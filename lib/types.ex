@@ -59,9 +59,9 @@ defmodule Types do
           hash()
           | {:tagged_hash, hash()}
 
-  @spec is_tagged?(segment_ref()) :: boolean()
-  def is_tagged?(hash) when is_binary(hash), do: false
-  def is_tagged?({:tagged_hash, _}), do: true
+  @spec tagged?(segment_ref()) :: boolean()
+  def tagged?(hash) when is_binary(hash), do: false
+  def tagged?({:tagged_hash, _}), do: true
 
   @spec hash(segment_ref()) :: hash()
   def hash(hash) when is_binary(hash), do: hash

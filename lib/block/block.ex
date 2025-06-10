@@ -1,15 +1,11 @@
 defmodule Block do
-  alias Util.Hash
-  alias System.State.RotateKeys
   alias Block.Extrinsic
   alias Block.Header
   alias Codec.State.Trie
-  alias System.HeaderSeal
-  alias System.State
-  alias System.State.EntropyPool
-  alias System.State.SealKeyTicket
+  alias System.{HeaderSeal, State}
+  alias System.State.{EntropyPool, RotateKeys, SealKeyTicket}
   alias System.Validators.Safrole
-  alias Util.Time
+  alias Util.{Hash, Time}
   require Logger
   use SelectiveMock
 

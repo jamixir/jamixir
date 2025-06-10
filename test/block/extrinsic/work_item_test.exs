@@ -14,6 +14,7 @@ defmodule WorkItemTest do
     test "encodes/decodes a work item", %{wi: wi} do
       assert WorkItem.decode(e(wi)) == {wi, <<>>}
     end
+
     test "encodes/decodes a work item with tagged hash variant", %{wi: wi} do
       tagged = Enum.map(wi.import_segments, fn {h, i} -> {{:tagged_hash, h}, i} end)
       wi = %{wi | import_segments: tagged}
