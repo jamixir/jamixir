@@ -39,6 +39,26 @@ defmodule TestHelper do
     }
   end
 
+  def wait(fun, timeout \\ 1000, interval \\ 10) do
+    start_time = System.monotonic_time(:millisecond)
+    wait_loop(fun, start_time, timeout, interval)
+  end
+
+  defp wait_loop(fun, start_time, timeout, interval) do
+    if fun.() do
+      :ok
+    else
+      elapsed_time = System.monotonic_time(:millisecond) - start_time
+
+      if elapsed_time >= timeout do
+        raise "wait timed out after #{timeout}ms"
+      else
+        Process.sleep(interval)
+        wait_loop(fun, start_time, timeout, interval)
+      end
+    end
+  end
+
   defmacro setup_validators(validator_count) do
     quote do
       defmodule ConstantsMock do
