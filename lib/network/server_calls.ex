@@ -171,8 +171,18 @@ defmodule Network.ServerCalls do
   end
 
   def call(142, <<service_id::service(), hash::b(hash), length::32-little>> = _message) do
-    log("Receiving Preimage")
+    log("Receiving Preimage announcement")
     :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
+
+    # Capture the server PID before starting the task
+    server_pid = self()
+
+    Task.start(fn ->
+      log("Requesting preimage back from client via server #{inspect(server_pid)}")
+
+      Network.Peer.send(server_pid, 143, hash)
+    end)
+
     <<>>
   end
 

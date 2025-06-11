@@ -23,10 +23,9 @@ defmodule CommsTest do
 
   setup context do
     # Use a different port for each test based on its line number
-    port = @base_port + (context.line || 0)
+    base_port = @base_port + (context.line || 0)
 
-    {:ok, server_pid} = PeerSupervisor.start_peer(:listener, "::1", port)
-    {:ok, client_pid} = PeerSupervisor.start_peer(:initiator, "::1", port)
+    {server_pid, client_pid, port} = start_peers_with_retry(base_port, 3)
 
     wait(fn -> Process.alive?(client_pid) end)
     wait(fn -> Process.alive?(server_pid) end)
@@ -389,8 +388,37 @@ defmodule CommsTest do
   # CE 142
   describe "announce_preimage/4" do
     test "announces preimage", %{client: client} do
-      Jamixir.NodeAPI.Mock |> expect(:receive_preimage, 1, fn 44, <<45::hash()>>, 1 -> :ok end)
-      {:ok, ""} = Peer.announce_preimage(client, 44, <<45::hash()>>, 1)
+      preimage_data = "test preimage"
+      preimage_hash = Util.Hash.default(preimage_data)
+
+
+      # The server automatically does bidirectional communication, so we need to expect both calls
+      Jamixir.NodeAPI.Mock
+      |> expect(:receive_preimage, 1, fn 44, ^preimage_hash, 1 ->
+        Logger.info("Mock: receive_preimage called with service_id=44, preimage_hash=#{inspect(preimage_hash)}, length=1")
+        :ok
+      end)
+      |> expect(:get_preimage, 1, fn ^preimage_hash ->
+        Logger.info("Mock: get_preimage called with preimage_hash=#{inspect(preimage_hash)}")
+        {:ok, preimage_data}
+      end)
+      |> expect(:save_preimage, 1, fn ^preimage_data ->
+        Logger.info("Mock: save_preimage called with preimage_data=#{inspect(preimage_data)}")
+        :ok
+      end)
+
+      {:ok, ""} = Peer.announce_preimage(client, 44, preimage_hash, 1)
+
+      # Wait for the async bidirectional communication to complete
+      wait(fn ->
+        try do
+          verify!()
+          true
+        rescue
+          Mox.VerificationError -> false
+        end
+      end, 200)
+
       verify!()
     end
   end
@@ -697,5 +725,47 @@ defmodule CommsTest do
       end
 
     {:ok, peers}
+  end
+
+  # Helper function to start peers with retry logic
+  defp start_peers_with_retry(base_port, max_retries) do
+    start_peers_with_retry(base_port, max_retries, 0)
+  end
+
+  defp start_peers_with_retry(_base_port, max_retries, attempt) when attempt >= max_retries do
+    raise "Failed to start peers after #{max_retries} attempts"
+  end
+
+  defp start_peers_with_retry(base_port, max_retries, attempt) do
+    port = base_port + attempt
+
+    case start_peer_pair(port) do
+      {:ok, server_pid, client_pid} ->
+        {server_pid, client_pid, port}
+      {:error, reason} ->
+        Logger.debug("Attempt #{attempt + 1} failed on port #{port}: #{inspect(reason)}")
+        # Wait a bit before retrying to avoid rapid port conflicts
+        Process.sleep(10 + attempt * 5)
+        start_peers_with_retry(base_port, max_retries, attempt + 1)
+    end
+  end
+
+  defp start_peer_pair(port) do
+    case PeerSupervisor.start_peer(:listener, "::1", port) do
+      {:ok, server_pid} ->
+        # Wait a bit for the server to be fully ready
+        Process.sleep(10)
+
+        case PeerSupervisor.start_peer(:initiator, "::1", port) do
+          {:ok, client_pid} ->
+            {:ok, server_pid, client_pid}
+          {:error, reason} ->
+            # Clean up server if client fails
+            if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
+            {:error, {:client_start_failed, reason}}
+        end
+      {:error, reason} ->
+        {:error, {:server_start_failed, reason}}
+    end
   end
 end
