@@ -125,8 +125,15 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def receive_preimage(_service_id, _hash, _length) do
-    {:error, :not_implemented}
+  def receive_preimage(_service_id, hash, _length) do
+    server_pid = self()
+
+    Task.start(fn ->
+      Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
+      Network.Peer.send(server_pid, 143, hash)
+    end)
+
+    :ok
   end
 
   @impl true
