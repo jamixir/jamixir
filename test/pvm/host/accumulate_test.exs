@@ -7,7 +7,6 @@ defmodule PVM.Host.AccumulateTest do
 
   alias PVM.{
     Memory,
-    Memory.Constants,
     Host.Accumulate.Context,
     Registers,
     Host.Accumulate.Result,
@@ -17,8 +16,9 @@ defmodule PVM.Host.AccumulateTest do
 
   import PVM.Constants.HostCallResult
   import Codec.Encoder
+  import PVM.Memory.Constants
 
-  def a_0, do: Constants.min_allowed_address()
+  def a_0, do: min_allowed_address()
 
   setup_all do
     {:ok, context: {%Context{}, %Context{}}}
