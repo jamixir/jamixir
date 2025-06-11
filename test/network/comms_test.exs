@@ -391,11 +391,20 @@ defmodule CommsTest do
       preimage_data = "test preimage"
       preimage_hash = Util.Hash.default(preimage_data)
 
-
       # The server automatically does bidirectional communication, so we need to expect both calls
       Jamixir.NodeAPI.Mock
       |> expect(:receive_preimage, 1, fn 44, ^preimage_hash, 1 ->
-        Logger.info("Mock: receive_preimage called with service_id=44, preimage_hash=#{inspect(preimage_hash)}, length=1")
+        Logger.info(
+          "Mock: receive_preimage called with service_id=44, preimage_hash=#{inspect(preimage_hash)}, length=1"
+        )
+
+        server_pid = self()
+
+        Task.start(fn ->
+          Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
+          Network.Peer.send(server_pid, 143, preimage_hash)
+        end)
+
         :ok
       end)
       |> expect(:get_preimage, 1, fn ^preimage_hash ->
@@ -411,12 +420,12 @@ defmodule CommsTest do
 
       # Wait for the async bidirectional communication to complete
       wait(fn ->
-        try do
-          verify!()
-          true
-        rescue
-          Mox.VerificationError -> false
-        end
+          try do
+            verify!()
+            true
+          rescue
+            Mox.VerificationError -> false
+          end
       end, 200)
 
       verify!()
