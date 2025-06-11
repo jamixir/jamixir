@@ -37,9 +37,10 @@ defmodule Network.Peer do
 
   @impl GenServer
   def init(%{init_mode: init_mode, ip: ip, port: port}) do
-    identifier = "#{init_mode}#{ip}:#{port}"
+    # Use self() PID as the registry identifier - it's unique and direct
+    identifier = self()
     {:ok, pid} = Network.PeerRegistry.register_peer(self(), identifier)
-    log("Registered peer with identifier: #{identifier} #{inspect(pid)}")
+    log("Registered peer with identifier: #{inspect(identifier)} #{inspect(pid)}")
 
     case init_mode do
       :initiator -> initiate_connection(ip, port)
@@ -114,6 +115,21 @@ defmodule Network.Peer do
     }
 
     {:noreply, new_state}
+  end
+
+  @impl GenServer
+  def handle_info({:quic, :new_stream, stream, _props}, state) do
+    log("Activating new stream: #{inspect(stream)}")
+
+    case :quicer.setopt(stream, :active, true) do
+      :ok ->
+        log("New stream activated successfully: #{inspect(stream)}")
+
+      {:error, reason} ->
+        log("Failed to activate new stream: #{inspect(stream)} - #{inspect(reason)}")
+    end
+
+    {:noreply, state}
   end
 
   # Catch-all for unhandled QUIC events
