@@ -491,26 +491,6 @@ defmodule CommsTest do
   describe "announce_block/3" do
     setup :set_mox_global
 
-    setup do
-      port = 20_000 + System.unique_integer([:positive])
-      {:ok, _server} = PeerSupervisor.start_peer(:listener, "::1", port)
-      Process.sleep(30)
-
-      case PeerSupervisor.start_peer(:initiator, "::1", port) do
-        {:ok, client} ->
-          Application.put_env(:jamixir, :server_calls, ServerCallsMock)
-
-          on_exit(fn ->
-            Application.delete_env(:jamixir, :server_calls)
-          end)
-
-          {:ok, client: client}
-
-        {:error, reason} ->
-          flunk("Failed to start client: #{inspect(reason)}")
-      end
-    end
-
     test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 

@@ -9,6 +9,7 @@ defmodule Block.Header do
   use Sizes
   import Codec.{Decoder, Encoder}
   import Codec.Decoder
+  require Logger
 
   @type t :: %__MODULE__{
           # Formula (5.2) v0.6.6
@@ -119,6 +120,10 @@ defmodule Block.Header do
     else
       case Storage.get(header.parent_hash) do
         nil ->
+          Logger.error(
+            "Parent header not found for block with hash #{Base.encode16(header.extrinsic_hash)}"
+          )
+
           {:error, :no_parent}
 
         parent_header ->

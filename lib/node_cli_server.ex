@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeCLIServer do
+  alias Network.Peer
   alias Network.PeerSupervisor
   import System.State.Validator
   alias Jamixir.TimeTicker
@@ -21,7 +22,6 @@ defmodule Jamixir.NodeCLIServer do
     jam_state = init_jam_state()
     server_pid = init_network_listener()
     Logger.info("Waiting 5s for clients to start...")
-    Process.sleep(5_000)
     cliend_pids = connect_clients(jam_state.curr_validators, %{})
     {:ok, %{jam_state: jam_state, server_pid: server_pid, client_pids: cliend_pids}}
   end
@@ -105,7 +105,7 @@ defmodule Jamixir.NodeCLIServer do
       ) do
     Logger.debug("Node received new timeslot: #{timeslot}")
 
-    connect_clients(jam_state.curr_validators, cliend_pids)
+    client_pids = connect_clients(jam_state.curr_validators, cliend_pids)
 
     jam_state =
       case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
@@ -114,7 +114,7 @@ defmodule Jamixir.NodeCLIServer do
 
           case Jamixir.Node.add_block(block) do
             {:ok, new_jam_state} ->
-              announce_block_to_peers(new_jam_state.curr_validators)
+              announce_block_to_peers(client_pids, block)
               new_jam_state
 
             {:error, reason} ->
@@ -127,19 +127,14 @@ defmodule Jamixir.NodeCLIServer do
           jam_state
       end
 
-    {:noreply, %{state | jam_state: jam_state}}
+    {:noreply, %{state | jam_state: jam_state, client_pids: client_pids}}
   end
 
-  import Util.Hex
-
-  def announce_block_to_peers(validators) do
+  def announce_block_to_peers(client_pids, block) do
     Logger.debug("📢 Announcing block to peers")
 
-    for v <- validators do
-      case address(v) do
-        nil -> Logger.warning("No address found for this validator: #{encode16(v.bandersnatch)}")
-        address -> Logger.debug("📢 Announcing block to peer: #{address}")
-      end
+    for pid <- client_pids do
+      Peer.announce_block(pid, block.header, block.header.timeslot)
     end
   end
 end
