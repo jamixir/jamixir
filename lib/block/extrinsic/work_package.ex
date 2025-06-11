@@ -151,6 +151,31 @@ defmodule Block.Extrinsic.WorkPackage do
     end
   end
 
+  def extrinsic_defs(%__MODULE__{work_items: work_items}) do
+    for(wi <- work_items, do: for(e <- wi.extrinsic, do: e)) |> List.flatten()
+  end
+
+  def valid_extrinsics?(%__MODULE__{work_items: []}, []), do: true
+
+  def valid_extrinsics?(%__MODULE__{work_items: [%WorkItem{extrinsic: []} | rest]}, a),
+    do: valid_extrinsics?(%__MODULE__{work_items: rest}, a)
+
+  def valid_extrinsics?(%__MODULE__{work_items: [%WorkItem{extrinsic: [_ | _]} | _]}, []),
+    do: false
+
+  def valid_extrinsics?(%__MODULE__{work_items: []}, [_ | _]), do: false
+
+  def valid_extrinsics?(
+        %__MODULE__{work_items: [%WorkItem{extrinsic: [{hash, size} | rest_e_wi]} | rest_wi]},
+        [e | rest_r]
+      ) do
+    hash == h(e) and size == byte_size(e) and
+      valid_extrinsics?(
+        %__MODULE__{work_items: [%WorkItem{extrinsic: rest_e_wi} | rest_wi]},
+        rest_r
+      )
+  end
+
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
     <<service::service(), bin::binary>> = bin

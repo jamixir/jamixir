@@ -1,4 +1,5 @@
 defmodule Storage do
+  alias Block.Extrinsic.WorkPackage
   alias Block.Header
   alias System.State
   alias Util.Hash
@@ -96,6 +97,11 @@ defmodule Storage do
     end
   end
 
+  def put(%WorkPackage{} = work_package, core) do
+    key = <<@p_wp, core::m(core_index)>>
+    KVStorage.put(%{key => e(work_package)})
+  end
+
   def put(key, value), do: KVStorage.put(key, value)
 
   defp prepare_entry({key, value}), do: {:ok, {key, value}}
@@ -138,6 +144,17 @@ defmodule Storage do
       bin ->
         {block, _} = Block.decode(bin)
         block
+    end
+  end
+
+  def get_work_package(core) do
+    case KVStorage.get(<<@p_wp, core::m(core_index)>>) do
+      nil ->
+        nil
+
+      bin ->
+        {wp, _} = WorkPackage.decode(bin)
+        wp
     end
   end
 

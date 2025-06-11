@@ -125,4 +125,20 @@ defmodule Jamixir.NodeTest do
       assert {:error, :not_found} = get_preimage(Hash.random())
     end
   end
+
+  describe "save and get work package" do
+    test "save_work_package with valid work package" do
+      {wp, extrinsics} = work_package_and_its_extrinsic_factory()
+      assert :ok = save_work_package(wp, 7, extrinsics)
+
+      assert Storage.get_work_package(7) == wp
+      assert Storage.get_work_package(5) == nil
+    end
+
+    test "save_work_package with invalid extrinsics" do
+      wp = build(:work_package)
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [])
+    end
+  end
 end

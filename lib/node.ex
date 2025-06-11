@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.WorkPackage
   alias Util.Hash
   alias System.State
   use StoragePrefix
@@ -79,12 +80,6 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def add_work_package(_core, _wp, _extrinsic) do
-    {:error, :not_implemented}
-  end
-
-  @impl true
-
   def get_blocks(_, _, 0), do: {:ok, []}
 
   def get_blocks(header_hash, :descending, count) do
@@ -176,8 +171,19 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_work_package(_wp, _core, _extrinsic) do
-    {:error, :not_implemented}
+  def save_work_package(wp, core, extrinsics) do
+    if WorkPackage.valid_extrinsics?(wp, extrinsics) do
+      Storage.put(wp, core)
+
+      for e <- extrinsics do
+        Storage.put(e)
+      end
+
+      :ok
+    else
+      Logger.error("Invalid extrinsics for work package service #{wp.service} core #{core}")
+      {:error, :invalid_extrinsics}
+    end
   end
 
   @impl true

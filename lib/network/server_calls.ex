@@ -63,11 +63,24 @@ defmodule Network.ServerCalls do
   def call(131, m), do: process_ticket_message(:proxy, m)
   def call(132, m), do: process_ticket_message(:validator, m)
 
-  def call(133, [wp_and_core, extrinsic]) do
+  def call(133, [wp_and_core, extrinsic_bin]) do
     <<core_index::16-little, rest::binary>> = wp_and_core
     {wp, _} = WorkPackage.decode(rest)
     log("Received work package for service #{wp.service} core #{core_index}")
-    :ok = Jamixir.NodeAPI.save_work_package(wp, core_index, extrinsic)
+
+    {_, extrinsics} =
+      Enum.reduce_while(WorkPackage.extrinsic_defs(wp), {extrinsic_bin, []}, fn {_, e_size},
+                                                                                {bin, extrinsics} ->
+        case bin do
+          <<>> ->
+            {:halt, {<<>>, extrinsics}}
+
+          <<e::binary-size(e_size), rest::binary>> ->
+            {:cont, {rest, extrinsics ++ [e]}}
+        end
+      end)
+
+    :ok = Jamixir.NodeAPI.save_work_package(wp, core_index, extrinsics)
     <<>>
   end
 

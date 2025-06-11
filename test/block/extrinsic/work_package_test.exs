@@ -226,4 +226,26 @@ defmodule WorkPackageTest do
       refute WorkPackage.valid_data_segments?(wp2)
     end
   end
+
+  describe "valid_extrinsics?/2" do
+    test "valid empty extrinsics" do
+      wp = build(:work_package, work_items: [])
+      assert WorkPackage.valid_extrinsics?(wp, [])
+    end
+
+    test "valid items with no extrinsics" do
+      wp = build(:work_package, work_items: [build(:work_item, extrinsic: [])])
+      assert WorkPackage.valid_extrinsics?(wp, [])
+    end
+
+    test "valid extrinsics" do
+      {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
+      assert WorkPackage.valid_extrinsics?(work_package, extrinsics)
+    end
+
+    test "invalid extrinsics" do
+      {work_package, _} = work_package_and_its_extrinsic_factory()
+      refute WorkPackage.valid_extrinsics?(work_package, [])
+    end
+  end
 end
