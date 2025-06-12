@@ -116,12 +116,23 @@ defmodule System.State.Accumulation do
       alwaysaccers: alwaysaccers_
     } = o
 
+    w_star_n = Enum.take(accumulatable_reports, n)
+
+    # Formula (12.25) v0.6.5
+    accumulation_stats = accumulate_statistics(w_star_n, u)
+
     # Formula (12.29) v0.6.5
-    x = apply_transfers(services_intermediate, deferred_transfers, timeslot_, extra_args)
+    x =
+      apply_transfers(
+        services_intermediate,
+        deferred_transfers,
+        timeslot_,
+        MapSet.new(Map.keys(accumulation_stats)),
+        extra_args
+      )
 
     services_intermediate_2 = for {s, {a, _gas}} <- x, into: %{}, do: {s, a}
 
-    w_star_n = Enum.take(accumulatable_reports, n)
     # Formula (12.32) v0.6.5
     work_package_hashes = WorkReport.work_package_hashes(w_star_n)
     # Formula (12.33) v0.6.5
@@ -152,8 +163,7 @@ defmodule System.State.Accumulation do
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
       beefy_commitment: beefy_commitment,
-      # Formula (12.25) v0.6.5
-      accumulation_stats: accumulate_statistics(w_star_n, u),
+      accumulation_stats: accumulation_stats,
       # Formula (12.31) v0.6.5
       deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
     }
@@ -525,16 +535,35 @@ defmodule System.State.Accumulation do
     {total_gas, operands}
   end
 
-  # Formula (12.28) v0.6.5
-  # Formula (12.29) v0.6.5
-  def apply_transfers(services_intermediate, transfers, timeslot, extra_args) do
+  # Formula (12.28) v0.6.7
+  # Formula (12.29) v0.6.7
+  # Formula (12.30) v0.6.7
+  @spec apply_transfers(
+          services_intermediate :: %{non_neg_integer() => ServiceAccount.t()},
+          transfers :: list(DeferredTransfer.t()),
+          timeslot_ :: Types.timeslot(),
+          accumulates_service_keys :: MapSet.t(non_neg_integer()),
+          extra_args :: extra_args()
+        ) :: %{non_neg_integer() => ServiceAccount.t()}
+  def apply_transfers(
+        services_intermediate,
+        transfers,
+        timeslot_,
+        accumulates_service_keys,
+        extra_args
+      ) do
     Enum.reduce(Map.keys(services_intermediate), %{}, fn s, acc ->
       selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
 
-      service_with_transfers_applied =
-        PVM.on_transfer(services_intermediate, timeslot, s, selected_transfers, extra_args)
+      {service_with_transfers_applied, _used_gas} =
+        PVM.on_transfer(services_intermediate, timeslot_, s, selected_transfers, extra_args)
 
-      Map.put(acc, s, service_with_transfers_applied)
+      service_with_transfers_applied_ =
+        if s in accumulates_service_keys,
+          do: %{service_with_transfers_applied | latest_accumulation_timeslot: timeslot_},
+          else: service_with_transfers_applied
+
+      Map.put(acc, s, service_with_transfers_applied_)
     end)
   end
 

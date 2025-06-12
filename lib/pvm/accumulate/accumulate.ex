@@ -97,7 +97,7 @@ defmodule PVM.Accumulate do
             Accumulate.checkpoint(gas, registers, memory, context)
 
           :new ->
-            Accumulate.new(gas, registers, memory, context)
+            Accumulate.new(gas, registers, memory, context, timeslot)
 
           :upgrade ->
             Accumulate.upgrade(gas, registers, memory, context)

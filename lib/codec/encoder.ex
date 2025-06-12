@@ -182,6 +182,7 @@ defmodule Codec.Encoder do
   defmacro m(var) do
     var_name =
       case var do
+        # Match SomeModule.field_name -> extract field_name
         {{:., _, [{_, _, _}, name]}, _, []} when is_atom(name) -> name
         {name, _, _} -> name
       end

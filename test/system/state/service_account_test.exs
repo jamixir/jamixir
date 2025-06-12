@@ -152,10 +152,12 @@ defmodule System.State.ServiceAccountTest do
   describe "encode/1" do
     test "encode service account smoke test" do
       sa = build(:service_account)
+      encoded = Codec.Encoder.encode(sa)
 
       assert Codec.Encoder.encode(sa) ==
-               sa.code_hash <>
-                 "\xE8\x03\0\0\0\0\0\0\x88\x13\0\0\0\0\0\0\x10'\0\0\0\0\0\0y\0\0\0\0\0\0\0\x03\0\0\0"
+               Base.decode16!(
+                 "F3E925002FED7CC0DED46842569EB5C90C910C091D8D04A1BDF96E0DB719FD91E803000000000000881300000000000010270000000000007900000000000000000000000000000003000000000000000000000000000000"
+               )
     end
   end
 

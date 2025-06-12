@@ -79,10 +79,10 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec assign_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def assign_internal(registers, memory, {x, _y} = context_pair) do
-    q = Constants.max_authorization_queue_items()
+    [c, o, a] = Registers.get(registers, [7, 8, 9])
 
-    c =
-      case Memory.read(memory, registers.r8, 32 * q) do
+    q =
+      case Memory.read(memory, o, 32 * Constants.max_authorization_queue_items()) do
         {:ok, data} ->
           for <<hash::binary-size(32) <- data>>, do: hash
 
@@ -94,17 +94,26 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, w7_, context_} =
       cond do
-        c == :error ->
+        q == :error ->
           {:panic, w7, context_pair}
 
-        w7 >= Constants.core_count() ->
+        x.service != x.accumulation.assigners |> Enum.at(c) ->
+          {:continue, huh(), context_pair}
+
+        c >= Constants.core_count() ->
           {:continue, core(), context_pair}
 
         true ->
           queue_ =
-            x.accumulation.authorizer_queue |> List.insert_at(w7, c)
+            x.accumulation.authorizer_queue |> List.insert_at(c, q)
 
-          x_ = put_in(x.accumulation.authorizer_queue, queue_)
+          assigners_ = x.accumulation.assigners |> List.replace_at(c, a)
+
+          x_ =
+            put_in(x.accumulation.authorizer_queue, queue_)
+
+          x_ = put_in(x_.accumulation.assigners, assigners_)
+
           context_ = put_elem(context_pair, 0, x_)
           {:continue, ok(), context_}
       end
@@ -133,12 +142,17 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, w7_, context_} =
-      if v == :error do
-        {:panic, registers.r7, context_pair}
-      else
-        x_ = put_in(x, [:accumulation, :next_validators], v)
-        context_ = put_elem(context_pair, 0, x_)
-        {:continue, ok(), context_}
+      cond do
+        v == :error ->
+          {:panic, registers.r7, context_pair}
+
+        x.service != x.accumulation.delegator ->
+          {:continue, huh(), context_pair}
+
+        true ->
+          x_ = put_in(x, [:accumulation, :next_validators], v)
+          context_ = put_elem(context_pair, 0, x_)
+          {:continue, ok(), context_}
       end
 
     %Result.Internal{
@@ -166,10 +180,10 @@ defmodule PVM.Host.Accumulate.Internal do
     }
   end
 
-  @spec new_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec new_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
-  def new_internal(registers, memory, {x, _y} = context_pair) do
-    [o, l, g, m] = Registers.get(registers, [7, 8, 9, 10])
+  def new_internal(registers, memory, {x, _y} = context_pair, timeslot) do
+    [o, l, g, m, f] = Registers.get(registers, [7, 8, 9, 10, 11])
 
     c =
       case Memory.read(memory, o, 32) do
@@ -188,7 +202,11 @@ defmodule PVM.Host.Accumulate.Internal do
           preimage_storage_l: %{{c, l} => []},
           code_hash: c,
           gas_limit_g: g,
-          gas_limit_m: m
+          gas_limit_m: m,
+          creation_timeslot: timeslot,
+          gratis_storage_offset: f,
+          latest_accumulation_timeslot: 0,
+          parent_service: x.service
         }
 
         %{a | balance: ServiceAccount.threshold_balance(a)}
@@ -207,6 +225,9 @@ defmodule PVM.Host.Accumulate.Internal do
         cond do
           c == :error ->
             {:panic, registers.r7, x_i, xu_d}
+
+          f != 0 and x.service != x.accumulation.manager ->
+            {:continue, huh(), x_i, xu_d}
 
           s.balance < ServiceAccount.threshold_balance(x_s) ->
             {:continue, cash(), x_i, xu_d}
