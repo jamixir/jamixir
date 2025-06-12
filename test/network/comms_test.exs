@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Jamixir.Node
   alias Network.Types.SegmentShardsRequest
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
@@ -394,39 +395,25 @@ defmodule CommsTest do
       # The server automatically does bidirectional communication, so we need to expect both calls
       Jamixir.NodeAPI.Mock
       |> expect(:receive_preimage, 1, fn 44, ^preimage_hash, 1 ->
-        Logger.info(
-          "Mock: receive_preimage called with service_id=44, preimage_hash=#{inspect(preimage_hash)}, length=1"
-        )
-
-        server_pid = self()
-
-        Task.start(fn ->
-          Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
-          Network.Peer.send(server_pid, 143, preimage_hash)
-        end)
-
+        Node.receive_preimage(44, preimage_hash, 1)
         :ok
       end)
-      |> expect(:get_preimage, 1, fn ^preimage_hash ->
-        Logger.info("Mock: get_preimage called with preimage_hash=#{inspect(preimage_hash)}")
-        {:ok, preimage_data}
-      end)
-      |> expect(:save_preimage, 1, fn ^preimage_data ->
-        Logger.info("Mock: save_preimage called with preimage_data=#{inspect(preimage_data)}")
-        :ok
-      end)
+      |> expect(:get_preimage, 1, fn ^preimage_hash -> {:ok, preimage_data} end)
+      |> expect(:save_preimage, 1, fn ^preimage_data -> :ok end)
 
       {:ok, ""} = Peer.announce_preimage(client, 44, preimage_hash, 1)
 
       # Wait for the async bidirectional communication to complete
-      wait(fn ->
+      wait(
+        fn ->
           try do
-            verify!()
-            true
+            verify!() == :ok
           rescue
             Mox.VerificationError -> false
           end
-      end, 200)
+        end,
+        200
+      )
 
       verify!()
     end
@@ -751,6 +738,7 @@ defmodule CommsTest do
     case start_peer_pair(port) do
       {:ok, server_pid, client_pid} ->
         {server_pid, client_pid, port}
+
       {:error, reason} ->
         Logger.debug("Attempt #{attempt + 1} failed on port #{port}: #{inspect(reason)}")
         # Wait a bit before retrying to avoid rapid port conflicts
@@ -768,11 +756,13 @@ defmodule CommsTest do
         case PeerSupervisor.start_peer(:initiator, "::1", port) do
           {:ok, client_pid} ->
             {:ok, server_pid, client_pid}
+
           {:error, reason} ->
             # Clean up server if client fails
             if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
             {:error, {:client_start_failed, reason}}
         end
+
       {:error, reason} ->
         {:error, {:server_start_failed, reason}}
     end
