@@ -238,7 +238,7 @@ defmodule PVM do
     else
       gas_limit = sum_field(transfers, :gas_limit)
 
-      {gas, _, service_} =
+      {used_gas, _, service_} =
         ArgInvoc.execute(
           code,
           10,
@@ -248,7 +248,7 @@ defmodule PVM do
           service
         )
 
-      {service_, gas}
+      {service_, used_gas}
     end
   end
 end

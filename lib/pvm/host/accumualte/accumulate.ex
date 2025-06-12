@@ -38,11 +38,12 @@ defmodule PVM.Host.Accumulate do
     )
   end
 
-  def new(gas, registers, memory, context_pair) do
+  def new(gas, registers, memory, context_pair, timeslot) do
     with_gas(
       Result,
       {gas, registers, memory, context_pair},
-      &new_internal/3
+      &new_internal/4,
+      [timeslot]
     )
   end
 

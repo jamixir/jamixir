@@ -25,7 +25,13 @@ defmodule System.State.ServiceAccount do
           # g
           gas_limit_g: non_neg_integer(),
           # m
-          gas_limit_m: non_neg_integer()
+          gas_limit_m: non_neg_integer(),
+          # r
+          creation_timeslot: Types.timeslot(),
+          # a
+          latest_accumulation_timeslot: Types.timeslot(),
+          # p
+          parent_service: non_neg_integer()
         }
 
   defstruct storage: %{},
@@ -35,7 +41,10 @@ defmodule System.State.ServiceAccount do
             gratis_storage_offset: 0,
             balance: 0,
             gas_limit_g: 0,
-            gas_limit_m: 0
+            gas_limit_m: 0,
+            creation_timeslot: 0,
+            latest_accumulation_timeslot: 0,
+            parent_service: 0
 
   # Formula (9.8) v0.6.6
   # ai ≡ 2⋅∣al∣ + ∣as∣
@@ -129,10 +138,18 @@ defmodule System.State.ServiceAccount do
         <<s.gas_limit_m::m(gas)>> <>
         <<octets_in_storage::64-little>> <>
         <<s.gratis_storage_offset::64-little>> <>
-        <<items_in_storage::32-little>>
+        <<items_in_storage::32-little>> <>
+        <<s.creation_timeslot::m(timeslot)>> <>
+        <<s.latest_accumulation_timeslot::m(timeslot)>> <>
+        <<s.parent_service::service()>>
     end
   end
 
+  # TODO: decode does not match 0.6.7
+  # https://github.com/jamixir/jamixir/issues/449
+  # before the introduction of the new fields on 0.6.7, the last field, octets_in_storage
+  # was a calculated value, and didnt need to be decoded
+  # now  we have gratis_storage_offset and other AFTER the calculated valules, therfore how to decode is not clear
   def decode(
         <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
           rest::binary>>
@@ -155,6 +172,10 @@ defmodule System.State.ServiceAccount do
       gas_limit_g: {:service, :min_item_gas},
       gas_limit_m: {:service, :min_memo_gas},
       balance: {:service, :balance},
+      gratis_storage_offset: {:service, :gratis_storage_offset},
+      creation_timeslot: {:service, :creation_timeslot},
+      latest_accumulation_timeslot: {:service, :latest_accumulation_timeslot},
+      parent_service: {:service, :parent_service},
       code_hash: [&extract_code_hash/1, :service]
     }
   end
@@ -192,7 +213,11 @@ defmodule System.State.ServiceAccount do
               balance: service.balance,
               min_item_gas: service.gas_limit_g,
               min_memo_gas: service.gas_limit_m,
-              code_hash: service.code_hash
+              code_hash: service.code_hash,
+              gratis_storage_offset: service.gratis_storage_offset,
+              creation_timeslot: service.creation_timeslot,
+              latest_accumulation_timeslot: service.latest_accumulation_timeslot,
+              parent_service: service.parent_service
             }
         end}}
 
@@ -209,7 +234,11 @@ defmodule System.State.ServiceAccount do
       balance: custom_map,
       code_hash: custom_map,
       gas_limit_g: custom_map,
-      gas_limit_m: custom_map
+      gas_limit_m: custom_map,
+      gratis_storage_offset: custom_map,
+      creation_timeslot: custom_map,
+      latest_accumulation_timeslot: custom_map,
+      parent_service: custom_map
     }
   end
 end

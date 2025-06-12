@@ -174,7 +174,10 @@ defmodule PVM.Host.AccumulateTest do
 
       context = %Context{
         service: 123,
-        accumulation: %Accumulation{}
+        accumulation: %Accumulation{
+          assigners: [0, 123, 0, 123],
+          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
+        }
       }
 
       registers = %Registers{
@@ -194,7 +197,7 @@ defmodule PVM.Host.AccumulateTest do
       memory: memory
     } do
       # Make memory unreadable
-      memory = Memory.set_access(memory, 0x1_0000, 1, nil)
+      memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
       assert %{
                exit_reason: :panic,
@@ -203,6 +206,27 @@ defmodule PVM.Host.AccumulateTest do
                context: ^context
              } = Accumulate.assign(gas, registers, memory, context)
     end
+
+    test "returns {:continue, huh()} when service != assigners[c]", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      x = elem(context, 0)
+      x_ = %{x | service: 999}
+      context = {x_, elem(context, 1)}
+      huh = huh()
+
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.assign(gas, registers, memory, context)
+    end
+
 
     test "returns {:continue, core()} when core value is invalid", %{
       memory: memory,
@@ -243,6 +267,8 @@ defmodule PVM.Host.AccumulateTest do
 
       # Verify the authorizer queue was updated in context
       queue = get_in(x_, [:accumulation, :authorizer_queue])
+      assigners = get_in(x_, [:accumulation, :assigners])
+      assert assigners == [0, 0, 0, 123]
       assert is_list(queue)
       # Core 1 should have the value we wrote to memory
       assert Enum.at(queue, 1) |> List.first() == <<255::256>>
@@ -280,7 +306,7 @@ defmodule PVM.Host.AccumulateTest do
 
       registers = %Registers{r7: 0x1_0000}
 
-      context = {%Context{}, %Context{}}
+      context = {%Context{service: 123, accumulation: %Accumulation{delegator: 123}}, %Context{}}
 
       {:ok, memory: memory, context: context, gas: 100, registers: registers}
     end
@@ -291,11 +317,30 @@ defmodule PVM.Host.AccumulateTest do
       memory: memory,
       registers: registers
     } do
-      memory = Memory.set_access(memory, 0x1_0000, 336, nil)
+      memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
       assert %{
                exit_reason: :panic,
                registers: ^registers,
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.designate(gas, registers, memory, context)
+    end
+
+    test "returns {:continue, huh()} when service != delegator", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      x = elem(context, 0)
+      x_ = %{x | service: 999}
+      context = {x_, elem(context, 1)}
+      huh = huh()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
                memory: ^memory,
                context: ^context
              } = Accumulate.designate(gas, registers, memory, context)
@@ -403,14 +448,15 @@ defmodule PVM.Host.AccumulateTest do
         r10: 200
       }
 
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
+      timeslot_ = 1
 
       assert %{
                exit_reason: :panic,
                registers: ^registers,
                memory: ^memory,
                context: ^context
-             } = Accumulate.new(gas, registers, memory, context)
+             } = Accumulate.new(gas, registers, memory, context, timeslot_)
     end
 
     test "returns {:continue, cash()} when service balance is insufficient", %{
@@ -438,13 +484,14 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       cash = cash()
+      timeslot_ = 1
 
       assert %{
                exit_reason: :continue,
                registers: %{r7: ^cash},
                memory: ^memory,
                context: ^context
-             } = Accumulate.new(gas, registers, memory, context)
+             } = Accumulate.new(gas, registers, memory, context, timeslot_)
     end
 
     test "returns {:continue, computed_service} and updates context with valid parameters", %{
@@ -460,13 +507,14 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       %{computed_service: computed_service} = x
+      timeslot_ = 1
 
       assert %{
                exit_reason: :continue,
                registers: %{r7: ^computed_service},
                memory: ^memory,
                context: {x_, ^y}
-             } = Accumulate.new(gas, registers, memory, {x, y})
+             } = Accumulate.new(gas, registers, memory, {x, y}, timeslot_)
 
       # Check computed_service was updated
       assert x_.computed_service == Utils.check(Utils.bump(x.computed_service), x.accumulation)
@@ -485,7 +533,11 @@ defmodule PVM.Host.AccumulateTest do
                preimage_storage_l: %{{Hash.one(), 1} => []},
                gas_limit_g: 100,
                gas_limit_m: 200,
-               balance: ServiceAccount.threshold_balance(new_service)
+               balance: ServiceAccount.threshold_balance(new_service),
+               gratis_storage_offset: 0,
+               creation_timeslot: timeslot_,
+               latest_accumulation_timeslot: 0,
+               parent_service: x.service
              }
     end
   end
@@ -741,7 +793,8 @@ defmodule PVM.Host.AccumulateTest do
           services: %{
             123 => initial_service,
             456 => service_to_eject
-          }
+          },
+          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
         }
       }
 
@@ -1483,7 +1536,8 @@ defmodule PVM.Host.AccumulateTest do
           services: %{
             123 => service_account,
             456 => clean_service
-          }
+          },
+          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
         },
         preimages: MapSet.new()
       }
