@@ -372,7 +372,7 @@ defmodule PVM.Host.General.Internal do
       if t != nil do
         e(
           {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
-           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
+           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t), t.gratis_storage_offset}
         )
       else
         nil
