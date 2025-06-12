@@ -11,13 +11,15 @@ defmodule System.State.ServiceAccount do
 
   @type t :: %__MODULE__{
           # s
-          storage: %{Types.hash() => binary()},
+          storage: %{binary() => binary()},
           # p
           preimage_storage_p: %{Types.hash() => binary()},
           # l
           preimage_storage_l: %{{Types.hash(), non_neg_integer()} => list(non_neg_integer())},
           # c
           code_hash: Types.hash(),
+          # f
+          gratis_storage_offset: Types.balance(),
           # b
           balance: Types.balance(),
           # g
@@ -30,6 +32,7 @@ defmodule System.State.ServiceAccount do
             preimage_storage_p: %{},
             preimage_storage_l: %{},
             code_hash: Hash.zero(),
+            gratis_storage_offset: 0,
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0
@@ -49,9 +52,15 @@ defmodule System.State.ServiceAccount do
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
   @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
   def threshold_balance(%__MODULE__{} = sa) do
-    Constants.service_minimum_balance() +
-      Constants.additional_minimum_balance_per_item() * items_in_storage(sa) +
-      Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
+    # Bs
+    base_balance = Constants.service_minimum_balance()
+    # Bi * ai
+    item_cost = Constants.additional_minimum_balance_per_item() * items_in_storage(sa)
+    # BL * ao
+    octet_cost = Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
+    # Bs + Bi * ai + BL * ao - af
+    threshold = base_balance + item_cost + octet_cost - sa.gratis_storage_offset
+    max(0, threshold)
   end
 
   # Formula (9.4) v0.6.6
@@ -119,6 +128,7 @@ defmodule System.State.ServiceAccount do
         <<s.gas_limit_g::m(gas)>> <>
         <<s.gas_limit_m::m(gas)>> <>
         <<octets_in_storage::64-little>> <>
+        <<s.gratis_storage_offset::64-little>> <>
         <<items_in_storage::32-little>>
     end
   end
