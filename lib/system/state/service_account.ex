@@ -136,7 +136,6 @@ defmodule System.State.ServiceAccount do
     end
   end
 
-  # octets_in_storage and items_in_storage are ignored, since they are calculated values
   def decode(bin) do
     <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
       octets_in_storage::64-little, deposit_offset::64-little, items_in_storage::32-little,
