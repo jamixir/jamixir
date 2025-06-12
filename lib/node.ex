@@ -130,7 +130,7 @@ defmodule Jamixir.Node do
 
     Task.start(fn ->
       Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
-      Network.Peer.send(server_pid, 143, hash)
+      Network.Peer.get_preimage(server_pid, hash)
     end)
 
     :ok
