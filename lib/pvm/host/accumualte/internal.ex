@@ -1,9 +1,8 @@
-# Formula (B.20) v0.6.6
+# Formula (B.22) v0.6.7
 
 defmodule PVM.Host.Accumulate.Internal do
   alias System.State.Validator
   alias System.DeferredTransfer
-  alias System.State.PrivilegedServices
   alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.{Memory, Registers}
@@ -18,7 +17,19 @@ defmodule PVM.Host.Accumulate.Internal do
   def bless_internal(registers, memory, {x, _y} = context_pair) do
     [m, a, v, o, n] = Registers.get(registers, [7, 8, 9, 10, 11])
 
-    g =
+    assigners_ =
+      case Memory.read(memory, a, 4 * Constants.core_count()) do
+        {:ok, data} ->
+          for <<chunk::binary-size(4) <- data>>, into: [] do
+            <<service::service()>> = chunk
+            service
+          end
+
+        _ ->
+          :error
+      end
+
+    z =
       case Memory.read(memory, o, 12 * n) do
         {:ok, data} ->
           for <<chunk::binary-size(12) <- data>>, into: %{} do
@@ -32,21 +43,27 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason_, w7_, context_} =
       cond do
-        g == :error ->
+        z == :error or assigners_ == :error ->
           {:panic, registers.r7, context_pair}
 
-        Enum.any?([m, a, v], &(&1 < 0 or &1 > 0xFFFF_FFFF)) ->
+        x.service != x.accumulation.manager ->
+          {:continue, huh(), context_pair}
+
+        Enum.any?([m, v], &(&1 < 0 or &1 > 0xFFFF_FFFF)) ->
           {:continue, who(), context_pair}
 
         true ->
-          privileged_service = %PrivilegedServices{
-            manager: m,
-            assigners: a,
-            next_validators_service: v,
-            services_gas: g
+          x_ = %{
+            x
+            | accumulation: %{
+                x.accumulation
+                | manager: m,
+                  assigners: assigners_,
+                  delegator: v,
+                  alwaysaccers: z
+              }
           }
 
-          x_ = put_in(x, [:accumulation, :privileged_services], privileged_service)
           context_ = put_elem(context_pair, 0, x_)
           {:continue, ok(), context_}
       end

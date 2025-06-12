@@ -28,7 +28,7 @@ defmodule System.State.PrivilegedServicesTest do
       assert JsonEncoder.encode(ps) == %{
                chi_m: ps.manager,
                chi_a: ps.assigners,
-               chi_v: ps.next_validators_service,
+               chi_v: ps.delegator,
                chi_g: [
                  %{service: 1, gas: 1000},
                  %{service: 2, gas: 2000},

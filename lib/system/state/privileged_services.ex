@@ -1,6 +1,6 @@
 defmodule System.State.PrivilegedServices do
   @moduledoc """
-  Formula (9.9) v0.6.6
+  Formula (9.9) v0.6.7
   """
   alias Codec.JsonEncoder
   import Codec.Encoder
@@ -8,20 +8,20 @@ defmodule System.State.PrivilegedServices do
   use JsonDecoder
 
   @type t :: %__MODULE__{
-          # m
+          # χm
           manager: non_neg_integer(),
-          # a
+          # χa
           assigners: list(non_neg_integer()),
-          # v
-          next_validators_service: non_neg_integer(),
-          # g
-          services_gas: %{non_neg_integer() => non_neg_integer()}
+          # χv
+          delegator: non_neg_integer(),
+          # χg
+          alwaysaccers: %{non_neg_integer() => non_neg_integer()}
         }
 
   defstruct manager: 0,
             assigners: List.duplicate(0, Constants.core_count()),
-            next_validators_service: 0,
-            services_gas: %{}
+            delegator: 0,
+            alwaysaccers: %{}
 
   defimpl Encodable do
     import Codec.Encoder
@@ -32,8 +32,8 @@ defmodule System.State.PrivilegedServices do
 
       <<v.manager::m(service)>> <>
         assigners_encoded <>
-        <<v.next_validators_service::m(service)>> <>
-        e(v.services_gas)
+        <<v.delegator::m(service)>> <>
+        e(v.alwaysaccers)
     end
   end
 
@@ -48,15 +48,15 @@ defmodule System.State.PrivilegedServices do
       {assigner, rest}
     end)
 
-    <<next_validators_service::m(service), rest::binary>> = rest
+    <<delegator::m(service), rest::binary>> = rest
 
-    {services_gas, rest} = VariableSize.decode(rest, :map_int)
+    {alwaysaccers, rest} = VariableSize.decode(rest, :map_int)
 
     {%__MODULE__{
        manager: manager,
        assigners: assigners,
-       next_validators_service: next_validators_service,
-       services_gas: services_gas
+       delegator: delegator,
+       alwaysaccers: alwaysaccers
      }, rest}
   end
 
@@ -64,8 +64,8 @@ defmodule System.State.PrivilegedServices do
     %{
       manager: :chi_m,
       assigners: :chi_a,
-      next_validators_service: :chi_v,
-      services_gas: [:chi_g, %{}]
+      delegator: :chi_v,
+      alwaysaccers: [:chi_g, %{}]
     }
   end
 
@@ -73,7 +73,7 @@ defmodule System.State.PrivilegedServices do
     do: %{
       manager: :chi_m,
       assigners: :chi_a,
-      next_validators_service: :chi_v,
-      services_gas: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
+      delegator: :chi_v,
+      alwaysaccers: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
     }
 end

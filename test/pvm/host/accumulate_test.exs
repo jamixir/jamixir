@@ -21,7 +21,8 @@ defmodule PVM.Host.AccumulateTest do
   def a_0, do: min_allowed_address()
 
   setup_all do
-    {:ok, context: {%Context{}, %Context{}}}
+    x = %Context{service: 321, accumulation: %Accumulation{manager: 321}}
+    {:ok, context: {x, x}}
   end
 
   describe "bless/4" do
@@ -34,24 +35,33 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       # Encode the gas map entries
-      encoded_data =
+      encoded_alwaysaccers =
         for {service, value} <- gas_map, into: <<>> do
           <<service::service(), value::64-little>>
+        end
+
+      assigners = for _ <- 1..Constants.core_count(), do: :rand.uniform(255)
+
+      encoded_assigners =
+        for service <- assigners, into: <<>> do
+          <<service::service()>>
         end
 
       # Write to memory
       memory =
         PreMemory.init_nil_memory()
-        |> PreMemory.write(a_0(), encoded_data)
+        |> PreMemory.write(a_0(), encoded_alwaysaccers)
         |> PreMemory.set_access(a_0(), 32, :read)
+        |> PreMemory.write(2 * a_0(), encoded_assigners)
+        |> PreMemory.set_access(2 * a_0(), 4 * Constants.core_count(), :read)
         |> PreMemory.finalize()
 
       registers = %Registers{
         # manager
         r7: 1,
-        # assigners
-        r8: 2,
-        # next_validators_service
+        # assigners offset
+        r8: 2 * a_0(),
+        # delegator
         r9: 3,
         # memory offset
         r10: 0x1_0000,
@@ -59,7 +69,8 @@ defmodule PVM.Host.AccumulateTest do
         r11: 3
       }
 
-      {:ok, memory: memory, gas_map: gas_map, registers: registers, gas: 100}
+      {:ok,
+       memory: memory, gas_map: gas_map, registers: registers, gas: 100, assigners: assigners}
     end
 
     test "returns {:panic, w7} when memory is not readable", %{
@@ -68,7 +79,9 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       # Make memory unreadable
-      memory = Memory.set_access(%Memory{}, 0x1_000A, 3, nil)
+      memory =
+        PreMemory.init_nil_memory()
+        |> PreMemory.finalize()
 
       assert %{
                exit_reason: :panic,
@@ -86,7 +99,7 @@ defmodule PVM.Host.AccumulateTest do
     } do
       registers = %{
         registers
-        | r8: 0x1_0000_0000
+        | r7: 0x1_0000_0000
       }
 
       who = who()
@@ -99,12 +112,33 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.bless(gas, registers, memory, context)
     end
 
+    test "returns {:continue, huh()} when context.service != mamanger", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      x = elem(context, 0)
+      x_ = %{x | service: 999}
+      context = {x_, elem(context, 1)}
+
+      huh = huh()
+
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^huh},
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.bless(gas, registers, memory, context)
+    end
+
     test "returns {:continue, ok()} with valid parameters", %{
       memory: memory,
       context: context,
       gas: gas,
       gas_map: gas_map,
-      registers: registers
+      registers: registers,
+      assigners: assigners
     } do
       ok = ok()
       {_x, y} = context
@@ -117,14 +151,15 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.bless(gas, registers, memory, context)
 
       # Verify privileged services in context
-      expected_privileged = %PrivilegedServices{
+      expected_privileged = %{
         manager: 1,
-        assigners: 2,
-        next_validators_service: 3,
-        services_gas: gas_map
+        assigners: assigners,
+        delegator: 3,
+        alwaysaccers: gas_map
       }
 
-      assert get_in(x_, [:accumulation, :privileged_services]) == expected_privileged
+      assert Map.take(x_.accumulation, [:manager, :assigners, :delegator, :alwaysaccers]) ==
+               expected_privileged
     end
   end
 
