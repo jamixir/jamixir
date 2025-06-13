@@ -4,7 +4,8 @@ defmodule Mix.Tasks.GenerateKeypair do
 
   @shortdoc "Generates a bandersnatch keypair and stores private key in file and public key in .env"
 
-  def run(_args) do
-    Jamixir.CLI.generate_keypair()
+  def run(args) do
+    # Reuse the same logic as the release command
+    Jamixir.Commands.GenKeys.run(args)
   end
 end

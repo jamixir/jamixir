@@ -18,9 +18,8 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 10,
   # GA
-  gas_accumulation: 10_000_000,
-  storage_persist: false
+  gas_accumulation: 1_000_000
 
-config :logger, level: :none
+config :logger, level: :debug
 
-config :jamixir, :server_calls, ServerCallsMock
+config :jamixir, :server_calls, Network.ServerCalls
