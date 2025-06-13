@@ -33,11 +33,41 @@ docker compose build
 docker compose up 
 ```
 
-
 ## Using development env
 
 ```
 mix jam --keys test/keys/0.json
+```
+
+## Using releases (production)
+
+### Build the release
+```bash
+# Build with tiny configuration (6 validators, shorter epochs)
+MIX_ENV=tiny mix release
+
+# Build with production configuration
+MIX_ENV=prod mix release
+```
+
+### Run the release
+```bash
+cd _build/tiny/rel/jamixir
+
+# Show help
+./jamixir --help
+
+# Generate keys
+./jamixir gen-keys
+./jamixir gen-keys --file-name my-validator-key
+
+# List existing keys
+./jamixir list-keys
+
+# Run a node
+./jamixir run
+./jamixir run --port 10001
+./jamixir run --keys path/to/keys.seed --genesis path/to/genesis.json
 ```
 
 ### How to Run Unit Tests
@@ -58,8 +88,15 @@ mix test --only generate_blocks
 ```
 
 ### How to generate a bandersnatch key-pair
+
+**Development:**
 ```
 mix generate_keypair
+```
+
+**Release:**
+```
+./jamixir gen-keys
 ```
 
 # Tested Elixir / OTP version
