@@ -17,7 +17,8 @@ defmodule Jamixir.MixProject do
         "coveralls.html": :test,
         "test.trace": :test
       ],
-      aliases: aliases()
+      aliases: aliases(),
+      releases: releases()
     ]
   end
 
@@ -60,6 +61,14 @@ defmodule Jamixir.MixProject do
     [
       "test.full": "cmd MIX_ENV=full_test mix test --only full_vectors",
       "test.tiny": "cmd mix test --only tiny_vectors"
+    ]
+  end
+
+  defp releases do
+    [
+      jamixir: [
+        applications: [runtime_tools: :permanent]
+      ]
     ]
   end
 end

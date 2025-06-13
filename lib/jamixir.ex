@@ -3,8 +3,10 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
+    persist_storage? = Application.get_env(:jamixir, :storage_persist, true)
+
     children = [
-      {Storage, [persist: Mix.env() != :test]},
+      {Storage, [persist: persist_storage?]},
       Network.PeerRegistry,
       Network.PeerSupervisor,
       Jamixir.TimeTicker,
@@ -20,4 +22,69 @@ defmodule Jamixir do
   end
 
   def config(k), do: config()[k]
+
+  # CLI command dispatcher for release
+  def main(args \\ []) do
+    # Only start minimal applications needed for CLI commands
+    Application.ensure_all_started(:logger)
+    Application.ensure_all_started(:crypto)
+
+    case args do
+      [] ->
+        print_help()
+
+      ["--help"] ->
+        print_help()
+
+      ["-h"] ->
+        print_help()
+
+      ["help"] ->
+        print_help()
+
+      ["--version"] ->
+        print_version()
+
+      ["-V"] ->
+        print_version()
+
+      ["gen-keys" | rest] ->
+        Jamixir.Commands.GenKeys.run(rest)
+
+      ["list-keys" | rest] ->
+        Jamixir.Commands.ListKeys.run(rest)
+
+      ["run" | rest] ->
+        # Don't start the application here - let the run command handle it
+        Jamixir.Commands.Run.run(rest)
+
+      [cmd | _] ->
+        IO.puts("Unknown command: #{cmd}")
+        print_help()
+        System.halt(1)
+    end
+  end
+
+  defp print_help do
+    IO.puts("""
+    Jamixir node
+
+    Usage: jamixir [OPTIONS] <COMMAND>
+
+    Commands:
+      gen-keys   Generate a new secret key seed and print the derived session keys
+      list-keys  List all session keys we have the secret key for
+      run        Run a Jamixir node
+      help       Print this message or the help of the given subcommand(s)
+
+    Options:
+      -h, --help     Print help
+      -V, --version  Print version
+    """)
+  end
+
+  defp print_version do
+    version = Application.spec(:jamixir, :vsn) || "unknown"
+    IO.puts("jamixir #{version}")
+  end
 end
