@@ -77,6 +77,7 @@ pub fn do_encode(
     mut input_data: Vec<u8>,
     num_data_shards: usize,
 ) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+    let V = if num_data_shards == 2 { 6 } else { 1023 };
     let bytes_per_data_chunk = num_data_shards * BYTES_PER_SYMBOL;
     let input_length = input_data.len();
 
@@ -86,30 +87,37 @@ pub fn do_encode(
         input_data.extend(std::iter::repeat(PADDING_BYTE).take(padding_needed));
     }
 
+    let shard_size = input_data.len() / num_data_shards;
     let symbols_per_shard = input_data.len() / bytes_per_data_chunk;
+    let mut original_shards: Vec<Vec<u8>> = vec![Vec::with_capacity(2 * symbols_per_shard); num_data_shards];
+    let mut recovery_shards: Vec<Vec<u8>> = vec![Vec::with_capacity(2 * symbols_per_shard); V - num_data_shards];
 
     let data_shards = split_data_into_shards(&input_data, num_data_shards, symbols_per_shard);
 
-    let mut encoder = ReedSolomonEncoder::new(
-        num_data_shards,
-        num_data_shards * RECOVERY_SHARD_MULTIPLIER,
-        BYTES_PER_SYMBOL * symbols_per_shard,
-    )?;
-    let mut all_shards = Vec::new();
+    for i in 0..symbols_per_shard {
+        let mut encoder = ReedSolomonEncoder::new(
+            num_data_shards,
+            V - num_data_shards,
+            BYTES_PER_SYMBOL
+        )?;
+        for c in 0..num_data_shards {
+            let shard = [
+                input_data[i * BYTES_PER_SYMBOL + c * shard_size],
+                input_data[i * BYTES_PER_SYMBOL + c * shard_size + 1]
+            ];
+            encoder.add_original_shard(&shard)?;
+            original_shards[c].extend_from_slice(&shard);
+        }
+        let encoded = encoder.encode()?;
+        for (j, shard) in encoded.recovery_iter().enumerate() {
+            recovery_shards[j].extend_from_slice(shard);
+        }
 
-    for shard in &data_shards {
-        encoder.add_original_shard(shard)?;
-        all_shards.push(shard.clone());
+
     }
-
-    let encoding_result = encoder.encode()?;
-    let recovery_shards: Vec<_> = encoding_result.recovery_iter().collect();
-
-    validate_recovery_shard_count(&recovery_shards, num_data_shards);
-
-    for recovery_shard in &recovery_shards {
-        all_shards.push(recovery_shard.to_vec());
-    }
+    let all_shards = original_shards
+                .iter()
+                .chain(recovery_shards.iter()).map(|s| s.clone()).collect();
 
     Ok(all_shards)
 }
