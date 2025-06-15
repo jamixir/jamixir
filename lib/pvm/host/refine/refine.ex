@@ -58,21 +58,15 @@ defmodule PVM.Host.Refine do
     )
   end
 
-  def zero(gas, registers, memory, context) do
+  def pages(gas, registers, memory, context) do
     with_gas(
       Result,
       {gas, registers, memory, context},
-      &zero_internal/3
+      &pages_internal/3
     )
   end
 
-  def void(gas, registers, memory, context) do
-    with_gas(
-      Result,
-      {gas, registers, memory, context},
-      &void_internal/3
-    )
-  end
+
 
   def invoke(gas, registers, memory, context) do
     with_gas(
