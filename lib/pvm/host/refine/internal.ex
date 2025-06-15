@@ -211,9 +211,9 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec zero_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def zero_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
-    [n, p, c] = Registers.get(registers, [7, 8, 9])
+  @spec pages_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  def pages_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+    [n, p, c, r] = Registers.get(registers, [7, 8, 9, 10])
 
     u =
       Map.get(m, n, :error)
@@ -223,64 +223,38 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     u_ =
-      case u do
-        :error ->
+      # set_access_by_page could fail if the p < 16 or p + c > 0x1_0000
+      # the next "cond" block takes care of that
+      try do
+        cond do
+        u == :error ->
           :error
 
-        _ ->
-          try do
-            Memory.set_access_by_page(u, p, c, :write)
-            |> Memory.write!(p * zp, <<0::size(c * zp)>>)
-          rescue
-            _ -> :error
-          end
-      end
+        r == 0 ->
+          Memory.set_access_by_page(u, p, c, :write)
+          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          |> Memory.set_access_by_page(p, c, nil)
 
-    {w7_, m_} =
-      cond do
-        p < 16 or p + c > 0x1_0000 ->
-          {huh(), m}
+        r == 1 ->
+          Memory.set_access_by_page(u, p, c, :write)
+          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          |> Memory.set_access_by_page(p, c, :read)
 
-        u == :error ->
-          {who(), m}
+        r == 2 ->
+          Memory.set_access_by_page(u, p, c, :write)
+          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+
+        r == 3 ->
+          Memory.set_access_by_page(u, p, c, :read)
+
+        r == 4 ->
+          Memory.set_access_by_page(u, p, c, :write)
 
         true ->
-          machine = Map.get(m, n)
-          machine_ = %{machine | memory: u_}
-          m_ = Map.put(m, n, machine_)
-          {ok(), m_}
-      end
-
-    %Internal{
-      registers: Registers.set(registers, :r7, w7_),
-      memory: memory,
-      context: %{context | m: m_}
-    }
-  end
-
-  @spec void_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def void_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
-    [n, p, c] = Registers.get(registers, [7, 8, 9])
-
-    u =
-      Map.get(m, n, :error)
-      |> case do
-        :error -> :error
-        machine -> machine.memory
-      end
-
-    u_ =
-      case u do
-        :error ->
-          :error
-
-        _ ->
-          try do
-            Memory.write!(u, p * zp, <<0::size(c * zp)>>)
-            |> Memory.set_access_by_page(p, c, nil)
-          rescue
-            _ -> :error
-          end
+          u
+        end
+      rescue
+        _ -> :error
       end
 
     {w7_, m_} =
@@ -288,7 +262,10 @@ defmodule PVM.Host.Refine.Internal do
         u == :error ->
           {who(), m}
 
-        p < 16 or p + c > 0x1_0000 or not Memory.check_pages_access?(u, p, c, :read) ->
+        r > 4 or p < 16 or p + c > 0x1_0000 ->
+          {huh(), m}
+
+        r > 2 and not Memory.check_pages_access?(u, p, c, :read) ->
           {huh(), m}
 
         true ->

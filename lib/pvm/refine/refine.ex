@@ -91,14 +91,12 @@ defmodule PVM.Refine do
             :peek ->
               Refine.peek(gas, registers, memory, context)
 
-            :zero ->
-              Refine.zero(gas, registers, memory, context)
+            :pages ->
+              Refine.pages(gas, registers, memory, context)
 
             :poke ->
               Refine.poke(gas, registers, memory, context)
 
-            :void ->
-              Refine.void(gas, registers, memory, context)
 
             :invoke ->
               Refine.invoke(gas, registers, memory, context)
