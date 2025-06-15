@@ -14,6 +14,7 @@ defmodule PVM.Host.Refine.PagesTest do
         |> PreMemory.set_access(min_allowed_address(), page_size() + 2, :write)
         |> PreMemory.write(min_allowed_address(), test_data)
         |> PreMemory.finalize()
+        
 
       machine = %Integrated{
         memory: machine_memory,
