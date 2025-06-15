@@ -33,7 +33,13 @@ defmodule PVM.Accumulate.Operand do
     alias Block.Extrinsic.Guarantee.WorkDigest
     import Codec.Encoder
 
-    # Formula (C.29) v0.6.6
+    # update function this to v0.6.6 when test vectors are updated to 0.6.6
+    # def encode(%PVM.Accumulate.Operand{} = o),
+    #   do:
+    #     e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
+    #       WorkDigest.encode_result(o.data) <> e(vs(o.output))
+
+    # Formula (C.29) v0.6.5
     @spec encode(PVM.Accumulate.Operand.t()) :: binary()
     def encode(%PVM.Accumulate.Operand{} = o),
       do:
