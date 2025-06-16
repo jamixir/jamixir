@@ -1,7 +1,7 @@
 defmodule RecentHistoryTest do
   use ExUnit.Case
 
-  alias System.State.RecentHistory.AccumulationOutput
+  alias System.State.RecentHistory.Lastaccout
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee
   alias Block.Header
@@ -44,14 +44,14 @@ defmodule RecentHistoryTest do
   describe "transition" do
     test "handles empty guarantees list" do
       recent_history = %RecentHistory{}
-      accumulation_outputs = [%AccumulationOutput{service: 1, accumulated_output: Hash.one()}]
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [],
-          accumulation_outputs
+          lastaccout
         )
 
       assert length(result.blocks) == 1
@@ -59,7 +59,7 @@ defmodule RecentHistoryTest do
       assert result.beefy_belt == [Hash.keccak_256(<<1::service(), Hash.one()::binary>>)]
     end
 
-    test "handles nil accumulation_outputs" do
+    test "handles nil lastaccout" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
@@ -67,14 +67,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      accumulation_outputs = nil
+      lastaccout = nil
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          accumulation_outputs
+          lastaccout
         )
 
       assert length(result.blocks) == 1
@@ -90,14 +90,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      accumulation_outputs = [%AccumulationOutput{service: 1, accumulated_output: Hash.one()}]
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          accumulation_outputs
+          lastaccout
         )
 
       assert length(result.blocks) == 1
@@ -126,14 +126,14 @@ defmodule RecentHistoryTest do
         }
       }
 
-      accumulation_outputs = [%AccumulationOutput{service: 2, accumulated_output: Hash.five()}]
+      lastaccout = [%Lastaccout{service: 2, accumulated_output: Hash.five()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          accumulation_outputs
+          lastaccout
         )
 
       assert length(result.blocks) == 2
@@ -160,14 +160,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      accumulation_outputs = [%AccumulationOutput{service: 3, accumulated_output: Hash.three()}]
+      lastaccout = [%Lastaccout{service: 3, accumulated_output: Hash.three()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee1, guarantee2],
-          accumulation_outputs
+          lastaccout
         )
 
       assert Enum.at(result.blocks, -1).work_report_hashes == %{
@@ -201,7 +201,7 @@ defmodule RecentHistoryTest do
         }
       }
 
-      accumulation_outputs = [%AccumulationOutput{service: 1, accumulated_output: Hash.one()}]
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       # Call the function to add a new block
       result =
@@ -209,7 +209,7 @@ defmodule RecentHistoryTest do
           %Header{},
           recent_history,
           [guarantee],
-          accumulation_outputs
+          lastaccout
         )
 
       # Check that the length remains 8
@@ -224,10 +224,10 @@ defmodule RecentHistoryTest do
 
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
-      accumulation_outputs =
+      lastaccout =
         [
-          %AccumulationOutput{service: 1, accumulated_output: <<11::hash()>>},
-          %AccumulationOutput{service: 2, accumulated_output: <<22::hash()>>}
+          %Lastaccout{service: 1, accumulated_output: <<11::hash()>>},
+          %Lastaccout{service: 2, accumulated_output: <<22::hash()>>}
         ]
 
       # Create guarantees with specific work_package_hashes
@@ -255,7 +255,7 @@ defmodule RecentHistoryTest do
           %Header{},
           %RecentHistory{},
           [guarantee1, guarantee2],
-          accumulation_outputs
+          lastaccout
         )
 
       # Verify that the MMR and work_package_hashes are correctly linked
@@ -266,10 +266,10 @@ defmodule RecentHistoryTest do
                Hash.two() => Hash.three()
              }
 
-      # Construct the expected Merkle tree root from the accumulation_outputs
+      # Construct the expected Merkle tree root from the lastaccout
       expected_merkle_root =
-        accumulation_outputs
-        |> Enum.map(fn %AccumulationOutput{service: service, accumulated_output: hash} ->
+        lastaccout
+        |> Enum.map(fn %Lastaccout{service: service, accumulated_output: hash} ->
           <<service::service(), hash::binary>>
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
@@ -298,7 +298,7 @@ defmodule RecentHistoryTest do
           %Header{},
           %RecentHistory{},
           [guarantee],
-          [%AccumulationOutput{service: 2, accumulated_output: Hash.five()}]
+          [%Lastaccout{service: 2, accumulated_output: Hash.five()}]
         )
 
       # Verify that the state root in the newly added block is all zeros
@@ -341,8 +341,8 @@ defmodule RecentHistoryTest do
 
     test "calculates merkle root for non-empty MapSet" do
       map = [
-        %AccumulationOutput{service: 1, accumulated_output: Hash.one()},
-        %AccumulationOutput{service: 2, accumulated_output: Hash.two()}
+        %Lastaccout{service: 1, accumulated_output: Hash.one()},
+        %Lastaccout{service: 2, accumulated_output: Hash.two()}
       ]
 
       result = RecentHistory.get_well_balanced_merkle_root(map)

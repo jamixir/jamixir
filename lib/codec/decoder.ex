@@ -76,9 +76,10 @@ defmodule Codec.Decoder do
 
   @spec decode_mmr(binary()) :: list(Types.hash() | nil)
   def decode_mmr(bin) do
-    VariableSize.decode(bin, fn b ->
+    {mmr, rest} = VariableSize.decode(bin, fn b ->
       NilDiscriminator.decode(b, :hash)
     end)
+    {mmr, rest}
   end
 
   defp do_decode_hashes(bin, :hash, list_length) do
