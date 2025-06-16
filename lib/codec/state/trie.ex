@@ -76,10 +76,17 @@ defmodule Codec.State.Trie do
   # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
   def key_to_31_octet({s, h}) do
     <<n0, n1, n2, n3>> = e_le(s, 4)
-    <<h_part::binary-size(27), _rest::binary>> = h
-    <<h0, h1, h2, h3, rest::binary>> = h_part
-    <<n0, h0, n1, h1, n2, h2, n3, h3>> <> rest
+    <<a_part::binary-size(27), _rest::binary>> = Hash.default(h)
+    <<a0, a1, a2, a3, rest::binary>> = a_part
+    <<n0, a0, n1, a1, n2, a2, n3, a3>> <> rest
   end
+
+  # def key_to_31_octet({s, h}) do
+  #   <<n0, n1, n2, n3>> = e_le(s, 4)
+  #   <<a_part::binary-size(27), _rest::binary>> = Hash.default(h)
+  #   <<a0, a1, a2, a3, rest::binary>> = a_part
+  #   <<n0, a0, n1, a1, n2, a2, n3, a3>> <> rest
+  # end
 
   # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
   def key_to_31_octet(key) when key < 256, do: <<key::8, 0::240>>
@@ -94,6 +101,8 @@ defmodule Codec.State.Trie do
   def octet31_to_key(<<n0, h0, n1, h1, n2, h2, n3, h3, rest::binary-size(23)>>) do
     s = de_le(<<n0, n1, n2, n3>>, 4)
     h = <<h0, h1, h2, h3>> <> rest
+    IO.inspect(h)
+    IO.inspect(s)
     {s, h}
   end
 
@@ -215,7 +224,10 @@ defmodule Codec.State.Trie do
     dict =
       for {k, v} <- trie, into: %{} do
         id = octet31_to_key(k)
-        {id, elem(decode_value(id, v), 0)}
+        IO.inspect(id)
+        value = decode_value(id, v)
+        IO.inspect(value)
+        {id, elem(value, 0)}
       end
 
     services =
