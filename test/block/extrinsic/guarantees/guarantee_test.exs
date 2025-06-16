@@ -49,12 +49,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
             %RecentBlock{
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root,
-              accumulated_result_mmr: [<<1>>, <<2>>]
+              accumulated_result_mmb: [<<1>>, <<2>>]
             },
             %RecentBlock{
               header_hash: Hash.one(),
               state_root: nil,
-              accumulated_result_mmr: [<<1>>, <<2>>]
+              accumulated_result_mmb: [<<1>>, <<2>>]
             }
           ]
         }
@@ -613,7 +613,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         %RecentBlock{
           header_hash: "hash1",
           state_root: "root1",
-          accumulated_result_mmr: ["mmr1"],
+          accumulated_result_mmb: "mmr1",
           work_report_hashes: %{}
         }
       ]

@@ -129,7 +129,7 @@ defmodule System.State do
            ),
          entropy_pool_ = EntropyPool.transition(vrf_output, rotated_entropy_pool),
          # Formula (4.15) v0.6.6 - W*
-         # Formula (4.16) v0.6.6 - (ϑ',ξ',δ‡,χ',ι',φ',C)≺ (W∗,ϑ,ξ,δ,χ,ι,φ,τ,τ′)
+         # Formula (4.16) v0.6.7 - (ϑ′, ξ′, δ‡, χ′, ι′, φ′, θ′, I, X) ≺ (W∗, ϑ, ξ, δ, χ, ι, φ, τ, τ ′)
          %{
            services: services_intermediate_2,
            next_validators: next_validators_,
@@ -137,7 +137,7 @@ defmodule System.State do
            ready_to_accumulate: ready_to_accumulate_,
            privileged_services: privileged_services_,
            accumulation_history: accumulation_history_,
-           beefy_commitment: beefy_commitment_,
+           lastaccout: lastaccout_,
            accumulation_stats: accumulation_stats,
            deferred_transfers_stats: deferred_transfers_stats
          } =
@@ -157,9 +157,9 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # β' Formula (4.17) v0.6.6
+         # β'H Formula (4.17) v0.6.6
          recent_history_ =
-           RecentHistory.transition(h, state.recent_history, e.guarantees, beefy_commitment_),
+           RecentHistory.transition(h, state.recent_history, e.guarantees, lastaccout_),
          {:ok, reporters_set} <-
            Guarantee.reporters_set(
              e.guarantees,

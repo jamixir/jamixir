@@ -540,7 +540,8 @@ defmodule Jamixir.Factory do
     alias System.State.RecentHistory
 
     %RecentHistory{
-      blocks: build_list(2, :recent_block)
+      blocks: build_list(2, :recent_block),
+      beefy_belt: [Hash.random(), Hash.random(), nil]
     }
   end
 
@@ -548,7 +549,7 @@ defmodule Jamixir.Factory do
     %RecentBlock{
       header_hash: Hash.random(),
       state_root: Hash.random(),
-      accumulated_result_mmr: [Hash.random(), nil, nil],
+      accumulated_result_mmb: Hash.random(),
       work_report_hashes: %{Hash.random() => Hash.random()}
     }
   end
