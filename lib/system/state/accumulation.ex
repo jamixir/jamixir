@@ -104,7 +104,7 @@ defmodule System.State.Accumulation do
     }
 
     # Formula (12.22) v0.6.5
-    {n, o, deferred_transfers, accumulation_outputs, u} =
+    {n, o, deferred_transfers, lastaccout, u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -167,7 +167,7 @@ defmodule System.State.Accumulation do
       ready_to_accumulate: ready_to_accumulate_,
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
-      accumulation_outputs: accumulation_outputs,
+      lastaccout: lastaccout,
       accumulation_stats: accumulation_stats,
       deferred_transfers_stats: deferred_transfers_stats
     }
