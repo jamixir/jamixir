@@ -256,7 +256,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
       invalid_rb =
         put_in(Enum.at(state.recent_history.blocks, 0).beefy_root, Hash.random())
 
-      invalid_state = put_in(state.recent_history.blocks, [invalid_rb, Enum.at(state.recent_history.blocks, 1)])
+      invalid_state =
+        put_in(state.recent_history.blocks, [invalid_rb, Enum.at(state.recent_history.blocks, 1)])
 
       assert Guarantee.validate([g1], invalid_state, %Header{
                timeslot: 1,
