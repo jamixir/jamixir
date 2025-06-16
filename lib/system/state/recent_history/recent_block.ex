@@ -5,7 +5,7 @@ defmodule System.State.RecentHistory.RecentBlock do
           # h
           header_hash: Types.hash(),
           # b
-          accumulated_result_mmr: list(Types.hash() | nil),
+          accumulated_result_mmb: Types.hash(),
           # s
           state_root: Types.hash(),
           # p
@@ -14,7 +14,7 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   # Formula (7.1) v0.6.6
   defstruct header_hash: nil,
-            accumulated_result_mmr: [nil],
+            accumulated_result_mmb: nil,
             state_root: nil,
             work_report_hashes: %{}
 
@@ -22,7 +22,6 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def json_mapping,
     do: %{
-      accumulated_result_mmr: [&mmr/1, :mmr],
       work_report_hashes: [&map_reported_hashes/1, :reported]
     }
 
@@ -45,13 +44,13 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def decode(bin) do
     <<header_hash::b(hash), rest::binary>> = bin
-    {accumulated_result_mmr, rest} = Decoder.decode_mmr(rest)
+    <<accumulated_result_mmb::b(hash), rest::binary>> = rest
     <<state_root::b(hash), rest::binary>> = rest
     {work_report_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
 
     {%__MODULE__{
        header_hash: header_hash,
-       accumulated_result_mmr: accumulated_result_mmr,
+       accumulated_result_mmb: accumulated_result_mmb,
        state_root: state_root,
        work_report_hashes: work_report_hashes
      }, rest}
@@ -59,7 +58,7 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def to_json_mapping do
     %{
-      accumulated_result_mmr: :mmr,
+      accumulated_result_mmb: :mmr,
       work_report_hashes:
         {:reported,
          &for {hash, exports_root} <- &1 do

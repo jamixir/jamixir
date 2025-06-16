@@ -1,6 +1,7 @@
 defmodule RecentHistoryTest do
   use ExUnit.Case
 
+  alias System.State.RecentHistory.Lastaccout
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee
   alias Block.Header
@@ -43,21 +44,22 @@ defmodule RecentHistoryTest do
   describe "transition" do
     test "handles empty guarantees list" do
       recent_history = %RecentHistory{}
-      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [],
-          beefy_commitment
+          lastaccout
         )
 
       assert length(result.blocks) == 1
       assert Enum.at(result.blocks, -1).work_report_hashes == %{}
+      assert result.beefy_belt == [Hash.keccak_256(<<1::service(), Hash.one()::binary>>)]
     end
 
-    test "handles nil beefy_commitment" do
+    test "handles nil lastaccout" do
       guarantee = %Guarantee{
         work_report: %Guarantee.WorkReport{
           specification: %AvailabilitySpecification{work_package_hash: Hash.one()}
@@ -65,18 +67,19 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment = nil
+      lastaccout = nil
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          beefy_commitment
+          lastaccout
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).accumulated_result_mmr == [Hash.zero()]
+      assert Enum.at(result.blocks, -1).accumulated_result_mmb == Hash.zero()
+      assert result.beefy_belt == [Hash.zero()]
     end
 
     test "handles empty recent_history.blocks" do
@@ -87,24 +90,27 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          beefy_commitment
+          lastaccout
         )
 
       assert length(result.blocks) == 1
       assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.one() => Hash.zero()}
+
+      assert Enum.at(result.blocks, -1).accumulated_result_mmb ==
+               Hash.keccak_256(<<1::service(), Hash.one()::binary>>)
     end
 
     test "handles non-empty recent_history.blocks" do
-      previous_block = %RecentHistory.RecentBlock{
+      previous_block = %RecentBlock{
         header_hash: Hash.one(),
-        accumulated_result_mmr: [Hash.two()],
+        accumulated_result_mmb: [Hash.two()],
         state_root: Hash.one(),
         work_report_hashes: %{Hash.three() => Hash.zero()}
       }
@@ -120,14 +126,14 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment = BeefyCommitmentMap.new([{2, Hash.five()}])
+      lastaccout = [%Lastaccout{service: 2, accumulated_output: Hash.five()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee],
-          beefy_commitment
+          lastaccout
         )
 
       assert length(result.blocks) == 2
@@ -154,14 +160,14 @@ defmodule RecentHistoryTest do
       }
 
       recent_history = %RecentHistory{}
-      beefy_commitment = BeefyCommitmentMap.new([{3, Hash.three()}])
+      lastaccout = [%Lastaccout{service: 3, accumulated_output: Hash.three()}]
 
       result =
         RecentHistory.transition(
           %Header{},
           recent_history,
           [guarantee1, guarantee2],
-          beefy_commitment
+          lastaccout
         )
 
       assert Enum.at(result.blocks, -1).work_report_hashes == %{
@@ -176,7 +182,7 @@ defmodule RecentHistoryTest do
         for hash <- 1..8 do
           %RecentHistory.RecentBlock{
             header_hash: t(hash),
-            accumulated_result_mmr: [t(hash)],
+            accumulated_result_mmb: [t(hash)],
             state_root: t(hash),
             work_report_hashes: %{t(hash) => Hash.zero()}
           }
@@ -195,7 +201,7 @@ defmodule RecentHistoryTest do
         }
       }
 
-      beefy_commitment = BeefyCommitmentMap.new([{1, Hash.one()}])
+      lastaccout = [%Lastaccout{service: 1, accumulated_output: Hash.one()}]
 
       # Call the function to add a new block
       result =
@@ -203,7 +209,7 @@ defmodule RecentHistoryTest do
           %Header{},
           recent_history,
           [guarantee],
-          beefy_commitment
+          lastaccout
         )
 
       # Check that the length remains 8
@@ -218,8 +224,11 @@ defmodule RecentHistoryTest do
 
     test "correctly links inputs to MMR and work_package_hashes" do
       # Create a beefy commitment map
-      beefy_commitment =
-        BeefyCommitmentMap.new([{1, <<11::hash()>>}, {2, <<22::hash()>>}])
+      lastaccout =
+        [
+          %Lastaccout{service: 1, accumulated_output: <<11::hash()>>},
+          %Lastaccout{service: 2, accumulated_output: <<22::hash()>>}
+        ]
 
       # Create guarantees with specific work_package_hashes
       guarantee1 = %Guarantee{
@@ -246,7 +255,7 @@ defmodule RecentHistoryTest do
           %Header{},
           %RecentHistory{},
           [guarantee1, guarantee2],
-          beefy_commitment
+          lastaccout
         )
 
       # Verify that the MMR and work_package_hashes are correctly linked
@@ -257,20 +266,19 @@ defmodule RecentHistoryTest do
                Hash.two() => Hash.three()
              }
 
-      # Construct the expected Merkle tree root from the beefy_commitment
+      # Construct the expected Merkle tree root from the lastaccout
       expected_merkle_root =
-        MapSet.to_list(beefy_commitment)
-        |> Enum.sort_by(&elem(&1, 0))
-        |> Enum.map(fn {service, hash} ->
-          encoded_index = Codec.Encoder.encode_little_endian(service, 4)
-          <<encoded_index::binary, hash::binary>>
+        lastaccout
+        |> Enum.map(fn %Lastaccout{service: service, accumulated_output: hash} ->
+          <<service::service(), hash::binary>>
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
 
-      # Verify that the accumulated_result_mmr is based on the well-balanced Merkle root
+      # Verify that the accumulated_result_mmb is based on the well-balanced Merkle root
       expected_mmr_roots = MMR.append(MMR.new(), expected_merkle_root).roots
 
-      assert Enum.at(result.blocks, -1).accumulated_result_mmr == expected_mmr_roots
+      assert Enum.at(result.blocks, -1).accumulated_result_mmb == expected_merkle_root
+      assert result.beefy_belt == expected_mmr_roots
     end
 
     test "verifies state root is all zeros" do
@@ -290,7 +298,7 @@ defmodule RecentHistoryTest do
           %Header{},
           %RecentHistory{},
           [guarantee],
-          BeefyCommitmentMap.new([{2, Hash.five()}])
+          [%Lastaccout{service: 2, accumulated_output: Hash.five()}]
         )
 
       # Verify that the state root in the newly added block is all zeros
@@ -327,12 +335,16 @@ defmodule RecentHistoryTest do
       assert RecentHistory.get_well_balanced_merkle_root(nil) == Hash.zero()
     end
 
-    test "returns Hash.zero() for empty MapSet" do
-      assert RecentHistory.get_well_balanced_merkle_root(MapSet.new()) == Hash.zero()
+    test "returns Hash.zero() for empty list" do
+      assert RecentHistory.get_well_balanced_merkle_root([]) == Hash.zero()
     end
 
     test "calculates merkle root for non-empty MapSet" do
-      map = BeefyCommitmentMap.new([{1, Hash.one()}, {2, Hash.two()}])
+      map = [
+        %Lastaccout{service: 1, accumulated_output: Hash.one()},
+        %Lastaccout{service: 2, accumulated_output: Hash.two()}
+      ]
+
       result = RecentHistory.get_well_balanced_merkle_root(map)
       refute result == Hash.zero()
     end
@@ -342,15 +354,14 @@ defmodule RecentHistoryTest do
     test "import json correctly" do
       json = JsonReader.read("test/system/state/recent_history.json")
       result = RecentHistory.from_json(json)
-      assert %RecentHistory{blocks: [block1, block2]} = result
+      assert %RecentHistory{blocks: [block1, block2], beefy_belt: beefy_belt} = result
 
       # Add assertions to verify the result
       assert block1 == %RecentBlock{
                header_hash:
                  <<0x530EF4636FEDD498E99C7601581271894A53E965E901E8FA49581E525F165DAE::hash()>>,
-               accumulated_result_mmr: [
-                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>
-               ],
+               accumulated_result_mmb:
+                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>,
                state_root:
                  <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::hash()>>,
                work_report_hashes: %{
@@ -365,10 +376,8 @@ defmodule RecentHistoryTest do
       assert block2 == %RecentBlock{
                header_hash:
                  <<0x241D129C6EDC2114E6DFBA7D556F7F7C66399B55CEEC3078A53D44C752BA7E9A::hash()>>,
-               accumulated_result_mmr: [
-                 nil,
-                 <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::hash()>>
-               ],
+               accumulated_result_mmb:
+                 <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::hash()>>,
                state_root:
                  <<0x0000000000000000000000000000000000000000000000000000000000000000::hash()>>,
                work_report_hashes: %{
@@ -376,6 +385,12 @@ defmodule RecentHistoryTest do
                    <<0xC0EDFE377D20B9F4ED7D9DF9511EF904C87E24467364F0F7F75F20CFE90DD8FB::hash()>>
                }
              }
+
+      assert beefy_belt ==
+               [
+                 nil,
+                 <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>
+               ]
     end
   end
 end
