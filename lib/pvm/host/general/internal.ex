@@ -361,44 +361,47 @@ defmodule PVM.Host.General.Internal do
   @spec info_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), services()) ::
           Result.Internal.t()
   def info_internal(registers, memory, context, service_index, services) do
-    t =
+    a =
       if registers.r7 == @max_64_bit_value,
         do: services[service_index],
         else: services[registers.r7]
 
     o = registers.r8
 
-    m =
-      if t != nil do
-        e(
-          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
-           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t),
-           t.gratis_storage_offset, t.creation_timeslot, t.latest_accumulation_timeslot,
-           t.parent_service}
-        )
+    v =
+      if a != nil do
+        <<
+          a.code_hash::binary,
+          a.balance::m(balance),
+          ServiceAccount.threshold_balance(a)::m(balance),
+          a.gas_limit_g::m(gas),
+          a.gas_limit_m::m(gas),
+          ServiceAccount.octets_in_storage(a)::64-little,
+          ServiceAccount.items_in_storage(a)::32-little,
+          a.gratis_storage_offset::64-little,
+          a.creation_timeslot::m(timeslot),
+          a.latest_accumulation_timeslot::m(timeslot),
+          a.parent_service::service()
+        >>
       else
         nil
       end
 
-    is_writable = Memory.check_range_access?(memory, o, safe_byte_size(m), :write)
+    f = min(registers.r11, safe_byte_size(v))
+    l = min(registers.r12, safe_byte_size(v) - f)
 
-    memory_ =
-      if m != nil and is_writable do
-        Memory.write!(memory, o, m)
-      else
-        memory
-      end
+    is_writable = Memory.check_range_access?(memory, o, l, :write)
 
-    {exit_reason_, w7_} =
+    {exit_reason_, w7_, memory_} =
       cond do
-        m == nil ->
-          {:continue, none()}
+        !is_writable ->
+          {:panic, registers.r7, memory}
 
-        m != nil and !is_writable ->
-          {:panic, registers.r7}
+        v == nil ->
+          {:continue, none(), memory}
 
         true ->
-          {:continue, ok()}
+          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
     %Result.Internal{

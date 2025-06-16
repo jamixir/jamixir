@@ -486,7 +486,7 @@ defmodule PVM.Host.GeneralTest do
     setup do
       m =
         PreMemory.init_nil_memory()
-        |> PreMemory.set_access(a_0(), 32, :write)
+        |> PreMemory.set_access(a_0(), 128, :write)
         |> PreMemory.finalize()
 
       service_account = %ServiceAccount{
@@ -501,7 +501,7 @@ defmodule PVM.Host.GeneralTest do
       }
 
       g = 100
-      registers = %Registers{r7: 1, r8: a_0()}
+      registers = %Registers{r7: 1, r8: a_0(), r11: 0, r12: 1000}
       context = %ServiceAccount{}
 
       {:ok,
@@ -548,20 +548,29 @@ defmodule PVM.Host.GeneralTest do
       context: context,
       registers: registers
     } do
-      ok = ok()
-
-      assert %{exit_reason: :continue, registers: %{r7: ^ok}, memory: memory_, context: ^context} =
-               General.info(g, registers, m, context, 42, services)
-
       t = Map.get(services, 1)
 
-      expected_mem_value =
-        e(
-          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
-           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
-        )
+      expected_encoded_data =
+        <<
+          t.code_hash::binary,
+          t.balance::64-little,
+          ServiceAccount.threshold_balance(t)::64-little,
+          t.gas_limit_g::64-little,
+          t.gas_limit_m::64-little,
+          ServiceAccount.octets_in_storage(t)::64-little,
+          ServiceAccount.items_in_storage(t)::32-little,
+          t.gratis_storage_offset::64-little,
+          t.creation_timeslot::32-little,
+          t.latest_accumulation_timeslot::32-little,
+          t.parent_service::32-little
+        >>
 
-      assert Memory.read!(memory_, a_0(), byte_size(expected_mem_value)) == expected_mem_value
+      expected_size = byte_size(expected_encoded_data)
+
+      assert %{exit_reason: :continue, registers: %{r7: ^expected_size}, memory: memory_, context: ^context} =
+               General.info(g, registers, m, context, 42, services)
+
+      assert Memory.read!(memory_, a_0(), expected_size) == expected_encoded_data
     end
 
     test "successfully writes service info using max 64-bit value", %{
@@ -572,22 +581,31 @@ defmodule PVM.Host.GeneralTest do
       registers: registers
     } do
       # selects service from args rather than registers
-      Registers.set(registers, :r7, 0xFFFF_FFFF_FFFF_FFFF)
-
-      ok = ok()
-
-      assert %{exit_reason: :continue, registers: %{r7: ^ok}, memory: memory_, context: ^context} =
-               General.info(g, registers, m, context, 1, services)
+      r = Registers.set(registers, :r7, 0xFFFF_FFFF_FFFF_FFFF)
 
       t = Map.get(services, 1)
 
-      expected_mem_value =
-        e(
-          {t.code_hash, t.balance, ServiceAccount.threshold_balance(t), t.gas_limit_g,
-           t.gas_limit_m, ServiceAccount.octets_in_storage(t), ServiceAccount.items_in_storage(t)}
-        )
+      expected_encoded_data =
+        <<
+          t.code_hash::binary,
+          t.balance::64-little,
+          ServiceAccount.threshold_balance(t)::64-little,
+          t.gas_limit_g::64-little,
+          t.gas_limit_m::64-little,
+          ServiceAccount.octets_in_storage(t)::64-little,
+          ServiceAccount.items_in_storage(t)::32-little,
+          t.gratis_storage_offset::64-little,
+          t.creation_timeslot::32-little,
+          t.latest_accumulation_timeslot::32-little,
+          t.parent_service::32-little
+        >>
 
-      assert Memory.read!(memory_, a_0(), byte_size(expected_mem_value)) == expected_mem_value
+      expected_size = byte_size(expected_encoded_data)
+
+      assert %{exit_reason: :continue, registers: %{r7: ^expected_size}, memory: memory_, context: ^context} =
+               General.info(g, r, m, context, 1, services)
+
+      assert Memory.read!(memory_, a_0(), expected_size) == expected_encoded_data
     end
   end
 
