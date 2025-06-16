@@ -41,7 +41,7 @@ defmodule HistoryTestVectors do
     stub(MockAccumulation, :do_transition, fn _, _, _ ->
       %{
         accumulate_mock_return()
-        | accumulation_outputs: JsonDecoder.from_json(json_data[:input][:accumulate_root])
+        | lastaccout: JsonDecoder.from_json(json_data[:input][:accumulate_root])
       }
     end)
 
