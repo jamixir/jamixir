@@ -8,6 +8,7 @@ defmodule System.State.ServiceAccount do
   import Codec.Encoder
   use AccessStruct
   import Codec.JsonEncoder
+  import Util.Collections, only: [sum_by: 2]
 
   @type t :: %__MODULE__{
           # s
@@ -46,16 +47,16 @@ defmodule System.State.ServiceAccount do
             latest_accumulation_timeslot: 0,
             parent_service: 0
 
-  # Formula (9.8) v0.6.6
+  # Formula (9.8) v0.6.7
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
     2 * length(Map.keys(l)) + length(Map.keys(s))
   end
 
-  # ao ∈ N2^64 ≡ sum(81 + z) + sum(32 + |x|),
+  # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    Enum.sum(for {_h, z} <- Map.keys(l), do: 81 + z) +
-      Enum.sum(for v <- Map.values(s), do: 32 + byte_size(v))
+    sum_by(Map.keys(l), fn {_h, z} -> 81 + z end) +
+      sum_by(s, fn {key, value} -> 34 + byte_size(key) + byte_size(value) end)
   end
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
@@ -145,20 +146,22 @@ defmodule System.State.ServiceAccount do
     end
   end
 
-  # TODO: decode does not match 0.6.7
-  # https://github.com/jamixir/jamixir/issues/449
-  # before the introduction of the new fields on 0.6.7, the last field, octets_in_storage
-  # was a calculated value, and didnt need to be decoded
-  # now  we have gratis_storage_offset and other AFTER the calculated valules, therfore how to decode is not clear
-  def decode(
-        <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
-          rest::binary>>
-      ) do
+  # octets_in_storage and items_in_storage are ignored, since they are calculated values
+  def decode(bin) do
+    <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
+      _octets_in_storage::64-little, gratis_storage_offset::64-little,
+      _items_in_storage::32-little, creation_timeslot::m(timeslot),
+      latest_accumulation_timeslot::m(timeslot), parent_service::service(), rest::binary>> = bin
+
     {%__MODULE__{
        code_hash: code_hash,
        balance: balance,
        gas_limit_g: gas_limit_g,
-       gas_limit_m: gas_limit_m
+       gas_limit_m: gas_limit_m,
+       gratis_storage_offset: gratis_storage_offset,
+       creation_timeslot: creation_timeslot,
+       latest_accumulation_timeslot: latest_accumulation_timeslot,
+       parent_service: parent_service
      }, rest}
   end
 

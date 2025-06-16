@@ -40,20 +40,33 @@ defmodule Codec.State.TrieTest do
          <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
            0, 0, 3>>}
 
-      assert key_to_31_octet(key) == <<1, 0, 0, 0>> <> :binary.copy(<<0>>, 27)
+      a = Hash.default(elem(key, 1))
+      a_part = binary_slice(a, 0, 27)
+      <<a0, a1, a2, a3, rest::binary>> = a_part
+
+      assert key_to_31_octet(key) == <<1, a0, 0, a1, 0, a2, 0, a3>> <> rest
     end
 
     test "convert service id and hash" do
-      hash = "012345678901234567890123456"
+      key = "012345678901234567890123456"
+      a = Hash.default(key)
+      a_part = binary_slice(a, 0, 27)
+      <<a0, a1, a2, a3, rest::binary>> = a_part
 
-      assert key_to_31_octet({1, hash}) ==
-               <<1, "0", 0, "1", 0, "2", 0>> <> "345678901234567890123456"
+      # For service id 1
+      <<n0_1, n1_1, n2_1, n3_1>> = <<1::32-little>>
 
-      assert key_to_31_octet({1024, hash}) ==
-               <<0, "0", 4, "1", 0, "2", 0>> <> "345678901234567890123456"
+      assert key_to_31_octet({1, key}) == <<n0_1, a0, n1_1, a1, n2_1, a2, n3_1, a3>> <> rest
 
-      assert key_to_31_octet({4_294_967_295, hash}) ==
-               <<255, "0", 255, "1", 255, "2", 255>> <> "345678901234567890123456"
+      # For service id 1024
+      <<n0_1024, n1_1024, n2_1024, n3_1024>> = <<1024::32-little>>
+
+      assert key_to_31_octet({1024, key}) == <<n0_1024, a0, n1_1024, a1, n2_1024, a2, n3_1024, a3>> <> rest
+
+      # For service id 4_294_967_295
+      <<n0_max, n1_max, n2_max, n3_max>> = <<4_294_967_295::32-little>>
+
+      assert key_to_31_octet({4_294_967_295, key}) == <<n0_max, a0, n1_max, a1, n2_max, a2, n3_max, a3>> <> rest
     end
 
     test "all state keys are encodable with key_to_31_octet", %{state: state} do
@@ -252,6 +265,14 @@ defmodule Codec.State.TrieTest do
 
       assert recovered_state.services == trie_state.services
     end
+
+    # TODO
+    # with the changes introduced to accoutn footprint in https://github.com/gavofyork/graypaper/pull/406
+    # this test cannot pass
+    # why? storage keys are unrecovable, , in recoverd state we get storage keys of length 27
+    # but NOW (0.6.7), octets_in_storage also counts key size (this is likely to change)(https://github.com/gavofyork/graypaper/pull/406/files#r2112117815)
+    # so in the second encoding (serialize(recovered_state)) we get wrong (too low) number because the storage key are not 32 bytes
+    # also notice that in 0.6.7 - sotage chnaged from D<H => Y> into D<Y => Y>
 
     test "trie_to_state/1 - service accounts with storage", %{state: state} do
       trie_state = %State{
