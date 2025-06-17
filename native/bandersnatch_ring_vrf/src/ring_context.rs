@@ -1,22 +1,18 @@
+use ark_serialize::CanonicalDeserialize;
 use ark_vrf::{
     reexports::ark_serialize,
     suites::bandersnatch::{PcsParams, RingProofParams},
 };
-use ark_serialize::CanonicalDeserialize;
 use rustler::{Error, NifResult};
-use std::{fs::File, io::Read, sync::OnceLock};
+use std::sync::OnceLock;
 
 static RING_CTX: OnceLock<RingProofParams> = OnceLock::new();
+static SRS_FILE: &[u8] = include_bytes!("./zcash-srs-2-11-compressed.bin");
 
 #[rustler::nif]
-pub fn create_ring_context(file_path: String, ring_size: usize) -> NifResult<()> {
+pub fn create_ring_context(ring_size: usize) -> NifResult<()> {
     RING_CTX.get_or_init(|| {
-        let mut file = File::open(file_path).expect("Failed to open the SRS file");
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf)
-            .expect("Failed to read the SRS file");
-
-        let pcs_params = PcsParams::deserialize_uncompressed_unchecked(&mut &buf[..])
+        let pcs_params = PcsParams::deserialize_compressed(&mut &SRS_FILE[..])
             .expect("Failed to deserialize PCS parameters");
         RingProofParams::from_pcs_params(ring_size, pcs_params)
             .expect("Failed to create RingContext")
