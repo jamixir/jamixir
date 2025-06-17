@@ -173,6 +173,19 @@ defmodule Jamixir.Factory do
     }
   end
 
+  def work_package_and_its_extrinsic_factory do
+    extrinsics = [<<1, 2, 3>>, <<4, 5, 6, 7>>]
+
+    work_items =
+      for wi <- build_list(2, :work_item) do
+        put_in(wi.extrinsic, for(e <- extrinsics, do: {Hash.default(e), byte_size(e)}))
+      end
+
+    work_package = build(:work_package, work_items: work_items)
+
+    {work_package, extrinsics ++ extrinsics}
+  end
+
   # Validator Factories
 
   def validator_factory do

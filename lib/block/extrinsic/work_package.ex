@@ -151,6 +151,28 @@ defmodule Block.Extrinsic.WorkPackage do
     end
   end
 
+  def extrinsic_defs(%__MODULE__{work_items: work_items}) do
+    for(wi <- work_items, do: for(e <- wi.extrinsic, do: e)) |> List.flatten()
+  end
+
+  def valid_extrinsics?(%__MODULE__{} = wp, extrinsics) do
+    work_item_extrinsics = extrinsic_defs(wp)
+
+    if length(work_item_extrinsics) != length(extrinsics) do
+      false
+    else
+      Enum.zip(work_item_extrinsics, extrinsics)
+      |> Enum.reduce_while(true, fn {{expected_hash, expected_size}, actual_extrinsic}, _acc ->
+        if expected_hash == h(actual_extrinsic) and expected_size == byte_size(actual_extrinsic) do
+          {:cont, true}
+        else
+          {:halt, false}
+        end
+      end)
+    end
+  end
+
+
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
     <<service::service(), bin::binary>> = bin

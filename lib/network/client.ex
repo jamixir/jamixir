@@ -140,7 +140,7 @@ defmodule Network.Client do
   end
 
   def send_work_package(pid, wp, core_index, extrinsics) do
-    messages = [t(core_index) <> e(wp), extrinsics]
+    messages = [t(core_index) <> e(wp), e(extrinsics)]
     send(pid, 133, messages)
   end
 

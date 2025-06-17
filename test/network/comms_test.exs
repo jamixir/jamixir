@@ -200,12 +200,12 @@ defmodule CommsTest do
   # CE 133
   describe "send_work_package/4" do
     test "sends work package", %{client: client} do
-      work_package = build(:work_package)
+      {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
+
       core = 3
-      extrinsics = <<1, 2, 3>>
 
       Jamixir.NodeAPI.Mock
-      |> expect(:save_work_package, 1, fn ^work_package, 3, ^extrinsics -> :ok end)
+      |> expect(:save_work_package, 1, fn ^work_package, ^core, ^extrinsics -> :ok end)
 
       {:ok, ""} = Peer.send_work_package(client, work_package, core, extrinsics)
       verify!()
