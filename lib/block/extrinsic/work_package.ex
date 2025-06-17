@@ -155,26 +155,23 @@ defmodule Block.Extrinsic.WorkPackage do
     for(wi <- work_items, do: for(e <- wi.extrinsic, do: e)) |> List.flatten()
   end
 
-  def valid_extrinsics?(%__MODULE__{work_items: []}, []), do: true
+  def valid_extrinsics?(%__MODULE__{} = wp, extrinsics) do
+    work_item_extrinsics = extrinsic_defs(wp)
 
-  def valid_extrinsics?(%__MODULE__{work_items: [%WorkItem{extrinsic: []} | rest]}, a),
-    do: valid_extrinsics?(%__MODULE__{work_items: rest}, a)
-
-  def valid_extrinsics?(%__MODULE__{work_items: [%WorkItem{extrinsic: [_ | _]} | _]}, []),
-    do: false
-
-  def valid_extrinsics?(%__MODULE__{work_items: []}, [_ | _]), do: false
-
-  def valid_extrinsics?(
-        %__MODULE__{work_items: [%WorkItem{extrinsic: [{hash, size} | rest_e_wi]} | rest_wi]},
-        [e | rest_r]
-      ) do
-    hash == h(e) and size == byte_size(e) and
-      valid_extrinsics?(
-        %__MODULE__{work_items: [%WorkItem{extrinsic: rest_e_wi} | rest_wi]},
-        rest_r
-      )
+    if length(work_item_extrinsics) != length(extrinsics) do
+      false
+    else
+      Enum.zip(work_item_extrinsics, extrinsics)
+      |> Enum.reduce_while(true, fn {{expected_hash, expected_size}, actual_extrinsic}, _acc ->
+        if expected_hash == h(actual_extrinsic) and expected_size == byte_size(actual_extrinsic) do
+          {:cont, true}
+        else
+          {:halt, false}
+        end
+      end)
+    end
   end
+
 
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
