@@ -67,8 +67,24 @@ defmodule Jamixir.MixProject do
   defp releases do
     [
       jamixir: [
-        applications: [runtime_tools: :permanent]
+        include_executables_for: [:unix],
+        applications: [runtime_tools: :permanent],
+        steps: [:assemble, &copy_quicer_priv/1]
       ]
     ]
+  end
+
+  defp copy_quicer_priv(release) do
+    quicer_priv_dir = Path.join([File.cwd!(), "deps", "quicer", "priv"])
+    release_quicer_priv_dir = Path.join([release.path, "lib", "quicer-0.2.4", "priv"])
+
+    if File.exists?(quicer_priv_dir) do
+      File.mkdir_p!(release_quicer_priv_dir)
+
+      # Use `cp -a` to preserve symbolic links
+      System.cmd("cp", ["-a", quicer_priv_dir <> "/.", release_quicer_priv_dir])
+    end
+
+    release
   end
 end
