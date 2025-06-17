@@ -3,18 +3,14 @@ defmodule RingVrf do
   require Logger
   # load static ring context data from a file
   # following the example https://github.com/davxy/bandersnatch-vrfs-spec/blob/main/example/src/main.rs
-  def create_ring_context(_filename, _ring_size), do: :erlang.nif_error(:nif_not_loaded)
+  def create_ring_context(_ring_size), do: :erlang.nif_error(:nif_not_loaded)
 
   def init_ring_context, do: init_ring_context(Constants.validator_count())
 
   def init_ring_context(ring_size) do
     Logger.info("💍 Initializing ring context with size #{ring_size}")
-    current_dir = File.cwd!()
 
-    filename =
-      Path.join([current_dir, "native/bandersnatch_ring_vrf/data/zcash-srs-2-11-uncompressed.bin"])
-
-    create_ring_context(filename, ring_size)
+    create_ring_context(ring_size)
   end
 
   # Formula (G.3) v0.6.6
