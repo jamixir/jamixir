@@ -61,12 +61,14 @@ defmodule Codec.State.TrieTest do
       # For service id 1024
       <<n0_1024, n1_1024, n2_1024, n3_1024>> = <<1024::32-little>>
 
-      assert key_to_31_octet({1024, key}) == <<n0_1024, a0, n1_1024, a1, n2_1024, a2, n3_1024, a3>> <> rest
+      assert key_to_31_octet({1024, key}) ==
+               <<n0_1024, a0, n1_1024, a1, n2_1024, a2, n3_1024, a3>> <> rest
 
       # For service id 4_294_967_295
       <<n0_max, n1_max, n2_max, n3_max>> = <<4_294_967_295::32-little>>
 
-      assert key_to_31_octet({4_294_967_295, key}) == <<n0_max, a0, n1_max, a1, n2_max, a2, n3_max, a3>> <> rest
+      assert key_to_31_octet({4_294_967_295, key}) ==
+               <<n0_max, a0, n1_max, a1, n2_max, a2, n3_max, a3>> <> rest
     end
 
     test "all state keys are encodable with key_to_31_octet", %{state: state} do
@@ -179,7 +181,7 @@ defmodule Codec.State.TrieTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :storage)
         |> Enum.each(fn {h, v} ->
-          key = {s, <<(1 <<< 32) - 1::32-little>> <> binary_slice(h, 0, 28)}
+          key = {s, <<(1 <<< 32) - 1::32-little>> <> h}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -191,7 +193,7 @@ defmodule Codec.State.TrieTest do
       |> Enum.each(fn {s, service_account} ->
         Map.get(service_account, :preimage_storage_p)
         |> Enum.each(fn {h, v} ->
-          key = {s, <<(1 <<< 32) - 2::32-little>> <> binary_slice(h, 1, 28)}
+          key = {s, <<(1 <<< 32) - 2::32-little>> <> h}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -202,7 +204,7 @@ defmodule Codec.State.TrieTest do
       |> Enum.each(fn {s, service_account} ->
         service_account.preimage_storage_l
         |> Enum.each(fn {{h, l}, t} ->
-          key = <<l::32-little>> <> (Hash.default(h) |> binary_slice(2, 28))
+          key = <<l::32-little>> <> h
           value = e(vs(for x <- t, do: <<x::32-little>>))
           assert state_keys(state)[{s, key}] == value
         end)
@@ -278,13 +280,14 @@ defmodule Codec.State.TrieTest do
       trie_state = %State{
         state
         | services: %{
-            1_234_567 => build(:service_account)
+            1_234_567 => build(:service_account, storage: %{})
           }
       }
 
       trie = serialize(trie_state)
       recovered_state = trie_to_state(trie)
-      assert serialize(recovered_state) == trie
+
+      assert recovered_state == trie_state
     end
   end
 

@@ -1,6 +1,4 @@
 defmodule System.State.RecentHistory.RecentBlock do
-  alias Codec.Decoder
-
   @type t :: %__MODULE__{
           # h
           header_hash: Types.hash(),

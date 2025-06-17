@@ -28,7 +28,7 @@ defmodule Codec.State.Trie do
   @storage_prefix (1 <<< 32) - 1
   @preimage_prefix (1 <<< 32) - 2
 
-  # Formula (D.2) v0.6.6
+  # Formula (D.2) v0.6.7
   def state_keys(%State{} = s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
@@ -66,7 +66,7 @@ defmodule Codec.State.Trie do
     |> encode_accounts_preimage_storage_l(s)
   end
 
-  # Formula (D.1) v0.6.6 - C constructor
+  # Formula (D.1) v0.6.7 - C constructor
   # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)
@@ -101,8 +101,6 @@ defmodule Codec.State.Trie do
   def octet31_to_key(<<n0, h0, n1, h1, n2, h2, n3, h3, rest::binary-size(23)>>) do
     s = de_le(<<n0, n1, n2, n3>>, 4)
     h = <<h0, h1, h2, h3>> <> rest
-    IO.inspect(h)
-    IO.inspect(s)
     {s, h}
   end
 
@@ -183,24 +181,24 @@ defmodule Codec.State.Trie do
     end)
   end
 
-  # ∀(s ↦ a) ∈ δ, (k ↦ v) ∈ as ∶ C(s, E4 (2^32 − 1) ⌢ k0...28 ) ↦ v
+  # ∀(s ↦ a) ∈ δ,(k ↦ v) ∈ as ∶ C(s,E4(2^32−1) ⌢ k) ↦ v
   defp encode_accounts_storage_s(state_keys, %State{} = state, property) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le(@storage_prefix, 4) <> binary_slice(h, 0, 28)}, v)
+        Map.put(ac, {s, e_le(@storage_prefix, 4) <> h}, v)
       end)
     end)
   end
 
-  # ∀(s ↦ a) ∈ δ, (h ↦ p) ∈ ap ∶ C(s, E4 (2^32 − 2) ⌢ h1...29 ) ↦ p
+  # ∀(s ↦ a) ∈ δ,(h ↦ p) ∈ ap ∶ C(s,E4(2^32−2) ⌢ h) ↦ p
   defp encode_accounts_storage_p(state_keys, %State{} = state, property) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       Map.get(a, property)
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le(@preimage_prefix, 4) <> binary_slice(h, 1, 28)}, v)
+        Map.put(ac, {s, e_le(@preimage_prefix, 4) <> h}, v)
       end)
     end)
   end
@@ -212,7 +210,7 @@ defmodule Codec.State.Trie do
       a.preimage_storage_l
       |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
         value = e(vs(for x <- t, do: e_le(x, 4)))
-        key = e_le(l, 4) <> (h(h) |> binary_slice(2, 28))
+        key = e_le(l, 4) <> h
         Map.put(ac, {s, key}, value)
       end)
     end)
@@ -224,23 +222,21 @@ defmodule Codec.State.Trie do
     dict =
       for {k, v} <- trie, into: %{} do
         id = octet31_to_key(k)
-        IO.inspect(id)
         value = decode_value(id, v)
-        IO.inspect(value)
         {id, elem(value, 0)}
       end
 
     services =
       for {{255, service_id}, v} <- dict, reduce: %{} do
         acc ->
-          storage =
-            for {{^service_id, <<@storage_prefix::little-32, k::binary>>}, v} <- dict,
-                into: %{} do
-              {k, v}
-            end
+          # storage keys can't be recovered
+          storage = %{}
 
           preimage_storage_p =
-            for {{^service_id, <<@preimage_prefix::little-32, _::binary>>}, v} <- dict,
+            for {{^service_id, bin_key}, v} <- dict,
+                recovered_key =
+                  key_to_31_octet({service_id, <<@preimage_prefix::little-32>> <> h(v)}),
+                recovered_key |> binary_slice(8, 20) == bin_key |> binary_slice(4, 20),
                 into: %{} do
               {Hash.default(v), v}
             end
@@ -248,9 +244,16 @@ defmodule Codec.State.Trie do
           preimage_storage_l =
             for {h, p} <- preimage_storage_p, into: %{} do
               l = byte_size(p)
-              key = e_le(l, 4) <> (h(h) |> binary_slice(2, 23))
+              trie_key = key_to_31_octet({service_id, e_le(l, 4) <> h})
+
+              value =
+                VariableSize.decode(trie[trie_key], fn <<x::little-32, rest::binary>> ->
+                  {x, rest}
+                end)
+                |> elem(0)
+
               {{h, l}, p}
-              {{h, l}, dict[{service_id, key}]}
+              {{h, l}, value}
             end
 
           Map.put(acc, service_id, %ServiceAccount{
@@ -324,20 +327,9 @@ defmodule Codec.State.Trie do
     ServiceAccount.decode(bin)
   end
 
-  # storage item
-  def decode_value({_service_id, <<@storage_prefix::little-32, _::binary>>}, bin),
+  # storage item / preimage_storage_s and preimage_storage_l
+  def decode_value({_service_id, _key}, bin),
     do: {bin, <<>>}
-
-  # preimage_p
-  def decode_value({_service_id, <<@preimage_prefix::little-32, _::binary>>}, bin),
-    do: {bin, <<>>}
-
-  # preimage_l
-  def decode_value({_service_id, <<_::binary>>}, bin) do
-    VariableSize.decode(bin, fn <<x::little-32, rest::binary>> ->
-      {x, rest}
-    end)
-  end
 
   def decode_value(_key, _value) do
     {nil, <<>>}
