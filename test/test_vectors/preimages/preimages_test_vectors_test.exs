@@ -5,6 +5,7 @@ defmodule PreimagesTestVectorsTest do
   import Mox
   import PreimagesTestVectors
   import TestHelper
+  import TestVectorUtil
 
   setup :verify_on_exit!
 
@@ -29,11 +30,13 @@ defmodule PreimagesTestVectorsTest do
       :ok
     end
 
-    Enum.each(files_to_test(), fn file_name ->
-      @tag file_name: file_name
-      test "verify preimages vectors #{file_name}", %{file_name: file_name} do
-        execute_test(file_name, "stf/preimages/data")
-      end
-    end)
+    define_vector_tests("preimages")
+
+    # Enum.each(files_to_test(), fn file_name ->
+    #   @tag file_name: file_name
+    #   test "verify preimages vectors #{file_name}", %{file_name: file_name} do
+    #     execute_test(file_name, "stf/preimages/data")
+    #   end
+    # end)
   end
 end
