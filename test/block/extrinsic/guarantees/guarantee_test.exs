@@ -11,11 +11,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
   describe "validate/1" do
     setup do
+      accumulation_result_mmb = Codec.Encoder.super_peak_mmr([Hash.random(), Hash.random()])
+
       refinement_context =
         build(:refinement_context,
           anchor: <<99>>,
           state_root: <<77>>,
-          beefy_root: Codec.Encoder.super_peak_mmr([<<1>>, <<2>>])
+          beefy_root: accumulation_result_mmb
         )
 
       g1 =
@@ -49,12 +51,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
             %RecentBlock{
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root,
-              accumulated_result_mmb: [<<1>>, <<2>>]
+              accumulated_result_mmb: accumulation_result_mmb
             },
             %RecentBlock{
               header_hash: Hash.one(),
               state_root: nil,
-              accumulated_result_mmb: [<<1>>, <<2>>]
+              accumulated_result_mmb: Hash.random()
             }
           ]
         }
@@ -246,19 +248,21 @@ defmodule Block.Extrinsic.GuaranteeTest do
                {:error, :bad_state_root}
     end
 
-    test "error when recent history does not have accumulated_result_mmr", %{
+    test "error when recent history does not have accumulated_result_mmb", %{
       g1: g1,
       state: state,
       refinement_context: refinement_context
     } do
-      invalid_rb = put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmr, [])
-      invalid_state = put_in(state.recent_history.blocks, [invalid_rb])
+      invalid_rb =
+        put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmb, Hash.random())
+
+      invalid_state = put_in(state.recent_history.blocks, [invalid_rb, Enum.at(state.recent_history.blocks, 1)])
 
       assert Guarantee.validate([g1], invalid_state, %Header{
                timeslot: 1,
                prior_state_root: refinement_context.state_root
              }) ==
-               {:error, :bad_beefy_mmr}
+               {:error, :bad_beefy_mmb}
     end
 
     test "returns error when work package exists in recent history", %{state: state, g1: g1} do
