@@ -1,4 +1,5 @@
 defmodule System.State.AccumulationTest do
+  alias System.State.RecentHistory.Lastaccout
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias System.{AccumulationResult, DeferredTransfer}
@@ -58,6 +59,42 @@ defmodule System.State.AccumulationTest do
         }
       }
     end)
+  end
+
+  defp setup_mock_accumulation do
+    Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
+    end)
+
+    :ok
+  end
+
+  defp base_accumulation_state(overrides \\ %{}) do
+    base = %Accumulation{
+      manager: 1,
+      assigners: [3],
+      delegator: 2,
+      next_validators: [<<1>>, <<2>>],
+      authorizer_queue: [[<<0, 0>>, <<0, 1>>], [<<1, 0>>, <<1, 1>>]],
+      services: %{4 => :service4, 5 => :service5, 6 => :service6}
+    }
+
+    Map.merge(base, overrides)
+  end
+
+  defp base_extra_args(overrides \\ %{}) do
+    base = %{
+      timeslot_: Enum.random(1..1000),
+      n0_: Util.Hash.one()
+    }
+
+    Map.merge(base, overrides)
+  end
+
+  defp simple_work_report(service, gas_ratio) do
+    %WorkReport{digests: [%WorkDigest{service: service, gas_ratio: gas_ratio}]}
   end
 
   setup_all do
@@ -279,11 +316,7 @@ defmodule System.State.AccumulationTest do
 
   describe "accumulates privileged services/4" do
     setup do
-      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
-      end)
+      setup_mock_accumulation()
 
       :ok
     end
@@ -294,14 +327,9 @@ defmodule System.State.AccumulationTest do
         ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
       }
 
-      initial_state = %Accumulation{
-        manager: 1,
-        assigners: [3],
-        delegator: 2,
-        services: %{1 => :service1, 2 => :service2, 3 => :service3, 4 => :service4},
-        next_validators: :initial_next_validators,
-        authorizer_queue: :initial_authorizer_queue
-      }
+      initial_state = base_accumulation_state(%{
+        assigners: [2]
+      })
 
       work_reports = []
       always_acc_services = %{}
@@ -325,43 +353,33 @@ defmodule System.State.AccumulationTest do
 
   describe "parallelized_accumulation/3" do
     setup do
-      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
-      end)
+      setup_mock_accumulation()
 
       :ok
     end
 
     test "performs parallelized_accumulation correctly" do
-      extra_args = %{
-        timeslot_: Enum.random(1..1000),
-        n0_: Util.Hash.one()
-      }
-
-      initial_state = %Accumulation{
-        services: %{4 => :service4, 5 => :service5, 6 => :service6},
-        manager: 1,
-        assigners: [3],
-        delegator: 2,
-        next_validators: :initial_next_validators,
-        authorizer_queue: :initial_authorizer_queue
-      }
-
-      work_reports = [
-        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 10}]},
-        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 20}]}
-      ]
-
+      # Setup test data
+      services = %{4 => :service4, 5 => :service5}
       always_acc_services = %{6 => 30}
 
-      # Single stub that handles all services
+      initial_state = base_accumulation_state(%{
+        services: services
+      })
+
+      work_reports = [
+        simple_work_report(4, 10),
+        simple_work_report(5, 20)
+      ]
+
+      extra_args = base_extra_args(%{timeslot_: 100})
+
+      # Mock accumulation behavior
       MockAccumulation
       |> stub(:do_single_accumulation, fn _, _, _, service, _ ->
         case service do
-          # Regular services (4, 5, 6)
-          s when s in [4, 5, 6] ->
+          # Regular services return updated state + outputs
+          s when s in [4, 5] ->
             %AccumulationResult{
               state: %{initial_state | services: %{service => :"updated_service#{service}"}},
               transfers: [%{amount: service * 10}],
@@ -369,177 +387,135 @@ defmodule System.State.AccumulationTest do
               gas_used: service * 10
             }
 
-          # Manager service (1) - should return updated privileged services
+          # Manager updates privileged services
           1 ->
             %AccumulationResult{
-              state: %{
-                initial_state
-                | manager: :updated_manager,
-                  # assigners_star - service IDs that will be accumulated
-                  assigners: [99, 100],
-                  # delegator_star
-                  delegator: 101,
-                  alwaysaccers: :updated_alwaysaccers
-              },
-              transfers: [],
-              output: nil,
-              gas_used: 0
+              state: %{initial_state |
+                manager: 2,
+                assigners: [99, 100],
+                delegator: 101,
+                alwaysaccers: %{6 => 130}
+              }
             }
 
-          # Assigners_star services (99, 100) - return values for assigners field
-          s when s in [99, 100] ->
-            %AccumulationResult{
-              state: %{
-                initial_state
-                | assigners: [:assigner_result_for_service, s]
-              },
-              transfers: [],
-              output: nil,
-              gas_used: 0
-            }
+          # Privileged services update their respective fields
+          s when s in [99, 100] -> %AccumulationResult{state: %{initial_state | assigners: [10001, 10002]}}
+          101 -> %AccumulationResult{state: %{initial_state | delegator: 2004}}
+          3 -> %AccumulationResult{state: %{initial_state | authorizer_queue: [[<<0, 0, 100>>, <<0, 1, 100>>]]}}
+          2 -> %AccumulationResult{state: %{initial_state | next_validators: :updated_next_validators}}
 
-          # delegator_star (101) - return value for delegator field
-          101 ->
-            %AccumulationResult{
-              state: %{
-                initial_state
-                | delegator: :updated_delegator
-              },
-              transfers: [],
-              output: nil,
-              gas_used: 0
-            }
-
-          # Other privileged services (3, 27) - should return updated field values
-          3 ->
-            %AccumulationResult{
-              state: %{initial_state | authorizer_queue: :updated_authorizer_queue},
-              transfers: [],
-              output: nil,
-              gas_used: 0
-            }
-
-          2 ->
-            %AccumulationResult{
-              state: %{initial_state | next_validators: :updated_next_validators},
-              transfers: [],
-              output: nil,
-              gas_used: 0
-            }
-
-          _ ->
-            %AccumulationResult{
-              state: initial_state,
-              transfers: [],
-              output: nil,
-              gas_used: 0
-            }
+          _ -> %AccumulationResult{state: initial_state}
         end
       end)
 
-      result =
-        Accumulation.parallelized_accumulation(
-          initial_state,
-          work_reports,
-          always_acc_services,
-          extra_args
-        )
+      # Execute and verify results
+      {updated_state, transfers, outputs, total_gas} =
+        Accumulation.parallelized_accumulation(initial_state, work_reports, always_acc_services, extra_args)
 
-      assert {updated_state, transfers, outputs, total_gas} = result
+      # Verify gas usage
+      assert total_gas == [{4, 40}, {5, 50}, {6, 0}]
 
-      assert total_gas == [{4, 40}, {5, 50}, {6, 60}]
+      # Verify state updates
+      assert updated_state.manager == 2
+      assert updated_state.assigners == [10001, 10002]
+      assert updated_state.delegator == 2004
+      assert updated_state.alwaysaccers == %{6 => 130}
+      assert updated_state.next_validators == :updated_next_validators
+      assert updated_state.authorizer_queue == [[<<0, 0, 100>>, <<0, 1, 100>>]]
 
-      assert %{
-               manager: :updated_manager,
-               assigners: [:assigner_result_for_service, 100],
-               delegator: :updated_delegator,
-               alwaysaccers: :updated_alwaysaccers,
-               next_validators: :updated_next_validators,
-               authorizer_queue: [:updated_authorizer_queue]
-             } =
-               updated_state
-               |> Map.take([
-                 :manager,
-                 :assigners,
-                 :delegator,
-                 :alwaysaccers,
-                 :next_validators,
-                 :authorizer_queue
-               ])
-
-      assert transfers == [%{amount: 40}, %{amount: 50}, %{amount: 60}]
-      assert MapSet.size(outputs) == 3
-
-      assert Enum.all?([4, 5, 6], fn service ->
-               MapSet.member?(outputs, {service, "output#{service}"})
-             end)
+      # Verify transfers and outputs
+      assert transfers == [%{amount: 40}, %{amount: 50}]
+      assert length(outputs) == 2
+      assert Enum.member?(outputs, %Lastaccout{service: 4, accumulated_output: "output4"})
+      assert Enum.member?(outputs, %Lastaccout{service: 5, accumulated_output: "output5"})
     end
 
     test "correctly handles n (new services) and m (removed services)" do
-      extra_args = %{
-        timeslot_: Enum.random(1..1000),
-        n0_: Util.Hash.one()
-      }
+      extra_args = base_extra_args()
 
       # Initial state with services 1, 2, 3
-      initial_state = %Accumulation{
+      initial_state = base_accumulation_state(%{
         services: %{
           4 => %ServiceAccount{balance: 100},
           5 => %ServiceAccount{balance: 200},
           6 => %ServiceAccount{balance: 300}
         },
-        manager: 1,
-        delegator: 2,
-        assigners: [3],
-        next_validators: :initial_next_validators,
-        authorizer_queue: :initial_authorizer_queue
-      }
+        assigners: [3]
+      })
 
       work_reports = [
-        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 10}]},
-        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 20}]}
+        simple_work_report(4, 10),
+        simple_work_report(5, 20)
       ]
 
       always_acc_services = %{}
 
-      mock_privileged_services(initial_state)
-
-      # Mock for service 4: Updates service 4, removes service 6, adds service 7
+      # Mock all services with a comprehensive stub to avoid conflicts
       MockAccumulation
-      |> expect(:do_single_accumulation, fn acc_state, _, _, 4, _ ->
-        # Create a new services map that:
-        # 1. Updates service 4
-        # 2. Keeps service 5 unchanged
-        # 3. Omits service 6 (to be removed)
-        # 4. Adds service 7 (new service)
-        updated_services = %{
-          4 => %ServiceAccount{balance: 150},
-          5 => acc_state.services[5],
-          7 => %ServiceAccount{balance: 400}
-        }
+      |> stub(:do_single_accumulation, fn acc_state, _, _, service, _ ->
+        case service do
+          # Manager service (1) - returns updated privileged services
+          1 ->
+            %AccumulationResult{
+              state: %{acc_state |
+                manager: :updated_manager,
+                assigners: [99, 100],
+                delegator: 101,
+                alwaysaccers: :updated_alwaysaccers
+              }
+            }
 
-        %AccumulationResult{
-          state: %{acc_state | services: updated_services},
-          transfers: [%{amount: 10}],
-          output: "output4",
-          gas_used: 10
-        }
-      end)
+          # Original assigners service (3)
+          3 ->
+            %AccumulationResult{state: acc_state}
 
-      # Mock for service 5: Updates service 5, adds service 8
-      MockAccumulation
-      |> expect(:do_single_accumulation, fn acc_state, _, _, 5, _ ->
-        updated_services =
-          acc_state.services
-          |> Map.put(5, %ServiceAccount{balance: 250})
-          |> Map.put(8, %ServiceAccount{balance: 500})
+          # Original delegator service (2)
+          2 ->
+            %AccumulationResult{state: acc_state}
 
-        %AccumulationResult{
-          state: %{acc_state | services: updated_services},
-          transfers: [%{amount: 20}],
-          output: "output5",
-          gas_used: 20
-        }
+          # Assigners star services (99, 100)
+          s when s in [99, 100] ->
+            %AccumulationResult{
+              state: %{acc_state | assigners: [:assigner_result_1, :assigner_result_2]}
+            }
+
+          # Delegator star service (101)
+          101 ->
+            %AccumulationResult{
+              state: %{acc_state | delegator: :updated_delegator}
+            }
+
+          # Service 4: Updates service 4, removes service 6, adds service 7
+          4 ->
+            updated_services = %{
+              4 => %ServiceAccount{balance: 150},
+              5 => acc_state.services[5],
+              7 => %ServiceAccount{balance: 400}
+            }
+            %AccumulationResult{
+              state: %{acc_state | services: updated_services},
+              transfers: [%{amount: 10}],
+              output: "output4",
+              gas_used: 10
+            }
+
+          # Service 5: Updates service 5, adds service 8
+          5 ->
+            updated_services =
+              acc_state.services
+              |> Map.put(5, %ServiceAccount{balance: 250})
+              |> Map.put(8, %ServiceAccount{balance: 500})
+            %AccumulationResult{
+              state: %{acc_state | services: updated_services},
+              transfers: [%{amount: 20}],
+              output: "output5",
+              gas_used: 20
+            }
+
+          # Default case
+          _ ->
+            %AccumulationResult{state: acc_state}
+        end
       end)
 
       {updated_state, transfers, outputs, total_gas} =
@@ -572,11 +548,9 @@ defmodule System.State.AccumulationTest do
       assert Enum.sum(for t <- transfers, do: t.amount) == 30
 
       # Verify outputs
-      assert MapSet.size(outputs) == 2
-
-      assert Enum.all?([4, 5], fn service ->
-               MapSet.member?(outputs, {service, "output#{service}"})
-             end)
+      assert length(outputs) == 2
+      assert Enum.member?(outputs, %Lastaccout{service: 4, accumulated_output: "output4"})
+      assert Enum.member?(outputs, %Lastaccout{service: 5, accumulated_output: "output5"})
 
       # Verify transfers are ordered by source service executions
       # First all transfers from service 4, then service 5
@@ -591,11 +565,7 @@ defmodule System.State.AccumulationTest do
 
   describe "sequential_accumulation/4" do
     setup do
-      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
-      end)
+      setup_mock_accumulation()
 
       :ok
     end
@@ -603,33 +573,25 @@ defmodule System.State.AccumulationTest do
     test "performs basic outer accumulation correctly" do
       gas_limit = 100
 
-      extra_args = %{
-        timeslot_: Enum.random(1..1000),
-        n0_: Util.Hash.one()
-      }
+      extra_args = base_extra_args()
 
-      initial_state = %Accumulation{
-        services: %{4 => :service4, 5 => :service5, 6 => :service6},
-          manager: 1,
-        assigners: 2,
-        delegator: 3,
-        next_validators: :initial_next_validators,
-        authorizer_queue: :initial_authorizer_queue
-      }
+      initial_state = base_accumulation_state(%{
+        assigners: [2]
+      })
 
       work_reports = [
-        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 30}]},
-        %WorkReport{digests: [%WorkDigest{service: 5, gas_ratio: 40}]},
-        %WorkReport{digests: [%WorkDigest{service: 4, gas_ratio: 50}]}
+        simple_work_report(4, 30),
+        simple_work_report(5, 40),
+        simple_work_report(4, 50)
       ]
 
       always_acc_services = %{6 => 20}
 
       # Mock single_accumulation
       MockAccumulation
-      |> expect(:do_single_accumulation, 6, fn acc_state, _, _, service, _ ->
+      |> stub(:do_single_accumulation, fn acc_state, _, _, service, _ ->
         gas_map = %{4 => 30, 5 => 40, 6 => 20}
-        gas_used = gas_map[service]
+        gas_used = Map.get(gas_map, service, 0)
 
         %AccumulationResult{
           state: acc_state,
@@ -655,7 +617,9 @@ defmodule System.State.AccumulationTest do
       assert final_state.services == %{4 => :service4, 5 => :service5, 6 => :service6}
 
       # (30 + 40 + 20)
-      assert Enum.all?([4, 5, 6], fn i -> MapSet.member?(all_outputs, {i, "output#{i}"}) end)
+      assert Enum.all?([4, 5, 6], fn i ->
+        Enum.member?(all_outputs, %Lastaccout{service: i, accumulated_output: "output#{i}"})
+      end)
 
       # Verify transfers are ordered by source service executions
       # First all transfers from service 4, then service 5, then service 6
@@ -684,10 +648,18 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
       ]
 
-      %{1 => {s1, _}, 2 => {s2, _}, 3 => {s3, _}} =
-        Accumulation.apply_transfers(services_intermediate_2, transfers, 0, %{
-          n0_: Util.Hash.one()
-        })
+      accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
+
+      %{1 => s1, 2 => s2, 3 => s3} =
+        Accumulation.apply_transfers(
+          services_intermediate_2,
+          transfers,
+          0,
+          accumualted_services_keys,
+          %{
+            n0_: Util.Hash.one()
+          }
+        )
 
       assert s1.balance == 200
       assert s2.balance == 250
@@ -700,8 +672,12 @@ defmodule System.State.AccumulationTest do
         2 => %ServiceAccount{balance: 200}
       }
 
-      %{1 => {s1, _}, 2 => {s2, _}} =
-        Accumulation.apply_transfers(services_intermediate_2, [], 0, %{n0_: Util.Hash.one()})
+      accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
+
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_transfers(services_intermediate_2, [], 0, accumualted_services_keys, %{
+          n0_: Util.Hash.one()
+        })
 
       assert s1.balance == 100
       assert s2.balance == 200
@@ -713,19 +689,53 @@ defmodule System.State.AccumulationTest do
         2 => %ServiceAccount{balance: 200}
       }
 
+      accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
+
       transfers = [
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      %{1 => {s1, g1}, 2 => {s2, g2}} =
-        Accumulation.apply_transfers(services_intermediate_2, transfers, 0, %{
-          n0_: Util.Hash.one()
-        })
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_transfers(
+          services_intermediate_2,
+          transfers,
+          0,
+          accumualted_services_keys,
+          %{
+            n0_: Util.Hash.one()
+          }
+        )
 
       assert s1.balance == 100
       assert s2.balance == 200
-      assert g1 == 0
-      assert g2 == 0
+    end
+
+    test "updates latest_accumulation_timeslot, but only to accumulated_services" do
+      services_intermediate_2 = %{
+        1 => %ServiceAccount{balance: 100, latest_accumulation_timeslot: 1},
+        2 => %ServiceAccount{balance: 200, latest_accumulation_timeslot: 2}
+      }
+
+      accumualted_services_keys = MapSet.new([1])
+      timeslot = 100
+
+      transfers = [
+        %DeferredTransfer{sender: 1, receiver: 2, amount: 50}
+      ]
+
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_transfers(
+          services_intermediate_2,
+          transfers,
+          timeslot,
+          accumualted_services_keys,
+          %{n0_: Util.Hash.one()}
+        )
+
+      assert s1.latest_accumulation_timeslot == timeslot
+      assert s2.latest_accumulation_timeslot == 2
+      assert s1.balance == 100
+      assert s2.balance == 250
     end
   end
 
@@ -841,11 +851,7 @@ defmodule System.State.AccumulationTest do
       n0_ = :crypto.strong_rand_bytes(32)
 
       # Set the mock module for accumulation
-      Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
-
-      on_exit(fn ->
-        Application.delete_env(:jamixir, :accumulation_module)
-      end)
+      setup_mock_accumulation()
 
       %{
         timeslot: 5,
