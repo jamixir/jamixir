@@ -313,9 +313,10 @@ defmodule System.State.Accumulation do
       |> Map.get(:state)
       |> Map.get(:next_validators)
 
-    # q′ = (∆1(o, w, f , a_c)o)q
+    # Formula (12.17) v0.6.8 (we're in the future :))
+    #     ∀c ∈ NC ∶ q′ c = ((∆1(o, w, f , ac)o)q)c
     authorizer_queue_ =
-      for a_c <- acc_state.assigners do
+      for {a_c, c} <- Enum.with_index(acc_state.assigners) do
         single_accumulation(
           acc_state,
           work_reports,
@@ -325,6 +326,7 @@ defmodule System.State.Accumulation do
         )
         |> Map.get(:state)
         |> Map.get(:authorizer_queue)
+        |> Enum.at(c)
       end
 
     d = acc_state.services
