@@ -6,7 +6,7 @@ defmodule RecentHistoryTest do
   alias Block.Extrinsic.Guarantee
   alias Block.Header
   alias System.State.RecentHistory.RecentBlock
-  alias System.State.{BeefyCommitmentMap, RecentHistory}
+  alias System.State.{RecentHistory}
   alias Util.{Hash, MerkleTree, MMR}
   import Jamixir.Factory
   import Codec.Encoder
