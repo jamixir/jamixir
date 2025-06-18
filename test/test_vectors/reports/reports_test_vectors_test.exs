@@ -37,6 +37,7 @@ defmodule ReportsTestVectorsTest do
       :ok
     end
 
+    # TODO test vecotrs are not yet updated to new recent history form of 0.6.7 (pre-state.recent_blocks are in pre 0.6.7 form)
     define_vector_tests("reports")
   end
 end
