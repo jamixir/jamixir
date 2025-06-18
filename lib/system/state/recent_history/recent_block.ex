@@ -23,8 +23,6 @@ defmodule System.State.RecentHistory.RecentBlock do
       work_report_hashes: [&map_reported_hashes/1, :reported]
     }
 
-  defp mmr(json), do: JsonDecoder.from_json(json[:peaks])
-
   defp map_reported_hashes(json) do
     for report <- json, into: %{} do
       {f1, f2} =
