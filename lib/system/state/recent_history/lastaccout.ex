@@ -1,3 +1,4 @@
+# Formula (7.4) v0.6.7
 defmodule System.State.RecentHistory.Lastaccout do
   @type t :: %__MODULE__{
           # s

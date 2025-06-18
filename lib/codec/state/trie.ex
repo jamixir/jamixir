@@ -81,13 +81,6 @@ defmodule Codec.State.Trie do
     <<n0, a0, n1, a1, n2, a2, n3, a3>> <> rest
   end
 
-  # def key_to_31_octet({s, h}) do
-  #   <<n0, n1, n2, n3>> = e_le(s, 4)
-  #   <<a_part::binary-size(27), _rest::binary>> = Hash.default(h)
-  #   <<a0, a1, a2, a3, rest::binary>> = a_part
-  #   <<n0, a0, n1, a1, n2, a2, n3, a3>> <> rest
-  # end
-
   # i ∈ N2^8 ↦ [i, 0, 0, . . . ]
   def key_to_31_octet(key) when key < 256, do: <<key::8, 0::240>>
 

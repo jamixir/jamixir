@@ -1,6 +1,6 @@
 defmodule System.State.ServiceAccount do
   @moduledoc """
-  Formula (9.3) v0.6.6
+  Formula (9.3) v0.6.7
   """
   alias Codec.VariableSize
   alias System.State.ServiceAccount
@@ -126,8 +126,8 @@ defmodule System.State.ServiceAccount do
 
   defimpl Encodable do
     alias System.State.ServiceAccount
-    # Formula (D.2) v0.6.6
-    # C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
+    # Formula (D.2) v0.6.7
+    # C(255, s) ↦ ac ⌢ E8(ab, ag , am, ao, af ) ⌢ E4(ai, ar , aa, ap)
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
       octets_in_storage = ServiceAccount.octets_in_storage(s)

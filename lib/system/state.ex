@@ -157,7 +157,7 @@ defmodule System.State do
              state.authorizer_pool,
              h.timeslot
            ),
-         # β'H Formula (4.17) v0.6.6
+         # β'H Formula (4.17) v0.6.7
          recent_history_ =
            RecentHistory.transition(h, state.recent_history, e.guarantees, lastaccouts_),
          {:ok, reporters_set} <-

@@ -11,7 +11,7 @@ defmodule PVM.Accumulate do
   import Codec.Encoder
 
   @doc """
-  Formula (B.9) v0.6.6
+  Formula (B.9) v0.6.7
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
@@ -44,7 +44,7 @@ defmodule PVM.Accumulate do
     x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
 
     d = x.accumulation.services
-    # Formula (B.11) v0.6.6
+    # Formula (B.11) v0.6.7
     f = fn n, %{gas: gas, registers: registers, memory: memory}, {x, _y} = context ->
       s = Context.accumulating_service(x)
 

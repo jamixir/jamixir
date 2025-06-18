@@ -12,7 +12,7 @@ defmodule PVM.Refine do
 
   @doc """
   ΨR: The Refine pvm invocation function.
-  # Formula (B.5) v0.6.6
+  # Formula (B.5) v0.6.7
   """
 
   # see here about where the preimages comes from , it is not in the GP
