@@ -29,10 +29,12 @@ defmodule AuthorizationTestVectorsTest do
 
 
 # TODO
-# authorizer_queue_ doesn't match
-# authorizer_pool_ depeneds on authorizer_queue_ => also doesn't match
-# authorizer_queue_ is created in accumualtion.transition and has been changed in 0.6.7
-# test vect
+# our code already assumes the following PR, check later if it was accepted
+# the pr adds a missing c subscript to the transformation of auth queue in 12.17
+# without it, there is a dimensionality bug 2d matric turns into 3d tensor
+# it is missing another c subscript
+# https://github.com/gavofyork/graypaper/pull/437
+
   describe "vectors" do
     define_vector_tests("authorizations")
   end
