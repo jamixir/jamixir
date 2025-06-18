@@ -1,7 +1,7 @@
 defmodule System.State.RecentHistory.Lastaccout do
   @type t :: %__MODULE__{
           # s
-          service: Types.service(),
+          service: Types.service_index(),
           # b
           accumulated_output: Types.hash()
         }

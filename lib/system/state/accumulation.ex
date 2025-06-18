@@ -6,7 +6,15 @@ defmodule System.State.Accumulation do
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
-  alias System.State.{BeefyCommitmentMap, PrivilegedServices, Ready, ServiceAccount, Validator}
+  alias System.State.RecentHistory.Lastaccout
+
+  alias System.State.{
+    PrivilegedServices,
+    Ready,
+    ServiceAccount,
+    Validator
+  }
+
   alias Types
   use MapUnion
   use AccessStruct
@@ -96,7 +104,7 @@ defmodule System.State.Accumulation do
     }
 
     # Formula (12.22) v0.6.5
-    {n, o, deferred_transfers, lastaccout, u} =
+    {n, o, deferred_transfers, lastaccouts, u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -162,7 +170,7 @@ defmodule System.State.Accumulation do
       ready_to_accumulate: ready_to_accumulate_,
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
-      lastaccout: lastaccout,
+      lastaccouts: lastaccouts,
       accumulation_stats: accumulation_stats,
       # Formula (12.31) v0.6.5
       deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
@@ -215,7 +223,7 @@ defmodule System.State.Accumulation do
           %{non_neg_integer() => non_neg_integer()},
           extra_args()
         ) ::
-          {non_neg_integer(), t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
+          {non_neg_integer(), t(), list(DeferredTransfer.t()), list(Lastaccout.t()),
            list({Types.service_index(), Types.gas()})}
 
   def sequential_accumulation(
@@ -228,7 +236,7 @@ defmodule System.State.Accumulation do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
 
     if i == 0 do
-      {0, acc_state, [], MapSet.new(), []}
+      {0, acc_state, [], [], []}
     else
       {o_star, t_star, b_star, u_star} =
         parallelized_accumulation(
@@ -277,7 +285,7 @@ defmodule System.State.Accumulation do
           %{non_neg_integer() => non_neg_integer()},
           extra_args()
         ) ::
-          {t(), list(DeferredTransfer.t()), BeefyCommitmentMap.t(),
+          {t(), list(DeferredTransfer.t()), list(Lastaccout.t()),
            list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(acc_state, work_reports, alwaysaccers, extra_args) do
     # s
@@ -321,13 +329,12 @@ defmodule System.State.Accumulation do
 
     d = acc_state.services
 
-    {service_hash_pairs, transfers, n, m, service_gas, service_preimages} =
-      Enum.reduce(services, {MapSet.new(), [], %{}, MapSet.new(), [], []}, fn service,
-                                                                              {acc_output,
-                                                                               acc_transfers,
-                                                                               acc_n, acc_m,
-                                                                               acc_service_gas,
-                                                                               acc_preimages} ->
+    {lastaccouts, transfers, n, m, service_gas, service_preimages} =
+      Enum.reduce(services, {[], [], %{}, MapSet.new(), [], []}, fn service,
+                                                                    {acc_lastaccouts,
+                                                                     acc_transfers, acc_n, acc_m,
+                                                                     acc_service_gas,
+                                                                     acc_preimages} ->
         # ar stands for accumulation result
         # ∆1(o,w,f,s)
         ar =
@@ -351,8 +358,8 @@ defmodule System.State.Accumulation do
 
         {
           if(is_binary(ar.output),
-            do: MapSet.put(acc_output, {service, ar.output}),
-            else: acc_output
+            do: acc_lastaccouts ++ [%Lastaccout{service: service, accumulated_output: ar.output}],
+            else: acc_lastaccouts
           ),
           acc_transfers ++ ar.transfers,
           acc_n ++ service_n,
@@ -384,7 +391,7 @@ defmodule System.State.Accumulation do
       alwaysaccers: privileged_services_.alwaysaccers
     }
 
-    {accumulation_state, List.flatten(transfers), service_hash_pairs, service_gas}
+    {accumulation_state, List.flatten(transfers), lastaccouts, service_gas}
   end
 
   # Formula (12.18) v0.6.6
