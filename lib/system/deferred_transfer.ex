@@ -1,5 +1,5 @@
 defmodule System.DeferredTransfer do
-  # Formula (12.14) v0.6.6 - T
+  # Formula (12.14) v0.6.7 - T
 
   @type t :: %__MODULE__{
           # s ∈ ℕ_S
@@ -20,7 +20,7 @@ defmodule System.DeferredTransfer do
             memo: <<0::size(Constants.memo_size() * 8)>>,
             gas_limit: 0
 
-  # Formula (12.27) v0.6.6
+  # Formula (12.27) v0.6.7
   @spec select_transfers_for_destination(list(t()), non_neg_integer()) :: list(t())
   def select_transfers_for_destination(transfers, destination) do
     Enum.with_index(transfers)
@@ -32,7 +32,7 @@ defmodule System.DeferredTransfer do
   defimpl Encodable do
     import Codec.Encoder
     alias System.DeferredTransfer
-    # Formula (C.28) v0.6.6
+    # Formula (C.28) v0.6.7
     def encode(%DeferredTransfer{} = t) do
       <<t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance), t.memo::binary,
         t.gas_limit::m(gas)>>

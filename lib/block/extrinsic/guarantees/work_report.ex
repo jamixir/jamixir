@@ -274,11 +274,14 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (14.11) v0.6.6
+  # TODO update to 0.6.7
+  # https://github.com/gavofyork/graypaper/pull/378
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
     l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
+    # this part in purticular neeeds to be updated to 0.6.7
     {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e, u} do

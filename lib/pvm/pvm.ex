@@ -21,7 +21,7 @@ defmodule PVM do
   end
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
-    # Formula (B.2) v0.6.6
+    # Formula (B.2) v0.6.7
     f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
       host_call_result =
         case host(n) do
@@ -154,7 +154,7 @@ defmodule PVM do
     PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_})
   end
 
-  # Formula (B.15) v0.6.6
+  # Formula (B.15) v0.6.7
   @spec on_transfer(
           services :: %{integer() => ServiceAccount.t()},
           timeslot :: non_neg_integer(),
