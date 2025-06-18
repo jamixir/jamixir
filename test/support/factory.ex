@@ -263,7 +263,8 @@ defmodule Jamixir.Factory do
       code_hash: Hash.default(storage_value),
       balance: 1000,
       gas_limit_g: 5000,
-      gas_limit_m: 10_000
+      gas_limit_m: 10_000,
+      gratis_storage_offset: 40
     }
   end
 

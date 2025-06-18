@@ -26,7 +26,8 @@ defmodule System.State.ServiceAccountTest do
 
   describe "octets in storage" do
     test "return correct value for octets in storage", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(sa) == 121
+      # 81 + bytes size of single item in preimage_l + 34+ byte_size(key) + byte_size(value) of single item in storage
+      assert ServiceAccount.octets_in_storage(sa) == 81 + 4 + 34 + 32 + 4
     end
 
     test "empty items in storage", %{sa: sa} do
@@ -34,7 +35,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "empty items in preimage storage l", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(%{sa | preimage_storage_l: %{}}) == 36
+      assert ServiceAccount.octets_in_storage(%{sa | preimage_storage_l: %{}}) == 34 + 32 + 4
     end
   end
 
@@ -145,7 +146,15 @@ defmodule System.State.ServiceAccountTest do
 
   describe "threshold balance" do
     test "return correct value for threshold balance", %{sa: sa} do
-      assert ServiceAccount.threshold_balance(sa) == 251
+      items_in_storage = 3
+      octets_in_storage = 81 + 4 + 34 + 32 + 4
+      gratis_storage_offset = 40
+
+      assert ServiceAccount.threshold_balance(sa) ==
+               Constants.service_minimum_balance() +
+                 Constants.additional_minimum_balance_per_item() * items_in_storage +
+                 Constants.additional_minimum_balance_per_octet() * octets_in_storage -
+                 gratis_storage_offset
     end
   end
 
@@ -154,10 +163,19 @@ defmodule System.State.ServiceAccountTest do
       sa = build(:service_account)
       encoded = Codec.Encoder.encode(sa)
 
-      assert Codec.Encoder.encode(sa) ==
-               Base.decode16!(
-                 "F3E925002FED7CC0DED46842569EB5C90C910C091D8D04A1BDF96E0DB719FD91E803000000000000881300000000000010270000000000007900000000000000000000000000000003000000000000000000000000000000"
-               )
+      expected_encoded =
+        sa.code_hash <>
+          <<sa.balance::64-little>> <>
+          <<sa.gas_limit_g::64-little>> <>
+          <<sa.gas_limit_m::64-little>> <>
+          <<ServiceAccount.octets_in_storage(sa)::64-little>> <>
+          <<sa.gratis_storage_offset::64-little>> <>
+          <<ServiceAccount.items_in_storage(sa)::32-little>> <>
+          <<sa.creation_timeslot::32-little>> <>
+          <<sa.latest_accumulation_timeslot::32-little>> <>
+          <<sa.parent_service::32-little>>
+
+      assert Base.encode16(encoded) == Base.encode16(expected_encoded)
     end
   end
 
