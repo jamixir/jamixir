@@ -120,7 +120,7 @@ defmodule TestVectorUtil do
 
   def accumulate_mock_return,
     do: %{
-      lastaccout: <<>>,
+      lastaccouts: [],
       authorizer_queue: [],
       services: %{},
       next_validators: [],
