@@ -159,26 +159,23 @@ defmodule Network.Server do
         handle_up_stream(data, stream, new_state, stream_state)
 
       :new_stream ->
-        case data do
-          <<protocol_id::8, rest::binary>> ->
-            if protocol_id >= 128 do
-              handle_ce_stream(rest, stream, props, state, %{
-                protocol_id: protocol_id,
-                buffer: <<>>
-              })
-            else
-              case UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context) do
-                {{:ok, stream_data}, new_state} ->
-                  handle_up_stream(data, stream, new_state, stream_data)
-
-                {:reject, _} ->
-                  {:noreply, state}
-              end
-            end
-
-          _ ->
-            {:noreply, state}
-        end
+        process_new_stream(data, stream, props, state)
     end
   end
+
+  defp process_new_stream(<<protocol_id::8, rest::binary>> = data, stream, props, state) do
+    if protocol_id >= 128 do
+      handle_ce_stream(rest, stream, props, state, %{protocol_id: protocol_id, buffer: <<>>})
+    else
+      case UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context) do
+        {{:ok, stream_data}, new_state} ->
+          handle_up_stream(data, stream, new_state, stream_data)
+
+        {:reject, _} ->
+          {:noreply, state}
+      end
+    end
+  end
+
+  defp process_new_stream(_, _, _, state), do: {:noreply, state}
 end

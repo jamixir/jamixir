@@ -3,18 +3,10 @@ defmodule System.State.Accumulation do
   Chapter 12 - accumulation
   """
 
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
+  alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
-
-  alias System.State.{
-    BeefyCommitmentMap,
-    PrivilegedServices,
-    Ready,
-    ServiceAccount,
-    Validator
-  }
-
+  alias System.State.{BeefyCommitmentMap, PrivilegedServices, Ready, ServiceAccount, Validator}
   alias Types
   use MapUnion
   use AccessStruct

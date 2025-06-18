@@ -251,17 +251,8 @@ defmodule PVM.Host.General.Internal do
         }) ::
           Result.Internal.t()
   def read_internal(registers, memory, service_account, service_index, services) do
-    s_star =
-      cond do
-        registers.r7 == @max_64_bit_value -> service_index
-        true -> registers.r7
-      end
-
-    a =
-      cond do
-        s_star == service_index -> service_account
-        true -> Map.get(services, s_star)
-      end
+    s_star = if registers.r7 == @max_64_bit_value, do: service_index, else: registers.r7
+    a = if s_star == service_index, do: service_account, else: Map.get(services, s_star)
 
     [ko, kz, o] = Registers.get(registers, [8, 9, 10])
 

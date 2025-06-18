@@ -35,11 +35,7 @@ defmodule Network.MessageParsers do
             )
 
             message_preview =
-              if byte_size(message) > 0 do
-                inspect(binary_part(message, 0, min(16, byte_size(message))))
-              else
-                "empty"
-              end
+              if byte_size(message) > 0, do: inspect(binary_slice(message, 0, 16)), else: "empty"
 
             log(:debug, "PARSE_MESSAGES: Message preview: #{message_preview}")
 
@@ -104,41 +100,37 @@ defmodule Network.MessageParsers do
   def parse_up_protocol_id(buffer) do
     log_tag = "PARSE_UP_PROTOCOL_ID"
 
-    cond do
-      byte_size(buffer) < 1 ->
-        log(:debug, "#{log_tag}: Buffer too small for protocol ID")
-        {:need_more, buffer}
-
-      true ->
-        <<protocol_id::8, rest::binary>> = buffer
-        log(:debug, "#{log_tag}: Protocol ID #{protocol_id} extracted")
-        {:protocol, protocol_id, rest}
+    if byte_size(buffer) < 1 do
+      log(:debug, "#{log_tag}: Buffer too small for protocol ID")
+      {:need_more, buffer}
+    else
+      <<protocol_id::8, rest::binary>> = buffer
+      log(:debug, "#{log_tag}: Protocol ID #{protocol_id} extracted")
+      {:protocol, protocol_id, rest}
     end
   end
 
   def parse_up_message(buffer) do
     log_tag = "PARSE_UP_MESSAGE"
 
-    cond do
-      byte_size(buffer) < 4 ->
-        log(:debug, "#{log_tag}: Buffer too small for message length")
+    if byte_size(buffer) < 4 do
+      log(:debug, "#{log_tag}: Buffer too small for message length")
+      {:need_more, buffer}
+    else
+      <<length::32-little, rest::binary>> = buffer
+
+      if byte_size(rest) >= length do
+        <<message::binary-size(length), remaining::binary>> = rest
+        log(:debug, "#{log_tag}: Parsed complete message of size #{length}")
+        {:complete, message, remaining}
+      else
+        log(
+          :debug,
+          "#{log_tag}: Incomplete message, needed #{length}, have #{byte_size(rest)}"
+        )
+
         {:need_more, buffer}
-
-      true ->
-        <<length::32-little, rest::binary>> = buffer
-
-        if byte_size(rest) >= length do
-          <<message::binary-size(length), remaining::binary>> = rest
-          log(:debug, "#{log_tag}: Parsed complete message of size #{length}")
-          {:complete, message, remaining}
-        else
-          log(
-            :debug,
-            "#{log_tag}: Incomplete message, needed #{length}, have #{byte_size(rest)}"
-          )
-
-          {:need_more, buffer}
-        end
+      end
     end
   end
 end

@@ -126,19 +126,17 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     {exit_reason, w7_, context_} =
-      cond do
-        p == :error ->
-          {:panic, registers.r7, context}
+      if p == :error do
+        {:panic, registers.r7, context}
+      else
+        case PVM.Decoder.deblob(p) do
+          {:ok, _} ->
+            machine = %Integrated{program: p, memory: u, counter: i}
+            {:continue, n, %{context | m: Map.put(m, n, machine)}}
 
-        true ->
-          case PVM.Decoder.deblob(p) do
-            {:ok, _} ->
-              machine = %Integrated{program: p, memory: u, counter: i}
-              {:continue, n, %{context | m: Map.put(m, n, machine)}}
-
-            {:error, _} ->
-              {:continue, huh(), context}
-          end
+          {:error, _} ->
+            {:continue, huh(), context}
+        end
       end
 
     %Internal{
@@ -218,9 +216,10 @@ defmodule PVM.Host.Refine.Internal do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     u =
-      case Map.has_key?(m, n) do
-        true -> Map.get(m, n).memory
-        false -> :error
+      Map.get(m, n, :error)
+      |> case do
+        :error -> :error
+        machine -> machine.memory
       end
 
     u_ =
@@ -264,9 +263,10 @@ defmodule PVM.Host.Refine.Internal do
     [n, p, c] = Registers.get(registers, [7, 8, 9])
 
     u =
-      case Map.has_key?(m, n) do
-        true -> Map.get(m, n).memory
-        false -> :error
+      Map.get(m, n, :error)
+      |> case do
+        :error -> :error
+        machine -> machine.memory
       end
 
     u_ =

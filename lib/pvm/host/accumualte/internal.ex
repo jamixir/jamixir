@@ -116,14 +116,12 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, w7_, context_} =
-      cond do
-        v == :error ->
-          {:panic, registers.r7, context_pair}
-
-        true ->
-          x_ = put_in(x, [:accumulation, :next_validators], v)
-          context_ = put_elem(context_pair, 0, x_)
-          {:continue, ok(), context_}
+      if v == :error do
+        {:panic, registers.r7, context_pair}
+      else
+        x_ = put_in(x, [:accumulation, :next_validators], v)
+        context_ = put_elem(context_pair, 0, x_)
+        {:continue, ok(), context_}
       end
 
     %Result.Internal{
@@ -233,17 +231,15 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, w7_, context_} =
-      cond do
-        c == :error ->
-          {:panic, registers.r7, context_pair}
+      if c == :error do
+        {:panic, registers.r7, context_pair}
+      else
+        xs_ =
+          %{Context.accumulating_service(x) | code_hash: c, gas_limit_g: g, gas_limit_m: m}
 
-        true ->
-          xs_ =
-            %{Context.accumulating_service(x) | code_hash: c, gas_limit_g: g, gas_limit_m: m}
-
-          x_ = put_in(x, [:accumulation, :services, x.service], xs_)
-          context_ = put_elem(context_pair, 0, x_)
-          {:continue, ok(), context_}
+        x_ = put_in(x, [:accumulation, :services, x.service], xs_)
+        context_ = put_elem(context_pair, 0, x_)
+        {:continue, ok(), context_}
       end
 
     %Result.Internal{
@@ -388,28 +384,21 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, w7_, w8_} =
-      cond do
-        h == :error ->
-          {:panic, registers.r7, registers.r8}
+      if h == :error do
+        {:panic, registers.r7, registers.r8}
+      else
+        xs = Context.accumulating_service(x)
+        a = Map.get(xs.preimage_storage_l, {h, z}, :error)
 
-        true ->
-          xs = Context.accumulating_service(x)
-          a = Map.get(xs.preimage_storage_l, {h, z}, :error)
+        two_32 = 0x1_0000_0000
 
-          cond do
-            a == :error ->
-              {:continue, none(), 0}
-
-            true ->
-              two_32 = 0x1_0000_0000
-
-              case a do
-                [] -> {:continue, 0, 0}
-                [x] -> {:continue, 1 + two_32 * x, 0}
-                [x, y] -> {:continue, 2 + two_32 * x, y}
-                [x, y, z] -> {:continue, 3 + two_32 * x, y + two_32 * z}
-              end
-          end
+        case a do
+          :error -> {:continue, none(), 0}
+          [] -> {:continue, 0, 0}
+          [x] -> {:continue, 1 + two_32 * x, 0}
+          [x, y] -> {:continue, 2 + two_32 * x, y}
+          [x, y, z] -> {:continue, 3 + two_32 * x, y + two_32 * z}
+        end
       end
 
     registers_ = Registers.set(registers, :r7, w7_) |> Registers.set(:r8, w8_)
@@ -555,12 +544,10 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     {exit_reason, w7_, x_} =
-      cond do
-        h == :error ->
-          {:panic, registers.r7, x}
-
-        true ->
-          {:continue, ok(), %{x | accumulation_trie_result: h}}
+      if h == :error do
+        {:panic, registers.r7, x}
+      else
+        {:continue, ok(), %{x | accumulation_trie_result: h}}
       end
 
     %Result.Internal{
@@ -583,11 +570,7 @@ defmodule PVM.Host.Accumulate.Internal do
     # d
     services = x.accumulation.services
 
-    s_star =
-      cond do
-        registers.r7 == @max_64_bit_value -> service_index
-        true -> registers.r7
-      end
+    s_star = if registers.r7 == @max_64_bit_value, do: service_index, else: registers.r7
 
     i =
       case Memory.read(memory, o, z) do

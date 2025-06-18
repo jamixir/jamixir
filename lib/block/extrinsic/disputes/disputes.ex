@@ -199,7 +199,9 @@ defmodule Block.Extrinsic.Disputes do
   defp validate_faults(faults, allowed_validator_keys, v_set) do
     with :ok <- validate_common_offense_rules(faults, allowed_validator_keys, :faults) do
       if Enum.any?(faults, fn fault ->
-           case Enum.find(v_set, fn {hash, _sum, _v_count} -> hash == fault.work_report_hash end) do
+           find_fn = fn {hash, _sum, _v_count} -> hash == fault.work_report_hash end
+
+           case Enum.find(v_set, find_fn) do
              {_, sum, v_count} when sum == div(2 * v_count, 3) + 1 -> fault.vote
              {_, 0, _} -> !fault.vote
              _ -> false

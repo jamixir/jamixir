@@ -51,7 +51,7 @@ defmodule Network.Peer do
   defp initiate_connection(ip, port) do
     log("Initiating connection to #{ip}:#{port}...")
 
-    case :quicer.connect(ip, port, default_quicer_opts(), 5_000) do
+    case :quicer.connect(ip, port, default_quicer_opts(), 10_000) do
       {:ok, conn} ->
         log("Connected to #{ip}:#{port}")
         {:ok, %PeerState{connection: conn}}

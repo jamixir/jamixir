@@ -39,11 +39,9 @@ defmodule KVStorage do
 
           value ->
             # Async update to memory
-            Task.start(fn ->
-              :mnesia.transaction(fn ->
-                :mnesia.write({@table_name, key, value})
-              end)
-            end)
+            write_fn = fn -> :mnesia.write({@table_name, key, value}) end
+            transaction_fn = fn -> :mnesia.transaction(write_fn) end
+            Task.start(transaction_fn)
 
             value
         end
