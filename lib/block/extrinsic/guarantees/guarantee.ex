@@ -191,7 +191,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   # Formula (11.33) v0.6.8
-  # ∀x ∈ x ∶ ∃y ∈ β ∶ xa = yh ∧ xs = ys ∧ xb = yb
+# ∀x ∈ x ∶ ∃y ∈ β†H ∶ xa = yh ∧ xs = ys ∧ xb = yb
   mockable validate_anchor_block(guarantees, %RecentHistory{} = beta, prior_state_root) do
     beta_dagger = RecentHistory.update_latest_state_root(beta, prior_state_root)
 
