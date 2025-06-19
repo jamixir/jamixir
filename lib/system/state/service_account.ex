@@ -124,6 +124,8 @@ defmodule System.State.ServiceAccount do
   defp in_storage?([x, y], t), do: x <= t and t < y
   defp in_storage?([x, y, z], t), do: (x <= t and t < y) or z <= t
 
+  def service_id?(n), do: n >= 0 and n <= 0xFFFF_FFFF 
+
   defimpl Encodable do
     alias System.State.ServiceAccount
     # Formula (D.2) v0.6.7

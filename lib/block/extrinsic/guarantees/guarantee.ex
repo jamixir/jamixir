@@ -208,7 +208,7 @@ defmodule Block.Extrinsic.Guarantee do
               {:halt, {:error, :anchor_not_recent}}
 
             blocks ->
-              # xb = MR(yb)
+              # xb = yb
               case for(
                      y <- blocks,
                      x.beefy_root ==

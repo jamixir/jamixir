@@ -20,10 +20,7 @@ defmodule PVM.Host.Accumulate.Internal do
     assigners_ =
       case Memory.read(memory, a, 4 * Constants.core_count()) do
         {:ok, data} ->
-          for <<chunk::binary-size(4) <- data>>, into: [] do
-            <<service::service()>> = chunk
-            service
-          end
+          for <<service::service() <- data>>, into: [], do: service
 
         _ ->
           :error
@@ -32,10 +29,7 @@ defmodule PVM.Host.Accumulate.Internal do
     z =
       case Memory.read(memory, o, 12 * n) do
         {:ok, data} ->
-          for <<chunk::binary-size(12) <- data>>, into: %{} do
-            <<service::service(), value::64-little>> = chunk
-            {service, value}
-          end
+          for <<service::service(), value::64-little <- data>>, into: %{}, do: {service, value}
 
         _ ->
           :error
@@ -43,13 +37,13 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason_, w7_, context_} =
       cond do
-        z == :error or assigners_ == :error ->
+        :error in [z, assigners_] ->
           {:panic, registers.r7, context_pair}
 
         x.service != x.accumulation.manager ->
           {:continue, huh(), context_pair}
 
-        Enum.any?([m, v], &(&1 < 0 or &1 > 0xFFFF_FFFF)) ->
+        Enum.any?([m, v], &(not ServiceAccount.service_id?(&1))) ->
           {:continue, who(), context_pair}
 
         true ->
