@@ -9,6 +9,7 @@ defmodule Block.Extrinsic.WorkPackage do
   use AccessStruct
   import Codec.Encoder
   alias Codec.VariableSize
+  import Util.Collections, only: [sum_by: 2]
   use Sizes
 
   @type t :: %__MODULE__{
@@ -87,10 +88,9 @@ defmodule Block.Extrinsic.WorkPackage do
   defp valid_size?(%__MODULE__{work_items: work_items} = p) do
     byte_size(p.authorization_token) +
       byte_size(p.parameterization_blob) +
-      Enum.reduce(work_items, 0, fn w, acc ->
-        segments_size = length(w.import_segments) * Constants.segment_size()
-        extrinsic_size = Enum.sum(for {_, e} <- w.extrinsic, do: e)
-        acc + byte_size(w.payload) + segments_size + extrinsic_size
+      sum_by(work_items, fn w ->
+        byte_size(w.payload) + length(w.import_segments) * Constants.segment_size() +
+          Enum.sum(for {_, e} <- w.extrinsic, do: e)
       end) <= @maximum_size
   end
 
