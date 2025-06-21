@@ -268,14 +268,6 @@ defmodule Codec.State.TrieTest do
       assert recovered_state.services == trie_state.services
     end
 
-    # TODO
-    # with the changes introduced to accoutn footprint in https://github.com/gavofyork/graypaper/pull/406
-    # this test cannot pass
-    # why? storage keys are unrecovable, , in recoverd state we get storage keys of length 27
-    # but NOW (0.6.7), octets_in_storage also counts key size (this is likely to change)(https://github.com/gavofyork/graypaper/pull/406/files#r2112117815)
-    # so in the second encoding (serialize(recovered_state)) we get wrong (too low) number because the storage key are not 32 bytes
-    # also notice that in 0.6.7 - sotage chnaged from D<H => Y> into D<Y => Y>
-
     test "trie_to_state/1 - service accounts with storage", %{state: state} do
       trie_state = %State{
         state
