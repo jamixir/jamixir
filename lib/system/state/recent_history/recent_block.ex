@@ -1,4 +1,6 @@
 defmodule System.State.RecentHistory.RecentBlock do
+  alias Util.Hash
+
   @type t :: %__MODULE__{
           # h
           header_hash: Types.hash(),
@@ -11,9 +13,9 @@ defmodule System.State.RecentHistory.RecentBlock do
         }
 
   # Formula (7.1) v0.6.7
-  defstruct header_hash: nil,
-            accumulated_result_mmb: nil,
-            state_root: nil,
+  defstruct header_hash: Hash.zero(),
+            accumulated_result_mmb: Hash.zero(),
+            state_root: Hash.zero(),
             work_report_hashes: %{}
 
   use JsonDecoder
