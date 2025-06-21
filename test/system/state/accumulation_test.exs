@@ -26,7 +26,7 @@ defmodule System.State.AccumulationTest do
           assigners: [99, 100],
           # delegator_star - service ID that will be accumulated
           delegator: 101,
-          alwaysaccers: :updated_alwaysaccers
+          always_accumulated: :updated_always_accumulated
         }
       }
     end)
@@ -340,7 +340,7 @@ defmodule System.State.AccumulationTest do
                manager: :updated_manager,
                assigners: [:assigner_99_result_1, :assigner_100_result_2],
                delegator: :updated_delegator,
-               alwaysaccers: :updated_alwaysaccers
+               always_accumulated: :updated_always_accumulated
              } =
                Accumulation.accumulate_privileged_services(
                  initial_state,
@@ -394,7 +394,7 @@ defmodule System.State.AccumulationTest do
                 manager: 2,
                 assigners: [99, 100],
                 delegator: 101,
-                alwaysaccers: %{6 => 130}
+                always_accumulated: %{6 => 130}
               }
             }
 
@@ -419,7 +419,7 @@ defmodule System.State.AccumulationTest do
       assert updated_state.manager == 2
       assert updated_state.assigners == [10001, 10002]
       assert updated_state.delegator == 2004
-      assert updated_state.alwaysaccers == %{6 => 130}
+      assert updated_state.always_accumulated == %{6 => 130}
       assert updated_state.next_validators == :updated_next_validators
       assert updated_state.authorizer_queue == [[<<0, 0, 100>>, <<0, 1, 100>>]]
 
@@ -461,7 +461,7 @@ defmodule System.State.AccumulationTest do
                 manager: :updated_manager,
                 assigners: [99, 100],
                 delegator: 101,
-                alwaysaccers: :updated_alwaysaccers
+                always_accumulated: :updated_always_accumulated
               }
             }
 
@@ -839,7 +839,7 @@ defmodule System.State.AccumulationTest do
         privileged_services: %PrivilegedServices{
           manager: 1,
           assigners: [2],
-          alwaysaccers: %{1 => 100, 2 => 100}
+          always_accumulated: %{1 => 100, 2 => 100}
         },
         timeslot: 3,
         services: %{

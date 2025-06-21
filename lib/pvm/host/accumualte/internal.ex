@@ -54,7 +54,7 @@ defmodule PVM.Host.Accumulate.Internal do
                 | manager: m,
                   assigners: assigners_,
                   delegator: v,
-                  alwaysaccers: z
+                  always_accumulated: z
               }
           }
 
