@@ -2,7 +2,7 @@ defmodule PVM.Host.AccumulateTest do
   use ExUnit.Case
   alias PVM.Host.Accumulate
   alias System.DeferredTransfer
-  alias System.State.{Accumulation, PrivilegedServices, ServiceAccount}
+  alias System.State.{Accumulation, ServiceAccount}
   alias Util.Hash
 
   alias PVM.{
@@ -193,8 +193,7 @@ defmodule PVM.Host.AccumulateTest do
     test "returns :panic when memory is not readable", %{
       context: context,
       gas: gas,
-      registers: registers,
-      memory: memory
+      registers: registers
     } do
       # Make memory unreadable
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
@@ -314,7 +313,6 @@ defmodule PVM.Host.AccumulateTest do
     test "returns :panic when memory is not readable", %{
       context: context,
       gas: gas,
-      memory: memory,
       registers: registers
     } do
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
