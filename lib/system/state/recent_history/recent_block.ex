@@ -37,6 +37,15 @@ defmodule System.State.RecentHistory.RecentBlock do
     end
   end
 
+  defimpl Encodable do
+    import Codec.Encoder, only: [e: 1]
+    alias System.State.RecentHistory.RecentBlock
+
+    def encode(%RecentBlock{} = b) do
+      e({b.header_hash, b.accumulated_result_mmb, b.state_root, b.work_report_hashes})
+    end
+  end
+
   use Sizes
   import Codec.Encoder
 
