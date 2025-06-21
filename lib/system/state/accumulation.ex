@@ -6,14 +6,7 @@ defmodule System.State.Accumulation do
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
-  alias System.State.RecentHistory.Lastaccout
-
-  alias System.State.{
-    PrivilegedServices,
-    Ready,
-    ServiceAccount,
-    Validator
-  }
+  alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator, RecentHistory.AccumulationOutput}
 
   alias Types
   use MapUnion
@@ -104,7 +97,7 @@ defmodule System.State.Accumulation do
     }
 
     # Formula (12.22) v0.6.5
-    {n, o, deferred_transfers, lastaccouts, u} =
+    {n, o, deferred_transfers, accumulation_outputs, u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -170,7 +163,7 @@ defmodule System.State.Accumulation do
       ready_to_accumulate: ready_to_accumulate_,
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
-      lastaccouts: lastaccouts,
+      accumulation_outputs: accumulation_outputs,
       accumulation_stats: accumulation_stats,
       # Formula (12.31) v0.6.5
       deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
@@ -223,7 +216,7 @@ defmodule System.State.Accumulation do
           %{non_neg_integer() => non_neg_integer()},
           extra_args()
         ) ::
-          {non_neg_integer(), t(), list(DeferredTransfer.t()), list(Lastaccout.t()),
+          {non_neg_integer(), t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()),
            list({Types.service_index(), Types.gas()})}
 
   def sequential_accumulation(
@@ -285,7 +278,7 @@ defmodule System.State.Accumulation do
           %{non_neg_integer() => non_neg_integer()},
           extra_args()
         ) ::
-          {t(), list(DeferredTransfer.t()), list(Lastaccout.t()),
+          {t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()),
            list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(acc_state, work_reports, alwaysaccers, extra_args) do
     # s
@@ -331,9 +324,9 @@ defmodule System.State.Accumulation do
 
     d = acc_state.services
 
-    {lastaccouts, transfers, n, m, service_gas, service_preimages} =
+    {accumulation_outputs, transfers, n, m, service_gas, service_preimages} =
       Enum.reduce(services, {[], [], %{}, MapSet.new(), [], []}, fn service,
-                                                                    {acc_lastaccouts,
+                                                                    {acc_accumulation_outputs,
                                                                      acc_transfers, acc_n, acc_m,
                                                                      acc_service_gas,
                                                                      acc_preimages} ->
@@ -360,8 +353,8 @@ defmodule System.State.Accumulation do
 
         {
           if(is_binary(ar.output),
-            do: acc_lastaccouts ++ [%Lastaccout{service: service, accumulated_output: ar.output}],
-            else: acc_lastaccouts
+            do: acc_accumulation_outputs ++ [%AccumulationOutput{service: service, accumulated_output: ar.output}],
+            else: acc_accumulation_outputs
           ),
           acc_transfers ++ ar.transfers,
           acc_n ++ service_n,
@@ -393,7 +386,7 @@ defmodule System.State.Accumulation do
       alwaysaccers: privileged_services_.alwaysaccers
     }
 
-    {accumulation_state, List.flatten(transfers), lastaccouts, service_gas}
+    {accumulation_state, List.flatten(transfers), accumulation_outputs, service_gas}
   end
 
   # Formula (12.18) v0.6.6
