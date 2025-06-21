@@ -99,7 +99,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
         true ->
           queue_ =
-            x.accumulation.authorizer_queue |> List.insert_at(c, q)
+            x.accumulation.authorizer_queue |> List.replace_at(c, q)
 
           assigners_ = x.accumulation.assigners |> List.replace_at(c, a)
 
@@ -182,7 +182,7 @@ defmodule PVM.Host.Accumulate.Internal do
     c =
       case Memory.read(memory, o, 32) do
         {:ok, data} ->
-          if l >= 0 and l < 0x1_0000_0000, do: data, else: :error
+          if ServiceAccount.service_id?(l), do: data, else: :error
 
         _ ->
           :error
