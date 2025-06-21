@@ -176,7 +176,7 @@ defmodule PVM.Host.AccumulateTest do
         service: 123,
         accumulation: %Accumulation{
           assigners: [0, 123, 0, 123],
-          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
+          authorizer_queue: [[Hash.one()], [Hash.two()]]  # Initialize authorizer_queue with an empty list
         }
       }
 
