@@ -15,13 +15,13 @@ defmodule System.State.PrivilegedServices do
           # χv
           delegator: non_neg_integer(),
           # χg
-          alwaysaccers: %{non_neg_integer() => non_neg_integer()}
+          always_accumulated: %{non_neg_integer() => non_neg_integer()}
         }
 
   defstruct manager: 0,
             assigners: List.duplicate(0, Constants.core_count()),
             delegator: 0,
-            alwaysaccers: %{}
+            always_accumulated: %{}
 
   defimpl Encodable do
     import Codec.Encoder
@@ -33,7 +33,7 @@ defmodule System.State.PrivilegedServices do
       <<v.manager::m(service)>> <>
         assigners_encoded <>
         <<v.delegator::m(service)>> <>
-        e(v.alwaysaccers)
+        e(v.always_accumulated)
     end
   end
 
@@ -50,13 +50,13 @@ defmodule System.State.PrivilegedServices do
 
     <<delegator::m(service), rest::binary>> = rest
 
-    {alwaysaccers, rest} = VariableSize.decode(rest, :map_int)
+    {always_accumulated, rest} = VariableSize.decode(rest, :map_int)
 
     {%__MODULE__{
        manager: manager,
        assigners: assigners,
        delegator: delegator,
-       alwaysaccers: alwaysaccers
+       always_accumulated: always_accumulated
      }, rest}
   end
 
@@ -65,7 +65,7 @@ defmodule System.State.PrivilegedServices do
       manager: :chi_m,
       assigners: :chi_a,
       delegator: :chi_v,
-      alwaysaccers: [:chi_g, %{}]
+      always_accumulated: [:chi_g, %{}]
     }
   end
 
@@ -74,6 +74,6 @@ defmodule System.State.PrivilegedServices do
       manager: :chi_m,
       assigners: :chi_a,
       delegator: :chi_v,
-      alwaysaccers: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
+      always_accumulated: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
     }
 end

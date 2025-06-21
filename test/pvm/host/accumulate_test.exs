@@ -35,7 +35,7 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       # Encode the gas map entries
-      encoded_alwaysaccers =
+      encoded_always_accumulated =
         for {service, value} <- gas_map, into: <<>> do
           <<service::service(), value::64-little>>
         end
@@ -50,7 +50,7 @@ defmodule PVM.Host.AccumulateTest do
       # Write to memory
       memory =
         PreMemory.init_nil_memory()
-        |> PreMemory.write(a_0(), encoded_alwaysaccers)
+        |> PreMemory.write(a_0(), encoded_always_accumulated)
         |> PreMemory.set_access(a_0(), 32, :read)
         |> PreMemory.write(2 * a_0(), encoded_assigners)
         |> PreMemory.set_access(2 * a_0(), 4 * Constants.core_count(), :read)
@@ -155,10 +155,10 @@ defmodule PVM.Host.AccumulateTest do
         manager: 1,
         assigners: assigners,
         delegator: 3,
-        alwaysaccers: gas_map
+        always_accumulated: gas_map
       }
 
-      assert Map.take(x_.accumulation, [:manager, :assigners, :delegator, :alwaysaccers]) ==
+      assert Map.take(x_.accumulation, [:manager, :assigners, :delegator, :always_accumulated]) ==
                expected_privileged
     end
   end

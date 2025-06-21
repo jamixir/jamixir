@@ -40,7 +40,7 @@ defmodule System.State.Accumulation do
           # v: Delegator
           delegator: non_neg_integer(),
           # z: Always accers
-          alwaysaccers: %{non_neg_integer() => non_neg_integer()}
+          always_accumulated: %{non_neg_integer() => non_neg_integer()}
         }
 
   defstruct services: %{},
@@ -49,7 +49,7 @@ defmodule System.State.Accumulation do
             manager: 0,
             assigners: [],
             delegator: 0,
-            alwaysaccers: %{}
+            always_accumulated: %{}
 
   def transition(w, t_, n0_, s) do
     module = Application.get_env(:jamixir, :accumulation, __MODULE__)
@@ -74,7 +74,7 @@ defmodule System.State.Accumulation do
       max(
         Constants.gas_total_accumulation(),
         Constants.gas_accumulation() * Constants.core_count() +
-          Enum.sum(Map.values(privileged_services.alwaysaccers))
+          Enum.sum(Map.values(privileged_services.always_accumulated))
       )
 
     # W∗
@@ -93,7 +93,7 @@ defmodule System.State.Accumulation do
       manager: privileged_services.manager,
       assigners: privileged_services.assigners,
       delegator: privileged_services.delegator,
-      alwaysaccers: privileged_services.alwaysaccers
+      always_accumulated: privileged_services.always_accumulated
     }
 
     # Formula (12.22) v0.6.5
@@ -102,7 +102,7 @@ defmodule System.State.Accumulation do
         gas_limit,
         accumulatable_reports,
         initial_state,
-        privileged_services.alwaysaccers,
+        privileged_services.always_accumulated,
         extra_args
       )
 
@@ -114,7 +114,7 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
-      alwaysaccers: alwaysaccers_
+      always_accumulated: always_accumulated_
     } = o
 
     w_star_n = Enum.take(accumulatable_reports, n)
@@ -153,7 +153,7 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
-      alwaysaccers: alwaysaccers_
+      always_accumulated: always_accumulated_
     }
 
     %{
@@ -223,7 +223,7 @@ defmodule System.State.Accumulation do
         gas_limit,
         work_reports,
         acc_state,
-        alwaysaccers,
+        always_accumulated,
         extra_args
       ) do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
@@ -235,7 +235,7 @@ defmodule System.State.Accumulation do
         parallelized_accumulation(
           acc_state,
           Enum.take(work_reports, i),
-          alwaysaccers,
+          always_accumulated,
           extra_args
         )
 
@@ -280,16 +280,16 @@ defmodule System.State.Accumulation do
         ) ::
           {t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()),
            list({Types.service_index(), Types.gas()})}
-  def parallelized_accumulation(acc_state, work_reports, alwaysaccers, extra_args) do
+  def parallelized_accumulation(acc_state, work_reports, always_accumulated, extra_args) do
     # s
-    services = collect_services(work_reports, alwaysaccers)
+    services = collect_services(work_reports, always_accumulated)
 
     # {m′, a′, v′, z′}
     privileged_services_ =
       accumulate_privileged_services(
         acc_state,
         work_reports,
-        alwaysaccers,
+        always_accumulated,
         extra_args
       )
 
@@ -298,7 +298,7 @@ defmodule System.State.Accumulation do
       single_accumulation(
         acc_state,
         work_reports,
-        alwaysaccers,
+        always_accumulated,
         # v
         acc_state.delegator,
         extra_args
@@ -313,7 +313,7 @@ defmodule System.State.Accumulation do
         single_accumulation(
           acc_state,
           work_reports,
-          alwaysaccers,
+          always_accumulated,
           a_c,
           extra_args
         )
@@ -383,7 +383,7 @@ defmodule System.State.Accumulation do
       # v'
       delegator: privileged_services_.delegator,
       # z'
-      alwaysaccers: privileged_services_.alwaysaccers
+      always_accumulated: privileged_services_.always_accumulated
     }
 
     {accumulation_state, List.flatten(transfers), accumulation_outputs, service_gas}
@@ -417,18 +417,18 @@ defmodule System.State.Accumulation do
     end
   end
 
-  def collect_services(work_reports, alwaysaccers) do
+  def collect_services(work_reports, always_accumulated) do
     for(
       d <- Enum.flat_map(work_reports, & &1.digests),
       do: d.service,
       into: MapSet.new()
-    ) ++ keys_set(alwaysaccers)
+    ) ++ keys_set(always_accumulated)
   end
 
   def accumulate_privileged_services(
         acc_state,
         work_reports,
-        alwaysaccers,
+        always_accumulated,
         extra_args
       ) do
     %__MODULE__{manager: manager} = acc_state
@@ -442,16 +442,16 @@ defmodule System.State.Accumulation do
       # v∗
       delegator: delegator_star,
       # z′
-      alwaysaccers: alwaysaccers_
+      always_accumulated: always_accumulated_
     } =
-      single_accumulation(acc_state, work_reports, alwaysaccers, manager, extra_args)
+      single_accumulation(acc_state, work_reports, always_accumulated, manager, extra_args)
       |> Map.get(:state)
 
     #     ∀c ∈ NC ∶ a′ c = ((∆1(o, w, f , a∗ c )o)a)c
     assigners_ =
       for {a_c_star, core_index} <- Enum.with_index(assigners_star) do
         # (∆1(o, w, f , a∗ c)
-        single_accumulation(acc_state, work_reports, alwaysaccers, a_c_star, extra_args)
+        single_accumulation(acc_state, work_reports, always_accumulated, a_c_star, extra_args)
         # o
         |> Map.get(:state)
         # a
@@ -465,7 +465,7 @@ defmodule System.State.Accumulation do
       single_accumulation(
         acc_state,
         work_reports,
-        alwaysaccers,
+        always_accumulated,
         delegator_star,
         extra_args
       )
@@ -478,7 +478,7 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
-      alwaysaccers: alwaysaccers_
+      always_accumulated: always_accumulated_
     }
   end
 

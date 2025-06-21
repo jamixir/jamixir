@@ -296,7 +296,7 @@ defmodule Jamixir.Factory do
       manager: 1,
       assigners: [2, 3],
       delegator: 4,
-      alwaysaccers: %{1 => 1000, 2 => 2000, 3 => 3000, 4 => 4000}
+      always_accumulated: %{1 => 1000, 2 => 2000, 3 => 3000, 4 => 4000}
     }
   end
 
