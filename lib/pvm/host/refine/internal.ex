@@ -222,36 +222,33 @@ defmodule PVM.Host.Refine.Internal do
         machine -> machine.memory
       end
 
+    # set_access_by_page could fail if the p < 16 or p + c > 0x1_0000
+    # the next "cond" block takes care of that
     u_ =
-      # set_access_by_page could fail if the p < 16 or p + c > 0x1_0000
-      # the next "cond" block takes care of that
       try do
         cond do
-        u == :error ->
-          :error
+          u == :error ->
+            :error
 
-        r == 0 ->
-          Memory.set_access_by_page(u, p, c, :write)
-          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
-          |> Memory.set_access_by_page(p, c, nil)
+          r < 3 ->
+            m =
+              Memory.set_access_by_page(u, p, c, :write)
+              |> Memory.write!(p * zp, <<0::size(c * zp)>>)
 
-        r == 1 ->
-          Memory.set_access_by_page(u, p, c, :write)
-          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
-          |> Memory.set_access_by_page(p, c, :read)
+            cond do
+              r == 0 -> Memory.set_access_by_page(m, p, c, nil)
+              r == 1 -> Memory.set_access_by_page(m, p, c, :read)
+              r == 2 -> Memory.set_access_by_page(m, p, c, :write)
+            end
 
-        r == 2 ->
-          Memory.set_access_by_page(u, p, c, :write)
-          |> Memory.write!(p * zp, <<0::size(c * zp)>>)
+          r == 3 ->
+            Memory.set_access_by_page(u, p, c, :read)
 
-        r == 3 ->
-          Memory.set_access_by_page(u, p, c, :read)
+          r == 4 ->
+            Memory.set_access_by_page(u, p, c, :write)
 
-        r == 4 ->
-          Memory.set_access_by_page(u, p, c, :write)
-
-        true ->
-          u
+          true ->
+            u
         end
       rescue
         _ -> :error
