@@ -112,7 +112,8 @@ defmodule System.State.RecentHistory do
       _ ->
         # Formula (7.6) v0.6.7
         s =
-          for %AccumulationOutput{service: service, accumulated_output: h} <- accumulation_outputs,
+          for %AccumulationOutput{service: service, accumulated_output: h} <-
+                accumulation_outputs,
               do: <<service::service(), h::binary>>
 
         well_balanced_merkle_root(s, &keccak_256/1)
@@ -124,13 +125,7 @@ defmodule System.State.RecentHistory do
     # Formula (D.2) v0.6.7
     # C(3) ↦ E(↕[(h, b, s, ↕p) S⎧ ⎩h, b, s, p⎫ ⎭<− βH ], EM (βB ))
     def encode(%RecentHistory{} = rh) do
-      e(
-        {vs(
-           for b <- rh.blocks do
-             {b.header_hash, b.accumulated_result_mmb, b.state_root, e(b.work_report_hashes)}
-           end
-         ), encode_mmr(rh.beefy_belt)}
-      )
+      e({vs(rh.blocks), encode_mmr(rh.beefy_belt)})
     end
   end
 
