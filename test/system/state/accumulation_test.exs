@@ -1,5 +1,5 @@
 defmodule System.State.AccumulationTest do
-  alias System.State.RecentHistory.Lastaccout
+  alias System.State.RecentHistory.AccumulationOutput
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
   alias System.{AccumulationResult, DeferredTransfer}
@@ -426,8 +426,8 @@ defmodule System.State.AccumulationTest do
       # Verify transfers and outputs
       assert transfers == [%{amount: 40}, %{amount: 50}]
       assert length(outputs) == 2
-      assert Enum.member?(outputs, %Lastaccout{service: 4, accumulated_output: "output4"})
-      assert Enum.member?(outputs, %Lastaccout{service: 5, accumulated_output: "output5"})
+      assert Enum.member?(outputs, %AccumulationOutput{service: 4, accumulated_output: "output4"})
+      assert Enum.member?(outputs, %AccumulationOutput{service: 5, accumulated_output: "output5"})
     end
 
     test "correctly handles n (new services) and m (removed services)" do
@@ -549,8 +549,8 @@ defmodule System.State.AccumulationTest do
 
       # Verify outputs
       assert length(outputs) == 2
-      assert Enum.member?(outputs, %Lastaccout{service: 4, accumulated_output: "output4"})
-      assert Enum.member?(outputs, %Lastaccout{service: 5, accumulated_output: "output5"})
+      assert Enum.member?(outputs, %AccumulationOutput{service: 4, accumulated_output: "output4"})
+      assert Enum.member?(outputs, %AccumulationOutput{service: 5, accumulated_output: "output5"})
 
       # Verify transfers are ordered by source service executions
       # First all transfers from service 4, then service 5
@@ -618,7 +618,7 @@ defmodule System.State.AccumulationTest do
 
       # (30 + 40 + 20)
       assert Enum.all?([4, 5, 6], fn i ->
-        Enum.member?(all_outputs, %Lastaccout{service: i, accumulated_output: "output#{i}"})
+        Enum.member?(all_outputs, %AccumulationOutput{service: i, accumulated_output: "output#{i}"})
       end)
 
       # Verify transfers are ordered by source service executions
