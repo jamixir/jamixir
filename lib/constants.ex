@@ -89,7 +89,7 @@ defmodule Constants do
 
   # Formula (14.6) v0.6.6 - WB
   @doc "W_B = 12 * 2^20: The maximum size of an encoded work-package together with its extrinsic data and import implications, in octets"
-  def max_work_package_size, do: 12_582_912
+  def max_work_package_size, do: 13_794_305
 
   @doc "W_C - The maximum size of service code in octets"
   def max_service_code_size, do: 4_000_000

@@ -100,7 +100,7 @@ defmodule WorkPackageTest do
     end
 
     test "validates different work_item import_segments length", %{wp: wp} do
-      [ds1 | rest] = for _ <- 1..500, do: {Hash.zero(), 21_062}
+      [ds1 | rest] = for _ <- 1..2862, do: {Hash.zero(), 4_104}
       [ex1 | ex_rest] = for _ <- 1..100, do: {Hash.zero(), 105_310}
 
       in_limit_work_item =
@@ -114,8 +114,8 @@ defmodule WorkPackageTest do
 
       # WS*WC = 4104
       # |ii| = 500 => 500 * 4104 = 2_052_000
-      # Max: 12_582_912 - 2_052_000 = 10_530_912
-      # 10_530_912 / 500 = 21_061
+      # Max: 13_794_305 - 2_052_000 = 11_742_305
+      # 11_742_305 / 4104 = 2862
       assert WorkPackage.valid?(%{wp | work_items: [in_limit_work_item]})
       refute WorkPackage.valid?(%{wp | work_items: [big_work_item]})
     end

@@ -1,11 +1,10 @@
 defmodule PVM.Host.General.FetchTest do
   use ExUnit.Case
   alias Block.Extrinsic.{WorkItem, WorkPackage}
-  alias PVM.Host.General
-  alias PVM.{Memory, Registers, PreMemory}
-  alias System.{DeferredTransfer, State.ServiceAccount}
   alias PVM.Accumulate.Operand
-  alias PVM.Host.General.FetchArgs
+  alias PVM.Host.{General, General.FetchArgs}
+  alias PVM.{Memory, PreMemory, Registers}
+  alias System.{DeferredTransfer, State.ServiceAccount}
   alias Util.Hash
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants, only: [min_allowed_address: 0]
@@ -107,12 +106,13 @@ defmodule PVM.Host.General.FetchTest do
         recent_history_size()::16-little,
         max_work_items()::16-little,
         max_work_report_dep_sum()::16-little,
+        max_tickets_pre_extrinsic()::16-little,
         max_age_lookup_anchor()::m(timeslot),
+        tickets_per_validator()::16-little,
         max_authorizations_items()::16-little,
         slot_period()::16-little,
         max_authorization_queue_items()::16-little,
         rotation_period()::16-little,
-        max_accumulation_queue_items()::16-little,
         max_extrinsics()::16-little,
         unavailability_period()::16-little,
         validator_count()::16-little,
@@ -120,7 +120,6 @@ defmodule PVM.Host.General.FetchTest do
         max_work_package_size()::32-little,
         max_service_code_size()::32-little,
         erasure_coded_piece_size()::32-little,
-        segment_size()::32-little,
         max_imports()::32-little,
         erasure_coded_pieces_per_segment()::32-little,
         max_work_report_size()::32-little,

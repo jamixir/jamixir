@@ -1,4 +1,4 @@
-# Formula (B.18) v0.6.6
+# Formula (B.18) v0.6.8
 defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
   alias Block.Extrinsic.WorkPackage
@@ -76,8 +76,12 @@ defmodule PVM.Host.General.Internal do
             max_work_items()::16-little,
             # E2(J)
             max_work_report_dep_sum()::16-little,
+            # E2(K)
+            max_tickets_pre_extrinsic()::16-little,
             # E4(L)
             max_age_lookup_anchor()::m(timeslot),
+            # E2(N)
+            tickets_per_validator()::16-little,
             # E2(O)
             max_authorizations_items()::16-little,
             # E2(P)
@@ -86,8 +90,6 @@ defmodule PVM.Host.General.Internal do
             max_authorization_queue_items()::16-little,
             # E2(R)
             rotation_period()::16-little,
-            # E2(S)
-            max_accumulation_queue_items()::16-little,
             # E2(T)
             max_extrinsics()::16-little,
             # E2(U)
@@ -102,8 +104,6 @@ defmodule PVM.Host.General.Internal do
             max_service_code_size()::32-little,
             # E4(W_E)
             erasure_coded_piece_size()::32-little,
-            # E4(W_G)
-            segment_size()::32-little,
             # E4(W_M)
             max_imports()::32-little,
             # E4(W_P)
