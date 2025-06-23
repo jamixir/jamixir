@@ -22,4 +22,6 @@ defmodule Util.Hex do
     prefix = Keyword.get(opts, :prefix, false)
     encode16(binary, case: casing, prefix: prefix)
   end
+
+  def b16(binary), do: encode16(binary, prefix: true)
 end
