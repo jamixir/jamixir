@@ -35,13 +35,16 @@ defmodule Network.Server do
         {:noreply, state}
 
       {:error, :timeout} ->
-        # Normal case - no streams to accept right now
-        send(self(), :accept_stream)
+        Process.send_after(self(), :accept_stream, 100)
+        {:noreply, state}
+
+      {:error, :closed} ->
+        log(:debug, "Connection closed, stopping stream acceptance")
         {:noreply, state}
 
       {:error, reason} when reason in [:badarg, :internal_error, :bad_pid, :owner_dead] ->
         log(:error, "Stream accept error: #{inspect(reason)}")
-        send(self(), :accept_stream)
+        Process.send_after(self(), :accept_stream, 500)
         {:noreply, state}
     end
   end

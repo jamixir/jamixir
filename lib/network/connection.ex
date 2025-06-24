@@ -1,23 +1,27 @@
-defmodule Network.Peer do
+defmodule Network.Connection do
+  @moduledoc """
+  Handles a single bidirectional QUIC connection to a remote peer.
+  Each connection is managed by ConnectionManager.
+  """
+
   use GenServer
-  alias Network.{Client, PeerState, Server}
+  alias Network.{Client, PeerState, Server, ConnectionManager}
   require Logger
   import Network.Config
+  import Utils, only: [format_ip_address: 1]
 
-  @log_context "[QUIC_PEER]"
+  @log_context "[CONNECTION]"
 
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
   def log(message), do: Logger.info("#{@log_context} #{message}")
+
   # Re-export the client API functions
   defdelegate send(pid, protocol_id, message), to: Client
   defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client
   defdelegate announce_block(pid, header, slot), to: Client
-
   defdelegate announce_preimage(pid, service_id, hash, length), to: Client
   defdelegate get_preimage(pid, hash), to: Client
-
   defdelegate distribute_assurance(pid, assurance), to: Client
-
   defdelegate distribute_ticket(pid, mode, epoch, ticket), to: Client
   defdelegate announce_judgement(pid, epoch, wr_hash, judgement), to: Client
   defdelegate distribute_guarantee(pid, guarantee), to: Client
@@ -30,31 +34,25 @@ defmodule Network.Peer do
   defdelegate request_state(pid, block_hash, start_key, end_key, max_size), to: Client
   defdelegate request_segment_shards(pid, requests, with_justification), to: Client
 
-  # Starts the peer handler and connects to a remote peer
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
   end
 
+  # For outbound connections (initiated by ConnectionManager)
   @impl GenServer
-  def init(%{init_mode: init_mode, ip: ip, port: port}) do
-    # Use self() PID as the registry identifier - it's unique and direct
-    identifier = self()
-    {:ok, pid} = Network.PeerRegistry.register_peer(self(), identifier)
-    log("Registered peer with identifier: #{inspect(identifier)} #{inspect(pid)}")
-
-    case init_mode do
-      :initiator -> initiate_connection(ip, port)
-      :listener -> start_listener(port)
-    end
-  end
-
-  defp initiate_connection(ip, port) do
-    log("Initiating connection to #{ip}:#{port}...")
+  def init(%{init_mode: :initiator, ip: ip, port: port}) do
+    remote_address = format_ip_address(ip)
+    log("Initiating connection to #{remote_address}:#{port}...")
 
     case :quicer.connect(ip, port, default_quicer_opts(), 10_000) do
       {:ok, conn} ->
-        log("Connected to #{ip}:#{port}")
-        {:ok, %PeerState{connection: conn}}
+        log("Connected to #{remote_address}:#{port}")
+
+        # Notify ConnectionManager of successful connection
+        address = "#{remote_address}:#{port}"
+        ConnectionManager.connection_established(address, self())
+
+        {:ok, %PeerState{connection: conn, remote_address: remote_address, remote_port: port}}
 
       error ->
         log(:error, "Connection failed: #{inspect(error)}")
@@ -62,18 +60,34 @@ defmodule Network.Peer do
     end
   end
 
-  defp start_listener(port) do
-    log("Listening for connection on #{port}...")
+  # For incoming connections (pre-established by Listener)
+  @impl GenServer
+  def init(%{
+        connection: conn,
+        remote_address: remote_address,
+        remote_port: remote_port,
+        local_port: local_port
+      }) do
+    log(
+      "Handling incoming connection from #{remote_address}:#{remote_port} (connecting to our port #{local_port})"
+    )
 
-    case :quicer.listen(port, default_quicer_opts()) do
-      {:ok, socket} ->
-        send(self(), :accept_connection)
-        {:ok, %PeerState{socket: socket}}
+    # Start accepting streams on this connection
+    send(self(), :accept_stream)
 
-      {:error, reason} ->
-        log(:error, "Failed to start listener: #{inspect(reason)}")
-        {:stop, reason}
-    end
+    {:ok,
+     %PeerState{
+       connection: conn,
+       remote_address: remote_address,
+       remote_port: remote_port,
+       local_port: local_port
+     }}
+  end
+
+  # Helper function to get remote address for supervisor registry
+  @impl GenServer
+  def handle_call(:get_remote_address, _from, state) do
+    {:reply, {state.remote_address, state.remote_port}, state}
   end
 
   # Client-side handlers
@@ -83,11 +97,30 @@ defmodule Network.Peer do
   @impl GenServer
   def handle_cast({:announce_block, _, _, _} = msg, state), do: Client.handle_cast(msg, state)
 
-  # Server-side handlers
-  @impl GenServer
-  def handle_info(:accept_connection, state), do: Server.handle_info(:accept_connection, state)
+  # Server-side handlers - only accept streams, connections accepted by Listener are handled by ConnectionManager
   @impl GenServer
   def handle_info(:accept_stream, state), do: Server.handle_info(:accept_stream, state)
+
+  # Handle connection closed - notify ConnectionManager for reconnection logic
+  @impl GenServer
+  def handle_info({:quic, :closed, _conn_or_stream, _props}, state) do
+    if state.connection_closed != true do
+      log("Connection closed")
+
+      # Notify ConnectionManager for potential reconnection (only if outbound)
+      if state.remote_address && state.remote_port do
+        address = "#{state.remote_address}:#{state.remote_port}"
+        log("📤 Notifying ConnectionManager of lost connection to #{address}")
+        ConnectionManager.connection_lost(address)
+      end
+
+      new_state = %{state | connection_closed: true}
+      {:noreply, new_state}
+    else
+      # Already handled this closure, ignore subsequent events
+      {:noreply, state}
+    end
+  end
 
   # Data handling
   @impl GenServer
@@ -111,7 +144,8 @@ defmodule Network.Peer do
     new_state = %{
       state
       | pending_responses: Map.delete(state.pending_responses, stream),
-        ce_streams: Map.delete(state.ce_streams, stream)
+        ce_streams: Map.delete(state.ce_streams, stream),
+        up_stream_data: Map.delete(state.up_stream_data, stream)
     }
 
     {:noreply, new_state}
@@ -136,14 +170,13 @@ defmodule Network.Peer do
   @impl GenServer
   def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
     log(:debug, "Received unhandled event: #{inspect(event_name)}")
-
     {:noreply, state}
   end
 
   # Super catch-all for any other messages
   @impl GenServer
   def handle_info(msg, state) do
-    log(:debug, "BasicQuicClient received unknown message: #{inspect(msg)}")
+    log(:debug, "Connection received unknown message: #{inspect(msg)}")
     {:noreply, state}
   end
 end

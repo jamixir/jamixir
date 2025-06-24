@@ -66,11 +66,11 @@ defmodule Jamixir.Node do
             :ok
 
           error ->
-            error
+            {:error, error}
         end
 
       error ->
-        error
+        {:error, error}
     end
   end
 
@@ -125,7 +125,7 @@ defmodule Jamixir.Node do
 
     Task.start(fn ->
       Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
-      Network.Peer.get_preimage(server_pid, hash)
+      Network.Connection.get_preimage(server_pid, hash)
     end)
 
     :ok

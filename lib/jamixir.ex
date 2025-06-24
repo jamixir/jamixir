@@ -3,13 +3,17 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
-    persist_storage? = Application.get_env(:jamixir, :storage_persist, true)
+    persist_storage? = Jamixir.config()[:storage_persist] || false
+    port = Application.get_env(:jamixir, :port, 9999)
 
     children = [
       {Storage, [persist: persist_storage?]},
-      Network.PeerRegistry,
-      Network.PeerSupervisor,
+      Network.ConnectionSupervisor,
+      Network.ConnectionManager,
+      {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
+      {Task.Supervisor, name: Jamixir.TaskSupervisor},
+      Jamixir.InitializationTask,
       Jamixir.NodeCLIServer
     ]
 

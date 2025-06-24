@@ -2,7 +2,7 @@ defmodule KeyManager do
   @moduledoc """
   Manages the retrieval of public and private keys.
   """
-  require Logger
+  alias Util.Logger, as: Log
   import Util.Hex
   @private_key_file "private_key.enc"
 
@@ -39,6 +39,18 @@ defmodule KeyManager do
     {{private_key, public_key}, public_key}
   end
 
+  @doc """
+  Get the ed25519 public key from the stored application configuration.
+
+  Returns the public key if configured, nil otherwise.
+  """
+  def get_our_ed25519_key do
+    case Application.get_env(:jamixir, :keys) do
+      %{ed25519: pubkey} -> pubkey
+      _ -> nil
+    end
+  end
+
   defp decrypt_private_key(encrypted_data, password) do
     <<iv::binary-size(16), ciphertext::binary>> = encrypted_data
     key = :crypto.hash(:sha256, password) |> binary_part(0, 32)
@@ -50,19 +62,20 @@ defmodule KeyManager do
     {:ok, keys}
   end
 
+  @spec load_keys(binary()) :: {:error, any()} | {:ok, any()}
   def load_keys(keys_file) do
     with {:ok, content} <- File.read(keys_file),
          {:ok, keys} <- Jason.decode(content) do
       # Store in application env
       keys = keys |> Utils.atomize_keys() |> JsonDecoder.from_json()
       Application.put_env(:jamixir, :keys, keys)
-      Logger.info("🔑 Keys loaded successfully from #{keys_file}")
-      Logger.info("🔑 Validator bandersnatch key: #{inspect(encode16(keys.bandersnatch))}")
-      Logger.info("🔑 Validator ed25519 key: #{inspect(encode16(keys.ed25519))}")
+      Log.info("🔑 Keys loaded successfully from #{keys_file}")
+      Log.debug("🔑 Validator bandersnatch key: #{inspect(encode16(keys.bandersnatch))}")
+      Log.debug("🔑 Validator ed25519 key: #{inspect(encode16(keys.ed25519))}")
       {:ok, keys}
     else
       {:error, e} ->
-        Logger.error("Failed to load keys: #{inspect(e)}")
+        Log.error("Failed to load keys: #{inspect(e)}")
         {:error, e}
     end
   end
