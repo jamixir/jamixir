@@ -69,9 +69,9 @@ defmodule KeyManager do
       # Store in application env
       keys = keys |> Utils.atomize_keys() |> JsonDecoder.from_json()
       Application.put_env(:jamixir, :keys, keys)
-      Logger.info("🔑 Keys loaded successfully from #{keys_file}")
-      Logger.debug("🔑 Validator bandersnatch key: #{b16(keys.bandersnatch)}")
-      Logger.debug("🔑 Validator ed25519 key: #{b16(keys.ed25519)}")
+      Log.info("🔑 Keys loaded successfully from #{keys_file}")
+      Log.debug("🔑 Validator bandersnatch key: #{b16(keys.bandersnatch)}")
+      Log.debug("🔑 Validator ed25519 key: #{b16(keys.ed25519)}")
       {:ok, keys}
     else
       {:error, e} ->
