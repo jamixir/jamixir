@@ -37,5 +37,4 @@ Mnesia.nonode@nohost/
 /test/output/
 .DS_Store
 MnesiaCore.nonode*
-<<<<<<< HEAD
 db/
