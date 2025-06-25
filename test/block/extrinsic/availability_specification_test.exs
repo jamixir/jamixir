@@ -1,9 +1,9 @@
 defmodule Block.Extrinsic.AvailabilitySpecificationTest do
-  alias Util.MerkleTree
   alias Block.Extrinsic.AvailabilitySpecification, as: AS
-  alias Util.{Hash, Hex}
+  alias Util.{MerkleTree, Hash}
   use ExUnit.Case
   import Jamixir.Factory
+  import Util.Hex, only: [b16: 1]
   import Mox
 
   setup do
@@ -33,11 +33,11 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   describe "to_json/1" do
     test "encodes availability specification to json", %{availability: availability} do
       assert Codec.JsonEncoder.encode(availability) == %{
-               hash: Hex.encode16(availability.work_package_hash, prefix: true),
+               hash: b16(availability.work_package_hash),
                exports_count: availability.segment_count,
                length: availability.length,
-               erasure_root: Hex.encode16(availability.erasure_root, prefix: true),
-               exports_root: Hex.encode16(availability.exports_root, prefix: true)
+               erasure_root: b16(availability.erasure_root),
+               exports_root: b16(availability.exports_root)
              }
     end
   end

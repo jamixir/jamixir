@@ -9,6 +9,7 @@ defmodule Block.Header do
   use Sizes
   import Codec.{Decoder, Encoder}
   import Codec.Decoder
+  import Util.Hex, only: [b16: 1]
   require Logger
 
   @type t :: %__MODULE__{
@@ -92,9 +93,7 @@ defmodule Block.Header do
 
     if state_root == r,
       do: :ok,
-      else:
-        {:error,
-         "Invalid state root. \nHeader: #{Base.encode16(r)}, \nState: #{Base.encode16(state_root)}"}
+      else: {:error, "Invalid state root. \nHeader: #{b16(r)}, \nState: #{b16(state_root)}"}
   end
 
   use MapUnion

@@ -27,7 +27,7 @@ defmodule Codec.JsonEncoder do
   def to_map(map) when map_size(map) == 0, do: nil
 
   def to_map(map) do
-    for({k, v} <- map, into: %{}, do: {encode16(k, prefix: true), v})
+    for({k, v} <- map, into: %{}, do: {b16(k), v})
   end
 
   def to_object({k, v}, key_name, value_name) do

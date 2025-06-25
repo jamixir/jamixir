@@ -1,9 +1,10 @@
 defmodule Block.Extrinsic.Guarantee.WorkDigestTest do
   alias Block.Extrinsic.Guarantee.WorkDigest
-  alias Util.{Hash, Hex}
+  alias Util.Hash
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
+  import Util.Hex, only: [b16: 1]
 
   setup do
     {:ok, wd: build(:work_digest)}
@@ -71,11 +72,11 @@ defmodule Block.Extrinsic.Guarantee.WorkDigestTest do
       json = Codec.JsonEncoder.encode(wd)
 
       assert json == %{
-               code_hash: Hex.encode16(wd.code_hash, prefix: true),
-               payload_hash: Hex.encode16(wd.payload_hash, prefix: true),
+               code_hash: b16(wd.code_hash),
+               payload_hash: b16(wd.payload_hash),
                service_id: wd.service,
                accumulate_gas: wd.gas_ratio,
-               result: %{ok: Hex.encode16(elem(wd.result, 1), prefix: true)},
+               result: %{ok: b16(elem(wd.result, 1))},
                exports: 6,
                extrinsic_count: 7,
                extrinsic_size: 8,
@@ -89,8 +90,8 @@ defmodule Block.Extrinsic.Guarantee.WorkDigestTest do
       json = Codec.JsonEncoder.encode(wd)
 
       assert json == %{
-               code_hash: Hex.encode16(wd.code_hash, prefix: true),
-               payload_hash: Hex.encode16(wd.payload_hash, prefix: true),
+               code_hash: b16(wd.code_hash),
+               payload_hash: b16(wd.payload_hash),
                service_id: wd.service,
                accumulate_gas: wd.gas_ratio,
                result: %{:panic => nil},

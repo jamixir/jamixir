@@ -70,10 +70,7 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info(
-        {:new_timeslot, timeslot},
-        %{jam_state: jam_state} = state
-      ) do
+  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
     Log.debug("Node received new timeslot: #{timeslot}")
 
     client_pids = ConnectionManager.get_connections()

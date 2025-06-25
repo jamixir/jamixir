@@ -141,4 +141,19 @@ defmodule Jamixir.NodeTest do
       {:error, :invalid_extrinsics} = save_work_package(wp, 7, [])
     end
   end
+
+  describe "distribute and get work report" do
+    test "distribute_work_report guarantee with valid parameters" do
+      guarantee = build(:guarantee)
+      spec = guarantee.work_report.specification
+      :ok = save_guarantee(guarantee)
+
+      {:ok, r} = get_work_report(spec.work_package_hash)
+      assert r == guarantee.work_report
+    end
+
+    test "request an unexisting work report" do
+      assert {:error, :not_found} = get_work_report(Hash.random())
+    end
+  end
 end

@@ -1,11 +1,12 @@
 defmodule System.StateTransition.EntropyPoolTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Codec.JsonEncoder
   alias Block.Header
+  alias Codec.JsonEncoder
   alias System.State.EntropyPool
-  alias Util.{Hash, Hex}
+  alias Util.Hash
   import Mox
+  import Util.Hex, only: [b16: 1]
   import Codec.Encoder
 
   setup :verify_on_exit!
@@ -102,12 +103,7 @@ defmodule System.StateTransition.EntropyPoolTest do
 
       json = JsonEncoder.encode(pool)
 
-      assert json == [
-               Hex.encode16(pool.n0, prefix: true),
-               Hex.encode16(pool.n1, prefix: true),
-               Hex.encode16(pool.n2, prefix: true),
-               Hex.encode16(pool.n3, prefix: true)
-             ]
+      assert json == [pool.n0, pool.n1, pool.n2, pool.n3] |> Enum.map(&b16/1)
     end
   end
 end

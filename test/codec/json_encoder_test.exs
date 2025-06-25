@@ -1,8 +1,9 @@
 defmodule Codec.JsonEncoderTest do
   use ExUnit.Case
   alias Codec.JsonEncoder
-  alias Util.{Hash, Hex}
+  alias Util.Hash
   import Jamixir.Factory
+  import Util.Hex, only: [b16: 1]
 
   describe "encode/1" do
     test "encodes list of list of hashes" do
@@ -46,18 +47,18 @@ defmodule Codec.JsonEncoderTest do
       json = JsonEncoder.encode(block)
 
       assert json == %{
-               header_hash: Hex.encode16(block.header_hash, prefix: true),
-               state_root: Hex.encode16(block.state_root, prefix: true),
+               header_hash: b16(block.header_hash),
+               state_root: b16(block.state_root),
                mmr:
                  for hash <- block.accumulated_result_mmr do
-                   if is_nil(hash), do: nil, else: Hex.encode16(hash, prefix: true)
+                   if is_nil(hash), do: nil, else: b16(hash)
                  end,
                reported:
                  block.work_report_hashes
                  |> Enum.map(fn {hash, exports_root} ->
                    %{
-                     hash: Hex.encode16(hash, prefix: true),
-                     exports_root: Hex.encode16(exports_root, prefix: true)
+                     hash: b16(hash),
+                     exports_root: b16(exports_root)
                    }
                  end)
              }
@@ -77,7 +78,7 @@ defmodule Codec.JsonEncoderTest do
                gamma_k: Enum.map(safrole.pending, &JsonEncoder.encode/1),
                gamma_s: %{tickets: Enum.map(safrole.slot_sealers, &JsonEncoder.encode/1)},
                gamma_a: Enum.map(safrole.ticket_accumulator, &JsonEncoder.encode/1),
-               gamma_z: Hex.encode16(safrole.epoch_root, prefix: true)
+               gamma_z: b16(safrole.epoch_root)
              }
     end
   end
