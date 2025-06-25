@@ -1,7 +1,7 @@
 defmodule Network.UpStreamTest do
   use ExUnit.Case
   alias Network.UpStreamManager
-  alias Network.PeerState
+  alias Network.ConnectionState
 
   @log_context "[TEST]"
 
@@ -33,7 +33,7 @@ defmodule Network.UpStreamTest do
       # Setup
       protocol_id = 42
       stream = make_ref()
-      state = %PeerState{up_streams: %{}, up_stream_data: %{}}
+      state = %ConnectionState{up_streams: %{}, up_stream_data: %{}}
 
       # Call function directly
       {{:ok, stream_data}, new_state} =
@@ -52,7 +52,7 @@ defmodule Network.UpStreamTest do
       stream = make_ref()
       stream_data = %{protocol_id: protocol_id, buffer: <<>>}
 
-      state = %PeerState{
+      state = %ConnectionState{
         up_streams: %{protocol_id => stream},
         up_stream_data: %{stream => stream_data}
       }
@@ -77,7 +77,7 @@ defmodule Network.UpStreamTest do
       old_stream = low_ref
       old_stream_data = %{protocol_id: protocol_id, buffer: <<"old_data">>}
 
-      state = %PeerState{
+      state = %ConnectionState{
         up_streams: %{protocol_id => old_stream},
         up_stream_data: %{old_stream => old_stream_data}
       }
@@ -111,7 +111,7 @@ defmodule Network.UpStreamTest do
       higher_stream = high_ref
       stream_data = %{protocol_id: protocol_id, buffer: <<>>}
 
-      state = %PeerState{
+      state = %ConnectionState{
         up_streams: %{protocol_id => higher_stream},
         up_stream_data: %{higher_stream => stream_data}
       }
