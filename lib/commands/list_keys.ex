@@ -43,7 +43,7 @@ defmodule Jamixir.Commands.ListKeys do
     case File.read(file_path) do
       {:ok, content} ->
         case Jason.decode(content) do
-          {:ok, %{"public_key" => public_key, "private_key" => private_key}} ->
+          {:ok, %{"public_key" => public_key, "private_key" => _private_key}} ->
             # Generate peer ID from public key (you'll need to implement this based on your format)
             peer_id = generate_peer_id(public_key)
             IO.puts("#{file_path}: Peer ID: #{peer_id}")
