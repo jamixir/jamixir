@@ -5,7 +5,7 @@ defmodule Network.Connection do
   """
 
   use GenServer
-  alias Network.{Client, PeerState, Server, ConnectionManager}
+  alias Network.{Client, ConnectionState, Server, ConnectionManager}
   require Logger
   import Network.Config
   import Utils, only: [format_ip_address: 1]
@@ -52,7 +52,7 @@ defmodule Network.Connection do
         address = "#{remote_address}:#{port}"
         ConnectionManager.connection_established(address, self())
 
-        {:ok, %PeerState{connection: conn, remote_address: remote_address, remote_port: port}}
+        {:ok, %ConnectionState{connection: conn, remote_address: remote_address, remote_port: port}}
 
       error ->
         log(:error, "Connection failed: #{inspect(error)}")
@@ -76,7 +76,7 @@ defmodule Network.Connection do
     send(self(), :accept_stream)
 
     {:ok,
-     %PeerState{
+     %ConnectionState{
        connection: conn,
        remote_address: remote_address,
        remote_port: remote_port,

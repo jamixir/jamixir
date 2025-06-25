@@ -1,14 +1,10 @@
-defmodule Network.PeerState do
+defmodule Network.ConnectionState do
   defstruct [
     # Listener socket (when started in listen mode)
     :socket,
     # QUIC connection handle
     :connection,
-    # Remote peer information
-    :remote_address,
-    :remote_port,
-    # Local port information
-    :local_port,
+    :remote_ed25519_key,
     # Flag to track if connection closure has been handled
     connection_closed: false,
     # Map of stream -> {from, protocol_id, buffer}
