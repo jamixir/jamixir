@@ -1,8 +1,8 @@
 defmodule Util.Export do
-  alias Util.Time
-  alias Util.Hex
-  alias Codec.JsonEncoder
   alias Base
+  alias Codec.JsonEncoder
+  alias Util.Time
+  import Util.Hex
   require Logger
 
   def canonical_order(state_map) do
@@ -60,16 +60,10 @@ defmodule Util.Export do
   defp do_export(%System.State{} = s, output_dir, state_filename, trie_filename) do
     state_snapshot = JsonEncoder.encode(s) |> canonical_order()
     trie = Codec.State.Trie.serialize_hex(s, prefix: true)
-    state_root = Codec.State.Trie.state_root(s) |> Hex.encode16(prefix: true)
+    state_root = b16(Codec.State.Trie.state_root(s))
 
     keyvals =
-      for {key, val} <- trie do
-        [
-          key,
-          val,
-          get_key_name(Hex.decode16!(key))
-        ]
-      end
+      for {key, val} <- trie, do: [key, val, get_key_name(decode16!(key))]
 
     state_trie = %{
       state_root: state_root,

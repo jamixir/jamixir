@@ -2,7 +2,9 @@ defmodule Jamixir.Node do
   alias Block.Extrinsic.WorkPackage
   alias Util.Hash
   alias System.State
+  alias Util.Hash
   use StoragePrefix
+  import Util.Hex, only: [b16: 1]
   require Logger
 
   @behaviour Jamixir.NodeAPI
@@ -124,7 +126,10 @@ defmodule Jamixir.Node do
     server_pid = self()
 
     Task.start(fn ->
-      Logger.info("Requesting preimage back from client via server #{inspect(server_pid)}")
+      Logger.info(
+        "Requesting preimage #{b16(hash)} back from client via server #{inspect(server_pid)}"
+      )
+
       Network.Connection.get_preimage(server_pid, hash)
     end)
 
@@ -168,13 +173,19 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_guarantee(_guarantee) do
-    {:error, :not_implemented}
+  def save_guarantee(guarantee) do
+    spec = guarantee.work_report.specification
+    Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
+    Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
+    :ok
   end
 
   @impl true
-  def get_work_report(_hash) do
-    {:error, :not_implemented}
+  def get_work_report(hash) do
+    case Storage.get("#{@p_guarantee}#{hash}") do
+      nil -> {:error, :not_found}
+      guarantee -> {:ok, guarantee.work_report}
+    end
   end
 
   @impl true

@@ -172,7 +172,6 @@ defmodule Block.Extrinsic.WorkPackage do
     end
   end
 
-
   def decode(bin) do
     {authorization_token, bin} = VariableSize.decode(bin, :binary)
     <<service::service(), bin::binary>> = bin

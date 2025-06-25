@@ -1,12 +1,14 @@
 defmodule System.State.JudgementsTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Codec.JsonEncoder
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.Error
+  alias Codec.JsonEncoder
   alias System.State.Judgements
-  alias Util.{Hash, Time, Hex}
+  alias Util.{Hash, Time}
+
   import Mox
+  import Util.Hex, only: [b16: 1]
   setup :verify_on_exit!
 
   defp assert_updated_set(result, state, set_key, new_item) do
@@ -303,10 +305,10 @@ defmodule System.State.JudgementsTest do
       j = build(:judgements)
 
       assert JsonEncoder.encode(j) == %{
-               good: for(v <- j.good, do: Hex.encode16(v, prefix: true)),
-               bad: for(v <- j.bad, do: Hex.encode16(v, prefix: true)),
-               wonky: for(v <- j.wonky, do: Hex.encode16(v, prefix: true)),
-               offenders: for(v <- j.offenders, do: Hex.encode16(v, prefix: true))
+               good: Enum.map(j.good, &b16/1),
+               bad: Enum.map(j.bad, &b16/1),
+               wonky: Enum.map(j.wonky, &b16/1),
+               offenders: Enum.map(j.offenders, &b16/1)
              }
     end
   end

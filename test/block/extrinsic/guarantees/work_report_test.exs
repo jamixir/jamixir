@@ -3,13 +3,14 @@ defmodule WorkReportTest do
   import Codec.Encoder
   import Jamixir.Factory
   alias Block.Extrinsic.AvailabilitySpecification
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
+  alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
   alias System.State.Ready
   alias System.State.ServiceAccount
-  alias Util.{Hash, Hex}
+  alias Util.Hash
   import Mox
+  import Util.Hex, only: [b16: 1]
 
   setup_all do
     preimage = Hash.random()
@@ -553,12 +554,12 @@ defmodule WorkReportTest do
                package_spec: JsonEncoder.encode(wr.specification),
                context: JsonEncoder.encode(wr.refinement_context),
                core_index: wr.core_index,
-               authorizer_hash: Hex.encode16(wr.authorizer_hash, prefix: true),
-               auth_output: Hex.encode16(wr.output, prefix: true),
+               authorizer_hash: b16(wr.authorizer_hash),
+               auth_output: b16(wr.output),
                segment_root_lookup: [
                  %{
-                   work_package_hash: Hex.encode16(Hash.one(), prefix: true),
-                   segment_tree_root: Hex.encode16(Hash.two(), prefix: true)
+                   work_package_hash: b16(Hash.one()),
+                   segment_tree_root: b16(Hash.two())
                  }
                ],
                digests: for(r <- wr.digests, do: JsonEncoder.encode(r)),
