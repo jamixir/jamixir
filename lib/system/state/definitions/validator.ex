@@ -85,10 +85,25 @@ defmodule System.State.Validator do
 
   def port(_), do: nil
 
+  def ip_port(%__MODULE__{metadata: metadata}) do
+    ip = ip_address(%__MODULE__{metadata: metadata})
+    port = port(%__MODULE__{metadata: metadata})
+    {ip, port}
+  end
+
   def address(%__MODULE__{} = validator) do
-    ip = ip_address(validator)
-    port = port(validator)
+    {ip, port} = ip_port(validator)
     if ip && port, do: "#{ip}:#{port}", else: nil
+  end
+
+  @doc """
+  Find validator by IP address and port from a list of validators.
+  If port is nil, it ignores port due to ephemeral port issues with inbound connections.
+  """
+  def find_by_ip(validators, ip, port \\ nil) when is_list(validators) and is_binary(ip) do
+    Enum.find(validators, fn validator ->
+      ip_address(validator) == ip && (port == nil || port(validator) == port)
+    end)
   end
 
   def neighbours(_, prev, curr, next)

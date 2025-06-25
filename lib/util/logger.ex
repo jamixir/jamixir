@@ -41,8 +41,14 @@ defmodule Util.Logger do
   @doc """
   Connection-specific logging for network events
   """
-  def connection(level, message, address \\ nil) do
-    context = if address, do: "[CONN:#{Util.NodeIdentity.format_address(address)}]", else: "[CONN]"
+  def connection(level, message, ed25519_key \\ nil) do
+    context = if ed25519_key do
+      validator_name = Util.NodeIdentity.get_name_for_key(ed25519_key)
+      "[CONN:#{validator_name}]"
+    else
+      "[CONN]"
+    end
+
     formatted_message = format_message(message, context)
     Logger.log(level, formatted_message)
   end

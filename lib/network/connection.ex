@@ -6,14 +6,8 @@ defmodule Network.Connection do
 
   use GenServer
   alias Network.{Client, ConnectionState, Server, ConnectionManager}
-  require Logger
   import Network.Config
-  import Utils, only: [format_ip_address: 1]
-
-  @log_context "[CONNECTION]"
-
-  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
-  def log(message), do: Logger.info("#{@log_context} #{message}")
+  alias Util.Logger, as: Log
 
   # Re-export the client API functions
   defdelegate send(pid, protocol_id, message), to: Client
@@ -40,22 +34,22 @@ defmodule Network.Connection do
 
   # For outbound connections (initiated by ConnectionManager)
   @impl GenServer
-  def init(%{init_mode: :initiator, ip: ip, port: port}) do
-    remote_address = format_ip_address(ip)
-    log("Initiating connection to #{remote_address}:#{port}...")
+  def init(
+        %{init_mode: :initiator, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port}
+      ) do
+    Log.connection(:info, "Initiating connection to validator", remote_ed25519_key)
 
     case :quicer.connect(ip, port, default_quicer_opts(), 10_000) do
       {:ok, conn} ->
-        log("Connected to #{remote_address}:#{port}")
+        Log.connection(:info, "Connected to validator", remote_ed25519_key)
 
         # Notify ConnectionManager of successful connection
-        address = "#{remote_address}:#{port}"
-        ConnectionManager.connection_established(address, self())
+        ConnectionManager.connection_established(remote_ed25519_key, self())
 
-        {:ok, %ConnectionState{connection: conn, remote_address: remote_address, remote_port: port}}
+        {:ok, %ConnectionState{connection: conn, remote_ed25519_key: remote_ed25519_key}}
 
       error ->
-        log(:error, "Connection failed: #{inspect(error)}")
+        Log.connection(:error, "Connection failed: #{inspect(error)}", remote_ed25519_key)
         {:stop, error}
     end
   end
@@ -64,13 +58,12 @@ defmodule Network.Connection do
   @impl GenServer
   def init(%{
         connection: conn,
-        remote_address: remote_address,
-        remote_port: remote_port,
-        local_port: local_port
+        remote_ed25519_key: remote_ed25519_key
       }) do
-    log(
-      "Handling incoming connection from #{remote_address}:#{remote_port} (connecting to our port #{local_port})"
-    )
+    Log.connection(:info, "Handling incoming connection from validator", remote_ed25519_key)
+
+    # Notify ConnectionManager of successful inbound connection
+    ConnectionManager.connection_established(remote_ed25519_key, self())
 
     # Start accepting streams on this connection
     send(self(), :accept_stream)
@@ -78,16 +71,8 @@ defmodule Network.Connection do
     {:ok,
      %ConnectionState{
        connection: conn,
-       remote_address: remote_address,
-       remote_port: remote_port,
-       local_port: local_port
+       remote_ed25519_key: remote_ed25519_key
      }}
-  end
-
-  # Helper function to get remote address for supervisor registry
-  @impl GenServer
-  def handle_call(:get_remote_address, _from, state) do
-    {:reply, {state.remote_address, state.remote_port}, state}
   end
 
   # Client-side handlers
@@ -105,13 +90,12 @@ defmodule Network.Connection do
   @impl GenServer
   def handle_info({:quic, :closed, _conn_or_stream, _props}, state) do
     if state.connection_closed != true do
-      log("Connection closed")
+      Log.connection(:info, "Connection closed", state.remote_ed25519_key)
 
-      # Notify ConnectionManager for potential reconnection (only if outbound)
-      if state.remote_address && state.remote_port do
-        address = "#{state.remote_address}:#{state.remote_port}"
-        log("📤 Notifying ConnectionManager of lost connection to #{address}")
-        ConnectionManager.connection_lost(address)
+      # Notify ConnectionManager for potential reconnection
+      if state.remote_ed25519_key do
+        Log.connection(:info, "📤 Notifying ConnectionManager of lost connection to validator", state.remote_ed25519_key)
+        ConnectionManager.connection_lost(state.remote_ed25519_key)
       end
 
       new_state = %{state | connection_closed: true}
@@ -139,7 +123,7 @@ defmodule Network.Connection do
   # Stream cleanup
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    log("Stream closed: #{inspect(stream)}")
+    Log.connection(:info, "Stream closed: #{inspect(stream)}", state.remote_ed25519_key)
 
     new_state = %{
       state
@@ -153,14 +137,14 @@ defmodule Network.Connection do
 
   @impl GenServer
   def handle_info({:quic, :new_stream, stream, _props}, state) do
-    log("Activating new stream: #{inspect(stream)}")
+    Log.connection(:info, "Activating new stream: #{inspect(stream)}", state.remote_ed25519_key)
 
     case :quicer.setopt(stream, :active, true) do
       :ok ->
-        log("New stream activated successfully: #{inspect(stream)}")
+        Log.connection(:info, "New stream activated successfully: #{inspect(stream)}", state.remote_ed25519_key)
 
       {:error, reason} ->
-        log("Failed to activate new stream: #{inspect(stream)} - #{inspect(reason)}")
+        Log.connection(:error, "Failed to activate new stream: #{inspect(stream)} - #{inspect(reason)}", state.remote_ed25519_key)
     end
 
     {:noreply, state}
@@ -169,14 +153,14 @@ defmodule Network.Connection do
   # Catch-all for unhandled QUIC events
   @impl GenServer
   def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
-    log(:debug, "Received unhandled event: #{inspect(event_name)}")
+    Log.connection(:debug, "Received unhandled event: #{inspect(event_name)}", state.remote_ed25519_key)
     {:noreply, state}
   end
 
   # Super catch-all for any other messages
   @impl GenServer
   def handle_info(msg, state) do
-    log(:debug, "Connection received unknown message: #{inspect(msg)}")
+    Log.connection(:debug, "Connection received unknown message: #{inspect(msg)}", state.remote_ed25519_key)
     {:noreply, state}
   end
 end
