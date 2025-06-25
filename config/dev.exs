@@ -18,8 +18,13 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 10,
   # GA
-  gas_accumulation: 1_000_000
+  gas_accumulation: 1_000_000,
+  storage_persist: false
 
-config :logger, level: :debug
+config :logger, level: :info
+
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
 
 config :jamixir, :server_calls, Network.ServerCalls

@@ -1,7 +1,7 @@
 defmodule Jamixir.TimeTicker do
   use GenServer
-  require Logger
   alias Util.Time
+  alias Util.Logger, as: Log
 
   @default_tick_interval 500
 
@@ -39,7 +39,7 @@ defmodule Jamixir.TimeTicker do
     schedule_tick(state.tick_interval)
 
     if new_timeslot != state.last_timeslot do
-      Logger.info("🕒 Time has come: #{new_timeslot}")
+      Log.consensus(:info, "🕒 Time has come: #{new_timeslot}")
       broadcast_timeslot(new_timeslot, state.subscribers)
     end
 

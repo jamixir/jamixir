@@ -20,4 +20,6 @@ config :jamixir, Jamixir,
   # GA
   gas_accumulation: 10_000_000
 
+config :logger, level: :info
+
 config :jamixir, :server_calls, Network.ServerCalls
