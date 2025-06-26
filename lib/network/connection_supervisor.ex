@@ -189,7 +189,7 @@ defmodule Network.ConnectionSupervisor do
 
   @impl true
   def handle_cast(:shutdown_all_connections, state) do
-    IO.info("🛑 Shutting down all connections gracefully")
+    IO.puts("🛑 Shutting down all connections gracefully")
 
     for {ed25519_key, pid} <- state.connections do
       if Process.alive?(pid) do
