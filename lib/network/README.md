@@ -149,7 +149,7 @@ This module implements a QUIC-based peer-to-peer networking layer for Jamixir no
 
 - **ConnectionPolicy** (`connection_policy.ex`) - Connection strategy and retry logic
 - **ConnectionInfo** (`connection_info.ex`) - Connection metadata structure
-- **ConnectionState** (`peer_state.ex`) - Per-connection state management
+- **ConnectionState** (`connection_state.ex`) - Per-connection state management
 - **Client/Server** (`client.ex`, `server.ex`) - Message handling logic
 
 
