@@ -45,6 +45,10 @@ defmodule Network.ConnectionManager do
     GenServer.call(__MODULE__, :get_connections)
   end
 
+  def get_connection(ed25519_key) do
+    GenServer.call(__MODULE__, {:get_connection, ed25519_key})
+  end
+
   # used by Connection to notify us that a connection has been established
   def connection_established(ed25519_key, pid) do
     GenServer.cast(__MODULE__, {:connection_established, ed25519_key, pid})
@@ -89,6 +93,11 @@ defmodule Network.ConnectionManager do
   @impl GenServer
   def handle_call(:get_connections, _from, state) do
     {:reply, ConnectionSupervisor.get_all_connections(), state}
+  end
+
+  @impl GenServer
+  def handle_call({:get_connection, ed25519_key}, _from, state) do
+    {:reply, ConnectionSupervisor.get_connection(ed25519_key), state}
   end
 
   @impl GenServer
