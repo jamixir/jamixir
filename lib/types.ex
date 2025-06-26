@@ -59,6 +59,12 @@ defmodule Types do
           hash()
           | {:tagged_hash, hash()}
 
+  # Network IP address types
+  @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
+  @type ipv6_address :: {0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535}
+  @type ip_address :: ipv4_address() | ipv6_address()
+  @type port_number :: 1..65535
+
   @spec tagged?(segment_ref()) :: boolean()
   def tagged?(hash) when is_binary(hash), do: false
   def tagged?({:tagged_hash, _}), do: true

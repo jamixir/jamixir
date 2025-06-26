@@ -65,19 +65,17 @@ defmodule System.State.Validator do
 
   use JsonDecoder
 
+  @spec ip_address(t()) :: Types.ip_address() | nil
   def ip_address(%__MODULE__{metadata: metadata}) when byte_size(metadata) >= 18 do
     <<ip::binary-size(16), _::binary>> = metadata
 
-    ip
-    |> Util.Hex.encode16()
-    |> String.codepoints()
-    |> Enum.chunk_every(4)
-    |> Enum.join(":")
+    <<a::16, b::16, c::16, d::16, e::16, f::16, g::16, h::16>> = ip
+    {a, b, c, d, e, f, g, h}
   end
 
   def ip_address(_), do: nil
 
-  @spec port(%__MODULE__{}) :: integer() | nil
+  @spec port(t()) :: Types.port_number() | nil
   def port(%__MODULE__{metadata: metadata}) when byte_size(metadata) >= 18 do
     <<_::binary-size(16), port::little-16, _::binary>> = metadata
     port
@@ -85,10 +83,16 @@ defmodule System.State.Validator do
 
   def port(_), do: nil
 
-  def address(%__MODULE__{} = validator) do
-    ip = ip_address(validator)
-    port = port(validator)
-    if ip && port, do: "#{ip}:#{port}", else: nil
+  def ip_port(%__MODULE__{} = validator), do: {ip_address(validator), port(validator)}
+
+  @doc """
+  Find validator by IP address and port from a list of validators.
+  If port is nil, it ignores port due to ephemeral port issues with inbound connections.
+  """
+  def find_by_ip(validators, ip, port \\ nil) when is_list(validators) do
+    Enum.find(validators, fn validator ->
+      ip_address(validator) == ip && (port == nil || port(validator) == port)
+    end)
   end
 
   def neighbours(_, prev, curr, next)
