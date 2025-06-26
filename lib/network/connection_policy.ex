@@ -6,52 +6,62 @@ defmodule Network.ConnectionPolicy do
 
   alias Network.ConnectionSupervisor
   alias Util.Logger, as: Log
-  import System.State.Validator, only: [address: 1, ip_address: 1, port: 1]
+  alias System.State.Validator
+
+  @type connection_attempt_result :: {connection_outcome(), Types.ed25519_key()}
+  @type connection_outcome :: :skip_self | :connect_success | :connect_failure | :wait_inbound
 
   # Configuration constants
-  @initial_retry_delay 2000  # 2 seconds
+  # 2 seconds
+  @initial_retry_delay 2000
   @retry_multiplier 2
-  @max_retry_delay 32000  # 32 seconds
-  @max_retry_duration 300_000  # 5 minutes
+  # 32 seconds
+  @max_retry_delay 32000
+  # 5 minutes
+  @max_retry_duration 300_000
 
   ## Public API
 
-  def attempt_connections(targets) do
-    Enum.map(targets, fn target ->
-      address = get_address(target)
+  @spec attempt_connections(list(Validator.t())) :: list(connection_attempt_result())
+  def attempt_connections(validators) do
+    our_ed25519_key = KeyManager.get_our_ed25519_key()
 
-      our_address = Application.get_env(:jamixir, :our_validator_address)
+    Enum.map(validators, fn %Validator{ed25519: ed25519_key} = v ->
+      cond do
+        our_ed25519_key == ed25519_key ->
+          Log.connection(:debug, "⏭️ Skipping self-connection", ed25519_key)
+          {:skip_self, ed25519_key}
 
-      if our_address == address do
-        Log.connection(:debug, "⏭️ Skipping self-connection", address)
-        {:skip_self, address, target}
-      else
-        if should_initiate_connection?(target) do
-          Log.connection(:debug, "🔌 Attempting connection", address)
+        should_initiate_connection?(v, our_ed25519_key) ->
+          Log.connection(:debug, "🔌 Attempting connection", ed25519_key)
 
-          case attempt_connection(target) do
-            {:ok, result} -> {:connect_success, address, result, target}
-            {:error, reason} -> {:connect_failure, address, reason, target}
+          case attempt_connection(v) do
+            {:ok, _result} ->
+              Log.connection(:info, "✅ Connected", ed25519_key)
+              {:connect_success, ed25519_key}
+
+            {:error, reason} ->
+              Log.connection(:debug, "❌ Connection failed: #{inspect(reason)}", ed25519_key)
+              {:connect_failure, ed25519_key}
           end
-        else
-          Log.connection(:debug, "👂 Waiting for inbound connection", address)
-          {:wait_inbound, address, target}
-        end
+
+        true ->
+          Log.connection(:debug, "👂 Waiting for inbound connection", ed25519_key)
+          {:wait_inbound, ed25519_key}
       end
     end)
   end
 
-  def attempt_connection(target) do
-    address = get_address(target)
-    {ip, port} = get_ip_port(target)
+  def attempt_connection(%Validator{ed25519: ed25519_key} = v) do
+    {ip, port} = Validator.ip_port(v)
 
-    case ConnectionSupervisor.start_outbound_connection(ip, port) do
+    case ConnectionSupervisor.start_outbound_connection(ed25519_key, ip, port) do
       {:ok, pid} ->
-        Log.connection(:info, "✅ Connected", address)
+        Log.connection(:info, "✅ Connected", ed25519_key)
         {:ok, %{type: :new, pid: pid}}
 
       {:error, reason} ->
-        Log.connection(:debug, "❌ Connection failed: #{inspect(reason)}", address)
+        Log.connection(:debug, "❌ Connection failed: #{inspect(reason)}", ed25519_key)
         {:error, reason}
     end
   end
@@ -66,20 +76,15 @@ defmodule Network.ConnectionPolicy do
     elapsed < @max_retry_duration
   end
 
+  def should_initiate_connection?(v, our_key \\ nil)
 
-  def should_initiate_connection?(target) do
-    our_key = KeyManager.get_our_ed25519_key()
-    target_key = Map.get(target, :ed25519)
-
-    preferred = Network.Rules.preferred_initiator(our_key, target_key)
-    preferred == our_key
+  def should_initiate_connection?(%Validator{ed25519: target_key}, our_key) do
+    our_key = our_key || KeyManager.get_our_ed25519_key()
+    should_initiate_connection?(target_key, our_key)
   end
 
-  ## Helper Functions
-
-  defp get_address(%{address: address}), do: address
-  defp get_address(validator), do: address(validator)
-
-  defp get_ip_port(%{ip_address: ip, port: port}), do: {ip, port}
-  defp get_ip_port(validator), do: {ip_address(validator), port(validator)}
+  def should_initiate_connection?(target_key, our_key) do
+    our_key = our_key || KeyManager.get_our_ed25519_key()
+    our_key == Network.Rules.preferred_initiator(our_key, target_key)
+  end
 end

@@ -4,7 +4,7 @@ defmodule Network.Client do
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Block.Extrinsic.Assurance
-  alias Network.PeerState
+  alias Network.ConnectionState
   import Quicer.Flags
   import Network.{Codec, Config}
   require Logger
@@ -170,7 +170,7 @@ defmodule Network.Client do
 
   def handle_cast(
         {:announce_block, message, hash, slot},
-        %PeerState{up_streams: up_streams} = state
+        %ConnectionState{up_streams: up_streams} = state
       ) do
     protocol_id = 0
 
@@ -206,12 +206,12 @@ defmodule Network.Client do
     end
   end
 
-  def handle_call({:send, protocol_id, message}, from, %PeerState{} = state)
+  def handle_call({:send, protocol_id, message}, from, %ConnectionState{} = state)
       when is_binary(message) do
     handle_call({:send, protocol_id, [message]}, from, state)
   end
 
-  def handle_call({:send, protocol_id, messages}, from, %PeerState{} = state)
+  def handle_call({:send, protocol_id, messages}, from, %ConnectionState{} = state)
       when is_list(messages) do
     {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
 
@@ -231,10 +231,10 @@ defmodule Network.Client do
         buffer: <<>>
       })
 
-    {:noreply, %PeerState{state | pending_responses: new_pending}}
+    {:noreply, %ConnectionState{state | pending_responses: new_pending}}
   end
 
-  def handle_data(data, stream, props, %PeerState{} = state) do
+  def handle_data(data, stream, props, %ConnectionState{} = state) do
     state_ =
       case Map.get(state.pending_responses, stream) do
         nil ->

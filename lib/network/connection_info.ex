@@ -12,12 +12,12 @@ defmodule Network.ConnectionInfo do
           direction: direction(),
           retry_count: non_neg_integer(),
           start_time: integer(),
-          target: map() | nil
+          remote_ed25519_key: Types.ed25519_key()
         }
 
   defstruct status: :connecting,
             direction: :outbound,
             retry_count: 0,
             start_time: System.monotonic_time(:millisecond),
-            target: nil
+            remote_ed25519_key: nil
 end

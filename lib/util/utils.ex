@@ -84,12 +84,4 @@ defmodule Utils do
   def transpose([first | _] = matrix) when is_list(matrix) and is_list(first) do
     List.zip(matrix) |> Enum.map(&Tuple.to_list/1)
   end
-
-  @doc """
-  Formats IP addresses consistently across different input types.
-  """
-  def format_ip_address({a, b, c, d}), do: "#{a}.#{b}.#{c}.#{d}"
-  def format_ip_address(ip) when is_binary(ip), do: ip
-  def format_ip_address(ip) when is_list(ip), do: List.to_string(ip)
-  def format_ip_address(ip), do: inspect(ip)
 end

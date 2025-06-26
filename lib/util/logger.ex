@@ -5,59 +5,59 @@ defmodule Util.Logger do
   """
 
   require Logger
+  import Util.Hex, only: [b16: 1]
 
-  @doc """
-  Info level log with node identity
-  """
+  def get_node_name do
+    get_node_alias() || "NODE"
+  end
+
+  def get_node_alias do
+    Application.get_env(:jamixir, :node_alias)
+  end
+
   def info(message, context \\ nil) do
     formatted_message = format_message(message, context)
     Logger.info(formatted_message)
   end
 
-  @doc """
-  Debug level log with node identity
-  """
   def debug(message, context \\ nil) do
     formatted_message = format_message(message, context)
     Logger.debug(formatted_message)
   end
 
-  @doc """
-  Warning level log with node identity
-  """
   def warning(message, context \\ nil) do
     formatted_message = format_message(message, context)
     Logger.warning(formatted_message)
   end
 
-  @doc """
-  Error level log with node identity
-  """
   def error(message, context \\ nil) do
     formatted_message = format_message(message, context)
     Logger.error(formatted_message)
   end
 
-  @doc """
-  Connection-specific logging for network events
-  """
-  def connection(level, message, address \\ nil) do
-    context = if address, do: "[CONN:#{Util.NodeIdentity.format_address(address)}]", else: "[CONN]"
+  def connection(level, message, ed25519_key, connection_info \\ nil)
+
+  def connection(level, message, ed25519_key, %{ip: ip, port: port}) do
+    formatted_address = format_ip_port(ip, port)
+    key_prefix = get_key_prefix(ed25519_key)
+
+    context = "[CONN:#{key_prefix}@#{formatted_address}]"
     formatted_message = format_message(message, context)
     Logger.log(level, formatted_message)
   end
 
-  @doc """
-  Validator-specific logging for consensus events
-  """
+  def connection(level, message, ed25519_key, _connection_info) do
+    key_prefix = get_key_prefix(ed25519_key)
+    context = "[CONN:#{key_prefix}]"
+    formatted_message = format_message(message, context)
+    Logger.log(level, formatted_message)
+  end
+
   def consensus(level, message) do
     formatted_message = format_message(message, "[CONSENSUS]")
     Logger.log(level, formatted_message)
   end
 
-  @doc """
-  Block-specific logging
-  """
   def block(level, message) do
     formatted_message = format_message(message, "[BLOCK]")
     Logger.log(level, formatted_message)
@@ -65,11 +65,14 @@ defmodule Util.Logger do
 
   # Private helper to format messages consistently
   defp format_message(message, context) do
-    node_name = Util.NodeIdentity.get_node_name()
+    node_name = get_node_name()
 
     case context do
-      nil -> "#{node_name} #{message}"
-      context -> "#{node_name}#{context} #{message}"
+      nil -> "[#{node_name}] #{message}"
+      context -> "[#{node_name}]#{context} #{message}"
     end
   end
+
+  defp get_key_prefix(ed25519_key), do: b16(ed25519_key) |> String.slice(0, 6)
+  defp format_ip_port(ip, port), do: "#{:inet.ntoa(ip)}:#{port}"
 end

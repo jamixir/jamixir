@@ -87,13 +87,12 @@ This module implements a QUIC-based peer-to-peer networking layer for Jamixir no
 
 #### **Connection** (`connection.ex`)
 - **Bidirectional QUIC connection** to a single remote peer
-- Maintains `PeerState` with connection metadata
+- Maintains `ConnectionState` with connection metadata
 - Implements both client and server message handling
 - **Notifies ConnectionManager** of status changes
 
-**PeerState Fields:**
-- `remote_address` / `remote_port` - Peer identification
-- `local_port` - Local service port (for inbound connections)
+**ConnectionState Fields:**
+- `remote_ed25519_key` - identifies the romte validator
 - `connection_closed` - Prevents duplicate closure handling
 - Stream management maps for ongoing communications
 
@@ -150,7 +149,7 @@ This module implements a QUIC-based peer-to-peer networking layer for Jamixir no
 
 - **ConnectionPolicy** (`connection_policy.ex`) - Connection strategy and retry logic
 - **ConnectionInfo** (`connection_info.ex`) - Connection metadata structure
-- **PeerState** (`peer_state.ex`) - Per-connection state management
+- **ConnectionState** (`connection_state.ex`) - Per-connection state management
 - **Client/Server** (`client.ex`, `server.ex`) - Message handling logic
 
 
