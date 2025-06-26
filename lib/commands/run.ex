@@ -41,8 +41,7 @@ defmodule Jamixir.Commands.Run do
       Application.put_env(:jamixir, :port, port)
     end
 
-    node_name = Util.NodeIdentity.get_raw_node_name()
-    Log.info("🎭 Starting as validator: #{node_name}")
+    Log.info("🎭 Starting as validator")
 
     Application.ensure_all_started(:jamixir)
     Process.sleep(:infinity)
