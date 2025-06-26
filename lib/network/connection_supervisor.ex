@@ -53,6 +53,10 @@ defmodule Network.ConnectionSupervisor do
     GenServer.call(__MODULE__, :get_all_connections)
   end
 
+  def shutdown_all_connections do
+    GenServer.cast(__MODULE__, :shutdown_all_connections)
+  end
+
   @impl true
   def handle_call({:start_outbound_connection, remote_ed25519_key, ip, port}, _from, state) do
     case Map.get(state.connections, remote_ed25519_key) do
@@ -181,6 +185,20 @@ defmodule Network.ConnectionSupervisor do
   @impl true
   def handle_call(:get_all_connections, _from, state) do
     {:reply, state.connections, state}
+  end
+
+  @impl true
+  def handle_cast(:shutdown_all_connections, state) do
+    IO.info("🛑 Shutting down all connections gracefully")
+
+    for {ed25519_key, pid} <- state.connections do
+      if Process.alive?(pid) do
+        Log.connection(:debug, "🛑 Shutting down connection", ed25519_key)
+        GenServer.cast(pid, :shutdown)
+      end
+    end
+
+    {:noreply, state}
   end
 
   # Handle process termination - clean up our registry

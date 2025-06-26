@@ -21,6 +21,18 @@ defmodule Jamixir do
     Supervisor.start_link(children, opts)
   end
 
+  @impl true
+  def stop(_state) do
+    try do
+      Network.ConnectionSupervisor.shutdown_all_connections()
+      Process.sleep(100)
+    rescue
+      _ -> :ok
+    end
+
+    :ok
+  end
+
   def config do
     Application.get_env(:jamixir, Jamixir)
   end

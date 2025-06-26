@@ -44,7 +44,34 @@ defmodule Jamixir.Commands.Run do
     Log.info("🎭 Starting as validator")
 
     Application.ensure_all_started(:jamixir)
-    Process.sleep(:infinity)
+
+    # Register this process so we can send it shutdown messages
+    Process.register(self(), :shutdown_handler)
+
+    # Spawn a simple input listener for  graceful shutdown
+    spawn(fn -> input_listener() end)
+
+    Log.info("Node running. Type 'q' + Enter for graceful shutdown")
+
+    # Wait for shutdown message or sleep forever
+    receive do
+      :shutdown ->
+        Log.info("🛑 Received shutdown message, stopping application...")
+        Application.stop(:jamixir)
+        System.stop(0)
+    after
+      :infinity ->
+        :ok
+    end
+  end
+
+  defp input_listener do
+    case IO.gets("") do
+      "q\n" ->
+        send(:shutdown_handler, :shutdown)
+      _ ->
+        input_listener()
+    end
   end
 
   defp print_help do

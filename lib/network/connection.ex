@@ -83,6 +83,15 @@ defmodule Network.Connection do
   @impl GenServer
   def handle_cast({:announce_block, _, _, _} = msg, state), do: Client.handle_cast(msg, state)
 
+  # Handle graceful shutdown - close QUIC connection properly
+  @impl GenServer
+  def handle_cast(:shutdown, state) do
+    if state.connection && state.connection_closed != true do
+      :quicer.close_connection(state.connection)
+    end
+    {:stop, :shutdown, state}
+  end
+
   # Server-side handlers - only accept streams, connections accepted by Listener are handled by ConnectionManager
   @impl GenServer
   def handle_info(:accept_stream, state), do: Server.handle_info(:accept_stream, state)
