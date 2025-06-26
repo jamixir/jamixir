@@ -66,8 +66,6 @@ defmodule Network.ConnectionSupervisor do
         {:reply, {:ok, pid}, state}
 
       nil ->
-        normalized_ip = if is_list(ip), do: ip, else: to_charlist(ip)
-
         spec = %{
           id: {:outbound_connection, remote_ed25519_key, System.unique_integer()},
           start:
@@ -76,7 +74,7 @@ defmodule Network.ConnectionSupervisor do
                %{
                  init_mode: :initiator,
                  remote_ed25519_key: remote_ed25519_key,
-                 ip: normalized_ip,
+                 ip: ip,
                  port: port
                }
              ]},

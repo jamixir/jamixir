@@ -1,10 +1,26 @@
 defmodule Network.ConnectionState do
+  @type t :: %__MODULE__{
+    socket: term() | nil,
+    connection: term() | nil,
+    remote_ed25519_key: Types.ed25519_key() | nil,
+    ip: Types.ip_address() | nil,
+    port: Types.port_number() | nil,
+    connection_closed: boolean(),
+    pending_responses: map(),
+    up_streams: map(),
+    up_stream_data: map(),
+    ce_streams: map()
+  }
+
   defstruct [
     # Listener socket (when started in listen mode)
     :socket,
     # QUIC connection handle
     :connection,
     :remote_ed25519_key,
+    # Destination IP and port for outbound connections (nil for inbound)
+    :ip,
+    :port,
     # Flag to track if connection closure has been handled
     connection_closed: false,
     # Map of stream -> {from, protocol_id, buffer}

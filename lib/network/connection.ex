@@ -37,19 +37,20 @@ defmodule Network.Connection do
   def init(
         %{init_mode: :initiator, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port}
       ) do
-    Log.connection(:info, "Initiating connection to validator", remote_ed25519_key)
+    connection_info = %{ip: ip, port: port}
+    Log.connection(:info, "Initiating connection to validator", remote_ed25519_key, connection_info)
 
     case :quicer.connect(ip, port, default_quicer_opts(), 10_000) do
       {:ok, conn} ->
-        Log.connection(:info, "Connected to validator", remote_ed25519_key)
+        Log.connection(:info, "Connected to validator", remote_ed25519_key, connection_info)
 
         # Notify ConnectionManager of successful connection
         ConnectionManager.connection_established(remote_ed25519_key, self())
 
-        {:ok, %ConnectionState{connection: conn, remote_ed25519_key: remote_ed25519_key}}
+        {:ok, %ConnectionState{connection: conn, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port}}
 
       error ->
-        Log.connection(:error, "Connection failed: #{inspect(error)}", remote_ed25519_key)
+        Log.connection(:error, "Connection failed: #{inspect(error)}", remote_ed25519_key, connection_info)
         {:stop, error}
     end
   end
@@ -90,11 +91,13 @@ defmodule Network.Connection do
   @impl GenServer
   def handle_info({:quic, :closed, _conn_or_stream, _props}, state) do
     if state.connection_closed != true do
-      Log.connection(:info, "Connection closed", state.remote_ed25519_key)
+      connection_info = if state.ip && state.port, do: %{ip: state.ip, port: state.port}, else: nil
+
+      Log.connection(:info, "Connection closed", state.remote_ed25519_key, connection_info)
 
       # Notify ConnectionManager for potential reconnection
       if state.remote_ed25519_key do
-        Log.connection(:info, "📤 Notifying ConnectionManager of lost connection to validator", state.remote_ed25519_key)
+        Log.connection(:info, "📤 Notifying ConnectionManager of lost connection to validator", state.remote_ed25519_key, connection_info)
         ConnectionManager.connection_lost(state.remote_ed25519_key)
       end
 
