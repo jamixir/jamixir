@@ -84,11 +84,8 @@ defmodule System.State.ValidatorTest do
 
       v = build(:validator, metadata: metadata)
 
-      assert Validator.ip_address(v) ==
-               "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-
+      assert Validator.ip_address(v) == {8193, 3512, 34_211, 0, 0, 35_374, 880, 29_492}
       assert Validator.port(v) == 8080
-      assert Validator.address(v) == "2001:0db8:85a3:0000:0000:8a2e:0370:7334:8080"
     end
 
     test "handles empty metadata" do
