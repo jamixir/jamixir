@@ -2,9 +2,8 @@ defmodule Block.Extrinsic.Disputes.Judgement do
   use Sizes
   import Codec.Encoder, only: [m: 1]
 
-  @moduledoc """
-  Formula (10.2) v0.6.6
-  """
+  # Formula (10.2) v0.7.0
+  # Formula (10.10) v0.7.0
   @type t :: %__MODULE__{
           # v
           vote: Types.vote(),
@@ -16,7 +15,7 @@ defmodule Block.Extrinsic.Disputes.Judgement do
 
   defstruct [:vote, :validator_index, :signature]
 
-  # Formula (10.4) v0.6.6
+  # Formula (10.4) v0.7.0
   def signature_base(%__MODULE__{vote: vote}) do
     if vote, do: SigningContexts.jam_valid(), else: SigningContexts.jam_invalid()
   end

@@ -1,6 +1,6 @@
 defmodule System.State.PrivilegedServices do
   @moduledoc """
-  Formula (9.9) v0.6.7
+  Formula (9.9) v0.7.0
   """
   alias Codec.JsonEncoder
   import Codec.Encoder
@@ -8,13 +8,13 @@ defmodule System.State.PrivilegedServices do
   use JsonDecoder
 
   @type t :: %__MODULE__{
-          # χm
+          # χ_M
           manager: non_neg_integer(),
-          # χa
+          # χ_A
           assigners: list(non_neg_integer()),
-          # χv
+          # χ_V
           delegator: non_neg_integer(),
-          # χg
+          # χ_Z
           always_accumulated: %{non_neg_integer() => non_neg_integer()}
         }
 
@@ -43,10 +43,11 @@ defmodule System.State.PrivilegedServices do
     <<manager::m(service), rest::binary>> = bin
 
     # Decode assigners list using decode_list
-    {assigners, rest} = Codec.Decoder.decode_list(rest, Constants.core_count(), fn bin ->
-      <<assigner::m(service), rest::binary>> = bin
-      {assigner, rest}
-    end)
+    {assigners, rest} =
+      Codec.Decoder.decode_list(rest, Constants.core_count(), fn bin ->
+        <<assigner::m(service), rest::binary>> = bin
+        {assigner, rest}
+      end)
 
     <<delegator::m(service), rest::binary>> = rest
 
