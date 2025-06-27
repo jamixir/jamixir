@@ -35,11 +35,11 @@ defmodule SigningContexts do
   @doc "XU - Bandersnatch Audit selection entropy context."
   def jam_audit, do: "jam_audit"
 
-  # Formula (10.4) v0.6.6
+  # Formula (10.4) v0.7.0
   @doc "X⊺ - Ed25519 Judgements for valid work-reports context."
   def jam_valid, do: "jam_valid"
 
-  # Formula (10.4) v0.6.6
+  # Formula (10.4) v0.7.0
   @doc "X - Ed25519 Judgements for invalid work-reports context."
   def jam_invalid, do: "jam_invalid"
 end
