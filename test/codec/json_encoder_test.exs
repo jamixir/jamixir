@@ -53,10 +53,7 @@ defmodule Codec.JsonEncoderTest do
                reported:
                  block.work_report_hashes
                  |> Enum.map(fn {hash, exports_root} ->
-                   %{
-                     hash: b16(hash),
-                     exports_root: b16(exports_root)
-                   }
+                   %{hash: b16(hash), exports_root: b16(exports_root)}
                  end)
              }
     end

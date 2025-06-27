@@ -66,7 +66,7 @@ defmodule System.State.RecentHistory do
              guarantees,
              lastaccouts
            ) do
-    # β† Formula (4.6) v0.6.6
+    # β†H Formula (4.6) v0.7.0
     recent_history =
       RecentHistory.update_latest_state_root(recent_history, prior_state_root)
 
