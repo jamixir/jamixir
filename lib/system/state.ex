@@ -13,13 +13,13 @@ defmodule System.State do
   alias Util.Hash
 
   @type t :: %__MODULE__{
-          # Formula (8.1) v0.6.6
+          # Formula (8.1) v0.7.0
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           accumulation_outputs: list(AccumulationOutput.t()),
           safrole: Safrole.t(),
-          # Formula (9.1) v0.6.6
-          # Formula (9.2) v0.6.6
+          # Formula (9.1) v0.7.0
+          # Formula (9.2) v0.7.0
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
           # Formula (6.7) v0.7.0
@@ -28,7 +28,7 @@ defmodule System.State do
           prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t() | nil),
           timeslot: integer(),
-          # Formula (8.1) v0.6.6
+          # Formula (8.1) v0.7.0
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),
@@ -39,11 +39,7 @@ defmodule System.State do
           accumulation_history: list(MapSet.t(Types.hash()))
         }
 
-<<<<<<< HEAD
   # Formula (4.4) v0.7.0 σ ≡ (α, β, θ, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
-=======
-  # Formula (4.4) v0.7.0 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ω, ξ)
->>>>>>> e1566a3e (review formulas chapter 1-4)
   defstruct [
     # α
     authorizer_pool: List.duplicate([], Constants.core_count()),
