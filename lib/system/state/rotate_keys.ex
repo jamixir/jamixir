@@ -5,7 +5,7 @@ defmodule System.State.RotateKeys do
   alias Util.Time
 
   @doc """
-  Formula (6.13) v0.6.6
+  Formula (6.13) v0.7.0
 
   returns tuple :{pending_, current_, prev_, epoch_root_}
   """
@@ -30,22 +30,22 @@ defmodule System.State.RotateKeys do
         %Judgements{offenders: offenders}
       ) do
     if Time.new_epoch?(timeslot, timeslot_) do
-      # Formula (6.13) v0.6.6 -  new epoch - rotate keys
-      # {γ_k', κ', λ', γ_z'} = {Φ(ι), γ_k, κ, z}
+      # Formula (6.13) v0.7.0 -  new epoch - rotate keys
+      # {γ_P', κ', λ', γ_z'} = {Φ(ι), γ_P, κ, z}
 
-      # γ_k' = Φ(ι) (next -> pending)
+      # γ_P' = Φ(ι) (next -> pending)
       pending_ = Validator.nullify_offenders(next_validators, offenders)
-      # κ' = γ_k (pending -> current)
+      # κ' = γ_P (pending -> current)
       current_ = pending
       # λ' = κ (current -> prev)
       prev_ = curr_validators
-      # γ_z' = z, z = O([kb ∣ k <- γk ])
+      # γ_Z' = z, z = O([kb ∣ k <- γk ])
       epoch_root_ = RingVrf.create_commitment(for p <- pending_, do: p.bandersnatch)
 
       {pending_, current_, prev_, epoch_root_}
     else
-      # Formula (6.13) v0.6.6 -  same epoch - no rotation
-      # {γ_k', κ', λ', γ_z'} = {γ_k, κ, λ, γ_z}
+      # Formula (6.13) v0.7.0 -  same epoch - no rotation
+      # {γ_P', κ', λ', γ_z'} = {γ_P, κ, λ, γ_z}
       {pending, curr_validators, prev_validators, epoch_root}
     end
   end
