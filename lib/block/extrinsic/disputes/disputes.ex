@@ -149,11 +149,11 @@ defmodule Block.Extrinsic.Disputes do
         {:error,
          if(offense_type == :faults, do: Error.unsorted_faults(), else: Error.unsorted_culprits())}
 
-      # Formula 10.5 and 1.6 - Check if all offense validator keys are valid
+      # Formula (10.5) and 10.6 - Check if all offense validator keys are valid
       !Enum.all?(offenses, &(&1.key in allowed_validator_keys)) ->
         {:error, Error.offender_already_reported()}
 
-      # Formula 10.5 and 10.6 - Check signatures
+      # Formula (10.5) and 10.6 - Check signatures
       !Enum.all?(
         offenses,
         fn offense ->

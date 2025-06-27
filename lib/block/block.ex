@@ -11,7 +11,7 @@ defmodule Block do
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
 
-  # Formula (4.2) v0.6.6
+  # Formula (4.2) v0.7.0
   defstruct [
     # Hp
     header: nil,
