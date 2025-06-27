@@ -51,7 +51,7 @@ defmodule System.Audit do
     SigningContexts.jam_announce() <> n <> xn <> h(e(header))
   end
 
-  # Formula 17.16
+  # Formula (17.16) v0.6.6
   def announcements(_n) do
     # TODO
     []

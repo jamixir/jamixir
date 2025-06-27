@@ -38,7 +38,7 @@ defmodule Util.Time do
   mockable validate_block_timeslot(block_timeslot) do
     block_time = block_timeslot * Constants.slot_period()
 
-    # Formula (5.7) v0.6.6
+    # Formula (5.7) v0.7.0
     if valid_block_time?(block_time) do
       :ok
     else
