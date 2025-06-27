@@ -12,10 +12,16 @@ defmodule System.State.RecentHistory.RecentBlock do
           work_report_hashes: %{Types.hash() => Types.hash()}
         }
 
-  # Formula (7.1) v0.6.7
+  # Formula (7.2) v0.7.0
+  # βH ∈ ⟦(h ∈ H, s ∈ H, b ∈ H, p ∈ H → H)⟧∶H
+  # h
   defstruct header_hash: Hash.zero(),
+            accumulated_result_mmb: Hash.zero(),
+            # b
             beefy_root: Hash.zero(),
+            # s
             state_root: Hash.zero(),
+            # p
             work_report_hashes: %{}
 
   use JsonDecoder

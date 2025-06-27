@@ -1,8 +1,5 @@
 defmodule Block.Extrinsic.Disputes do
-  @moduledoc """
-  Formula (10.2) v0.6.6
-  """
-
+  # Formula (10.2) v0.7.0
   alias Block.Extrinsic.Disputes
   alias Codec.VariableSize
   alias Block.Extrinsic.Disputes.{Culprit, Error, Fault, Judgement, Verdict}
@@ -11,11 +8,11 @@ defmodule Block.Extrinsic.Disputes do
   use MapUnion
 
   @type t :: %__MODULE__{
-          # v
+          # E_V
           verdicts: list(Verdict.t()),
-          # c
+          # E_C
           culprits: list(Culprit.t()),
-          # f
+          # E_F
           faults: list(Fault.t())
         }
 
@@ -75,21 +72,21 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, Error.bad_vote_split()}
 
-      # Formula (10.7) v0.6.6
+      # Formula (10.7) v0.7.0
       !match?(
         :ok,
         Collections.validate_unique_and_ordered(verdicts, & &1.work_report_hash)
       ) ->
         {:error, Error.unsorted_verdicts()}
 
-      # Formula (10.9) v0.6.6
+      # Formula (10.9) v0.7.0
       !MapSet.disjoint?(
         Judgements.union_all(judgements),
         MapSet.new(verdicts, & &1.work_report_hash)
       ) ->
         {:error, Error.already_judged()}
 
-      #  Formula (10.3) v0.6.6 - signatures
+      # Formula (10.3) v0.7.0 - signatures
       !Enum.all?(verdicts, fn verdict ->
         curr_validators
         |> get_validator_set(prev_validators, current_epoch, verdict.epoch_index)
@@ -97,14 +94,14 @@ defmodule Block.Extrinsic.Disputes do
       end) ->
         {:error, Error.invalid_signature()}
 
-      # Formula (10.10) v0.6.6
+      # Formula (10.10) v0.7.0
       !Collections.all_ok?(verdicts, fn %Verdict{judgements: judgements} ->
         Collections.validate_unique_and_ordered(judgements, & &1.validator_index)
       end) ->
         {:error, Error.unsorted_judgements()}
 
-      # Formula (10.11) v0.6.6
-      # Formula (10.12) v0.6.6
+      # Formula (10.11) v0.7.0
+      # Formula (10.12) v0.7.0
       Enum.any?(verdicts, fn verdict ->
         validator_count =
             length(
@@ -129,13 +126,13 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (10.5) v0.6.6
-  # Formula (10.6) v0.6.6
+  # Formula (10.5) v0.7.0
+  # Formula (10.6) v0.7.0
   defp compute_allowed_validator_keys(curr_validators, prev_validators, judgements) do
     MapSet.new(curr_validators, & &1.ed25519) ++ MapSet.new(prev_validators, & &1.ed25519) \\ judgements.offenders
   end
 
-  # Formula (10.17) v0.6.6
+  # Formula (10.17) v0.7.0
   defp compute_bad_set(verdicts, judgements) do
     for v <- verdicts, Verdict.sum_judgements(v) == 0, into: MapSet.new() do
       v.work_report_hash
@@ -144,7 +141,7 @@ defmodule Block.Extrinsic.Disputes do
 
   defp validate_common_offense_rules(offenses, allowed_validator_keys, offense_type) do
     cond do
-      # Formula (10.8) v0.6.6
+      # Formula (10.8) v0.7.0
       !match?(:ok, Collections.validate_unique_and_ordered(offenses, & &1.key)) ->
         {:error,
          if(offense_type == :faults, do: Error.unsorted_faults(), else: Error.unsorted_culprits())}
@@ -214,7 +211,7 @@ defmodule Block.Extrinsic.Disputes do
     end
   end
 
-  # Formula (10.3) v0.6.6
+  # Formula (10.3) v0.7.0
   def get_validator_set(curr_validators, _prev_validators, current_epoch, current_epoch),
     do: curr_validators
 
