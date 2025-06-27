@@ -37,15 +37,15 @@ defmodule Types do
   @type bls_key :: <<_::1152>>
   @type validator_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
-  # Formula (4.28) v0.6.6 - should be guarded as <= 2^32
+  # Formula (4.28) v0.7.0 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
-  # Formula (4.21) v0.6.6 - NB - should be guarded as <= 2^64
+  # Formula (4.21) v0.7.0 - NB - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
-  # Formula (4.23) v0.6.6 - NG - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.7.0 - NG - shoud be a 64-bit integer <= 2^64
   @type gas :: non_neg_integer()
-  # Formula (4.23) v0.6.6 - ZG - shoud be a 64-bit signed (-2^63..2^63)
+  # Formula (4.23) v0.7.0 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (4.23) v0.6.6 - NR - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.7.0 - NR - shoud be a 64-bit integer <= 2^64
   @type register :: non_neg_integer()
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil
@@ -62,9 +62,9 @@ defmodule Types do
   # Network IP address types
   @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
   @type ipv6_address ::
-          {0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535}
+          {0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535, 0..65_535}
   @type ip_address :: ipv4_address() | ipv6_address()
-  @type port_number :: 1..65535
+  @type port_number :: 1..65_535
 
   @spec tagged?(segment_ref()) :: boolean()
   def tagged?(hash) when is_binary(hash), do: false
