@@ -1,9 +1,14 @@
 defmodule System.State.SealKeyTicket do
   @moduledoc """
-  Formula (6.6) v0.6.6
+  Formula (6.6) v0.7.0
   """
 
-  @type t :: %__MODULE__{id: Types.hash(), attempt: non_neg_integer()}
+  @type t :: %__MODULE__{
+          # y
+          id: Types.hash(),
+          # r
+          attempt: non_neg_integer()
+        }
 
   defstruct id: <<>>, attempt: 0
 
