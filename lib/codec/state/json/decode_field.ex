@@ -13,7 +13,7 @@ defmodule Codec.State.Json.DecodeField do
     Ready
   }
 
-  # σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
+  # σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ω, ξ)
   def decode_field(:alpha, value), do: [{:authorizer_pool, JsonDecoder.from_json(value)}]
   def decode_field(:beta, value), do: [{:recent_history, RecentHistory.from_json(value)}]
 
