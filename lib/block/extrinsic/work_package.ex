@@ -96,7 +96,7 @@ defmodule Block.Extrinsic.WorkPackage do
 
   use Sizes
 
-  # Formula 14.2 w  ∈ ⟦I⟧ 1∶I - I = 4
+  # Formula (14.2) w  ∈ ⟦I⟧ 1∶I - I = 4
   defp valid_items?(%__MODULE__{work_items: []}), do: false
   defp valid_items?(%__MODULE__{work_items: pw}) when length(pw) > @max_work_items, do: false
   defp valid_items?(_), do: true
