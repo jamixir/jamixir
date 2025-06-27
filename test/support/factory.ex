@@ -192,8 +192,8 @@ defmodule Jamixir.Factory do
     %System.State.Validator{
       bandersnatch: Hash.random(),
       ed25519: Hash.random(),
-      bls: :crypto.strong_rand_bytes(144),
-      metadata: :crypto.strong_rand_bytes(128)
+      bls: :crypto.strong_rand_bytes(@bls_key_size),
+      metadata: :crypto.strong_rand_bytes(@metadata_size)
     }
   end
 
