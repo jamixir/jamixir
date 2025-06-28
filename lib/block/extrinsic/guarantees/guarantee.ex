@@ -163,7 +163,7 @@ defmodule Block.Extrinsic.Guarantee do
   # p ≡ {(rs)p ∣ r ∈ I}
   @spec p_set(list(WorkReport.t())) :: MapSet.t(Types.hash())
   defp p_set(work_reports) do
-    for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
+    for r <- work_reports, do: r.specification.work_package_hash, into: MapSet.new()
   end
 
   # Formula (11.32) v0.7.0
@@ -353,8 +353,8 @@ defmodule Block.Extrinsic.Guarantee do
     extrinsic_and_recent_work_hashes = p_set(work_reports) ++ recent_block_hashes(blocks)
 
     required_hashes =
-      for w <- work_reports do
-        w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)
+      for r <- work_reports do
+        r.refinement_context.prerequisite ++ Utils.keys_set(r.segment_root_lookup)
       end
       |> Enum.reduce(MapSet.new(), &++/2)
 
@@ -368,9 +368,9 @@ defmodule Block.Extrinsic.Guarantee do
   # Formula (11.40) v0.7.0
   @spec p_map(list(WorkReport.t())) :: %{Types.hash() => Types.hash()}
   def p_map(work_reports) do
-    for w <- work_reports,
+    for r <- work_reports,
         into: %{},
-        do: {w.specification.work_package_hash, w.specification.exports_root}
+        do: {r.specification.work_package_hash, r.specification.exports_root}
   end
 
   defp recent_block_hashes(blocks) do
