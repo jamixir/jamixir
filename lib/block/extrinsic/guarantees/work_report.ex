@@ -94,8 +94,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.4) v0.6.6
-  # Formula (12.5) v0.6.6
+  # Formula (12.4) v0.7.0
+  # Formula (12.5) v0.7.0
   @spec separate_work_reports(list(__MODULE__.t()), list(MapSet.t(Types.hash()))) ::
           {list(__MODULE__.t()), list({__MODULE__.t(), MapSet.t(Types.hash())})}
   def separate_work_reports(work_reports, accumulation_history)
@@ -119,13 +119,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {immediate_work_reports, queued_work_reports}
   end
 
-  # Formula (12.6) v0.6.6
+  # Formula (12.6) v0.7.0
   @spec with_dependencies(__MODULE__.t()) :: {__MODULE__.t(), MapSet.t()}
   def with_dependencies(w) do
     {w, w.refinement_context.prerequisite ++ Utils.keys_set(w.segment_root_lookup)}
   end
 
-  # Formula (12.7) v0.6.6
+  # Formula (12.7) v0.7.0
   @spec filter_and_update_dependencies(
           list({__MODULE__.t(), MapSet.t(Types.hash())}),
           MapSet.t(Types.hash())
@@ -138,7 +138,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.8) v0.6.6
+  # Formula (12.8) v0.7.0
   @spec accumulation_priority_queue(list({__MODULE__.t(), MapSet.t(Types.hash())})) ::
           list(__MODULE__.t())
   def accumulation_priority_queue(r) do
@@ -154,10 +154,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (12.9) v0.6.6
+  # Formula (12.9) v0.7.0
   @spec work_package_hashes(list(__MODULE__.t())) :: MapSet.t(Types.hash())
   def work_package_hashes(work_reports) do
-    for w <- work_reports, do: w.specification.work_package_hash, into: MapSet.new()
+    for r <- work_reports, do: r.specification.work_package_hash, into: MapSet.new()
   end
 
   # Formula (12.11) v0.6.6 (W∗)
@@ -174,11 +174,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         accumulation_history,
         ready_to_accumulate
       ) do
-    # Formula (12.2) v0.6.6
+    # Formula (12.2) v0.7.0
     accumulated = Collections.union(accumulation_history)
 
-    # Formula (12.4) v0.6.6
-    # Formula (12.5) v0.6.6
+    # Formula (12.4) v0.7.0
+    # Formula (12.5) v0.7.0
     {immediate_work_reports, queued_work_reports} =
       separate_work_reports(work_reports, accumulated)
 

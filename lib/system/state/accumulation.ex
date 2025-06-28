@@ -186,7 +186,7 @@ defmodule System.State.Accumulation do
           end
       end
 
-    for w <- work_reports, d <- w.digests, reduce: %{} do
+    for r <- work_reports, d <- r.digests, reduce: %{} do
       stat ->
         case Map.get(stat, d.service) do
           nil -> Map.put(stat, d.service, {1, Map.get(gas_per_service, d.service, 0)})
