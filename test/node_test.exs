@@ -10,6 +10,16 @@ defmodule Jamixir.NodeTest do
   @genesis_file "genesis/genesis.json"
   setup_validators(1)
 
+  setup_all do
+    Application.put_env(:jamixir, :start_full_app, true)
+
+    on_exit(fn ->
+      Application.delete_env(:jamixir, :start_full_app)
+    end)
+
+    :ok
+  end
+
   setup do
     Application.put_env(:jamixir, :original_modules, [Jamixir.Node])
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
