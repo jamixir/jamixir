@@ -1,43 +1,38 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
-  @moduledoc """
-  Formula (11.2) v0.6.6
-  """
-
   alias System.State.ServiceAccount
-  alias Block.Extrinsic.{Assurance, AvailabilitySpecification, WorkItem}
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
-  alias Block.Extrinsic.WorkPackage
-  alias Codec.JsonEncoder
+  alias Block.Extrinsic.{Assurance, AvailabilitySpecification}
+  alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
+  alias Block.Extrinsic.{WorkItem, WorkPackage}
+  alias Codec.{JsonEncoder, VariableSize}
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
-  alias Codec.VariableSize
   import Codec.{Decoder, Encoder}
   use MapUnion
   use SelectiveMock
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (11.2) v0.6.6
+  # Formula (11.2) v0.7.0
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
-          # x
+          # c
           refinement_context: RefinementContext.t(),
           # c
           core_index: non_neg_integer(),
           # a
           authorizer_hash: Types.hash(),
-          # o
+          # t
           output: binary(),
           # l
           segment_root_lookup: segment_root_lookup(),
-          # r
+          # d
           digests: list(WorkDigest.t()),
           # g
           auth_gas_used: Types.gas()
         }
 
-  # Formula (11.2) v0.6.6
+  # Formula (11.2) v0.7.0
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -47,13 +42,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             digests: [],
             auth_gas_used: 0
 
-  # Formula (11.3) v0.6.6
-  # ∀w ∈ W ∶ ∣wl∣ +∣(wx)p∣ ≤ J
+  # Formula (11.3) v0.7.0
+  # ∀r ∈ R ∶ ∣rl∣ +∣(rc)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    # Formula (11.3) v0.6.6
-    # Formula (11.8) v0.6.6
-    # ∀w ∈ W ∶∣wo∣ + ∑∣rd∣ ≤ WR
+    # Formula (11.3) v0.7.0
+    # Formula (11.8) v0.7.0
+    # ∀r ∈ R ∶∣rt∣ + ∑∣dl∣ ≤ WR
     map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
       Constants.max_work_report_dep_sum() and
       byte_size(wr.output) +
@@ -65,7 +60,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.16) v0.6.6 W ≡ [ ρ†[c]w | c <− NC, ∑a∈EA av[c] > 2/3V ]
+  # Formula (11.16) v0.7.0 R ≡ [ ρ†[c]r | c <− NC, ∑a∈EA af[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t() | nil)
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)

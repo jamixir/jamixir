@@ -1,14 +1,14 @@
 defmodule Block.Extrinsic.Guarantee.WorkDigest do
-  @moduledoc """
-  Formula (11.6) v0.6.6
-  """
   alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem}
   alias Util.Hash
   import Codec.{Decoder, Encoder}
 
+  # Formula (11.7) v0.7.0
+  # E ∈ {∞,☇,⊚,⊖,BAD,BIG}
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
+  # Formula (11.6) v0.7.0
   @type t :: %__MODULE__{
           # s
           service: non_neg_integer(),
@@ -18,18 +18,18 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
           payload_hash: Types.hash(),
           # g
           gas_ratio: non_neg_integer(),
-          # d
+          # l
           result: {:ok, binary()} | {:error, WorkExecutionError.t()},
           # u
           gas_used: Types.gas(),
           # i
           imports: non_neg_integer(),
-          # e
-          exports: non_neg_integer(),
           # x
           extrinsic_count: non_neg_integer(),
           # z
-          extrinsic_size: non_neg_integer()
+          extrinsic_size: non_neg_integer(),
+          # e
+          exports: non_neg_integer()
         }
 
   # s
@@ -46,12 +46,12 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
             gas_used: 0,
             # i
             imports: 0,
-            # e
-            exports: 0,
             # x
             extrinsic_count: 0,
             # z
-            extrinsic_size: 0
+            extrinsic_size: 0,
+            # e
+            exports: 0
 
   @spec new(WorkItem.t(), {:ok, binary()} | {:error, WorkExecutionError.t()}) :: t
   def new(%WorkItem{} = wi, output) do
