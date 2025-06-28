@@ -3,10 +3,35 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
+    children = get_children()
+    opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  defp get_children do
+    test_envs = [:test, :full_test]
+    if Enum.member?(test_envs, Mix.env()) and not Application.get_env(:jamixir, :start_full_app, false),
+      do: test_children(),
+      else: production_children()
+  end
+
+  defp test_children do
+    persist_storage? = Jamixir.config()[:storage_persist] || false
+
+    [
+      {Storage, [persist: persist_storage?]},
+      Jamixir.TimeTicker,
+      {Task.Supervisor, name: Jamixir.TaskSupervisor},
+      Jamixir.InitializationTask,
+      Jamixir.NodeCLIServer
+    ]
+  end
+
+  defp production_children do
     persist_storage? = Jamixir.config()[:storage_persist] || false
     port = Application.get_env(:jamixir, :port, 9999)
 
-    children = [
+    [
       {Storage, [persist: persist_storage?]},
       Network.ConnectionSupervisor,
       Network.ConnectionManager,
@@ -16,9 +41,6 @@ defmodule Jamixir do
       Jamixir.InitializationTask,
       Jamixir.NodeCLIServer
     ]
-
-    opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
-    Supervisor.start_link(children, opts)
   end
 
   @impl true
