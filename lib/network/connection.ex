@@ -60,8 +60,12 @@ defmodule Network.Connection do
   def init(%{
         connection: conn,
         remote_ed25519_key: remote_ed25519_key
-      }) do
+      } = args) do
     Log.connection(:info, "Handling incoming connection from validator", remote_ed25519_key)
+    # Test-only: register process under an alias if provided
+    if pid_alias = args[:test_server_alias] do
+      Process.register(self(), pid_alias)
+    end
 
     # Notify ConnectionManager of successful inbound connection
     ConnectionManager.connection_established(remote_ed25519_key, self())
@@ -89,6 +93,7 @@ defmodule Network.Connection do
     if state.connection && state.connection_closed != true do
       :quicer.close_connection(state.connection)
     end
+
     {:stop, :shutdown, state}
   end
 

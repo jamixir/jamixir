@@ -68,8 +68,8 @@ defmodule Network.ConnectionManager do
   end
 
   # used by Listener to notify us that a new inbound connection has been established
-  def handle_inbound_connection(conn, ed25519_key) do
-    GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key})
+  def handle_inbound_connection(conn, ed25519_key, opts \\ []) do
+    GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key, opts})
   end
 
   # Internal function used by ConnectionPolicy to start outbound connections
@@ -81,12 +81,7 @@ defmodule Network.ConnectionManager do
     GenServer.cast(__MODULE__, :shutdown_all_connections)
   end
 
-  def kill_all_incoming do
-    GenServer.cast(__MODULE__, :kill_all_incoming)
-  end
-
   ## GenServer Implementation
-
   @impl GenServer
   def init(_opts) do
     {:ok, supervisor_pid} = DynamicSupervisor.start_link(strategy: :one_for_one)
@@ -199,7 +194,7 @@ defmodule Network.ConnectionManager do
 
   @impl GenServer
   def handle_cast(
-        {:handle_inbound_connection, conn, ed25519_key},
+        {:handle_inbound_connection, conn, ed25519_key, opts},
         state
       ) do
     Log.connection(:info, "📞 Handling inbound connection", ed25519_key)
@@ -227,6 +222,7 @@ defmodule Network.ConnectionManager do
                  connection: conn,
                  remote_ed25519_key: ed25519_key
                }
+               |> Map.merge(Enum.into(opts, %{}))
              ]},
           restart: :temporary,
           type: :worker
@@ -235,33 +231,21 @@ defmodule Network.ConnectionManager do
         case DynamicSupervisor.start_child(state.supervisor_pid, spec) do
           {:ok, pid} ->
             # Transfer ownership after the process is started
-            case :quicer.controlling_process(conn, pid) do
-              :ok ->
-                Process.monitor(pid)
-                Log.connection(:info, "✅ Inbound connection started successfully", ed25519_key)
+            :ok = :quicer.controlling_process(conn, pid)
 
-                connection_info = %ConnectionInfo{
-                  status: :connected,
-                  direction: :inbound,
-                  remote_ed25519_key: ed25519_key,
-                  pid: pid
-                }
+            Process.monitor(pid)
+            Log.connection(:info, "✅ Inbound connection started successfully", ed25519_key)
 
-                new_connections = Map.put(state.connections, ed25519_key, connection_info)
-                {:noreply, %{state | connections: new_connections}}
+            connection_info = %ConnectionInfo{
+              status: :connected,
+              direction: :inbound,
+              remote_ed25519_key: ed25519_key,
+              pid: pid
+            }
 
-              {:error, reason} ->
-                Log.connection(
-                  :warning,
-                  "❌ Failed to transfer connection ownership: #{inspect(reason)}",
-                  ed25519_key
-                )
+            new_connections = Map.put(state.connections, ed25519_key, connection_info)
 
-                # Clean up the process we just started
-                DynamicSupervisor.terminate_child(state.supervisor_pid, pid)
-                :quicer.close_connection(conn)
-                {:noreply, state}
-            end
+            {:noreply, %{state | connections: new_connections}}
 
           error ->
             Log.connection(
@@ -392,29 +376,6 @@ defmodule Network.ConnectionManager do
     end
 
     {:noreply, state}
-  end
-
-  @impl GenServer
-  def handle_cast(:kill_all_incoming, state) do
-    for {ed25519_key, %ConnectionInfo{direction: :inbound, pid: pid}} <- state.connections do
-      if is_pid(pid) and Process.alive?(pid) do
-        Log.connection(:info, "Killing inbound connection", ed25519_key)
-        GenServer.stop(pid, :normal)
-      end
-    end
-
-    new_connections =
-      state.connections
-      |> Enum.map(fn
-        {key, %ConnectionInfo{direction: :inbound} = info} ->
-          {key, %{info | pid: nil, status: :disconnected}}
-
-        pair ->
-          pair
-      end)
-      |> Map.new()
-
-    {:noreply, %{state | connections: new_connections}}
   end
 
   @impl GenServer

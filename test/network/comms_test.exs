@@ -19,40 +19,38 @@ defmodule CommsTest do
   use Sizes
 
   @dummy_protocol_id 242
+  @port 9999
+  @test_server_alias :test_server_alias
+  setup_all do
+    start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias})
+    %{test_server_alias: @test_server_alias}
+  end
 
   setup do
-    port = 9999
-
     {:ok, client_pid} =
       Network.ConnectionManager.start_outbound_connection(
         Util.Hash.random(),
         {127, 0, 0, 1},
-        port
+        @port
       )
 
-    # Wait for the server connection to be established
-    # TODO: make wasy to access the server connection pid => can wait for it like we do the client_pid below
-    Process.sleep(50)
+    # Wait for the server connection process to be registered
+    wait(fn -> Process.whereis(@test_server_alias) end)
+    server_pid = Process.whereis(@test_server_alias)
 
     wait(fn -> Process.alive?(client_pid) end)
-    # wait(fn -> Process.alive?(server_pid) end)
-
-    client_state = :sys.get_state(client_pid)
-    port = client_state.port
+    wait(fn -> Process.alive?(server_pid) end)
 
     on_exit(fn ->
       if Process.alive?(client_pid), do: GenServer.stop(client_pid, :normal)
-      # Kill all inbound (server) connection processes
-      Network.ConnectionManager.kill_all_incoming()
+      if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
     end)
 
-    {:ok, client: client_pid, port: port}
+    {:ok, client: client_pid, server: server_pid}
   end
 
   setup :set_mox_from_context
 
-  # TODO fix network tests
-  # @moduletag :skip
   describe "basic messages" do
     test "parallel streams", %{client: client} do
       number_of_messages = 5
@@ -104,7 +102,7 @@ defmodule CommsTest do
       {:ok, blocks: blocks}
     end
 
-    test "requests 9 blocks", %{client: client, blocks: blocks, port: _port} do
+    test "requests 9 blocks", %{client: client, blocks: blocks} do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn <<0::hash()>>, :ascending, 9 -> {:ok, blocks} end)
 
@@ -113,7 +111,7 @@ defmodule CommsTest do
       assert {:ok, ^blocks} = result
     end
 
-    test "requests 2 blocks in descending order", %{client: client, blocks: blocks, port: _port} do
+    test "requests 2 blocks in descending order", %{client: client, blocks: blocks} do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn <<1::hash()>>, :descending, 2 -> {:ok, blocks} end)
 

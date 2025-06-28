@@ -18,12 +18,13 @@ defmodule Network.Listener do
   @impl true
   def init(opts) do
     port = Keyword.get(opts, :port, 9999)
+    test_server_alias = Keyword.get(opts, :test_server_alias)
 
     case :quicer.listen(port, default_quicer_opts()) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)
-        {:ok, %{socket: socket}}
+        {:ok, %{socket: socket, test_server_alias: test_server_alias}}
 
       {:error, reason} ->
         Log.error("❌ Failed to start listener on port #{port}: #{inspect(reason)}")
@@ -48,7 +49,13 @@ defmodule Network.Listener do
                 :ok =
                   :quicer.controlling_process(conn, Process.whereis(Network.ConnectionManager))
 
-                ConnectionManager.handle_inbound_connection(conn, ed25519_key)
+                # Pass test_server_alias if present in state
+                opts =
+                  if Map.get(state, :test_server_alias),
+                    do: [test_server_alias: Map.get(state, :test_server_alias)],
+                    else: []
+
+                ConnectionManager.handle_inbound_connection(conn, ed25519_key, opts)
 
               {:error, reason} ->
                 Log.warning("❌ Failed to identify validator: #{inspect(reason)}")
