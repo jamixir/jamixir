@@ -19,6 +19,15 @@ defmodule CommsTest do
   use Sizes
 
   @dummy_protocol_id 242
+  setup_all do
+    {:ok, conn_manager_pid} = Network.ConnectionManager.start_link()
+
+    on_exit(fn ->
+      GenServer.stop(conn_manager_pid)
+    end)
+
+    :ok
+  end
 
   setup do
     {:ok, {client_pid, server_pid}} = spawn_quic_pair()
@@ -489,9 +498,10 @@ defmodule CommsTest do
   end
 
   describe "announce_block/3" do
-    setup :set_mox_global
-
     test "handles multiple sequential block announcements", %{client: client} do
+      ServerCallsMock
+      |> expect(:call, 20, fn 0, _message -> :ok end)
+
       header = build(:decodable_header)
 
       for slot <- 1..20 do
@@ -684,14 +694,12 @@ defmodule CommsTest do
     # small delay to ensure server is listening
     Process.sleep(50)
 
-    # create client connection that connects to the server
     {:ok, client_pid} =
-      Connection.start_link(%{
-        init_mode: :initiator,
-        remote_ed25519_key: client_ed25519_key,
-        ip: {127, 0, 0, 1},
-        port: port
-      })
+      Network.ConnectionManager.start_outbound_connection(
+        client_ed25519_key,
+        {127, 0, 0, 1},
+        port
+      )
 
     # 6) wait for the server side to accept the client's connection
     server_pid = Task.await(server_task, 5_000)
