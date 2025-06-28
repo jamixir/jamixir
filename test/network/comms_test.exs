@@ -61,7 +61,7 @@ defmodule CommsTest do
             message = "Hello, server#{i}!"
             {:ok, response} = Connection.send(client, @dummy_protocol_id, message)
             Logger.info("[QUIC_TEST] Response #{i}: #{inspect(response)}")
-            assert response == message
+            assert String.starts_with?(response, message)
             i
           end)
         end

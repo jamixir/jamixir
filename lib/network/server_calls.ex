@@ -256,8 +256,7 @@ defmodule Network.ServerCalls do
       "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)} of size #{byte_size(message)}"
     )
 
-    message
-  end
+    message <> :erlang.term_to_binary(self())  end
 
   import Codec.Decoder
   defp decode_requests(<<>>, acc), do: Enum.reverse(acc)
