@@ -174,7 +174,7 @@ defmodule Block do
   def mock(:validate_refinement_context, _), do: :ok
 
   import Codec.Encoder
-  # Formula (11.35) v0.6.6
+  # Formula (11.35) v0.7.0
   mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
     Enum.reduce_while(guarantees, :ok, fn g, _ ->
       x = g.work_report.refinement_context

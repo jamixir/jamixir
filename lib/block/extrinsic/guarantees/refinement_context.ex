@@ -16,7 +16,7 @@ defmodule RefinementContext do
           prerequisite: MapSet.t(Types.hash())
         }
 
-  # Formula (11.4) v0.6.6
+  # Formula (11.4) v0.7.0
   # a - anchor header hash
   defstruct anchor: Hash.zero(),
             # s - posterior state root

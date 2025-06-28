@@ -1,14 +1,16 @@
 defmodule System.State.CoreReport do
-  @moduledoc """
-  Formula (11.1) v0.6.6
-  """
-
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.State.CoreReport
   use SelectiveMock
   import Codec.Encoder
 
-  @type t :: %__MODULE__{work_report: WorkReport.t(), timeslot: Types.timeslot()}
+  # Formula (11.1) v0.7.0
+  @type t :: %__MODULE__{
+          # r
+          work_report: WorkReport.t(),
+          # t
+          timeslot: Types.timeslot()
+        }
 
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
@@ -39,7 +41,7 @@ defmodule System.State.CoreReport do
            ) do
     w = MapSet.new(available_work_reports)
 
-    # Formula (11.17) v0.6.6
+    # Formula (11.17) v0.7.0
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil or intermediate == nil,
         do: nil,
@@ -61,7 +63,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def transition(core_reports_2, guarantees, timeslot_) do
-    # Formula (11.43) v0.6.6
+    # Formula (11.43) v0.7.0
     for index <- 0..(Constants.core_count() - 1) do
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> Enum.at(core_reports_2, index)
