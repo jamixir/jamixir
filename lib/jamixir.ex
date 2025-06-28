@@ -17,13 +17,13 @@ defmodule Jamixir do
 
   defp test_children do
     persist_storage? = Jamixir.config()[:storage_persist] || false
+    port = Application.get_env(:jamixir, :port, 9999)
 
     [
       {Storage, [persist: persist_storage?]},
-      Jamixir.TimeTicker,
-      {Task.Supervisor, name: Jamixir.TaskSupervisor},
-      Jamixir.InitializationTask,
-      Jamixir.NodeCLIServer
+      Network.ConnectionManager,
+      {Network.Listener, [port: port]},
+      Jamixir.TimeTicker
     ]
   end
 

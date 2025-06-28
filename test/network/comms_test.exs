@@ -19,28 +19,31 @@ defmodule CommsTest do
   use Sizes
 
   @dummy_protocol_id 242
-  setup_all do
-    {:ok, conn_manager_pid} = Network.ConnectionManager.start_link()
-
-    on_exit(fn ->
-      GenServer.stop(conn_manager_pid)
-    end)
-
-    :ok
-  end
 
   setup do
-    {:ok, {client_pid, server_pid}} = spawn_quic_pair()
+    port = 9999
+
+    {:ok, client_pid} =
+      Network.ConnectionManager.start_outbound_connection(
+        Util.Hash.random(),
+        {127, 0, 0, 1},
+        port
+      )
+
+    # Wait for the server connection to be established
+    # TODO: make wasy to access the server connection pid => can wait for it like we do the client_pid below
+    Process.sleep(50)
 
     wait(fn -> Process.alive?(client_pid) end)
-    wait(fn -> Process.alive?(server_pid) end)
+    # wait(fn -> Process.alive?(server_pid) end)
 
     client_state = :sys.get_state(client_pid)
     port = client_state.port
 
     on_exit(fn ->
-      if Process.alive?(server_pid), do: GenServer.stop(server_pid, :normal)
       if Process.alive?(client_pid), do: GenServer.stop(client_pid, :normal)
+      # Kill all inbound (server) connection processes
+      Network.ConnectionManager.kill_all_incoming()
     end)
 
     {:ok, client: client_pid, port: port}
@@ -662,51 +665,5 @@ defmodule CommsTest do
     {:ok, stream} = :quicer.start_stream(client_state.connection, Config.default_stream_opts())
     {:ok, _} = :quicer.send(stream, payload, Flags.send_flag(:fin))
     assert Process.alive?(client), "Peer crashed on #{description}"
-  end
-
-  @spec spawn_quic_pair() ::
-          {:ok, {pid(), pid()}} | {:error, term()}
-  def spawn_quic_pair() do
-    port = 5_000 + :rand.uniform(1_000)
-    client_ed25519_key = Util.Hash.random()
-    server_ed25519_key = Util.Hash.random()
-
-    {:ok, listen_socket} = :quicer.listen(port, Config.default_quicer_opts())
-
-    # start server task to accept the incoming connection
-    server_task =
-      Task.async(fn ->
-        {:ok, conn} = :quicer.accept(listen_socket, [], 5_000)
-
-        {:ok, conn} = :quicer.handshake(conn)
-
-        {:ok, server_pid} =
-          Connection.start_link(%{
-            connection: conn,
-            remote_ed25519_key: server_ed25519_key
-          })
-
-        # transfer ownership from this task to the server process
-        :ok = :quicer.controlling_process(conn, server_pid)
-        server_pid
-      end)
-
-    # small delay to ensure server is listening
-    Process.sleep(50)
-
-    {:ok, client_pid} =
-      Network.ConnectionManager.start_outbound_connection(
-        client_ed25519_key,
-        {127, 0, 0, 1},
-        port
-      )
-
-    # 6) wait for the server side to accept the client's connection
-    server_pid = Task.await(server_task, 5_000)
-
-    # Close the listen socket since we only need one connection
-    :quicer.close_listener(listen_socket)
-
-    {:ok, {client_pid, server_pid}}
   end
 end

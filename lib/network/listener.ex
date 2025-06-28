@@ -44,6 +44,10 @@ defmodule Network.Listener do
             case get_validator_ed25519_key(conn) do
               {:ok, ed25519_key} ->
                 Log.info("✅ Identified validator, delegating to ConnectionManager")
+
+                :ok =
+                  :quicer.controlling_process(conn, Process.whereis(Network.ConnectionManager))
+
                 ConnectionManager.handle_inbound_connection(conn, ed25519_key)
 
               {:error, reason} ->
@@ -134,5 +138,15 @@ defmodule Network.Listener do
         Log.warning("❌ Failed to get validators from state: #{inspect(reason)}")
         {:error, :state_not_available}
     end
+  end
+
+  def stop do
+    GenServer.stop(__MODULE__)
+  end
+
+  @impl true
+  def terminate(_reason, %{socket: socket}) do
+    :ok = :quicer.close_listener(socket)
+    :ok
   end
 end

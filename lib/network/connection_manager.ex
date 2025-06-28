@@ -81,6 +81,10 @@ defmodule Network.ConnectionManager do
     GenServer.cast(__MODULE__, :shutdown_all_connections)
   end
 
+  def kill_all_incoming do
+    GenServer.cast(__MODULE__, :kill_all_incoming)
+  end
+
   ## GenServer Implementation
 
   @impl GenServer
@@ -388,6 +392,29 @@ defmodule Network.ConnectionManager do
     end
 
     {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_cast(:kill_all_incoming, state) do
+    for {ed25519_key, %ConnectionInfo{direction: :inbound, pid: pid}} <- state.connections do
+      if is_pid(pid) and Process.alive?(pid) do
+        Log.connection(:info, "Killing inbound connection", ed25519_key)
+        GenServer.stop(pid, :normal)
+      end
+    end
+
+    new_connections =
+      state.connections
+      |> Enum.map(fn
+        {key, %ConnectionInfo{direction: :inbound} = info} ->
+          {key, %{info | pid: nil, status: :disconnected}}
+
+        pair ->
+          pair
+      end)
+      |> Map.new()
+
+    {:noreply, %{state | connections: new_connections}}
   end
 
   @impl GenServer
