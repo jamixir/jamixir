@@ -14,6 +14,7 @@ defmodule Network.Config do
     peer_unidi_stream_count: 100,
     versions: [:"tlsv1.3"],
     verify: :none,
+    conn_acceptors: 4,
     # TODO: this is hack to prevent quicer from closing the connection when the peer is not sending any data
     # instead we shoudl intiate up stream and indeed shut dow connection if nothing is moving on them
     # the quicer default is 30 seconds
