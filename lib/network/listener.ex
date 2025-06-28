@@ -18,12 +18,13 @@ defmodule Network.Listener do
   @impl true
   def init(opts) do
     port = Keyword.get(opts, :port, 9999)
+    test_server_alias = Keyword.get(opts, :test_server_alias)
 
     case :quicer.listen(port, default_quicer_opts()) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)
-        {:ok, %{socket: socket}}
+        {:ok, %{socket: socket, test_server_alias: test_server_alias}}
 
       {:error, reason} ->
         Log.error("❌ Failed to start listener on port #{port}: #{inspect(reason)}")
@@ -44,7 +45,17 @@ defmodule Network.Listener do
             case get_validator_ed25519_key(conn) do
               {:ok, ed25519_key} ->
                 Log.info("✅ Identified validator, delegating to ConnectionManager")
-                ConnectionManager.handle_inbound_connection(conn, ed25519_key)
+
+                :ok =
+                  :quicer.controlling_process(conn, Process.whereis(Network.ConnectionManager))
+
+                # Pass test_server_alias if present in state
+                opts =
+                  if Map.get(state, :test_server_alias),
+                    do: [test_server_alias: Map.get(state, :test_server_alias)],
+                    else: []
+
+                ConnectionManager.handle_inbound_connection(conn, ed25519_key, opts)
 
               {:error, reason} ->
                 Log.warning("❌ Failed to identify validator: #{inspect(reason)}")
@@ -134,5 +145,15 @@ defmodule Network.Listener do
         Log.warning("❌ Failed to get validators from state: #{inspect(reason)}")
         {:error, :state_not_available}
     end
+  end
+
+  def stop do
+    GenServer.stop(__MODULE__)
+  end
+
+  @impl true
+  def terminate(_reason, %{socket: socket}) do
+    :ok = :quicer.close_listener(socket)
+    :ok
   end
 end

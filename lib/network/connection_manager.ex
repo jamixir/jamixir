@@ -1,20 +1,26 @@
 defmodule Network.ConnectionManager do
   @moduledoc """
-  Manages all connections lifecycle.
-  - initiates connections to validators
-  - hadnles incoming connection (from Listener)
-  - handles connection status updates (success, lost, disconnected) (from Connection)
-  - retries connections
+  Central orchestrator for all network connections.
 
-  sits ontop of ConnectionSupervisor to manage connections lifecycle., is the main entry point for all connection related logic.
-  no other process touches ConnectionSupervisor directly.
+  - Directly supervises all connection processes (inbound and outbound)
+  - Handles connection lifecycle: creation, monitoring, retry, and shutdown
+  - All connection creation, lookup, and shutdown is handled via this module
+
+  Entry points:
+  - connect_to_validators/1: Initiate connections to all validators
+  - start_outbound_connection/3: Start a single outbound connection
+  - handle_inbound_connection/2: Handle a new inbound connection
+  - get_connection/1, get_connections/0: Lookup connection PIDs
+  - shutdown_all_connections/0: Graceful shutdown of all connections
+
   """
 
   use GenServer
-  alias Network.{ConnectionPolicy, ConnectionSupervisor, ConnectionInfo}
+  alias Network.{ConnectionPolicy, ConnectionInfo}
   alias Util.Logger, as: Log
 
   @type connection_manager_state :: %__MODULE__{
+          supervisor_pid: pid(),
           connections: %{Types.ed25519_key() => ConnectionInfo.t()},
           retry_timers: %{Types.ed25519_key() => reference()},
           validators: list(System.State.Validator.t())
@@ -24,6 +30,7 @@ defmodule Network.ConnectionManager do
   @connection_retry_delay 5000
 
   defstruct [
+    :supervisor_pid,
     :connections,
     :retry_timers,
     :validators
@@ -61,16 +68,28 @@ defmodule Network.ConnectionManager do
   end
 
   # used by Listener to notify us that a new inbound connection has been established
-  def handle_inbound_connection(conn, ed25519_key) do
-    GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key})
+  def handle_inbound_connection(conn, ed25519_key, opts \\ []) do
+    GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key, opts})
+  end
+
+  # Internal function used by ConnectionPolicy to start outbound connections
+  def start_outbound_connection(remote_ed25519_key, ip, port) do
+    GenServer.call(__MODULE__, {:start_outbound_connection, remote_ed25519_key, ip, port})
+  end
+
+  def shutdown_all_connections do
+    GenServer.cast(__MODULE__, :shutdown_all_connections)
   end
 
   ## GenServer Implementation
-
   @impl GenServer
   def init(_opts) do
+    {:ok, supervisor_pid} = DynamicSupervisor.start_link(strategy: :one_for_one)
+    Process.monitor(supervisor_pid)
+
     {:ok,
      %__MODULE__{
+       supervisor_pid: supervisor_pid,
        connections: %{},
        retry_timers: %{},
        validators: []
@@ -92,47 +111,152 @@ defmodule Network.ConnectionManager do
 
   @impl GenServer
   def handle_call(:get_connections, _from, state) do
-    {:reply, ConnectionSupervisor.get_all_connections(), state}
+    # Extract PIDs from our connections state
+    connection_pids =
+      state.connections
+      |> Enum.filter(fn {_key, conn_info} -> conn_info.pid != nil end)
+      |> Enum.into(%{}, fn {key, conn_info} -> {key, conn_info.pid} end)
+
+    {:reply, connection_pids, state}
   end
 
   @impl GenServer
   def handle_call({:get_connection, ed25519_key}, _from, state) do
-    {:reply, ConnectionSupervisor.get_connection(ed25519_key), state}
+    case Map.get(state.connections, ed25519_key) do
+      %ConnectionInfo{pid: pid} when is_pid(pid) ->
+        {:reply, {:ok, pid}, state}
+
+      %ConnectionInfo{pid: nil} ->
+        {:reply, {:error, :not_connected}, state}
+
+      nil ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  @impl GenServer
+  def handle_call({:start_outbound_connection, remote_ed25519_key, ip, port}, _from, state) do
+    # Check if connection already exists
+    case Map.get(state.connections, remote_ed25519_key) do
+      %ConnectionInfo{pid: pid} when is_pid(pid) ->
+        Log.connection(
+          :debug,
+          "🔄 Connection already exists, returning existing",
+          remote_ed25519_key
+        )
+
+        {:reply, {:ok, pid}, state}
+
+      _no_active_connection ->
+        # Create DynamicSupervisor spec for outbound connection
+        spec = %{
+          id: {:outbound_connection, remote_ed25519_key, System.unique_integer()},
+          start:
+            {Network.Connection, :start_link,
+             [
+               %{
+                 init_mode: :initiator,
+                 remote_ed25519_key: remote_ed25519_key,
+                 ip: ip,
+                 port: port
+               }
+             ]},
+          restart: :temporary,
+          type: :worker
+        }
+
+        case DynamicSupervisor.start_child(state.supervisor_pid, spec) do
+          {:ok, pid} ->
+            Process.monitor(pid)
+            Log.connection(:debug, "✅ Started outbound connection", remote_ed25519_key)
+
+            connection_info = %ConnectionInfo{
+              status: :connecting,
+              direction: :outbound,
+              remote_ed25519_key: remote_ed25519_key,
+              pid: pid
+            }
+
+            new_connections = Map.put(state.connections, remote_ed25519_key, connection_info)
+            {:reply, {:ok, pid}, %{state | connections: new_connections}}
+
+          error ->
+            Log.connection(
+              :warning,
+              "❌ Failed to start outbound connection: #{inspect(error)}",
+              remote_ed25519_key
+            )
+
+            {:reply, error, state}
+        end
+    end
   end
 
   @impl GenServer
   def handle_cast(
-        {:handle_inbound_connection, conn, ed25519_key},
+        {:handle_inbound_connection, conn, ed25519_key, opts},
         state
       ) do
     Log.connection(:info, "📞 Handling inbound connection", ed25519_key)
 
-    case ConnectionSupervisor.start_inbound_connection(conn, ed25519_key) do
-      {:ok, _pid} ->
-        Log.connection(:info, "✅ Inbound connection started successfully", ed25519_key)
-
-        connection_info = %ConnectionInfo{
-          status: :connected,
-          direction: :inbound,
-          remote_ed25519_key: ed25519_key
-        }
-
-        new_connections = Map.put(state.connections, ed25519_key, connection_info)
-        {:noreply, %{state | connections: new_connections}}
-
-      {:error, :already_exists} ->
-        Log.connection(:warning, "🚫 Duplicate inbound connection rejected", ed25519_key)
-        {:noreply, state}
-
-      {:error, reason} ->
+    # Check if connection already exists
+    case Map.get(state.connections, ed25519_key) do
+      %ConnectionInfo{pid: pid} when is_pid(pid) ->
         Log.connection(
-          :error,
-          "❌ Failed to start inbound connection: #{inspect(reason)}",
+          :debug,
+          "🚫 Connection already exists, rejecting duplicate",
           ed25519_key
         )
 
         :quicer.close_connection(conn)
         {:noreply, state}
+
+      _no_active_connection ->
+        # Create DynamicSupervisor spec for inbound connection
+        spec = %{
+          id: {:inbound_connection, ed25519_key, System.unique_integer()},
+          start:
+            {Network.Connection, :start_link,
+             [
+               %{
+                 connection: conn,
+                 remote_ed25519_key: ed25519_key
+               }
+               |> Map.merge(Enum.into(opts, %{}))
+             ]},
+          restart: :temporary,
+          type: :worker
+        }
+
+        case DynamicSupervisor.start_child(state.supervisor_pid, spec) do
+          {:ok, pid} ->
+            # Transfer ownership after the process is started
+            :ok = :quicer.controlling_process(conn, pid)
+
+            Process.monitor(pid)
+            Log.connection(:info, "✅ Inbound connection started successfully", ed25519_key)
+
+            connection_info = %ConnectionInfo{
+              status: :connected,
+              direction: :inbound,
+              remote_ed25519_key: ed25519_key,
+              pid: pid
+            }
+
+            new_connections = Map.put(state.connections, ed25519_key, connection_info)
+
+            {:noreply, %{state | connections: new_connections}}
+
+          error ->
+            Log.connection(
+              :error,
+              "❌ Failed to start inbound connection: #{inspect(error)}",
+              ed25519_key
+            )
+
+            :quicer.close_connection(conn)
+            {:noreply, state}
+        end
     end
   end
 
@@ -141,11 +265,19 @@ defmodule Network.ConnectionManager do
     Log.connection(:info, "💔 Connection lost", ed25519_key)
 
     case Map.get(state.connections, ed25519_key) do
-      %ConnectionInfo{direction: :outbound} = connection_info ->
-        ConnectionSupervisor.kill_connection(ed25519_key)
+      %ConnectionInfo{direction: :outbound, pid: pid} = connection_info ->
+        # Kill the connection process if it exists
+        if is_pid(pid) do
+          Log.connection(:debug, "🔪 Killing dead connection process", ed25519_key)
+          DynamicSupervisor.terminate_child(state.supervisor_pid, pid)
+        end
 
         new_connections =
-          Map.put(state.connections, ed25519_key, %{connection_info | status: :disconnected})
+          Map.put(state.connections, ed25519_key, %{
+            connection_info
+            | status: :disconnected,
+              pid: nil
+          })
 
         # Schedule retry for outbound connections
         Log.connection(:info, "📅 Scheduling reconnection attempt (outbound)", ed25519_key)
@@ -162,11 +294,19 @@ defmodule Network.ConnectionManager do
              retry_timers: new_timers
          }}
 
-      %ConnectionInfo{direction: :inbound} = connection_info ->
-        ConnectionSupervisor.kill_connection(ed25519_key)
+      %ConnectionInfo{direction: :inbound, pid: pid} = connection_info ->
+        # Kill the connection process if it exists
+        if is_pid(pid) do
+          Log.connection(:debug, "🔪 Killing dead connection process", ed25519_key)
+          DynamicSupervisor.terminate_child(state.supervisor_pid, pid)
+        end
 
         new_connections =
-          Map.put(state.connections, ed25519_key, %{connection_info | status: :disconnected})
+          Map.put(state.connections, ed25519_key, %{
+            connection_info
+            | status: :disconnected,
+              pid: nil
+          })
 
         Log.connection(
           :info,
@@ -175,6 +315,16 @@ defmodule Network.ConnectionManager do
         )
 
         {:noreply, %{state | connections: new_connections}}
+
+      nil ->
+        # Connection not tracked in our state, ignore
+        Log.connection(
+          :debug,
+          "🚫 Received connection_lost for unknown connection, ignoring",
+          ed25519_key
+        )
+
+        {:noreply, state}
     end
   end
 
@@ -184,11 +334,48 @@ defmodule Network.ConnectionManager do
 
     existing_conn = Map.get(state.connections, ed25519_key)
 
-    Log.connection(:debug, "🔄 Updating connection to connected", ed25519_key)
-    updated_conn = %ConnectionInfo{existing_conn | status: :connected}
-    updated_connections = Map.put(state.connections, ed25519_key, updated_conn)
+    case existing_conn do
+      %ConnectionInfo{} = conn_info ->
+        Log.connection(:debug, "🔄 Updating existing connection to connected", ed25519_key)
+        updated_conn = %ConnectionInfo{conn_info | status: :connected, pid: pid}
+        updated_connections = Map.put(state.connections, ed25519_key, updated_conn)
+        {:noreply, %{state | connections: updated_connections}}
 
-    {:noreply, %{state | connections: updated_connections}}
+      nil ->
+        # Connection not tracked, create a new entry (probably from test or external connection)
+        Log.connection(
+          :debug,
+          "🆕 Creating new connection entry for unknown connection",
+          ed25519_key
+        )
+
+        new_conn = %ConnectionInfo{
+          status: :connected,
+          # Assume inbound since we didn't initiate it
+          direction: :inbound,
+          remote_ed25519_key: ed25519_key,
+          start_time: System.monotonic_time(:millisecond),
+          retry_count: 0,
+          pid: pid
+        }
+
+        updated_connections = Map.put(state.connections, ed25519_key, new_conn)
+        {:noreply, %{state | connections: updated_connections}}
+    end
+  end
+
+  @impl GenServer
+  def handle_cast(:shutdown_all_connections, state) do
+    IO.puts("🛑 Shutting down all connections gracefully")
+
+    for {ed25519_key, %ConnectionInfo{pid: pid}} <- state.connections do
+      if is_pid(pid) && Process.alive?(pid) do
+        Log.connection(:debug, "🛑 Shutting down connection", ed25519_key)
+        GenServer.cast(pid, :shutdown)
+      end
+    end
+
+    {:noreply, state}
   end
 
   @impl GenServer
@@ -210,6 +397,24 @@ defmodule Network.ConnectionManager do
       true ->
         handle_retry_wait_inbound(ed25519_key, connection_info, state)
     end
+  end
+
+  # Handle process termination - clean up our connections map
+  @impl GenServer
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    # Find and update the connection info that had this PID
+    new_connections =
+      state.connections
+      |> Enum.map(fn {key, conn_info} ->
+        if conn_info.pid == pid do
+          {key, %{conn_info | pid: nil, status: :disconnected}}
+        else
+          {key, conn_info}
+        end
+      end)
+      |> Map.new()
+
+    {:noreply, %{state | connections: new_connections}}
   end
 
   ## Private Helper Functions

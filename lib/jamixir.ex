@@ -20,10 +20,8 @@ defmodule Jamixir do
 
     [
       {Storage, [persist: persist_storage?]},
-      Jamixir.TimeTicker,
-      {Task.Supervisor, name: Jamixir.TaskSupervisor},
-      Jamixir.InitializationTask,
-      Jamixir.NodeCLIServer
+      Network.ConnectionManager,
+      Jamixir.TimeTicker
     ]
   end
 
@@ -33,7 +31,6 @@ defmodule Jamixir do
 
     [
       {Storage, [persist: persist_storage?]},
-      Network.ConnectionSupervisor,
       Network.ConnectionManager,
       {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
@@ -46,7 +43,7 @@ defmodule Jamixir do
   @impl true
   def stop(_state) do
     try do
-      Network.ConnectionSupervisor.shutdown_all_connections()
+      Network.ConnectionManager.shutdown_all_connections()
       Process.sleep(100)
     rescue
       _ -> :ok
