@@ -4,7 +4,7 @@ defmodule Network.ConnectionPolicy do
   used by ConnectionManager to make decisions about connection attempts, retries, and protocol decisions.
   """
 
-  alias Network.ConnectionSupervisor
+  alias Network.ConnectionManager
   alias Util.Logger, as: Log
   alias System.State.Validator
 
@@ -55,7 +55,7 @@ defmodule Network.ConnectionPolicy do
   def attempt_connection(%Validator{ed25519: ed25519_key} = v) do
     {ip, port} = Validator.ip_port(v)
 
-    case ConnectionSupervisor.start_outbound_connection(ed25519_key, ip, port) do
+    case ConnectionManager.start_outbound_connection(ed25519_key, ip, port) do
       {:ok, pid} ->
         Log.connection(:info, "✅ Connected", ed25519_key)
         {:ok, %{type: :new, pid: pid}}
