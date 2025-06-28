@@ -9,7 +9,8 @@ defmodule Jamixir do
   end
 
   defp get_children do
-    if Mix.env() == :test and not Application.get_env(:jamixir, :start_full_app, false),
+    test_envs = [:test, :full_test]
+    if Enum.member?(test_envs, Mix.env()) and not Application.get_env(:jamixir, :start_full_app, false),
       do: test_children(),
       else: production_children()
   end
