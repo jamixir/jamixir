@@ -1,8 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
-  alias Network.Connection
   alias Jamixir.Node
-  alias Network.Types.SegmentShardsRequest
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
@@ -12,7 +10,7 @@ defmodule CommsTest do
   import TestHelper
   require Logger
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
-  alias Network.{Config, Peer, PeerSupervisor}
+  alias Network.{Config, Connection, Types.SegmentShardsRequest}
   alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
   import ExUnit.Assertions
@@ -20,10 +18,9 @@ defmodule CommsTest do
   alias Util.Hash
   use Sizes
 
-  @base_port 9999
   @dummy_protocol_id 242
 
-  setup context do
+  setup do
     {:ok, {client_pid, server_pid}} = spawn_quic_pair()
 
     wait(fn -> Process.alive?(client_pid) end)
@@ -666,17 +663,17 @@ defmodule CommsTest do
 
     {:ok, listen_socket} = :quicer.listen(port, Config.default_quicer_opts())
 
-     start server task to accept the incoming connection
+    # start server task to accept the incoming connection
     server_task =
       Task.async(fn ->
-
         {:ok, conn} = :quicer.accept(listen_socket, [], 5_000)
 
         {:ok, conn} = :quicer.handshake(conn)
+
         {:ok, server_pid} =
-          Network.Connection.start_link(%{
+          Connection.start_link(%{
             connection: conn,
-            remote_ed25519_key: server_key
+            remote_ed25519_key: server_ed25519_key
           })
 
         # transfer ownership from this task to the server process
@@ -689,9 +686,9 @@ defmodule CommsTest do
 
     # create client connection that connects to the server
     {:ok, client_pid} =
-      Network.Connection.start_link(%{
+      Connection.start_link(%{
         init_mode: :initiator,
-        remote_ed25519_key: client_key,
+        remote_ed25519_key: client_ed25519_key,
         ip: {127, 0, 0, 1},
         port: port
       })
