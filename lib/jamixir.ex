@@ -10,7 +10,7 @@ defmodule Jamixir do
       {Storage, [persist: persist_storage?]},
       # Network.ConnectionSupervisor,
       # Network.ConnectionManager,
-      # {Network.Listener, [port: port]},
+      {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
       {Task.Supervisor, name: Jamixir.TaskSupervisor},
       Jamixir.InitializationTask,
