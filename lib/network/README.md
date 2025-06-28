@@ -105,7 +105,7 @@ This module implements a QUIC-based peer-to-peer networking layer for Jamixir no
 1. **Listener** accepts incoming QUIC connection
 2. **Listener** calls `ConnectionManager.handle_inbound_connection()`
 3. **ConnectionManager** starts new inbound connection process
-4. **ConnectionManager** passs ownership of the QUIC connection to to newly created connection process
+4. **ConnectionManager** pass ownership of the QUIC connection to to newly created connection process
 5. **Connection** begins stream handling for the established connection
 
 ### Connection Loss & Recovery
