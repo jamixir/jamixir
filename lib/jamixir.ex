@@ -8,9 +8,9 @@ defmodule Jamixir do
 
     children = [
       {Storage, [persist: persist_storage?]},
-      # Network.ConnectionSupervisor,
-      # Network.ConnectionManager,
-      {Network.Listener, [port: port]},
+      Network.ConnectionSupervisor,
+      Network.ConnectionManager,
+      # {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
       {Task.Supervisor, name: Jamixir.TaskSupervisor},
       Jamixir.InitializationTask,
