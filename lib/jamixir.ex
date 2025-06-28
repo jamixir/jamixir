@@ -3,30 +3,17 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
-    # Skip full application startup when running test environment
-    # unless explicitly requested
-    if Mix.env() == :test and not Application.get_env(:jamixir, :start_full_app, false) do
-      # Return a minimal supervisor for test mode
-      children = []
-      opts = [strategy: :one_for_one, name: Jamixir.TestSupervisor]
-      Supervisor.start_link(children, opts)
-    else
-      start_full_application()
-    end
-  end
-
-  defp start_full_application do
     persist_storage? = Jamixir.config()[:storage_persist] || false
     port = Application.get_env(:jamixir, :port, 9999)
 
     children = [
       {Storage, [persist: persist_storage?]},
-      Network.ConnectionSupervisor,
-      Network.ConnectionManager,
-      {Network.Listener, [port: port]},
+      # Network.ConnectionSupervisor,
+      # Network.ConnectionManager,
+      # {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
-      {Task.Supervisor, name: Jamixir.TaskSupervisor},
-      Jamixir.InitializationTask,
+      # {Task.Supervisor, name: Jamixir.TaskSupervisor},
+      # Jamixir.InitializationTask,
       Jamixir.NodeCLIServer
     ]
 
