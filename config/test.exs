@@ -21,6 +21,6 @@ config :jamixir, Jamixir,
   gas_accumulation: 10_000_000,
   storage_persist: false
 
-config :logger, level: :debug
+config :logger, level: :none
 
 config :jamixir, :server_calls, ServerCallsMock
