@@ -64,7 +64,12 @@ defmodule Network.Connection do
     Log.connection(:info, "Handling incoming connection from validator", remote_ed25519_key)
     # Test-only: register process under an alias if provided
     if pid_alias = args[:test_server_alias] do
-      Process.register(self(), pid_alias)
+      try do
+        Process.register(self(), pid_alias)
+      rescue
+        _ ->
+          Log.connection(:error, "Failed to register process under alias: #{inspect(pid_alias)}", remote_ed25519_key)
+      end
     end
 
     # Notify ConnectionManager of successful inbound connection
