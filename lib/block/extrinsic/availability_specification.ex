@@ -17,7 +17,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
         }
 
   # Formula (11.5) v0.7.0
-  # h
+  # p
   defstruct work_package_hash: Hash.zero(),
             # l
             length: 0,
