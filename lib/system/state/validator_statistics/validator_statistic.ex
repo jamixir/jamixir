@@ -1,7 +1,4 @@
 defmodule System.State.ValidatorStatistic do
-  @moduledoc """
-  Formula (13.2) v0.6.6
-  """
   defstruct blocks_produced: 0,
             tickets_introduced: 0,
             preimages_introduced: 0,
@@ -9,6 +6,7 @@ defmodule System.State.ValidatorStatistic do
             reports_guaranteed: 0,
             availability_assurances: 0
 
+  # Formula (13.2) v0.7.0
   @type t :: %__MODULE__{
           # b
           blocks_produced: non_neg_integer(),
