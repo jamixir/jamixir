@@ -1,7 +1,4 @@
 defmodule System.State.CoreStatistic do
-  @moduledoc """
-  Formula (13.6) v0.6.6
-  """
   alias System.State.CoreStatistic
   alias Block.Extrinsic.{Assurance, Guarantee.WorkReport}
 
@@ -14,6 +11,7 @@ defmodule System.State.CoreStatistic do
             bundle_size: 0,
             gas_used: 0
 
+  # Formula (13.6) v0.7.0
   @type t :: %__MODULE__{
           # d
           da_load: non_neg_integer(),
@@ -21,13 +19,13 @@ defmodule System.State.CoreStatistic do
           popularity: non_neg_integer(),
           # i
           imports: non_neg_integer(),
-          # e
-          exports: non_neg_integer(),
-          # z
-          extrinsic_size: non_neg_integer(),
           # x
           extrinsic_count: non_neg_integer(),
-          # b
+          # z
+          extrinsic_size: non_neg_integer(),
+          # e
+          exports: non_neg_integer(),
+          # l
           bundle_size: non_neg_integer(),
           # u
           gas_used: Types.gas()
@@ -56,19 +54,29 @@ defmodule System.State.CoreStatistic do
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
-        # Formula (13.8) v0.6.6
-        # Formula (13.9) v0.6.6
+        # Formula (13.8) v0.7.0
+        # Formula (13.9) v0.7.0
+        # i: R(c)_i
         imports: sum_field(w_incoming_digests, :imports),
-        exports: sum_field(w_incoming_digests, :exports),
+        # x: R(c)_x
         extrinsic_count: sum_field(w_incoming_digests, :extrinsic_count),
+        # z: R(c)_z
         extrinsic_size: sum_field(w_incoming_digests, :extrinsic_size),
+        # e: R(c)_e
+        exports: sum_field(w_incoming_digests, :exports),
+        # u: R(c)_u
         gas_used: sum_field(w_incoming_digests, :gas_used),
+        # Formula (13.10) v0.7.0
+        # l: L(c) - (r_s)_l
         bundle_size: (Map.get(w_incoming, :specification) || %{}) |> Map.get(:length, 0),
-        # Formula (13.10) v0.6.6
+        # Formula (13.11) v0.7.0
+        # d: ∑(r_s)_l + W_G⌈(r_s)_n 65 /64⌉
         da_load:
           Map.get(w_newly_available_specification, :length, 0) +
             Constants.segment_size() *
               ceil(Map.get(w_newly_available_specification, :segment_count, 0) * (65 / 64)),
+        # Formula (13.8) v0.7.0
+        # p: ∑a∈E_A a_f[c]
         popularity: sum_field(a_bits, c)
       }
     end
