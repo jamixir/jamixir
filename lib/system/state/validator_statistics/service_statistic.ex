@@ -1,7 +1,6 @@
 defmodule System.State.ServiceStatistic do
-  alias Block.Extrinsic.Preimage
+  alias Block.Extrinsic.{Guarantee.WorkReport, Preimage}
   alias System.State.ServiceStatistic
-  alias Block.Extrinsic.Guarantee.WorkReport
 
   # p
   defstruct preimage: {0, 0},
@@ -9,30 +8,31 @@ defmodule System.State.ServiceStatistic do
             refine: {0, 0},
             # i
             imports: 0,
-            # e
-            exports: 0,
             # x
             extrinsic_count: 0,
             # z
             extrinsic_size: 0,
+            # e
+            exports: 0,
             # a
             accumulation: {0, 0},
+            # t
             transfers: {0, 0}
 
-  # Formula (13.7) v0.6.6
+  # Formula (13.7) v0.7.0
   @type t :: %__MODULE__{
           preimage: {non_neg_integer(), non_neg_integer()},
           refine: {non_neg_integer(), Types.gas()},
           imports: non_neg_integer(),
-          exports: non_neg_integer(),
           extrinsic_count: non_neg_integer(),
           extrinsic_size: non_neg_integer(),
+          exports: non_neg_integer(),
           accumulation: {non_neg_integer(), Types.gas()},
           transfers: {non_neg_integer(), Types.gas()}
         }
 
-  # Formula (13.11) v0.6.6
-  # Formula (13.12) v0.6.6
+  # Formula (13.12) v0.7.0
+  # Formula (13.13) v0.7.0
   @spec calculate_stats(
           list(WorkReport.t()),
           list(AccumulationStatistic.t()),
@@ -45,17 +45,20 @@ defmodule System.State.ServiceStatistic do
         deferred_transfers_stats,
         preimages
       ) do
-    # Formula (13.13) v0.6.6
-    # Formula (13.15) v0.6.6
+    # Formula (13.12) v0.7.0 - i, x, z, e, r
+    # Formula (13.14) v0.7.0
+    # Formula (13.16) v0.7.0
     refine_stats(incoming_work_reports)
-    # Formula (13.11) v0.6.6
+    # Formula (13.12) v0.7.0 - a
     |> accumulation_stats(accumulation_stats)
     |> deferred_transfers_stats(deferred_transfers_stats)
-    # Formula (13.14) v0.6.6
+    # Formula (13.15) v0.7.0
     |> preimage_stats(preimages)
   end
 
-  # Formula (13.14) v0.6.6 - p
+  # Formula (13.15) v0.7.0 - p
+  # Formula (13.12) v0.7.0
+  # p: ∑(s,d) ∈ EP (1,∣d∣)
   defp preimage_stats(previous_stats, preimages) do
     for %Preimage{service: s, blob: p} <- preimages, reduce: previous_stats do
       map ->

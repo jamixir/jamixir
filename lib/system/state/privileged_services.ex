@@ -1,12 +1,10 @@
 defmodule System.State.PrivilegedServices do
-  @moduledoc """
-  Formula (9.9) v0.7.0
-  """
   alias Codec.JsonEncoder
   import Codec.Encoder
   alias Codec.VariableSize
   use JsonDecoder
 
+  # Formula (9.9) v0.7.0
   @type t :: %__MODULE__{
           # χ_M
           manager: non_neg_integer(),
