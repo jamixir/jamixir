@@ -119,8 +119,8 @@ defmodule System.State.ServiceAccount do
 
   defimpl Encodable do
     alias System.State.ServiceAccount
-    # Formula (D.2) v0.6.7
-    # C(255, s) ↦ ac ⌢ E8(ab, ag , am, ao, af ) ⌢ E4(ai, ar , aa, ap)
+    # Formula (D.2) v0.7.0
+    # C(255, s) ↦ a_c ⌢ E8(a_b, a_g , a_m, a_o, a_f) ⌢ E4(a_i, a_r , a_a, a_p)
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
       s.code_hash <>

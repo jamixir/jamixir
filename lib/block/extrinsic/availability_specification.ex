@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           segment_count: non_neg_integer()
         }
 
-  # Formula (11.5) v0.7.0
+  # Formula (11.5) v0.7.0 - Y
   # p
   defstruct work_package_hash: Hash.zero(),
             # l
@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.22) v0.6.6
+    # Formula (C.25) v0.7.0
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
         <<availability.length::m(work_bundle_length)>> <>

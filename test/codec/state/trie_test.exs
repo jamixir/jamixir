@@ -17,7 +17,7 @@ defmodule Codec.State.TrieTest do
   end
 
   # C Constructor
-  # Formula (D.1) v0.6.6
+  # Formula (D.1) v0.7.0
   describe "key_to_31_octet" do
     test "convert integer" do
       assert key_to_31_octet(0) == :binary.copy(<<0>>, 31)

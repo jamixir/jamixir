@@ -73,7 +73,7 @@ defmodule Block.Extrinsic.Preimage do
   defimpl Encodable do
     import Codec.Encoder
 
-    # Formula (C.15) v0.6.6
+    # Formula (C.18) v0.7.0
     def encode(%Block.Extrinsic.Preimage{service: service_index, blob: p}) do
       t(service_index) <> e(vs(p))
     end
