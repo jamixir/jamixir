@@ -16,7 +16,6 @@ defmodule PVM.Host.General.FetchArgs do
           preimages: list(list(binary())) | nil,
           operands: list(Operand.t()) | nil,
           transfers: list(DeferredTransfer.t()) | nil,
-          # fetch in (0.6.6) does not use the context, so for now i am leaving the type unspecifed
           context: any()
         }
   defstruct [

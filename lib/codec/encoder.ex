@@ -18,14 +18,14 @@ defmodule Codec.Encoder do
   @spec encode_le(integer(), integer()) :: binary()
   def encode_le(x, l), do: encode_little_endian(x, l)
 
-  # Formula (E.9) v0.6.6
+  # Formula (E.9) v0.7.0
   # b ↦ E(↕[¿x ∣ x <− b])
   @spec encode_mmr(list(Types.hash() | nil)) :: Types.hash()
   def encode_mmr(mmr) do
     do_encode(VariableSize.new(Enum.map(mmr, &NilDiscriminator.new/1)))
   end
 
-  # Formula (E.10) v0.6.6
+  # Formula (E.10) v0.7.0
   def super_peak_mmr(b) do
     case for h <- b, h != nil, do: h do
       [] ->
