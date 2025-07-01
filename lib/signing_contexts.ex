@@ -23,7 +23,7 @@ defmodule SigningContexts do
   @doc "X_G - Ed25519 Guarantee statements context."
   def jam_guarantee, do: "jam_guarantee"
 
-  # Formula (17.11) v0.6.6
+  # Formula (17.11) v0.7.0
   @doc "X_I - Ed25519 Audit announcement statements context."
   def jam_announce, do: "jam_announce"
 
@@ -31,7 +31,7 @@ defmodule SigningContexts do
   @doc "X_T - Bandersnatch RingVRF Ticket generation and regular block seal context."
   def jam_ticket_seal, do: "jam_ticket_seal"
 
-  # Formula (17.4) v0.6.6
+  # Formula (17.4) v0.7.0
   @doc "X_U - Bandersnatch Audit selection entropy context."
   def jam_audit, do: "jam_audit"
 
