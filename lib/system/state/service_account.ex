@@ -49,7 +49,7 @@ defmodule System.State.ServiceAccount do
             items_in_storage: nil,
             octets_in_storage: nil
 
-  # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
+  # at ∈ ℕ_B ≡ BS + BI⋅ai + BL⋅al
   @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
   def threshold_balance(%__MODULE__{} = sa) do
     # Bs

@@ -19,7 +19,7 @@ defmodule System.Audit do
 
   # Formula (17.6) v0.6.6
   # Formula (17.7) v0.6.6
-  # p = F([ (c,Qc) ∣ c <− NC], r)
+  # p = F([ (c,Qc) ∣ c <− ℕ_C], r)
   def random_selection(keypair, s0, auditable_work_reports) do
     r = RingVrf.ietf_vrf_output(keypair, s0)
     list = for {qc, c} <- Enum.with_index(auditable_work_reports), do: {c, qc}

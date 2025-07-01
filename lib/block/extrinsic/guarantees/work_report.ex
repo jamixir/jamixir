@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.16) v0.7.0 R ≡ [ ρ†[c]r | c <− NC, ∑a∈EA af[c] > 2/3V ]
+  # Formula (11.16) v0.7.0 R ≡ [ ρ†[c]r | c <−ℕ_C, ∑a∈EA af[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t() | nil)
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)
@@ -160,7 +160,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     for r <- work_reports, do: r.specification.work_package_hash, into: MapSet.new()
   end
 
-  # Formula (12.11) v0.6.6 (W∗)
+  # Formula (12.11) v0.7.0 (R*)
   @spec accumulatable_work_reports(
           list(__MODULE__.t()),
           non_neg_integer(),
@@ -182,16 +182,16 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {immediate_work_reports, queued_work_reports} =
       separate_work_reports(work_reports, accumulated)
 
-    # Formula (12.10) v0.6.6
+    # Formula (12.10) v0.7.0
     m = Time.epoch_phase(block_timeslot)
 
     {before_m, after_m} = Enum.split(ready_to_accumulate, m)
-    # Formula (12.12) v0.6.6
+    # Formula (12.12) v0.7.0
     q =
       (for(x <- List.flatten(after_m ++ before_m), do: Ready.to_tuple(x)) ++ queued_work_reports)
       |> filter_and_update_dependencies(work_package_hashes(immediate_work_reports))
 
-    # Formula (12.11) v0.6.6
+    # Formula (12.11) v0.7.0
     immediate_work_reports ++ accumulation_priority_queue(q)
   end
 

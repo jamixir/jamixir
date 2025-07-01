@@ -39,13 +39,13 @@ defmodule Types do
   @type epoch_index :: non_neg_integer()
   # Formula (4.28) v0.7.0 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
-  # Formula (4.21) v0.7.0 - NB - should be guarded as <= 2^64
+  # Formula (4.21) v0.7.0 - ℕ_B - should be guarded as <= 2^64
   @type balance :: non_neg_integer()
-  # Formula (4.23) v0.7.0 - NG - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.7.0 - ℕ_G - shoud be a 64-bit integer <= 2^64
   @type gas :: non_neg_integer()
   # Formula (4.23) v0.7.0 - ZG - shoud be a 64-bit signed (-2^63..2^63)
   @type gas_result :: integer()
-  # Formula (4.23) v0.7.0 - NR - shoud be a 64-bit integer <= 2^64
+  # Formula (4.23) v0.7.0 - ℕ_R - shoud be a 64-bit integer <= 2^64
   @type register :: non_neg_integer()
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil

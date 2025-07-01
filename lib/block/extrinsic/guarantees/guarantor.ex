@@ -3,7 +3,7 @@ defmodule Block.Extrinsic.GuarantorAssignments do
   alias Util.Time
 
   # Formula (11.18) v0.7.0
-  # M ∈ (⟦N_C⟧_V, ⟦¯H¯⟧_V)
+  # M ∈ (⟦ℕ_C⟧_V, ⟦¯H¯⟧_V)
   @type t :: %__MODULE__{
           assigned_cores: list(non_neg_integer()),
           validators: list(Types.ed25519_key())
