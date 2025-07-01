@@ -29,7 +29,7 @@ defmodule Types do
 
   # @hash_size
 
-  # Formula (14.1) v0.6.6 - G ≡ YWG
+  # Formula (14.1) v0.7.0 - J ≡ B_W_G
   # (4104 * 8)
   def_bin_type(:export_segment, :export_segment)
 
