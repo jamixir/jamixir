@@ -1,13 +1,14 @@
 defmodule System.AccumulationResult do
-  alias System.State.Accumulation
   alias System.DeferredTransfer
+  alias System.State.Accumulation
 
+  # Formula (12.20) v0.7.0 - O
   @type t :: %__MODULE__{
-          # o
+          # e
           state: Accumulation.t(),
           # t
           transfers: list(DeferredTransfer.t()),
-          # b
+          # y
           output: Types.hash() | nil,
           # u
           gas_used: non_neg_integer(),

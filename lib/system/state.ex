@@ -141,7 +141,7 @@ defmodule System.State do
            ready_to_accumulate: ready_to_accumulate_,
            privileged_services: privileged_services_,
            accumulation_history: accumulation_history_,
-           lastaccout: lastaccout_,
+           accumulation_outputs: accumulation_outputs_,
            accumulation_stats: accumulation_stats,
            deferred_transfers_stats: deferred_transfers_stats
          } =
@@ -163,7 +163,7 @@ defmodule System.State do
            ),
          # β'H Formula (4.17) v0.7.0
          recent_history_ =
-           RecentHistory.transition(h, state.recent_history, e.guarantees, lastaccout_),
+           RecentHistory.transition(h, state.recent_history, e.guarantees, accumulation_outputs_),
          {:ok, reporters_set} <-
            Guarantee.reporters_set(
              e.guarantees,

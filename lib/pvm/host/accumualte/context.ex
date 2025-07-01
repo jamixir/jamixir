@@ -1,4 +1,4 @@
-# Formula (B.7) v0.6.6
+# Formula (B.7) v0.7.0
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
   use AccessStruct

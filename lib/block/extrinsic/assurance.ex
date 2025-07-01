@@ -12,7 +12,7 @@ defmodule Block.Extrinsic.Assurance do
   use Sizes
   import Codec.Encoder
   # Formula (11.10) v0.7.0
-  # EA ∈ ⟦(a ∈ H, f ∈ bC, v ∈ NV, s ∈ ¯V¯)⟧∶V
+  # EA ∈ ⟦(a ∈ H, f ∈ bC, v ∈ ℕ_V, s ∈ ¯V¯)⟧∶V
   defstruct hash: Hash.zero(),
             bitfield: <<0::@bitfield_size*8>>,
             validator_index: 0,

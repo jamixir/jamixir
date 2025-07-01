@@ -3,9 +3,9 @@ defmodule PVM.Accumulate.Operand do
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
 
-  # Formula (12.19) v0.6.6
+  # Formula (12.19) v0.7.0 - I
   @type t :: %__MODULE__{
-          # h
+          # p
           package_hash: Types.hash(),
           # e
           segment_root: Types.hash(),
@@ -15,10 +15,10 @@ defmodule PVM.Accumulate.Operand do
           payload_hash: Types.hash(),
           # g
           gas_limit: Types.gas(),
-          # d
-          data: {:ok, binary()} | {:error, WorkExecutionError.t()},
-          # o
-          output: binary()
+          # t
+          output: binary(),
+          # l
+          data: {:ok, binary()} | {:error, WorkExecutionError.t()}
         }
 
   defstruct package_hash: Hash.zero(),
@@ -26,8 +26,8 @@ defmodule PVM.Accumulate.Operand do
             authorizer: Hash.zero(),
             payload_hash: Hash.zero(),
             gas_limit: 0,
-            data: <<>>,
-            output: <<>>
+            output: <<>>,
+            data: <<>>
 
   defimpl Encodable do
     alias Block.Extrinsic.Guarantee.WorkDigest
