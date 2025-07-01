@@ -1,6 +1,6 @@
 defmodule System.State.Services do
-  alias System.State.ServiceAccount
   alias Block.Extrinsic.Preimage
+  alias System.State.ServiceAccount
 
   # Formula (12.43) v0.7.0
   def transition(services_intermediate_2, preimages, timeslot_) do

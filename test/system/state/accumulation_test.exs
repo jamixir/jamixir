@@ -311,7 +311,7 @@ defmodule System.State.AccumulationTest do
 
           # Privileged services update their respective fields
           s when s in [99, 100] ->
-            %AccumulationResult{state: %{initial_state | assigners: [10001, 10002]}}
+            %AccumulationResult{state: %{initial_state | assigners: [10_001, 10_002]}}
 
           101 ->
             %AccumulationResult{state: %{initial_state | delegator: 2004}}
