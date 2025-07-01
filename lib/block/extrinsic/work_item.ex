@@ -34,11 +34,11 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (14.3) v0.6.6
+  # Formula (14.3) v0.7.0 - W
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
-    # h: The code hash of the service at the time of reporting
+    # c: The code hash of the service at the time of reporting
     code_hash: Hash.zero(),
     # y: A payload blob
     payload: <<>>,
@@ -132,20 +132,20 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (14.8) v0.6.6
+  # Formula (14.9) v0.7.0
   @spec to_work_digest(
           Block.Extrinsic.WorkItem.t(),
           binary() | WorkExecutionError.t(),
           Types.gas()
         ) ::
           Block.Extrinsic.Guarantee.WorkDigest.t()
-  def to_work_digest(%__MODULE__{} = wi, output, gas) do
+  def to_work_digest(%__MODULE__{} = wi, result, gas) do
     %WorkDigest{
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: h(wi.payload),
       gas_ratio: wi.refine_gas_limit,
-      result: output,
+      result: result,
       gas_used: gas,
       imports: length(wi.import_segments),
       exports: wi.export_count,
@@ -154,14 +154,14 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (14.14) v0.6.6
-  # X(w ∈ I) ≡ [d ∣ (H(d),∣d∣) −< wx]
+  # Formula (14.14) v0.7.0
+  # X(w ∈ W) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w) do
     for {r, n} <- w.extrinsic, d = Storage.get(r), byte_size(d) == n, do: d
   end
 
-  # Formula (14.14) v0.6.6
-  # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
+  # Formula (14.15) v0.7.0
+  # S(w ∈ W) ≡ [b[n] ∣ M(b) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
         root = WorkReport.segment_root(r),
@@ -169,8 +169,8 @@ defmodule Block.Extrinsic.WorkItem do
         do: %SegmentData{erasure_root: root, segment_index: n, data: data}
   end
 
-  # Formula (14.14) v0.6.6
-  # J (w∈I) ≡ [↕J0(s,n) ∣ M(s) = L(r), (r,n) <− wi]
+  # Formula (14.15) v0.7.0
+  # J (w ∈ W) ≡ [↕J0(b,n) ∣ M(b) = L(r), (r,n) <− wi]
   def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
         do: DataAvailability.get_justification(WorkReport.segment_root(r), n)
