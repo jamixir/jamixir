@@ -74,13 +74,13 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (17.1) v0.6.6
-  # Formula (17.2) v0.6.6
+  # Formula (17.1) v0.7.0
+  # Formula (17.2) v0.7.0
   @spec auditable_work_reports(list(Assurance.t()), list(CoreReport.t()), list(CoreReport.t())) ::
           list(t() | nil)
   def auditable_work_reports(assurances, core_reports_intermediate_1, core_reports) do
     available = available_work_reports(assurances, core_reports_intermediate_1)
-    for w <- core_reports, do: if(Enum.member?(available, w), do: w, else: nil)
+    for r <- core_reports, do: if(Enum.member?(available, r), do: r, else: nil)
   end
 
   def mock(:available_work_reports, c) do
