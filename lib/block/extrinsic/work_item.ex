@@ -57,21 +57,21 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     import Codec.Encoder
-    # Formula (C.26) v0.6.6
+    # Formula (C.29) v0.7.0
     def encode(%WorkItem{} = wi) do
       e({
         t(wi.service),
         wi.code_hash,
-        vs(wi.payload),
         <<wi.refine_gas_limit::m(gas)>>,
         <<wi.accumulate_gas_limit::m(gas)>>,
+        <<wi.export_count::m(segment_count)>>,
+        vs(wi.payload),
         vs(encode_import_segments(wi)),
-        vs(encode_extrinsic(wi)),
-        <<wi.export_count::m(segment_count)>>
+        vs(encode_extrinsic(wi))
       })
     end
 
-    # Formula (C.31) v0.6.6
+    # Formula (C.34) v0.7.0
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments,
           do: {Types.hash(h), <<i + if(Types.tagged?(h), do: 0x8000, else: 0)::m(segment_count)>>}
@@ -111,12 +111,12 @@ defmodule Block.Extrinsic.WorkItem do
   def decode(bin) do
     <<service::service(), bin::binary>> = bin
     <<code_hash::b(hash), bin::binary>> = bin
-    {payload, bin} = VariableSize.decode(bin, :binary)
     <<refine_gas_limit::m(gas), bin::binary>> = bin
     <<accumulate_gas_limit::m(gas), bin::binary>> = bin
+    <<export_count::m(segment_count), bin::binary>> = bin
+    {payload, bin} = VariableSize.decode(bin, :binary)
     {import_segments, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 2)
-    {extrinsic, bin} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
-    <<export_count::m(segment_count), rest::binary>> = bin
+    {extrinsic, rest} = VariableSize.decode(bin, :list_of_tuples, @hash_size, 4)
 
     import_segments = decode_import_segments_binary(import_segments)
 

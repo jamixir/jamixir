@@ -11,9 +11,9 @@ defmodule Util.Merklization do
   alias Codec.State.Trie.SerializedState
 
   @doc """
-  Formula (D.3) v0.6.6:
-     { (H, H) → B512
-  B: { (l,r) → [0] ~ bits(l)1... ~ bits(r)
+  Formula (D.3) v0.7.0:
+     { (H, H) → b_512
+  B: { (l,r) → [0] ~ bits(l)_1... ~ bits(r)
 
   Encodes the branch by concatenating the left and right hashes
   after using the bits order function.
@@ -27,10 +27,10 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    Formula (D.4) v0.6.6
+    Formula (D.4) v0.7.0
     Encodes the leaf nodes distinguin between regular and embedded leafs.
-      { (H, Y) → B512
-    L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
+      { (H, Y) → b_512
+    L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)_2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
               { [1,1,0,0,0,0,0,0] ~ bits(k)...248 ~ bits(H(v))                    otherwise
 
   Leaf nodes are further subdivided into embedded-value leaves and regular leaves. The second bit of the node discriminates between these.
@@ -55,15 +55,10 @@ defmodule Util.Merklization do
     end
   end
 
-  @doc """
-    Merklization State Function
-
-   Formula (D.5) v0.6.6
-    Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
-
-  """
   def merkelize_state(%SerializedState{data: dict}), do: merkelize_state(dict)
 
+  # Formula (D.5) v0.7.0
+  # M(σ）= M（｛（bits(k) →（K,v））|（K → v）∈ T（σ）)
   def merkelize_state(dict) do
     merkelize(
       for {k, v} <- dict do
@@ -74,13 +69,14 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    General Merklization Function
+  General Merklization Function
 
-   Formula (D.6) v0.6.6
-                       { H°                       if |d| = 0
-    M(d:D(B → (H,Y))) ={ H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
-                       { H(bits-1 (B(M(l), M(r)))) otherwise, where Vb,p: (b → p) ed → (b1.. → p) E { l   if bo = 0
-                                                                                                    { r   if bo = 1
+  Formula (D.6) v0.7.0
+                           { H°                        if |d| = 0
+    M(d: <b → (B_31,B)>) = { H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
+                           { H(bits-1 (B(M(l), M(r)))) otherwise,
+                           where Vb,p: (b → p) ∈ d ⇔ (b_1... → p) ∈ { l   if b_0 = 0
+                                                                    { r   if b_0 = 1
   """
 
   def merkelize(dict) do

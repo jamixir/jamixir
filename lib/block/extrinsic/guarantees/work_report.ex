@@ -370,18 +370,18 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.24) v0.6.6
-    # E(xs,xx,xc,xa,↕xo,↕xl,↕xr)
+    # Formula (C.27) v0.7.0
+    # E(r_s,r_c,r_c,r_a,r_g,↕r_t,↕r_l,↕r_d)
     def encode(%WorkReport{} = wr) do
       e({
         wr.specification,
         wr.refinement_context,
         wr.core_index,
         wr.authorizer_hash,
+        wr.auth_gas_used,
         vs(wr.output),
         wr.segment_root_lookup,
-        vs(wr.digests),
-        wr.auth_gas_used
+        vs(wr.digests)
       })
     end
   end
@@ -393,10 +393,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {refinement_context, bin} = RefinementContext.decode(bin)
     {core_index, bin} = de_i(bin)
     <<authorizer_hash::b(hash), bin::binary>> = bin
+    {auth_gas_used, bin} = de_i(bin)
     {output, bin} = VariableSize.decode(bin, :binary)
     {segment_root_lookup, bin} = VariableSize.decode(bin, :map, @hash_size, @hash_size)
     {digests, rest} = VariableSize.decode(bin, WorkDigest)
-    {auth_gas_used, rest} = de_i(rest)
 
     {%__MODULE__{
        specification: specification,

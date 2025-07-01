@@ -185,8 +185,8 @@ defmodule System.State.Safrole do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (D.2) v0.6.6 - C(4)
-    # C(4) ↦ E(γk, γz, { 0 if γs ∈ ⟦C⟧E 1 if γs ∈ ⟦HB⟧E }, γs, ↕γa)
+    # Formula (D.2) v0.7.0 - C(4)
+    # C(4) ↦ E(γ_P, γ_z, { 0 if γ_s ∈ ⟦T⟧_E, 1 if γ_s ∈ ⟦H⟧_E }, γ_s, ↕γ_a)
     def encode(safrole) do
       sealer_type =
         case safrole.slot_sealers do

@@ -75,8 +75,8 @@ defmodule System.State.CoreReport do
   defimpl Encodable do
     alias System.State.CoreReport
     import Codec.Encoder
-    # Formula (D.2) v0.6.6
-    # C(10) ↦ E([¿(w, E4(t)) ∣ (w, t) <− ρ]) ,
+    # Formula (D.2) v0.7.0
+    # C(10) ↦ E([¿(r, E4(t)) ∣ (r, t) <− ρ])
     def encode(%CoreReport{} = c) do
       e({c.work_report, t(c.timeslot)})
     end

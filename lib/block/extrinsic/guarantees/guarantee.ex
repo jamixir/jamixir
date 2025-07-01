@@ -381,7 +381,7 @@ defmodule Block.Extrinsic.Guarantee do
     import Codec.Encoder
     alias Block.Extrinsic.Guarantee
 
-    # Formula (C.16) v0.6.6
+    # Formula (C.19) v0.7.0
     def encode(%Guarantee{timeslot: timeslot} = g) do
       e({
         g.work_report,

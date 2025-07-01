@@ -33,7 +33,7 @@ defmodule RefinementContext do
   defimpl Encodable do
     import Codec.Encoder, only: [e: 1, vs: 1, m: 1]
 
-    # Formula (C.21) v0.6.6
+    # Formula (C.24) v0.7.0
     def encode(%RefinementContext{
           anchor: a,
           state_root: s,

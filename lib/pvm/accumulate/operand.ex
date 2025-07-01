@@ -1,7 +1,7 @@
 defmodule PVM.Accumulate.Operand do
-  alias Util.Hash
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Types
+  alias Util.Hash
 
   # Formula (12.19) v0.7.0 - I
   @type t :: %__MODULE__{
@@ -33,7 +33,7 @@ defmodule PVM.Accumulate.Operand do
     alias Block.Extrinsic.Guarantee.WorkDigest
     import Codec.Encoder
 
-    # Formula (C.29) v0.6.7
+    # Formula (C.32) v0.7.0
     def encode(%PVM.Accumulate.Operand{} = o),
       do:
         e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
