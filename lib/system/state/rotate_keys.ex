@@ -1,6 +1,6 @@
 defmodule System.State.RotateKeys do
-  alias System.State
   alias Block.Header
+  alias System.State
   alias System.State.{Judgements, Safrole, Validator}
   alias Util.Time
 

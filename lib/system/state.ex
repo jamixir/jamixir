@@ -1,14 +1,12 @@
 defmodule System.State do
+  alias System.State.Accumulation
   alias System.State.RecentHistory.AccumulationOutput
   alias System.State.Services
-  alias System.State.Accumulation
-  alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Guarantee
-  alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Constants
   alias System.State
-  alias System.State.{AuthorizerPool, CoreReport, EntropyPool, Judgements}
-  alias System.State.{PrivilegedServices, Ready, RecentHistory, Safrole}
+  alias System.State.{Accumulation, AuthorizerPool, CoreReport, EntropyPool, Judgements}
+  alias System.State.{PrivilegedServices, Ready, RecentHistory, Safrole, Services}
   alias System.State.{ServiceAccount, Validator, ValidatorStatistics}
   alias Util.Hash
 

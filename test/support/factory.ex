@@ -1,7 +1,7 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
   alias Encodable.System.State.RecentHistory
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
+  alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
   alias Block.Extrinsic.Preimage
   alias Block.{Extrinsic, Header}

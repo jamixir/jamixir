@@ -1,11 +1,11 @@
 defmodule System.State.AccumulationTest do
-  alias System.State.RecentHistory.AccumulationOutput
   alias Block.Extrinsic.AvailabilitySpecification
-  alias Block.Extrinsic.Guarantee.{WorkReport, WorkDigest}
-  alias System.{AccumulationResult, DeferredTransfer}
+  alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
   alias System.State
+  alias System.{AccumulationResult, DeferredTransfer}
   alias System.State.{Accumulation, PrivilegedServices, Ready, ServiceAccount}
+  alias System.State.RecentHistory.AccumulationOutput
   import Jamixir.Factory
   import Mox
   import Util.Hash
@@ -345,7 +345,7 @@ defmodule System.State.AccumulationTest do
 
       # Verify state updates
       assert updated_state.manager == 2
-      assert updated_state.assigners == [10001, 10002]
+      assert updated_state.assigners == [10_001, 10_002]
       assert updated_state.delegator == 2004
       assert updated_state.always_accumulated == %{6 => 130}
       assert updated_state.next_validators == :updated_next_validators

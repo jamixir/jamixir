@@ -2,7 +2,7 @@ defmodule ListenerTest do
   use ExUnit.Case, async: false
   import TestHelper
 
-  alias Network.{Connection}
+  alias Network.Connection
   import ExUnit.Assertions
 
   @dummy_protocol_id 242
