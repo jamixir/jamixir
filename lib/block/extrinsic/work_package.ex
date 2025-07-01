@@ -139,14 +139,14 @@ defmodule Block.Extrinsic.WorkPackage do
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     import Codec.Encoder
-    # Formula (C.25) v0.6.6
+    # Formula (C.28) v0.7.0
     def encode(%WorkPackage{} = wp) do
       e({
-        vs(wp.authorization_token),
         t(wp.service),
         wp.authorization_code_hash,
-        vs(wp.parameterization_blob),
         wp.context,
+        vs(wp.authorization_token),
+        vs(wp.parameterization_blob),
         vs(wp.work_items)
       })
     end
@@ -175,11 +175,11 @@ defmodule Block.Extrinsic.WorkPackage do
   end
 
   def decode(bin) do
-    {authorization_token, bin} = VariableSize.decode(bin, :binary)
     <<service::service(), bin::binary>> = bin
     <<authorization_code_hash::b(hash), bin::binary>> = bin
-    {parameterization_blob, bin} = VariableSize.decode(bin, :binary)
     {context, bin} = RefinementContext.decode(bin)
+    {authorization_token, bin} = VariableSize.decode(bin, :binary)
+    {parameterization_blob, bin} = VariableSize.decode(bin, :binary)
     {work_items, rest} = VariableSize.decode(bin, WorkItem)
 
     {%__MODULE__{
