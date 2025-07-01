@@ -70,14 +70,11 @@ defmodule Jamixir do
 
   @impl true
   def stop(_state) do
-    try do
-      Network.ConnectionManager.shutdown_all_connections()
-      Process.sleep(100)
-    rescue
-      _ -> :ok
-    end
-
+    Network.ConnectionManager.shutdown_all_connections()
+    Process.sleep(100)
     :ok
+  rescue
+    _ -> :ok
   end
 
   def config do
