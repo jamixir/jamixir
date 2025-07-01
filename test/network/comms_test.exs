@@ -3,7 +3,12 @@ defmodule CommsTest do
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.WorkPackageBundle
+  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Codec.State.Trie
+  alias Jamixir.Node
+  alias Network.{Config, Connection, Types.SegmentShardsRequest}
+  alias Quicer.Flags
+  alias System.Audit.AuditAnnouncement
   import Codec.Encoder
   import Mox
   import Jamixir.Factory
