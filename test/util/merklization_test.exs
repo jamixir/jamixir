@@ -4,7 +4,7 @@ defmodule Util.MerklizationTest do
   alias Util.{Hash, Merklization}
   use Sizes
 
-  # Formula (D.3) v0.6.0
+  # Formula (D.3) v0.7.0
   describe "encode_branch/2 (l,r)" do
     test "encode_branch with simple values" do
       # 256-bit value with only the first bit set
@@ -35,7 +35,7 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (D.4) v0.6.0
+  # Formula (D.4) v0.7.0
 
   describe "encode_leaf/2" do
     test "encode_leaf when byte_size(value) < 32 (Embebed)" do
@@ -74,8 +74,6 @@ defmodule Util.MerklizationTest do
     end
   end
 
-  # Formula (D.5) v0.6.0
-  # Formula (D.6) v0.6.0
   describe "bits" do
     test "bits function with single byte" do
       # Binary representation: 00101010
@@ -140,6 +138,8 @@ defmodule Util.MerklizationTest do
     end
   end
 
+  # Formula (D.5) v0.7.0
+  # Formula (D.6) v0.7.0
   describe "meklelize_state/1" do
     test "smoke test fake state" do
       dict = %{<<1>> => "a", <<2>> => "b"}

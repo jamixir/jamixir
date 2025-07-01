@@ -46,19 +46,19 @@ defmodule Block.Extrinsic do
   defimpl Encodable do
     import Codec.Encoder
 
-    # Formula (C.13) v0.6.6
+    # Formula (C.16) v0.7.0
     def encode(%Block.Extrinsic{} = ex),
       do:
         e({
-          # Formula (C.14) v0.6.6
+          # Formula (C.17) v0.7.0
           vs(ex.tickets),
-          # Formula (C.15) v0.6.6
+          # Formula (C.18) v0.7.0
           vs(ex.preimages),
-          # Formula (C.16) v0.6.6
+          # Formula (C.19) v0.7.0
           vs(ex.guarantees),
-          # Formula (C.17) v0.6.6
+          # Formula (C.20) v0.7.0
           vs(ex.assurances),
-          # Formula (C.18) v0.6.6
+          # Formula (C.21) v0.7.0
           ex.disputes
         })
   end

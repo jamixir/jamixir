@@ -28,14 +28,14 @@ defmodule Codec.State.Trie do
 
   @preimage_prefix (1 <<< 32) - 2
 
-  # Formula (D.2) v0.6.7
+  # Formula (D.2) v0.7.0
   def state_keys(%State{} = s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
       1 => e(Enum.map(s.authorizer_pool, &vs/1)),
       # C(2) ↦ E(φ)
       2 => e(s.authorizer_queue),
-      # C(3) ↦ E(↕[(h, EM (b), s, ↕p) ∣ (h, b, s, p) <− β])
+      # C(3) ↦ E(↕[(h, b, s, ↕p) ∣ (h, b, s, p) <− β_H], E_M(β_B))
       3 => e(s.recent_history),
       # C(4) - safrole encoding
       4 => e(s.safrole),
@@ -53,9 +53,9 @@ defmodule Codec.State.Trie do
       10 => e(Enum.map(s.core_reports, &NilDiscriminator.new/1)),
       # C(11) ↦ E4(τ)
       11 => t(s.timeslot),
-      # C(12) ↦ E4(χ)
+      # C(12) ↦ E(E4(χ_M, χ_A , χ_V ),χ_Z)
       12 => e(s.privileged_services),
-      # C(13) ↦ E4(π)
+      # C(13) ↦ E(E4(π_V, π_L), π_C, π_S)
       13 => e(s.validator_statistics),
       14 => e(Enum.map(s.ready_to_accumulate, &vs/1)),
       15 => e(Enum.map(s.accumulation_history, &vs/1)),
@@ -72,7 +72,7 @@ defmodule Codec.State.Trie do
     |> encode_accounts_storage_p(s, :preimage_storage_p)
   end
 
-  # Formula (D.1) v0.6.7 - C constructor
+  # Formula (D.1) v0.7.0 - C constructor
   # (i, s ∈ ℕ_S) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)

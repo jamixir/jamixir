@@ -65,10 +65,10 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
   end
 
   defimpl Encodable do
-    alias Block.Extrinsic.Guarantee.{WorkExecutionError, WorkDigest}
+    alias Block.Extrinsic.Guarantee.{WorkDigest, WorkExecutionError}
     import Codec.Encoder
-    # Formula (C.23) v0.6.6
-    # E(x∈L) ≡ E(E4(xs),xc,xy ,E8(xg ),O(xd),xu,xi,xx,xz ,xe)
+    # Formula (C.26) v0.7.0
+    # E(d ∈ D) ≡ E(E_4(d_s),d_c,d_y ,E8(d_g),O(d_l),d_u,d_i,d_x,d_z,d_e)
     @spec encode(Block.Extrinsic.Guarantee.WorkDigest.t()) :: <<_::32, _::_*8>>
     def encode(%WorkDigest{} = wd) do
       t(wd.service) <>
@@ -85,12 +85,12 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
     end
   end
 
-  # Formula (C.30) v0.6.6
-  def encode_result({:ok, b}) do
-    e({0, vs(b)})
+  # Formula (C.33) v0.7.0
+  def encode_result({:ok, o}) do
+    e({0, vs(o)})
   end
 
-  # Formula (C.30) v0.6.6
+  # Formula (C.33) v0.7.0
   def encode_result({:error, e}) do
     e(WorkExecutionError.code(e))
   end
