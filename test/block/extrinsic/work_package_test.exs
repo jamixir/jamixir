@@ -1,6 +1,6 @@
 defmodule WorkPackageTest do
-  alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.WorkPackage
+  alias Block.Extrinsic.WorkPackageBundle
   alias System.State
   alias Util.Hash
   use ExUnit.Case
