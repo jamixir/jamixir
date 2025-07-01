@@ -42,7 +42,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   use JsonDecoder
   use Sizes
 
-  # Formula (14.16) v0.6.6
+  # Formula (14.17) v0.7.0
   @spec from_execution(Types.hash(), binary(), list(Types.export_segment())) ::
           __MODULE__.t()
   def from_execution(work_package_hash, bundle_binary, export_segments) do
@@ -55,7 +55,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     }
   end
 
-  # Formula (14.16) v0.6.6 - u
+  # Formula (14.17) v0.7.0 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   def calculate_erasure_root(bundle_binary, exports) do
     # C6# (s⌢P(s))

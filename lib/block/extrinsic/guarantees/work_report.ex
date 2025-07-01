@@ -195,7 +195,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     immediate_work_reports ++ accumulation_priority_queue(q)
   end
 
-  # Formula (14.10) v0.6.6
+  # Formula (14.11) v0.7.0
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exports) do
     segments_count = ceil(length(exports) / 64)
@@ -211,21 +211,21 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (14.11) v0.6.6
+  # Formula (14.12) v0.7.0
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           :error | Task.t({WorkReport.t(), list(binary())})
   def execute_work_package(%WorkPackage{} = wp, core, services) do
-    # {o, g} = ΨI (p,c)
+    # {t, g} = ΨI (p,c)
     w_r = Constants.max_work_report_size()
 
     case PVM.authorized(wp, core, services) do
-      {o, _} when is_atom(o) or byte_size(o) > w_r ->
+      {t, _} when is_atom(t) or byte_size(t) > w_r ->
         :error
 
-      {o, _gas_used} ->
+      {t, _gas_used} ->
         segments_data = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         import_segments = for(w <- segments_data, do: for(s <- w, do: s.data))
-        {import_segments, Task.async(fn -> refine(wp, core, o, services, import_segments) end)}
+        {import_segments, Task.async(fn -> refine(wp, core, t, services, import_segments) end)}
     end
   end
 
@@ -238,8 +238,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         ) ::
           {WorkReport.t(), list(binary())}
   defp refine(wp, core, o, services, import_segments) do
-    # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
-    {r, e} =
+    # (d, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
+    {d, e} =
       for j <- 0..(length(wp.work_items) - 1) do
         # (r,e) = I(p,j)
         {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
@@ -249,7 +249,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       |> Enum.unzip()
 
     exports = List.flatten(e)
-    # Formula (14.15) v0.6.6
+
+    # Formula (14.16) v0.7.0
     s =
       AvailabilitySpecification.from_execution(
         h(e(wp)),
@@ -264,13 +265,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
        authorizer_hash: WorkPackage.implied_authorizer(wp, services),
        output: o,
        segment_root_lookup: get_segment_lookup_dict(wp),
-       digests: r
+       digests: d
      }, exports}
   end
 
-  # Formula (14.11) v0.6.6
-  # TODO update to 0.6.7
-  # https://github.com/gavofyork/graypaper/pull/378
   def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
@@ -314,11 +312,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
-  # Formula (14.12) v0.6.6
+  # Formula (14.13) v0.7.0
   def segment_root({:tagged_hash, r}), do: Storage.get_segments_root(r)
   def segment_root(r), do: r
 
-  # Formula (14.13) v0.6.6
+  # Formula (14.13) v0.7.0
   def get_segment_lookup_dict(%WorkPackage{work_items: wi}) do
     for w <- wi,
         {{:tagged_hash, wp_hash} = r, _} <- w.import_segments,
