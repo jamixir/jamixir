@@ -12,7 +12,7 @@ defmodule PVM.Refine do
 
   @doc """
   ΨR: The Refine pvm invocation function.
-  # Formula (B.5) v0.6.7
+  # Formula (B.5) v0.7.0
   """
 
   # see here about where the preimages comes from , it is not in the GP
@@ -96,7 +96,6 @@ defmodule PVM.Refine do
 
             :poke ->
               Refine.poke(gas, registers, memory, context)
-
 
             :invoke ->
               Refine.invoke(gas, registers, memory, context)

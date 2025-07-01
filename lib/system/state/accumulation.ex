@@ -32,7 +32,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_transition(list(), State.t(), extra_args()) :: any()
 
-  # Formula (12.13) v0.6.7 - U
+  # Formula (12.13) v0.7.0 - S
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -76,7 +76,7 @@ defmodule System.State.Accumulation do
         },
         %{timeslot_: timeslot_} = extra_args
       ) do
-    # Formula (12.21) v0.6.5
+    # Formula (12.22) v0.7.0
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -93,6 +93,8 @@ defmodule System.State.Accumulation do
         ready_to_accumulate
       )
 
+    # Formula (12.23) v0.7.0
+    # e = (d: δ,i: ι,q: ϕ,m: χ_M ,a: χ_A,v: χ_V ,z: χ_Z)
     initial_state = %__MODULE__{
       services: services,
       next_validators: next_validators,
@@ -103,8 +105,8 @@ defmodule System.State.Accumulation do
       always_accumulated: privileged_services.always_accumulated
     }
 
-    # Formula (12.22) v0.6.5
-    {n, o, deferred_transfers, lastaccout, u} =
+    # Formula (12.24) v0.7.0
+    {n, e_, deferred_transfers, accumulation_outputs, u} =
       sequential_accumulation(
         gas_limit,
         accumulatable_reports,
@@ -113,7 +115,7 @@ defmodule System.State.Accumulation do
         extra_args
       )
 
-    # Formula (12.23) v0.6.5
+    # Formula (12.25) v0.7.0
     %__MODULE__{
       services: services_intermediate,
       next_validators: next_validators_,
@@ -122,13 +124,14 @@ defmodule System.State.Accumulation do
       assigners: assigners_,
       delegator: delegator_,
       always_accumulated: always_accumulated_
-    } = o
+    } = e_
 
     w_star_n = Enum.take(accumulatable_reports, n)
 
-    # Formula (12.25) v0.6.5
+    # Formula (12.27) v0.7.0
     accumulation_stats = accumulate_statistics(w_star_n, u)
-    # Formula (12.29) v0.6.5
+
+    # Formula (12.31) v0.7.0
     {services_intermediate_2, deferred_transfers_stats} =
       apply_transfers(
         services_intermediate,
@@ -138,12 +141,12 @@ defmodule System.State.Accumulation do
         extra_args
       )
 
-    # Formula (12.32) v0.6.5
+    # Formula (12.35) v0.7.0
     work_package_hashes = WorkReport.work_package_hashes(w_star_n)
-    # Formula (12.33) v0.6.5
+    # Formula (12.36) v0.7.0
     accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
     {_, w_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-    # Formula (12.34) v0.6.5
+    # Formula (12.37) v0.7.0
     ready_to_accumulate_ =
       build_ready_to_accumulate_(
         ready_to_accumulate,
@@ -167,15 +170,15 @@ defmodule System.State.Accumulation do
       ready_to_accumulate: ready_to_accumulate_,
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
-      lastaccout: lastaccout,
+      accumulation_outputs: accumulation_outputs,
       accumulation_stats: accumulation_stats,
       deferred_transfers_stats: deferred_transfers_stats
     }
   end
 
-  # Formula (12.24) v0.6.5
-  # Formula (12.25) v0.6.5
-  # Formula (12.26) v0.6.5
+  # Formula (12.26) v0.7.0
+  # Formula (12.27) v0.7.0
+  # Formula (12.28) v0.7.0
   def accumulate_statistics(work_reports, service_gas_used) do
     gas_per_service =
       for {s, u} <- service_gas_used, reduce: %{} do
@@ -195,7 +198,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.16) v0.6.5
+  # Formula (12.16) v0.7.0
   @spec sequential_accumulation(
           non_neg_integer(),
           list(WorkReport.t()),
@@ -218,7 +221,7 @@ defmodule System.State.Accumulation do
     if i == 0 do
       {0, acc_state, [], [], []}
     else
-      {o_star, t_star, b_star, u_star} =
+      {e_star, t_star, b_star, u_star} =
         parallelized_accumulation(
           acc_state,
           Enum.take(work_reports, i),
@@ -228,16 +231,16 @@ defmodule System.State.Accumulation do
 
       g_star = Enum.sum(for {_, g} <- u_star, do: g)
 
-      {j, o_prime, t, b, u} =
+      {j, e_prime, t, b, u} =
         sequential_accumulation(
           gas_limit - g_star,
           Enum.drop(work_reports, i),
-          o_star,
+          e_star,
           Map.new(),
           extra_args
         )
 
-      {i + j, o_prime, t_star ++ t, b_star ++ b, u_star ++ u}
+      {i + j, e_prime, t_star ++ t, b_star ++ b, u_star ++ u}
     end
   end
 
@@ -258,7 +261,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.17) v0.6.7
+  # Formula (12.17) v0.7.0
   @spec parallelized_accumulation(
           t(),
           list(WorkReport.t()),
@@ -467,7 +470,7 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.18) v0.6.6
+  # Formula (12.18) v0.7.0
   @spec integrate_preimages(
           %{Types.service_index() => ServiceAccount.t()},
           list({Types.service_index(), binary()}),
@@ -531,24 +534,24 @@ defmodule System.State.Accumulation do
     initial_g = Map.get(service_dict, service, 0)
 
     service_results =
-      for %WorkReport{digests: wr, output: wo, specification: ws, authorizer_hash: wa} <-
+      for %WorkReport{digests: wd, output: wt, specification: ws, authorizer_hash: wa} <-
             work_reports,
-          %WorkDigest{service: ^service, gas_ratio: rg, result: rd, payload_hash: ry} <- wr,
-          do: {rg, rd, ry, wo, ws, wa}
+          %WorkDigest{service: ^service, gas_ratio: rg, result: rl, payload_hash: ry} <- wd,
+          do: {rg, rl, ry, wt, ws, wa}
 
     total_gas =
       initial_g +
         Enum.sum(Stream.map(service_results, &elem(&1, 0)))
 
     operands =
-      for {rg, rd, ry, wo, ws, wa} <- service_results do
+      for {rg, rl, ry, wt, ws, wa} <- service_results do
         %Accumulate.Operand{
           package_hash: ws.work_package_hash,
           segment_root: ws.exports_root,
           authorizer: wa,
-          output: wo,
+          output: wt,
           payload_hash: ry,
-          data: rd,
+          data: rl,
           gas_limit: rg
         }
       end
@@ -561,6 +564,7 @@ defmodule System.State.Accumulation do
   # Formula (12.30) v0.6.7
   # Formula (12.31) v0.6.7
   # Formula (12.32) v0.6.7
+
   @spec apply_transfers(
           services_intermediate :: %{non_neg_integer() => ServiceAccount.t()},
           transfers :: list(DeferredTransfer.t()),
@@ -612,7 +616,7 @@ defmodule System.State.Accumulation do
     {services, transfer_stats}
   end
 
-  # Formula (12.34) v0.6.5
+  # Formula (12.37) v0.7.0
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: MapSet.t(WorkReport.t()),

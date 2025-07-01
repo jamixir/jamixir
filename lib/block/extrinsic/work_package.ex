@@ -61,8 +61,8 @@ defmodule Block.Extrinsic.WorkPackage do
     }
   end
 
-  # Formula (14.9) v0.6.6
-  # pc
+  # Formula (14.10) v0.7.0
+  # p_u
   def authorization_code(%__MODULE__{} = wp, services) do
     case ServiceAccount.historical_lookup(
            services[wp.service],
