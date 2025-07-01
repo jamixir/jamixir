@@ -9,11 +9,9 @@ defmodule Utils do
   end
 
   defp safe_to_existing_atom(string) do
-    try do
-      String.to_existing_atom(string)
-    rescue
-      ArgumentError -> {:error, :not_existing_atom}
-    end
+    String.to_existing_atom(string)
+  rescue
+    ArgumentError -> {:error, :not_existing_atom}
   end
 
   def atomize_keys(map) when is_map(map) do
@@ -66,7 +64,7 @@ defmodule Utils do
 
   def keys_set(map), do: MapSet.new(Map.keys(map))
 
-  # Formula (H.5) v0.6.6
+  # Formula (H.3) v0.7.0
   def transpose([]), do: []
 
   def transpose([first | _] = matrix) when is_binary(first) do
