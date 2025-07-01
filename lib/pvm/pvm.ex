@@ -11,7 +11,7 @@ defmodule PVM do
   import Util.Collections, only: [sum_field: 2]
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (B.1) v0.6.6
+  # Formula (B.1) v0.7.0
   @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
               binary() | WorkExecutionError.t()
 
@@ -29,7 +29,7 @@ defmodule PVM do
   end
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
-    # Formula (B.2) v0.6.7
+    # Formula (B.2) v0.7.0
     f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
       host_call_result =
         case host(n) do
@@ -69,11 +69,11 @@ defmodule PVM do
       {e, %{gas: g, registers: r, memory: m}, nil}
     end
 
-    pc = WorkPackage.authorization_code(p, services)
+    p_u = WorkPackage.authorization_code(p, services)
 
     w_a = Constants.max_is_authorized_code_size()
 
-    case pc do
+    case p_u do
       nil ->
         {:bad, 0}
 
@@ -84,13 +84,13 @@ defmodule PVM do
         args = e(t(core_index))
 
         {used_gas, result, nil} =
-          ArgInvoc.execute(pc, 0, Constants.gas_is_authorized(), args, f, nil)
+          ArgInvoc.execute(p_u, 0, Constants.gas_is_authorized(), args, f, nil)
 
         {result, used_gas}
     end
   end
 
-  # Formula (B.5) v0.6.6
+  # Formula (B.5) v0.7.0
   @callback do_refine(
               non_neg_integer(),
               WorkPackage.t(),

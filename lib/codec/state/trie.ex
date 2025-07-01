@@ -73,7 +73,7 @@ defmodule Codec.State.Trie do
   end
 
   # Formula (D.1) v0.6.7 - C constructor
-  # (i, s ∈ NS) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
+  # (i, s ∈ ℕ_S) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)
     <<i::8>> <> <<n0, 0, n1, 0, n2, 0, n3, 0>> <> <<0::176>>
