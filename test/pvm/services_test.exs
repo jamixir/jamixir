@@ -2,6 +2,7 @@ defmodule PVM.ServicesTest do
   alias PVM.ArgInvoc
   alias PVM.Host.Refine
   alias PVM.Accumulate
+  alias System.AccumulationResult
   alias System.State.{Accumulation, ServiceAccount}
   import Codec.Encoder
   use ExUnit.Case
@@ -71,6 +72,13 @@ defmodule PVM.ServicesTest do
 
     {accumulation, timeslot, service_index, gas, operands, extra_args} = make_accumulate_args(bin)
     result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, extra_args)
-    assert match?({^accumulation, [], nil, _gas, []}, result)
+
+    assert result == %AccumulationResult{
+             state: accumulation,
+             transfers: [],
+             output: nil,
+             gas_used: 59,
+             preimages: []
+           }
   end
 end

@@ -144,15 +144,14 @@ defmodule PVM.Accumulate.UtilsTest do
       result = Utils.collapse({gas, Hash.two(), ctx})
       x = elem(ctx, 0)
 
-      assert {accumulation, transfers, hash, remaining_gas, preimages} = result
       # Should use x's accumulation
-      assert accumulation == x.accumulation
+      assert result.state == x.accumulation
       # service_x balance
-      assert accumulation.services[256].balance == 100
-      assert transfers == x.transfers
-      assert hash == Hash.two()
-      assert remaining_gas == gas
-      assert preimages == MapSet.to_list(x.preimages)
+      assert result.state.services[256].balance == 100
+      assert result.transfers == x.transfers
+      assert result.output == Hash.two()
+      assert result.gas_used == gas
+      assert result.preimages == MapSet.to_list(x.preimages)
     end
 
     test "handles non-32-byte output", %{ctx: ctx} do
@@ -160,14 +159,13 @@ defmodule PVM.Accumulate.UtilsTest do
       gas = 1000
       result = Utils.collapse({gas, output, ctx})
       x = elem(ctx, 0)
-      assert {accumulation, transfers, hash, remaining_gas, preimages} = result
-      assert accumulation == x.accumulation
+      assert result.state == x.accumulation
       # service_x balance
-      assert accumulation.services[256].balance == 100
-      assert transfers == x.transfers
-      assert hash == nil
-      assert remaining_gas == gas
-      assert preimages == MapSet.to_list(x.preimages)
+      assert result.state.services[256].balance == 100
+      assert result.transfers == x.transfers
+      assert result.output == nil
+      assert result.gas_used == gas
+      assert result.preimages == MapSet.to_list(x.preimages)
     end
 
     test "handles panic output", %{ctx: ctx} do
@@ -175,12 +173,11 @@ defmodule PVM.Accumulate.UtilsTest do
       result = Utils.collapse({gas, :panic, ctx})
       y = elem(ctx, 1)
 
-      assert {accumulation, transfers, hash, remaining_gas, preimages} = result
-      assert accumulation == y.accumulation
-      assert transfers == y.transfers
-      assert hash == nil
-      assert remaining_gas == gas
-      assert preimages == MapSet.to_list(y.preimages)
+      assert result.state == y.accumulation
+      assert result.transfers == y.transfers
+      assert result.output == nil
+      assert result.gas_used == gas
+      assert result.preimages == MapSet.to_list(y.preimages)
     end
   end
 

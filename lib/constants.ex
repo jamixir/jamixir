@@ -54,7 +54,7 @@ defmodule Constants do
   @doc "K - The maximum number of tickets which may be submitted in a single extrinsic."
   defmockable(:max_tickets_pre_extrinsic, do: Jamixir.config()[:max_tickets_pre_extrinsic])
 
-  @doc "L = 14, 400: The maximum age in timeslots of the lookup anchor."
+  @doc "L = 14,400: The maximum age in timeslots of the lookup anchor."
   def max_age_lookup_anchor, do: 14_400
 
   @doc "N - The number of ticket entries per validator"

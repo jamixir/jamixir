@@ -274,7 +274,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     # ℓ = ∑k<j pw[k]e
     l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
-    # this part in purticular neeeds to be updated to 0.6.7
     {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
 
     case {r, e, u} do

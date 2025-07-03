@@ -1,4 +1,3 @@
-# Formula (B.18) v0.6.8
 defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
   alias Block.Extrinsic.WorkItem
@@ -19,6 +18,7 @@ defmodule PVM.Host.General.Internal do
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
+  # Formula (B.18) v0.7.0
   @spec fetch_internal(
           Registers.t(),
           Memory.t(),

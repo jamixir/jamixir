@@ -1,11 +1,11 @@
-# Formula (B.22) v0.6.7
+# Formula (B.22) v0.7.0
 
 defmodule PVM.Host.Accumulate.Internal do
-  alias System.State.Validator
-  alias System.DeferredTransfer
-  alias System.State.ServiceAccount
   alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.{Memory, Registers}
+  alias System.DeferredTransfer
+  alias System.State.ServiceAccount
+  alias System.State.Validator
   import PVM.{Constants.HostCallResult}
   import Codec.Encoder
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
