@@ -17,15 +17,13 @@ defmodule System.AccumulationResult do
         }
   defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: []
 
-  def new({state, transfers, output, gas_used, _preimages}) do
+  def new({state, transfers, output, gas_used, preimages}) do
     %__MODULE__{
       state: state,
       transfers: transfers,
       output: output,
       gas_used: gas_used,
-      # TODO: use the preimages - isnt used because the accumulate test vectors are failing,
-      # must be that they are not updated to latest GP (0.6.6) (12.05.2025)
-      preimages: []
+      preimages: preimages
     }
   end
 end

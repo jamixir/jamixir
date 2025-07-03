@@ -527,7 +527,6 @@ defmodule System.State.Accumulation do
     {gas, operands} = pre_single_accumulation(work_reports, service_dict, service)
 
     PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
-    |> AccumulationResult.new()
   end
 
   def pre_single_accumulation(work_reports, service_dict, service) do
