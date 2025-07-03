@@ -1,5 +1,6 @@
 defmodule PVM.AccumulateTest do
   use ExUnit.Case
+  alias System.AccumulationResult
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate, Accumulate.Operand}
   alias Util.Hash
@@ -25,10 +26,8 @@ defmodule PVM.AccumulateTest do
     end
 
     test "handles service without code", %{accumulation: accumulation, n0_: n0_, timeslot_: t_} do
-      assert(
-        {^accumulation, [], nil, 0, []} =
-          PVM.accumulate(accumulation, t_, 256, 1000, [], %{n0_: n0_})
-      )
+      assert AccumulationResult.new({accumulation, [], nil, 0, []}) ==
+               PVM.accumulate(accumulation, t_, 256, 1000, [], %{n0_: n0_})
     end
 
     test "handles nil service at service_index", %{n0_: n0_} do
@@ -39,7 +38,7 @@ defmodule PVM.AccumulateTest do
 
       t_ = 0
 
-      assert {^accumulation, [], nil, 0, []} =
+      assert AccumulationResult.new({accumulation, [], nil, 0, []}) ==
                Accumulate.execute(accumulation, t_, 256, 1000, [], %{n0_: n0_})
     end
 
@@ -65,15 +64,14 @@ defmodule PVM.AccumulateTest do
       operands = [%Operand{data: {:error, :big}}]
       t_ = 0
 
-      {result_acc, transfers, result_hash, gas, _} =
-        PVM.accumulate(accumulation, t_, 256, 1000, operands, %{n0_: n0_})
+      acc_result = PVM.accumulate(accumulation, t_, 256, 1000, operands, %{n0_: n0_})
 
-      assert result_acc.services[256].balance == 100
-      assert transfers == []
+      assert acc_result.state.services[256].balance == 100
+      assert acc_result.transfers == []
       # Gas call doesn't produce 32-byte output
-      assert is_nil(result_hash)
+      assert is_nil(acc_result.output)
       # Some gas was consumed
-      assert gas < 1000
+      assert acc_result.gas_used < 1000
     end
   end
 end

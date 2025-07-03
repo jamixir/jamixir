@@ -1,7 +1,7 @@
 defmodule PVM.Accumulate do
+  alias System.AccumulationResult
   alias PVM.Host.{Accumulate, Accumulate.Context, General}
   alias PVM.Registers
-  alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
   alias PVM.Host.General.FetchArgs
@@ -11,7 +11,7 @@ defmodule PVM.Accumulate do
   import Codec.Encoder
 
   @doc """
-  Formula (B.9) v0.6.7
+  Formula (B.9) v0.7.0
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
@@ -21,13 +21,7 @@ defmodule PVM.Accumulate do
           gas :: non_neg_integer(),
           operands :: list(Operand.t()),
           extra_args :: %{n0_: Types.hash()}
-        ) :: {
-          Accumulation.t(),
-          list(DeferredTransfer.t()),
-          Types.hash() | nil,
-          non_neg_integer(),
-          list({Types.service_index(), binary()})
-        }
+        ) :: AccumulationResult.t()
   def execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}, opts \\ []) do
     # Get trace setting from environment variable
     opts =
@@ -40,11 +34,11 @@ defmodule PVM.Accumulate do
           opts
       end
 
-    # Formula (B.10) v0.6.6
+    # Formula (B.10) v0.7.0
     x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
 
     d = x.accumulation.services
-    # Formula (B.11) v0.6.7
+    # Formula (B.11) v0.7.0
     f = fn n, %{gas: gas, registers: registers, memory: memory}, {x, _y} = context ->
       s = Context.accumulating_service(x)
 
@@ -147,7 +141,7 @@ defmodule PVM.Accumulate do
     args = e({timeslot, service_index, length(operands)})
 
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
-      {x.accumulation, [], nil, 0, []}
+      AccumulationResult.new({x.accumulation, [], nil, 0, []})
     else
       ArgInvoc.execute(service_code, 5, gas, args, f, {x, x}, opts)
       |> Utils.collapse()
