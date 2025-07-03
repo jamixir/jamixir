@@ -1,14 +1,14 @@
 defmodule PVM.Accumulate.Utils do
-  alias System.DeferredTransfer
-  alias System.State.Accumulation
   alias PVM.Host
   alias PVM.Host.Accumulate.Context
+  alias System.AccumulationResult
+  alias System.State.Accumulation
   alias Util.Hash
   import Codec.{Encoder, Decoder}
 
   @hash_size 32
 
-  # Formula (B.10) v0.6.6
+  # Formula (B.10) v0.7.0
   @spec initializer(Types.hash(), non_neg_integer(), Accumulation.t(), non_neg_integer()) ::
           Context.t()
   def initializer(n0_, header_timeslot, accumulation_state, service_index) do
@@ -31,7 +31,7 @@ defmodule PVM.Accumulate.Utils do
 
   @dialyzer {:no_return, check: 2}
 
-  # Formula (B.14) v0.6.6
+  # Formula (B.14) v0.7.0
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
     if i in Map.keys(services) do
@@ -50,22 +50,38 @@ defmodule PVM.Accumulate.Utils do
     256 + rem(i - 256 + 42, 0xFFFFFE00)
   end
 
-  # Formula (B.13) v0.6.6
+  # Formula (B.13) v0.7.0
   @spec collapse({Types.gas(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
-          {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, Types.gas(),
-           list({Types.service_index(), binary()})}
+          AccumulationResult.t()
+
   def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
-    do:
-      {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
+    do: %AccumulationResult{
+      state: y.accumulation,
+      transfers: y.transfers,
+      output: y.accumulation_trie_result,
+      gas_used: gas,
+      preimages: MapSet.to_list(y.preimages)
+    }
 
   def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
-    do: {x.accumulation, x.transfers, output, gas, MapSet.to_list(x.preimages)}
+    do: %AccumulationResult{
+      state: x.accumulation,
+      transfers: x.transfers,
+      output: output,
+      gas_used: gas,
+      preimages: MapSet.to_list(x.preimages)
+    }
 
   def collapse({gas, _output, {x, _y}}),
-    do:
-      {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
+    do: %AccumulationResult{
+      state: x.accumulation,
+      transfers: x.transfers,
+      output: x.accumulation_trie_result,
+      gas_used: gas,
+      preimages: MapSet.to_list(x.preimages)
+    }
 
-  # Formula (B.12) v0.6.6
+  # Formula (B.12) v0.7.0
   @spec replace_service(
           Host.General.Result.t(),
           {Context.t(), Context.t()}
