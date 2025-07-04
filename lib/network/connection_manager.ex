@@ -366,7 +366,7 @@ defmodule Network.ConnectionManager do
 
   @impl GenServer
   def handle_cast(:shutdown_all_connections, state) do
-    IO.puts("🛑 Shutting down all connections gracefully")
+    Log.info("🛑 Shutting down all connections gracefully")
 
     for {ed25519_key, %ConnectionInfo{pid: pid}} <- state.connections do
       if is_pid(pid) && Process.alive?(pid) do

@@ -7,10 +7,15 @@ defmodule Network.MessageParsersTest do
   setup :set_mox_global
 
   setup do
+    original_server_calls = Application.get_env(:jamixir, :server_calls)
     Application.put_env(:jamixir, :server_calls, ServerCallsMock)
 
     on_exit(fn ->
-      Application.delete_env(:jamixir, :server_calls)
+      if original_server_calls do
+        Application.put_env(:jamixir, :server_calls, original_server_calls)
+      else
+        Application.delete_env(:jamixir, :server_calls)
+      end
       Mox.verify!()
     end)
 
