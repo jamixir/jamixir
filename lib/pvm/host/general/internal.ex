@@ -126,18 +126,19 @@ defmodule PVM.Host.General.Internal do
         authorizer_trace != nil and w10 == 2 ->
           authorizer_trace
 
-        service_index != nil and w10 == 3 and w11 < length(preimages) and
+        preimages != nil and w10 == 3 and w11 < length(preimages) and
             w12 < length(Enum.at(preimages, w11)) ->
           preimages |> Enum.at(w11) |> Enum.at(w12)
 
-        service_index != nil and w10 == 4 and w11 < length(Enum.at(preimages, service_index)) ->
+        preimages != nil and service_index != nil and w10 == 4 and
+            w11 < length(Enum.at(preimages, service_index)) ->
           preimages |> Enum.at(service_index) |> Enum.at(w11)
 
-        service_index != nil and w10 == 5 and w11 < length(import_segments) and
+        import_segments != nil and w10 == 5 and w11 < length(import_segments) and
             w12 < length(Enum.at(import_segments, w11)) ->
           import_segments |> Enum.at(w11) |> Enum.at(w12)
 
-        service_index != nil and w10 == 6 and
+        import_segments != nil and service_index != nil and w10 == 6 and
             w11 < length(Enum.at(import_segments, service_index)) ->
           import_segments |> Enum.at(service_index) |> Enum.at(w11)
 
