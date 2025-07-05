@@ -5,12 +5,39 @@ defmodule ListenerTest do
   alias Network.{Connection}
   import ExUnit.Assertions
 
-
   @dummy_protocol_id 242
   @port 9997
   setup_all do
     start_supervised!({Network.Listener, port: @port})
     :ok
+  end
+
+  setup do
+    Network.ConnectionManager.shutdown_all_connections()
+
+    wait(fn ->
+      connections = Network.ConnectionManager.get_connections()
+      Enum.empty?(connections)
+    end)
+
+    :ok
+  end
+
+  defp start_connection_with_retry(key, ip, port, max_retries \\ 3) do
+    Enum.reduce_while(1..max_retries, nil, fn attempt, _acc ->
+      case Network.ConnectionManager.start_outbound_connection(key, ip, port) do
+        {:ok, pid} ->
+          {:halt, {:ok, pid}}
+
+        {:error, reason} ->
+          if attempt == max_retries do
+            {:halt, {:error, reason}}
+          else
+            Process.sleep(50 * attempt)
+            {:cont, nil}
+          end
+      end
+    end)
   end
 
   describe "multiple connections to single listener" do
@@ -22,10 +49,13 @@ defmodule ListenerTest do
 
       clients =
         Enum.map(keys, fn key ->
-          {:ok, pid} =
-            Network.ConnectionManager.start_outbound_connection(key, {127, 0, 0, 1}, port)
+          case start_connection_with_retry(key, {127, 0, 0, 1}, port) do
+            {:ok, pid} ->
+              pid
 
-          pid
+            {:error, reason} ->
+              flunk("Failed to start connection after retries: #{inspect(reason)}")
+          end
         end)
 
       Process.sleep(100)
@@ -63,7 +93,8 @@ defmodule ListenerTest do
       assert length(Enum.uniq(server_pids)) == 3
 
       all_conncetions_pids = Network.ConnectionManager.get_connections() |> Map.values()
-      assert length(all_conncetions_pids) == 6 # 3 clients  + 3 servers
+      # 3 clients  + 3 servers
+      assert length(all_conncetions_pids) == 6
 
       Enum.each(server_pids, fn pid ->
         assert pid in all_conncetions_pids
