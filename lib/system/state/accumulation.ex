@@ -84,7 +84,7 @@ defmodule System.State.Accumulation do
           Enum.sum(Map.values(privileged_services.always_accumulated))
       )
 
-    # W∗
+    # R∗
     accumulatable_reports =
       WorkReport.accumulatable_work_reports(
         work_reports,
