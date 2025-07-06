@@ -3,6 +3,8 @@ import Config
 config :jamixir, Jamixir,
   # C
   core_count: 2,
+  # D
+  forget_delay: 32,
   # E
   epoch_length: 12,
   # K
