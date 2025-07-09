@@ -117,30 +117,5 @@ defmodule PVM.Host.Refine.InvokeTest do
       assert {:ok, ^registers_for_inner_execution} =
                Memory.read(memory_, registers.r8 + 8, 12 * 8)
     end
-
-    @tag :skip
-    # TODO, rely on simpler program, this is too much to maintain
-    test "executes program that panics", %{
-      context: context,
-      memory: memory,
-      gas: gas,
-      registers: registers
-    } do
-      panic = panic()
-      w8 = registers.r8
-
-      assert %{
-               exit_reason: :continue,
-               registers: %{r7: ^panic, r8: ^w8},
-               memory: memory_,
-               context: context_
-             } = Refine.invoke(gas, registers, memory, context)
-
-      assert Memory.read!(memory_, registers.r8 + 16, 24) ==
-               <<30::64-little, 11::64-little, 10::64-little>>
-
-      machine = Map.get(context_.m, 1)
-      assert Memory.read!(machine.memory, 0x10003, 4) == <<30::32-little>>
-    end
   end
 end
