@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic do
+  alias System.State.Validator
   alias Codec.VariableSize
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, Preimage, TicketProof}
   # Formula (4.3) v0.6.6
@@ -20,13 +21,20 @@ defmodule Block.Extrinsic do
   @spec validate(t(), Block.Header.t(), System.State.t()) :: :ok | {:error, String.t()}
   def validate(%__MODULE__{} = extrinsic, header, %System.State{} = state) do
     with :ok <- Guarantee.validate(extrinsic.guarantees, state, header),
+         pending_ =
+           Validator.nullify_offenders(
+             Map.get(state, :next_validators),
+             Map.get(state, :judgements) |> Map.get(:offenders)
+           ),
+         epoch_root_ = RingVrf.create_commitment(for p <- pending_, do: p.bandersnatch),
          :ok <-
            TicketProof.validate(
              extrinsic.tickets,
              header.timeslot,
              state.timeslot,
              state.entropy_pool,
-             state.safrole
+             state.safrole,
+             epoch_root_
            ),
          :ok <-
            Disputes.validate(

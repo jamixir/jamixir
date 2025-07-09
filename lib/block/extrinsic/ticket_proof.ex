@@ -28,11 +28,12 @@ defmodule Block.Extrinsic.TicketProof do
           non_neg_integer(),
           non_neg_integer(),
           EntropyPool.t(),
+          Safrole.t(),
           Types.bandersnatch_ring_root()
         ) ::
           :ok | {:error, String.t()}
 
-  mockable validate(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole) do
+  mockable validate(ticket_proofs, header_timeslot, state_timeslot, entropy_pool, safrole, epoch_root_) do
     with is_new_epoch <- Time.new_epoch?(state_timeslot, header_timeslot),
          :ok <- validate_ticket_count(ticket_proofs, header_timeslot),
          :ok <- validate_entry_indices(ticket_proofs),
@@ -40,7 +41,7 @@ defmodule Block.Extrinsic.TicketProof do
            construct_n(
              ticket_proofs,
              if(is_new_epoch, do: entropy_pool.n1, else: entropy_pool.n2),
-             safrole.epoch_root
+             epoch_root_
            ),
          # Formula (6.32) v0.6.6
          :ok <-
