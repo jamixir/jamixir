@@ -172,6 +172,8 @@ defmodule Storage do
   def get_state(key) when is_atom(key), do: KVStorage.get("#{@state_key}:#{key}")
   def get_state_root, do: KVStorage.get(@state_root_key)
 
+  def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
+  def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)
   # Private Functions
 
   defp encodable?(data), do: not is_nil(Encodable.impl_for(data))

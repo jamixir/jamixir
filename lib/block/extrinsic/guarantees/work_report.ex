@@ -218,45 +218,49 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   # Formula (14.11) v0.6.6
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
-          WorkReport.t()
+          :error | Task.t({WorkReport.t(), list(binary())})
   def execute_work_package(%WorkPackage{} = wp, core, services) do
     # {o, g} = ΨI (p,c)
     w_r = Constants.max_work_report_size()
 
     case PVM.authorized(wp, core, services) do
-      {o, _} when is_atom(o) or byte_size(o) > w_r ->
-        :error
-
-      {o, _gas_used} ->
-        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
-        # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
-        {r, e} =
-          for j <- 0..(length(wp.work_items) - 1) do
-            # (r,e) = I(p,j)
-            {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
-            # C(pw [j],r), e)
-            {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
-          end
-          |> Enum.unzip()
-
-        # Formula (14.15) v0.6.6
-        s =
-          AvailabilitySpecification.from_execution(
-            h(e(wp)),
-            WorkPackage.bundle_binary(wp),
-            List.flatten(e)
-          )
-
-        %__MODULE__{
-          specification: s,
-          refinement_context: wp.context,
-          core_index: core,
-          authorizer_hash: WorkPackage.implied_authorizer(wp, services),
-          output: o,
-          segment_root_lookup: get_import_segments(wp),
-          digests: r
-        }
+      {o, _} when is_atom(o) or byte_size(o) > w_r -> :error
+      {o, _gas_used} -> Task.async(fn -> refine(wp, core, o, services) end)
     end
+  end
+
+  @spec refine(WorkPackage.t(), integer(), binary(), %{integer() => ServiceAccount.t()}) ::
+          {WorkReport.t(), list(binary())}
+  defp refine(wp, core, o, services) do
+    import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
+    # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
+    {r, e} =
+      for j <- 0..(length(wp.work_items) - 1) do
+        # (r,e) = I(p,j)
+        {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
+        # C(pw [j],r), e)
+        {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
+      end
+      |> Enum.unzip()
+
+    exports = List.flatten(e)
+    # Formula (14.15) v0.6.6
+    s =
+      AvailabilitySpecification.from_execution(
+        h(e(wp)),
+        WorkPackage.bundle_binary(wp),
+        exports
+      )
+
+    {%__MODULE__{
+       specification: s,
+       refinement_context: wp.context,
+       core_index: core,
+       authorizer_hash: WorkPackage.implied_authorizer(wp, services),
+       output: o,
+       segment_root_lookup: get_segment_lookup_dict(wp),
+       digests: r
+     }, exports}
   end
 
   # Formula (14.11) v0.6.6
@@ -304,14 +308,19 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
   # Formula (14.12) v0.6.6
-  # TODO ⊞ part
-  def segment_root(r) do
-    r
-  end
+  def segment_root({:tagged_hash, r}), do: Storage.get_segments_root(r)
+  def segment_root(r), do: r
 
-  # TODO (14.13) v0.6.6
-  def get_import_segments(%WorkPackage{work_items: _wi}) do
-    %{}
+  # Formula (14.13) v0.6.6
+  def get_segment_lookup_dict(%WorkPackage{work_items: wi}) do
+    for w <- wi,
+        {{:tagged_hash, wp_hash} = r, _} <- w.import_segments,
+        s = segment_root(r),
+        s != nil do
+      {wp_hash, s}
+    end
+    |> Enum.take(8)
+    |> Map.new()
   end
 
   use JsonDecoder
