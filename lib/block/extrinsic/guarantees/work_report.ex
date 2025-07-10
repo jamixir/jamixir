@@ -296,8 +296,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
               )
             end
 
-        # smaller then (<) looks suspicious, should confirm in matrix channel (Luke, May 12, 2025)
-        if byte_size(r) + z < Constants.max_work_report_size() do
+        if byte_size(r) + z > Constants.max_work_report_size() do
           {:oversize, u, zero_segments(w.export_count)}
         else
           {r, u, e}
