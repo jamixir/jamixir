@@ -177,6 +177,26 @@ defmodule Jamixir.Node do
     spec = guarantee.work_report.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
+
+    server_pid = self()
+
+    case Storage.get_state() do
+      nil ->
+        Logger.error("No state found to request erasure code for work report")
+        {:error, :no_state}
+
+      state ->
+        Task.start(fn ->
+          Logger.info("Request EC  for work report: #{b16(spec.work_package_hash)}")
+
+          Network.Connection.request_audit_shard(
+            server_pid,
+            spec.erasure_root,
+            my_assigned_shard_index(state, guarantee.work_report.core_index)
+          )
+        end)
+    end
+
     :ok
   end
 
@@ -268,5 +288,23 @@ defmodule Jamixir.Node do
   @impl true
   def get_justification(_erasure_root, _segment_index, _shard_index) do
     {:error, :not_implemented}
+  end
+
+  def my_validator_index(nil), do: nil
+
+  def my_validator_index(state) do
+    state.curr_validators
+    |> Enum.find_index(fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end)
+  end
+
+  # i = (cR + v) mod V
+  def my_assigned_shard_index(state, core) do
+    case my_validator_index(state) do
+      nil ->
+        nil
+
+      v ->
+        rem(core * Constants.erasure_code_recovery_threshold() + v, Constants.validator_count())
+    end
   end
 end

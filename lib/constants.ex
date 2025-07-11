@@ -117,4 +117,8 @@ defmodule Constants do
 
   @doc "Y - The number of timeslots into an epoch at which ticket-submission ends."
   defmockable(:ticket_submission_end, do: Jamixir.config(:ticket_submission_end))
+
+  def erasure_code_recovery_threshold do
+    Jamixir.config()[:erasure_code_recovery_threshold] || 342
+  end
 end
