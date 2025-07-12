@@ -275,7 +275,7 @@ defmodule CommsTest do
   end
 
   # CE 137
-  describe "request_segment/3" do
+  describe "request_work_report_shard/3" do
     test "request segment based on erasure_root and index", %{client: client} do
       erasure_root = <<1::hash()>>
       index = 8
@@ -284,11 +284,11 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, segments, justification}}
       end)
 
-      {:ok, {b, s, j}} = Connection.request_segment(client, erasure_root, index)
+      {:ok, {b, s, j}} = Connection.request_work_report_shard(client, erasure_root, index)
       verify!()
 
       assert b == bundle_shard
@@ -306,7 +306,7 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, [], justification}}
       end)
 

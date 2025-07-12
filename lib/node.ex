@@ -271,7 +271,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def get_segment(_erasure_root, _segment_index) do
+  def get_work_report_shard(_erasure_root, _segment_index) do
     {:error, :not_implemented}
   end
 

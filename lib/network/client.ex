@@ -105,14 +105,14 @@ defmodule Network.Client do
     send(pid, 136, hash)
   end
 
-  def request_segment(pid, erasure_root, segment_index),
-    do: send_segment_request(pid, 137, erasure_root, segment_index)
+  def request_work_report_shard(pid, erasure_root, shard_index),
+    do: send_wp_shard_request(pid, 137, erasure_root, shard_index)
 
-  def request_audit_shard(pid, erasure_root, segment_index),
-    do: send_segment_request(pid, 138, erasure_root, segment_index)
+  def request_audit_shard(pid, erasure_root, shard_index),
+    do: send_wp_shard_request(pid, 138, erasure_root, shard_index)
 
-  defp send_segment_request(pid, protocol_id, erasure_root, segment_index) do
-    message = erasure_root <> <<segment_index::16-little>>
+  defp send_wp_shard_request(pid, protocol_id, erasure_root, shard_index) do
+    message = erasure_root <> <<shard_index::16-little>>
     send(pid, protocol_id, message)
   end
 

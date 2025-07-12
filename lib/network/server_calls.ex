@@ -108,10 +108,10 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(137, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
-    log("Requesting segment")
+  def call(137, <<erasure_root::binary-size(@hash_size), shard_index::16-little>>) do
+    log("Requesting Work Report Shard")
 
-    case Jamixir.NodeAPI.get_segment(erasure_root, segment_index) do
+    case Jamixir.NodeAPI.get_work_report_shard(erasure_root, shard_index) do
       {:ok, {bundle_shard, segments, justification}} ->
         [bundle_shard, segments, justification]
 
@@ -124,7 +124,7 @@ defmodule Network.ServerCalls do
   def call(138, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
     log("Requesting segment")
 
-    case Jamixir.NodeAPI.get_segment(erasure_root, segment_index) do
+    case Jamixir.NodeAPI.get_work_report_shard(erasure_root, segment_index) do
       {:ok, {bundle_shard, _, justification}} ->
         [bundle_shard, justification]
 
@@ -256,7 +256,8 @@ defmodule Network.ServerCalls do
       "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)} of size #{byte_size(message)}"
     )
 
-    message <> :erlang.term_to_binary(self())  end
+    message <> :erlang.term_to_binary(self())
+  end
 
   import Codec.Decoder
   defp decode_requests(<<>>, acc), do: Enum.reverse(acc)
