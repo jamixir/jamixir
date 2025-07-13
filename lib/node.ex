@@ -44,17 +44,12 @@ defmodule Jamixir.Node do
   @impl true
   @spec inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
   def inspect_state(key) do
-    case Storage.get_state() do
+    case Storage.get_state(key) do
       nil ->
         {:error, :no_state}
 
-      state ->
-        key_atom = String.to_existing_atom(key)
-
-        case Map.fetch(state, key_atom) do
-          {:ok, value} -> {:ok, value}
-          :error -> {:error, :key_not_found}
-        end
+      value ->
+        {:ok, value}
     end
   end
 
