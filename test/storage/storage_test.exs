@@ -63,11 +63,6 @@ defmodule StorageTest do
   end
 
   describe "Storage" do
-    # test "initialization" do
-    #   assert {:ok, _pid} = Storage.start_link()
-    #   assert KVStorage.get("t:0") == nil
-    #   assert KVStorage.get(:latest_timeslot) == 0
-    # end
 
     test "store and retrieve single header" do
       header = build(:decodable_header)
@@ -104,6 +99,14 @@ defmodule StorageTest do
       assert is_binary(Storage.get_state_root())
       Storage.remove(Storage.state_key())
       Storage.remove(Storage.state_root_key())
+    end
+
+    test "store and retrieve state fields" do
+      state = %State{}
+      assert :ok = Storage.put(state)
+      for key <- Map.keys(Map.from_struct(state)) do
+        assert Storage.get_state(key) == Map.get(state, key)
+      end
     end
 
     test "get non-existent header" do

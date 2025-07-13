@@ -64,10 +64,20 @@ defmodule Storage do
   def put(%State{} = state) do
     state_root = Codec.State.Trie.state_root(state)
 
-    KVStorage.put(%{
-      @state_key => state,
-      @state_root_key => state_root
-    })
+    state_fields =
+      Map.from_struct(state)
+      |> Enum.map(fn {key, value} -> {"#{@state_key}:#{key}", value} end)
+      |> Map.new()
+
+    KVStorage.put(
+      Map.merge(
+        state_fields,
+        %{
+          @state_key => state,
+          @state_root_key => state_root
+        }
+      )
+    )
 
     :ok
   end
@@ -159,6 +169,7 @@ defmodule Storage do
   end
 
   def get_state, do: KVStorage.get(@state_key)
+  def get_state(key) when is_atom(key), do: KVStorage.get("#{@state_key}:#{key}")
   def get_state_root, do: KVStorage.get(@state_root_key)
 
   # Private Functions
