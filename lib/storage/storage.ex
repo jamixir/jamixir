@@ -3,6 +3,7 @@ defmodule Storage do
   alias Block.Header
   alias System.State
   alias Util.Hash
+  alias Codec.State.Trie.SerializedState
   import Codec.Encoder
   use StoragePrefix
 
@@ -112,6 +113,11 @@ defmodule Storage do
     KVStorage.put(%{key => e(work_package)})
   end
 
+  def put(header_hash, %SerializedState{data: data})
+      when is_binary(header_hash) and byte_size(header_hash) == 32 do
+    KVStorage.put(header_hash, data)
+  end
+
   def put(key, value), do: KVStorage.put(key, value)
 
   defp prepare_entry({key, value}), do: {:ok, {key, value}}
@@ -172,8 +178,16 @@ defmodule Storage do
   def get_state(key) when is_atom(key), do: KVStorage.get("#{@state_key}:#{key}")
   def get_state_root, do: KVStorage.get(@state_root_key)
 
+  def get_serialized_state(header_hash) do
+    case KVStorage.get(header_hash) do
+      nil -> nil
+      data -> %SerializedState{data: data}
+    end
+  end
+
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)
+
   # Private Functions
 
   defp encodable?(data), do: not is_nil(Encodable.impl_for(data))

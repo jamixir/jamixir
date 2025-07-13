@@ -1,10 +1,12 @@
 defmodule Jamixir.Fuzzer do
   require Logger
+  alias Codec.State.Trie.SerializedState
   alias Util.Logger, as: Log
   alias Jamixir.Meta
+  import Util.Hex, only: [b16: 1]
   import Jamixir.Fuzzer.Util
 
-  def accept(socket_path) do
+  def accept(socket_path, timeout \\ 1000) do
     if File.exists?(socket_path), do: File.rm!(socket_path)
 
     {:ok, sock} =
@@ -14,45 +16,40 @@ defmodule Jamixir.Fuzzer do
     :ok = :socket.listen(sock)
 
     Log.info("Ready to be fuzzed on #{socket_path}")
-    loop_acceptor(sock)
+    loop_acceptor(sock, timeout)
   end
 
-  defp loop_acceptor(listener) do
-    case :socket.accept(listener) do
+  defp loop_acceptor(listener, timeout) do
+    case :socket.accept(listener, timeout) do
       {:ok, client} ->
         Log.info("New fuzzer  connected")
-        Task.start(fn -> handle_client(client) end)
-        loop_acceptor(listener)
+        Task.start(fn -> handle_client(client, timeout) end)
+        loop_acceptor(listener, timeout)
 
       {:error, reason} ->
         Log.error("Accept error: #{inspect(reason)}")
     end
   end
 
-  defp handle_client(sock) do
-    case :socket.recv(sock, 0) do
-      {:ok, data} ->
-        case decode(data) do
-          {:ok, message_type, parsed_data} ->
-            handle_message(message_type, parsed_data, sock)
-
-          {:error, reason} ->
-            Log.error("Decode error: #{inspect(reason)}")
-        end
-
-        handle_client(sock)
+  defp handle_client(sock, timeout) do
+    case receive_and_parse_message(sock, timeout) do
+      {:ok, message_type, parsed_data} ->
+        handle_message(message_type, parsed_data, sock)
+        handle_client(sock, timeout)
 
       {:error, :closed} ->
+        Log.info("Client disconnected")
         :ok
 
       {:error, reason} ->
-        Log.error("Recv error: #{inspect(reason)}")
+        Log.error("Message handling error: #{inspect(reason)}")
+        handle_client(sock, timeout)
     end
   end
 
-  defp handle_message(:peer_info, parsed_data, sock) do
-    {name, {version_major, version_minor, version_patch},
-     {protocol_major, protocol_minor, protocol_patch}} = parsed_data
+  defp handle_message(:peer_info, %{name: name, version: version, protocol: protocol}, sock) do
+    {version_major, version_minor, version_patch} = version
+    {protocol_major, protocol_minor, protocol_patch} = protocol
 
     Log.info(
       "Peer info: name=#{name}, version=#{version_major}.#{version_minor}.#{version_patch}, protocol=#{protocol_major}.#{protocol_minor}.#{protocol_patch}"
@@ -63,14 +60,32 @@ defmodule Jamixir.Fuzzer do
 
   defp handle_message(:import_block, _parsed_data, _sock) do
     # TODO: Implement
+    Log.debug("Import block message received (not implemented)")
   end
 
   defp handle_message(:set_state, _parsed_data, _sock) do
     # TODO: Implement
+    Log.debug("Set state message received (not implemented)")
   end
 
-  defp handle_message(:get_state, _parsed_data, _sock) do
-    # TODO: Implement
+  defp handle_message(:get_state, %{header_hash: header_hash}, sock) do
+    case Storage.get_serialized_state(header_hash) do
+      nil ->
+        Log.error("Serialized state not found for header hash: #{b16(header_hash)}")
+        :socket.close(sock)
+
+      %SerializedState{data: data} ->
+        serialized_data =
+          for {key, value} <- data, into: <<>> do
+            <<key::binary, value::binary>>
+          end
+
+        :socket.send(sock, encode_message(:state, serialized_data))
+    end
+  end
+
+  defp handle_message(message_type, parsed_data, _sock) do
+    Log.debug("Unhandled message type: #{message_type}, data: #{inspect(parsed_data)}")
   end
 
   defp send_peer_info(sock) do

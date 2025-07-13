@@ -21,6 +21,10 @@ defmodule Codec.State.Trie do
 
   import Bitwise
 
+  defmodule SerializedState do
+    defstruct [:data]
+  end
+
   @storage_prefix (1 <<< 32) - 1
   @preimage_prefix (1 <<< 32) - 2
 
@@ -94,7 +98,8 @@ defmodule Codec.State.Trie do
   end
 
   def serialize(state) do
-    for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
+    serialized = for({k, v} <- state_keys(state), do: {key_to_31_octet(k), v}, into: %{})
+    %SerializedState{data: serialized}
   end
 
   def serialize_hex(state, opts \\ []) do

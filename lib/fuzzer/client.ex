@@ -41,14 +41,18 @@ defmodule Jamixir.Test.FuzzerClient do
     send_message(client, :peer_info, message)
   end
 
-  def send_message(client, message_type, message),
-    do: :socket.send(client.socket, encode_message(message_type, message))
+  def send_get_state(client, header_hash) do
+    send_message(client, :get_state, header_hash)
+  end
 
-  def send_and_receive(client, message_type, message, timeout \\ 5000) do
-    with :ok <- send_message(client, message_type, message),
-         {:ok, data} <- :socket.recv(client.socket, 0, timeout) do
-      decode(data)
-    else
+  def send_message(client, message_type, message) do
+    bin = encode_message(message_type, message)
+    :socket.send(client.socket, bin)
+  end
+
+  def send_and_receive(client, message_type, message, timeout \\ 1000) do
+    case send_message(client, message_type, message) do
+      :ok -> receive_and_parse_message(client.socket, timeout)
       error -> error
     end
   end
