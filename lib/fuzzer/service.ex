@@ -1,6 +1,6 @@
 defmodule Jamixir.Fuzzer do
   require Logger
-  alias Codec.State.Trie.SerializedState
+  alias Codec.State.Trie
   alias Util.Logger, as: Log
   alias Jamixir.Meta
   import Util.Hex, only: [b16: 1]
@@ -63,23 +63,21 @@ defmodule Jamixir.Fuzzer do
     Log.debug("Import block message received (not implemented)")
   end
 
-  defp handle_message(:set_state, _parsed_data, _sock) do
-    # TODO: Implement
-    Log.debug("Set state message received (not implemented)")
+  defp handle_message(:set_state, %{header_hash: header_hash, state: state}, sock) do
+    state_root = Storage.put(header_hash, state)
+
+    Log.info("State successfully stored for header hash: #{b16(header_hash)}")
+    :socket.send(sock, encode_message(:state_root, state_root))
   end
 
   defp handle_message(:get_state, %{header_hash: header_hash}, sock) do
-    case Storage.get_serialized_state(header_hash) do
+    case Storage.get(header_hash) do
       nil ->
         Log.error("Serialized state not found for header hash: #{b16(header_hash)}")
         :socket.close(sock)
 
-      %SerializedState{data: data} ->
-        serialized_data =
-          for {key, value} <- data, into: <<>> do
-            <<key::binary, value::binary>>
-          end
-
+      serialized_state ->
+        serialized_data = Trie.to_binary(serialized_state)
         :socket.send(sock, encode_message(:state, serialized_data))
     end
   end

@@ -118,7 +118,41 @@ defmodule Codec.State.Trie do
     end
   end
 
-  def state_root(state), do: Merklization.merkelize_state(serialize(state))
+  def state_root(%State{} = state), do: state_root(serialize(state))
+
+  def state_root(%SerializedState{} = serialized_state),
+    do: Merklization.merkelize_state(serialized_state)
+
+  def to_binary(%State{} = state), do: to_binary(serialize(state))
+
+  def to_binary(%SerializedState{data: data}) do
+    key_value_list =
+      for {key, value} <- data do
+        vs(key <> value)
+      end
+
+    e(vs(key_value_list))
+  end
+
+  @spec from_binary(nonempty_binary()) ::
+          {:ok, %SerializedState{data: map()}} | {:error, :invalid_state_format}
+  def from_binary(binary) do
+    try do
+      {key_value_list, _rest} =
+        VariableSize.decode(binary, fn key_value_bin ->
+          {key_value, rest} = VariableSize.decode(key_value_bin, :binary)
+          <<key::binary-size(31), value::binary>> = key_value
+          {{key, value}, rest}
+        end)
+
+      data = Map.new(key_value_list)
+      {:ok, %SerializedState{data: data}}
+    rescue
+      MatchError -> {:error, :invalid_state_format}
+    end
+  end
+
+  def deserialize(%SerializedState{data: data}), do: trie_to_state(data)
 
   # ∀(s ↦ a) ∈ δ ∶ C(255, s) ↦ ac ⌢ E8(ab, ag, am, al) ⌢ E4(ai) ,
   defp encode_accounts(%{} = state_keys, %State{} = state) do

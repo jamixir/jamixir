@@ -1,5 +1,6 @@
 defmodule Jamixir.Fuzzer.Util do
-  require Logger
+  alias Codec.State.Trie.SerializedState
+  alias Codec.State.Trie
 
   @protocol_to_message_type %{
     0 => :peer_info,
@@ -102,10 +103,35 @@ defmodule Jamixir.Fuzzer.Util do
     {:ok, :get_state, %{header_hash: bin}}
   end
 
+  defp parse(:set_state, bin) do
+    try do
+      <<header_hash::binary-size(32), state_bin::binary>> = bin
+
+      case Trie.from_binary(state_bin) do
+        {:ok, serialized_state} ->
+          {:ok, :set_state, %{header_hash: header_hash, state: serialized_state}}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    rescue
+      MatchError -> {:error, :invalid_set_state_format}
+    end
+  end
+
   defp parse(:state, bin) do
-    # for the moment, we are not doing the fuzzer side
-    # therefore not bothering with reconstructing the state from the binary
-    {:ok, :state, bin}
+    case Trie.from_binary(bin) do
+      {:ok, %SerializedState{data: state_map}} ->
+        state = Trie.trie_to_state(state_map)
+        {:ok, :state, state}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse(:state_root, bin) do
+    {:ok, :state_root, bin}
   end
 
   defp parse(message_type, bin) do

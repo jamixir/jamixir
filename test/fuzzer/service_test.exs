@@ -1,5 +1,6 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias Codec.State.Trie.SerializedState
   alias Util.Hash
   alias Jamixir.Test.FuzzerClient
   alias Jamixir.Meta
@@ -53,20 +54,15 @@ defmodule Jamixir.FuzzerTest do
       state = build(:genesis_state_with_safrole).state
 
       serialized_state = Trie.serialize(state)
-
-      expected_data =
-        for {key, value} <- serialized_state.data, into: <<>> do
-          <<key::binary, value::binary>>
-        end
+      expected_state_root = Trie.state_root(serialized_state)
 
       header_hash = Hash.one()
       Storage.put(header_hash, serialized_state)
 
-      # Request the state
-      assert {:ok, :state, state_bin} =
+      assert {:ok, :state, incoming_state} =
                FuzzerClient.send_and_receive(client, :get_state, header_hash)
 
-      assert state_bin == expected_data
+      assert Trie.serialize(incoming_state) == serialized_state
     end
 
     test "handles get_state request for non-existent state", %{client: client} do
@@ -82,6 +78,24 @@ defmodule Jamixir.FuzzerTest do
       # The service logs an error but doesn't send a response for non-existent states
       # So we expect a timeout or error
       assert result == {:error, :closed}
+    end
+  end
+
+  describe "set_state handler" do
+    test "handles set_state request", %{client: client} do
+      state = build(:genesis_state_with_safrole).state
+      serialized_state = Trie.serialize(state)
+      expected_state_root = Trie.state_root(serialized_state)
+      header_hash = Hash.random()
+
+      set_state_message = header_hash <> Trie.to_binary(serialized_state)
+
+      assert {:ok, :state_root, incoming_state_root} =
+               FuzzerClient.send_and_receive(client, :set_state, set_state_message)
+
+      assert Storage.get(header_hash) == serialized_state
+      assert incoming_state_root == expected_state_root
+      assert Storage.get_state_root(header_hash) == expected_state_root
     end
   end
 end

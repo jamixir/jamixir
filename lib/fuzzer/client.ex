@@ -4,6 +4,7 @@ defmodule Jamixir.Test.FuzzerClient do
   in reality this is not our responsibility
   but it aids in testing the fuzzer service
   """
+alias Codec.State.Trie
 
   import Jamixir.Fuzzer.Util
 
@@ -43,6 +44,12 @@ defmodule Jamixir.Test.FuzzerClient do
 
   def send_get_state(client, header_hash) do
     send_message(client, :get_state, header_hash)
+  end
+
+  def send_set_state(client, header_hash, state) do
+    serialized_state = Trie.to_binary(state)
+    message = <<header_hash::binary-size(32), serialized_state::binary>>
+    send_message(client, :set_state, message)
   end
 
   def send_message(client, message_type, message) do

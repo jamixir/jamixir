@@ -24,6 +24,6 @@ config :jamixir, Jamixir,
   storage_persist: false,
   erasure_code_recovery_threshold: 2
 
-config :logger, level: :none
+config :logger, level: :debug
 
 config :jamixir, :server_calls, ServerCallsMock
