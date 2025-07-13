@@ -249,7 +249,7 @@ defmodule Jamixir.Node do
         {:error, :execution_failed}
 
       task ->
-        {_work_report, _exports} = Task.await(task, :infinity)
+        {_work_report, _exports} = Task.await(task)
         Logger.info("Work package executed successfully, saving work report")
 
         # TODO
