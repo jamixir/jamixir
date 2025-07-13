@@ -105,7 +105,7 @@ defmodule Codec.State.Trie do
   def serialize_hex(state, opts \\ []) do
     prefix = Keyword.get(opts, :prefix, false)
 
-    for {k, v} <- serialize(state),
+    for {k, v} <- serialize(state) |> Map.get(:data),
         do: {Hex.encode16(k, prefix: prefix), Hex.encode16(v, prefix: prefix)},
         into: %{}
   end
@@ -196,6 +196,8 @@ defmodule Codec.State.Trie do
       end)
     end)
   end
+
+  def trie_to_state(%SerializedState{data: trie}), do: trie_to_state(trie)
 
   def trie_to_state(trie) do
     dict =

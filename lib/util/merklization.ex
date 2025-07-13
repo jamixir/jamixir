@@ -62,7 +62,9 @@ defmodule Util.Merklization do
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
   """
-  def merkelize_state(%SerializedState{data: dict}) do
+  def merkelize_state(%SerializedState{data: dict}), do: merkelize_state(dict)
+
+  def merkelize_state(dict) do
     merkelize(
       for {k, v} <- dict do
         {bits(k), {k, v}}

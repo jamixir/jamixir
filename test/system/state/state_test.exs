@@ -22,7 +22,7 @@ defmodule System.StateTest do
   describe "serialize/1" do
     test "serialized state dictionary", %{state: state} do
       state_keys = state_keys(state)
-      serialized_state = serialize(state)
+      serialized_state = serialize(state) |> Map.get(:data)
 
       state_keys
       |> Enum.each(fn {k, _} ->
