@@ -1,6 +1,5 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
-  alias Codec.State.Trie.SerializedState
   alias Util.Hash
   alias Jamixir.Test.FuzzerClient
   alias Jamixir.Meta
@@ -54,7 +53,6 @@ defmodule Jamixir.FuzzerTest do
       state = build(:genesis_state_with_safrole).state
 
       serialized_state = Trie.serialize(state)
-      expected_state_root = Trie.state_root(serialized_state)
 
       header_hash = Hash.one()
       Storage.put(header_hash, serialized_state)
