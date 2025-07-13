@@ -318,6 +318,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         s != nil do
       {wp_hash, s}
     end
+    |> Enum.uniq()
     |> Enum.take(8)
     |> Map.new()
   end

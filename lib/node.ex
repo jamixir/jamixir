@@ -1,7 +1,6 @@
 defmodule Jamixir.Node do
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
-  alias Util.Hash
   alias System.State
   alias Util.Hash
   use StoragePrefix

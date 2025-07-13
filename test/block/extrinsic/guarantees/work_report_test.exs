@@ -594,7 +594,7 @@ defmodule WorkReportTest do
       assert WorkReport.get_segment_lookup_dict(wp) == %{}
     end
 
-    test "maximum 7 items in segment lookup" do
+    test "maximum 8 items in segment lookup" do
       wp_hashes = for i <- 1..10, do: <<i::hash()>>
       segments = for h <- wp_hashes, do: {{:tagged_hash, h}, 7}
       for w <- wp_hashes, do: Storage.put_segments_root(w, Hash.random())
@@ -617,6 +617,27 @@ defmodule WorkReportTest do
       wp = build(:work_package, work_items: [build(:work_item, import_segments: segments)])
 
       assert WorkReport.get_segment_lookup_dict(wp) == %{wp_hash => Hash.two()}
+    end
+
+    test "duplicate package count > 8 with other packages" do
+      wp_hashes = for i <- 1..3, do: <<i::hash()>>
+      segments_different_wp = for h <- wp_hashes, do: {{:tagged_hash, h}, 7}
+      for w <- wp_hashes, do: Storage.put_segments_root(w, Hash.random())
+      segments_same_wp = for _ <- 1..10, do: Enum.at(segments_different_wp, 0)
+
+      wp =
+        build(:work_package,
+          work_items: [
+            build(:work_item, import_segments: segments_same_wp),
+            build(:work_item, import_segments: segments_different_wp)
+          ]
+        )
+
+      assert WorkReport.get_segment_lookup_dict(wp) == %{
+               <<1::hash()>> => Storage.get_segments_root(<<1::hash()>>),
+               <<2::hash()>> => Storage.get_segments_root(<<2::hash()>>),
+               <<3::hash()>> => Storage.get_segments_root(<<3::hash()>>)
+             }
     end
   end
 end
