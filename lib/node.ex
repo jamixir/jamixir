@@ -174,14 +174,14 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_guarantee(guarantee) do
+  def save_guarantee(guarantee, header_hash) do
     spec = guarantee.work_report.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
     server_pid = self()
 
-    case Storage.get_state() do
+    case Storage.get_state(header_hash) do
       nil ->
         Logger.error("No state found to request erasure code for work report")
         {:error, :no_state}
@@ -210,9 +210,9 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary())) ::
+  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary()), Types.hash()) ::
           :ok | {:error, :invalid_extrinsics}
-  def save_work_package(wp, core, extrinsics) do
+  def save_work_package(wp, core, extrinsics, header_hash) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
       Storage.put(wp, core)
 
@@ -220,7 +220,7 @@ defmodule Jamixir.Node do
         Storage.put(e)
       end
 
-      process_work_package(wp, core, extrinsics)
+      process_work_package(wp, core, extrinsics, header_hash)
 
       :ok
     else
@@ -229,10 +229,10 @@ defmodule Jamixir.Node do
     end
   end
 
-  def process_work_package(wp, core, extrinsics) do
+  def process_work_package(wp, core, extrinsics, header_hash) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    state = Storage.get_state()
+    state = Storage.get_state(header_hash)
 
     # A work-package received via CE 133 should be shared with the other guarantors
     # assigned to the core using this protocol, but only after:
