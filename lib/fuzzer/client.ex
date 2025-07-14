@@ -61,10 +61,7 @@ defmodule Jamixir.Fuzzer.Client do
     :socket.send(client.socket, bin)
   end
 
-  def send_and_receive(client, message_type, message, timeout \\ 1000) do
-    case send_message(client, message_type, message) do
-      :ok -> receive_and_parse_message(client.socket, timeout)
-      error -> error
-    end
+  def receive_message(client, timeout \\ 1000) do
+    receive_and_parse_message(client.socket, timeout)
   end
 end

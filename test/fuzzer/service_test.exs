@@ -9,7 +9,6 @@ defmodule Jamixir.FuzzerTest do
   import Jamixir.Factory
   import Codec.Encoder
   import TestVectorUtil
-  alias Util.Hash
 
   @socket_path "/tmp/jamixir_fuzzer_test.sock"
 
@@ -32,18 +31,10 @@ defmodule Jamixir.FuzzerTest do
     {:ok, client: client, fuzzer_pid: fuzzer_pid}
   end
 
-  defp build_peer_info_message(name, app_version, jam_version) do
-    {app_version_major, app_version_minor, app_version_patch} = app_version
-    {jam_version_major, jam_version_minor, jam_version_patch} = jam_version
-
-    <<name::binary, app_version_major::8, app_version_minor::8, app_version_patch::8,
-      jam_version_major::8, jam_version_minor::8, jam_version_patch::8>>
-  end
-
   describe "peer_info handler" do
     test "handles basic peer info exchange", %{client: client} do
-      msg = build_peer_info_message(Meta.name(), {0, 1, 0}, {1, 0, 0})
-      assert {:ok, :peer_info, data} = Client.send_and_receive(client, :peer_info, msg)
+      assert :ok = Client.send_peer_info(client, Meta.name(), {0, 1, 0}, {1, 0, 0})
+      assert {:ok, :peer_info, data} = Client.receive_message(client)
 
       assert %{name: name, version: version, protocol: protocol} = data
       assert name == Meta.name()
@@ -59,8 +50,8 @@ defmodule Jamixir.FuzzerTest do
       header_hash = Hash.one()
       Storage.put(header_hash, state)
 
-      assert {:ok, :state, incoming_state} =
-               Client.send_and_receive(client, :get_state, header_hash)
+      assert :ok = Client.send_get_state(client, header_hash)
+      assert {:ok, :state, incoming_state} = Client.receive_message(client)
 
       assert Trie.serialize(incoming_state) == Trie.serialize(state)
     end
@@ -69,11 +60,13 @@ defmodule Jamixir.FuzzerTest do
       # Request a state that doesn't exist
       non_existent_hash = Hash.random()
 
+      assert :ok = Client.send_get_state(client, non_existent_hash)
+
       # The service should not send a response for non-existent states
       # note, this is a guess, the protocol doesn't mention what to do in this case
       # and since the fuzzer is an intrenal test tool, this should not happen and should not really be a concern
       # We expect a timeout or error
-      result = Client.send_and_receive(client, :get_state, non_existent_hash, 1000)
+      result = Client.receive_message(client, 1000)
 
       # The service logs an error but doesn't send a response for non-existent states
       # So we expect a timeout or error
@@ -88,10 +81,8 @@ defmodule Jamixir.FuzzerTest do
       expected_state_root = Trie.state_root(serialized_state)
       header_hash = Hash.two()
 
-      set_state_message = header_hash <> Trie.to_binary(serialized_state)
-
-      assert {:ok, :state_root, incoming_state_root} =
-               Client.send_and_receive(client, :set_state, set_state_message)
+      assert :ok = Client.send_set_state(client, header_hash, state)
+      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
 
       assert Storage.get_state(header_hash) |> Trie.serialize() == serialized_state
       assert incoming_state_root == expected_state_root
@@ -125,9 +116,8 @@ defmodule Jamixir.FuzzerTest do
       expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
       expected_state_root = Trie.state_root(%SerializedState{data: expected_trie})
 
-      # Call the fuzzer client to import the block
-      assert {:ok, :state_root, incoming_state_root} =
-               Client.send_and_receive(client, :import_block, e(block))
+      assert :ok = Client.send_import_block(client, block)
+      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
 
       header_hash = h(e(block.header))
       assert incoming_state_root == expected_state_root
