@@ -11,7 +11,7 @@ defmodule Jamixir.NodeTest do
 
   @genesis_file "genesis/genesis.json"
   @genesis_hash Genesis.genesis_block_parent()
-  @genesis_state_key "#{@p_state}#{@genesis_hash}"
+  @genesis_state_key "#{@p_state}:#{@genesis_hash}"
   # setup_validators(1)
   setup do
     Application.put_env(:jamixir, :original_modules, [Jamixir.Node])

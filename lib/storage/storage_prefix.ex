@@ -9,6 +9,7 @@ defmodule StoragePrefix do
       @p_segments_root "r"
       @p_state "s"
       @p_state_root "sr"
+      @p_timeslot "t"
     end
   end
 end

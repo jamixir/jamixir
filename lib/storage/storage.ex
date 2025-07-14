@@ -36,7 +36,7 @@ defmodule Storage do
   def put(%Block{} = block) do
     {:ok, header_hash} = put(block.header)
 
-    key = "#{@p_block}#{header_hash}"
+    key = "#{@p_block}:#{header_hash}"
 
     {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
 
@@ -48,8 +48,8 @@ defmodule Storage do
 
     KVStorage.put(%{
       hash => header,
-      "#{@p_child}#{header.parent_hash}" => hash,
-      "t:#{header.timeslot}" => header,
+      "#{@p_child}:#{header.parent_hash}" => hash,
+      "#{@p_timeslot}:#{header.timeslot}" => header,
       @latest_timeslot => header.timeslot
     })
 
@@ -92,15 +92,15 @@ defmodule Storage do
 
     state_fields =
       Map.from_struct(posterior_state)
-      |> Enum.map(fn {key, value} -> {"#{@p_state}#{header_hash}:#{key}", value} end)
+      |> Enum.map(fn {key, value} -> {"#{@p_state}:#{header_hash}:#{key}", value} end)
       |> Map.new()
 
     KVStorage.put(
       Map.merge(
         state_fields,
         %{
-          "#{@p_state}#{header_hash}" => posterior_state,
-          "#{@p_state_root}#{header_hash}" => state_root
+          "#{@p_state}:#{header_hash}" => posterior_state,
+          "#{@p_state_root}:#{header_hash}" => state_root
         }
       )
     )
@@ -140,7 +140,7 @@ defmodule Storage do
         nil
 
       slot ->
-        case KVStorage.get("t:#{slot}") do
+        case KVStorage.get("#{@p_timeslot}:#{slot}") do
           nil -> nil
           header -> {slot, header}
         end
@@ -148,7 +148,7 @@ defmodule Storage do
   end
 
   def get_block(header_hash) do
-    case KVStorage.get("#{@p_block}#{header_hash}") do
+    case KVStorage.get("#{@p_block}:#{header_hash}") do
       nil ->
         nil
 
@@ -170,14 +170,14 @@ defmodule Storage do
   end
 
   def get_state(header_hash) do
-    KVStorage.get("#{@p_state}#{header_hash}")
+    KVStorage.get("#{@p_state}:#{header_hash}")
   end
 
   def get_state(header_hash, key) do
-    KVStorage.get("#{@p_state}#{header_hash}:#{key}")
+    KVStorage.get("#{@p_state}:#{header_hash}:#{key}")
   end
 
-  def get_state_root(header_hash), do: KVStorage.get("#{@p_state_root}#{header_hash}")
+  def get_state_root(header_hash), do: KVStorage.get("#{@p_state_root}:#{header_hash}")
 
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)
@@ -195,7 +195,7 @@ defmodule Storage do
         Enum.reduce(headers, %{}, fn header, acc ->
           acc
           |> Map.put(h(e(header)), header)
-          |> Map.put("t:#{header.timeslot}", header)
+          |> Map.put("#{@p_timeslot}:#{header.timeslot}", header)
           |> Map.put(@latest_timeslot, latest_timeslot)
         end)
 
