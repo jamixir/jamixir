@@ -1,12 +1,12 @@
-defmodule Jamixir.Test.FuzzerClient do
+defmodule Jamixir.Fuzzer.Client do
   @moduledoc """
   This is the fuzzing side
   in reality this is not our responsibility
   but it aids in testing the fuzzer service
   """
-alias Codec.State.Trie
-
+  alias Codec.State.Trie
   import Jamixir.Fuzzer.Util
+  import Codec.Encoder, only: [e: 1]
 
   defstruct [:socket, :socket_path]
 
@@ -50,6 +50,10 @@ alias Codec.State.Trie
     serialized_state = Trie.to_binary(state)
     message = <<header_hash::binary-size(32), serialized_state::binary>>
     send_message(client, :set_state, message)
+  end
+
+  def send_import_block(client, block) do
+    send_message(client, :import_block, e(block))
   end
 
   def send_message(client, message_type, message) do

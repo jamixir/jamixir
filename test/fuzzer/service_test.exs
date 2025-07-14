@@ -1,11 +1,13 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
   alias Util.Hash
-  alias Jamixir.Test.FuzzerClient
+  alias Jamixir.Fuzzer.{Client, Service}
   alias Jamixir.Meta
   alias Codec.State.Trie
   alias Storage
   import Jamixir.Factory
+  import Codec.Encoder, only: [e: 1]
+  import TestHelper
   alias Util.Hash
 
   @socket_path "/tmp/jamixir_fuzzer_test.sock"
@@ -13,15 +15,15 @@ defmodule Jamixir.FuzzerTest do
   setup do
     if File.exists?(@socket_path), do: File.rm!(@socket_path)
 
-    fuzzer_pid = Task.start_link(fn -> Jamixir.Fuzzer.accept(@socket_path) end)
+    fuzzer_pid = Task.start_link(fn -> Service.accept(@socket_path) end)
 
     # Give it a moment to start
     Process.sleep(100)
 
-    {:ok, client} = FuzzerClient.connect(@socket_path)
+    {:ok, client} = Client.connect(@socket_path)
 
     on_exit(fn ->
-      FuzzerClient.disconnect(client)
+      Client.disconnect(client)
       if File.exists?(@socket_path), do: File.rm!(@socket_path)
     end)
 
@@ -39,7 +41,7 @@ defmodule Jamixir.FuzzerTest do
   describe "peer_info handler" do
     test "handles basic peer info exchange", %{client: client} do
       msg = build_peer_info_message(Meta.name(), {0, 1, 0}, {1, 0, 0})
-      assert {:ok, :peer_info, data} = FuzzerClient.send_and_receive(client, :peer_info, msg)
+      assert {:ok, :peer_info, data} = Client.send_and_receive(client, :peer_info, msg)
 
       assert %{name: name, version: version, protocol: protocol} = data
       assert name == Meta.name()
@@ -52,15 +54,13 @@ defmodule Jamixir.FuzzerTest do
     test "handles get_state request", %{client: client} do
       state = build(:genesis_state_with_safrole).state
 
-      serialized_state = Trie.serialize(state)
-
       header_hash = Hash.one()
-      Storage.put(header_hash, serialized_state)
+      Storage.put(header_hash, state)
 
       assert {:ok, :state, incoming_state} =
-               FuzzerClient.send_and_receive(client, :get_state, header_hash)
+               Client.send_and_receive(client, :get_state, header_hash)
 
-      assert Trie.serialize(incoming_state) == serialized_state
+      assert Trie.serialize(incoming_state) == Trie.serialize(state)
     end
 
     test "handles get_state request for non-existent state", %{client: client} do
@@ -71,7 +71,7 @@ defmodule Jamixir.FuzzerTest do
       # note, this is a guess, the protocol doesn't mention what to do in this case
       # and since the fuzzer is an intrenal test tool, this should not happen and should not really be a concern
       # We expect a timeout or error
-      result = FuzzerClient.send_and_receive(client, :get_state, non_existent_hash, 1000)
+      result = Client.send_and_receive(client, :get_state, non_existent_hash, 1000)
 
       # The service logs an error but doesn't send a response for non-existent states
       # So we expect a timeout or error
@@ -84,16 +84,29 @@ defmodule Jamixir.FuzzerTest do
       state = build(:genesis_state_with_safrole).state
       serialized_state = Trie.serialize(state)
       expected_state_root = Trie.state_root(serialized_state)
-      header_hash = Hash.random()
+      header_hash = Hash.two()
 
       set_state_message = header_hash <> Trie.to_binary(serialized_state)
 
       assert {:ok, :state_root, incoming_state_root} =
-               FuzzerClient.send_and_receive(client, :set_state, set_state_message)
+               Client.send_and_receive(client, :set_state, set_state_message)
 
-      assert Storage.get(header_hash) == serialized_state
+      assert Storage.get_state(header_hash) |> Trie.serialize() == serialized_state
       assert incoming_state_root == expected_state_root
-      assert Storage.get_state_root(header_hash) == expected_state_root
+      assert Storage.get_state_root(header_hash) == incoming_state_root
+    end
+  end
+
+  describe "import_block handler" do
+    setup_validators(1)
+
+    test "handles import_block request", %{client: client} do
+      block = build(:decodable_block)
+
+      assert {:ok, :import_block, incoming_block} =
+               Client.send_and_receive(client, :import_block, e(block))
+
+      assert incoming_block == block
     end
   end
 end

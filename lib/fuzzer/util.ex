@@ -109,7 +109,8 @@ defmodule Jamixir.Fuzzer.Util do
 
       case Trie.from_binary(state_bin) do
         {:ok, serialized_state} ->
-          {:ok, :set_state, %{header_hash: header_hash, state: serialized_state}}
+          state = Trie.trie_to_state(serialized_state)
+          {:ok, :set_state, %{header_hash: header_hash, state: state}}
 
         {:error, reason} ->
           {:error, reason}
@@ -132,6 +133,15 @@ defmodule Jamixir.Fuzzer.Util do
 
   defp parse(:state_root, bin) do
     {:ok, :state_root, bin}
+  end
+
+  defp parse(:import_block, bin) do
+    try do
+      {block, _rest} = Block.decode(bin)
+      {:ok, :import_block, block}
+    rescue
+      MatchError -> {:error, :invalid_import_block_format}
+    end
   end
 
   defp parse(message_type, bin) do

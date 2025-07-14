@@ -7,6 +7,8 @@ defmodule StoragePrefix do
       @p_wp "w"
       @p_guarantee "g"
       @p_segments_root "r"
+      @p_state "s"
+      @p_state_root "sr"
     end
   end
 end

@@ -3,17 +3,12 @@ defmodule Storage do
   alias Block.Header
   alias System.State
   alias Util.Hash
-  alias Codec.State.Trie.SerializedState
   alias Codec.State.Trie
   import Codec.Encoder
   use StoragePrefix
 
-  @state_key "state"
-  @state_root_key "state_root"
   @latest_timeslot "latest_timeslot"
 
-  def state_key, do: @state_key
-  def state_root_key, do: @state_root_key
   def latest_timeslot, do: @latest_timeslot
 
   def child_spec(opts) do
@@ -63,25 +58,29 @@ defmodule Storage do
 
   def put(headers) when is_list(headers), do: put_headers(headers)
 
-  def put(%State{} = state) do
-    state_root = Codec.State.Trie.state_root(state)
+  def put(%Block{} = b, %State{} = s) do
+    put(h(e(b.header)), s)
+  end
+
+  def put(header_hash, %State{} = posterior_state) do
+    state_root = Trie.state_root(posterior_state)
 
     state_fields =
-      Map.from_struct(state)
-      |> Enum.map(fn {key, value} -> {"#{@state_key}:#{key}", value} end)
+      Map.from_struct(posterior_state)
+      |> Enum.map(fn {key, value} -> {"#{@p_state}#{header_hash}:#{key}", value} end)
       |> Map.new()
 
     KVStorage.put(
       Map.merge(
         state_fields,
         %{
-          @state_key => state,
-          @state_root_key => state_root
+          "#{@p_state}#{header_hash}" => posterior_state,
+          "#{@p_state_root}#{header_hash}" => state_root
         }
       )
     )
 
-    :ok
+    state_root
   end
 
   def put(object) when is_struct(object) do
@@ -112,17 +111,6 @@ defmodule Storage do
   def put(%WorkPackage{} = work_package, core) do
     key = <<@p_wp, core::m(core_index)>>
     KVStorage.put(%{key => e(work_package)})
-  end
-
-  def put(header_hash, %SerializedState{} = serialized_state) do
-    state_root = Trie.state_root(serialized_state)
-
-    KVStorage.put(%{
-      header_hash => serialized_state,
-      "#{@state_root_key}#{header_hash}" => state_root
-    })
-
-    state_root
   end
 
   def put(key, value), do: KVStorage.put(key, value)
@@ -181,11 +169,15 @@ defmodule Storage do
     end
   end
 
-  def get_state, do: KVStorage.get(@state_key)
-  def get_state(key) when is_atom(key), do: KVStorage.get("#{@state_key}:#{key}")
-  def get_state_root, do: KVStorage.get(@state_root_key)
+  def get_state(header_hash) do
+    KVStorage.get("#{@p_state}#{header_hash}")
+  end
 
-  def get_state_root(header_hash), do: KVStorage.get("#{@state_root_key}#{header_hash}")
+  def get_state(header_hash, key) do
+    KVStorage.get("#{@p_state}#{header_hash}:#{key}")
+  end
+
+  def get_state_root(header_hash), do: KVStorage.get("#{@p_state_root}#{header_hash}")
 
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)

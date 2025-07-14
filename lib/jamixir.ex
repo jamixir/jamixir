@@ -32,7 +32,7 @@ defmodule Jamixir do
     [
       {Storage, [persist: persist_storage?]},
       {Task.Supervisor, name: Fuzzer.TaskSupervisor},
-      Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.accept(socket_path) end},
+      Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.Service.accept(socket_path) end},
         restart: :permanent
       )
     ]

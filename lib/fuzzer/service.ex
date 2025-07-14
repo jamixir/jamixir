@@ -1,4 +1,4 @@
-defmodule Jamixir.Fuzzer do
+defmodule Jamixir.Fuzzer.Service do
   require Logger
   alias Codec.State.Trie
   alias Util.Logger, as: Log
@@ -58,11 +58,6 @@ defmodule Jamixir.Fuzzer do
     send_peer_info(sock)
   end
 
-  defp handle_message(:import_block, _parsed_data, _sock) do
-    # TODO: Implement
-    Log.debug("Import block message received (not implemented)")
-  end
-
   defp handle_message(:set_state, %{header_hash: header_hash, state: state}, sock) do
     state_root = Storage.put(header_hash, state)
 
@@ -71,15 +66,19 @@ defmodule Jamixir.Fuzzer do
   end
 
   defp handle_message(:get_state, %{header_hash: header_hash}, sock) do
-    case Storage.get(header_hash) do
+    case Storage.get_state(header_hash) do
       nil ->
-        Log.error("Serialized state not found for header hash: #{b16(header_hash)}")
+        Log.error("State not found for header hash: #{b16(header_hash)}")
         :socket.close(sock)
 
-      serialized_state ->
-        serialized_data = Trie.to_binary(serialized_state)
-        :socket.send(sock, encode_message(:state, serialized_data))
+      state ->
+        :socket.send(sock, encode_message(:state, Trie.to_binary(state)))
     end
+  end
+
+  defp handle_message(:import_block, block, sock) do
+    Jamixir.Node.import_block(block)
+    :socket.send(sock, encode_message(:import_block, Codec.Encoder.e(block)))
   end
 
   defp handle_message(message_type, parsed_data, _sock) do

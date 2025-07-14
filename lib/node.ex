@@ -16,7 +16,7 @@ defmodule Jamixir.Node do
   end
 
   def add_block(%Block{} = block) do
-    with app_state <- Storage.get_state() do
+    with app_state <- Storage.get_state(block.header.parent_hash) do
       case State.add_block(app_state, block) do
         {:ok, new_app_state} ->
           Storage.put(new_app_state)
