@@ -40,7 +40,7 @@ defmodule Jamixir.NodeCLIServer do
   @impl true
   def handle_call({:add_block, block_binary}, _from, state) do
     case Jamixir.Node.add_block(block_binary) do
-      {:ok, _} -> {:reply, :ok, state}
+      {:ok, new_app_state, state_root} -> {:reply, {:ok, new_app_state, state_root}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
@@ -81,7 +81,7 @@ defmodule Jamixir.NodeCLIServer do
           Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
 
           case Jamixir.Node.add_block(block) do
-            {:ok, new_jam_state} ->
+            {:ok, new_jam_state, _state_root} ->
               announce_block_to_peers(client_pids, block)
               new_jam_state
 

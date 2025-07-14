@@ -1,11 +1,13 @@
 defmodule Jamixir.NodeAPI do
+  alias Codec.State
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
   alias Block.Extrinsic.Guarantee
   alias System.Audit.AuditAnnouncement
-  @callback add_block(binary) :: :ok | {:error, any}
+  @callback add_block(binary) :: {:ok, State.t(), binary()} | {:error, any}
   @callback inspect_state(Types.hash()) :: {:ok, any} | {:error, any}
-  @callback inspect_state(Types.hash(), any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
+  @callback inspect_state(Types.hash(), any()) ::
+              {:error, :key_not_found | :no_state} | {:ok, any()}
   @callback get_blocks(Types.hash(), :asc | :desc, integer()) ::
               {:ok, list(Block.t())} | {:error, any}
   # CE 131/132 Safrole ticket distribution (epoch index, attempt, proof)

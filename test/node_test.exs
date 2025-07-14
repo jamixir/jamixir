@@ -40,7 +40,7 @@ defmodule Jamixir.NodeTest do
   describe "add_block" do
     test "add_block with valid block bin" do
       block = build(:block, header: build(:header, parent_hash: @genesis_hash))
-      assert {:ok, _} = add_block(e(block))
+      assert {:ok, _new_app_state, _state_root} = add_block(e(block))
     end
   end
 
@@ -64,8 +64,8 @@ defmodule Jamixir.NodeTest do
         | extrinsic: %Extrinsic{}
       }
 
-      {:ok, _} = add_block(block1)
-      {:ok, _} = add_block(block2)
+      {:ok, _, _} = add_block(block1)
+      {:ok, _, _} = add_block(block2)
 
       # one block fetch
       {:ok, [b]} = get_blocks(h(e(block2.header)), :descending, 1)
@@ -94,9 +94,9 @@ defmodule Jamixir.NodeTest do
         | extrinsic: %Extrinsic{}
       }
 
-      {:ok, _} = add_block(block1)
-      {:ok, _} = add_block(block2)
-      {:ok, _} = add_block(block3)
+      {:ok, _, _} = add_block(block1)
+      {:ok, _, _} = add_block(block2)
+      {:ok, _, _} = add_block(block3)
 
       # one block fetch
       {:ok, [b2]} = get_blocks(h(e(block1.header)), :ascending, 1)

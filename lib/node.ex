@@ -20,11 +20,11 @@ defmodule Jamixir.Node do
     with app_state <- Storage.get_state(block.header.parent_hash) do
       case State.add_block(app_state, block) do
         {:ok, new_app_state} ->
-          Storage.put(block, new_app_state)
+          state_root = Storage.put(block, new_app_state)
           Storage.put(block)
           Logger.info("🔄 State Updated successfully")
           Logger.debug("🔄 New State: #{inspect(new_app_state)}")
-          {:ok, new_app_state}
+          {:ok, new_app_state, state_root}
 
         {:error, _pre_state, reason} ->
           {:error, reason}
