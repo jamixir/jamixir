@@ -5,6 +5,7 @@ defmodule Jamixir.Node do
   alias Util.Hash
   use StoragePrefix
   import Util.Hex, only: [b16: 1]
+  alias Jamixir.Genesis
   require Logger
 
   @behaviour Jamixir.NodeAPI
@@ -19,7 +20,7 @@ defmodule Jamixir.Node do
     with app_state <- Storage.get_state(block.header.parent_hash) do
       case State.add_block(app_state, block) do
         {:ok, new_app_state} ->
-          Storage.put(new_app_state)
+          Storage.put(block, new_app_state)
           Storage.put(block)
           Logger.info("🔄 State Updated successfully")
           Logger.debug("🔄 New State: #{inspect(new_app_state)}")
@@ -27,25 +28,21 @@ defmodule Jamixir.Node do
 
         {:error, _pre_state, reason} ->
           {:error, reason}
-
-        {:error, reason} ->
-          {:error, reason}
       end
     end
   end
 
   @impl true
-  def inspect_state do
-    case Storage.get_state() do
+  def inspect_state(header_hash) do
+    case Storage.get_state(header_hash) do
       nil -> {:ok, :no_state}
       state -> {:ok, Map.keys(state)}
     end
   end
 
   @impl true
-  @spec inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
-  def inspect_state(key) do
-    case Storage.get_state(key) do
+  def inspect_state(header_hash, key) do
+    case Storage.get_state(header_hash, key) do
       nil ->
         {:error, :no_state}
 
@@ -60,7 +57,7 @@ defmodule Jamixir.Node do
         case Jason.decode(contents) do
           {:ok, json_data} ->
             state = Codec.State.Json.decode(json_data |> Utils.atomize_keys())
-            Storage.put(state)
+            Storage.put(Genesis.genesis_block_parent(), state)
             :ok
 
           error ->
@@ -84,7 +81,7 @@ defmodule Jamixir.Node do
   def get_blocks(header_hash, :descending, count) do
     {blocks, _} =
       Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
-        case Storage.get_block(next_hash) do
+        case  Storage.get_block(next_hash) do
           nil ->
             {:halt, {blocks, nil}}
 

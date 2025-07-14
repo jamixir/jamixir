@@ -56,9 +56,9 @@ defmodule Jamixir.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors"]
-  defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors", "genesis"]
+  defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors", "genesis"]
+  defp elixirc_paths(_), do: ["lib", "genesis"]
 
   def aliases do
     [

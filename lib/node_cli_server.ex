@@ -9,8 +9,8 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   def add_block(block_binary), do: GenServer.call(__MODULE__, {:add_block, block_binary})
-  def inspect_state, do: GenServer.call(__MODULE__, :inspect_state)
-  def inspect_state(key), do: GenServer.call(__MODULE__, {:inspect_state, key})
+  def inspect_state(header_hash), do: GenServer.call(__MODULE__, {:inspect_state, header_hash})
+  def inspect_state(header_hash, key), do: GenServer.call(__MODULE__, {:inspect_state, header_hash, key})
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
 
   @impl true
@@ -46,16 +46,16 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_call(:inspect_state, _from, state) do
-    case Jamixir.Node.inspect_state() do
+  def handle_call({:inspect_state, header_hash}, _from, state) do
+    case Jamixir.Node.inspect_state(header_hash) do
       {:ok, :no_state} -> {:reply, {:ok, :no_state}, state}
       {:ok, keys} -> {:reply, {:ok, keys}, state}
     end
   end
 
   @impl true
-  def handle_call({:inspect_state, key}, _from, state) do
-    case Jamixir.Node.inspect_state(key) do
+  def handle_call({:inspect_state, header_hash, key}, _from, state) do
+    case Jamixir.Node.inspect_state(header_hash, key) do
       {:ok, value} -> {:reply, {:ok, value}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end

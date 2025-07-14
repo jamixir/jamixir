@@ -58,31 +58,6 @@ defmodule Storage do
 
   def put(headers) when is_list(headers), do: put_headers(headers)
 
-  def put(%Block{} = b, %State{} = s) do
-    put(h(e(b.header)), s)
-  end
-
-  def put(header_hash, %State{} = posterior_state) do
-    state_root = Trie.state_root(posterior_state)
-
-    state_fields =
-      Map.from_struct(posterior_state)
-      |> Enum.map(fn {key, value} -> {"#{@p_state}#{header_hash}:#{key}", value} end)
-      |> Map.new()
-
-    KVStorage.put(
-      Map.merge(
-        state_fields,
-        %{
-          "#{@p_state}#{header_hash}" => posterior_state,
-          "#{@p_state_root}#{header_hash}" => state_root
-        }
-      )
-    )
-
-    state_root
-  end
-
   def put(object) when is_struct(object) do
     case encodable?(object) do
       true -> KVStorage.put(h(e(object)), object)
@@ -106,6 +81,31 @@ defmodule Storage do
       entries ->
         KVStorage.put(entries)
     end
+  end
+
+  def put(%Block{} = b, %State{} = s) do
+    put(h(e(b.header)), s)
+  end
+
+  def put(header_hash, %State{} = posterior_state) do
+    state_root = Trie.state_root(posterior_state)
+
+    state_fields =
+      Map.from_struct(posterior_state)
+      |> Enum.map(fn {key, value} -> {"#{@p_state}#{header_hash}:#{key}", value} end)
+      |> Map.new()
+
+    KVStorage.put(
+      Map.merge(
+        state_fields,
+        %{
+          "#{@p_state}#{header_hash}" => posterior_state,
+          "#{@p_state_root}#{header_hash}" => state_root
+        }
+      )
+    )
+
+    state_root
   end
 
   def put(%WorkPackage{} = work_package, core) do

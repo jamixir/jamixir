@@ -1,11 +1,13 @@
 defmodule StorageTest do
   use ExUnit.Case, async: false
+  alias Codec.State.Trie
   alias System.State
   alias Util.Hash
   use StoragePrefix
   import Jamixir.Factory
   import Codec.Encoder
   import TestHelper
+  use StoragePrefix
 
   setup_all do
     Storage.remove_all()
@@ -63,7 +65,6 @@ defmodule StorageTest do
   end
 
   describe "Storage" do
-
     test "store and retrieve single header" do
       header = build(:decodable_header)
       assert {:ok, hash} = Storage.put(header)
@@ -94,18 +95,22 @@ defmodule StorageTest do
 
     test "store and retrieve state" do
       state = %State{}
-      assert :ok = Storage.put(state)
-      assert Storage.get_state() == state
-      assert is_binary(Storage.get_state_root())
-      Storage.remove(Storage.state_key())
-      Storage.remove(Storage.state_root_key())
+      state_root = Trie.state_root(state)
+      header_hash = Hash.random()
+      assert ^state_root = Storage.put(header_hash, state)
+      assert Storage.get_state(header_hash) == state
+      assert Storage.get_state_root(header_hash) == state_root
+      Storage.remove("#{@p_state}#{header_hash}")
+      Storage.remove("#{@p_state_root}#{header_hash}")
     end
 
     test "store and retrieve state fields" do
       state = %State{}
-      assert :ok = Storage.put(state)
+      header_hash = Hash.random()
+      Storage.put(header_hash, state)
+
       for key <- Map.keys(Map.from_struct(state)) do
-        assert Storage.get_state(key) == Map.get(state, key)
+        assert Storage.get_state(header_hash, key) == Map.get(state, key)
       end
     end
 

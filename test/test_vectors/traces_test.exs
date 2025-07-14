@@ -51,7 +51,7 @@ defmodule TracesTest do
         @tag mode: mode
         @tag timeout: :infinity
         @tag config: config
-        # @tag :slow
+        @tag :slow
         test "#{mode} mode block import", %{mode: mode, config: config} do
           {failed_blocks, _} =
             for block_number <- config[:block_range], reduce: {[], nil} do

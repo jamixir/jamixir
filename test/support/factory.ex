@@ -430,7 +430,7 @@ defmodule Jamixir.Factory do
   end
 
   def decodable_block_factory(attrs) do
-    extrinsic = build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
+    extrinsic = Map.get(attrs, :extrinsic, build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes)))
     parent_hash = Map.get(attrs, :parent_hash, Hash.random())
 
     header =
