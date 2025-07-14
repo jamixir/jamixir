@@ -1,7 +1,6 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
   alias Codec.State.Trie.SerializedState
-  alias Block.Extrinsic
   alias Util.Hash
   alias Jamixir.Fuzzer.{Client, Service}
   alias Jamixir.Meta
