@@ -1,12 +1,13 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias Block.Extrinsic
   alias Util.Hash
   alias Jamixir.Fuzzer.{Client, Service}
   alias Jamixir.Meta
   alias Codec.State.Trie
   alias Storage
   import Jamixir.Factory
-  import Codec.Encoder, only: [e: 1]
+  import Codec.Encoder
   import TestHelper
   alias Util.Hash
 
@@ -101,12 +102,23 @@ defmodule Jamixir.FuzzerTest do
     setup_validators(1)
 
     test "handles import_block request", %{client: client} do
-      block = build(:decodable_block)
+      # the state this block will build on top of
+      prior_state = build(:genesis_state_with_safrole).state
+      prior_state_root = Trie.state_root(prior_state)
+      # pass prior state root validation
+      block = build(:decodable_block, prior_state_root: prior_state_root, extrinsic: %Extrinsic{})
 
-      assert {:ok, :import_block, incoming_block} =
+      # put the prior state in storage - fuzzer uses Node.add_block which will read the prior state from storage
+      # and pass it to State.add_block
+      Storage.put(block.header.parent_hash, prior_state)
+
+      # put a parent header in storage => pass parent validation
+      Storage.put(block.header.parent_hash, build(:decodable_header, timeslot: 1))
+
+      assert {:ok, :state_root, incoming_state_root} =
                Client.send_and_receive(client, :import_block, e(block))
 
-      assert incoming_block == block
+      assert Storage.get_state_root(h(e(block.header))) == incoming_state_root == prior_state_root
     end
   end
 end

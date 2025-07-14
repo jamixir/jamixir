@@ -77,8 +77,14 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp handle_message(:import_block, block, sock) do
-    Jamixir.Node.import_block(block)
-    :socket.send(sock, encode_message(:import_block, Codec.Encoder.e(block)))
+    case Jamixir.Node.add_block(block) do
+      {:ok, _new_app_state, state_root} ->
+        :socket.send(sock, encode_message(:state_root, state_root))
+
+      {:error, reason} ->
+        Log.error("Failed to import block: #{reason}")
+        :socket.close(sock)
+    end
   end
 
   defp handle_message(message_type, parsed_data, _sock) do

@@ -432,16 +432,18 @@ defmodule Jamixir.Factory do
   def decodable_block_factory(attrs) do
     extrinsic = Map.get(attrs, :extrinsic, build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes)))
     parent_hash = Map.get(attrs, :parent_hash, Hash.random())
+    prior_state_root = Map.get(attrs, :prior_state_root, Hash.random())
 
     header =
       build(:decodable_header,
         extrinsic_hash: Hash.default(Encodable.encode(extrinsic)),
-        parent_hash: parent_hash
+        parent_hash: parent_hash,
+        prior_state_root: prior_state_root
       )
 
     build(
       :block,
-      merge_attributes(Map.delete(attrs, :parent_hash), %{header: header, extrinsic: extrinsic})
+      merge_attributes(Map.drop(attrs, [:parent_hash, :prior_state_root]), %{header: header, extrinsic: extrinsic})
     )
   end
 
@@ -503,14 +505,14 @@ defmodule Jamixir.Factory do
   def decodable_header_factory(attrs) do
     build(
       :header,
-      Map.merge(attrs, %{
+      Map.merge(%{
         prior_state_root: Hash.random(),
         epoch_mark:
           {Hash.random(), Hash.random(),
            for(_ <- 1..Constants.validator_count(), do: {Hash.random(), Hash.random()})},
         vrf_signature: Hash.random(96),
         block_seal: Hash.random(96)
-      })
+      }, attrs)
     )
   end
 
