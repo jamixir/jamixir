@@ -2,6 +2,7 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
+  alias Util.MerkleTree
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.WorkPackage
@@ -448,22 +449,21 @@ defmodule WorkReportTest do
     # case r binary too small
     test "oversize", %{wp: wp, state: state} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<>>, [<<1>>], 555} end)
+      o = String.duplicate(<<1>>, Constants.max_work_report_size() + 1)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
       assert r == :oversize
       assert length(e) == 1
     end
 
     # case r binary and o(auhtorizer output) is correct size
     test "all good", %{wp: wp, state: state} do
-      w_r = Constants.max_work_report_size()
-      o = String.duplicate(<<1>>, w_r + 1)
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
 
-      {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, <<1>>, [], state.services, %{})
       assert r == <<2>>
       assert length(e) == 1
     end
@@ -480,8 +480,7 @@ defmodule WorkReportTest do
       stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
         w = Enum.at(p.work_items, j)
 
-        {String.duplicate(<<1>>, Constants.max_work_report_size()),
-         List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
+        {<<1, 2, 3>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
       on_exit(fn ->
@@ -507,12 +506,14 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      wr = WorkReport.execute_work_package(wp, 0, services)
+      task = WorkReport.execute_work_package(wp, 0, services)
+      {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
       assert wr.core_index == 0
       assert wr.output == <<1>>
       assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
+      assert wr.specification.exports_root == MerkleTree.merkle_root(e)
 
       expected_work_digest = %WorkDigest{
         service: 1,
@@ -524,7 +525,7 @@ defmodule WorkReportTest do
         extrinsic_size: 7,
         gas_used: 555,
         imports: 1,
-        result: String.duplicate(<<1>>, Constants.max_work_report_size())
+        result: <<1, 2, 3>>
       }
 
       assert wr.digests == [expected_work_digest]
@@ -533,13 +534,14 @@ defmodule WorkReportTest do
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
       stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
-      wr = WorkReport.execute_work_package(wp, 0, services)
-      assert wr == :error
+      task = WorkReport.execute_work_package(wp, 0, services)
+      assert task == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      wr = WorkReport.execute_work_package(wp, 0, services)
+      task = WorkReport.execute_work_package(wp, 0, services)
+      {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
       assert work_digest.result == :bad
     end
@@ -564,6 +566,77 @@ defmodule WorkReportTest do
                ],
                digests: for(r <- wr.digests, do: JsonEncoder.encode(r)),
                auth_gas_used: 0
+             }
+    end
+  end
+
+  describe "get_segment_lookup_dict/1" do
+    test "return correct lookup dictionary" do
+      Storage.put_segments_root(Hash.one(), Hash.two())
+
+      wp =
+        build(:work_package,
+          work_items: [
+            # correct item
+            build(:work_item, import_segments: [{{:tagged_hash, Hash.one()}, 7}]),
+            # original segment, ignore
+            build(:work_item, import_segments: [{Hash.three(), 9}]),
+            # not stored segment, ignore
+            build(:work_item, import_segments: [{{:tagged_hash, Hash.random()}, 7}])
+          ]
+        )
+
+      assert WorkReport.get_segment_lookup_dict(wp) == %{Hash.one() => Hash.two()}
+    end
+
+    test "return empty lookup dictionary when no segments" do
+      wp = build(:work_package, work_items: [])
+      assert WorkReport.get_segment_lookup_dict(wp) == %{}
+    end
+
+    test "maximum 8 items in segment lookup" do
+      wp_hashes = for i <- 1..10, do: <<i::hash()>>
+      segments = for h <- wp_hashes, do: {{:tagged_hash, h}, 7}
+      for w <- wp_hashes, do: Storage.put_segments_root(w, Hash.random())
+
+      wp = build(:work_package, work_items: [build(:work_item, import_segments: segments)])
+
+      assert Map.keys(WorkReport.get_segment_lookup_dict(wp)) == Enum.take(wp_hashes, 8)
+    end
+
+    test "duplicate package returns only one dict key/value" do
+      wp_hash = Hash.random()
+      Storage.put_segments_root(wp_hash, Hash.two())
+
+      segments = [
+        {{:tagged_hash, wp_hash}, 7},
+        # two segmentes same package
+        {{:tagged_hash, wp_hash}, 9}
+      ]
+
+      wp = build(:work_package, work_items: [build(:work_item, import_segments: segments)])
+
+      assert WorkReport.get_segment_lookup_dict(wp) == %{wp_hash => Hash.two()}
+    end
+
+    test "duplicate package count > 8 with other packages" do
+      wp_hashes = for i <- 1..3, do: <<i::hash()>>
+      segments_different_wp = for h <- wp_hashes, do: {{:tagged_hash, h}, 7}
+      for w <- wp_hashes, do: Storage.put_segments_root(w, Hash.random())
+      segments_same_wp = for _ <- 1..10, do: Enum.at(segments_different_wp, 0)
+
+      wp =
+        build(:work_package,
+          work_items: [
+            build(:work_item, import_segments: segments_same_wp),
+            build(:work_item, import_segments: segments_different_wp)
+          ]
+        )
+
+      assert WorkReport.get_segment_lookup_dict(wp) == %{
+               <<1::hash()>> => Storage.get_segments_root(<<1::hash()>>),
+               <<2::hash()>> => Storage.get_segments_root(<<2::hash()>>),
+               <<3::hash()>> => Storage.get_segments_root(<<3::hash()>>)
              }
     end
   end

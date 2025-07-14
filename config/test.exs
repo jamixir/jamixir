@@ -21,7 +21,8 @@ config :jamixir, Jamixir,
   ticket_submission_end: 10,
   # GA
   gas_accumulation: 10_000_000,
-  storage_persist: false
+  storage_persist: false,
+  erasure_code_recovery_threshold: 2
 
 config :logger, level: :none
 

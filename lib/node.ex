@@ -1,6 +1,6 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
-  alias Util.Hash
   alias System.State
   alias Util.Hash
   use StoragePrefix
@@ -8,6 +8,7 @@ defmodule Jamixir.Node do
   require Logger
 
   @behaviour Jamixir.NodeAPI
+
   @impl true
   def add_block(block_binary) when is_binary(block_binary) do
     {block, _} = Block.decode(block_binary)
@@ -76,6 +77,7 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
+  # CE 128 - Block Request
   @impl true
   def get_blocks(_, _, 0), do: {:ok, []}
 
@@ -116,6 +118,7 @@ defmodule Jamixir.Node do
     {:ok, Enum.reverse(blocks)}
   end
 
+  # CE 142 - Preimage Announcement
   @impl true
   def receive_preimage(_service_id, hash, _length) do
     server_pid = self()
@@ -131,6 +134,7 @@ defmodule Jamixir.Node do
     :ok
   end
 
+  # CE 143 - Preimage Request
   @impl true
   def get_preimage(hash) do
     case Storage.get("#{@p_preimage}#{hash}") do
@@ -172,6 +176,26 @@ defmodule Jamixir.Node do
     spec = guarantee.work_report.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
+
+    server_pid = self()
+
+    case Storage.get_state() do
+      nil ->
+        Logger.error("No state found to request erasure code for work report")
+        {:error, :no_state}
+
+      state ->
+        Task.start(fn ->
+          Logger.info("Request EC  for work report: #{b16(spec.work_package_hash)}")
+
+          Network.Connection.request_audit_shard(
+            server_pid,
+            spec.erasure_root,
+            my_assigned_shard_index(state, guarantee.work_report.core_index)
+          )
+        end)
+    end
+
     :ok
   end
 
@@ -184,6 +208,8 @@ defmodule Jamixir.Node do
   end
 
   @impl true
+  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary())) ::
+          :ok | {:error, :invalid_extrinsics}
   def save_work_package(wp, core, extrinsics) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
       Storage.put(wp, core)
@@ -192,10 +218,44 @@ defmodule Jamixir.Node do
         Storage.put(e)
       end
 
+      process_work_package(wp, core, extrinsics)
+
       :ok
     else
       Logger.error("Invalid extrinsics for work package service #{wp.service} core #{core}")
       {:error, :invalid_extrinsics}
+    end
+  end
+
+  def process_work_package(wp, core, extrinsics) do
+    Logger.info("Processing work package for service #{wp.service} core #{core}")
+
+    state = Storage.get_state()
+
+    # A work-package received via CE 133 should be shared with the other guarantors
+    # assigned to the core using this protocol, but only after:
+
+    # It has been determined that it is possible to generate a work-report that could be included
+    # on chain. This will involve, for example, verifying the WP's authorization.
+    # All import segments have been retrieved. Note that this will involve mapping any WP
+    # hashes in the import list to segments-roots.
+
+    # TODO verify imports before executing the work package.
+    # The refine logic need not be executed before sharing a work-package;
+    # ideally, refinement should be done while waiting for the other guarantors to respond.
+    case WorkReport.execute_work_package(wp, core, state.services) do
+      :error ->
+        Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
+        {:error, :execution_failed}
+
+      task ->
+        {_work_report, _exports} = Task.await(task)
+        Logger.info("Work package executed successfully, saving work report")
+
+        # TODO
+        # 1 - erasure code exports and save for upcoming calls
+        # 2 - distribute Guarantee to other validators
+        :ok
     end
   end
 
@@ -210,7 +270,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def get_segment(_erasure_root, _segment_index) do
+  def get_work_report_shard(_erasure_root, _segment_index) do
     {:error, :not_implemented}
   end
 
@@ -227,5 +287,23 @@ defmodule Jamixir.Node do
   @impl true
   def get_justification(_erasure_root, _segment_index, _shard_index) do
     {:error, :not_implemented}
+  end
+
+  def my_validator_index(nil), do: nil
+
+  def my_validator_index(state) do
+    state.curr_validators
+    |> Enum.find_index(fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end)
+  end
+
+  # i = (cR + v) mod V
+  def my_assigned_shard_index(state, core) do
+    case my_validator_index(state) do
+      nil ->
+        nil
+
+      v ->
+        rem(core * Constants.erasure_code_recovery_threshold() + v, Constants.validator_count())
+    end
   end
 end

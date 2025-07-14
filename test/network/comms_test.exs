@@ -275,7 +275,7 @@ defmodule CommsTest do
   end
 
   # CE 137
-  describe "request_segment/3" do
+  describe "request_work_report_shard/3" do
     test "request segment based on erasure_root and index", %{client: client} do
       erasure_root = <<1::hash()>>
       index = 8
@@ -284,11 +284,11 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, segments, justification}}
       end)
 
-      {:ok, {b, s, j}} = Connection.request_segment(client, erasure_root, index)
+      {:ok, {b, s, j}} = Connection.request_work_report_shard(client, erasure_root, index)
       verify!()
 
       assert b == bundle_shard
@@ -306,7 +306,7 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_segment, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, [], justification}}
       end)
 
@@ -660,20 +660,24 @@ defmodule CommsTest do
   describe "multi outbound connections" do
     test "handles multiple outbound connections", %{client: client, server: server} do
       # Create additional clients
-      additional_clients = for _ <- 1..2 do
-        {:ok, pid} = Network.ConnectionManager.start_outbound_connection(
-          Util.Hash.random(),
-          {127, 0, 0, 1},
-          @port
-        )
-        wait(fn -> Process.alive?(pid) end)
-        pid
-      end
+      additional_clients =
+        for _ <- 1..2 do
+          {:ok, pid} =
+            Network.ConnectionManager.start_outbound_connection(
+              Util.Hash.random(),
+              {127, 0, 0, 1},
+              @port
+            )
+
+          wait(fn -> Process.alive?(pid) end)
+          pid
+        end
 
       all_clients = [client | additional_clients]
 
       # Verify all clients are tracked by ConnectionManager
       all_connections = Network.ConnectionManager.get_connections() |> Map.values()
+
       Enum.each(all_clients, fn client_pid ->
         assert client_pid in all_connections, "Expected client to be in connections"
       end)
@@ -682,16 +686,18 @@ defmodule CommsTest do
       msg_len = byte_size(test_message)
 
       # Send test messages and collect responses
-      responses = Enum.map(all_clients, fn client_pid ->
-        {:ok, resp} = Connection.send(client_pid, @dummy_protocol_id, test_message)
-        resp
-      end)
+      responses =
+        Enum.map(all_clients, fn client_pid ->
+          {:ok, resp} = Connection.send(client_pid, @dummy_protocol_id, test_message)
+          resp
+        end)
 
       # Extract and verify server PIDs from responses
-      server_pids = Enum.map(responses, fn resp ->
-        <<_msg::binary-size(msg_len), pid_bin::binary>> = resp
-        :erlang.binary_to_term(pid_bin)
-      end)
+      server_pids =
+        Enum.map(responses, fn resp ->
+          <<_msg::binary-size(msg_len), pid_bin::binary>> = resp
+          :erlang.binary_to_term(pid_bin)
+        end)
 
       assert length(Enum.uniq(server_pids)) == 3
       assert Enum.member?(server_pids, server)
