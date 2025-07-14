@@ -1,5 +1,6 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias Codec.State.Trie.SerializedState
   alias Block.Extrinsic
   alias Util.Hash
   alias Jamixir.Fuzzer.{Client, Service}
@@ -8,7 +9,7 @@ defmodule Jamixir.FuzzerTest do
   alias Storage
   import Jamixir.Factory
   import Codec.Encoder
-  import TestHelper
+  import TestVectorUtil
   alias Util.Hash
 
   @socket_path "/tmp/jamixir_fuzzer_test.sock"
@@ -26,6 +27,7 @@ defmodule Jamixir.FuzzerTest do
     on_exit(fn ->
       Client.disconnect(client)
       if File.exists?(@socket_path), do: File.rm!(@socket_path)
+      Storage.remove_all()
     end)
 
     {:ok, client: client, fuzzer_pid: fuzzer_pid}
@@ -99,26 +101,41 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "import_block handler" do
-    setup_validators(1)
+    test "handles import_block request with fallback test vector", %{client: client} do
+      # Fetch fallback block 1 from test vectors (mimicking trace tests)
+      {:ok, block_json} =
+        fetch_and_parse_json(
+          "00000001.json",
+          "traces/fallback",
+          "davxy",
+          "jam-test-vectors",
+          "master"
+        )
 
-    test "handles import_block request", %{client: client} do
-      # the state this block will build on top of
-      prior_state = build(:genesis_state_with_safrole).state
-      prior_state_root = Trie.state_root(prior_state)
-      # pass prior state root validation
-      block = build(:decodable_block, prior_state_root: prior_state_root, extrinsic: %Extrinsic{})
+      parent_hash = JsonDecoder.from_json(block_json[:block][:header][:parent])
 
-      # put the prior state in storage - fuzzer uses Node.add_block which will read the prior state from storage
-      # and pass it to State.add_block
-      Storage.put(block.header.parent_hash, prior_state)
+      Storage.put(parent_hash, build(:header, timeslot: 0))
 
-      # put a parent header in storage => pass parent validation
-      Storage.put(block.header.parent_hash, build(:decodable_header, timeslot: 1))
+      # put the pre_state in storage under the parent hash
+      pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
+      pre_state = Trie.trie_to_state(pre_state_trie)
+      Storage.put(parent_hash, pre_state)
 
+      block = Block.from_json(block_json[:block])
+
+      expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
+      expected_state_root = Trie.state_root(%SerializedState{data: expected_trie})
+
+      # Call the fuzzer client to import the block
       assert {:ok, :state_root, incoming_state_root} =
                Client.send_and_receive(client, :import_block, e(block))
 
-      assert Storage.get_state_root(h(e(block.header))) == incoming_state_root == prior_state_root
+      header_hash = h(e(block.header))
+      assert incoming_state_root == expected_state_root
+      assert Storage.get_state_root(header_hash) == expected_state_root
+
+      # Assert that the block header is in storage
+      assert Storage.get_block(header_hash) == block
     end
   end
 end

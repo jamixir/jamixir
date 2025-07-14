@@ -436,7 +436,7 @@ defmodule Jamixir.Factory do
 
     header =
       build(:decodable_header,
-        extrinsic_hash: Hash.default(Encodable.encode(extrinsic)),
+        extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
         parent_hash: parent_hash,
         prior_state_root: prior_state_root
       )
