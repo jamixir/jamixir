@@ -17,18 +17,23 @@ defmodule Jamixir.Node do
   end
 
   def add_block(%Block{} = block) do
-    with app_state <- Storage.get_state(block.header.parent_hash) do
-      case State.add_block(app_state, block) do
-        {:ok, new_app_state} ->
-          state_root = Storage.put(block, new_app_state)
-          Storage.put(block)
-          Logger.info("🔄 State Updated successfully")
-          Logger.debug("🔄 New State: #{inspect(new_app_state)}")
-          {:ok, new_app_state, state_root}
+    case Storage.get_state(block.header.parent_hash) do
+      nil ->
+        Logger.error("Parent state not found for hash: #{b16(block.header.parent_hash)}")
+        {:error, :parent_state_not_found}
 
-        {:error, _pre_state, reason} ->
-          {:error, reason}
-      end
+      app_state ->
+        case State.add_block(app_state, block) do
+          {:ok, new_app_state} ->
+            state_root = Storage.put(block, new_app_state)
+            Storage.put(block)
+            Logger.info("🔄 State Updated successfully")
+            Logger.debug("🔄 New State: #{inspect(new_app_state)}")
+            {:ok, new_app_state, state_root}
+
+          {:error, _pre_state, reason} ->
+            {:error, reason}
+        end
     end
   end
 

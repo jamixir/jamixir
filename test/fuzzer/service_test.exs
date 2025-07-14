@@ -91,8 +91,7 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "import_block handler" do
-    test "handles import_block request with fallback test vector", %{client: client} do
-      # Fetch fallback block 1 from test vectors (mimicking trace tests)
+    setup %{client: client} do
       {:ok, block_json} =
         fetch_and_parse_json(
           "00000001.json",
@@ -103,7 +102,6 @@ defmodule Jamixir.FuzzerTest do
         )
 
       parent_hash = JsonDecoder.from_json(block_json[:block][:header][:parent])
-
       Storage.put(parent_hash, build(:header, timeslot: 0))
 
       # put the pre_state in storage under the parent hash
@@ -111,20 +109,80 @@ defmodule Jamixir.FuzzerTest do
       pre_state = Trie.trie_to_state(pre_state_trie)
       Storage.put(parent_hash, pre_state)
 
-      block = Block.from_json(block_json[:block])
+      {:ok, client: client, parent_hash: parent_hash, pre_state: pre_state}
+    end
 
+    test "handles single import_block request", %{client: client} do
+      {:ok, block_json} =
+        fetch_and_parse_json(
+          "00000001.json",
+          "traces/fallback",
+          "davxy",
+          "jam-test-vectors",
+          "master"
+        )
+
+      block = Block.from_json(block_json[:block])
       expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
       expected_state_root = Trie.state_root(%SerializedState{data: expected_trie})
+      header_hash = h(e(block.header))
 
       assert :ok = Client.send_import_block(client, block)
       assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
 
-      header_hash = h(e(block.header))
       assert incoming_state_root == expected_state_root
       assert Storage.get_state_root(header_hash) == expected_state_root
 
-      # Assert that the block header is in storage
       assert Storage.get_block(header_hash) == block
+    end
+
+    @tag :slow
+    test "handles sequential import of 10 blocks", %{client: client} do
+      block_range = 1..10
+
+      for block_number <- block_range do
+        file = String.pad_leading("#{block_number}", 8, "0")
+
+        {:ok, block_json} =
+          fetch_and_parse_json(
+            "#{file}.json",
+            "traces/fallback",
+            "davxy",
+            "jam-test-vectors",
+            "master"
+          )
+
+        block = Block.from_json(block_json[:block])
+        expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
+        expected_state_root = Trie.state_root(%SerializedState{data: expected_trie})
+        header_hash = h(e(block.header))
+
+        assert :ok = Client.send_import_block(client, block)
+        assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
+
+        assert incoming_state_root == expected_state_root
+        assert Storage.get_block(header_hash) == block
+        assert Storage.get_state_root(header_hash) == expected_state_root
+      end
+
+      {:ok, final_block_json} =
+        fetch_and_parse_json(
+          "00000010.json",
+          "traces/fallback",
+          "davxy",
+          "jam-test-vectors",
+          "master"
+        )
+
+      final_block = Block.from_json(final_block_json[:block])
+      final_header_hash = h(e(final_block.header))
+      expected_final_trie = Trie.from_json(final_block_json[:post_state][:keyvals])
+
+      # retrive final state and comapre to expected post state from trace
+      assert :ok = Client.send_get_state(client, final_header_hash)
+      assert {:ok, :state, retrieved_state} = Client.receive_message(client)
+
+      assert Trie.serialize(retrieved_state).data == expected_final_trie
     end
   end
 end

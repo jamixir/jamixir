@@ -6,7 +6,7 @@ defmodule Jamixir.Fuzzer.Service do
   import Util.Hex, only: [b16: 1]
   import Jamixir.Fuzzer.Util
 
-  def accept(socket_path, timeout \\ 1000) do
+  def accept(socket_path, timeout \\ 7_000) do
     if File.exists?(socket_path), do: File.rm!(socket_path)
 
     {:ok, sock} =
