@@ -21,9 +21,6 @@ defmodule Jamixir.InitializationTask do
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
 
-    :persistent_term.put(:jam_state, jam_state)
-
-
     Task.start(fn ->
       Log.debug("🔗 Connecting to validators...")
       :ok = ConnectionManager.connect_to_validators(jam_state.curr_validators)
@@ -41,5 +38,4 @@ defmodule Jamixir.InitializationTask do
     Storage.put(Genesis.genesis_block_parent(), jam_state)
     jam_state
   end
-
 end

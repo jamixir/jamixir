@@ -225,6 +225,8 @@ defmodule CommsTest do
   # CE 134
   describe "send_work_package_bundle/4" do
     test "sends work package bundle", %{client: client} do
+      stub(DAMock, :do_get_segment, fn _, _ -> nil end)
+
       wp_bundle = WorkPackage.bundle_binary(build(:work_package))
       core = 3
       segment_root_mapping = %{Hash.zero() => Hash.one(), Hash.one() => Hash.two()}

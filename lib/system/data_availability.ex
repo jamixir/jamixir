@@ -1,4 +1,8 @@
 defmodule System.DataAvailability do
+  alias Network.Connection
+  alias Network.Types.SegmentShardsRequest
+  alias Jamixir.NodeCLIServer
+  require Logger
   @callback do_get_segment(binary(), non_neg_integer()) :: binary()
 
   def get_segment(merkle_root, segment_index) do
@@ -7,7 +11,34 @@ defmodule System.DataAvailability do
     module.do_get_segment(merkle_root, segment_index)
   end
 
-  def do_get_segment(_merkle_root, _segment_index) do
-    # TODO: Implement this function
+  def node_server do
+    Application.get_env(:jamixir, :node_cli_server, Jamixir.NodeCLIServer)
+  end
+
+  def do_get_segment(erasure_root, segment_index) do
+    # first try local storage for segment
+    case Storage.get_segment(erasure_root, segment_index) do
+      nil ->
+        core = Storage.get_segment_core(erasure_root)
+
+        for {v, pid} <- node_server().validator_connections() do
+          shard_index = node_server().assigned_shard_index(core, v.ed25519)
+
+          req = %SegmentShardsRequest{
+            erasure_root: erasure_root,
+            segment_index: segment_index,
+            shard_indexes: [shard_index]
+          }
+
+          Connection.request_segment_shards(pid, [req], false)
+
+          Logger.debug(
+            "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519_key}"
+          )
+        end
+
+      segment ->
+        segment
+    end
   end
 end
