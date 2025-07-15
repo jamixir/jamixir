@@ -1,7 +1,5 @@
 defmodule System.DataAvailabilityTest do
-  alias Network.ConnectionManager
-  alias Jamixir.NodeCLIServer
-  alias Network.Connection
+  alias Network.Types.SegmentShardsRequest
   alias Util.Hash
   import Codec.Encoder
   import System.DataAvailability
@@ -15,17 +13,19 @@ defmodule System.DataAvailabilityTest do
     setup do
       Application.delete_env(:jamixir, :data_availability)
       Application.put_env(:jamixir, :node_cli_server, NodeCLIServerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
 
       root = Hash.random()
+      core = 2
 
-      Storage.set_segment_core(root, 1)
+      Storage.set_segment_core(root, core)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :data_availability, DAMock)
         Application.delete_env(:jamixir, :node_cli_server)
       end)
 
-      {:ok, root: root}
+      {:ok, root: root, core: core}
     end
 
     test "returns binary data when found in storage" do
@@ -36,20 +36,37 @@ defmodule System.DataAvailabilityTest do
       assert get_segment(root, 5) == value
     end
 
-    test "request segments from nodes when not found in storage", %{root: root} do
+    test "request segments from nodes when not found in storage", %{root: root, core: core} do
+      segment = <<123_456_789_123_123_123::m(export_segment)>>
       segment_index = 3
+      shards = ErasureCoding.erasure_code(segment)
+      validators = build_list(6, :validator)
+      fake_pid = 99
 
-      # Mock validator connections and shard assignment
-      p = spawn(fn -> :ok end)
-
+      # mock validators
       NodeCLIServerMock
-      |> expect(:validator_connections, fn -> %{} end)
+      |> expect(:validator_connections, fn -> for v <- validators, do: {v, fake_pid} end)
 
-      # |> expect(:assigned_shard_index, fn _, _ -> 1 end)
+      # for each validator, expects to get its share based on assigned shard index
+      for {v, i} <- Enum.with_index(validators) do
+        key = v.ed25519
 
-      assert get_segment(root, segment_index) == []
+        expect(NodeCLIServerMock, :assigned_shard_index, fn ^core, ^key -> i end)
 
-      # Clean up
+        req = [
+          %SegmentShardsRequest{
+            erasure_root: root,
+            segment_index: segment_index,
+            shard_indexes: [i]
+          }
+        ]
+
+        expect(ClientMock, :request_segment_shards, fn ^fake_pid, ^req, false ->
+          Enum.at(shards, i)
+        end)
+      end
+
+      assert get_segment(root, segment_index) == segment
     end
   end
 end

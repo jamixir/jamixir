@@ -21,21 +21,25 @@ defmodule System.DataAvailability do
       nil ->
         core = Storage.get_segment_core(erasure_root)
 
-        for {v, pid} <- node_server().validator_connections() do
-          shard_index = node_server().assigned_shard_index(core, v.ed25519)
+        {shards, indexes} =
+          for {v, pid} <- node_server().validator_connections() do
+            Logger.debug(
+              "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519_key}"
+            )
 
-          req = %SegmentShardsRequest{
-            erasure_root: erasure_root,
-            segment_index: segment_index,
-            shard_indexes: [shard_index]
-          }
+            shard_index = node_server().assigned_shard_index(core, v.ed25519)
 
-          Connection.request_segment_shards(pid, [req], false)
+            req = %SegmentShardsRequest{
+              erasure_root: erasure_root,
+              segment_index: segment_index,
+              shard_indexes: [shard_index]
+            }
 
-          Logger.debug(
-            "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519_key}"
-          )
-        end
+            {Connection.request_segment_shards(pid, [req], false), shard_index}
+          end
+          |> Enum.unzip()
+
+        ErasureCoding.decode(shards, indexes, Constants.segment_size(), Constants.core_count())
 
       segment ->
         segment
