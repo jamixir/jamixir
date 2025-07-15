@@ -5,7 +5,7 @@ defmodule Network.Connection do
   """
 
   use GenServer
-  alias Network.{Client, ConnectionState, Server, ConnectionManager}
+  alias Network.{Client, ConnectionManager, ConnectionState, Server}
   import Network.Config
   alias Util.Logger, as: Log
 

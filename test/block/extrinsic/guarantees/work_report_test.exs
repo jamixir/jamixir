@@ -483,6 +483,8 @@ defmodule WorkReportTest do
         {<<1, 2, 3>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
+      stub(DAMock, :do_get_segment, fn _, _ -> nil end)
+
       on_exit(fn ->
         Application.put_env(:jamixir, :pvm, PVM)
       end)

@@ -86,7 +86,7 @@ defmodule Jamixir.Node do
   def get_blocks(header_hash, :descending, count) do
     {blocks, _} =
       Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
-        case  Storage.get_block(next_hash) do
+        case Storage.get_block(next_hash) do
           nil ->
             {:halt, {blocks, nil}}
 
@@ -190,11 +190,11 @@ defmodule Jamixir.Node do
         Task.start(fn ->
           Logger.info("Request EC  for work report: #{b16(spec.work_package_hash)}")
 
-          Network.Connection.request_audit_shard(
-            server_pid,
-            spec.erasure_root,
-            my_assigned_shard_index(state, guarantee.work_report.core_index)
-          )
+          # Network.Connection.request_audit_shard(
+          #   server_pid,
+          #   spec.erasure_root,
+          #   NodeCLIServer.assigned_shard_index(guarantee.work_report.core_index)
+          # )
         end)
     end
 
@@ -210,7 +210,12 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary()), Types.hash()) ::
+  @spec save_work_package(
+          Block.Extrinsic.WorkPackage.t(),
+          integer(),
+          list(binary()),
+          Types.hash()
+        ) ::
           :ok | {:error, :invalid_extrinsics}
   def save_work_package(wp, core, extrinsics, header_hash) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
@@ -232,7 +237,7 @@ defmodule Jamixir.Node do
   def process_work_package(wp, core, extrinsics, header_hash) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    state = Storage.get_state(header_hash)
+    services = Storage.get_state(header_hash).services
 
     # A work-package received via CE 133 should be shared with the other guarantors
     # assigned to the core using this protocol, but only after:
@@ -245,7 +250,7 @@ defmodule Jamixir.Node do
     # TODO verify imports before executing the work package.
     # The refine logic need not be executed before sharing a work-package;
     # ideally, refinement should be done while waiting for the other guarantors to respond.
-    case WorkReport.execute_work_package(wp, core, state.services) do
+    case WorkReport.execute_work_package(wp, core, services) do
       :error ->
         Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
         {:error, :execution_failed}
@@ -271,6 +276,7 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
+  # CE 137 - Work Report Shard Request
   @impl true
   def get_work_report_shard(_erasure_root, _segment_index) do
     {:error, :not_implemented}
@@ -289,23 +295,5 @@ defmodule Jamixir.Node do
   @impl true
   def get_justification(_erasure_root, _segment_index, _shard_index) do
     {:error, :not_implemented}
-  end
-
-  def my_validator_index(nil), do: nil
-
-  def my_validator_index(state) do
-    state.curr_validators
-    |> Enum.find_index(fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end)
-  end
-
-  # i = (cR + v) mod V
-  def my_assigned_shard_index(state, core) do
-    case my_validator_index(state) do
-      nil ->
-        nil
-
-      v ->
-        rem(core * Constants.erasure_code_recovery_threshold() + v, Constants.validator_count())
-    end
   end
 end

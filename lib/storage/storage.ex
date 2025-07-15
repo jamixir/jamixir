@@ -36,7 +36,7 @@ defmodule Storage do
   def put(%Block{} = block) do
     {:ok, header_hash} = put(block.header)
 
-    key = @p_block <>header_hash
+    key = @p_block <> header_hash
 
     {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
 
@@ -48,8 +48,8 @@ defmodule Storage do
 
     KVStorage.put(%{
       hash => header,
-      @p_child <> header.parent_hash => hash,
-      @p_timeslot <> t(header.timeslot) => header,
+      (@p_child <> header.parent_hash) => hash,
+      (@p_timeslot <> t(header.timeslot)) => header,
       @latest_timeslot => header.timeslot
     })
 
@@ -99,8 +99,8 @@ defmodule Storage do
       Map.merge(
         state_fields,
         %{
-          @p_state <> header_hash => posterior_state,
-          @p_state_root <> header_hash => state_root
+          (@p_state <> header_hash) => posterior_state,
+          (@p_state_root <> header_hash) => state_root
         }
       )
     )
@@ -184,6 +184,22 @@ defmodule Storage do
 
   def get_next_block(header_hash) do
     KVStorage.get(@p_child <> header_hash)
+  end
+
+  def get_segment(merkle_root, segment_index) do
+    KVStorage.get(@p_segment <> merkle_root <> <<segment_index::little-32>>)
+  end
+
+  def put_segment(merkle_root, segment_index, segment) do
+    KVStorage.put(@p_segment <> merkle_root <> <<segment_index::little-32>>, segment)
+  end
+
+  def get_segment_core(merkle_root) do
+    KVStorage.get(@p_segment_core <> merkle_root)
+  end
+
+  def set_segment_core(merkle_root, core_index) do
+    KVStorage.put(@p_segment_core <> merkle_root, core_index)
   end
 
   # Private Functions

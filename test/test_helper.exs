@@ -14,6 +14,9 @@ Mox.defmock(MockPVM, for: PVM)
 Mox.defmock(Jamixir.NodeAPI.Mock, for: Jamixir.NodeAPI)
 Mox.defmock(ErasureCodingMock, for: ErasureCoding)
 Mox.defmock(ServerCallsMock, for: Network.ServerCallsBehaviour)
+Mox.defmock(DAMock, for: System.DataAvailability)
+Mox.defmock(NodeCLIServerMock, for: Jamixir.NodeCLIServerBehaviour)
 
 # Optional: remove or move to test setup unless needed globally
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+Application.put_env(:jamixir, :data_availability, DAMock)
