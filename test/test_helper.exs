@@ -16,6 +16,7 @@ Mox.defmock(ErasureCodingMock, for: ErasureCoding)
 Mox.defmock(ServerCallsMock, for: Network.ServerCallsBehaviour)
 Mox.defmock(DAMock, for: System.DataAvailability)
 Mox.defmock(NodeCLIServerMock, for: Jamixir.NodeCLIServerBehaviour)
+Mox.defmock(ClientMock, for: Network.ClientAPI)
 
 # Optional: remove or move to test setup unless needed globally
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)

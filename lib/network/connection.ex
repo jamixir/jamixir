@@ -9,24 +9,79 @@ defmodule Network.Connection do
   import Network.Config
   alias Util.Logger, as: Log
 
-  # Re-export the client API functions
-  defdelegate send(pid, protocol_id, message), to: Client
-  defdelegate request_blocks(pid, hash, direction, max_blocks), to: Client
-  defdelegate announce_block(pid, header, slot), to: Client
-  defdelegate announce_preimage(pid, service_id, hash, length), to: Client
-  defdelegate get_preimage(pid, hash), to: Client
-  defdelegate distribute_assurance(pid, assurance), to: Client
-  defdelegate distribute_ticket(pid, mode, epoch, ticket), to: Client
-  defdelegate announce_judgement(pid, epoch, wr_hash, judgement), to: Client
-  defdelegate distribute_guarantee(pid, guarantee), to: Client
-  defdelegate get_work_report(pid, hash), to: Client
-  defdelegate send_work_package(pid, wp, core, extrinsics), to: Client
-  defdelegate send_work_package_bundle(pid, bundle, core, segment_roots), to: Client
-  defdelegate announce_audit(pid, audit_announcement), to: Client
-  defdelegate request_work_report_shard(pid, erasure_root, segment_index), to: Client
-  defdelegate request_audit_shard(pid, erasure_root, segment_index), to: Client
-  defdelegate request_state(pid, block_hash, start_key, end_key, max_size), to: Client
-  defdelegate request_segment_shards(pid, requests, with_justification), to: Client
+  # Get the client module from application config
+  defp client_module do
+    Application.get_env(:jamixir, :network_client, Network.Client)
+  end
+
+  # Re-export the client API functions with configurable backend
+  def send(pid, protocol_id, message) do
+    client_module().send(pid, protocol_id, message)
+  end
+
+  def request_blocks(pid, hash, direction, max_blocks) do
+    client_module().request_blocks(pid, hash, direction, max_blocks)
+  end
+
+  def announce_block(pid, header, slot) do
+    client_module().announce_block(pid, header, slot)
+  end
+
+  def announce_preimage(pid, service_id, hash, length) do
+    client_module().announce_preimage(pid, service_id, hash, length)
+  end
+
+  def get_preimage(pid, hash) do
+    client_module().get_preimage(pid, hash)
+  end
+
+  def distribute_assurance(pid, assurance) do
+    client_module().distribute_assurance(pid, assurance)
+  end
+
+  def distribute_ticket(pid, mode, epoch, ticket) do
+    client_module().distribute_ticket(pid, mode, epoch, ticket)
+  end
+
+  def announce_judgement(pid, epoch, wr_hash, judgement) do
+    client_module().announce_judgement(pid, epoch, wr_hash, judgement)
+  end
+
+  def distribute_guarantee(pid, guarantee) do
+    client_module().distribute_guarantee(pid, guarantee)
+  end
+
+  def get_work_report(pid, hash) do
+    client_module().get_work_report(pid, hash)
+  end
+
+  def send_work_package(pid, wp, core, extrinsics) do
+    client_module().send_work_package(pid, wp, core, extrinsics)
+  end
+
+  def send_work_package_bundle(pid, bundle, core, segment_roots) do
+    client_module().send_work_package_bundle(pid, bundle, core, segment_roots)
+  end
+
+  def announce_audit(pid, audit_announcement) do
+    client_module().announce_audit(pid, audit_announcement)
+  end
+
+  def request_work_report_shard(pid, erasure_root, segment_index) do
+    client_module().request_work_report_shard(pid, erasure_root, segment_index)
+  end
+
+  def request_audit_shard(pid, erasure_root, segment_index) do
+    client_module().request_audit_shard(pid, erasure_root, segment_index)
+  end
+
+  def request_state(pid, block_hash, start_key, end_key, max_size) do
+    client_module().request_state(pid, block_hash, start_key, end_key, max_size)
+  end
+
+  def request_segment_shards(pid, requests, with_justification) do
+    client_module().request_segment_shards(pid, requests, with_justification)
+  end
 
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)

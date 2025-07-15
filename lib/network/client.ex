@@ -1,4 +1,6 @@
 defmodule Network.Client do
+  @behaviour Network.ClientAPI
+
   alias Network.MessageParsers
   alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
