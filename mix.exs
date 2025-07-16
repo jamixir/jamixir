@@ -4,7 +4,10 @@ defmodule Jamixir.MixProject do
   def project do
     [
       app: :jamixir,
-      version: "0.1.0",
+      name: "Jamixir",
+      version: "0.6.6",
+      app_version: {0, 6, 6},
+      jam_version: {0, 6, 6},
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -53,9 +56,9 @@ defmodule Jamixir.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors"]
-  defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors"]
-  defp elixirc_paths(_), do: ["lib"]
+  defp elixirc_paths(:test), do: ["lib", "test/support", "test/test_vectors", "genesis"]
+  defp elixirc_paths(:full_test), do: ["lib", "test/support", "test/test_vectors", "genesis"]
+  defp elixirc_paths(_), do: ["lib", "genesis"]
 
   def aliases do
     [

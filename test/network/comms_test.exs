@@ -125,7 +125,7 @@ defmodule CommsTest do
   describe "request_state/5" do
     setup do
       %{state: state} = build(:genesis_state_with_safrole)
-      {:ok, state_trie: Trie.serialize(state)}
+      {:ok, state_trie: Trie.serialize(state).data}
     end
 
     test "requests state smoke test", %{client: client, state_trie: state_trie} do

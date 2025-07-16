@@ -6,9 +6,12 @@ defmodule Jamixir.NodeTest do
   import TestHelper
   import Codec.Encoder
   import Jamixir.Node
+  alias Jamixir.Genesis
+  use StoragePrefix
 
   @genesis_file "genesis/genesis.json"
-
+  @genesis_hash Genesis.genesis_block_parent()
+  @genesis_state_key @p_state <> @genesis_hash
   setup do
     Application.put_env(:jamixir, :original_modules, [Jamixir.Node])
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
@@ -24,19 +27,19 @@ defmodule Jamixir.NodeTest do
   end
 
   test "inspect_state with empty state" do
-    Storage.remove("state")
-    assert {:ok, :no_state} = inspect_state()
+    Storage.remove(@genesis_state_key)
+    assert {:ok, :no_state} = inspect_state(@genesis_hash)
   end
 
   test "load_state from file" do
     assert :ok = load_state(@genesis_file)
-    assert {:ok, _keys} = inspect_state()
+    assert {:ok, _keys} = inspect_state(@genesis_hash)
   end
 
   describe "add_block" do
     test "add_block with valid block bin" do
-      block = build(:block)
-      assert {:ok, _} = add_block(e(block))
+      block = build(:block, header: build(:header, parent_hash: @genesis_hash))
+      assert {:ok, _new_app_state, _state_root} = add_block(e(block))
     end
   end
 
@@ -53,15 +56,15 @@ defmodule Jamixir.NodeTest do
     end
 
     test "get_blocks descending with valid block hash" do
-      block1 = %Block{build(:decodable_block) | extrinsic: %Extrinsic{}}
+      block1 = build(:decodable_block, parent_hash: @genesis_hash, extrinsic: %Extrinsic{})
 
       block2 = %Block{
         build(:decodable_block, parent_hash: h(e(block1.header)))
         | extrinsic: %Extrinsic{}
       }
 
-      {:ok, _} = add_block(block1)
-      {:ok, _} = add_block(block2)
+      {:ok, _, _} = add_block(block1)
+      {:ok, _, _} = add_block(block2)
 
       # one block fetch
       {:ok, [b]} = get_blocks(h(e(block2.header)), :descending, 1)
@@ -78,7 +81,7 @@ defmodule Jamixir.NodeTest do
     end
 
     test "get_blocks ascending with valid block hash" do
-      block1 = %Block{build(:decodable_block) | extrinsic: %Extrinsic{}}
+      block1 = build(:decodable_block, parent_hash: @genesis_hash, extrinsic: %Extrinsic{})
 
       block2 = %Block{
         build(:decodable_block, parent_hash: h(e(block1.header)))
@@ -90,9 +93,9 @@ defmodule Jamixir.NodeTest do
         | extrinsic: %Extrinsic{}
       }
 
-      {:ok, _} = add_block(block1)
-      {:ok, _} = add_block(block2)
-      {:ok, _} = add_block(block3)
+      {:ok, _, _} = add_block(block1)
+      {:ok, _, _} = add_block(block2)
+      {:ok, _, _} = add_block(block3)
 
       # one block fetch
       {:ok, [b2]} = get_blocks(h(e(block1.header)), :ascending, 1)
@@ -128,7 +131,7 @@ defmodule Jamixir.NodeTest do
   describe "save and get work package" do
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert :ok = save_work_package(wp, 7, extrinsics)
+      assert :ok = save_work_package(wp, 7, extrinsics, @genesis_hash)
 
       assert Storage.get_work_package(7) == wp
       assert Storage.get_work_package(5) == nil
@@ -136,8 +139,8 @@ defmodule Jamixir.NodeTest do
 
     test "save_work_package with invalid extrinsics" do
       wp = build(:work_package)
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [])
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>], @genesis_hash)
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [], @genesis_hash)
     end
   end
 
@@ -145,7 +148,7 @@ defmodule Jamixir.NodeTest do
     test "distribute_work_report guarantee with valid parameters" do
       guarantee = build(:guarantee)
       spec = guarantee.work_report.specification
-      :ok = save_guarantee(guarantee)
+      :ok = save_guarantee(guarantee, @genesis_hash)
 
       {:ok, r} = get_work_report(spec.work_package_hash)
       assert r == guarantee.work_report

@@ -5,6 +5,7 @@ defmodule Jamixir.Node do
   alias Util.Hash
   use StoragePrefix
   import Util.Hex, only: [b16: 1]
+  alias Jamixir.Genesis
   require Logger
 
   @behaviour Jamixir.NodeAPI
@@ -16,36 +17,37 @@ defmodule Jamixir.Node do
   end
 
   def add_block(%Block{} = block) do
-    with app_state <- Storage.get_state() do
-      case State.add_block(app_state, block) do
-        {:ok, new_app_state} ->
-          Storage.put(new_app_state)
-          Storage.put(block)
-          Logger.info("🔄 State Updated successfully")
-          Logger.debug("🔄 New State: #{inspect(new_app_state)}")
-          {:ok, new_app_state}
+    case Storage.get_state(block.header.parent_hash) do
+      nil ->
+        Logger.error("Parent state not found for hash: #{b16(block.header.parent_hash)}")
+        {:error, :parent_state_not_found}
 
-        {:error, _pre_state, reason} ->
-          {:error, reason}
+      app_state ->
+        case State.add_block(app_state, block) do
+          {:ok, new_app_state} ->
+            state_root = Storage.put(block, new_app_state)
+            Storage.put(block)
+            Logger.info("🔄 State Updated successfully")
+            Logger.debug("🔄 New State: #{inspect(new_app_state)}")
+            {:ok, new_app_state, state_root}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+          {:error, _pre_state, reason} ->
+            {:error, reason}
+        end
     end
   end
 
   @impl true
-  def inspect_state do
-    case Storage.get_state() do
+  def inspect_state(header_hash) do
+    case Storage.get_state(header_hash) do
       nil -> {:ok, :no_state}
       state -> {:ok, Map.keys(state)}
     end
   end
 
   @impl true
-  @spec inspect_state(any()) :: {:error, :key_not_found | :no_state} | {:ok, any()}
-  def inspect_state(key) do
-    case Storage.get_state(key) do
+  def inspect_state(header_hash, key) do
+    case Storage.get_state(header_hash, key) do
       nil ->
         {:error, :no_state}
 
@@ -60,7 +62,7 @@ defmodule Jamixir.Node do
         case Jason.decode(contents) do
           {:ok, json_data} ->
             state = Codec.State.Json.decode(json_data |> Utils.atomize_keys())
-            Storage.put(state)
+            Storage.put(Genesis.genesis_block_parent(), state)
             :ok
 
           error ->
@@ -84,7 +86,7 @@ defmodule Jamixir.Node do
   def get_blocks(header_hash, :descending, count) do
     {blocks, _} =
       Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
-        case Storage.get_block(next_hash) do
+        case  Storage.get_block(next_hash) do
           nil ->
             {:halt, {blocks, nil}}
 
@@ -99,7 +101,7 @@ defmodule Jamixir.Node do
   def get_blocks(header_hash, :ascending, count) do
     {blocks, _} =
       Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
-        case Storage.get("#{@p_child}#{next_hash}") do
+        case Storage.get_next_block(next_hash) do
           nil ->
             {:halt, {blocks, nil}}
 
@@ -172,14 +174,14 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_guarantee(guarantee) do
+  def save_guarantee(guarantee, header_hash) do
     spec = guarantee.work_report.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
     server_pid = self()
 
-    case Storage.get_state() do
+    case Storage.get_state(header_hash) do
       nil ->
         Logger.error("No state found to request erasure code for work report")
         {:error, :no_state}
@@ -208,9 +210,9 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary())) ::
+  @spec save_work_package(Block.Extrinsic.WorkPackage.t(), integer(), list(binary()), Types.hash()) ::
           :ok | {:error, :invalid_extrinsics}
-  def save_work_package(wp, core, extrinsics) do
+  def save_work_package(wp, core, extrinsics, header_hash) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
       Storage.put(wp, core)
 
@@ -218,7 +220,7 @@ defmodule Jamixir.Node do
         Storage.put(e)
       end
 
-      process_work_package(wp, core, extrinsics)
+      process_work_package(wp, core, extrinsics, header_hash)
 
       :ok
     else
@@ -227,10 +229,10 @@ defmodule Jamixir.Node do
     end
   end
 
-  def process_work_package(wp, core, extrinsics) do
+  def process_work_package(wp, core, extrinsics, header_hash) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    state = Storage.get_state()
+    state = Storage.get_state(header_hash)
 
     # A work-package received via CE 133 should be shared with the other guarantors
     # assigned to the core using this protocol, but only after:

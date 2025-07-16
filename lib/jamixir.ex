@@ -9,10 +9,33 @@ defmodule Jamixir do
   end
 
   defp get_children do
-    test_envs = [:test, :full_test]
-    if Enum.member?(test_envs, Mix.env()) and not Application.get_env(:jamixir, :start_full_app, false),
-      do: test_children(),
-      else: production_children()
+    cond do
+      # Fuzzer mode takes precedence if explicitly enabled
+      Application.get_env(:jamixir, :fuzzer_mode, false) ->
+        fuzzer_children()
+
+      # Test environment handling
+      Enum.member?([:test, :full_test], Mix.env()) and
+          not Application.get_env(:jamixir, :start_full_app, false) ->
+        test_children()
+
+      # Default production mode
+      true ->
+        production_children()
+    end
+  end
+
+  defp fuzzer_children do
+    persist_storage? = Jamixir.config()[:storage_persist] || false
+    socket_path = System.get_env("SOCKET_PATH") || "/tmp/jamixir_fuzzer.sock"
+
+    [
+      {Storage, [persist: persist_storage?]},
+      {Task.Supervisor, name: Fuzzer.TaskSupervisor},
+      Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.Service.accept(socket_path) end},
+        restart: :permanent
+      )
+    ]
   end
 
   defp test_children do

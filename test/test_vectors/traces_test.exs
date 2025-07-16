@@ -100,7 +100,7 @@ defmodule TracesTest do
                     Logger.info("🔍 Comparing state")
                     # uncomment to delete statistics from state trie
                     # |> Map.delete(<<13, 0::30*8>>)
-                    trie1 = Trie.serialize(new_state)
+                    %{data: trie1} = Trie.serialize(new_state)
                     # |> Map.delete(<<13, 0::30*8>>)
                     trie2 = expected_trie
 

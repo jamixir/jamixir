@@ -9,8 +9,8 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   def add_block(block_binary), do: GenServer.call(__MODULE__, {:add_block, block_binary})
-  def inspect_state, do: GenServer.call(__MODULE__, :inspect_state)
-  def inspect_state(key), do: GenServer.call(__MODULE__, {:inspect_state, key})
+  def inspect_state(header_hash), do: GenServer.call(__MODULE__, {:inspect_state, header_hash})
+  def inspect_state(header_hash, key), do: GenServer.call(__MODULE__, {:inspect_state, header_hash, key})
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
 
   @impl true
@@ -40,22 +40,22 @@ defmodule Jamixir.NodeCLIServer do
   @impl true
   def handle_call({:add_block, block_binary}, _from, state) do
     case Jamixir.Node.add_block(block_binary) do
-      {:ok, _} -> {:reply, :ok, state}
+      {:ok, new_app_state, state_root} -> {:reply, {:ok, new_app_state, state_root}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   @impl true
-  def handle_call(:inspect_state, _from, state) do
-    case Jamixir.Node.inspect_state() do
+  def handle_call({:inspect_state, header_hash}, _from, state) do
+    case Jamixir.Node.inspect_state(header_hash) do
       {:ok, :no_state} -> {:reply, {:ok, :no_state}, state}
       {:ok, keys} -> {:reply, {:ok, keys}, state}
     end
   end
 
   @impl true
-  def handle_call({:inspect_state, key}, _from, state) do
-    case Jamixir.Node.inspect_state(key) do
+  def handle_call({:inspect_state, header_hash, key}, _from, state) do
+    case Jamixir.Node.inspect_state(header_hash, key) do
       {:ok, value} -> {:reply, {:ok, value}, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -81,7 +81,7 @@ defmodule Jamixir.NodeCLIServer do
           Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
 
           case Jamixir.Node.add_block(block) do
-            {:ok, new_jam_state} ->
+            {:ok, new_jam_state, _state_root} ->
               announce_block_to_peers(client_pids, block)
               new_jam_state
 

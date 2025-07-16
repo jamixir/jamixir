@@ -8,6 +8,7 @@ defmodule Util.Merklization do
 
   alias Util.Hash
   import Codec.Encoder
+  alias Codec.State.Trie.SerializedState
 
   @doc """
   Formula (D.3) v0.6.6:
@@ -61,6 +62,8 @@ defmodule Util.Merklization do
     Mo（o）= M（｛（bits(k) →（K,v））|（K → v）E T（o）)
 
   """
+  def merkelize_state(%SerializedState{data: dict}), do: merkelize_state(dict)
+
   def merkelize_state(dict) do
     merkelize(
       for {k, v} <- dict do

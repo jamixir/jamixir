@@ -3,15 +3,12 @@ defmodule Storage do
   alias Block.Header
   alias System.State
   alias Util.Hash
+  alias Codec.State.Trie
   import Codec.Encoder
   use StoragePrefix
 
-  @state_key "state"
-  @state_root_key "state_root"
   @latest_timeslot "latest_timeslot"
 
-  def state_key, do: @state_key
-  def state_root_key, do: @state_root_key
   def latest_timeslot, do: @latest_timeslot
 
   def child_spec(opts) do
@@ -39,7 +36,7 @@ defmodule Storage do
   def put(%Block{} = block) do
     {:ok, header_hash} = put(block.header)
 
-    key = "#{@p_block}#{header_hash}"
+    key = @p_block <>header_hash
 
     {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
 
@@ -51,8 +48,8 @@ defmodule Storage do
 
     KVStorage.put(%{
       hash => header,
-      "#{@p_child}#{header.parent_hash}" => hash,
-      "t:#{header.timeslot}" => header,
+      @p_child <> header.parent_hash => hash,
+      @p_timeslot <> t(header.timeslot) => header,
       @latest_timeslot => header.timeslot
     })
 
@@ -60,27 +57,6 @@ defmodule Storage do
   end
 
   def put(headers) when is_list(headers), do: put_headers(headers)
-
-  def put(%State{} = state) do
-    state_root = Codec.State.Trie.state_root(state)
-
-    state_fields =
-      Map.from_struct(state)
-      |> Enum.map(fn {key, value} -> {"#{@state_key}:#{key}", value} end)
-      |> Map.new()
-
-    KVStorage.put(
-      Map.merge(
-        state_fields,
-        %{
-          @state_key => state,
-          @state_root_key => state_root
-        }
-      )
-    )
-
-    :ok
-  end
 
   def put(object) when is_struct(object) do
     case encodable?(object) do
@@ -105,6 +81,31 @@ defmodule Storage do
       entries ->
         KVStorage.put(entries)
     end
+  end
+
+  def put(%Block{} = b, %State{} = s) do
+    put(h(e(b.header)), s)
+  end
+
+  def put(header_hash, %State{} = posterior_state) do
+    state_root = Trie.state_root(posterior_state)
+
+    state_fields =
+      Map.from_struct(posterior_state)
+      |> Enum.map(fn {key, value} -> {@p_state <> header_hash <> to_string(key), value} end)
+      |> Map.new()
+
+    KVStorage.put(
+      Map.merge(
+        state_fields,
+        %{
+          @p_state <> header_hash => posterior_state,
+          @p_state_root <> header_hash => state_root
+        }
+      )
+    )
+
+    state_root
   end
 
   def put(%WorkPackage{} = work_package, core) do
@@ -138,16 +139,16 @@ defmodule Storage do
       nil ->
         nil
 
-      slot ->
-        case KVStorage.get("t:#{slot}") do
+      timeslot ->
+        case KVStorage.get(@p_timeslot <> t(timeslot)) do
           nil -> nil
-          header -> {slot, header}
+          header -> {timeslot, header}
         end
     end
   end
 
   def get_block(header_hash) do
-    case KVStorage.get("#{@p_block}#{header_hash}") do
+    case KVStorage.get(@p_block <> header_hash) do
       nil ->
         nil
 
@@ -168,12 +169,23 @@ defmodule Storage do
     end
   end
 
-  def get_state, do: KVStorage.get(@state_key)
-  def get_state(key) when is_atom(key), do: KVStorage.get("#{@state_key}:#{key}")
-  def get_state_root, do: KVStorage.get(@state_root_key)
+  def get_state(header_hash) do
+    KVStorage.get(@p_state <> header_hash)
+  end
+
+  def get_state(header_hash, key) do
+    KVStorage.get(@p_state <> header_hash <> to_string(key))
+  end
+
+  def get_state_root(header_hash), do: KVStorage.get(@p_state_root <> header_hash)
 
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)
+
+  def get_next_block(header_hash) do
+    KVStorage.get(@p_child <> header_hash)
+  end
+
   # Private Functions
 
   defp encodable?(data), do: not is_nil(Encodable.impl_for(data))
@@ -187,7 +199,7 @@ defmodule Storage do
         Enum.reduce(headers, %{}, fn header, acc ->
           acc
           |> Map.put(h(e(header)), header)
-          |> Map.put("t:#{header.timeslot}", header)
+          |> Map.put(@p_timeslot <> t(header.timeslot), header)
           |> Map.put(@latest_timeslot, latest_timeslot)
         end)
 
