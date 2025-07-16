@@ -1,5 +1,5 @@
 defmodule Jamixir.NodeAPI do
-  alias Codec.State
+  alias System.State
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
   alias Block.Extrinsic.Guarantee

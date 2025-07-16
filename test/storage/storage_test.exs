@@ -132,7 +132,7 @@ defmodule StorageTest do
       {:ok, _key} = Storage.put(block)
       header_hash = h(e(block.header))
       assert Storage.get_block(header_hash) == block
-      assert Storage.get("#{@p_child}:#{block.header.parent_hash}") == header_hash
+      assert Storage.get_next_block(block.header.parent_hash) == header_hash
     end
   end
 end

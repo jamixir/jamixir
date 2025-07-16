@@ -101,7 +101,7 @@ defmodule Jamixir.Node do
   def get_blocks(header_hash, :ascending, count) do
     {blocks, _} =
       Enum.reduce_while(1..count, {[], header_hash}, fn _, {blocks, next_hash} ->
-        case Storage.get("#{@p_child}:#{next_hash}") do
+        case Storage.get_next_block(next_hash) do
           nil ->
             {:halt, {blocks, nil}}
 
