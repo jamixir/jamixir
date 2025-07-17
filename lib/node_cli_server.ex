@@ -7,6 +7,7 @@ end
 defmodule Jamixir.NodeCLIServer do
   @behaviour Jamixir.NodeCLIServerBehaviour
 
+  alias Jamixir.Genesis
   alias Jamixir.TimeTicker
   alias Network.{Connection, ConnectionManager}
   alias Util.Logger, as: Log
@@ -36,7 +37,7 @@ defmodule Jamixir.NodeCLIServer do
 
   @impl true
   def init(opts) do
-    jam_state = opts[:jam_state] || Storage.get_state()
+    jam_state = opts[:jam_state] || Storage.get_state(Genesis.genesis_block_parent())
 
     TimeTicker.subscribe()
 
