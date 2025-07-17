@@ -179,14 +179,14 @@ defmodule Jamixir.Node do
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
-    server_pid = self()
+    _server_pid = self()
 
     case Storage.get_state(header_hash) do
       nil ->
         Logger.error("No state found to request erasure code for work report")
         {:error, :no_state}
 
-      state ->
+      _state ->
         Task.start(fn ->
           Logger.info("Request EC  for work report: #{b16(spec.work_package_hash)}")
 

@@ -23,6 +23,7 @@ defmodule System.DataAvailabilityTest do
       on_exit(fn ->
         Application.put_env(:jamixir, :data_availability, DAMock)
         Application.delete_env(:jamixir, :node_cli_server)
+        Application.delete_env(:jamixir, :network_client)
       end)
 
       {:ok, root: root, core: core}

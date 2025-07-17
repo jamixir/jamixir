@@ -1,7 +1,6 @@
 defmodule System.DataAvailability do
   alias Network.Connection
   alias Network.Types.SegmentShardsRequest
-  alias Jamixir.NodeCLIServer
   require Logger
   @callback do_get_segment(binary(), non_neg_integer()) :: binary()
 
