@@ -14,7 +14,7 @@ defmodule Network.Connection do
     Application.get_env(:jamixir, :network_client, Network.Client)
   end
 
-  # Re-export the client API functions with configurable backend
+  # Re-export the client API functions
   def send(pid, protocol_id, message) do
     client_module().send(pid, protocol_id, message)
   end

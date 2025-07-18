@@ -21,6 +21,8 @@ defmodule Jamixir.InitializationTask do
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
 
+    {:ok, _pid} = Supervisor.start_child(Jamixir.Supervisor, Jamixir.NodeCLIServer)
+
     Task.start(fn ->
       Log.debug("🔗 Connecting to validators...")
       :ok = ConnectionManager.connect_to_validators(jam_state.curr_validators)
@@ -35,7 +37,7 @@ defmodule Jamixir.InitializationTask do
     genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis/genesis.json")
     Log.debug("✨ Initializing JAM state from genesis file: #{genesis_file}")
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
-    Storage.put(Genesis.genesis_block_parent(), jam_state)
+    Storage.put(Genesis.genesis_block_parent_header(), jam_state)
     jam_state
   end
 end
