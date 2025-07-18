@@ -24,6 +24,7 @@ defmodule Jamixir.NodeCLIServer do
     do: GenServer.call(__MODULE__, {:inspect_state, header_hash, key})
 
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
+  @impl true
   def validator_connections, do: GenServer.call(__MODULE__, :validator_connections)
 
   def validator_index(ed25519_key) do
@@ -38,6 +39,10 @@ defmodule Jamixir.NodeCLIServer do
   @impl true
   def init(opts) do
     jam_state = opts[:jam_state] || Storage.get_state(Genesis.genesis_block_parent())
+
+    unless jam_state do
+      raise "JAM state not available - initialization may have failed"
+    end
 
     TimeTicker.subscribe()
 
@@ -112,6 +117,7 @@ defmodule Jamixir.NodeCLIServer do
     {:noreply, %{state | jam_state: jam_state}}
   end
 
+  @impl true
   # i = (cR + v) mod V
   def assigned_shard_index(core, key \\ KeyManager.get_our_ed25519_key()) do
     case validator_index(key) do
