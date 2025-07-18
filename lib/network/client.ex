@@ -18,19 +18,23 @@ defmodule Network.Client do
   def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
   def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
 
+  @impl true
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
     GenServer.call(pid, {:send, protocol_id, message}, 500)
   end
 
+  @impl true
   def send(pid, protocol_id, messages) when is_list(messages) do
     GenServer.call(pid, {:send, protocol_id, messages}, 500)
   end
 
+  @impl true
   def request_blocks(pid, hash, direction, max_blocks) when direction in [0, 1] do
     message = hash <> <<direction::8>> <> <<max_blocks::32-little>>
     send(pid, 128, message)
   end
 
+  @impl true
   def request_state(
         pid,
         <<block_hash::b(hash)>>,
@@ -42,15 +46,18 @@ defmodule Network.Client do
     send(pid, 129, message)
   end
 
+  @impl true
   def announce_preimage(pid, service_id, hash, length) do
     message = <<service_id::m(service_id)>> <> hash <> <<length::32-little>>
     send(pid, 142, message)
   end
 
+  @impl true
   def get_preimage(pid, hash) do
     send(pid, 143, hash)
   end
 
+  @impl true
   def distribute_assurance(
         pid,
         %Assurance{
@@ -63,11 +70,14 @@ defmodule Network.Client do
     send(pid, 141, message)
   end
 
+  @impl true
   def distribute_ticket(p, :proxy, epoch, ticket), do: distribute_ticket(p, 131, epoch, ticket)
 
+  @impl true
   def distribute_ticket(p, :validator, epoch, ticket),
     do: distribute_ticket(p, 132, epoch, ticket)
 
+  @impl true
   def distribute_ticket(
         pid,
         mode,
@@ -81,6 +91,7 @@ defmodule Network.Client do
     send(pid, mode, message)
   end
 
+  @impl true
   def announce_block(pid, header, timeslot) do
     log(:debug, "Announcing block at slot #{timeslot}")
     encoded_header = e(header)
@@ -89,6 +100,7 @@ defmodule Network.Client do
     GenServer.cast(pid, {:announce_block, message, hash, timeslot})
   end
 
+  @impl true
   def announce_judgement(pid, epoch_index, <<_::m(hash)>> = hash, %Judgement{
         vote: vote,
         validator_index: validator_index,
@@ -99,17 +111,21 @@ defmodule Network.Client do
     send(pid, 145, message)
   end
 
+  @impl true
   def distribute_guarantee(pid, %Block.Extrinsic.Guarantee{} = guarantee) do
     send(pid, 135, e(guarantee))
   end
 
+  @impl true
   def get_work_report(pid, <<_::m(hash)>> = hash) do
     send(pid, 136, hash)
   end
 
+  @impl true
   def request_work_report_shard(pid, erasure_root, shard_index),
     do: send_wp_shard_request(pid, 137, erasure_root, shard_index)
 
+  @impl true
   def request_audit_shard(pid, erasure_root, shard_index),
     do: send_wp_shard_request(pid, 138, erasure_root, shard_index)
 
@@ -118,6 +134,7 @@ defmodule Network.Client do
     send(pid, protocol_id, message)
   end
 
+  @impl true
   def request_segment_shards(pid, requests, with_justification) do
     message =
       for r <- requests, reduce: <<>> do
@@ -141,16 +158,19 @@ defmodule Network.Client do
     send(pid, protocol_id, message)
   end
 
+  @impl true
   def send_work_package(pid, wp, core_index, extrinsics) do
     messages = [t(core_index) <> e(wp), e(extrinsics)]
     send(pid, 133, messages)
   end
 
+  @impl true
   def send_work_package_bundle(pid, bundle, core_index, segment_roots) do
     messages = [t(core_index) <> e(segment_roots), bundle]
     send(pid, 134, messages)
   end
 
+  @impl true
   def announce_audit(pid, %AuditAnnouncement{
         tranche: tranche,
         announcements: announcements,
