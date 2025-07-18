@@ -62,7 +62,7 @@ defmodule Jamixir.Node do
         case Jason.decode(contents) do
           {:ok, json_data} ->
             state = Codec.State.Json.decode(json_data |> Utils.atomize_keys())
-            Storage.put(Genesis.genesis_block_parent(), state)
+            Storage.put(Genesis.genesis_block_parent_header(), state)
             :ok
 
           error ->
@@ -174,12 +174,13 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_guarantee(guarantee, header_hash) do
+  def save_guarantee(guarantee) do
     spec = guarantee.work_report.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
     _server_pid = self()
+    header_hash = <<>>
 
     case Storage.get_state(header_hash) do
       nil ->
@@ -210,14 +211,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  @spec save_work_package(
-          Block.Extrinsic.WorkPackage.t(),
-          integer(),
-          list(binary()),
-          Types.hash()
-        ) ::
-          :ok | {:error, :invalid_extrinsics}
-  def save_work_package(wp, core, extrinsics, header_hash) do
+  def save_work_package(wp, core, extrinsics) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
       Storage.put(wp, core)
 
@@ -225,7 +219,7 @@ defmodule Jamixir.Node do
         Storage.put(e)
       end
 
-      process_work_package(wp, core, extrinsics, header_hash)
+      process_work_package(wp, core, extrinsics)
 
       :ok
     else
@@ -234,10 +228,11 @@ defmodule Jamixir.Node do
     end
   end
 
-  def process_work_package(wp, core, extrinsics, header_hash) do
+  def process_work_package(wp, core, _extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    services = Storage.get_state(header_hash).services
+    {_ts, header} = Storage.get_latest_header()
+    services = Storage.get_state(header).services
 
     # A work-package received via CE 133 should be shared with the other guarantors
     # assigned to the core using this protocol, but only after:

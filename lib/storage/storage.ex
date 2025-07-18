@@ -83,8 +83,11 @@ defmodule Storage do
     end
   end
 
-  def put(%Block{} = b, %State{} = s) do
-    put(h(e(b.header)), s)
+  def put(%Block{} = b, %State{} = s), do: put(b.header, s)
+
+  def put(%Header{} = h, %State{} = s) do
+    put(h)
+    put(h(e(h)), s)
   end
 
   def put(header_hash, %State{} = posterior_state) do
@@ -168,6 +171,8 @@ defmodule Storage do
         wp
     end
   end
+
+  def get_state(%Header{} = header), do: get_state(h(e(header)))
 
   def get_state(header_hash) do
     KVStorage.get(@p_state <> header_hash)

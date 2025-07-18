@@ -131,7 +131,7 @@ defmodule Jamixir.NodeTest do
   describe "save and get work package" do
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert :ok = save_work_package(wp, 7, extrinsics, @genesis_hash)
+      assert :ok = save_work_package(wp, 7, extrinsics)
 
       assert Storage.get_work_package(7) == wp
       assert Storage.get_work_package(5) == nil
@@ -139,8 +139,8 @@ defmodule Jamixir.NodeTest do
 
     test "save_work_package with invalid extrinsics" do
       wp = build(:work_package)
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>], @genesis_hash)
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [], @genesis_hash)
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
+      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [])
     end
   end
 
@@ -148,7 +148,7 @@ defmodule Jamixir.NodeTest do
     test "distribute_work_report guarantee with valid parameters" do
       guarantee = build(:guarantee)
       spec = guarantee.work_report.specification
-      :ok = save_guarantee(guarantee, @genesis_hash)
+      :ok = save_guarantee(guarantee)
 
       {:ok, r} = get_work_report(spec.work_package_hash)
       assert r == guarantee.work_report
