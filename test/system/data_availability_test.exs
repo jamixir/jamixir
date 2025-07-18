@@ -63,7 +63,7 @@ defmodule System.DataAvailabilityTest do
         ]
 
         expect(ClientMock, :request_segment_shards, fn ^fake_pid, ^req, false ->
-          Enum.at(shards, i)
+          {:ok, Enum.at(shards, i)}
         end)
       end
 
