@@ -79,6 +79,8 @@ defmodule Network.Connection do
     client_module().request_state(pid, block_hash, start_key, end_key, max_size)
   end
 
+  @spec request_segment_shards(pid(), list(SegmentShardsRequest.t()), boolean()) ::
+          {:ok, list(binary())} | {:ok, {list(binary()), list(binary())}} | {:error, term()}
   def request_segment_shards(pid, requests, with_justification) do
     client_module().request_segment_shards(pid, requests, with_justification)
   end

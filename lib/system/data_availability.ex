@@ -34,7 +34,9 @@ defmodule System.DataAvailability do
               shard_indexes: [shard_index]
             }
 
-            {Connection.request_segment_shards(pid, [req], false), shard_index}
+            {:ok, shards} = Connection.request_segment_shards(pid, [req], false)
+
+            {shards, shard_index}
           end
           |> Enum.unzip()
 
