@@ -1,11 +1,9 @@
 defmodule Network.ClientAPI do
-  alias Block.Extrinsic.Assurance
+  alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.{Assurance, Guarantee, TicketProof, WorkPackage}
   alias Block.Extrinsic.Disputes.Judgement
-  alias Block.Extrinsic.Guarantee
-  alias Block.Extrinsic.TicketProof
-  alias Block.Extrinsic.WorkPackage
   alias Block.Header
-  alias Network.Types.SegmentShardsRequest
+  alias Network.Types.{SegmentShardsRequest}
   alias System.Audit.AuditAnnouncement
 
   @callback send(pid(), integer(), binary() | list(binary())) ::
@@ -28,7 +26,7 @@ defmodule Network.ClientAPI do
   @callback send_work_package_bundle(pid(), binary(), integer(), %{Types.hash() => Types.hash()}) ::
               {:ok, {binary(), binary()}} | {:error, term()}
   @callback announce_audit(pid(), AuditAnnouncement.t()) :: :ok | {:error, term()}
-  @callback request_work_report_shard(pid(), Hash.t(), integer()) ::
+  @callback request_work_report_shard(pid(), Types.hash(), integer()) ::
               {:ok, {binary(), list(binary()), list(binary())}} | {:error, term()}
   @callback request_audit_shard(pid(), binary(), integer()) ::
               {:ok, {binary(), list(binary())}} | {:error, term()}
