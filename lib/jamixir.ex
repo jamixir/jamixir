@@ -58,7 +58,8 @@ defmodule Jamixir do
       {Network.Listener, [port: port]},
       Jamixir.TimeTicker,
       {Task.Supervisor, name: Jamixir.TaskSupervisor},
-      Jamixir.InitializationTask
+      Jamixir.InitializationTask,
+      {Jamixir.NodeCLIServer, []}
     ]
   end
 

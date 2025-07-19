@@ -21,8 +21,6 @@ defmodule Jamixir.InitializationTask do
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
 
-    {:ok, _pid} = Supervisor.start_child(Jamixir.Supervisor, Jamixir.NodeCLIServer)
-
     Task.start(fn ->
       Log.debug("🔗 Connecting to validators...")
       :ok = ConnectionManager.connect_to_validators(jam_state.curr_validators)
