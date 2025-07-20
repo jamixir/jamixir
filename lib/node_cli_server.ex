@@ -38,22 +38,8 @@ defmodule Jamixir.NodeCLIServer do
 
   @impl true
   def init(opts) do
-    # Try to get JAM state, but don't fail if not available yet
-    jam_state = opts[:jam_state] || Storage.get_state(Genesis.genesis_block_parent())
-
-    if jam_state do
-      # JAM state is available, proceed normally
-      TimeTicker.subscribe()
-      Log.info("🎯 NodeCLIServer initialized with JAM state")
-      {:ok, %{jam_state: jam_state}}
-    else
-      # JAM state not available yet, wait for it
-      Log.info("⏳ NodeCLIServer waiting for JAM state initialization...")
-      TimeTicker.subscribe()
-      # Schedule a check for JAM state
-      Process.send_after(self(), :check_jam_state, 100)
-      {:ok, %{jam_state: nil}}
-    end
+    Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
+    {:ok, %{jam_state: opts[:jam_state]}}
   end
 
   # Wait for initialization to complete and get jam_state
@@ -122,25 +108,24 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   @impl true
-  def handle_info(:check_jam_state, %{jam_state: nil} = state) do
-    case Storage.get_state(Genesis.genesis_block_parent()) do
+  def handle_info({:check_jam_state, s}, %{jam_state: nil} = state) do
+    case s || Storage.get_state(Genesis.genesis_block_parent()) do
       nil ->
         # Still not available, check again later
-        Process.send_after(self(), :check_jam_state, 100)
+        Process.send_after(self(), {:check_jam_state, nil}, 100)
         {:noreply, state}
 
       jam_state ->
         # JAM state is now available!
         Log.info("🎯 NodeCLIServer received JAM state")
+        TimeTicker.subscribe()
         {:noreply, %{state | jam_state: jam_state}}
     end
   end
 
   @impl true
-  def handle_info(:check_jam_state, state) do
-    # Already have JAM state, ignore
-    {:noreply, state}
-  end
+  # Already have JAM state, ignore
+  def handle_info(:check_jam_state, state), do: {:noreply, state}
 
   @impl true
   # i = (cR + v) mod V
