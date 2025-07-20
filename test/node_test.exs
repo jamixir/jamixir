@@ -10,7 +10,7 @@ defmodule Jamixir.NodeTest do
   use StoragePrefix
 
   @genesis_file Genesis.default_file()
-  @genesis_hash Genesis.genesis_block_parent()
+  @genesis_hash Genesis.genesis_header_hash()
   @genesis_state_key @p_state <> @genesis_hash
   setup do
     Application.put_env(:jamixir, :original_modules, [Jamixir.Node])
