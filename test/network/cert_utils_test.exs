@@ -1,6 +1,8 @@
 # test/system/network/cert_utils_test.exs
 defmodule Network.CertUtilsTest do
   use ExUnit.Case
+  import Bitwise, only: [<<<: 2]
+  import Codec.Encoder, only: [e_le: 2]
 
   alias Network.CertUtils
   alias Util.Hash
@@ -35,6 +37,43 @@ defmodule Network.CertUtilsTest do
     test "invalid certificate algo" do
       {_, k} = :crypto.generate_key(:eddsa, :ed448)
       assert {:error, _} = CertUtils.generate_self_signed_certificate(k)
+    end
+  end
+
+  describe "alt_name/1" do
+    test "generates 53-character DNS name" do
+      key = Hash.zero()
+      dns_name = CertUtils.alt_name(key)
+
+      assert byte_size(dns_name) == 53
+      assert String.starts_with?(dns_name, "e")
+      assert String.length(dns_name) == 53
+    end
+
+    test "generates different names for different keys" do
+      key1 = Hash.zero()
+      key2 = Hash.one()
+
+      dns1 = CertUtils.alt_name(key1)
+      dns2 = CertUtils.alt_name(key2)
+
+      assert dns1 != dns2
+      assert byte_size(dns1) == 53
+      assert byte_size(dns2) == 53
+    end
+  end
+
+  describe "alt_name/1 engineered key" do
+    test "produces ejamixira... for engineered key" do
+      # Calculate the integer that produces "jamixir" + 45 'a's
+      n =
+        9 * (1 <<< 0) + 0 * (1 <<< 5) + 12 * (1 <<< 10) + 8 * (1 <<< 15) + 23 * (1 <<< 20) +
+          8 * (1 <<< 25) + 17 * (1 <<< 30)
+
+      key = e_le(n, 32)
+
+      dns = Network.CertUtils.alt_name(key)
+      assert dns == "ejamixiraaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     end
   end
 

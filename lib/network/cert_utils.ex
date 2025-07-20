@@ -1,5 +1,6 @@
 defmodule Network.CertUtils do
   require Logger
+  import Bitwise, only: [>>>: 2]
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
   @keyfile Path.join(:code.priv_dir(:jamixir), "secret.pem")
@@ -29,7 +30,7 @@ defmodule Network.CertUtils do
     File.write!(keyfile, pem)
     File.rm(certfile)
 
-    dns_name = dns_from_public_key(public_key)
+    dns_name = alt_name(public_key)
 
     cmd = """
       openssl req -new -x509 -days 365 -key #{keyfile} -out #{certfile} -subj "/CN=Jamixir Ed25519 Cert" -addext "subjectAltName=DNS:#{dns_name}"
@@ -49,14 +50,22 @@ defmodule Network.CertUtils do
     with {:ECPoint, cert_p_key} <- X509.Certificate.public_key(cert),
          {:Extension, _, _, [dNSName: dns_name]} <-
            X509.Certificate.extension(cert, :subject_alt_name),
-         true <- to_string(dns_name) == dns_from_public_key(cert_p_key) do
+         true <- to_string(dns_name) == alt_name(cert_p_key) do
       :ok
     else
       _ -> false
     end
   end
 
-  defp dns_from_public_key(k) do
-    "e" <> Base.encode32(k, case: :lower)
+  @base32_alphabet "abcdefghijklmnopqrstuvwxyz234567"
+
+  def alt_name(k) do
+    n = Codec.Decoder.de_le(k, 32)
+
+    "e" <>base32_encode(n, 52)
   end
+
+
+  defp base32_encode(_n, 0), do: <<>>
+  defp base32_encode(n, l), do: String.at(@base32_alphabet, rem(n, 32)) <> base32_encode(n >>> 5, l - 1)
 end
