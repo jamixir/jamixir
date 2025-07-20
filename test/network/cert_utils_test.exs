@@ -77,6 +77,37 @@ defmodule Network.CertUtilsTest do
     end
   end
 
+  describe "extract_ed25519_key_from_certificate/1" do
+    test "extracts ed25519 key from valid certificate" do
+      {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+      {:ok, cert} = CertUtils.generate_self_signed_certificate(private_key)
+      alt_name = CertUtils.alt_name(public_key)
+
+      # Convert certificate to DER format
+      cert_der = X509.Certificate.to_der(cert)
+
+      # Extract and validate
+      assert {:ok, ^public_key, ^alt_name} = CertUtils.validate_certificate(cert_der)
+    end
+
+    test "handles invalid DER data" do
+      invalid_der = <<1, 2, 3, 4, 5>>
+      assert {:error, :cert_decode_failed} = CertUtils.validate_certificate(invalid_der)
+    end
+
+    test "rejects certificate without alternative name" do
+      {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+      cert_key = CertUtils.cert_key(private_key, public_key)
+
+      # Create certificate without alternative name extension
+      cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
+      cert_der = X509.Certificate.to_der(cert)
+
+      # Should fail because no alternative name extension
+      assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert_der)
+    end
+  end
+
   def script do
     {p, k} = :crypto.generate_key(:eddsa, :ed25519, Hash.zero())
     {:ok, cert} = CertUtils.generate_self_signed_certificate(k)

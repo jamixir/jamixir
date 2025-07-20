@@ -5,6 +5,7 @@ defmodule Network.CertUtils do
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
   @keyfile Path.join(:code.priv_dir(:jamixir), "secret.pem")
   @certfile Path.join(:code.priv_dir(:jamixir), "cert.pem")
+  @ed25519_curve_oid {1, 3, 101, 112}
 
   def keyfile, do: @keyfile
   def certfile, do: @certfile
@@ -43,7 +44,7 @@ defmodule Network.CertUtils do
   end
 
   def cert_key(private_key, public_key) do
-    {:ECPrivateKey, 1, private_key, {:namedCurve, {1, 3, 101, 112}}, public_key, :asn1_NOVALUE}
+    {:ECPrivateKey, 1, private_key, {:namedCurve, @ed25519_curve_oid}, public_key, :asn1_NOVALUE}
   end
 
   def valid?(cert) do
@@ -54,6 +55,43 @@ defmodule Network.CertUtils do
       :ok
     else
       _ -> false
+    end
+  end
+
+  def validate_certificate(cert_der) do
+    case :public_key.pkix_decode_cert(cert_der, :otp) do
+      {:OTPCertificate, _tbs_cert, _signature_algorithm, _signature} = cert ->
+        case X509.Certificate.public_key(cert) do
+          # OpenSSL format
+          {:ECPoint, ed25519_key} ->
+            validate_alternative_name(cert, ed25519_key)
+
+          # X509 library format with curve parameters
+          {{:ECPoint, ed25519_key}, {:namedCurve, @ed25519_curve_oid}} ->
+            validate_alternative_name(cert, ed25519_key)
+
+          _ ->
+            {:error, :not_ed25519_certificate}
+        end
+
+      _ ->
+        {:error, :invalid_certificate_format}
+    end
+  rescue
+    _ -> {:error, :cert_decode_failed}
+  end
+
+  defp validate_alternative_name(cert, ed25519_key) do
+    case X509.Certificate.extension(cert, :subject_alt_name) do
+      {:Extension, _extn_id, _critical, [dNSName: dns_name]} ->
+        if to_string(dns_name) == alt_name(ed25519_key) do
+          {:ok, ed25519_key, to_string(dns_name)}
+        else
+          {:error, :alternative_name_mismatch}
+        end
+
+      _ ->
+        {:error, :missing_alternative_name}
     end
   end
 

@@ -82,69 +82,52 @@ defmodule Network.Listener do
   def handle_info(_msg, state), do: {:noreply, state}
 
   # Private functions
-  # Temporary function to get the validator's ed25519 key from ip address (by matching to the metadata in the state)
-  # this is a temporary solution , not good for production and can't be used for local testing (since all validators have the same ip)
-  # we will replace this with a proper certificate-based identification in a future PR
-  # TODO: extract the ed25519 key from the connection certificate
+  # Extract the validator's ed25519 key from the connection certificate
   defp get_validator_ed25519_key(conn) do
-    case :quicer.peername(conn) do
-      {:ok, {remote_ip, remote_port}} ->
-        Log.debug("🔍 Connection from #{inspect(remote_ip)}: #{remote_port}")
+    case :quicer.peercert(conn) do
+      {:ok, cert_der} ->
+        case extract_ed25519_key_from_certificate(cert_der) do
+          {:ok, ed25519_key} ->
+            Log.debug("✅ Extracted ed25519 key from certificate: #{inspect(ed25519_key)}")
+            {:ok, ed25519_key}
 
-        # Check if it's a localhost connection using tuple directly
-        if is_localhost?(remote_ip) do
-          Log.debug("🏠 Accepting localhost connection")
-          # Generate a unique identifier for local connections
-          unique_key = Hash.random()
-          {:ok, unique_key}
-        else
-          # For non-local addresses: strict IP-based identification
-          remote_address = format_ip_tuple(remote_ip)
-          Log.debug("🔍 Connection from #{remote_address}:#{remote_port}")
-          identify_validator_by_ip(remote_address)
+          {:error, reason} ->
+            Log.warning("❌ Failed to extract ed25519 key from certificate: #{inspect(reason)}")
+            {:error, reason}
         end
 
       {:error, reason} ->
-        Log.warning("❌ Failed to get peer address: #{inspect(reason)}")
+        Log.warning("❌ Failed to get peer certificate: #{inspect(reason)}")
         {:error, reason}
     end
   end
 
-  # Check if IP tuple represents localhost
-  # IPv4 localhost
-  defp is_localhost?({127, 0, 0, 1}), do: true
-  # IPv6 localhost
-  defp is_localhost?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
-  defp is_localhost?(_), do: false
-
-  # Format IP tuple to string only when needed for validator identification (will not be used after we have a proper certificate-based identification)
-  defp format_ip_tuple({a, b, c, d}), do: "#{a}.#{b}.#{c}.#{d}"
-
-  defp format_ip_tuple({a, b, c, d, e, f, g, h}) do
-    # Format IPv6 as standard hex format
-    [a, b, c, d, e, f, g, h]
-    |> Enum.map(&String.pad_leading(Integer.to_string(&1, 16), 4, "0"))
-    |> Enum.join(":")
-  end
-
-  defp identify_validator_by_ip(remote_address) do
-    case NodeStateServer.inspect_state("curr_validators") do
-      {:ok, validators} ->
-        Log.debug("📋 Found #{length(validators)} validators, searching for IP #{remote_address}")
-
-        case Validator.find_by_ip(validators, remote_address) do
-          nil ->
-            Log.warning("🚫 No validator found for IP #{remote_address}")
-            {:error, :validator_not_found}
-
-          validator ->
-            Log.debug("✅ Found validator #{inspect(validator.ed25519)} for IP #{remote_address}")
-            {:ok, validator.ed25519}
+  # Extract ed25519 public key from DER-encoded certificate
+  defp extract_ed25519_key_from_certificate(cert_der) do
+    case :public_key.pkix_decode_cert(cert_der, :otp) do
+      {:ok, cert} ->
+        case extract_ed25519_key_from_cert(cert) do
+          {:ok, key} -> {:ok, key}
+          {:error, reason} -> {:error, reason}
         end
 
       {:error, reason} ->
-        Log.warning("❌ Failed to get validators from state: #{inspect(reason)}")
-        {:error, :state_not_available}
+        {:error, {:cert_decode_failed, reason}}
+    end
+  end
+
+  # Extract ed25519 key from decoded certificate
+  defp extract_ed25519_key_from_cert(cert) do
+    case cert.tbsCertificate.subjectPublicKeyInfo do
+      %{algorithm: {:id_Ed25519, _}, subjectPublicKey: key_data} ->
+        # Ed25519 public key is 32 bytes
+        case key_data do
+          <<key::binary-size(32)>> -> {:ok, key}
+          _ -> {:error, :invalid_ed25519_key_size}
+        end
+
+      _ ->
+        {:error, :not_ed25519_certificate}
     end
   end
 
