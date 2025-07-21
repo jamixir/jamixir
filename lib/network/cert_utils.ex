@@ -7,9 +7,6 @@ defmodule Network.CertUtils do
   @certfile Path.join(:code.priv_dir(:jamixir), "cert.pem")
   @ed25519_curve_oid {1, 3, 101, 112}
 
-  def keyfile, do: @keyfile
-  def certfile, do: @certfile
-
   def generate_self_signed_certificate do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
     {{public_key, private_key}, generate_self_signed_certificate(private_key)}
@@ -18,8 +15,10 @@ defmodule Network.CertUtils do
   def generate_self_signed_certificate(private_key, opts \\ []) do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519, private_key)
 
-    keyfile = opts[:keyfile] || @keyfile
-    certfile = opts[:certfile] || @certfile
+    dns_name = alt_name(public_key)
+
+    keyfile = opts[:keyfile] || "priv/#{dns_name}_secret.pem"
+    certfile = opts[:certfile] || "priv/#{dns_name}_cert.pem"
 
     pem = """
     -----BEGIN PRIVATE KEY-----
@@ -31,8 +30,6 @@ defmodule Network.CertUtils do
     File.write!(keyfile, pem)
     File.rm(certfile)
 
-    dns_name = alt_name(public_key)
-
     cmd = """
       openssl req -new -x509 -days 365 -key #{keyfile} -out #{certfile} -subj "/CN=Jamixir Ed25519 Cert" -addext "subjectAltName=DNS:#{dns_name}"
     """
@@ -41,6 +38,26 @@ defmodule Network.CertUtils do
     X509.Certificate.from_pem(File.read!(certfile))
   rescue
     error -> {:error, error}
+  end
+
+  def keyfile do
+    KeyManager.get_our_ed25519_key()
+    |> keyfile()
+  end
+
+  def certfile do
+    KeyManager.get_our_ed25519_key()
+    |> certfile()
+  end
+
+  def keyfile(public_key) do
+    dns_name = alt_name(public_key)
+    "priv/#{dns_name}_secret.pem"
+  end
+
+  def certfile(public_key) do
+    dns_name = alt_name(public_key)
+    "priv/#{dns_name}_cert.pem"
   end
 
   def cert_key(private_key, public_key) do
@@ -59,26 +76,24 @@ defmodule Network.CertUtils do
   end
 
   def validate_certificate(cert_der) do
-    case :public_key.pkix_decode_cert(cert_der, :otp) do
-      {:OTPCertificate, _tbs_cert, _signature_algorithm, _signature} = cert ->
+    case X509.Certificate.from_der(cert_der, :OTPCertificate) do
+      {:ok, cert} ->
         case X509.Certificate.public_key(cert) do
           # OpenSSL format
-          {:ECPoint, ed25519_key} ->
-            validate_alternative_name(cert, ed25519_key)
+          {:ECPoint, ed25519_public_key} ->
+            validate_alternative_name(cert, ed25519_public_key)
 
           # X509 library format with curve parameters
-          {{:ECPoint, ed25519_key}, {:namedCurve, @ed25519_curve_oid}} ->
-            validate_alternative_name(cert, ed25519_key)
+          {{:ECPoint, ed25519_public_key}, {:namedCurve, @ed25519_curve_oid}} ->
+            validate_alternative_name(cert, ed25519_public_key)
 
           _ ->
             {:error, :not_ed25519_certificate}
         end
 
-      _ ->
-        {:error, :invalid_certificate_format}
+      error ->
+        error
     end
-  rescue
-    _ -> {:error, :cert_decode_failed}
   end
 
   defp validate_alternative_name(cert, ed25519_key) do
@@ -90,7 +105,7 @@ defmodule Network.CertUtils do
           {:error, :alternative_name_mismatch}
         end
 
-      _ ->
+      nil ->
         {:error, :missing_alternative_name}
     end
   end
@@ -100,10 +115,11 @@ defmodule Network.CertUtils do
   def alt_name(k) do
     n = Codec.Decoder.de_le(k, 32)
 
-    "e" <>base32_encode(n, 52)
+    "e" <> base32_encode(n, 52)
   end
 
-
   defp base32_encode(_n, 0), do: <<>>
-  defp base32_encode(n, l), do: String.at(@base32_alphabet, rem(n, 32)) <> base32_encode(n >>> 5, l - 1)
+
+  defp base32_encode(n, l),
+    do: String.at(@base32_alphabet, rem(n, 32)) <> base32_encode(n >>> 5, l - 1)
 end
