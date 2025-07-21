@@ -36,6 +36,9 @@ defmodule Jamixir.Commands.Run do
 
     if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
+    # Generate TLS certificates before starting the application
+    generate_tls_certificates()
+
     Log.info("🎭 Starting as validator")
 
     Application.ensure_all_started(:jamixir)
@@ -57,6 +60,28 @@ defmodule Jamixir.Commands.Run do
     after
       :infinity ->
         :ok
+    end
+  end
+
+  defp generate_tls_certificates do
+    case KeyManager.get_our_ed25519_keypair() do
+      {private_key, public_key} ->
+        Log.debug("🔐 Generating TLS certificate using ed25519 key: #{Util.Hex.encode16(public_key)}")
+
+        case Network.CertUtils.generate_self_signed_certificate(private_key) do
+          {:ok, cert} ->
+            Log.info("✅ TLS certificate generated successfully")
+            Log.debug("📜 Certificate DNS name: #{Network.CertUtils.alt_name(public_key)}")
+            {:ok, cert}
+
+          {:error, error} ->
+            Log.error("❌ Failed to generate TLS certificate: #{inspect(error)}")
+            {:error, error}
+        end
+
+      nil ->
+        Log.error("❌ No ed25519 keys loaded, cannot generate TLS certificate")
+        System.halt(1)
     end
   end
 
