@@ -1,4 +1,3 @@
-# test/system/network/cert_utils_test.exs
 defmodule Network.CertUtilsTest do
   use ExUnit.Case
   import Bitwise, only: [<<<: 2]
@@ -92,27 +91,17 @@ defmodule Network.CertUtilsTest do
 
     test "handles invalid DER data" do
       invalid_der = <<1, 2, 3, 4, 5>>
-      assert {:error, :cert_decode_failed} = CertUtils.validate_certificate(invalid_der)
+      assert {:error, :malformed} = CertUtils.validate_certificate(invalid_der)
     end
 
     test "rejects certificate without alternative name" do
       {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
       cert_key = CertUtils.cert_key(private_key, public_key)
 
-      # Create certificate without alternative name extension
       cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
       cert_der = X509.Certificate.to_der(cert)
 
-      # Should fail because no alternative name extension
       assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert_der)
     end
-  end
-
-  def script do
-    {p, k} = :crypto.generate_key(:eddsa, :ed25519, Hash.zero())
-    {:ok, cert} = CertUtils.generate_self_signed_certificate(k)
-    cert_key = CertUtils.cert_key(k, p)
-    IO.puts(X509.PrivateKey.to_pem(cert_key))
-    IO.puts(X509.Certificate.to_pem(cert))
   end
 end

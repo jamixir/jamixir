@@ -11,13 +11,18 @@ defmodule Network.Config do
     timeout: 5_000
   ]
 
-  def fixed_quicer_opts do
+  def quicer_listen_opts do
+    certfile = CertUtils.certfile()
+    keyfile = CertUtils.keyfile()
+
     [
+      certfile: ~c"#{certfile}",
+      keyfile: ~c"#{keyfile}",
+      verify: :peer,
+      allow_insecure: true,
       alpn: [~c"#{alpn_protocol_identifier()}"],
       peer_bidi_stream_count: Constants.validator_count(),
       peer_unidi_stream_count: 100,
-      versions: [:"tlsv1.3"],
-      verify: :verify_peer,
       conn_acceptors: 4,
       # TODO: this is hack to prevent quicer from closing the connection when the peer is not sending any data
       # instead we should intiate up stream and indeed shut dow connection if nothing is moving on them
@@ -26,11 +31,18 @@ defmodule Network.Config do
     ]
   end
 
-  def default_quicer_opts do
+  def quicer_connect_opts do
+    certfile = CertUtils.certfile()
+    keyfile = CertUtils.keyfile()
+
     [
-      certfile: ~c"#{CertUtils.certfile()}",
-      keyfile: ~c"#{CertUtils.keyfile()}"
-    ] ++ fixed_quicer_opts()
+      certfile: ~c"#{certfile}",
+      keyfile: ~c"#{keyfile}",
+      # cacertfile: ~c"priv/e3r2oc62zwfj3crnuifuvsxvbtlzetk4o5qyhetkhagsc2fgl2oka_cert.pem",
+      verify: :peer,
+      allow_insecure: true,
+      alpn: [~c"#{alpn_protocol_identifier()}"]
+    ]
   end
 
   @default_stream_opts %{active: true}

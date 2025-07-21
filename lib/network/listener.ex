@@ -5,11 +5,10 @@ defmodule Network.Listener do
 
   use GenServer
   import Network.Config
-  alias Util.Hash
   alias Network.ConnectionManager
-  alias System.State.Validator
-  alias Jamixir.NodeStateServer
+  alias Network.CertUtils
   alias Util.Logger, as: Log
+  import Util.Hex, only: [b16: 1]
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -21,7 +20,7 @@ defmodule Network.Listener do
     port = Keyword.get(opts, :port, 9999)
     test_server_alias = Keyword.get(opts, :test_server_alias)
 
-    case :quicer.listen(port, default_quicer_opts()) do
+    case :quicer.listen(port, quicer_listen_opts()) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)
@@ -86,48 +85,20 @@ defmodule Network.Listener do
   defp get_validator_ed25519_key(conn) do
     case :quicer.peercert(conn) do
       {:ok, cert_der} ->
-        case extract_ed25519_key_from_certificate(cert_der) do
-          {:ok, ed25519_key} ->
-            Log.debug("✅ Extracted ed25519 key from certificate: #{inspect(ed25519_key)}")
+        case CertUtils.validate_certificate(cert_der) do
+          {:ok, ed25519_key, alt_name} ->
+            Log.debug("✅ Extracted ed25519 key from certificate: #{b16(ed25519_key)}")
+            Log.debug("✅ Certificate alternative name: #{alt_name}")
             {:ok, ed25519_key}
 
           {:error, reason} ->
-            Log.warning("❌ Failed to extract ed25519 key from certificate: #{inspect(reason)}")
+            Log.warning("❌ Failed to validate certificate: #{inspect(reason)}")
             {:error, reason}
         end
 
       {:error, reason} ->
         Log.warning("❌ Failed to get peer certificate: #{inspect(reason)}")
         {:error, reason}
-    end
-  end
-
-  # Extract ed25519 public key from DER-encoded certificate
-  defp extract_ed25519_key_from_certificate(cert_der) do
-    case :public_key.pkix_decode_cert(cert_der, :otp) do
-      {:ok, cert} ->
-        case extract_ed25519_key_from_cert(cert) do
-          {:ok, key} -> {:ok, key}
-          {:error, reason} -> {:error, reason}
-        end
-
-      {:error, reason} ->
-        {:error, {:cert_decode_failed, reason}}
-    end
-  end
-
-  # Extract ed25519 key from decoded certificate
-  defp extract_ed25519_key_from_cert(cert) do
-    case cert.tbsCertificate.subjectPublicKeyInfo do
-      %{algorithm: {:id_Ed25519, _}, subjectPublicKey: key_data} ->
-        # Ed25519 public key is 32 bytes
-        case key_data do
-          <<key::binary-size(32)>> -> {:ok, key}
-          _ -> {:error, :invalid_ed25519_key_size}
-        end
-
-      _ ->
-        {:error, :not_ed25519_certificate}
     end
   end
 

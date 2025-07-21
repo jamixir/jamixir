@@ -101,7 +101,7 @@ defmodule Network.Connection do
       connection_info
     )
 
-    case :quicer.connect(ip, port, default_quicer_opts(), 10_000) do
+    case :quicer.connect(ip, port, quicer_connect_opts(), 10_000) do
       {:ok, conn} ->
         Log.connection(:info, "Connected to validator", remote_ed25519_key, connection_info)
 
