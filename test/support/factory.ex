@@ -169,7 +169,7 @@ defmodule Jamixir.Factory do
       authorization_code_hash: <<3::256>>,
       parameterization_blob: <<4>>,
       context: %RefinementContext{},
-      work_items: [build(:work_item)]
+      work_items: build_list(2, :work_item)
     }
   end
 

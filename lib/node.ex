@@ -261,9 +261,15 @@ defmodule Jamixir.Node do
     end
   end
 
+  # CE 134
   @impl true
-  def save_work_package_bundle(_bundle, _core, _segments) do
-    {:error, :not_implemented}
+  def save_work_package_bundle(bundle, core, segment_lookup_dict) do
+    Logger.info("Saving work package bundle for core #{core}")
+
+    # Save all import segments locally
+    # Save all extrinsics locally
+    # Verify and save all justifications
+    # Execute refine, calculate wp hash and returns signature if sucessful
   end
 
   @impl true
