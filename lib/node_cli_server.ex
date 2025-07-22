@@ -34,6 +34,10 @@ defmodule Jamixir.NodeCLIServer do
 
   def validator_index, do: validator_index(KeyManager.get_our_ed25519_key())
 
+  def current_timeslot do
+    GenServer.call(__MODULE__, :current_timeslot)
+  end
+
   def guarantors, do: GenServer.call(__MODULE__, :guarantors)
 
   def assigned_core do
@@ -97,6 +101,11 @@ defmodule Jamixir.NodeCLIServer do
     {:reply,
      jam_state.curr_validators
      |> Enum.find_index(fn v -> v.ed25519 == ed25519_key end), s}
+  end
+
+  @impl true
+  def handle_call(:current_timeslot, _from, %{jam_state: jam_state} = state) do
+    {:reply, jam_state.timeslot, state}
   end
 
   @impl true

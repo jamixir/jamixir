@@ -1,10 +1,14 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
+  alias Jamixir.NodeCLIServer
+  alias Network.ConnectionManager
   alias System.State
   alias Util.Hash
   use StoragePrefix
   import Util.Hex, only: [b16: 1]
+  import Codec.Encoder
   alias Jamixir.Genesis
   require Logger
 
@@ -107,12 +111,8 @@ defmodule Jamixir.Node do
 
           child_hash ->
             case Storage.get_block(child_hash) do
-              nil ->
-                {:halt, {blocks, nil}}
-
-              block ->
-                next_hash = Hash.default(Encodable.encode(block.header))
-                {:cont, {[block | blocks], next_hash}}
+              nil -> {:halt, {blocks, nil}}
+              block -> {:cont, {[block | blocks], h(e(block.header))}}
             end
         end
       end)
@@ -234,29 +234,55 @@ defmodule Jamixir.Node do
     {_ts, header} = Storage.get_latest_header()
     services = Storage.get_state(header).services
 
-    # A work-package received via CE 133 should be shared with the other guarantors
-    # assigned to the core using this protocol, but only after:
-
-    # It has been determined that it is possible to generate a work-report that could be included
-    # on chain. This will involve, for example, verifying the WP's authorization.
-    # All import segments have been retrieved. Note that this will involve mapping any WP
-    # hashes in the import list to segments-roots.
-
-    # TODO verify imports before executing the work package.
-    # The refine logic need not be executed before sharing a work-package;
-    # ideally, refinement should be done while waiting for the other guarantors to respond.
     case WorkReport.execute_work_package(wp, core, services) do
       :error ->
         Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
         {:error, :execution_failed}
 
-      task ->
-        {_work_report, _exports} = Task.await(task)
-        Logger.info("Work package executed successfully, saving work report")
+      # Auth logic and import segments ok. share with other guarantors
+      {import_segments, refine_task} ->
+        # send WP bundle to two other guarantors in same core through CE 134
+        bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
+        {work_report, _exports} = Task.await(refine_task)
+        Logger.info("Work package validated successfully. Sending to other guarantors")
+
+        validators = NodeCLIServer.same_core_guarantors()
+
+        responses =
+          for v <- validators do
+            pid = ConnectionManager.get_connection(v.ed25519)
+
+            # TODO send correct segment lookup map
+            {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, %{})}
+          end
+
+        wr_hash = h(e(work_report))
+
+        case Enum.filter(responses, fn {_, {:ok, {hash, _}}} -> hash == wr_hash end) do
+          [] ->
+            Logger.warning("No other guarator confirmed work report")
+
+          list ->
+            credentials =
+              for {pub_key, {:ok, {_, signature}}} <- list do
+                {NodeCLIServer.validator_index(pub_key), signature}
+              end
+
+            guarantee = %Guarantee{
+              work_report: work_report,
+              # TODO review what timeslot to use
+              timeslot: NodeCLIServer.current_timeslot(),
+              credentials: credentials
+            }
+
+            # send guarantee to all validators
+            for pid <- ConnectionManager.get_connections() do
+              Network.Connection.distribute_guarantee(pid, guarantee)
+            end
+        end
 
         # TODO
-        # 1 - erasure code exports and save for upcoming calls
-        # 2 - distribute Guarantee to other validators
+        # erasure code exports and save for upcoming calls
         :ok
     end
   end
@@ -285,6 +311,7 @@ defmodule Jamixir.Node do
       # TODO
     end
 
+    process_work_package(bundle.work_package, core, bundle.extrinsics)
     # Execute refine, calculate wp hash and returns signature if sucessful
   end
 
