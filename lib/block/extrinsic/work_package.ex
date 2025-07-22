@@ -2,6 +2,7 @@ defmodule Block.Extrinsic.WorkPackage do
   @moduledoc """
   Defines a WorkPackage struct and its types.
   """
+  alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.WorkItem
   alias System.State.ServiceAccount
   alias Util.Hash
@@ -48,12 +49,15 @@ defmodule Block.Extrinsic.WorkPackage do
     valid_data_segments?(wp) && valid_size?(wp) && valid_items?(wp) && valid_gas?(wp)
   end
 
-  def bundle_binary(%__MODULE__{} = wp) do
-    e(
-      {wp, for(w <- wp.work_items, do: WorkItem.extrinsic_data(w)),
-       for(w <- wp.work_items, do: WorkItem.import_segment_data(w)),
-       for(w <- wp.work_items, do: WorkItem.segment_justification(w))}
-    )
+  def bundle_binary(%__MODULE__{} = wp), do: e(bundle(wp))
+
+  def bundle(%__MODULE__{} = wp) do
+    %WorkPackageBundle{
+      work_package: wp,
+      import_segments: for(w <- wp.work_items, do: WorkItem.import_segment_data(w)),
+      justifications: for(w <- wp.work_items, do: WorkItem.segment_justification(w)),
+      extrinsics: for(w <- wp.work_items, do: WorkItem.extrinsic_data(w))
+    }
   end
 
   # Formula (14.9) v0.6.6

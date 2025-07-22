@@ -3,11 +3,12 @@ defmodule Block.Extrinsic.WorkItem do
   Work Item
   Section 14.3
   """
+  alias System.DataAvailability.SegmentData
   alias Block.Extrinsic.Guarantee.WorkExecutionError
   alias Block.Extrinsic.Guarantee.WorkReport
   alias System.DataAvailability
   alias Block.Extrinsic.{Guarantee.WorkDigest}
-  alias Util.{Hash, MerkleTree}
+  alias Util.Hash
   import Codec.{Encoder, Decoder}
   alias Codec.VariableSize
   use Sizes
@@ -163,15 +164,16 @@ defmodule Block.Extrinsic.WorkItem do
   # S(w ∈ I) ≡ [s[n] ∣ M(s) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
-        do: DataAvailability.get_segment(WorkReport.segment_root(r), n)
+        root = WorkReport.segment_root(r),
+        data = DataAvailability.get_segment(root, n),
+        do: %SegmentData{erasure_root: root, segment_index: n, data: data}
   end
 
   # Formula (14.14) v0.6.6
   # J (w∈I) ≡ [↕J0(s,n) ∣ M(s) = L(r), (r,n) <− wi]
   def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
-        s = DataAvailability.get_segment(WorkReport.segment_root(r), n),
-        do: vs(MerkleTree.justification(s, n, 0))
+        do: DataAvailability.get_justification(WorkReport.segment_root(r), n)
   end
 
   use JsonDecoder
