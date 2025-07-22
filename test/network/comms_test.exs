@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
+  alias Block.Extrinsic.WorkPackageBundle
   alias Jamixir.Node
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
@@ -22,6 +23,7 @@ defmodule CommsTest do
   @port 9999
   @test_server_alias :test_server_alias
   setup_all do
+    Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
     start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias})
     %{test_server_alias: @test_server_alias}
   end
@@ -225,22 +227,23 @@ defmodule CommsTest do
   # CE 134
   describe "send_work_package_bundle/4" do
     test "sends work package bundle", %{client: client} do
-      stub(DAMock, :do_get_segment, fn _, _ -> <<>> end)
-      stub(DAMock, :do_get_justification, fn _, _ -> <<>> end)
+      stub(DAMock, :do_get_segment, fn _, _ -> <<1::m(export_segment)>> end)
+      stub(DAMock, :do_get_justification, fn _, _ -> Hash.one() end)
 
       wp_bundle = WorkPackage.bundle_binary(build(:work_package))
       core = 3
-      segment_root_mapping = %{Hash.zero() => Hash.one(), Hash.one() => Hash.two()}
+      segment_lookup_dict = %{Hash.zero() => Hash.one(), Hash.one() => Hash.two()}
       wr_hash = <<7::hash()>>
       signature = <<8::m(signature)>>
+      {bundle, _} = WorkPackageBundle.decode(wp_bundle)
 
       Jamixir.NodeAPI.Mock
-      |> expect(:save_work_package_bundle, 1, fn ^wp_bundle, ^core, ^segment_root_mapping ->
+      |> expect(:save_work_package_bundle, 1, fn ^bundle, ^core, ^segment_lookup_dict ->
         {:ok, {wr_hash, signature}}
       end)
 
       {:ok, {^wr_hash, ^signature}} =
-        Connection.send_work_package_bundle(client, wp_bundle, core, segment_root_mapping)
+        Connection.send_work_package_bundle(client, wp_bundle, core, segment_lookup_dict)
 
       verify!()
     end

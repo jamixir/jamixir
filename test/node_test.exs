@@ -158,4 +158,9 @@ defmodule Jamixir.NodeTest do
       assert {:error, :not_found} = get_work_report(Hash.random())
     end
   end
+
+  describe "save_work_package_bundle/3" do
+    test "save bundle returning validator signature" do
+    end
+  end
 end

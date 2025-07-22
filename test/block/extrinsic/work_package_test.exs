@@ -44,7 +44,7 @@ defmodule WorkPackageTest do
     end
 
     test "invalid amount of work items", %{wp: wp} do
-      [wi] = wp.work_items
+      [wi | _] = wp.work_items
       # empty wi not allowed
       refute WorkPackage.valid?(%{wp | work_items: []})
 
@@ -249,16 +249,19 @@ defmodule WorkPackageTest do
 
   describe "bundle encoding and decoding" do
     test "smoke test bundle" do
-      work_package = build(:work_package, work_items: [build(:work_item), build(:work_item)])
+      work_package = build(:work_package)
       # extrinsic in work item factory
       Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
 
-      expect(DAMock, :do_get_segment, 4, fn _, _ -> <<1::m(export_segment)>> end)
-      expect(DAMock, :do_get_justification, 4, fn _, _ -> <<9::hash()>> end)
+      # call DA 2 times, one segment on each of 2 work items
+      expect(DAMock, :do_get_segment, 2, fn _, _ -> <<1::m(export_segment)>> end)
+      expect(DAMock, :do_get_justification, 2, fn _, _ -> <<9::hash()>> end)
       bundle = WorkPackage.bundle(work_package)
-      {dec, _} = WorkPackageBundle.decode(e(bundle))
+      {dec, bin} = WorkPackageBundle.decode(e(bundle))
 
-      assert dec == WorkPackage.bundle(work_package)
+      assert dec == bundle
+      assert bin == <<>>
+      verify!()
     end
   end
 end

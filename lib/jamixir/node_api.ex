@@ -61,8 +61,8 @@ defmodule Jamixir.NodeAPI do
   def get_segment_shards(erasure_root, segment_index, share_index),
     do: impl().get_segment_shards(erasure_root, segment_index, share_index)
 
-  def save_work_package_bundle(bundle, core, segments),
-    do: impl().save_work_package_bundle(bundle, core, segments)
+  def save_work_package_bundle(bundle, core, segment_lookup_dict),
+    do: impl().save_work_package_bundle(bundle, core, segment_lookup_dict)
 
   def get_state_trie(header_hash), do: impl().get_state_trie(header_hash)
 

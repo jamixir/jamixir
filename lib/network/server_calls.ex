@@ -1,4 +1,5 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.WorkPackageBundle
   alias Network.Types.SegmentShardsRequest
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.WorkPackage
@@ -84,10 +85,13 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
-  def call(134, [segments_and_core, bundle]) do
+  def call(134, [segments_and_core, bundle_bin]) do
     <<core_index::16-little, segments_bin::binary>> = segments_and_core
-    {segments, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
-    {:ok, {hash, sign}} = Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, segments)
+    {lookup_dict, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
+    {bundle, _} = WorkPackageBundle.decode(bundle_bin)
+
+    {:ok, {hash, sign}} =
+      Jamixir.NodeAPI.save_work_package_bundle(bundle, core_index, lookup_dict)
 
     hash <> sign
   end
