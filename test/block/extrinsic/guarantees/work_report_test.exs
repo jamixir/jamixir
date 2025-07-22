@@ -2,6 +2,7 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
+  alias System.DataAvailability.SegmentData
   alias Util.MerkleTree
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
@@ -509,7 +510,7 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      task = WorkReport.execute_work_package(wp, 0, services)
+      {[[%SegmentData{}]], task} = WorkReport.execute_work_package(wp, 0, services)
       {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
@@ -543,7 +544,7 @@ defmodule WorkReportTest do
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      task = WorkReport.execute_work_package(wp, 0, services)
+      {[[%SegmentData{}]], task} = WorkReport.execute_work_package(wp, 0, services)
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
       assert work_digest.result == :bad

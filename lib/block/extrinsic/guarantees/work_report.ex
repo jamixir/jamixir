@@ -224,15 +224,24 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     w_r = Constants.max_work_report_size()
 
     case PVM.authorized(wp, core, services) do
-      {o, _} when is_atom(o) or byte_size(o) > w_r -> :error
-      {o, _gas_used} -> Task.async(fn -> refine(wp, core, o, services) end)
+      {o, _} when is_atom(o) or byte_size(o) > w_r ->
+        :error
+
+      {o, _gas_used} ->
+        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
+        {import_segments, Task.async(fn -> refine(wp, core, o, services, import_segments) end)}
     end
   end
 
-  @spec refine(WorkPackage.t(), integer(), binary(), %{integer() => ServiceAccount.t()}) ::
+  @spec refine(
+          WorkPackage.t(),
+          integer(),
+          binary(),
+          %{integer() => ServiceAccount.t()},
+          list(list(binary()))
+        ) ::
           {WorkReport.t(), list(binary())}
-  defp refine(wp, core, o, services) do
-    import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
+  defp refine(wp, core, o, services, import_segments) do
     # (r, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
     {r, e} =
       for j <- 0..(length(wp.work_items) - 1) do

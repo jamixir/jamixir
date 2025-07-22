@@ -1,17 +1,18 @@
 defmodule NodeCLIServerTest do
+  alias System.State.Validator
   use ExUnit.Case, async: true
   import Jamixir.Factory
   import Jamixir.NodeCLIServer
 
+  setup do
+    KeyManager.load_keys("test/keys/4.json")
+    s = build(:genesis_state)
+    start_link(jam_state: s)
+
+    {:ok, state: s}
+  end
+
   describe "validator index and assigned shards  " do
-    setup do
-      KeyManager.load_keys("test/keys/4.json")
-      s = build(:genesis_state)
-      start_link(jam_state: s)
-
-      {:ok, state: s}
-    end
-
     test "returns nil no state found" do
       assert validator_index() == nil
     end
@@ -42,6 +43,37 @@ defmodule NodeCLIServerTest do
       assign_me_to_index(state, 5)
       # i = (1 * 2 + 5) mod 6 = 1
       assert assigned_shard_index(1) == 1
+    end
+  end
+
+  describe "guarantors/0" do
+    test "correctly return guarantors" do
+      guarantors = guarantors()
+      assert Enum.sort(guarantors.assigned_cores) == [0, 0, 0, 1, 1, 1]
+      assert length(Enum.sort(guarantors.validators)) == 6
+      [%Validator{} | _] = guarantors.validators
+    end
+  end
+
+  describe "assigned_core/0" do
+    test "returns assigned core for current validator", %{state: state} do
+      assign_me_to_index(state, 1)
+      assert assigned_core() in [0, 1]
+    end
+
+    test "returns nil when not a validator" do
+      assert assigned_core() == nil
+    end
+  end
+
+  describe "guarantors_same_core/0" do
+    test "return other 2 guarantors in the same core", %{state: state} do
+      assign_me_to_index(state, 1)
+      guarantors = same_core_guarantors()
+      assert length(guarantors) == 2
+
+      assert Enum.find(guarantors, fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end) ==
+               nil
     end
   end
 

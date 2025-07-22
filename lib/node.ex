@@ -267,8 +267,24 @@ defmodule Jamixir.Node do
     Logger.info("Saving work package bundle for core #{core}")
 
     # Save all import segments locally
-    # Save all extrinsics locally
-    # Verify and save all justifications
+    for wi <- bundle.work_package.work_items do
+      for {hash, index} <- wi.import_segments do
+        case Enum.find(bundle.import_segments, fn {h, _} -> h == hash end) do
+          nil ->
+            Logger.warning("Import segment #{b16(hash)} not found in bundle")
+
+          {segment_bin, _} ->
+            Storage.put_segment(hash, index, segment_bin)
+        end
+      end
+
+      # Save all extrinsics locally
+      for e <- wi.extrinsics, do: Storage.put(e)
+
+      # Verify and save all justifications
+      # TODO
+    end
+
     # Execute refine, calculate wp hash and returns signature if sucessful
   end
 
