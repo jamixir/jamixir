@@ -77,6 +77,13 @@ defmodule NodeCLIServerTest do
     end
   end
 
+  describe "current_timeslot/0" do
+    test "returns current timeslot", %{state: state} do
+      set_jam_state(put_in(state.timeslot, 5))
+      assert current_timeslot() == 5
+    end
+  end
+
   defp assign_me_to_index(state, index) do
     v = state.curr_validators |> Enum.at(index)
     v = put_in(v.ed25519, KeyManager.get_our_ed25519_key())
