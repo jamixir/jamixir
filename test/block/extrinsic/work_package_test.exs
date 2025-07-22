@@ -1,10 +1,13 @@
 defmodule WorkPackageTest do
+  alias Block.Extrinsic.WorkPackageBundle
+  alias Block.Extrinsic.WorkPackage
   alias System.State
   alias Util.Hash
-  alias Block.Extrinsic.WorkPackage
   use ExUnit.Case
   import Jamixir.Factory
   import Constants
+  import Codec.Encoder
+  import Mox
 
   setup_all do
     {:ok, wp: build(:work_package, service: 0), state: build(:genesis_state)}
@@ -178,11 +181,6 @@ defmodule WorkPackageTest do
   end
 
   describe "encode/1" do
-    test "encodes a work package", %{wp: wp} do
-      assert Codec.Encoder.encode(wp) ==
-               "\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x03\x01\x04\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\x01\x02\x03\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x04\x05\0\x01\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\a\0\0\0\b\0"
-    end
-
     test "encode and decode a work package", %{wp: wp} do
       assert WorkPackage.decode(Codec.Encoder.encode(wp)) == {wp, <<>>}
     end
@@ -246,6 +244,21 @@ defmodule WorkPackageTest do
     test "invalid extrinsics" do
       {work_package, _} = work_package_and_its_extrinsic_factory()
       refute WorkPackage.valid_extrinsics?(work_package, [])
+    end
+  end
+
+  describe "bundle encoding and decoding" do
+    test "smoke test bundle" do
+      work_package = build(:work_package, work_items: [build(:work_item), build(:work_item)])
+      # extrinsic in work item factory
+      Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
+
+      expect(DAMock, :do_get_segment, 4, fn _, _ -> <<1::m(export_segment)>> end)
+      expect(DAMock, :do_get_justification, 4, fn _, _ -> <<9::hash()>> end)
+      bundle = WorkPackage.bundle(work_package)
+      {dec, _} = WorkPackageBundle.decode(e(bundle))
+
+      assert dec == WorkPackage.bundle(work_package)
     end
   end
 end

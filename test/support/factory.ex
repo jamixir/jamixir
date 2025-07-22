@@ -157,7 +157,7 @@ defmodule Jamixir.Factory do
       payload: <<2>>,
       refine_gas_limit: 3,
       import_segments: [{<<4::256>>, 5}],
-      extrinsic: [{<<6::256>>, 7}],
+      extrinsic: [{Hash.default(<<1, 2, 3, 4, 5, 6, 7>>), 7}],
       export_count: 8
     }
   end
@@ -430,7 +430,13 @@ defmodule Jamixir.Factory do
   end
 
   def decodable_block_factory(attrs) do
-    extrinsic = Map.get(attrs, :extrinsic, build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes)))
+    extrinsic =
+      Map.get(
+        attrs,
+        :extrinsic,
+        build(:extrinsic, tickets: [build(:ticket_proof)], disputes: build(:disputes))
+      )
+
     parent_hash = Map.get(attrs, :parent_hash, Hash.random())
     prior_state_root = Map.get(attrs, :prior_state_root, Hash.random())
 
@@ -443,7 +449,10 @@ defmodule Jamixir.Factory do
 
     build(
       :block,
-      merge_attributes(Map.drop(attrs, [:parent_hash, :prior_state_root]), %{header: header, extrinsic: extrinsic})
+      merge_attributes(Map.drop(attrs, [:parent_hash, :prior_state_root]), %{
+        header: header,
+        extrinsic: extrinsic
+      })
     )
   end
 
@@ -505,14 +514,17 @@ defmodule Jamixir.Factory do
   def decodable_header_factory(attrs) do
     build(
       :header,
-      Map.merge(%{
-        prior_state_root: Hash.random(),
-        epoch_mark:
-          {Hash.random(), Hash.random(),
-           for(_ <- 1..Constants.validator_count(), do: {Hash.random(), Hash.random()})},
-        vrf_signature: Hash.random(96),
-        block_seal: Hash.random(96)
-      }, attrs)
+      Map.merge(
+        %{
+          prior_state_root: Hash.random(),
+          epoch_mark:
+            {Hash.random(), Hash.random(),
+             for(_ <- 1..Constants.validator_count(), do: {Hash.random(), Hash.random()})},
+          vrf_signature: Hash.random(96),
+          block_seal: Hash.random(96)
+        },
+        attrs
+      )
     )
   end
 

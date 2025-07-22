@@ -225,7 +225,8 @@ defmodule CommsTest do
   # CE 134
   describe "send_work_package_bundle/4" do
     test "sends work package bundle", %{client: client} do
-      stub(DAMock, :do_get_segment, fn _, _ -> nil end)
+      stub(DAMock, :do_get_segment, fn _, _ -> <<>> end)
+      stub(DAMock, :do_get_justification, fn _, _ -> <<>> end)
 
       wp_bundle = WorkPackage.bundle_binary(build(:work_package))
       core = 3

@@ -3,11 +3,22 @@ defmodule System.DataAvailability do
   alias Network.Types.SegmentShardsRequest
   require Logger
   @callback do_get_segment(binary(), non_neg_integer()) :: binary()
+  @callback do_get_justification(binary(), non_neg_integer()) :: binary()
 
   def get_segment(merkle_root, segment_index) do
     module = Application.get_env(:jamixir, :data_availability, __MODULE__)
 
     module.do_get_segment(merkle_root, segment_index)
+  end
+
+  def get_justification(merkle_root, segment_index) do
+    module = Application.get_env(:jamixir, :data_availability, __MODULE__)
+    module.do_get_justification(merkle_root, segment_index)
+  end
+
+  def do_get_justification(_merkle_root, _segment_index) do
+    # TODO
+    <<>>
   end
 
   def node_server do
