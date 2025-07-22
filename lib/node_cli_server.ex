@@ -7,6 +7,7 @@ end
 defmodule Jamixir.NodeCLIServer do
   @behaviour Jamixir.NodeCLIServerBehaviour
 
+  alias Block.Extrinsic.GuarantorAssignments
   alias Jamixir.Genesis
   alias Jamixir.TimeTicker
   alias Network.{Connection, ConnectionManager}
@@ -32,6 +33,37 @@ defmodule Jamixir.NodeCLIServer do
   end
 
   def validator_index, do: validator_index(KeyManager.get_our_ed25519_key())
+
+  def guarantors, do: GenServer.call(__MODULE__, :guarantors)
+
+  def assigned_core do
+    guarantors = guarantors()
+
+    index =
+      Enum.find_index(guarantors.validators, fn v ->
+        v.ed25519 == KeyManager.get_our_ed25519_key()
+      end)
+
+    if index, do: guarantors.assigned_cores |> Enum.at(index), else: nil
+  end
+
+  def same_core_guarantors do
+    case assigned_core() do
+      nil ->
+        []
+
+      core ->
+        # we know this is calling twice the guarantors function
+        # This can be improved later
+        guarantors = guarantors()
+
+        Enum.zip(guarantors.validators, guarantors.assigned_cores)
+        |> Enum.filter(fn {v, c} ->
+          v.ed25519 != KeyManager.get_our_ed25519_key() and c == core
+        end)
+        |> Enum.map(fn {v, _c} -> v end)
+    end
+  end
 
   def set_jam_state(state), do: GenServer.cast(__MODULE__, {:set_jam_state, state})
   def get_jam_state, do: GenServer.call(__MODULE__, :get_jam_state)
@@ -65,6 +97,19 @@ defmodule Jamixir.NodeCLIServer do
     {:reply,
      jam_state.curr_validators
      |> Enum.find_index(fn v -> v.ed25519 == ed25519_key end), s}
+  end
+
+  @impl true
+  def handle_call(:guarantors, _from, %{jam_state: jam_state} = state) do
+    guarantors =
+      GuarantorAssignments.guarantors(
+        jam_state.entropy_pool.n2,
+        jam_state.timeslot,
+        jam_state.curr_validators,
+        MapSet.new()
+      )
+
+    {:reply, guarantors, state}
   end
 
   @impl true
@@ -125,7 +170,7 @@ defmodule Jamixir.NodeCLIServer do
 
   @impl true
   # Already have JAM state, ignore
-  def handle_info(:check_jam_state, state), do: {:noreply, state}
+  def handle_info({:check_jam_state, _}, state), do: {:noreply, state}
 
   @impl true
   # i = (cR + v) mod V
