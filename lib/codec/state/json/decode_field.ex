@@ -74,13 +74,9 @@ defmodule Codec.State.Json.DecodeField do
 
   # delta - services
   def decode_field(:accounts, value), do: decode_field(:delta, value)
-  def decode_field(:services, value), do: decode_field(:delta, value)
 
   # eta - entropy
   def decode_field(:entropy, value), do: decode_field(:eta, value)
-
-  # iota - next_validators
-  def decode_field(:next_validators, value), do: decode_field(:iota, value)
 
   # kappa - curr_validators
   def decode_field(:curr_validators, value), do: decode_field(:kappa, value)

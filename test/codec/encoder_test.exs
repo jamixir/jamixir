@@ -183,6 +183,10 @@ defmodule CodecEncoderTest do
       s = %{service: 8}
       assert t(s.service) == <<8::little-(@service_index_size * 8)>>
     end
+
+    test "struct don't implement Encodable" do
+      assert_raise RuntimeError, fn -> e(%PVM.Integrated{}) end
+    end
   end
 
   describe "m macro" do

@@ -184,11 +184,9 @@ defmodule Codec.Encoder do
       case var do
         {{:., _, [{_, _, _}, name]}, _, []} when is_atom(name) -> name
         {name, _, _} -> name
-        name when is_atom(name) -> name
       end
 
     case Map.get(binary_registry(), var_name) do
-      nil -> var
       {size, :little} -> quote(do: unquote(size) - little)
       size -> quote(do: unquote(size) * 8)
     end
