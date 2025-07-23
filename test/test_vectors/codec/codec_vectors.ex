@@ -24,8 +24,4 @@ defmodule CodecVectors do
   ]
 
   def tests, do: @tests
-
-  def files_to_test do
-    for({file_name, _} <- @tests, do: file_name)
-  end
 end
