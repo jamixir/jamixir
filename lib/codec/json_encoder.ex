@@ -20,22 +20,7 @@ defmodule Codec.JsonEncoder do
     end
   end
 
-  def to_json(struct) when is_struct(struct) do
-    for x <- Map.from_struct(struct), do: encode(x), into: %{}
-  end
-
-  def to_map(map) when map_size(map) == 0, do: nil
-
-  def to_map(map) do
-    for({k, v} <- map, into: %{}, do: {b16(k), v})
-  end
-
-  def to_object({k, v}, key_name, value_name) do
-    %{
-      key_name => k,
-      value_name => v
-    }
-  end
+  def to_object({k, v}, key_name, value_name), do: %{key_name => k, value_name => v}
 
   def encode(%MapSet{} = set), do: set |> MapSet.to_list() |> encode()
 
@@ -57,9 +42,6 @@ defmodule Codec.JsonEncoder do
       {:_root, {:_root, transform}} ->
         transform.(struct) |> encode()
 
-      {key, {:_root, transform}} ->
-        transform.(Map.get(struct, key)) |> encode()
-
       {key, :_root} ->
         encode(Map.get(struct, key))
 
@@ -78,9 +60,6 @@ defmodule Codec.JsonEncoder do
 
               {new_key, transform} ->
                 {new_key, transform.(original_value)}
-
-              [parent_key, child_key] ->
-                {parent_key, %{child_key => original_value}}
 
               f when is_function(f) ->
                 [parent_key, child_key] = f.(original_value)
