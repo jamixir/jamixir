@@ -144,8 +144,6 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
       gas_used: [fn v -> v.gas_used end, :refine_load]
     }
 
-  def value_or_zero(v), do: v || 0
-
   def to_json_mapping,
     do: %{service: :service_id, gas_ratio: :accumulate_gas, result: {:result, &result_to_json/1}}
 

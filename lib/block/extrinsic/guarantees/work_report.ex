@@ -228,7 +228,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         :error
 
       {o, _gas_used} ->
-        import_segments = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
+        segments_data = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
+        import_segments = for(w <- segments_data, do: for(s <- w, do: s.data))
         {import_segments, Task.async(fn -> refine(wp, core, o, services, import_segments) end)}
     end
   end
