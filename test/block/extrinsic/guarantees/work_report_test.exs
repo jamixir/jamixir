@@ -2,8 +2,6 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
-  alias System.DataAvailability.SegmentData
-  alias Util.MerkleTree
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.WorkPackage
@@ -11,6 +9,7 @@ defmodule WorkReportTest do
   alias System.State.Ready
   alias System.State.ServiceAccount
   alias Util.Hash
+  alias Util.MerkleTree
   import Mox
   import Util.Hex, only: [b16: 1]
 
@@ -462,9 +461,9 @@ defmodule WorkReportTest do
     test "all good", %{wp: wp, state: state} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
-      wp = %WorkPackage{wp | work_items: [wi]}
+      wp = %WorkPackage{wp | work_items: [wi, wi]}
 
-      {r, _u, e} = WorkReport.process_item(wp, 0, <<1>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 1, <<1>>, [], state.services, %{})
       assert r == <<2>>
       assert length(e) == 1
     end
@@ -477,14 +476,15 @@ defmodule WorkReportTest do
       Application.put_env(:jamixir, :pvm, MockPVM)
       stub(MockPVM, :do_authorized, fn _, _, _ -> {<<1>>, 0} end)
       stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
+      segment = <<7::m(export_segment)>>
 
-      stub(MockPVM, :do_refine, fn j, p, _, _, _, _, _ ->
+      stub(MockPVM, :do_refine, fn j, p, <<1>>, [[^segment]], _, _, _ ->
         w = Enum.at(p.work_items, j)
 
         {<<1, 2, 3>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
       end)
 
-      stub(DAMock, :do_get_segment, fn _, _ -> <<>> end)
+      stub(DAMock, :do_get_segment, fn _, _ -> segment end)
       stub(DAMock, :do_get_justification, fn _, _ -> <<>> end)
 
       on_exit(fn ->
@@ -510,7 +510,8 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      {[[%SegmentData{}]], task} = WorkReport.execute_work_package(wp, 0, services)
+      {[[b]], task} = WorkReport.execute_work_package(wp, 0, services)
+      assert is_binary(b)
       {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
@@ -544,7 +545,8 @@ defmodule WorkReportTest do
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      {[[%SegmentData{}]], task} = WorkReport.execute_work_package(wp, 0, services)
+      {[[b]], task} = WorkReport.execute_work_package(wp, 0, services)
+      assert is_binary(b)
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
       assert work_digest.result == :bad
