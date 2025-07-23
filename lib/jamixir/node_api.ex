@@ -28,7 +28,8 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback save_guarantee(Guarantee.t()) :: :ok | {:error, any}
   @callback get_work_report(Types.hash()) :: {:ok, binary} | {:error, any}
-  @callback save_work_package(WorkPackage.t(), non_neg_integer(), binary()) :: :ok | {:error, any}
+  @callback save_work_package(WorkPackage.t(), non_neg_integer(), list(binary())) ::
+              :ok | {:error, any}
   @callback save_work_package_bundle(binary(), non_neg_integer(), %{Types.hash() => Types.hash()}) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}

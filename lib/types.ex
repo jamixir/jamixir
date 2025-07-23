@@ -61,7 +61,8 @@ defmodule Types do
 
   # Network IP address types
   @type ipv4_address :: {0..255, 0..255, 0..255, 0..255}
-  @type ipv6_address :: {0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535}
+  @type ipv6_address ::
+          {0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535, 0..65535}
   @type ip_address :: ipv4_address() | ipv6_address()
   @type port_number :: 1..65535
 

@@ -1,6 +1,7 @@
 {
   "skip_files": [
     "lib/codec/scale_native.ex",
+    "lib/commands/",
     "lib/cli.ex",
     "lib/mix/tasks/mix.jam.ex",
     "lib/mix/tasks/mix.cli.ex",
@@ -15,15 +16,11 @@
     "lib/macros/",
     "lib/network/flags.ex",
     "lib/network/config.ex",
-    "lib/network/peer_registry.ex",
-    "lib/network/peer_state.ex",
-    "lib/pvm/accumulate/operand.ex",
     "lib/pvm/constants/host_call_ids.ex",
     "lib/pvm/constants/inner_pvm_result.ex",
     "lib/pvm/host/refine/context.ex",
     "lib/pvm/integrated.ex",
     "test/support/original_modules.ex",
     "lib/types.ex"
-
   ]
 }

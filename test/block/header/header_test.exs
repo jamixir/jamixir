@@ -108,9 +108,9 @@ defmodule Block.HeaderTest do
     end
 
     test "returns error when block time is in the future" do
-      future_timeslot = Util.Time.current_time() + 10 / Constants.slot_period()
-      header = %Header{timeslot: future_timeslot}
-      state = %State{timeslot: future_timeslot - 1}
+      time = future_timeslot()
+      header = %Header{timeslot: time}
+      state = %State{timeslot: time - 1}
 
       assert {:error, message} = Header.validate(header, state)
       assert String.starts_with?(message, "Invalid block time: block_time")

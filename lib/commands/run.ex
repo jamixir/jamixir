@@ -69,6 +69,7 @@ defmodule Jamixir.Commands.Run do
     case IO.gets("") do
       "q\n" ->
         send(:shutdown_handler, :shutdown)
+
       _ ->
         input_listener()
     end
