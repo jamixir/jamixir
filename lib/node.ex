@@ -240,7 +240,7 @@ defmodule Jamixir.Node do
         {:error, :execution_failed}
 
       # Auth logic and import segments ok. share with other guarantors
-      {import_segments, refine_task} ->
+      {_import_segments, refine_task} ->
         # send WP bundle to two other guarantors in same core through CE 134
         bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
         {work_report, _exports} = Task.await(refine_task)
@@ -289,7 +289,7 @@ defmodule Jamixir.Node do
 
   # CE 134
   @impl true
-  def save_work_package_bundle(bundle, core, segment_lookup_dict) do
+  def save_work_package_bundle(bundle, core, _segment_lookup_dict) do
     Logger.info("Saving work package bundle for core #{core}")
 
     # Save all import segments locally
