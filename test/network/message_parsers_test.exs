@@ -16,6 +16,7 @@ defmodule Network.MessageParsersTest do
       else
         Application.delete_env(:jamixir, :server_calls)
       end
+
       Mox.verify!()
     end)
 

@@ -159,6 +159,7 @@ defmodule Block.Extrinsic.WorkPackage do
     for(wi <- work_items, do: for(e <- wi.extrinsic, do: e)) |> List.flatten()
   end
 
+  @spec valid_extrinsics?(Block.Extrinsic.WorkPackage.t(), list(binary())) :: any()
   def valid_extrinsics?(%__MODULE__{} = wp, extrinsics) do
     work_item_extrinsics = extrinsic_defs(wp)
 
