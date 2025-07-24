@@ -18,8 +18,7 @@ defmodule Network.Config do
     [
       certfile: ~c"#{certfile}",
       keyfile: ~c"#{keyfile}",
-      verify: :peer,
-      allow_insecure: true,
+      verify: :none,
       alpn: [~c"#{alpn_protocol_identifier()}"],
       peer_bidi_stream_count: Constants.validator_count(),
       peer_unidi_stream_count: 100,
@@ -38,9 +37,7 @@ defmodule Network.Config do
     [
       certfile: ~c"#{certfile}",
       keyfile: ~c"#{keyfile}",
-      # cacertfile: ~c"priv/e3r2oc62zwfj3crnuifuvsxvbtlzetk4o5qyhetkhagsc2fgl2oka_cert.pem",
-      verify: :peer,
-      allow_insecure: true,
+      verify: :none,
       alpn: [~c"#{alpn_protocol_identifier()}"]
     ]
   end
