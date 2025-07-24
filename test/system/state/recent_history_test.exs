@@ -340,9 +340,7 @@ defmodule RecentHistoryTest do
 
   describe "from_json/1" do
     test "import json correctly" do
-      {:ok, content} = File.read("test/system/state/recent_history.json")
-      {:ok, json} = Jason.decode(content)
-      json = Utils.atomize_keys(json)
+      json = JsonReader.read("test/system/state/recent_history.json")
       result = RecentHistory.from_json(json)
       assert %RecentHistory{blocks: [block1, block2]} = result
 

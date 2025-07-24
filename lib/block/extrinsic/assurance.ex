@@ -9,11 +9,12 @@ defmodule Block.Extrinsic.Assurance do
   alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
+  use Sizes
   import Codec.Encoder
   # Formula (11.10) v0.6.6
   # EA ∈ ⟦(a ∈ H, f ∈ BC, v ∈ NV, s ∈ E)⟧∶V
   defstruct hash: Hash.zero(),
-            bitfield: Utils.zero_bitstring(Sizes.bitfield()),
+            bitfield: <<0::@bitfield_size*8>>,
             validator_index: 0,
             signature: Crypto.zero_sign()
 
@@ -103,10 +104,6 @@ defmodule Block.Extrinsic.Assurance do
     use Sizes
     import Codec.Encoder
     alias Block.Extrinsic.Assurance
-
-    def pad(value, size) do
-      Utils.pad_binary(value, size)
-    end
 
     # Formula (C.17) v0.6.6
     def encode(%Assurance{} = a) do

@@ -155,8 +155,7 @@ defmodule System.StateTest do
     end
 
     test "decode/encode genesis state" do
-      genesis_json = File.read!("genesis/genesis.json") |> Jason.decode!() |> Utils.atomize_keys()
-
+      genesis_json = JsonReader.read("genesis/genesis.json")
       assert JsonEncoder.encode(Json.decode(genesis_json)) == genesis_json
     end
   end

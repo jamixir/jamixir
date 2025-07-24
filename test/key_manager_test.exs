@@ -64,7 +64,8 @@ defmodule KeyManagerTest do
     end
 
     test "handles missing file" do
-      assert {:error, :enoent} = KeyManager.load_keys("nonexistent.json")
+      assert {:error, %File.Error{reason: :enoent, path: "nonexistent.json", action: "read file"}} =
+               KeyManager.load_keys("nonexistent.json")
     end
 
     test "handles invalid JSON" do

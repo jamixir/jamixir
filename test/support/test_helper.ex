@@ -46,6 +46,7 @@ defmodule TestHelper do
       elapsed_time = System.monotonic_time(:millisecond) - start_time
 
       if elapsed_time >= timeout do
+        # coveralls-ignore-next-line
         raise "wait timed out after #{timeout}ms"
       else
         Process.sleep(interval)

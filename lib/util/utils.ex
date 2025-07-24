@@ -64,10 +64,6 @@ defmodule Utils do
     x <> pad
   end
 
-  def zero_bitstring(size) do
-    String.duplicate(<<0>>, size)
-  end
-
   def keys_set(map), do: MapSet.new(Map.keys(map))
 
   # Formula (H.5) v0.6.6

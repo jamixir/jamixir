@@ -9,9 +9,7 @@ defmodule Util.Crypto do
 
   use Sizes
 
-  def zero_sign do
-    Utils.zero_bitstring(@signature_size)
-  end
+  def zero_sign, do: <<0::@signature_size*8>>
 
   def random_sign do
     :crypto.strong_rand_bytes(@signature_size)
