@@ -12,7 +12,7 @@ defmodule System.DataAvailabilityTest do
   describe "do_get_segment/2" do
     setup do
       Application.delete_env(:jamixir, :data_availability)
-      Application.put_env(:jamixir, :node_cli_server, NodeCLIServerMock)
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
       Application.put_env(:jamixir, :network_client, ClientMock)
 
       root = Hash.random()
@@ -22,7 +22,7 @@ defmodule System.DataAvailabilityTest do
 
       on_exit(fn ->
         Application.put_env(:jamixir, :data_availability, DAMock)
-        Application.delete_env(:jamixir, :node_cli_server)
+        Application.delete_env(:jamixir, :node_state_server)
         Application.delete_env(:jamixir, :network_client)
       end)
 
@@ -45,14 +45,14 @@ defmodule System.DataAvailabilityTest do
       fake_pid = 99
 
       # mock validators
-      NodeCLIServerMock
+      NodeStateServerMock
       |> expect(:validator_connections, fn -> for v <- validators, do: {v, fake_pid} end)
 
       # for each validator, expects to get its share based on assigned shard index
       for {v, i} <- Enum.with_index(validators) do
         key = v.ed25519
 
-        expect(NodeCLIServerMock, :assigned_shard_index, fn ^core, ^key -> i end)
+        expect(NodeStateServerMock, :assigned_shard_index, fn ^core, ^key -> i end)
 
         req = [
           %SegmentShardsRequest{

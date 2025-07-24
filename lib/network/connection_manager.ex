@@ -16,7 +16,7 @@ defmodule Network.ConnectionManager do
   """
 
   use GenServer
-  alias Jamixir.NodeCLIServer
+  alias Jamixir.NodeStateServer
   alias Network.{ConnectionInfo}
   alias Util.Logger, as: Log
   alias System.State.Validator
@@ -584,7 +584,7 @@ defmodule Network.ConnectionManager do
   end
 
   defp find_validator_by_ed25519_key(ed25519_key) do
-    case NodeCLIServer.get_jam_state() do
+    case NodeStateServer.get_jam_state() do
       nil ->
         nil
 

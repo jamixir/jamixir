@@ -23,17 +23,17 @@ defmodule Mix.Tasks.Node do
   end
 
   def run(["inspect"]) do
-    connect_and_call(Jamixir.NodeCLIServer, :inspect_state, [])
+    connect_and_call(Jamixir.NodeStateServer, :inspect_state, [])
     |> handle_response()
   end
 
   def run(["inspect", key]) do
-    connect_and_call(Jamixir.NodeCLIServer, :inspect_state, [key])
+    connect_and_call(Jamixir.NodeStateServer, :inspect_state, [key])
     |> handle_response()
   end
 
   def run(["load", file]) do
-    connect_and_call(Jamixir.NodeCLIServer, :load_state, [file])
+    connect_and_call(Jamixir.NodeStateServer, :load_state, [file])
     |> handle_response()
   end
 

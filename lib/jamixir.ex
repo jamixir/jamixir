@@ -59,7 +59,7 @@ defmodule Jamixir do
       Jamixir.TimeTicker,
       {Task.Supervisor, name: Jamixir.TaskSupervisor},
       Jamixir.InitializationTask,
-      {Jamixir.NodeCLIServer, []}
+      {Jamixir.NodeStateServer, []}
     ]
   end
 
