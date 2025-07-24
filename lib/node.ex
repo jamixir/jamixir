@@ -61,20 +61,14 @@ defmodule Jamixir.Node do
   end
 
   def load_state(path) do
-    case File.read(path) do
-      {:ok, contents} ->
-        case Jason.decode(contents) do
-          {:ok, json_data} ->
-            state = Codec.State.Json.decode(json_data |> Utils.atomize_keys())
-            Storage.put(Genesis.genesis_block_parent_header(), state)
-            :ok
+    case Codec.State.from_file(path) do
+      {:ok, state} ->
+        Storage.put(Genesis.genesis_block_parent_header(), state)
+        :ok
 
-          error ->
-            {:error, error}
-        end
-
-      error ->
-        {:error, error}
+      {:error, reason} ->
+        Logger.error("Failed to load state from #{path}: #{reason}")
+        {:error, reason}
     end
   end
 

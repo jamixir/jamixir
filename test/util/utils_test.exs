@@ -102,6 +102,7 @@ defmodule UtilsTest do
     test "pads binary with zeros" do
       assert Utils.pad_binary(<<1, 2, 3>>, 8) == <<0, 0, 0, 0, 0, 1, 2, 3>>
       assert Utils.pad_binary(<<>>, 8) == <<0, 0, 0, 0, 0, 0, 0, 0>>
+      assert Utils.pad_binary(<<1, 2, 3>>, 1) == <<1, 2, 3>>
     end
   end
 

@@ -5,7 +5,7 @@ defmodule Block.Extrinsic.Disputes.FaultTest do
 
   describe "encode/decode" do
     test "encodes and decodes a fault" do
-      fault = build(:fault)
+      fault = build(:fault, vote: false)
       encoded = Codec.Encoder.encode(fault)
       {decoded, _} = Fault.decode(encoded)
       assert fault == decoded

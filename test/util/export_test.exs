@@ -43,9 +43,7 @@ defmodule Util.ExportTest do
 
     original_state_root = state_root(state)
 
-    file_state_root =
-      File.read!(state_trie_path) |> Jason.decode!() |> Map.get("state_root") |> Hex.decode16!()
-
+    file_state_root = JsonReader.read(state_trie_path) |> Map.get(:state_root) |> Hex.decode16!()
     loaded_state_root = state_root(loaded_state)
 
     assert loaded_state_root == file_state_root

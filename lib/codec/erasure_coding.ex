@@ -10,6 +10,7 @@ defmodule ErasureCoding do
 
   use Rustler, otp_app: :jamixir, crate: :erasure_coding
 
+  # coveralls-ignore-start
   def encode(_bin, _c), do: :erlang.nif_error(:nif_not_loaded)
   def decode(_shards, _indices, _size, _c), do: :erlang.nif_error(:nif_not_loaded)
 end

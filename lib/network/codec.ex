@@ -1,8 +1,6 @@
 defmodule Network.Codec do
   require Logger
 
-  def get_protocol_id(<<protocol_id::8, _::binary>>), do: protocol_id
-
   def encode_message(message) when is_binary(message) do
     length = byte_size(message)
     <<length::32-little, message::binary>>
@@ -13,17 +11,8 @@ defmodule Network.Codec do
     encode_message(msg)
   end
 
-  def encode_message(protocol_id, message) do
-    length = byte_size(message)
-    <<protocol_id::8, length::32-little, message::binary>>
-  end
-
   def decode_messages(<<>>), do: []
-
-  def decode_messages(data) do
-    decode_messages([], data)
-  end
-
+  def decode_messages(data), do: decode_messages([], data)
   defp decode_messages(acc, <<>>), do: Enum.reverse(acc)
 
   defp decode_messages(_acc, <<len::32-little, rest::binary>>) when byte_size(rest) < len do

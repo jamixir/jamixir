@@ -64,29 +64,26 @@ defmodule KeyManager do
 
   @spec load_keys(binary()) :: {:error, any()} | {:ok, any()}
   def load_keys(keys_file) do
-    with {:ok, content} <- File.read(keys_file),
-         {:ok, keys} <- Jason.decode(content) do
-      # Store in application env
-      keys = keys |> Utils.atomize_keys() |> JsonDecoder.from_json()
-      Application.put_env(:jamixir, :keys, keys)
+    keys = JsonReader.read(keys_file) |> JsonDecoder.from_json()
+    # Store in application env
+    Application.put_env(:jamixir, :keys, keys)
 
-      if Map.has_key?(keys, :alias) do
-        Application.put_env(:jamixir, :node_alias, keys.alias)
-      end
-
-      Log.info("🔑 Keys loaded successfully from #{keys_file}")
-      Log.debug("🔑 Validator bandersnatch key: #{b16(keys.bandersnatch)}")
-      Log.debug("🔑 Validator ed25519 key: #{b16(keys.ed25519)}")
-
-      if Map.has_key?(keys, :alias) do
-        Log.info("🎭 Node alias: #{keys.alias}")
-      end
-
-      {:ok, keys}
-    else
-      {:error, e} ->
-        Log.error("Failed to load keys: #{inspect(e)}")
-        {:error, e}
+    if Map.has_key?(keys, :alias) do
+      Application.put_env(:jamixir, :node_alias, keys.alias)
     end
+
+    Log.info("🔑 Keys loaded successfully from #{keys_file}")
+    Log.debug("🔑 Validator bandersnatch key: #{b16(keys.bandersnatch)}")
+    Log.debug("🔑 Validator ed25519 key: #{b16(keys.ed25519)}")
+
+    if Map.has_key?(keys, :alias) do
+      Log.info("🎭 Node alias: #{keys.alias}")
+    end
+
+    {:ok, keys}
+  rescue
+    e ->
+      Log.error("Failed to load keys: #{inspect(e)}")
+      {:error, e}
   end
 end

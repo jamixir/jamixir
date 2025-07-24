@@ -10,8 +10,7 @@ defmodule ErasureCodingTest do
         file_name = "test_#{size}_#{type}"
 
         test_case =
-          File.read("./test/codec/#{file_name}.json")
-          |> elem(1)
+          File.read!("./test/codec/#{file_name}.json")
           |> Jason.decode!()
           |> JsonDecoder.from_json()
 

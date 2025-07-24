@@ -520,11 +520,7 @@ defmodule Block.Extrinsic.Disputes.Test do
           )
         ],
         faults: [
-          build(:fault,
-            work_report_hash: wrh,
-            key_pair: {pub1, priv1},
-            vote: true
-          )
+          build(:fault, work_report_hash: wrh, key_pair: {pub1, priv1}, vote: true)
         ]
       }
 
@@ -570,26 +566,12 @@ defmodule Block.Extrinsic.Disputes.Test do
           )
         ],
         culprits: [
-          build(:culprit,
-            work_report_hash: wrh,
-            key_pair: {pub1, priv1}
-          ),
-          build(:culprit,
-            work_report_hash: wrh,
-            key_pair: {pub2, priv2}
-          )
+          build(:culprit, work_report_hash: wrh, key_pair: {pub1, priv1}),
+          build(:culprit, work_report_hash: wrh, key_pair: {pub2, priv2})
         ],
         faults: [
-          build(:fault,
-            work_report_hash: wrh,
-            key_pair: {pub1, priv1},
-            vote: true
-          ),
-          build(:fault,
-            work_report_hash: wrh,
-            key_pair: {pub2, priv2},
-            vote: true
-          )
+          build(:fault, work_report_hash: wrh, key_pair: {pub1, priv1}, vote: true),
+          build(:fault, work_report_hash: wrh, key_pair: {pub2, priv2}, vote: true)
         ]
       }
 
