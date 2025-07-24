@@ -2,8 +2,8 @@ defmodule Network.CertUtils do
   require Logger
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
-  @keyfile "priv/secret.pem"
-  @certfile "priv/cert.pem"
+  @keyfile Path.join(:code.priv_dir(:jamixir), "secret.pem")
+  @certfile Path.join(:code.priv_dir(:jamixir), "cert.pem")
 
   def keyfile, do: @keyfile
   def certfile, do: @certfile
