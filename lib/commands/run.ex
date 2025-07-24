@@ -29,17 +29,12 @@ defmodule Jamixir.Commands.Run do
     Log.info("🟣 Pump up the JAM, pump it up...")
     Log.debug("System loaded with config: #{inspect(Jamixir.config())}")
 
-    if keys_file = opts[:keys] do
-      KeyManager.load_keys(keys_file)
-    end
+    KeyManager.load_keys(opts[:keys])
 
-    if genesis_file = opts[:genesis] do
-      Application.put_env(:jamixir, :genesis_file, genesis_file)
-    end
+    if genesis_file = opts[:genesis],
+      do: Application.put_env(:jamixir, :genesis_file, genesis_file)
 
-    if port = opts[:port] do
-      Application.put_env(:jamixir, :port, port)
-    end
+    if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
     Log.info("🎭 Starting as validator")
 

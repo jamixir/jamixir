@@ -12,6 +12,7 @@ defmodule Jamixir.NodeStateServer do
   alias Jamixir.TimeTicker
   alias Network.{Connection, ConnectionManager}
   alias Util.Logger, as: Log
+  import Codec.Encoder
   use GenServer
 
   def start_link(opts \\ []) do
@@ -137,9 +138,10 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("Node received new timeslot: #{timeslot}")
 
     client_pids = ConnectionManager.get_connections()
+    parent_hash = h(e(Storage.get_latest_header()))
 
     jam_state =
-      case Block.new(%Block.Extrinsic{}, nil, jam_state, timeslot) do
+      case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
         {:ok, block} ->
           Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
 

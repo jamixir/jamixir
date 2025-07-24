@@ -92,6 +92,7 @@ defmodule Network.ConnectionManager do
   # GenServer Implementation
   @impl GenServer
   def init(_opts) do
+    Log.info("🔗 Initializing Connection Manager...")
     {:ok, supervisor_pid} = DynamicSupervisor.start_link(strategy: :one_for_one)
     Process.monitor(supervisor_pid)
 

@@ -32,7 +32,7 @@ defmodule Jamixir.InitializationTask do
   end
 
   defp init_jam_state do
-    genesis_file = Application.get_env(:jamixir, :genesis_file, "genesis/genesis.json")
+    genesis_file = Application.get_env(:jamixir, :genesis_file, Genesis.default_file())
     Log.debug("✨ Initializing JAM state from genesis file: #{genesis_file}")
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
     Storage.put(Genesis.genesis_block_parent_header(), jam_state)

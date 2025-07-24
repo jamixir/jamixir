@@ -1,4 +1,5 @@
 defmodule Jamixir do
+  require Config
   use Application
 
   @impl true
@@ -15,7 +16,7 @@ defmodule Jamixir do
         fuzzer_children()
 
       # Test environment handling
-      Enum.member?([:test, :full_test], Mix.env()) and
+      (Jamixir.config()[:test_env] || false) and
           not Application.get_env(:jamixir, :start_full_app, false) ->
         test_children()
 
@@ -26,6 +27,7 @@ defmodule Jamixir do
   end
 
   defp fuzzer_children do
+    Util.Logger.info("🔧 Running in fuzzer environment")
     persist_storage? = Jamixir.config()[:storage_persist] || false
     socket_path = System.get_env("SOCKET_PATH") || "/tmp/jamixir_fuzzer.sock"
 
@@ -39,6 +41,7 @@ defmodule Jamixir do
   end
 
   defp test_children do
+    Util.Logger.info("🔧 Running in test environment")
     persist_storage? = Jamixir.config()[:storage_persist] || false
 
     [
@@ -49,6 +52,7 @@ defmodule Jamixir do
   end
 
   defp production_children do
+    Util.Logger.info("🔧 Running in production environment")
     persist_storage? = Jamixir.config()[:storage_persist] || false
     port = Application.get_env(:jamixir, :port, 9999)
 
@@ -116,6 +120,10 @@ defmodule Jamixir do
         # Don't start the application here - let the run command handle it
         Jamixir.Commands.Run.run(rest)
 
+      ["fuzzer" | rest] ->
+        Application.put_env(:jamixir, :fuzzer_mode, true)
+        Jamixir.Commands.Run.run(rest)
+
       [cmd | _] ->
         IO.puts("Unknown command: #{cmd}")
         print_help()
@@ -130,6 +138,7 @@ defmodule Jamixir do
     Usage: jamixir [OPTIONS] <COMMAND>
 
     Commands:
+      fuzzer     Run the fuzzer listener on unix socket
       gen-keys   Generate a new secret key seed and print the derived session keys
       list-keys  List all session keys we have the secret key for
       run        Run a Jamixir node

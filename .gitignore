@@ -25,7 +25,7 @@ jamixir-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 .vscode/
-priv/
+priv/native/
 
 native/**/target/
 native/**/Cargo.lock

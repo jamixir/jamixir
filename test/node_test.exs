@@ -9,7 +9,7 @@ defmodule Jamixir.NodeTest do
   alias Jamixir.Genesis
   use StoragePrefix
 
-  @genesis_file "genesis/genesis.json"
+  @genesis_file Genesis.default_file()
   @genesis_hash Genesis.genesis_block_parent()
   @genesis_state_key @p_state <> @genesis_hash
   setup do

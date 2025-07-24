@@ -21,4 +21,7 @@ defmodule Jamixir.Genesis do
     }
   end
 
+  def default_file do
+    Path.join(:code.priv_dir(:jamixir), "genesis.json")
+  end
 end
