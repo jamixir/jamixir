@@ -5,6 +5,7 @@ defmodule System.StateTest do
   import OriginalModules
   import Mox
   import TestHelper
+  alias Jamixir.Genesis
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.JsonEncoder

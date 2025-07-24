@@ -1,4 +1,5 @@
 defmodule Codec.State do
+  alias Jamixir.Genesis
   alias Codec.State.Json
   require Logger
 
@@ -19,7 +20,7 @@ defmodule Codec.State do
     end
   end
 
-  def from_genesis(file \\ "genesis/genesis.json") do
+  def from_genesis(file \\ Genesis.default_file()) do
     from_file(file)
   end
 end

@@ -46,8 +46,13 @@ defmodule KeyManager do
   """
   def get_our_ed25519_key do
     case Application.get_env(:jamixir, :keys) do
-      %{ed25519: pubkey} -> pubkey
-      _ -> nil
+      %{ed25519: pubkey} ->
+        pubkey
+
+      _ ->
+        # when no key in env, load default alice key
+        load_keys(nil)
+        get_our_ed25519_key()
     end
   end
 
@@ -62,7 +67,9 @@ defmodule KeyManager do
     {:ok, keys}
   end
 
-  @spec load_keys(binary()) :: {:error, any()} | {:ok, any()}
+  def load_keys(nil), do: load_keys(Path.join(:code.priv_dir(:jamixir), "alice.json"))
+
+  @spec load_keys(binary() | nil) :: {:error, any()} | {:ok, any()}
   def load_keys(keys_file) do
     keys = JsonReader.read(keys_file) |> JsonDecoder.from_json()
     # Store in application env

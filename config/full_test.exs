@@ -20,6 +20,7 @@ config :jamixir, Jamixir,
   # Y
   ticket_submission_end: 500,
   # GA
-  gas_accumulation: 10_000_000
+  gas_accumulation: 10_000_000,
+  test_env: true
 
 config :logger, level: :none

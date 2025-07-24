@@ -57,6 +57,9 @@ cd _build/tiny/rel/jamixir
 # Show help
 ./jamixir --help
 
+# Run the fuzzer
+./jamixir fuzzer 
+
 # Generate keys
 ./jamixir gen-keys
 ./jamixir gen-keys --file-name my-validator-key

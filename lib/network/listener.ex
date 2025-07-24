@@ -17,6 +17,7 @@ defmodule Network.Listener do
 
   @impl true
   def init(opts) do
+    Log.info("🔧 Starting QUIC listener...")
     port = Keyword.get(opts, :port, 9999)
     test_server_alias = Keyword.get(opts, :test_server_alias)
 
