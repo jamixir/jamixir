@@ -1,8 +1,8 @@
-defmodule NodeCLIServerTest do
+defmodule NodeStateServerTest do
   alias System.State.Validator
   use ExUnit.Case, async: true
   import Jamixir.Factory
-  import Jamixir.NodeCLIServer
+  import Jamixir.NodeStateServer
 
   setup do
     KeyManager.load_keys("test/keys/4.json")

@@ -8,7 +8,7 @@ defmodule Network.Listener do
   alias Util.Hash
   alias Network.ConnectionManager
   alias System.State.Validator
-  alias Jamixir.NodeCLIServer
+  alias Jamixir.NodeStateServer
   alias Util.Logger, as: Log
 
   def start_link(opts) do
@@ -127,7 +127,7 @@ defmodule Network.Listener do
   end
 
   defp identify_validator_by_ip(remote_address) do
-    case NodeCLIServer.inspect_state("curr_validators") do
+    case NodeStateServer.inspect_state("curr_validators") do
       {:ok, validators} ->
         Log.debug("📋 Found #{length(validators)} validators, searching for IP #{remote_address}")
 

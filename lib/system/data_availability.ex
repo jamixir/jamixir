@@ -22,7 +22,7 @@ defmodule System.DataAvailability do
   end
 
   def node_server do
-    Application.get_env(:jamixir, :node_cli_server, Jamixir.NodeCLIServer)
+    Application.get_env(:jamixir, :node_state_server, Jamixir.NodeStateServer)
   end
 
   def do_get_segment(erasure_root, segment_index) do

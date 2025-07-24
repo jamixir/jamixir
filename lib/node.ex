@@ -2,7 +2,7 @@ defmodule Jamixir.Node do
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
-  alias Jamixir.NodeCLIServer
+  alias Jamixir.NodeStateServer
   alias Network.ConnectionManager
   alias System.State
   alias Util.Hash
@@ -188,7 +188,7 @@ defmodule Jamixir.Node do
           # Network.Connection.request_audit_shard(
           #   server_pid,
           #   spec.erasure_root,
-          #   NodeCLIServer.assigned_shard_index(guarantee.work_report.core_index)
+          #   NodeStateServer.assigned_shard_index(guarantee.work_report.core_index)
           # )
         end)
     end
@@ -240,7 +240,7 @@ defmodule Jamixir.Node do
         {work_report, _exports} = Task.await(refine_task)
         Logger.info("Work package validated successfully. Sending to other guarantors")
 
-        validators = NodeCLIServer.same_core_guarantors()
+        validators = NodeStateServer.same_core_guarantors()
 
         responses =
           for v <- validators do
@@ -259,13 +259,13 @@ defmodule Jamixir.Node do
           list ->
             credentials =
               for {pub_key, {:ok, {_, signature}}} <- list do
-                {NodeCLIServer.validator_index(pub_key), signature}
+                {NodeStateServer.validator_index(pub_key), signature}
               end
 
             guarantee = %Guarantee{
               work_report: work_report,
               # TODO review what timeslot to use
-              timeslot: NodeCLIServer.current_timeslot(),
+              timeslot: NodeStateServer.current_timeslot(),
               credentials: credentials
             }
 

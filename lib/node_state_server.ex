@@ -1,11 +1,11 @@
-defmodule Jamixir.NodeCLIServerBehaviour do
+defmodule Jamixir.NodeStateServerBehaviour do
   @callback validator_connections() :: list()
   @callback assigned_shard_index(non_neg_integer(), binary()) :: non_neg_integer() | nil
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
 end
 
-defmodule Jamixir.NodeCLIServer do
-  @behaviour Jamixir.NodeCLIServerBehaviour
+defmodule Jamixir.NodeStateServer do
+  @behaviour Jamixir.NodeStateServerBehaviour
 
   alias Block.Extrinsic.GuarantorAssignments
   alias Jamixir.Genesis
@@ -128,7 +128,7 @@ defmodule Jamixir.NodeCLIServer do
 
   @impl true
   def handle_cast({:set_jam_state, jam_state}, state) do
-    Log.info("Setting JAM state in NodeCLIServer")
+    Log.info("Setting JAM state in NodeStateServer")
     {:noreply, %{state | jam_state: jam_state}}
   end
 
@@ -171,7 +171,7 @@ defmodule Jamixir.NodeCLIServer do
 
       jam_state ->
         # JAM state is now available!
-        Log.info("🎯 NodeCLIServer received JAM state")
+        Log.info("🎯 NodeStateServer received JAM state")
         TimeTicker.subscribe()
         {:noreply, %{state | jam_state: jam_state}}
     end
