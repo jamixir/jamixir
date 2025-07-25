@@ -138,7 +138,8 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("Node received new timeslot: #{timeslot}")
 
     client_pids = ConnectionManager.get_connections()
-    parent_hash = h(e(Storage.get_latest_header()))
+    {_, parent_header} = Storage.get_latest_header()
+    parent_hash = h(e(parent_header))
 
     jam_state =
       case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
