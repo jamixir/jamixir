@@ -142,18 +142,22 @@ defmodule StorageTest do
     end
 
     test "put and get ticket" do
+      epoch = :rand.uniform(100_000)
+
       [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
-      assert {:ok, _} = Storage.put(1, t1)
-      assert {:ok, _} = Storage.put(1, t2)
-      assert Storage.get_tickets(1) == [t1, t2]
+      assert {:ok, _} = Storage.put(epoch, t1)
+      assert {:ok, _} = Storage.put(epoch, t2)
+      assert Storage.get_tickets(epoch) == [t1, t2]
     end
 
     test "put and get ticket different epochs" do
+      e1 = :rand.uniform(100_000)
+      e2 = :rand.uniform(100_000)
       [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
-      assert {:ok, _} = Storage.put(7, t1)
-      assert {:ok, _} = Storage.put(8, t2)
-      assert Storage.get_tickets(7) == [t1]
-      assert Storage.get_tickets(8) == [t2]
+      assert {:ok, _} = Storage.put(e1, t1)
+      assert {:ok, _} = Storage.put(e2, t2)
+      assert Storage.get_tickets(e1) == [t1]
+      assert Storage.get_tickets(e2) == [t2]
     end
   end
 end

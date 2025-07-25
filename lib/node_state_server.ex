@@ -17,6 +17,10 @@ defmodule Jamixir.NodeStateServer do
   import Codec.Encoder
   use GenServer
 
+  def instance do
+    Application.get_env(:jamixir, :node_state_server, Jamixir.NodeStateServer)
+  end
+
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end

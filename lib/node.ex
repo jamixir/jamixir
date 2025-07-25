@@ -170,17 +170,20 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
+  # CE 131 - Safrole ticket distribution
   @impl true
   def process_ticket(:proxy, epoch, ticket) do
     Storage.put(epoch, ticket)
 
-    for {_v, pid} <- NodeStateServer.validator_connections() do
+    for {_v, pid} <- NodeStateServer.instance().validator_connections() do
       Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
     end
   end
 
-  def process_ticket(:validator = _mode, _epoch, _ticket) do
-    {:error, :not_implemented}
+  # CE 132 - Safrole ticket distribution
+  @impl true
+  def process_ticket(:validator, epoch, ticket) do
+    Storage.put(epoch, ticket)
   end
 
   @impl true
