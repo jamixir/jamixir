@@ -173,7 +173,7 @@ defmodule Jamixir.NodeTest do
 
   describe "process_ticket/3" do
     test "process_ticket with :proxy mode" do
-      process_ticket(:proxy, 1, %TicketProof{})
+      process_ticket(:proxy, 1, build(:ticket_proof, attempt: 0))
     end
 
     test "process_ticket with :validator mode" do

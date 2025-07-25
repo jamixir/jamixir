@@ -12,6 +12,7 @@ defmodule StoragePrefix do
       @p_timeslot "t"
       @p_segment "s"
       @p_segment_core "k"
+      @p_ticket "T"
     end
   end
 end

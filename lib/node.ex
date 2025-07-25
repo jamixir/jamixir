@@ -171,8 +171,12 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def process_ticket(:proxy, _epoch, _ticket) do
-    {:error, :not_implemented}
+  def process_ticket(:proxy, epoch, ticket) do
+    Storage.put(epoch, ticket)
+
+    for {_v, pid} <- NodeStateServer.validator_connections() do
+      Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+    end
   end
 
   def process_ticket(:validator = _mode, _epoch, _ticket) do
