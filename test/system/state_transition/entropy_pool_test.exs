@@ -79,7 +79,7 @@ defmodule System.StateTransition.EntropyPoolTest do
       expected_slot_sealer =
         Enum.at(state.safrole.slot_sealers, block.header.timeslot)
 
-      {keypair, _} = Enum.at(key_pairs, block.header.block_author_key_index)
+      keypair = Enum.at(key_pairs, block.header.block_author_key_index)
 
       seal_context =
         SigningContexts.jam_ticket_seal() <>

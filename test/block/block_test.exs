@@ -194,7 +194,7 @@ defmodule BlockTest do
     end
 
     test "create a valid block with env key fallback mode new epoch" do
-      %{state: state, key_pairs: [{{priv, _}, pub} | _]} = build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: [{priv, pub} | _]} = build(:genesis_state_with_safrole)
 
       # use fixed entropy pool to avoid randomness and predictable block creation turn
       state = put_in(state.entropy_pool, build(:fixed_entropy_pool))

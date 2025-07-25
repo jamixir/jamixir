@@ -12,8 +12,8 @@ defmodule RingVrfTest do
     # Generate a ring of public keys
     keys =
       for _i <- 1..(count - 1) do
-        {_, keypair} = RingVrf.generate_secret_from_rand()
-        keypair
+        {_, pubkey} = RingVrf.generate_secret_from_rand()
+        pubkey
       end
 
     # Insert the public key at the specified position

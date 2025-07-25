@@ -1,5 +1,6 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
+  alias Block.Extrinsic.TicketProof
   alias Util.Hash
   alias Storage
   import Jamixir.Factory
@@ -167,6 +168,16 @@ defmodule Jamixir.NodeTest do
 
   describe "save_work_package_bundle/3" do
     test "save bundle returning validator signature" do
+    end
+  end
+
+  describe "process_ticket/3" do
+    test "process_ticket with :proxy mode" do
+      process_ticket(:proxy, 1, %TicketProof{})
+    end
+
+    test "process_ticket with :validator mode" do
+      assert {:error, :not_implemented} = process_ticket(:validator, 1, %{})
     end
   end
 end

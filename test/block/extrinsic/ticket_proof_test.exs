@@ -7,7 +7,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     ring = for v <- state.curr_validators, do: v.bandersnatch
 
     for i <- 0..(count - 1) do
-      {keypair, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
+      keypair = Enum.at(key_pairs, rem(i, length(key_pairs)))
       attempt = rem(i, 2)
 
       {proof, _} =
@@ -23,7 +23,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
   end
 
-  defp create_valid_proof(state, {keypair, _}, prover_idx, attempt) do
+  defp create_valid_proof(state, keypair, prover_idx, attempt) do
     RingVrf.ring_vrf_sign(
       for(v <- state.curr_validators, do: v.bandersnatch),
       keypair,
@@ -153,7 +153,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       [ticket] = create_valid_tickets(1, state, key_pairs)
 
       # Generate the output hash using ring_vrf_output
-      {keypair, _} = List.first(key_pairs)
+      keypair = List.first(key_pairs)
       public_keys = for v <- state.curr_validators, do: v.bandersnatch
 
       context =

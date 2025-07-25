@@ -20,7 +20,7 @@ defmodule Jamixir.Factory do
   def validators_and_bandersnatch_keys(count \\ @validator_count) do
     {validators, key_pairs} =
       for _ <- 1..count do
-        keypair = {_, b} = RingVrf.generate_secret_from_rand()
+        {keypair, b} = RingVrf.generate_secret_from_rand()
         {build(:validator, bandersnatch: b), keypair}
       end
       |> Enum.unzip()
@@ -43,7 +43,7 @@ defmodule Jamixir.Factory do
   # Seal Key Ticket Factory
   @spec single_seal_key_ticket_factory(list(), any(), integer()) :: System.State.SealKeyTicket.t()
   def single_seal_key_ticket_factory(key_pairs, entropy_pool, i) do
-    {keypair, _} = Enum.at(key_pairs, rem(i, length(key_pairs)))
+    keypair = Enum.at(key_pairs, rem(i, length(key_pairs)))
 
     attempt = Enum.random([0, 1])
 

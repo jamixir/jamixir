@@ -50,7 +50,7 @@ defmodule RingVrf do
   # Used for ticket claiming during block production
   # Formula (G.1) v0.6.6
   # Formula (G.2) v0.6.6
-  def ietf_vrf_sign(_secret, _context, _message),
+  def ietf_vrf_sign(_keypair, _context, _message),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # IETF VRF Verify

@@ -30,7 +30,7 @@ defmodule System.HeaderSeal do
         %Header{timeslot: ts} = header,
         epoch_slot_sealers,
         %EntropyPool{} = entropy_pool,
-        {keypair, _}
+        keypair
       ) do
     # associated with formula (6.15, 6.16) v0.6.6
     # let i = γs′ [Ht ]↺

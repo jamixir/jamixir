@@ -171,7 +171,7 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def process_ticket(:proxy = _mode, _epoch, _ticket) do
+  def process_ticket(:proxy, _epoch, _ticket) do
     {:error, :not_implemented}
   end
 
