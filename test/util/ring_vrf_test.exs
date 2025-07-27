@@ -154,22 +154,34 @@ defmodule RingVrfTest do
 
   describe "ietf_vrf_sign and ietf_vrf_verify" do
     test "simple sanity test: create key, sign something, get something back" do
-      {_, secret} = init_ring_context_and_gen_keys(1)
-      {signature, output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
+      {_, keypair} = init_ring_context_and_gen_keys(1)
+      {signature, output} = RingVrf.ietf_vrf_sign(keypair, "context", "message")
 
       assert byte_size(signature) == 96
       assert byte_size(output) == @hash_size
     end
 
     test "key sign and verify - all ok" do
-      {keys, secret} = init_ring_context_and_gen_keys(2, 7)
-      {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
+      {keys, keypair} = init_ring_context_and_gen_keys(2, 7)
+      {signature, output} = RingVrf.ietf_vrf_sign(keypair, "context", "message")
+      {:ok, ^output} = RingVrf.ietf_vrf_verify(Enum.at(keys, 2), "context", "message", signature)
 
-      result =
-        RingVrf.ietf_vrf_verify(Enum.at(keys, 2), "context", "message", signature)
+      assert byte_size(output) == @hash_size
+    end
 
-      assert {:ok, vrf_output_hash} = result
-      assert byte_size(vrf_output_hash) == @hash_size
+    test "key sign from seed - all ok" do
+      {keypair, pub} = RingVrf.generate_secret_from_seed(<<0::256>> |> :binary.bin_to_list())
+      {signature, output} = RingVrf.ietf_vrf_sign(keypair, "context", "message")
+      {:ok, ^output} = RingVrf.ietf_vrf_verify(pub, "context", "message", signature)
+    end
+
+    test "key sign from alice key" do
+      %{bandersnatch: pub, bandersnatch_priv: priv} =
+        JsonDecoder.from_json(JsonReader.read("priv/alice.json"))
+
+      keypair = {priv, pub}
+      {signature, output} = RingVrf.ietf_vrf_sign(keypair, "context", "message")
+      {:ok, ^output} = RingVrf.ietf_vrf_verify(pub, "context", "message", signature)
     end
   end
 

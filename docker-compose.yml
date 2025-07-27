@@ -1,4 +1,3 @@
-
 services:
   node1:
     build:
@@ -6,7 +5,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9900", "--keys=/node/keys/0.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9900",
+        "--keys=/node/keys/0.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -14,7 +20,7 @@ services:
       - "9001:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::10
@@ -25,7 +31,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9901", "--keys=/node/keys/1.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9901",
+        "--keys=/node/keys/1.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -33,7 +46,7 @@ services:
       - "9002:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::11
@@ -44,7 +57,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9902", "--keys=/node/keys/2.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9902",
+        "--keys=/node/keys/2.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -52,7 +72,7 @@ services:
       - "9003:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::12
@@ -63,7 +83,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9903", "--keys=/node/keys/3.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9903",
+        "--keys=/node/keys/3.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -71,7 +98,7 @@ services:
       - "9004:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::13
@@ -82,7 +109,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9904", "--keys=/node/keys/4.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9904",
+        "--keys=/node/keys/4.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -90,7 +124,7 @@ services:
       - "9005:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::14
@@ -101,7 +135,14 @@ services:
       ssh: [default]
     environment:
       RELEASE_DAEMON: "false"
-    command: ["/node/jamixir/bin/jamixir", "start", "--port=9905", "--keys=/node/keys/5.json", "--genesis=/node/genesis.json"]
+    command:
+      [
+        "/node/jamixir/bin/jamixir",
+        "start",
+        "--port=9905",
+        "--keys=/node/keys/5.json",
+        "--genesis=/node/genesis.json",
+      ]
     restart: unless-stopped
     expose:
       - "9000"
@@ -109,7 +150,7 @@ services:
       - "9006:9000"
     volumes:
       - ./test/keys:/node/keys
-      - ./genesis/genesis.json:/node/genesis.json
+      - ./priv/genesis.json:/node/genesis.json
     networks:
       jamnet:
         ipv6_address: fd00::15

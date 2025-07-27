@@ -5,7 +5,6 @@ defmodule System.StateTest do
   import OriginalModules
   import Mox
   import TestHelper
-  alias Jamixir.Genesis
   alias Block.Extrinsic
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Codec.JsonEncoder
@@ -156,7 +155,7 @@ defmodule System.StateTest do
     end
 
     test "decode/encode genesis state" do
-      genesis_json = JsonReader.read("genesis/genesis.json")
+      genesis_json = JsonReader.read("priv/genesis.json")
       assert JsonEncoder.encode(Json.decode(genesis_json)) == genesis_json
     end
   end
