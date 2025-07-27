@@ -57,10 +57,10 @@ defmodule KeyManagerTest do
       keys = Application.get_env(:jamixir, :keys)
 
       assert keys.ed25519 ==
-               decode16!("0x3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29")
+               decode16!("0x4418fb8c85bb3985394a8c2756d3643457ce614546202a2f50b093d762499ace")
 
       assert keys.ed25519_priv ==
-               decode16!("0x0000000000000000000000000000000000000000000000000000000000000000")
+               decode16!("0x996542becdf1e78278dc795679c825faca2e9ed2bf101bf3c4a236d3ed79cf59")
     end
 
     test "handles missing file" do

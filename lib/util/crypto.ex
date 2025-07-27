@@ -1,10 +1,26 @@
 defmodule Util.Crypto do
+  alias Util.Hash
+
   def valid_signature?(signature, payload, public_key) do
     :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
   end
 
   def sign(payload, private_key) do
     :crypto.sign(:eddsa, :none, payload, [private_key, :ed25519])
+  end
+
+  def create_ed25519_key_pair(seed) do
+    secret_seed = Hash.blake2b_256("jam_val_key_ed25519" <> seed)
+
+    :crypto.generate_key(:eddsa, :ed25519, secret_seed)
+  end
+
+  def create_bandersnatch_key_pair(seed) do
+    seed2 = Hash.blake2b_256("jam_val_key_bandersnatch" <> seed)
+    seed3 = :crypto.hash(:sha512, seed2)
+    {keypair, _} = RingVrf.generate_secret_from_scalar(seed3 |> :binary.bin_to_list())
+
+    keypair
   end
 
   use Sizes
