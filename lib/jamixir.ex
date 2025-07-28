@@ -138,7 +138,7 @@ defmodule Jamixir do
     Usage: jamixir [OPTIONS] <COMMAND>
 
     Commands:
-      fuzzer     Run the fuzzer listener on unix socket
+      fuzzer     Run the fuzzer listener on unix domain socket
       gen-keys   Generate a new secret key seed and print the derived session keys
       list-keys  List all session keys we have the secret key for
       run        Run a Jamixir node
