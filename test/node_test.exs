@@ -39,7 +39,10 @@ defmodule Jamixir.NodeTest do
   describe "add_block" do
     test "add_block with valid block bin" do
       block = build(:block, header: build(:header, parent_hash: @genesis_hash))
-      assert {:ok, _new_app_state, _state_root} = add_block(e(block))
+
+      :ok = load_state(@genesis_file)
+
+      assert {:ok, _, _} = add_block(block)
     end
   end
 

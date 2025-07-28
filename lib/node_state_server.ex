@@ -11,7 +11,9 @@ defmodule Jamixir.NodeStateServer do
   alias Jamixir.Genesis
   alias Jamixir.TimeTicker
   alias Network.{Connection, ConnectionManager}
+  alias System.State
   alias Util.Logger, as: Log
+  import Util.Hex, only: [b16: 1]
   import Codec.Encoder
   use GenServer
 
@@ -19,7 +21,7 @@ defmodule Jamixir.NodeStateServer do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def add_block(block_binary), do: GenServer.call(__MODULE__, {:add_block, block_binary})
+  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block})
   def inspect_state(header_hash), do: GenServer.call(__MODULE__, {:inspect_state, header_hash})
 
   def inspect_state(header_hash, key),
@@ -80,13 +82,22 @@ defmodule Jamixir.NodeStateServer do
   end
 
   # Wait for initialization to complete and get jam_state
-
   @impl true
-  def handle_call({:add_block, block_binary}, _from, state) do
-    case Jamixir.Node.add_block(block_binary) do
-      {:ok, new_app_state, state_root} -> {:reply, {:ok, new_app_state, state_root}, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
+  def handle_call({:add_block, block}, _from, %{jam_state: jam_state} = state) do
+    new_jam_state =
+      case Jamixir.Node.add_block(block, jam_state) do
+        {:ok, %State{} = new_jam_state, state_root} ->
+          Log.info("🔄 State Updated successfully")
+          Log.debug("🔄 New State Root: #{b16(state_root)}")
+          announce_block_to_peers(block)
+          new_jam_state
+
+        {:error, reason} ->
+          Log.block(:error, "Failed to add block: #{reason}")
+          jam_state
+      end
+
+    {:reply, {:ok, new_jam_state}, %{state | jam_state: new_jam_state}}
   end
 
   @impl true
@@ -137,31 +148,19 @@ defmodule Jamixir.NodeStateServer do
   def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
     Log.debug("Node received new timeslot: #{timeslot}")
 
-    client_pids = ConnectionManager.get_connections()
     {_, parent_header} = Storage.get_latest_header()
     parent_hash = h(e(parent_header))
 
-    jam_state =
-      case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
-        {:ok, block} ->
-          Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
+    case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
+      {:ok, block} ->
+        Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
+        Task.start(fn -> add_block(block) end)
 
-          case Jamixir.Node.add_block(block) do
-            {:ok, new_jam_state, _state_root} ->
-              announce_block_to_peers(client_pids, block)
-              new_jam_state
+      {:error, reason} ->
+        Log.consensus(:debug, "Not my turn to create block: #{reason}")
+    end
 
-            {:error, reason} ->
-              Log.block(:error, "Failed to add block: #{reason}")
-              jam_state
-          end
-
-        {:error, reason} ->
-          Log.consensus(:debug, "Not my turn to create block: #{reason}")
-          jam_state
-      end
-
-    {:noreply, %{state | jam_state: jam_state}}
+    {:noreply, state}
   end
 
   @impl true
@@ -196,7 +195,8 @@ defmodule Jamixir.NodeStateServer do
     end
   end
 
-  def announce_block_to_peers(client_pids, block) do
+  defp announce_block_to_peers(block) do
+    client_pids = ConnectionManager.get_connections()
     Log.debug("📢 Announcing block to #{map_size(client_pids)} peers")
 
     for {_address, pid} <- client_pids do
