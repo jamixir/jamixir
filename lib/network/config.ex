@@ -1,5 +1,4 @@
 defmodule Network.Config do
-  alias Network.CertUtils
   alias Jamixir.Genesis
   import Util.Hex, only: [encode16: 1]
   @protocol_version "0"
@@ -11,9 +10,9 @@ defmodule Network.Config do
     timeout: 5_000
   ]
 
-  def common_opts(cert_key) do
+  def common_opts(pkcs12_bundle) do
     [
-      certkeyasn1: cert_key,
+      pkcs12_bundle: pkcs12_bundle,
       verify: :none,
       alpn: [~c"#{alpn_protocol_identifier()}"],
       # TODO: this is hack to prevent quicer from closing the connection when the peer is not sending any data
@@ -23,8 +22,8 @@ defmodule Network.Config do
     ]
   end
 
-  def quicer_listen_opts(cert_key) do
-    common_opts(cert_key) ++
+  def quicer_listen_opts(pkcs12_bundle) do
+    common_opts(pkcs12_bundle) ++
       [
         peer_bidi_stream_count: Constants.validator_count(),
         peer_unidi_stream_count: 100,
@@ -33,8 +32,8 @@ defmodule Network.Config do
       ]
   end
 
-  def quicer_connect_opts(cert_key) do
-    common_opts(cert_key)
+  def quicer_connect_opts(pkcs12_bundle) do
+    common_opts(pkcs12_bundle)
   end
 
   @default_stream_opts %{active: true}

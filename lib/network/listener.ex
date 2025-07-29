@@ -19,9 +19,9 @@ defmodule Network.Listener do
     Log.info("🔧 Starting QUIC listener...")
     port = Keyword.get(opts, :port, 9999)
     test_server_alias = Keyword.get(opts, :test_server_alias)
-    cert_key = Keyword.get(opts, :cert_key, Application.get_env(:jamixir, :tls_pkcs12_binary))
+    pkcs12_bundle = Keyword.get(opts, :tls_identity, Application.get_env(:jamixir, :tls_identity))
 
-    case :quicer.listen(port, quicer_listen_opts(cert_key)) do
+    case :quicer.listen(port, quicer_listen_opts(pkcs12_bundle)) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)

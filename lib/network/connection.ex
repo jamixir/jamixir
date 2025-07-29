@@ -91,7 +91,7 @@ defmodule Network.Connection do
 
   # For outbound connections (initiated by ConnectionManager)
   @impl GenServer
-  def init(%{init_mode: :initiator, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port, cert_key: cert_key}) do
+  def init(%{init_mode: :initiator, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port, tls_identity: pkcs12_bundle}) do
     connection_info = %{ip: ip, port: port}
 
     Log.connection(
@@ -101,7 +101,7 @@ defmodule Network.Connection do
       connection_info
     )
 
-    case :quicer.connect(ip, port, quicer_connect_opts(cert_key), 10_000) do
+    case :quicer.connect(ip, port, quicer_connect_opts(pkcs12_bundle), 10_000) do
       {:ok, conn} ->
         Log.connection(:info, "Connected to validator", remote_ed25519_key, connection_info)
 

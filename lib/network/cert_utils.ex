@@ -88,7 +88,7 @@ defmodule Network.CertUtils do
     "priv/#{dns_name}_cert.pem"
   end
 
-  def cert_key(private_key, public_key) do
+  def ed25519_private_key_asn1(private_key, public_key) do
     {:ECPrivateKey, 1, private_key, {:namedCurve, @ed25519_curve_oid}, public_key, :asn1_NOVALUE}
   end
 

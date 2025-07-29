@@ -8,7 +8,7 @@ defmodule Network.CertUtilsTest do
 
   test "invalid certificate dns" do
     {p, k} = :crypto.generate_key(:eddsa, :ed25519)
-    cert_key = CertUtils.cert_key(k, p)
+    cert_key = CertUtils.ed25519_private_key_asn1(k, p)
     cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
 
     refute CertUtils.valid?(cert)
@@ -82,7 +82,7 @@ defmodule Network.CertUtilsTest do
 
   test "rejects certificate without alternative name" do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
-    cert_key = CertUtils.cert_key(private_key, public_key)
+    cert_key = CertUtils.ed25519_private_key_asn1(private_key, public_key)
 
     cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
     cert_der = X509.Certificate.to_der(cert)

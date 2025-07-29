@@ -11,7 +11,7 @@ defmodule Network.ConfigTest do
       # "jamnp-s/0/" (10) + 8 hex chars
       assert String.length(identifier) == 18
 
-      hash_part = String.slice(identifier, 10..-1)
+      hash_part = String.slice(identifier, 10..-1//1)
 
       assert String.match?(hash_part, ~r/^[0-9a-f]{8}$/)
     end
@@ -23,7 +23,7 @@ defmodule Network.ConfigTest do
 
       identifier = Config.alpn_protocol_identifier()
 
-      assert String.slice(identifier, 10..-1) == encode16(first_8_nibbles)
+      assert String.slice(identifier, 10..-1//1) == encode16(first_8_nibbles)
     end
   end
 

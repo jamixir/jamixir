@@ -25,8 +25,8 @@ defmodule CommsTest do
   setup_all do
     Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
     {_, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
-    start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias, cert_key: pkcs12_binary})
-    %{test_server_alias: @test_server_alias, cert_key: pkcs12_binary}
+    start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias, tls_identity: pkcs12_binary})
+    %{test_server_alias: @test_server_alias, tls_identity: pkcs12_binary}
   end
 
   setup do
@@ -671,7 +671,7 @@ defmodule CommsTest do
       # Create additional clients
       additional_clients =
         for _ <- 1..2 do
-          {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+          {_public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
           {:ok, pkcs12_binary} = Network.CertUtils.generate_self_signed_certificate(private_key)
           {:ok, pid} =
             Network.ConnectionManager.start_outbound_connection(
