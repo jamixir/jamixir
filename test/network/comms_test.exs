@@ -1,13 +1,13 @@
 defmodule CommsTest do
   use ExUnit.Case, async: false
-  alias Block.Extrinsic.WorkPackageBundle
-  alias Jamixir.Node
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
+  alias Block.Extrinsic.WorkPackageBundle
   alias Codec.State.Trie
   import Codec.Encoder
   import Mox
   import Jamixir.Factory
+  alias Jamixir.Node
   import TestHelper
   require Logger
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
@@ -507,15 +507,20 @@ defmodule CommsTest do
     end
   end
 
+  # UP 0
   describe "announce_block/3" do
-    test "handles multiple sequential block announcements", %{client: client} do
-      ServerCallsMock
-      |> expect(:call, 20, fn 0, _message -> :ok end)
+    setup do
+      Application.delete_env(:jamixir, :server_calls)
+      :ok
+    end
 
+    test "handles multiple sequential block announcements", %{client: client} do
       header = build(:decodable_header)
 
       for slot <- 1..20 do
-        Connection.announce_block(client, %{header | timeslot: slot}, slot)
+        h = %{header | timeslot: slot}
+        Connection.announce_block(client, h, slot)
+        Jamixir.NodeAPI.Mock |> expect(:announce_block, fn ^h, _, ^slot -> :ok end)
       end
 
       assert Process.alive?(client), "Expected client to be alive after announcements"
@@ -530,22 +535,6 @@ defmodule CommsTest do
 
       %{stream: stream} = client_state.up_streams[0]
       assert is_reference(stream)
-    end
-
-    # Ensure that announce_block/3 results in exactly `n` ServerCalls.call/2 invocations
-    test "calls ServerCalls.call N times", %{client: client} do
-      n = 10
-      header = build(:decodable_header)
-
-      ServerCallsMock
-      |> expect(:call, n, fn 0, _ -> :ok end)
-
-      for slot <- 1..n do
-        Connection.announce_block(client, %{header | timeslot: slot}, slot)
-      end
-
-      # Wait for async delivery
-      Process.sleep(100)
       verify!()
     end
   end

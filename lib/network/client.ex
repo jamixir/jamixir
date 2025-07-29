@@ -9,14 +9,13 @@ defmodule Network.Client do
   alias Network.ConnectionState
   import Quicer.Flags
   import Network.{Codec, Config}
-  require Logger
   import Codec.Encoder
   use Sizes
   import Bitwise, only: [&&&: 2]
+
   @log_context "[QUIC_CLIENT]"
 
-  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
-  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
+  use Util.Logger
 
   @impl true
   def send(pid, protocol_id, message) when is_integer(protocol_id) do

@@ -21,7 +21,8 @@ defmodule Jamixir.NodeStateServer do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block})
+  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false})
+  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
   def inspect_state(header_hash), do: GenServer.call(__MODULE__, {:inspect_state, header_hash})
 
   def inspect_state(header_hash, key),
@@ -83,13 +84,13 @@ defmodule Jamixir.NodeStateServer do
 
   # Wait for initialization to complete and get jam_state
   @impl true
-  def handle_call({:add_block, block}, _from, %{jam_state: jam_state} = state) do
+  def handle_call({:add_block, block, announce}, _from, %{jam_state: jam_state} = state) do
     new_jam_state =
       case Jamixir.Node.add_block(block, jam_state) do
         {:ok, %State{} = new_jam_state, state_root} ->
           Log.info("🔄 State Updated successfully")
           Log.debug("🔄 New State Root: #{b16(state_root)}")
-          announce_block_to_peers(block)
+          if announce, do: announce_block_to_peers(block)
           new_jam_state
 
         {:error, reason} ->

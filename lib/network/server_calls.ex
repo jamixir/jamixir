@@ -1,11 +1,11 @@
 defmodule Network.ServerCalls do
+  alias Block.Header
   alias Block.Extrinsic.WorkPackageBundle
   alias Network.Types.SegmentShardsRequest
   alias System.Audit.AuditAnnouncement
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
-  require Logger
   import Codec.Encoder
   alias Codec.VariableSize
   use Sizes
@@ -14,7 +14,8 @@ defmodule Network.ServerCalls do
   @behaviour Network.ServerCallsBehaviour
   @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
 
-  def log(message), do: Logger.log(:info, "[QUIC_SERVER_CALLS] #{message}")
+  @log_context "[QUIC_SERVER_CALLS]"
+  use Util.Logger
 
   def call(protocol_id, [single_message]) do
     call(protocol_id, single_message)
@@ -241,10 +242,12 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
-  def call(0, _message) do
+  def call(0, message) do
     log("Processing block announcement")
     # TODO: Implement block processing
-    :ok
+    {header, rest} = Header.decode(message)
+    <<hash::b(hash), timeslot::m(timeslot)>> = rest
+    :ok = Jamixir.NodeAPI.announce_block(header, hash, timeslot)
   end
 
   def call(protocol_id, messages) when is_list(messages) do
