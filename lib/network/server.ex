@@ -1,5 +1,4 @@
 defmodule Network.Server do
-  require Logger
   alias Quicer.Flags
   alias Network.Codec
   alias Network.UpStreamManager
@@ -8,8 +7,7 @@ defmodule Network.Server do
 
   @log_context "[QUIC_SERVER]"
 
-  def log(level, message), do: Logger.log(level, "#{@log_context} #{message}")
-  def log(message), do: Logger.log(:info, "#{@log_context} #{message}")
+  use Util.Logger
 
   def handle_info(:accept_connection, %{socket: socket} = state) do
     case :quicer.accept(socket, [], :infinity) do

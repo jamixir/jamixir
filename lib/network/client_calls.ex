@@ -1,10 +1,10 @@
 defmodule Network.ClientCalls do
   alias Block.Extrinsic.Guarantee.WorkReport
-  require Logger
   import Codec.Encoder
   alias Codec.VariableSize
   use Sizes
-  def log(message), do: Logger.log(:info, "[QUIC_CLIENT_CALLS] #{message}")
+  @log_context "[QUIC_CLIENT_CALLS]"
+  use Util.Logger
 
   def call(protocol_id, [single_message]) do
     call(protocol_id, single_message)

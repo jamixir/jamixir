@@ -16,6 +16,7 @@ defmodule Jamixir.Node do
 
   @impl true
   def add_block(block_binary) when is_binary(block_binary) do
+    IO.puts("Adding block: #{b16(block_binary)}")
     {block, _} = Block.decode(block_binary)
     add_block(block)
   end
@@ -41,6 +42,20 @@ defmodule Jamixir.Node do
       {:error, _pre_state, reason} ->
         {:error, reason}
     end
+  end
+
+  @impl true
+  def announce_block(header, _latest_hash, _latest_timeslot) do
+    hash = h(e(header))
+    pid = self()
+
+    Task.start(fn ->
+      Logger.info("Requesting block #{b16(hash)} back from author")
+      {:ok, [b]} = Network.Connection.request_blocks(pid, hash, 1, 1)
+      NodeStateServer.add_block(b, false)
+    end)
+
+    :ok
   end
 
   @impl true

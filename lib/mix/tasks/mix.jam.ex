@@ -5,6 +5,7 @@ defmodule Mix.Tasks.Jam do
 
   def run(args) do
     # Reuse the same logic as the release command
+    IO.inspect(Mix.env(), label: "Running in environment")
     Jamixir.Commands.Run.run(args)
   end
 end

@@ -75,4 +75,13 @@ defmodule Util.Logger do
 
   defp get_key_prefix(ed25519_key), do: b16(ed25519_key) |> String.slice(0, 6)
   defp format_ip_port(ip, port), do: "#{:inet.ntoa(ip)}:#{port}"
+
+  defmacro __using__(_) do
+    quote do
+      alias Util.Logger
+      def log(:debug, message), do: Logger.debug(message, @log_context)
+      def log(:error, message), do: Logger.error(message, @log_context)
+      def log(message), do: Logger.info(message, @log_context)
+    end
+  end
 end

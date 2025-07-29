@@ -1,9 +1,6 @@
 defmodule Network.MessageParsers do
-  require Logger
   import Codec.Encoder
-  import Codec.Encoder
-  def log(level, message), do: Logger.log(level, " #{message}")
-  def log(message), do: Logger.log(:info, " #{message}")
+  use Util.Logger
 
   def parse_ce_messages(data) do
     parse_ce_messages(data, [])

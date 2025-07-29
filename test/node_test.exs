@@ -46,6 +46,9 @@ defmodule Jamixir.NodeTest do
     end
   end
 
+  describe "add_block_with_header/2" do
+  end
+
   alias Block.Extrinsic
 
   describe "get_blocks/3" do
