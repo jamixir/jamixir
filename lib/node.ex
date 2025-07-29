@@ -63,7 +63,7 @@ defmodule Jamixir.Node do
   def load_state(path) do
     case Codec.State.from_file(path) do
       {:ok, state} ->
-        Storage.put(Genesis.genesis_header_hash(), state)
+        Storage.put(Genesis.genesis_block_header(), state)
         :ok
 
       {:error, reason} ->
