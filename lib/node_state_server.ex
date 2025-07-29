@@ -166,7 +166,7 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def handle_info({:check_jam_state, s}, %{jam_state: nil} = state) do
-    case s || Storage.get_state(Genesis.genesis_block_parent()) do
+    case s || Storage.get_state(Genesis.genesis_header_hash()) do
       nil ->
         # Still not available, check again later
         Process.send_after(self(), {:check_jam_state, nil}, 100)

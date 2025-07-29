@@ -3,6 +3,7 @@ defmodule Jamixir.InitializationTask do
   alias Util.Logger, as: Log
   alias Util.Hex
   alias Jamixir.Genesis
+  alias CertUtils
 
   def child_spec(_opts) do
     %{
@@ -21,9 +22,6 @@ defmodule Jamixir.InitializationTask do
 
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
-
-    generate_tls_certificates()
-    Log.info("✅ TLS certificates generated")
 
     Task.start(fn ->
       Log.debug("🔗 Connecting to validators...")
