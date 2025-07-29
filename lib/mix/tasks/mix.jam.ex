@@ -1,11 +1,10 @@
 defmodule Mix.Tasks.Jam do
   use Mix.Task
   require Logger
+  alias Jamixir.Commands.Run
   @shortdoc "Overrides the default `mix run` to start Jamixir.CLI"
 
   def run(args) do
-    # Reuse the same logic as the release command
-    IO.inspect(Mix.env(), label: "Running in environment")
-    Jamixir.Commands.Run.run(args)
+    Run.run(args)
   end
 end

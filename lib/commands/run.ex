@@ -9,7 +9,8 @@ defmodule Jamixir.Commands.Run do
     genesis: :string,
     port: :integer,
     socket_path: :string,
-    help: :boolean
+    help: :boolean,
+    log: :string
   ]
 
   @aliases [
@@ -27,6 +28,11 @@ defmodule Jamixir.Commands.Run do
   end
 
   defp start_node(opts) do
+    if log_level = opts[:log] || "info" do
+      Log.info("Setting log level to #{log_level}")
+      Logger.configure(level: :"#{log_level}")
+    end
+
     Log.info("🟣 Pump up the JAM, pump it up...")
     Log.debug("System loaded with config: #{inspect(Jamixir.config())}")
 
@@ -38,7 +44,8 @@ defmodule Jamixir.Commands.Run do
     if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
     # Set socket path for fuzzer mode
-    if socket_path = opts[:socket_path], do: Application.put_env(:jamixir, :fuzzer_socket_path, socket_path)
+    if socket_path = opts[:socket_path],
+      do: Application.put_env(:jamixir, :fuzzer_socket_path, socket_path)
 
     generate_tls_certificates()
 
@@ -113,6 +120,7 @@ defmodule Jamixir.Commands.Run do
           --genesis <GENESIS>        Genesis file to use
           --port <PORT>              Port to listen on
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
+          --log <LEVEL>              Log level (info | warn | error | debug) default: info)
       -h, --help                     Print help
 
     Examples:
