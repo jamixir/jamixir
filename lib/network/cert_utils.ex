@@ -3,8 +3,6 @@ defmodule Network.CertUtils do
   import Bitwise, only: [>>>: 2]
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
-  @keyfile Path.join(:code.priv_dir(:jamixir), "secret.pem")
-  @certfile Path.join(:code.priv_dir(:jamixir), "cert.pem")
   @ed25519_curve_oid {1, 3, 101, 112}
 
   def generate_self_signed_certificate do
@@ -28,7 +26,7 @@ defmodule Network.CertUtils do
     -----END PRIVATE KEY-----
     """
 
-    # Write temporary files
+
     File.write!(keyfile, pem)
 
     # Generate certificate using OpenSSL
@@ -56,7 +54,6 @@ defmodule Network.CertUtils do
             {:ok, pkcs12_binary}
 
           {error, _} ->
-            # Clean up on error
             File.rm(keyfile)
             File.rm(certfile)
             File.rm(pkcs12file)
@@ -64,7 +61,6 @@ defmodule Network.CertUtils do
         end
 
       {error, _} ->
-        # Clean up on error
         File.rm(keyfile)
         {:error, {:certificate_creation_failed, error}}
     end

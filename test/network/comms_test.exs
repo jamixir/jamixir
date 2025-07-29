@@ -24,13 +24,13 @@ defmodule CommsTest do
   @test_server_alias :test_server_alias
   setup_all do
     Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
-    {{_public_key, _private_key}, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
     start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias, cert_key: pkcs12_binary})
     %{test_server_alias: @test_server_alias, cert_key: pkcs12_binary}
   end
 
   setup do
-    {{_public_key, _private_key}, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
     {:ok, client_pid} =
       Network.ConnectionManager.start_outbound_connection(
         Util.Hash.random(),

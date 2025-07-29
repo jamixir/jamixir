@@ -1,9 +1,7 @@
 defmodule Jamixir.InitializationTask do
-  alias Network.{ConnectionManager, CertUtils}
+  alias Network.ConnectionManager
   alias Util.Logger, as: Log
-  alias Util.Hex
   alias Jamixir.Genesis
-  alias CertUtils
 
   def child_spec(_opts) do
     %{

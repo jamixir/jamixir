@@ -8,7 +8,8 @@ defmodule ListenerTest do
   @dummy_protocol_id 242
   @port 9997
   setup_all do
-    start_supervised!({Network.Listener, port: @port})
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
+    start_supervised!({Network.Listener, port: @port, cert_key: pkcs12_binary})
     :ok
   end
 
@@ -23,9 +24,9 @@ defmodule ListenerTest do
     :ok
   end
 
-  defp start_connection_with_retry(key, ip, port, max_retries \\ 3) do
+  defp start_connection_with_retry(key, ip, port, max_retries \\ 3, cert_key) do
     Enum.reduce_while(1..max_retries, nil, fn attempt, _acc ->
-      case Network.ConnectionManager.start_outbound_connection(key, ip, port) do
+      case Network.ConnectionManager.start_outbound_connection(key, ip, port, cert_key) do
         {:ok, pid} ->
           {:halt, {:ok, pid}}
 
@@ -47,9 +48,16 @@ defmodule ListenerTest do
       # Start three clients, each with a unique key
       keys = Enum.map(1..3, fn _ -> Util.Hash.random() end)
 
+      cert_keys =
+        Enum.map(1..3, fn _ ->
+          {_, {:ok, cert_key}} = Network.CertUtils.generate_self_signed_certificate()
+          cert_key
+        end)
+
       clients =
-        Enum.map(keys, fn key ->
-          case start_connection_with_retry(key, {127, 0, 0, 1}, port) do
+        Enum.zip(keys, cert_keys)
+        |> Enum.map(fn {key, cert_key} ->
+          case start_connection_with_retry(key, {127, 0, 0, 1}, port, cert_key) do
             {:ok, pid} ->
               pid
 
