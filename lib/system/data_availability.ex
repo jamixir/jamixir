@@ -34,7 +34,7 @@ defmodule System.DataAvailability do
         {shards, indexes} =
           for {v, pid} <- node_server().validator_connections() do
             Logger.debug(
-              "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519_key}"
+              "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519}"
             )
 
             shard_index = node_server().assigned_shard_index(core, v.ed25519)
