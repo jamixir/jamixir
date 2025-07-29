@@ -25,6 +25,6 @@ config :jamixir, Jamixir,
   erasure_code_recovery_threshold: 2,
   test_env: true
 
-config :logger, level: :none
+config :logger, level: :debug
 
 config :jamixir, :server_calls, ServerCallsMock

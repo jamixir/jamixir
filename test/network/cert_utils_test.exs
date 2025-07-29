@@ -6,36 +6,35 @@ defmodule Network.CertUtilsTest do
   alias Network.CertUtils
   alias Util.Hash
 
-  describe "create valid certificate" do
-    test "generate_self_signed_certificate" do
-      {p, k} = :crypto.generate_key(:eddsa, :ed25519)
+  test "invalid certificate dns" do
+    {p, k} = :crypto.generate_key(:eddsa, :ed25519)
+    cert_key = CertUtils.cert_key(k, p)
+    cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
 
-      {:ok, cert} = CertUtils.generate_self_signed_certificate(k)
-
-      {:ECPoint, cert_p_key} = X509.Certificate.public_key(cert)
-      assert cert_p_key == p
-    end
+    refute CertUtils.valid?(cert)
   end
 
-  describe "valid?/1" do
-    test "valid certificate" do
-      {_, k} = :crypto.generate_key(:eddsa, :ed25519)
-      {:ok, cert} = CertUtils.generate_self_signed_certificate(k)
+  test "invalid certificate algo" do
+    {_, k} = :crypto.generate_key(:eddsa, :ed448)
+    assert {:error, _} = CertUtils.generate_self_signed_certificate(k)
+  end
 
-      assert CertUtils.valid?(cert)
-    end
+  describe "PKCS12 extraction utilities" do
+    test "extract_from_pkcs12 returns both certificate and private key" do
+      {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+      {:ok, pkcs12_binary} = CertUtils.generate_self_signed_certificate(private_key)
 
-    test "invalid certificate dns" do
-      {p, k} = :crypto.generate_key(:eddsa, :ed25519)
-      cert_key = CertUtils.cert_key(k, p)
-      cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
+      case CertUtils.extract_from_pkcs12(pkcs12_binary) do
+        {:ok, {cert, extracted_private_key}} ->
+          assert CertUtils.valid?(cert)
+          # Verify the certificate has the correct public key
+          {:ECPoint, cert_pub_key} = X509.Certificate.public_key(cert)
+          assert cert_pub_key == public_key
+          assert extracted_private_key == private_key
 
-      refute CertUtils.valid?(cert)
-    end
-
-    test "invalid certificate algo" do
-      {_, k} = :crypto.generate_key(:eddsa, :ed448)
-      assert {:error, _} = CertUtils.generate_self_signed_certificate(k)
+        {:error, reason} ->
+          flunk("Failed to extract from PKCS12: #{inspect(reason)}")
+      end
     end
   end
 
@@ -76,32 +75,18 @@ defmodule Network.CertUtilsTest do
     end
   end
 
-  describe "extract_ed25519_key_from_certificate/1" do
-    test "extracts ed25519 key from valid certificate" do
-      {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
-      {:ok, cert} = CertUtils.generate_self_signed_certificate(private_key)
-      alt_name = CertUtils.alt_name(public_key)
+  test "handles invalid DER data" do
+    invalid_der = <<1, 2, 3, 4, 5>>
+    assert {:error, :malformed} = CertUtils.validate_certificate(invalid_der)
+  end
 
-      # Convert certificate to DER format
-      cert_der = X509.Certificate.to_der(cert)
+  test "rejects certificate without alternative name" do
+    {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+    cert_key = CertUtils.cert_key(private_key, public_key)
 
-      # Extract and validate
-      assert {:ok, ^public_key, ^alt_name} = CertUtils.validate_certificate(cert_der)
-    end
+    cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
+    cert_der = X509.Certificate.to_der(cert)
 
-    test "handles invalid DER data" do
-      invalid_der = <<1, 2, 3, 4, 5>>
-      assert {:error, :malformed} = CertUtils.validate_certificate(invalid_der)
-    end
-
-    test "rejects certificate without alternative name" do
-      {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
-      cert_key = CertUtils.cert_key(private_key, public_key)
-
-      cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
-      cert_der = X509.Certificate.to_der(cert)
-
-      assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert_der)
-    end
+    assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert_der)
   end
 end

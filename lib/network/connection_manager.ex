@@ -81,8 +81,8 @@ defmodule Network.ConnectionManager do
     GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key, opts})
   end
 
-  def start_outbound_connection(remote_ed25519_key, ip, port) do
-    GenServer.call(__MODULE__, {:start_outbound_connection, remote_ed25519_key, ip, port})
+  def start_outbound_connection(remote_ed25519_key, ip, port, cert_key) do
+    GenServer.call(__MODULE__, {:start_outbound_connection, remote_ed25519_key, ip, port, cert_key})
   end
 
   def shutdown_all_connections do
@@ -183,7 +183,7 @@ defmodule Network.ConnectionManager do
   end
 
   @impl GenServer
-  def handle_call({:start_outbound_connection, remote_ed25519_key, ip, port}, _from, state) do
+  def handle_call({:start_outbound_connection, remote_ed25519_key, ip, port, cert_key}, _from, state) do
     # Check if connection already exists
     case Map.get(state.connections, remote_ed25519_key) do
       %ConnectionInfo{pid: pid} when is_pid(pid) ->
@@ -206,7 +206,8 @@ defmodule Network.ConnectionManager do
                  init_mode: :initiator,
                  remote_ed25519_key: remote_ed25519_key,
                  ip: ip,
-                 port: port
+                 port: port,
+                 cert_key: cert_key
                }
              ]},
           restart: :temporary,

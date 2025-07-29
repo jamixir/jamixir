@@ -69,10 +69,13 @@ defmodule Jamixir.Commands.Run do
         Log.debug("🔐 Generating TLS certificate using ed25519 key: #{Util.Hex.encode16(public_key)}")
 
         case Network.CertUtils.generate_self_signed_certificate(private_key) do
-          {:ok, cert} ->
+          {:ok, pkcs12_binary} ->
             Log.info("✅ TLS certificate generated successfully")
             Log.debug("📜 Certificate DNS name: #{Network.CertUtils.alt_name(public_key)}")
-            {:ok, cert}
+
+            # Store PKCS12 binary in application env for use by listener and connections
+            Application.put_env(:jamixir, :tls_pkcs12_binary, pkcs12_binary)
+            {:ok, pkcs12_binary}
 
           {:error, error} ->
             Log.error("❌ Failed to generate TLS certificate: #{inspect(error)}")

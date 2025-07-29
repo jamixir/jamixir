@@ -19,8 +19,11 @@ defmodule Network.Listener do
     Log.info("🔧 Starting QUIC listener...")
     port = Keyword.get(opts, :port, 9999)
     test_server_alias = Keyword.get(opts, :test_server_alias)
+    cert_key = Keyword.get(opts, :cert_key, nil)
+    listen_opts = quicer_listen_opts(cert_key)
+    IO.inspect(listen_opts)
 
-    case :quicer.listen(port, quicer_listen_opts()) do
+    case :quicer.listen(port, listen_opts) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)

@@ -17,8 +17,10 @@ defmodule Network.CertUtils do
 
     dns_name = alt_name(public_key)
 
-    keyfile = opts[:keyfile] || "priv/#{dns_name}_secret.pem"
-    certfile = opts[:certfile] || "priv/#{dns_name}_cert.pem"
+    # Create temporary files for OpenSSL operations
+    keyfile = opts[:keyfile] || "/tmp/#{dns_name}_secret.pem"
+    certfile = opts[:certfile] || "/tmp/#{dns_name}_cert.pem"
+    pkcs12file = opts[:pkcs12file] || "/tmp/#{dns_name}.p12"
 
     pem = """
     -----BEGIN PRIVATE KEY-----
@@ -26,16 +28,46 @@ defmodule Network.CertUtils do
     -----END PRIVATE KEY-----
     """
 
-    File.rm(keyfile)
+    # Write temporary files
     File.write!(keyfile, pem)
-    File.rm(certfile)
 
-    cmd = """
+    # Generate certificate using OpenSSL
+    cert_cmd = """
       openssl req -new -x509 -days 365 -key #{keyfile} -out #{certfile} -subj "/CN=Jamixir Ed25519 Cert" -addext "subjectAltName=DNS:#{dns_name}"
     """
 
-    System.cmd("sh", ["-c", cmd])
-    X509.Certificate.from_pem(File.read!(certfile))
+    case System.cmd("sh", ["-c", cert_cmd]) do
+      {_, 0} ->
+        # Create PKCS12 bundle
+        pkcs12_cmd = """
+          openssl pkcs12 -export -out #{pkcs12file} -inkey #{keyfile} -in #{certfile} -passout pass:
+        """
+
+        case System.cmd("sh", ["-c", pkcs12_cmd]) do
+          {_, 0} ->
+            # Read PKCS12 binary
+            pkcs12_binary = File.read!(pkcs12file)
+
+            # Clean up temporary files
+            File.rm(keyfile)
+            File.rm(certfile)
+            File.rm(pkcs12file)
+
+            {:ok, pkcs12_binary}
+
+          {error, _} ->
+            # Clean up on error
+            File.rm(keyfile)
+            File.rm(certfile)
+            File.rm(pkcs12file)
+            {:error, {:pkcs12_creation_failed, error}}
+        end
+
+      {error, _} ->
+        # Clean up on error
+        File.rm(keyfile)
+        {:error, {:certificate_creation_failed, error}}
+    end
   rescue
     error -> {:error, error}
   end
@@ -93,6 +125,74 @@ defmodule Network.CertUtils do
 
       error ->
         error
+    end
+  end
+
+  def extract_from_pkcs12(pkcs12_binary, password \\ "") do
+    case {ExFiskal.PKCS12.extract_certs(pkcs12_binary, password),
+          ExFiskal.PKCS12.extract_key(pkcs12_binary, password)} do
+      {{:ok, cert_pem_with_attrs}, {:ok, key_pem}} ->
+        cert_pem = extract_cert_from_bag_attrs(cert_pem_with_attrs)
+
+        case X509.Certificate.from_pem(cert_pem) do
+          {:ok, cert} ->
+            case extract_private_key_binary(key_pem) do
+              {:ok, private_key} ->
+                {:ok, {cert, private_key}}
+
+              {:error, reason} ->
+                {:error, {:private_key_extraction_failed, reason}}
+            end
+
+          {:error, reason} ->
+            {:error, {:certificate_parsing_failed, reason}}
+        end
+
+      {{:error, reason}, _} ->
+        {:error, {:certificate_extraction_failed, reason}}
+
+      {_, {:error, reason}} ->
+        {:error, {:private_key_extraction_failed, reason}}
+    end
+  end
+
+  defp extract_cert_from_bag_attrs(cert_pem_with_attrs) do
+    # Find the start of the certificate
+    case String.split(cert_pem_with_attrs, "-----BEGIN CERTIFICATE-----") do
+      [_bag_attrs, cert_part] ->
+        "-----BEGIN CERTIFICATE-----" <> cert_part
+
+      _ ->
+        cert_pem_with_attrs
+    end
+  end
+
+  defp extract_private_key_binary(key_pem) do
+    case String.split(key_pem, "-----BEGIN PRIVATE KEY-----") do
+      [_header, key_part] ->
+        case String.split(key_part, "-----END PRIVATE KEY-----") do
+          [key_base64, _footer] ->
+            case Base.decode64(String.trim(key_base64)) do
+              {:ok, asn1_encoded} ->
+                # The ASN.1 encoded private key contains the actual key at the end
+                # For Ed25519, it's the last 32 bytes
+                if byte_size(asn1_encoded) >= 32 do
+                  private_key = binary_part(asn1_encoded, byte_size(asn1_encoded), -32)
+                  {:ok, private_key}
+                else
+                  {:error, :invalid_private_key_size}
+                end
+
+              {:error, reason} ->
+                {:error, {:base64_decode_failed, reason}}
+            end
+
+          _ ->
+            {:error, :invalid_private_key_format}
+        end
+
+      _ ->
+        {:error, :invalid_private_key_format}
     end
   end
 
