@@ -3,7 +3,7 @@ defmodule Network.UpStreamManager do
   alias Network.ConnectionState
 
   def manage_up_stream(protocol_id, stream_ref, %ConnectionState{} = state, log_tag) do
-    current_stream_ref = Map.get(state.up_streams, protocol_id)
+    current_stream_ref = Map.get(state.up_streams, protocol_id) |> Map.get(:stream)
 
     cond do
       # Existing stream with matching ID
@@ -32,7 +32,7 @@ defmodule Network.UpStreamManager do
           |> Map.delete(current_stream_ref)
           |> Map.put(stream_ref, stream_data)
 
-        updated_up_streams = Map.put(state.up_streams, protocol_id, stream_ref)
+        updated_up_streams = Map.put(state.up_streams, protocol_id, %{stream: stream_ref})
 
         new_state = %{
           state
