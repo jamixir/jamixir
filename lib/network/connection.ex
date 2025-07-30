@@ -232,14 +232,14 @@ defmodule Network.Connection do
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
     Log.connection(:info, "Stream closed: #{inspect(stream)}", state.remote_ed25519_key)
-    up_stream_data = Map.get(state.up_stream_data, stream)
+    protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
 
     new_state = %{
       state
       | pending_responses: Map.delete(state.pending_responses, stream),
         ce_streams: Map.delete(state.ce_streams, stream),
         up_stream_data: Map.delete(state.up_stream_data, stream),
-        up_streams: Map.delete(state.up_streams, up_stream_data.protocol_id)
+        up_streams: Map.delete(state.up_streams, protocol_id)
     }
 
     {:noreply, new_state}

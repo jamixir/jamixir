@@ -3,7 +3,7 @@ defmodule Network.UpStreamManager do
   alias Network.ConnectionState
 
   def manage_up_stream(protocol_id, stream_ref, %ConnectionState{} = state, log_tag) do
-    current_stream_ref = Map.get(state.up_streams, protocol_id) |> Map.get(:stream)
+    current_stream_ref = Map.get(state.up_streams, protocol_id, %{}) |> Map.get(:stream)
 
     cond do
       # Existing stream with matching ID
