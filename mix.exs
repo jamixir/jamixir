@@ -5,7 +5,7 @@ defmodule Jamixir.MixProject do
     [
       app: :jamixir,
       name: "Jamixir",
-      version: "0.6.7",
+      version: "0.7.0",
       app_version: {0, 2, 6},
       jam_version: {0, 7, 0},
       elixir: "~> 1.17",
