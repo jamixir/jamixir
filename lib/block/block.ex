@@ -99,7 +99,6 @@ defmodule Block do
       {priv, pub} ->
         # my_index = Enum.find_index(safrole_.pending, fn v -> v.bandersnatch == pub end)
         context = HeaderSeal.construct_seal_context(%{attempt: r}, %EntropyPool{n3: pool.n3})
-        IO.inspect("FOI!")
 
         case RingVrf.ietf_vrf_output({{priv, pub}, pub}, context) do
           ^id -> {:ok, {priv, pub}}

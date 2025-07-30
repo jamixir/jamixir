@@ -178,6 +178,8 @@ defmodule Jamixir.Node do
     for {_v, pid} <- NodeStateServer.instance().validator_connections() do
       Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
     end
+
+    :ok
   end
 
   # CE 132 - Safrole ticket distribution
