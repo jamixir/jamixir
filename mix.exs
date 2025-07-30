@@ -5,9 +5,9 @@ defmodule Jamixir.MixProject do
     [
       app: :jamixir,
       name: "Jamixir",
-      version: "0.6.6",
+      version: "0.6.7",
       app_version: {0, 1, 3},
-      jam_version: {0, 6, 6},
+      jam_version: {0, 6, 7},
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
