@@ -39,8 +39,7 @@ defmodule Network.UpStreamTest do
       {{:ok, stream_data}, new_state} =
         UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
 
-      # Verify results
-      assert new_state.up_streams[protocol_id] == stream
+      assert new_state.up_streams[protocol_id] == %{stream: stream}
       assert Map.has_key?(new_state.up_stream_data, stream)
       assert stream_data.protocol_id == nil
       assert stream_data.buffer == <<>>
@@ -53,7 +52,7 @@ defmodule Network.UpStreamTest do
       stream_data = %{protocol_id: protocol_id, buffer: <<>>}
 
       state = %ConnectionState{
-        up_streams: %{protocol_id => stream},
+        up_streams: %{protocol_id => %{stream: stream}},
         up_stream_data: %{stream => stream_data}
       }
 
@@ -61,8 +60,7 @@ defmodule Network.UpStreamTest do
       {{:ok, returned_stream_data}, new_state} =
         UpStreamManager.manage_up_stream(protocol_id, stream, state, @log_context)
 
-      # Verify results
-      assert new_state.up_streams[protocol_id] == stream
+      assert new_state.up_streams[protocol_id] == %{stream: stream}
       assert returned_stream_data == stream_data
       # State should be unchanged
       assert new_state == state
@@ -78,7 +76,7 @@ defmodule Network.UpStreamTest do
       old_stream_data = %{protocol_id: protocol_id, buffer: <<"old_data">>}
 
       state = %ConnectionState{
-        up_streams: %{protocol_id => old_stream},
+        up_streams: %{protocol_id => %{stream: old_stream}},
         up_stream_data: %{old_stream => old_stream_data}
       }
 
@@ -92,8 +90,7 @@ defmodule Network.UpStreamTest do
       {{:ok, new_stream_data}, new_state} =
         UpStreamManager.manage_up_stream(protocol_id, new_stream, state, @log_context)
 
-      # Verify results
-      assert new_state.up_streams[protocol_id] == new_stream
+      assert new_state.up_streams[protocol_id] == %{stream: new_stream}
       assert Map.has_key?(new_state.up_stream_data, new_stream)
       assert new_stream_data.protocol_id == nil
       assert new_stream_data.buffer == <<>>
@@ -112,7 +109,7 @@ defmodule Network.UpStreamTest do
       stream_data = %{protocol_id: protocol_id, buffer: <<>>}
 
       state = %ConnectionState{
-        up_streams: %{protocol_id => higher_stream},
+        up_streams: %{protocol_id => %{stream: higher_stream}},
         up_stream_data: %{higher_stream => stream_data}
       }
 
@@ -128,7 +125,7 @@ defmodule Network.UpStreamTest do
 
       # Verify the state is unchanged
       assert unchanged_state == state
-      assert unchanged_state.up_streams[protocol_id] == higher_stream
+      assert unchanged_state.up_streams[protocol_id] == %{stream: higher_stream}
     end
   end
 end
