@@ -5,11 +5,10 @@ defmodule Network.Listener do
 
   use GenServer
   import Network.Config
-  alias Util.Hash
   alias Network.ConnectionManager
-  alias System.State.Validator
-  alias Jamixir.NodeStateServer
+  alias Network.CertUtils
   alias Util.Logger, as: Log
+  import Util.Hex, only: [b16: 1]
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -20,8 +19,9 @@ defmodule Network.Listener do
     Log.info("🔧 Starting QUIC listener...")
     port = Keyword.get(opts, :port, 9999)
     test_server_alias = Keyword.get(opts, :test_server_alias)
+    pkcs12_bundle = Keyword.get(opts, :tls_identity, Application.get_env(:jamixir, :tls_identity))
 
-    case :quicer.listen(port, default_quicer_opts()) do
+    case :quicer.listen(port, quicer_listen_opts(pkcs12_bundle)) do
       {:ok, socket} ->
         Log.info("🎧 Listening on port #{port}")
         send(self(), :accept_connection)
@@ -82,69 +82,26 @@ defmodule Network.Listener do
   def handle_info(_msg, state), do: {:noreply, state}
 
   # Private functions
-  # Temporary function to get the validator's ed25519 key from ip address (by matching to the metadata in the state)
-  # this is a temporary solution , not good for production and can't be used for local testing (since all validators have the same ip)
-  # we will replace this with a proper certificate-based identification in a future PR
-  # TODO: extract the ed25519 key from the connection certificate
+  # Extract the validator's ed25519 key from the connection certificate
   defp get_validator_ed25519_key(conn) do
-    case :quicer.peername(conn) do
-      {:ok, {remote_ip, remote_port}} ->
-        Log.debug("🔍 Connection from #{inspect(remote_ip)}: #{remote_port}")
+    case :quicer.peercert(conn) do
+      {:ok, cert_der} ->
+        case CertUtils.validate_certificate(cert_der) do
+          {:ok, ed25519_key, alt_name} ->
+            Log.debug("✅ Extracted ed25519 key from certificate: #{b16(ed25519_key)}")
+            Log.debug("✅ Certificate alternative name: #{alt_name}")
+            {:ok, ed25519_key}
 
-        # Check if it's a localhost connection using tuple directly
-        if is_localhost?(remote_ip) do
-          Log.debug("🏠 Accepting localhost connection")
-          # Generate a unique identifier for local connections
-          unique_key = Hash.random()
-          {:ok, unique_key}
-        else
-          # For non-local addresses: strict IP-based identification
-          remote_address = format_ip_tuple(remote_ip)
-          Log.debug("🔍 Connection from #{remote_address}:#{remote_port}")
-          identify_validator_by_ip(remote_address)
+          {:error, reason} ->
+            Log.warning("❌ Failed to validate certificate: #{inspect(reason)}")
+            :quicer.close_connection(conn)
+            {:error, reason}
         end
 
       {:error, reason} ->
-        Log.warning("❌ Failed to get peer address: #{inspect(reason)}")
+        Log.warning("❌ Failed to get peer certificate: #{inspect(reason)}")
+        :quicer.close_connection(conn)
         {:error, reason}
-    end
-  end
-
-  # Check if IP tuple represents localhost
-  # IPv4 localhost
-  defp is_localhost?({127, 0, 0, 1}), do: true
-  # IPv6 localhost
-  defp is_localhost?({0, 0, 0, 0, 0, 0, 0, 1}), do: true
-  defp is_localhost?(_), do: false
-
-  # Format IP tuple to string only when needed for validator identification (will not be used after we have a proper certificate-based identification)
-  defp format_ip_tuple({a, b, c, d}), do: "#{a}.#{b}.#{c}.#{d}"
-
-  defp format_ip_tuple({a, b, c, d, e, f, g, h}) do
-    # Format IPv6 as standard hex format
-    [a, b, c, d, e, f, g, h]
-    |> Enum.map(&String.pad_leading(Integer.to_string(&1, 16), 4, "0"))
-    |> Enum.join(":")
-  end
-
-  defp identify_validator_by_ip(remote_address) do
-    case NodeStateServer.inspect_state("curr_validators") do
-      {:ok, validators} ->
-        Log.debug("📋 Found #{length(validators)} validators, searching for IP #{remote_address}")
-
-        case Validator.find_by_ip(validators, remote_address) do
-          nil ->
-            Log.warning("🚫 No validator found for IP #{remote_address}")
-            {:error, :validator_not_found}
-
-          validator ->
-            Log.debug("✅ Found validator #{inspect(validator.ed25519)} for IP #{remote_address}")
-            {:ok, validator.ed25519}
-        end
-
-      {:error, reason} ->
-        Log.warning("❌ Failed to get validators from state: #{inspect(reason)}")
-        {:error, :state_not_available}
     end
   end
 

@@ -81,8 +81,11 @@ defmodule Network.ConnectionManager do
     GenServer.cast(__MODULE__, {:handle_inbound_connection, conn, ed25519_key, opts})
   end
 
-  def start_outbound_connection(remote_ed25519_key, ip, port) do
-    GenServer.call(__MODULE__, {:start_outbound_connection, remote_ed25519_key, ip, port})
+  def start_outbound_connection(remote_ed25519_key, ip, port, pkcs12_bundle) do
+    GenServer.call(
+      __MODULE__,
+      {:start_outbound_connection, remote_ed25519_key, ip, port, pkcs12_bundle}
+    )
   end
 
   def shutdown_all_connections do
@@ -112,6 +115,7 @@ defmodule Network.ConnectionManager do
     state = %{state | validators: validators, retry_timers: %{}}
 
     our_ed25519_key = KeyManager.get_our_ed25519_key()
+    our_pkcs12_bundle = Application.get_env(:jamixir, :tls_identity)
 
     state_ =
       Enum.reduce(validators, state, fn %Validator{ed25519: ed25519_key} = v, acc_state ->
@@ -123,7 +127,7 @@ defmodule Network.ConnectionManager do
           should_initiate_connection?(v, our_ed25519_key) ->
             Log.connection(:debug, "🔌 Attempting connection", ed25519_key)
 
-            case attempt_connection(v, acc_state) do
+            case attempt_connection(v, acc_state, our_pkcs12_bundle) do
               {:ok, new_state} ->
                 Log.connection(:info, "✅ Connected", ed25519_key)
                 new_state
@@ -183,7 +187,11 @@ defmodule Network.ConnectionManager do
   end
 
   @impl GenServer
-  def handle_call({:start_outbound_connection, remote_ed25519_key, ip, port}, _from, state) do
+  def handle_call(
+        {:start_outbound_connection, remote_ed25519_key, ip, port, pkcs12_bundle},
+        _from,
+        state
+      ) do
     # Check if connection already exists
     case Map.get(state.connections, remote_ed25519_key) do
       %ConnectionInfo{pid: pid} when is_pid(pid) ->
@@ -206,7 +214,8 @@ defmodule Network.ConnectionManager do
                  init_mode: :initiator,
                  remote_ed25519_key: remote_ed25519_key,
                  ip: ip,
-                 port: port
+                 port: port,
+                 tls_identity: pkcs12_bundle
                }
              ]},
           restart: :temporary,
@@ -481,7 +490,7 @@ defmodule Network.ConnectionManager do
         {:noreply, state}
 
       validator ->
-        case attempt_connection(validator, state) do
+        case attempt_connection(validator, state, Application.get_env(:jamixir, :tls_identity)) do
           {:ok, new_state} ->
             Log.connection(:info, "✅ Retry connection succeeded", ed25519_key)
             # Remove the timer from retry_timers since connection succeeded
@@ -516,7 +525,7 @@ defmodule Network.ConnectionManager do
     end
   end
 
-  defp attempt_connection(%Validator{ed25519: ed25519_key} = v, state) do
+  defp attempt_connection(%Validator{ed25519: ed25519_key} = v, state, pkcs12_bundle) do
     {ip, port} = Validator.ip_port(v)
 
     case Map.get(state.connections, ed25519_key) do
@@ -540,7 +549,8 @@ defmodule Network.ConnectionManager do
                  init_mode: :initiator,
                  remote_ed25519_key: ed25519_key,
                  ip: ip,
-                 port: port
+                 port: port,
+                 tls_identity: pkcs12_bundle
                }
              ]},
           restart: :temporary,

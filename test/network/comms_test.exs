@@ -24,16 +24,19 @@ defmodule CommsTest do
   @test_server_alias :test_server_alias
   setup_all do
     Storage.put(<<1, 2, 3, 4, 5, 6, 7>>)
-    start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias})
-    %{test_server_alias: @test_server_alias}
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.create_pkcs12_bundle()
+    start_supervised!({Network.Listener, port: @port, test_server_alias: @test_server_alias, tls_identity: pkcs12_binary})
+    %{test_server_alias: @test_server_alias, tls_identity: pkcs12_binary}
   end
 
   setup do
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.create_pkcs12_bundle()
     {:ok, client_pid} =
       Network.ConnectionManager.start_outbound_connection(
         Util.Hash.random(),
         {127, 0, 0, 1},
-        @port
+        @port,
+        pkcs12_binary
       )
 
     # Wait for the server connection process to be registered
@@ -668,11 +671,14 @@ defmodule CommsTest do
       # Create additional clients
       additional_clients =
         for _ <- 1..2 do
+          {_public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+          {:ok, pkcs12_binary} = Network.CertUtils.create_pkcs12_bundle(private_key)
           {:ok, pid} =
             Network.ConnectionManager.start_outbound_connection(
               Util.Hash.random(),
               {127, 0, 0, 1},
-              @port
+              @port,
+              pkcs12_binary
             )
 
           wait(fn -> Process.alive?(pid) end)
