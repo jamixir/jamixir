@@ -1,24 +1,24 @@
 defmodule Network.CertUtils do
   require Logger
   import Bitwise, only: [>>>: 2]
+  @dialyzer {:nowarn_function, create_pkcs12_bundle: 1}
+
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
   @ed25519_curve_oid {1, 3, 101, 112}
 
-  def generate_self_signed_certificate do
+  def create_pkcs12_bundle do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
-    {{public_key, private_key}, generate_self_signed_certificate(private_key)}
+    {{public_key, private_key}, create_pkcs12_bundle(private_key)}
   end
 
-  def generate_self_signed_certificate(private_key, opts \\ []) do
+  def create_pkcs12_bundle(private_key) do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519, private_key)
 
-    dns_name = alt_name(public_key)
-
     # Create temporary files for OpenSSL operations
-    keyfile = opts[:keyfile] || "/tmp/#{dns_name}_secret.pem"
-    certfile = opts[:certfile] || "/tmp/#{dns_name}_cert.pem"
-    pkcs12file = opts[:pkcs12file] || "/tmp/#{dns_name}.p12"
+    keyfile = Temp.path!(suffix: "_secret.pem")
+    certfile = Temp.path!(suffix: "_cert.pem")
+    pkcs12file = Temp.path!(suffix: ".p12")
 
     pem = """
     -----BEGIN PRIVATE KEY-----
@@ -26,12 +26,10 @@ defmodule Network.CertUtils do
     -----END PRIVATE KEY-----
     """
 
-
     File.write!(keyfile, pem)
-
     # Generate certificate using OpenSSL
     cert_cmd = """
-      openssl req -new -x509 -days 365 -key #{keyfile} -out #{certfile} -subj "/CN=Jamixir Ed25519 Cert" -addext "subjectAltName=DNS:#{dns_name}"
+      openssl req -new -x509 -days 365 -key #{keyfile} -out #{certfile} -subj "/CN=Jamixir Ed25519 Cert" -addext "subjectAltName=DNS:#{alt_name(public_key)}"
     """
 
     case System.cmd("sh", ["-c", cert_cmd]) do
@@ -43,10 +41,8 @@ defmodule Network.CertUtils do
 
         case System.cmd("sh", ["-c", pkcs12_cmd]) do
           {_, 0} ->
-            # Read PKCS12 binary
             pkcs12_binary = File.read!(pkcs12file)
 
-            # Clean up temporary files
             File.rm(keyfile)
             File.rm(certfile)
             File.rm(pkcs12file)
@@ -68,59 +64,32 @@ defmodule Network.CertUtils do
     error -> {:error, error}
   end
 
-  def keyfile do
-    KeyManager.get_our_ed25519_key()
-    |> keyfile()
-  end
-
-  def certfile do
-    KeyManager.get_our_ed25519_key()
-    |> certfile()
-  end
-
-  def keyfile(public_key) do
-    dns_name = alt_name(public_key)
-    "priv/#{dns_name}_secret.pem"
-  end
-
-  def certfile(public_key) do
-    dns_name = alt_name(public_key)
-    "priv/#{dns_name}_cert.pem"
-  end
-
   def ed25519_private_key_asn1(private_key, public_key) do
     {:ECPrivateKey, 1, private_key, {:namedCurve, @ed25519_curve_oid}, public_key, :asn1_NOVALUE}
   end
 
-  def valid?(cert) do
-    with {:ECPoint, cert_p_key} <- X509.Certificate.public_key(cert),
-         {:Extension, _, _, [dNSName: dns_name]} <-
-           X509.Certificate.extension(cert, :subject_alt_name),
-         true <- to_string(dns_name) == alt_name(cert_p_key) do
-      :ok
-    else
-      _ -> false
-    end
-  end
-
-  def validate_certificate(cert_der) do
+  def validate_certificate(cert_der) when is_binary(cert_der) do
     case X509.Certificate.from_der(cert_der, :OTPCertificate) do
       {:ok, cert} ->
-        case X509.Certificate.public_key(cert) do
-          # OpenSSL format
-          {:ECPoint, ed25519_public_key} ->
-            validate_alternative_name(cert, ed25519_public_key)
-
-          # X509 library format with curve parameters
-          {{:ECPoint, ed25519_public_key}, {:namedCurve, @ed25519_curve_oid}} ->
-            validate_alternative_name(cert, ed25519_public_key)
-
-          _ ->
-            {:error, :not_ed25519_certificate}
-        end
+        validate_certificate(cert)
 
       error ->
         error
+    end
+  end
+
+  def validate_certificate(cert) do
+    case X509.Certificate.public_key(cert) do
+      # OpenSSL format
+      {:ECPoint, ed25519_public_key} ->
+        validate_alternative_name(cert, ed25519_public_key)
+
+      # X509 library format with curve parameters
+      {{:ECPoint, ed25519_public_key}, {:namedCurve, @ed25519_curve_oid}} ->
+        validate_alternative_name(cert, ed25519_public_key)
+
+      _ ->
+        {:error, :not_ed25519_certificate}
     end
   end
 
@@ -153,7 +122,6 @@ defmodule Network.CertUtils do
   end
 
   defp extract_cert_from_bag_attrs(cert_pem_with_attrs) do
-    # Find the start of the certificate
     case String.split(cert_pem_with_attrs, "-----BEGIN CERTIFICATE-----") do
       [_bag_attrs, cert_part] ->
         "-----BEGIN CERTIFICATE-----" <> cert_part

@@ -115,7 +115,7 @@ defmodule Network.ConnectionManager do
     state = %{state | validators: validators, retry_timers: %{}}
 
     our_ed25519_key = KeyManager.get_our_ed25519_key()
-    our_cert_key = Application.get_env(:jamixir, :tls_pkcs12_binary)
+    our_pkcs12_bundle = Application.get_env(:jamixir, :tls_identity)
 
     state_ =
       Enum.reduce(validators, state, fn %Validator{ed25519: ed25519_key} = v, acc_state ->
@@ -127,7 +127,7 @@ defmodule Network.ConnectionManager do
           should_initiate_connection?(v, our_ed25519_key) ->
             Log.connection(:debug, "🔌 Attempting connection", ed25519_key)
 
-            case attempt_connection(v, acc_state, our_cert_key) do
+            case attempt_connection(v, acc_state, our_pkcs12_bundle) do
               {:ok, new_state} ->
                 Log.connection(:info, "✅ Connected", ed25519_key)
                 new_state

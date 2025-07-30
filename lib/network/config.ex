@@ -27,8 +27,7 @@ defmodule Network.Config do
       [
         peer_bidi_stream_count: Constants.validator_count(),
         peer_unidi_stream_count: 100,
-        conn_acceptors: 4,
-        idle_timeout_ms: 0
+        conn_acceptors: 4
       ]
   end
 

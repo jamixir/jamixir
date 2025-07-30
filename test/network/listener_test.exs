@@ -8,7 +8,7 @@ defmodule ListenerTest do
   @dummy_protocol_id 242
   @port 9997
   setup_all do
-    {_, {:ok, pkcs12_binary}} = Network.CertUtils.generate_self_signed_certificate()
+    {_, {:ok, pkcs12_binary}} = Network.CertUtils.create_pkcs12_bundle()
     start_supervised!({Network.Listener, port: @port, tls_identity: pkcs12_binary})
     :ok
   end
@@ -50,7 +50,7 @@ defmodule ListenerTest do
 
       cert_keys =
         Enum.map(keys, fn _ ->
-          {_, {:ok, pkcs12_bundle}} = Network.CertUtils.generate_self_signed_certificate()
+          {_, {:ok, pkcs12_bundle}} = Network.CertUtils.create_pkcs12_bundle()
           pkcs12_bundle
         end)
 

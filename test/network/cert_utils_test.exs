@@ -3,6 +3,7 @@ defmodule Network.CertUtilsTest do
   import Bitwise, only: [<<<: 2]
   import Codec.Encoder, only: [e_le: 2]
 
+  alias X509.Certificate
   alias Network.CertUtils
   alias Util.Hash
 
@@ -10,23 +11,25 @@ defmodule Network.CertUtilsTest do
     {p, k} = :crypto.generate_key(:eddsa, :ed25519)
     cert_key = CertUtils.ed25519_private_key_asn1(k, p)
     cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
+    assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert)
 
-    refute CertUtils.valid?(cert)
+    assert {:error, :missing_alternative_name} =
+             CertUtils.validate_certificate(Certificate.to_der(cert))
   end
 
   test "invalid certificate algo" do
     {_, k} = :crypto.generate_key(:eddsa, :ed448)
-    assert {:error, _} = CertUtils.generate_self_signed_certificate(k)
+    assert {:error, _} = CertUtils.create_pkcs12_bundle(k)
   end
 
   describe "PKCS12 extraction utilities" do
     test "extract_from_pkcs12 returns both certificate and private key" do
       {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
-      {:ok, pkcs12_binary} = CertUtils.generate_self_signed_certificate(private_key)
+      {:ok, pkcs12_binary} = CertUtils.create_pkcs12_bundle(private_key)
 
       case CertUtils.extract_from_pkcs12(pkcs12_binary) do
         {:ok, {cert, extracted_private_key}} ->
-          assert CertUtils.valid?(cert)
+          assert {:ok, ^public_key, _dns_name} = CertUtils.validate_certificate(cert)
           # Verify the certificate has the correct public key
           {:ECPoint, cert_pub_key} = X509.Certificate.public_key(cert)
           assert cert_pub_key == public_key
@@ -85,8 +88,9 @@ defmodule Network.CertUtilsTest do
     cert_key = CertUtils.ed25519_private_key_asn1(private_key, public_key)
 
     cert = X509.Certificate.self_signed(cert_key, "CN=jamnp-s")
-    cert_der = X509.Certificate.to_der(cert)
 
-    assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert_der)
+    assert {:error, :missing_alternative_name} = CertUtils.validate_certificate(cert)
+    assert {:error, :missing_alternative_name} =
+             CertUtils.validate_certificate(Certificate.to_der(cert))
   end
 end
