@@ -154,7 +154,9 @@ defmodule Jamixir.NodeStateServer do
 
     case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
       {:ok, block} ->
-        Log.block(:info, "⛓️ Block created successfully. #{inspect(block)}")
+        header_hash = h(e(block.header))
+        Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
+        Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
         Task.start(fn -> add_block(block) end)
 
       {:error, reason} ->
