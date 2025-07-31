@@ -36,7 +36,10 @@ defmodule Jamixir.Commands.Run do
     Log.info("🟣 Pump up the JAM, pump it up...")
     Log.debug("System loaded with config: #{inspect(Jamixir.config())}")
 
-    KeyManager.load_keys(opts[:keys])
+    case KeyManager.load_keys(opts[:keys]) do
+      {:ok, _} -> :ok
+      {:error, e} -> raise e
+    end
 
     if genesis_file = opts[:genesis],
       do: Application.put_env(:jamixir, :genesis_file, genesis_file)
