@@ -8,6 +8,7 @@ defmodule Jamixir.Commands.Run do
     keys: :string,
     genesis: :string,
     port: :integer,
+    socket_path: :string,
     help: :boolean
   ]
 
@@ -35,6 +36,9 @@ defmodule Jamixir.Commands.Run do
       do: Application.put_env(:jamixir, :genesis_file, genesis_file)
 
     if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
+
+    # Set socket path for fuzzer mode
+    if socket_path = opts[:socket_path], do: Application.put_env(:jamixir, :fuzzer_socket_path, socket_path)
 
     generate_tls_certificates()
 
@@ -108,6 +112,7 @@ defmodule Jamixir.Commands.Run do
           --keys <KEYS>              Keys file to load
           --genesis <GENESIS>        Genesis file to use
           --port <PORT>              Port to listen on
+          --socket-path <PATH>       Unix domain socket path for fuzzer mode
       -h, --help                     Print help
 
     Examples:
