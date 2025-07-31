@@ -29,7 +29,9 @@ defmodule Jamixir do
   defp fuzzer_children do
     Util.Logger.info("🔧 Running in fuzzer environment")
     persist_storage? = Jamixir.config()[:storage_persist] || false
-    socket_path = System.get_env("SOCKET_PATH") || "/tmp/jamixir_fuzzer.sock"
+    socket_path = Application.get_env(:jamixir, :fuzzer_socket_path) ||
+                  System.get_env("SOCKET_PATH") ||
+                  "/tmp/jamixir_fuzzer.sock"
 
     [
       {Storage, [persist: persist_storage?]},
