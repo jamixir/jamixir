@@ -244,7 +244,6 @@ defmodule Network.ServerCalls do
 
   def call(0, message) do
     log("Processing block announcement")
-    # TODO: Implement block processing
     {header, rest} = Header.decode(message)
     <<hash::b(hash), timeslot::m(timeslot)>> = rest
     :ok = Jamixir.NodeAPI.announce_block(header, hash, timeslot)

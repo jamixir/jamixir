@@ -73,7 +73,7 @@ defmodule Util.Logger do
     end
   end
 
-  defp get_key_prefix(ed25519_key), do: b16(ed25519_key) |> String.slice(0, 6)
+  defp get_key_prefix(ed25519_key), do: KeyManager.get_known_key(b16(ed25519_key))
   defp format_ip_port(ip, port), do: "#{:inet.ntoa(ip)}:#{port}"
 
   defmacro __using__(_) do

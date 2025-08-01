@@ -5,6 +5,14 @@ defmodule KeyManager do
   alias Util.Logger, as: Log
   import Util.Hex
   @private_key_file "private_key.enc"
+  @known_keys %{
+    "0x4418fb8c85bb3985394a8c2756d3643457ce614546202a2f50b093d762499ace" => "ALICE",
+    "0xad93247bd01307550ec7acd757ce6fb805fcf73db364063265b30a949e90d933" => "BOB",
+    "0xcab2b9ff25c2410fbe9b8a717abb298c716a03983c98ceb4def2087500b8e341" => "CAROL",
+    "0xf30aa5444688b3cab47697b37d5cac5707bb3289e986b19b17db437206931a8d" => "DAVID",
+    "0x8b8c5d436f92ecf605421e873a99ec528761eb52a88a2f9a057b3b3003e6f32a" => "EVE",
+    "0xab0084d01534b31c1dd87c81645fd762482a90027754041ca1b56133d0466c06" => "FERGIE"
+  }
 
   @doc """
   Returns the public key as a binary.
@@ -37,6 +45,13 @@ defmodule KeyManager do
   def get_keypair do
     {private_key, public_key} = get_private_key()
     {{private_key, public_key}, public_key}
+  end
+
+  def get_known_key(key) when is_binary(key) do
+    case Map.get(@known_keys, key) do
+      nil -> key |> String.slice(0, 6)
+      name -> name
+    end
   end
 
   @doc """
