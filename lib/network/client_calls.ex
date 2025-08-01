@@ -13,6 +13,10 @@ defmodule Network.ClientCalls do
   def call(128, message) do
     log("Received block response")
     {:ok, Block.decode_list(message)}
+  rescue
+    e ->
+      log(:error, "Failed to decode blocks: #{inspect(e)}")
+      {:error, :decode_error}
   end
 
   def call(129, [bounderies, trie_bin]) do

@@ -119,9 +119,8 @@ defmodule Block.Header do
     else
       case Storage.get(header.parent_hash) do
         nil ->
-          Logger.error(
-            "Parent header not found for block with hash #{Base.encode16(header.extrinsic_hash)}"
-          )
+          hash = h(e(header))
+          Logger.error("State not found for header #{b16(hash)}")
 
           {:error, :no_parent}
 

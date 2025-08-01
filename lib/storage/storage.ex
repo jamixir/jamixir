@@ -1,11 +1,15 @@
 defmodule Storage do
   alias Block.Extrinsic.WorkPackage
   alias Block.Header
+  alias Codec.State.Trie
   alias System.State
   alias Util.Hash
-  alias Codec.State.Trie
   import Codec.Encoder
+  import Util.Hex, only: [b16: 1]
   use StoragePrefix
+
+  @log_context "[STORAGE]"
+  use Util.Logger
 
   @latest_timeslot "latest_timeslot"
 
@@ -91,6 +95,7 @@ defmodule Storage do
   end
 
   def put(header_hash, %State{} = posterior_state) do
+    log(:debug, "Storing state for header #{b16(header_hash)}")
     state_root = Trie.state_root(posterior_state)
 
     state_fields =
