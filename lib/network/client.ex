@@ -214,8 +214,9 @@ defmodule Network.Client do
 
       # No stream yet - send protocol ID first, then the message
       nil ->
-        log("Creating new UP stream for block announcements")
         {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
+        log("Created new UP stream: #{inspect(stream)} for protocol_id=#{protocol_id}")
+
         state = put_in(state.up_streams[protocol_id], %{stream: stream})
         state = put_in(state.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
 
