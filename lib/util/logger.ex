@@ -81,6 +81,7 @@ defmodule Util.Logger do
       alias Util.Logger
       def log(:debug, message), do: Logger.debug(message, @log_context)
       def log(:error, message), do: Logger.error(message, @log_context)
+      def log(:info, message), do: Logger.info(message, @log_context)
       def log(message), do: Logger.info(message, @log_context)
     end
   end

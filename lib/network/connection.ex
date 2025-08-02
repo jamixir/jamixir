@@ -246,6 +246,28 @@ defmodule Network.Connection do
   end
 
   @impl GenServer
+  def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
+    Log.connection(
+      :debug,
+      "Peer sent shutdown: #{inspect(stream)}",
+      state.remote_ed25519_key
+    )
+
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
+    Log.connection(
+      :debug,
+      "sent shutdown complete: #{inspect(stream)}",
+      state.remote_ed25519_key
+    )
+
+    {:noreply, state}
+  end
+
+  @impl GenServer
   def handle_info({:quic, :new_stream, stream, _props}, state) do
     Log.connection(:info, "Activating new stream: #{inspect(stream)}", state.remote_ed25519_key)
 
@@ -270,10 +292,10 @@ defmodule Network.Connection do
 
   # Catch-all for unhandled QUIC events
   @impl GenServer
-  def handle_info({:quic, event_name, _stream, _props} = _msg, state) do
+  def handle_info({:quic, event_name, stream, _props} = _msg, state) do
     Log.connection(
       :debug,
-      "Received unhandled event: #{inspect(event_name)}",
+      "#{inspect(event_name)} #{inspect(stream)}",
       state.remote_ed25519_key
     )
 
