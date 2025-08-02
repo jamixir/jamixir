@@ -232,7 +232,7 @@ defmodule Network.Connection do
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
     protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
-    Log.stream(:info, "Stream closed", stream, protocol_id)
+    Log.stream(:debug, "Stream closed", stream, protocol_id)
 
     new_state = %{
       state
@@ -263,11 +263,11 @@ defmodule Network.Connection do
 
   @impl GenServer
   def handle_info({:quic, :new_stream, stream, _props}, state) do
-    Log.stream(:info, "Activating new stream", stream)
+    Log.stream(:debug, "Activating new stream", stream)
 
     case :quicer.setopt(stream, :active, true) do
       :ok ->
-        Log.stream(:info, "New stream activated successfully", stream)
+        Log.stream(:debug, "New stream activated successfully", stream)
 
       {:error, reason} ->
         Log.stream(:error, "Failed to activate new stream - #{inspect(reason)}", stream)

@@ -50,7 +50,7 @@ defmodule Jamixir.Node do
     pid = self()
 
     Task.start(fn ->
-      Logger.info("Requesting block #{b16(hash)} back from author")
+      Logger.debug("Requesting block #{b16(hash)} back from author")
       {:ok, [b]} = Network.Connection.request_blocks(pid, hash, 1, 1)
       NodeStateServer.add_block(b, false)
     end)
