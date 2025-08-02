@@ -482,7 +482,7 @@ defmodule Network.ConnectionManager do
   end
 
   defp handle_retry_attempt(ed25519_key, connection_info, state) do
-    Log.connection(:info, "🔄 Attempting retry connection", ed25519_key)
+    Log.connection(:debug, "🔄 Attempting retry connection", ed25519_key)
 
     case find_validator_by_ed25519_key(ed25519_key) do
       nil ->
@@ -498,8 +498,6 @@ defmodule Network.ConnectionManager do
             {:noreply, %{new_state | retry_timers: new_timers}}
 
           {:error, new_state} ->
-            Log.connection(:warning, "❌ Retry connection failed", ed25519_key)
-
             updated_info = %ConnectionInfo{
               connection_info
               | status: :retrying,

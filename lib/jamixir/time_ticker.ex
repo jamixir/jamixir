@@ -39,7 +39,7 @@ defmodule Jamixir.TimeTicker do
     schedule_tick(state.tick_interval)
 
     if new_timeslot != state.last_timeslot do
-      Log.consensus(:info, "🕒 Time has come: #{new_timeslot}")
+      Log.consensus(:debug, "🕒 Time has come: #{new_timeslot}")
       broadcast_timeslot(new_timeslot, state.subscribers)
     end
 
