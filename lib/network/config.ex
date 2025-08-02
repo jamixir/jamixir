@@ -18,15 +18,16 @@ defmodule Network.Config do
       # TODO: this is hack to prevent quicer from closing the connection when the peer is not sending any data
       # instead we should intiate up stream and indeed shut dow connection if nothing is moving on them
       # the quicer default is 30 seconds
-      idle_timeout_ms: 0
+      idle_timeout_ms: 0,
+      peer_bidi_stream_count: 100,
+
     ]
   end
 
   def quicer_listen_opts(pkcs12_bundle) do
     common_opts(pkcs12_bundle) ++
       [
-        peer_bidi_stream_count: Constants.validator_count(),
-        peer_unidi_stream_count: 100,
+        peer_unidi_stream_count: 1,
         conn_acceptors: 4
       ]
   end
