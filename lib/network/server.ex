@@ -28,7 +28,7 @@ defmodule Network.Server do
   def handle_info(:accept_stream, %{connection: conn} = state) do
     case :quicer.accept_stream(conn, [{:active, true}], 0) do
       {:ok, stream} ->
-        log(:debug, "Stream accepted: #{inspect(stream)}")
+        log_stream(:debug, "Stream accepted", stream)
         send(self(), :accept_stream)
         {:noreply, state}
 
@@ -110,7 +110,7 @@ defmodule Network.Server do
         {:noreply, put_in(state.up_stream_data[stream].buffer, new_buffer)}
 
       {:protocol, protocol_id, rest} ->
-        log(:debug, "Received protocol ID #{protocol_id} for stream #{inspect(stream)}")
+        log_stream(:debug, "Received protocol ID #{protocol_id} for stream", stream, protocol_id)
 
         # Update stream with extracted protocol_id
         stream_data = %{stream_data | protocol_id: protocol_id, buffer: rest}
