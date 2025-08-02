@@ -231,8 +231,8 @@ defmodule Network.Connection do
   # Stream cleanup
   @impl GenServer
   def handle_info({:quic, :stream_closed, stream, _props}, state) do
-    Log.connection(:info, "Stream closed: #{inspect(stream)}", state.remote_ed25519_key)
     protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
+    Log.stream(:info, "Stream closed", stream, protocol_id)
 
     new_state = %{
       state
@@ -247,44 +247,30 @@ defmodule Network.Connection do
 
   @impl GenServer
   def handle_info({:quic, :peer_send_shutdown, stream, _props}, state) do
-    Log.connection(
-      :debug,
-      "Peer sent shutdown: #{inspect(stream)}",
-      state.remote_ed25519_key
-    )
+    protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
+    Log.stream(:debug, "Peer sent shutdown", stream, protocol_id)
 
     {:noreply, state}
   end
 
   @impl GenServer
   def handle_info({:quic, :send_shutdown_complete, stream, _props}, state) do
-    Log.connection(
-      :debug,
-      "sent shutdown complete: #{inspect(stream)}",
-      state.remote_ed25519_key
-    )
+    protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
+    Log.stream(:debug, "Sent shutdown complete", stream, protocol_id)
 
     {:noreply, state}
   end
 
   @impl GenServer
   def handle_info({:quic, :new_stream, stream, _props}, state) do
-    Log.connection(:info, "Activating new stream: #{inspect(stream)}", state.remote_ed25519_key)
+    Log.stream(:info, "Activating new stream", stream)
 
     case :quicer.setopt(stream, :active, true) do
       :ok ->
-        Log.connection(
-          :info,
-          "New stream activated successfully: #{inspect(stream)}",
-          state.remote_ed25519_key
-        )
+        Log.stream(:info, "New stream activated successfully", stream)
 
       {:error, reason} ->
-        Log.connection(
-          :error,
-          "Failed to activate new stream: #{inspect(stream)} - #{inspect(reason)}",
-          state.remote_ed25519_key
-        )
+        Log.stream(:error, "Failed to activate new stream - #{inspect(reason)}", stream)
     end
 
     {:noreply, state}
@@ -293,11 +279,8 @@ defmodule Network.Connection do
   # Catch-all for unhandled QUIC events
   @impl GenServer
   def handle_info({:quic, event_name, stream, _props} = _msg, state) do
-    Log.connection(
-      :debug,
-      "#{inspect(event_name)} #{inspect(stream)}",
-      state.remote_ed25519_key
-    )
+    protocol_id = Map.get(state.up_stream_data, stream, %{}) |> Map.get(:protocol_id)
+    Log.stream(:debug, "#{inspect(event_name)}", stream, protocol_id)
 
     {:noreply, state}
   end

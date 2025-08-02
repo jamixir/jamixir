@@ -215,7 +215,7 @@ defmodule Network.Client do
       # No stream yet - send protocol ID first, then the message
       nil ->
         {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-        log("Created new UP stream: #{inspect(stream)} for protocol_id=#{protocol_id}")
+        log_stream(:info, "Created new UP stream", stream, protocol_id)
 
         state = put_in(state.up_streams[protocol_id], %{stream: stream})
         state = put_in(state.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
@@ -265,7 +265,7 @@ defmodule Network.Client do
           # 2. could be an up_stream, but we expect up stream to be used for cast, not waiting for response
 
           # so finally we just ignore it
-          log(:debug, "ignoring unsolicited data from stream #{inspect(stream)}")
+          log_stream(:debug, "ignoring unsolicited data from stream", stream)
           state
 
         # Task.start(fn -> Network.ClientCalls.call(protocol_id, msg) end)
