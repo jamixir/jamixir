@@ -148,13 +148,13 @@ defmodule System.State.ServiceAccountTest do
     test "return correct value for threshold balance", %{sa: sa} do
       items_in_storage = 3
       octets_in_storage = 81 + 4 + 34 + 32 + 4
-      gratis_storage_offset = 40
+      deposit_offset = 40
 
       assert ServiceAccount.threshold_balance(sa) ==
                Constants.service_minimum_balance() +
                  Constants.additional_minimum_balance_per_item() * items_in_storage +
                  Constants.additional_minimum_balance_per_octet() * octets_in_storage -
-                 gratis_storage_offset
+                 deposit_offset
     end
   end
 
@@ -169,10 +169,10 @@ defmodule System.State.ServiceAccountTest do
           <<sa.gas_limit_g::64-little>> <>
           <<sa.gas_limit_m::64-little>> <>
           <<ServiceAccount.octets_in_storage(sa)::64-little>> <>
-          <<sa.gratis_storage_offset::64-little>> <>
+          <<sa.deposit_offset::64-little>> <>
           <<ServiceAccount.items_in_storage(sa)::32-little>> <>
-          <<sa.creation_timeslot::32-little>> <>
-          <<sa.latest_accumulation_timeslot::32-little>> <>
+          <<sa.creation_slot::32-little>> <>
+          <<sa.last_accumulation_slot::32-little>> <>
           <<sa.parent_service::32-little>>
 
       assert Base.encode16(encoded) == Base.encode16(expected_encoded)

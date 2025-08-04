@@ -559,15 +559,20 @@ defmodule PVM.Host.GeneralTest do
           t.gas_limit_m::64-little,
           ServiceAccount.octets_in_storage(t)::64-little,
           ServiceAccount.items_in_storage(t)::32-little,
-          t.gratis_storage_offset::64-little,
-          t.creation_timeslot::32-little,
-          t.latest_accumulation_timeslot::32-little,
+          t.deposit_offset::64-little,
+          t.creation_slot::32-little,
+          t.last_accumulation_slot::32-little,
           t.parent_service::32-little
         >>
 
       expected_size = byte_size(expected_encoded_data)
 
-      assert %{exit_reason: :continue, registers: %{r7: ^expected_size}, memory: memory_, context: ^context} =
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^expected_size},
+               memory: memory_,
+               context: ^context
+             } =
                General.info(g, registers, m, context, 42, services)
 
       assert Memory.read!(memory_, a_0(), expected_size) == expected_encoded_data
@@ -594,15 +599,20 @@ defmodule PVM.Host.GeneralTest do
           t.gas_limit_m::64-little,
           ServiceAccount.octets_in_storage(t)::64-little,
           ServiceAccount.items_in_storage(t)::32-little,
-          t.gratis_storage_offset::64-little,
-          t.creation_timeslot::32-little,
-          t.latest_accumulation_timeslot::32-little,
+          t.deposit_offset::64-little,
+          t.creation_slot::32-little,
+          t.last_accumulation_slot::32-little,
           t.parent_service::32-little
         >>
 
       expected_size = byte_size(expected_encoded_data)
 
-      assert %{exit_reason: :continue, registers: %{r7: ^expected_size}, memory: memory_, context: ^context} =
+      assert %{
+               exit_reason: :continue,
+               registers: %{r7: ^expected_size},
+               memory: memory_,
+               context: ^context
+             } =
                General.info(g, r, m, context, 1, services)
 
       assert Memory.read!(memory_, a_0(), expected_size) == expected_encoded_data

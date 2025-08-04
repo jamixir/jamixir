@@ -6,7 +6,14 @@ defmodule System.State.Accumulation do
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
   alias System.{AccumulationResult, DeferredTransfer, State}
-  alias System.State.{PrivilegedServices, Ready, ServiceAccount, Validator, RecentHistory.AccumulationOutput}
+
+  alias System.State.{
+    PrivilegedServices,
+    Ready,
+    ServiceAccount,
+    Validator,
+    RecentHistory.AccumulationOutput
+  }
 
   alias Types
   use MapUnion
@@ -353,7 +360,9 @@ defmodule System.State.Accumulation do
 
         {
           if(is_binary(ar.output),
-            do: acc_accumulation_outputs ++ [%AccumulationOutput{service: service, accumulated_output: ar.output}],
+            do:
+              acc_accumulation_outputs ++
+                [%AccumulationOutput{service: service, accumulated_output: ar.output}],
             else: acc_accumulation_outputs
           ),
           acc_transfers ++ ar.transfers,
@@ -562,7 +571,7 @@ defmodule System.State.Accumulation do
 
       service_with_transfers_applied_ =
         if s in accumulates_service_keys,
-          do: %{service_with_transfers_applied | latest_accumulation_timeslot: timeslot_},
+          do: %{service_with_transfers_applied | last_accumulation_slot: timeslot_},
           else: service_with_transfers_applied
 
       Map.put(acc, s, service_with_transfers_applied_)

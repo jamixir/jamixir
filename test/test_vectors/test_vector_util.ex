@@ -179,7 +179,6 @@ defmodule TestVectorUtil do
       })
 
     expected_state = State.Json.decode(json_data[:post_state])
-
     result = System.State.add_block(pre_state, block)
 
     case {result, json_data[:output][:err]} do

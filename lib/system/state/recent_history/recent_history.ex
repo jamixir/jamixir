@@ -33,7 +33,7 @@ defmodule System.State.RecentHistory do
 
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
-  def mock(:get_well_balanced_merkle_root, context), do: context[:accumulation_result_mmb]
+  def mock(:get_well_balanced_merkle_root, context), do: context[:accumulation_outputs]
   def mock(:transition, context), do: context[:recent_history]
 
   @doc """
@@ -78,7 +78,6 @@ defmodule System.State.RecentHistory do
     merkle_root = get_well_balanced_merkle_root(accumulation_outputs)
 
     # Formula (7.7) v0.6.7
-
     beefy_belt_ =
       MMR.from(beefy_belt)
       |> MMR.append(merkle_root, &keccak_256/1)
@@ -145,8 +144,8 @@ defmodule System.State.RecentHistory do
 
       _ ->
         %RecentHistory{
-          blocks: for(b <- json_data.blocks, do: RecentBlock.from_json(b)),
-          beefy_belt: json_data.beefy_belt |> JsonDecoder.from_json()
+          blocks: for(b <- json_data.history, do: RecentBlock.from_json(b)),
+          beefy_belt: json_data.mmr.peaks |> JsonDecoder.from_json()
         }
     end
   end

@@ -264,7 +264,7 @@ defmodule Jamixir.Factory do
       balance: 1000,
       gas_limit_g: 5000,
       gas_limit_m: 10_000,
-      gratis_storage_offset: 40
+      deposit_offset: 40
     }
   end
 
