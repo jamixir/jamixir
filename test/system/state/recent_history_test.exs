@@ -78,7 +78,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).accumulated_result_mmb == Hash.zero()
+      assert Enum.at(result.blocks, -1).beefy_root == Hash.zero()
       assert result.beefy_belt == [Hash.zero()]
     end
 
@@ -103,14 +103,14 @@ defmodule RecentHistoryTest do
       assert length(result.blocks) == 1
       assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.one() => Hash.zero()}
 
-      assert Enum.at(result.blocks, -1).accumulated_result_mmb ==
+      assert Enum.at(result.blocks, -1).beefy_root ==
                Hash.keccak_256(<<1::service(), Hash.one()::binary>>)
     end
 
     test "handles non-empty recent_history.blocks" do
       previous_block = %RecentBlock{
         header_hash: Hash.one(),
-        accumulated_result_mmb: [Hash.two()],
+        beefy_root: [Hash.two()],
         state_root: Hash.one(),
         work_report_hashes: %{Hash.three() => Hash.zero()}
       }
@@ -182,7 +182,7 @@ defmodule RecentHistoryTest do
         for hash <- 1..8 do
           %RecentHistory.RecentBlock{
             header_hash: t(hash),
-            accumulated_result_mmb: [t(hash)],
+            beefy_root: [t(hash)],
             state_root: t(hash),
             work_report_hashes: %{t(hash) => Hash.zero()}
           }
@@ -274,10 +274,10 @@ defmodule RecentHistoryTest do
         end)
         |> MerkleTree.well_balanced_merkle_root(&Hash.keccak_256/1)
 
-      # Verify that the accumulated_result_mmb is based on the well-balanced Merkle root
+      # Verify that the beefy_root is based on the well-balanced Merkle root
       expected_mmr_roots = MMR.append(MMR.new(), expected_merkle_root).roots
 
-      assert Enum.at(result.blocks, -1).accumulated_result_mmb == expected_merkle_root
+      assert Enum.at(result.blocks, -1).beefy_root == expected_merkle_root
       assert result.beefy_belt == expected_mmr_roots
     end
 
@@ -360,7 +360,7 @@ defmodule RecentHistoryTest do
       assert block1 == %RecentBlock{
                header_hash:
                  <<0x530EF4636FEDD498E99C7601581271894A53E965E901E8FA49581E525F165DAE::hash()>>,
-               accumulated_result_mmb:
+               beefy_root:
                  <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>,
                state_root:
                  <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::hash()>>,
@@ -376,7 +376,7 @@ defmodule RecentHistoryTest do
       assert block2 == %RecentBlock{
                header_hash:
                  <<0x241D129C6EDC2114E6DFBA7D556F7F7C66399B55CEEC3078A53D44C752BA7E9A::hash()>>,
-               accumulated_result_mmb:
+               beefy_root:
                  <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::hash()>>,
                state_root:
                  <<0x0000000000000000000000000000000000000000000000000000000000000000::hash()>>,

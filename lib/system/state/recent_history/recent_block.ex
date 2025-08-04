@@ -5,7 +5,7 @@ defmodule System.State.RecentHistory.RecentBlock do
           # h
           header_hash: Types.hash(),
           # b
-          accumulated_result_mmb: Types.hash(),
+          beefy_root: Types.hash(),
           # s
           state_root: Types.hash(),
           # p
@@ -14,7 +14,7 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   # Formula (7.1) v0.6.7
   defstruct header_hash: Hash.zero(),
-            accumulated_result_mmb: Hash.zero(),
+            beefy_root: Hash.zero(),
             state_root: Hash.zero(),
             work_report_hashes: %{}
 
@@ -22,8 +22,7 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def json_mapping,
     do: %{
-      work_report_hashes: [&map_reported_hashes/1, :reported],
-      accumulated_result_mmb: :beefy_root
+      work_report_hashes: [&map_reported_hashes/1, :reported]
     }
 
   defp map_reported_hashes(json) do
@@ -43,7 +42,7 @@ defmodule System.State.RecentHistory.RecentBlock do
     alias System.State.RecentHistory.RecentBlock
 
     def encode(%RecentBlock{} = b) do
-      e({b.header_hash, b.accumulated_result_mmb, b.state_root, b.work_report_hashes})
+      e({b.header_hash, b.beefy_root, b.state_root, b.work_report_hashes})
     end
   end
 
@@ -52,13 +51,13 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def decode(bin) do
     <<header_hash::b(hash), rest::binary>> = bin
-    <<accumulated_result_mmb::b(hash), rest::binary>> = rest
+    <<beefy_root::b(hash), rest::binary>> = rest
     <<state_root::b(hash), rest::binary>> = rest
     {work_report_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
 
     {%__MODULE__{
        header_hash: header_hash,
-       accumulated_result_mmb: accumulated_result_mmb,
+       beefy_root: beefy_root,
        state_root: state_root,
        work_report_hashes: work_report_hashes
      }, rest}
@@ -66,7 +65,6 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def to_json_mapping do
     %{
-      accumulated_result_mmb: :beefy_root,
       work_report_hashes:
         {:reported,
          &for {hash, exports_root} <- &1 do

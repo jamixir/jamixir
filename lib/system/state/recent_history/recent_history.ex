@@ -92,7 +92,7 @@ defmodule System.State.RecentHistory do
 
     new_block = %RecentBlock{
       header_hash: header_hash,
-      accumulated_result_mmb: super_peak_mmr(beefy_belt_),
+      beefy_root: super_peak_mmr(beefy_belt_),
       state_root: state_root_,
       work_report_hashes: wp_hashes
     }
