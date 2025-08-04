@@ -550,7 +550,7 @@ defmodule Jamixir.Factory do
     %RecentBlock{
       header_hash: Hash.random(),
       state_root: Hash.random(),
-      accumulated_result_mmb: Hash.random(),
+      beefy_root: Hash.random(),
       work_report_hashes: %{Hash.random() => Hash.random()}
     }
   end

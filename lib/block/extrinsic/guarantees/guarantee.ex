@@ -212,7 +212,7 @@ defmodule Block.Extrinsic.Guarantee do
               case for(
                      y <- blocks,
                      x.beefy_root ==
-                       y.accumulated_result_mmb,
+                       y.beefy_root,
                      do: y
                    ) do
                 [] -> {:halt, {:error, :bad_beefy_mmb}}

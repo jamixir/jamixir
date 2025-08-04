@@ -41,7 +41,7 @@ defmodule Codec.JsonEncoderTest do
       block =
         build(:recent_block,
           work_report_hashes: %{Hash.random() => Hash.random(), Hash.random() => Hash.random()},
-          accumulated_result_mmb: Hash.random()
+          beefy_root: Hash.random()
         )
 
       json = JsonEncoder.encode(block)
@@ -49,7 +49,7 @@ defmodule Codec.JsonEncoderTest do
       assert json == %{
                header_hash: b16(block.header_hash),
                state_root: b16(block.state_root),
-               mmr: b16(block.accumulated_result_mmb),
+               beefy_root: b16(block.beefy_root),
                reported:
                  block.work_report_hashes
                  |> Enum.map(fn {hash, exports_root} ->

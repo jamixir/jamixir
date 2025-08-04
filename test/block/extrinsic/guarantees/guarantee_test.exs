@@ -51,12 +51,12 @@ defmodule Block.Extrinsic.GuaranteeTest do
             %RecentBlock{
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root,
-              accumulated_result_mmb: accumulation_result_mmb
+              beefy_root: accumulation_result_mmb
             },
             %RecentBlock{
               header_hash: Hash.one(),
               state_root: nil,
-              accumulated_result_mmb: Hash.random()
+              beefy_root: Hash.random()
             }
           ]
         }
@@ -248,13 +248,13 @@ defmodule Block.Extrinsic.GuaranteeTest do
                {:error, :bad_state_root}
     end
 
-    test "error when recent history does not have accumulated_result_mmb", %{
+    test "error when recent history does not have beefy_root", %{
       g1: g1,
       state: state,
       refinement_context: refinement_context
     } do
       invalid_rb =
-        put_in(Enum.at(state.recent_history.blocks, 0).accumulated_result_mmb, Hash.random())
+        put_in(Enum.at(state.recent_history.blocks, 0).beefy_root, Hash.random())
 
       invalid_state = put_in(state.recent_history.blocks, [invalid_rb, Enum.at(state.recent_history.blocks, 1)])
 
@@ -617,7 +617,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         %RecentBlock{
           header_hash: "hash1",
           state_root: "root1",
-          accumulated_result_mmb: "mmr1",
+          beefy_root: "mmr1",
           work_report_hashes: %{}
         }
       ]
