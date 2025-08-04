@@ -89,11 +89,6 @@ defmodule Jamixir.Node do
     end
   end
 
-  @impl true
-  def add_ticket(_epoch, _attempt, _proof) do
-    {:error, :not_implemented}
-  end
-
   # CE 128 - Block Request
   @impl true
   def get_blocks(_, _, 0), do: {:ok, []}
@@ -165,6 +160,7 @@ defmodule Jamixir.Node do
     :ok
   end
 
+  # CE 141 - Assurance distribution
   @impl true
   def save_assurance(_assurance) do
     {:error, :not_implemented}
@@ -188,11 +184,13 @@ defmodule Jamixir.Node do
     Storage.put(epoch, ticket)
   end
 
+  # CE 145 - Judgment publication
   @impl true
   def save_judgement(_epoch, _hash, _judgement) do
     {:error, :not_implemented}
   end
 
+  # CE 135 - Work-report Guarantee distribution
   @impl true
   def save_guarantee(guarantee) do
     spec = guarantee.work_report.specification
@@ -222,6 +220,7 @@ defmodule Jamixir.Node do
     :ok
   end
 
+  # CE 136 - Work-report request
   @impl true
   def get_work_report(hash) do
     case Storage.get("#{@p_guarantee}#{hash}") do
@@ -230,6 +229,7 @@ defmodule Jamixir.Node do
     end
   end
 
+  # CE 133 - Work-package submission
   @impl true
   def save_work_package(wp, core, extrinsics) do
     if WorkPackage.valid_extrinsics?(wp, extrinsics) do
@@ -307,7 +307,7 @@ defmodule Jamixir.Node do
     end
   end
 
-  # CE 134
+  # CE 134 - Work-package sharing
   @impl true
   def save_work_package_bundle(bundle, core, _segment_lookup_dict) do
     Logger.info("Saving work package bundle for core #{core}")
@@ -335,6 +335,7 @@ defmodule Jamixir.Node do
     # Execute refine, calculate wp hash and returns signature if sucessful
   end
 
+  # CE 144 - Audit announcement
   @impl true
   def save_audit(_audit) do
     {:error, :not_implemented}
@@ -346,11 +347,13 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
+  # CE 139/140: Segment shard request
   @impl true
-  def get_segment_shards(_erasure_root, _segment_index, _share_index) do
+  def get_segment_shards(_erasure_root, _segment_index, _shard_index) do
     {:error, :not_implemented}
   end
 
+  # CE 129 - State request
   @impl true
   def get_state_trie(_header_hash) do
     {:error, :not_implemented}
