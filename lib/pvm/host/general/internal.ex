@@ -378,9 +378,9 @@ defmodule PVM.Host.General.Internal do
           a.gas_limit_m::m(gas),
           ServiceAccount.octets_in_storage(a)::64-little,
           ServiceAccount.items_in_storage(a)::32-little,
-          a.gratis_storage_offset::64-little,
-          a.creation_timeslot::m(timeslot),
-          a.latest_accumulation_timeslot::m(timeslot),
+          a.deposit_offset::64-little,
+          a.creation_slot::m(timeslot),
+          a.last_accumulation_slot::m(timeslot),
           a.parent_service::service()
         >>
       else

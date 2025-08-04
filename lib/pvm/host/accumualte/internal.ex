@@ -197,9 +197,9 @@ defmodule PVM.Host.Accumulate.Internal do
           code_hash: c,
           gas_limit_g: g,
           gas_limit_m: m,
-          creation_timeslot: timeslot,
-          gratis_storage_offset: f,
-          latest_accumulation_timeslot: 0,
+          creation_slot: timeslot,
+          deposit_offset: f,
+          last_accumulation_slot: 0,
           parent_service: x.service
         }
 

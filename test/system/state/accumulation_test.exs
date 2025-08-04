@@ -327,9 +327,10 @@ defmodule System.State.AccumulationTest do
         ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
       }
 
-      initial_state = base_accumulation_state(%{
-        assigners: [2]
-      })
+      initial_state =
+        base_accumulation_state(%{
+          assigners: [2]
+        })
 
       work_reports = []
       always_acc_services = %{}
@@ -363,9 +364,10 @@ defmodule System.State.AccumulationTest do
       services = %{4 => :service4, 5 => :service5}
       always_acc_services = %{6 => 30}
 
-      initial_state = base_accumulation_state(%{
-        services: services
-      })
+      initial_state =
+        base_accumulation_state(%{
+          services: services
+        })
 
       work_reports = [
         simple_work_report(4, 10),
@@ -390,27 +392,45 @@ defmodule System.State.AccumulationTest do
           # Manager updates privileged services
           1 ->
             %AccumulationResult{
-              state: %{initial_state |
-                manager: 2,
-                assigners: [99, 100],
-                delegator: 101,
-                always_accumulated: %{6 => 130}
+              state: %{
+                initial_state
+                | manager: 2,
+                  assigners: [99, 100],
+                  delegator: 101,
+                  always_accumulated: %{6 => 130}
               }
             }
 
           # Privileged services update their respective fields
-          s when s in [99, 100] -> %AccumulationResult{state: %{initial_state | assigners: [10001, 10002]}}
-          101 -> %AccumulationResult{state: %{initial_state | delegator: 2004}}
-          3 -> %AccumulationResult{state: %{initial_state | authorizer_queue: [[<<0, 0, 100>>, <<0, 1, 100>>]]}}
-          2 -> %AccumulationResult{state: %{initial_state | next_validators: :updated_next_validators}}
+          s when s in [99, 100] ->
+            %AccumulationResult{state: %{initial_state | assigners: [10001, 10002]}}
 
-          _ -> %AccumulationResult{state: initial_state}
+          101 ->
+            %AccumulationResult{state: %{initial_state | delegator: 2004}}
+
+          3 ->
+            %AccumulationResult{
+              state: %{initial_state | authorizer_queue: [[<<0, 0, 100>>, <<0, 1, 100>>]]}
+            }
+
+          2 ->
+            %AccumulationResult{
+              state: %{initial_state | next_validators: :updated_next_validators}
+            }
+
+          _ ->
+            %AccumulationResult{state: initial_state}
         end
       end)
 
       # Execute and verify results
       {updated_state, transfers, outputs, total_gas} =
-        Accumulation.parallelized_accumulation(initial_state, work_reports, always_acc_services, extra_args)
+        Accumulation.parallelized_accumulation(
+          initial_state,
+          work_reports,
+          always_acc_services,
+          extra_args
+        )
 
       # Verify gas usage
       assert total_gas == [{4, 40}, {5, 50}, {6, 0}]
@@ -434,14 +454,15 @@ defmodule System.State.AccumulationTest do
       extra_args = base_extra_args()
 
       # Initial state with services 1, 2, 3
-      initial_state = base_accumulation_state(%{
-        services: %{
-          4 => %ServiceAccount{balance: 100},
-          5 => %ServiceAccount{balance: 200},
-          6 => %ServiceAccount{balance: 300}
-        },
-        assigners: [3]
-      })
+      initial_state =
+        base_accumulation_state(%{
+          services: %{
+            4 => %ServiceAccount{balance: 100},
+            5 => %ServiceAccount{balance: 200},
+            6 => %ServiceAccount{balance: 300}
+          },
+          assigners: [3]
+        })
 
       work_reports = [
         simple_work_report(4, 10),
@@ -457,11 +478,12 @@ defmodule System.State.AccumulationTest do
           # Manager service (1) - returns updated privileged services
           1 ->
             %AccumulationResult{
-              state: %{acc_state |
-                manager: :updated_manager,
-                assigners: [99, 100],
-                delegator: 101,
-                always_accumulated: :updated_always_accumulated
+              state: %{
+                acc_state
+                | manager: :updated_manager,
+                  assigners: [99, 100],
+                  delegator: 101,
+                  always_accumulated: :updated_always_accumulated
               }
             }
 
@@ -492,6 +514,7 @@ defmodule System.State.AccumulationTest do
               5 => acc_state.services[5],
               7 => %ServiceAccount{balance: 400}
             }
+
             %AccumulationResult{
               state: %{acc_state | services: updated_services},
               transfers: [%{amount: 10}],
@@ -505,6 +528,7 @@ defmodule System.State.AccumulationTest do
               acc_state.services
               |> Map.put(5, %ServiceAccount{balance: 250})
               |> Map.put(8, %ServiceAccount{balance: 500})
+
             %AccumulationResult{
               state: %{acc_state | services: updated_services},
               transfers: [%{amount: 20}],
@@ -575,9 +599,10 @@ defmodule System.State.AccumulationTest do
 
       extra_args = base_extra_args()
 
-      initial_state = base_accumulation_state(%{
-        assigners: [2]
-      })
+      initial_state =
+        base_accumulation_state(%{
+          assigners: [2]
+        })
 
       work_reports = [
         simple_work_report(4, 30),
@@ -618,8 +643,11 @@ defmodule System.State.AccumulationTest do
 
       # (30 + 40 + 20)
       assert Enum.all?([4, 5, 6], fn i ->
-        Enum.member?(all_outputs, %AccumulationOutput{service: i, accumulated_output: "output#{i}"})
-      end)
+               Enum.member?(all_outputs, %AccumulationOutput{
+                 service: i,
+                 accumulated_output: "output#{i}"
+               })
+             end)
 
       # Verify transfers are ordered by source service executions
       # First all transfers from service 4, then service 5, then service 6
@@ -710,10 +738,10 @@ defmodule System.State.AccumulationTest do
       assert s2.balance == 200
     end
 
-    test "updates latest_accumulation_timeslot, but only to accumulated_services" do
+    test "updates last_accumulation_slot, but only to accumulated_services" do
       services_intermediate_2 = %{
-        1 => %ServiceAccount{balance: 100, latest_accumulation_timeslot: 1},
-        2 => %ServiceAccount{balance: 200, latest_accumulation_timeslot: 2}
+        1 => %ServiceAccount{balance: 100, last_accumulation_slot: 1},
+        2 => %ServiceAccount{balance: 200, last_accumulation_slot: 2}
       }
 
       accumualted_services_keys = MapSet.new([1])
@@ -732,8 +760,8 @@ defmodule System.State.AccumulationTest do
           %{n0_: Util.Hash.one()}
         )
 
-      assert s1.latest_accumulation_timeslot == timeslot
-      assert s2.latest_accumulation_timeslot == 2
+      assert s1.last_accumulation_slot == timeslot
+      assert s2.last_accumulation_slot == 2
       assert s1.balance == 100
       assert s2.balance == 250
     end

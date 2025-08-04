@@ -176,7 +176,8 @@ defmodule PVM.Host.AccumulateTest do
         service: 123,
         accumulation: %Accumulation{
           assigners: [0, 123, 0, 123],
-          authorizer_queue: [[Hash.one()], [Hash.two()]]  # Initialize authorizer_queue with an empty list
+          # Initialize authorizer_queue with an empty list
+          authorizer_queue: [[Hash.one()], [Hash.two()]]
         }
       }
 
@@ -217,7 +218,6 @@ defmodule PVM.Host.AccumulateTest do
       context = {x_, elem(context, 1)}
       huh = huh()
 
-
       assert %{
                exit_reason: :continue,
                registers: %{r7: ^huh},
@@ -225,7 +225,6 @@ defmodule PVM.Host.AccumulateTest do
                context: ^context
              } = Accumulate.assign(gas, registers, memory, context)
     end
-
 
     test "returns {:continue, core()} when core value is invalid", %{
       memory: memory,
@@ -532,9 +531,9 @@ defmodule PVM.Host.AccumulateTest do
                gas_limit_g: 100,
                gas_limit_m: 200,
                balance: ServiceAccount.threshold_balance(new_service),
-               gratis_storage_offset: 0,
-               creation_timeslot: timeslot_,
-               latest_accumulation_timeslot: 0,
+               deposit_offset: 0,
+               creation_slot: timeslot_,
+               last_accumulation_slot: 0,
                parent_service: x.service
              }
     end
@@ -792,7 +791,8 @@ defmodule PVM.Host.AccumulateTest do
             123 => initial_service,
             456 => service_to_eject
           },
-          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
+          # Initialize authorizer_queue with an empty list
+          authorizer_queue: [[]]
         }
       }
 
@@ -867,7 +867,7 @@ defmodule PVM.Host.AccumulateTest do
       timeslot: timeslot
     } do
       # this will make items_in_storage != 2
-      x = put_in(x, [:accumulation, :services, 456, :storage], %{<<1,2,3,4>> => Hash.five()})
+      x = put_in(x, [:accumulation, :services, 456, :storage], %{<<1, 2, 3, 4>> => Hash.five()})
       huh = huh()
 
       assert %{
@@ -1535,7 +1535,8 @@ defmodule PVM.Host.AccumulateTest do
             123 => service_account,
             456 => clean_service
           },
-          authorizer_queue: [[]]  # Initialize authorizer_queue with an empty list
+          # Initialize authorizer_queue with an empty list
+          authorizer_queue: [[]]
         },
         preimages: MapSet.new()
       }

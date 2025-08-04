@@ -20,7 +20,7 @@ defmodule System.State.ServiceAccount do
           # c
           code_hash: Types.hash(),
           # f
-          gratis_storage_offset: Types.balance(),
+          deposit_offset: Types.balance(),
           # b
           balance: Types.balance(),
           # g
@@ -28,9 +28,9 @@ defmodule System.State.ServiceAccount do
           # m
           gas_limit_m: non_neg_integer(),
           # r
-          creation_timeslot: Types.timeslot(),
+          creation_slot: Types.timeslot(),
           # a
-          latest_accumulation_timeslot: Types.timeslot(),
+          last_accumulation_slot: Types.timeslot(),
           # p
           parent_service: non_neg_integer()
         }
@@ -39,12 +39,12 @@ defmodule System.State.ServiceAccount do
             preimage_storage_p: %{},
             preimage_storage_l: %{},
             code_hash: Hash.zero(),
-            gratis_storage_offset: 0,
+            deposit_offset: 0,
             balance: 0,
             gas_limit_g: 0,
             gas_limit_m: 0,
-            creation_timeslot: 0,
-            latest_accumulation_timeslot: 0,
+            creation_slot: 0,
+            last_accumulation_slot: 0,
             parent_service: 0
 
   # Formula (9.8) v0.6.7
@@ -69,7 +69,7 @@ defmodule System.State.ServiceAccount do
     # BL * ao
     octet_cost = Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
     # Bs + Bi * ai + BL * ao - af
-    threshold = base_balance + item_cost + octet_cost - sa.gratis_storage_offset
+    threshold = base_balance + item_cost + octet_cost - sa.deposit_offset
     max(0, threshold)
   end
 
@@ -124,7 +124,7 @@ defmodule System.State.ServiceAccount do
   defp in_storage?([x, y], t), do: x <= t and t < y
   defp in_storage?([x, y, z], t), do: (x <= t and t < y) or z <= t
 
-  def service_id?(n), do: n >= 0 and n <= 0xFFFF_FFFF 
+  def service_id?(n), do: n >= 0 and n <= 0xFFFF_FFFF
 
   defimpl Encodable do
     alias System.State.ServiceAccount
@@ -140,10 +140,10 @@ defmodule System.State.ServiceAccount do
         <<s.gas_limit_g::m(gas)>> <>
         <<s.gas_limit_m::m(gas)>> <>
         <<octets_in_storage::64-little>> <>
-        <<s.gratis_storage_offset::64-little>> <>
+        <<s.deposit_offset::64-little>> <>
         <<items_in_storage::32-little>> <>
-        <<s.creation_timeslot::m(timeslot)>> <>
-        <<s.latest_accumulation_timeslot::m(timeslot)>> <>
+        <<s.creation_slot::m(timeslot)>> <>
+        <<s.last_accumulation_slot::m(timeslot)>> <>
         <<s.parent_service::service()>>
     end
   end
@@ -151,18 +151,18 @@ defmodule System.State.ServiceAccount do
   # octets_in_storage and items_in_storage are ignored, since they are calculated values
   def decode(bin) do
     <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
-      _octets_in_storage::64-little, gratis_storage_offset::64-little,
-      _items_in_storage::32-little, creation_timeslot::m(timeslot),
-      latest_accumulation_timeslot::m(timeslot), parent_service::service(), rest::binary>> = bin
+      _octets_in_storage::64-little, deposit_offset::64-little, _items_in_storage::32-little,
+      creation_slot::m(timeslot), last_accumulation_slot::m(timeslot), parent_service::service(),
+      rest::binary>> = bin
 
     {%__MODULE__{
        code_hash: code_hash,
        balance: balance,
        gas_limit_g: gas_limit_g,
        gas_limit_m: gas_limit_m,
-       gratis_storage_offset: gratis_storage_offset,
-       creation_timeslot: creation_timeslot,
-       latest_accumulation_timeslot: latest_accumulation_timeslot,
+       deposit_offset: deposit_offset,
+       creation_slot: creation_slot,
+       last_accumulation_slot: last_accumulation_slot,
        parent_service: parent_service
      }, rest}
   end
@@ -177,9 +177,9 @@ defmodule System.State.ServiceAccount do
       gas_limit_g: {:service, :min_item_gas},
       gas_limit_m: {:service, :min_memo_gas},
       balance: {:service, :balance},
-      gratis_storage_offset: {:service, :gratis_storage_offset},
-      creation_timeslot: {:service, :creation_timeslot},
-      latest_accumulation_timeslot: {:service, :latest_accumulation_timeslot},
+      deposit_offset: {:service, :deposit_offset},
+      creation_slot: {:service, :creation_slot},
+      last_accumulation_slot: {:service, :last_accumulation_slot},
       parent_service: {:service, :parent_service},
       code_hash: [&extract_code_hash/1, :service]
     }
@@ -219,9 +219,9 @@ defmodule System.State.ServiceAccount do
               min_item_gas: service.gas_limit_g,
               min_memo_gas: service.gas_limit_m,
               code_hash: service.code_hash,
-              gratis_storage_offset: service.gratis_storage_offset,
-              creation_timeslot: service.creation_timeslot,
-              latest_accumulation_timeslot: service.latest_accumulation_timeslot,
+              deposit_offset: service.deposit_offset,
+              creation_slot: service.creation_slot,
+              last_accumulation_slot: service.last_accumulation_slot,
               parent_service: service.parent_service
             }
         end}}
@@ -240,9 +240,9 @@ defmodule System.State.ServiceAccount do
       code_hash: custom_map,
       gas_limit_g: custom_map,
       gas_limit_m: custom_map,
-      gratis_storage_offset: custom_map,
-      creation_timeslot: custom_map,
-      latest_accumulation_timeslot: custom_map,
+      deposit_offset: custom_map,
+      creation_slot: custom_map,
+      last_accumulation_slot: custom_map,
       parent_service: custom_map
     }
   end

@@ -22,7 +22,8 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def json_mapping,
     do: %{
-      work_report_hashes: [&map_reported_hashes/1, :reported]
+      work_report_hashes: [&map_reported_hashes/1, :reported],
+      accumulated_result_mmb: :beefy_root
     }
 
   defp map_reported_hashes(json) do
@@ -65,7 +66,7 @@ defmodule System.State.RecentHistory.RecentBlock do
 
   def to_json_mapping do
     %{
-      accumulated_result_mmb: :mmr,
+      accumulated_result_mmb: :beefy_root,
       work_report_hashes:
         {:reported,
          &for {hash, exports_root} <- &1 do

@@ -68,9 +68,9 @@
           "balance": 20219,
           "min_item_gas": 10,
           "min_memo_gas": 10,
-          "gratis_storage_offset": 0,
-          "creation_timeslot": 0,
-          "latest_accumulation_timeslot": 0,
+          "deposit_offset": 0,
+          "creation_slot": 0,
+          "last_accumulation_slot": 0,
           "parent_service": 0
         },
         "preimages": [
@@ -393,7 +393,7 @@
   ],
   "chi": {
     "chi_m": 0,
-    "chi_a": [0,0],
+    "chi_a": [0, 0],
     "chi_v": 0,
     "chi_g": null
   },
