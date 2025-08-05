@@ -1,7 +1,7 @@
 defmodule Jamixir.Fuzzer.Util do
   alias Codec.State.Trie.SerializedState
   alias Codec.State.Trie
-
+  import Util.Hex, only: [b16: 1]
   @protocol_to_message_type %{
     0 => :peer_info,
     1 => :import_block,
@@ -31,6 +31,9 @@ defmodule Jamixir.Fuzzer.Util do
 
   def parse_raw_message(raw_data) do
     case raw_data do
+      <<>> ->
+        {:error, :empty_raw_message}
+
       <<protocol_number::8, message_bin::binary>> ->
         case @protocol_to_message_type[protocol_number] do
           nil ->
@@ -55,21 +58,42 @@ defmodule Jamixir.Fuzzer.Util do
 
   defp receive_raw_message(socket, timeout) do
     # First read the 4-byte length field
-    case :socket.recv(socket, 4, timeout) do
-      {:ok, <<length::32-little>>} ->
-        case :socket.recv(socket, length, timeout) do
-          {:ok, message_data} ->
-            {:ok, message_data}
+    case receive_exact_bytes(socket, 4, timeout) do
+      {:ok, length_bytes} ->
+        <<length::32-little>> = length_bytes
+            case receive_exact_bytes(socket, length, timeout) do
+              {:ok, message_data} ->
+                {:ok, message_data}
 
-          {:error, reason} ->
-            {:error, {:recv_message_failed, reason}}
-        end
+              {:error, reason} ->
+                {:error, {:recv_message_failed, reason}}
+            end
 
       {:error, :closed} ->
         {:error, :closed}
 
       {:error, reason} ->
         {:error, {:recv_length_failed, reason}}
+    end
+  end
+
+  defp receive_exact_bytes(socket, bytes_needed, timeout) do
+    short_timeout = min(timeout, 1000)
+
+    case :socket.recv(socket, bytes_needed, short_timeout) do
+      {:ok, data} when byte_size(data) == bytes_needed ->
+        {:ok, data}
+
+      {:ok, data} when byte_size(data) < bytes_needed ->
+        {:error, {:incomplete_message, byte_size(data), bytes_needed, b16(data)}}
+
+      {:error, :timeout} ->
+        {:error, {:timeout_waiting, 0, bytes_needed}}
+
+      {:error, {:timeout, partial_data}} ->
+        {:error, {:timeout_with_partial, byte_size(partial_data), bytes_needed, b16(partial_data)}}
+
+      error -> error
     end
   end
 
@@ -104,19 +128,27 @@ defmodule Jamixir.Fuzzer.Util do
   end
 
   defp parse(:set_state, bin) do
-    try do
-      <<header_hash::binary-size(32), state_bin::binary>> = bin
+    if byte_size(bin) < 32 do
+      {:error, {:message_too_short, :set_state, byte_size(bin), 32}}
+    else
+      try do
+        <<header_hash::binary-size(32), state_bin::binary>> = bin
 
-      case Trie.from_binary(state_bin) do
-        {:ok, serialized_state} ->
-          state = Trie.trie_to_state(serialized_state)
-          {:ok, :set_state, %{header_hash: header_hash, state: state}}
+        if byte_size(state_bin) == 0 do
+          {:error, {:empty_state_data, :set_state}}
+        else
+          case Trie.from_binary(state_bin) do
+            {:ok, serialized_state} ->
+              state = Trie.trie_to_state(serialized_state)
+              {:ok, :set_state, %{header_hash: header_hash, state: state}}
 
-        {:error, reason} ->
-          {:error, reason}
+            {:error, reason} ->
+              {:error, reason}
+          end
+        end
+      rescue
+        MatchError -> {:error, :invalid_set_state_format}
       end
-    rescue
-      MatchError -> {:error, :invalid_set_state_format}
     end
   end
 
