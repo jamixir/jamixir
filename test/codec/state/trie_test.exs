@@ -17,7 +17,7 @@ defmodule Codec.State.TrieTest do
   end
 
   # C Constructor
-  # Formula (D.1) v0.7.0
+  # Formula (D.1) v0.6.6
   describe "key_to_31_octet" do
     test "convert integer" do
       assert key_to_31_octet(0) == :binary.copy(<<0>>, 31)
@@ -179,7 +179,7 @@ defmodule Codec.State.TrieTest do
     test "accumulation outputs serialization - C(16)", %{state: state} do
       assert state_keys(state)[16] ==
                e(
-                 vs(for {s, h} <- state.accumulation_outputs, do: {<<s::m(service), h::b(hash)>>})
+                 vs(for {s, h} <- state.lastaccout, do: {<<s::m(service), h::b(hash)>>})
                )
     end
 
