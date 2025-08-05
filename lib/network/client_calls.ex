@@ -3,8 +3,12 @@ defmodule Network.ClientCalls do
   import Codec.Encoder
   alias Codec.VariableSize
   use Sizes
+  alias Util.Logger
+
   @log_context "[QUIC_CLIENT_CALLS]"
-  use Util.Logger
+
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   def call(protocol_id, [single_message]) do
     call(protocol_id, single_message)

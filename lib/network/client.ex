@@ -12,10 +12,12 @@ defmodule Network.Client do
   import Codec.Encoder
   use Sizes
   import Bitwise, only: [&&&: 2]
+  alias Util.Logger
 
   @log_context "[QUIC_CLIENT]"
 
-  use Util.Logger
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   @impl true
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
@@ -215,7 +217,7 @@ defmodule Network.Client do
       # No stream yet - send protocol ID first, then the message
       nil ->
         {:ok, stream} = :quicer.start_stream(state.connection, default_stream_opts())
-        log_stream(:debug, "Created new UP stream", stream, protocol_id)
+        Logger.stream(:debug, "Created new UP stream", stream, protocol_id)
 
         state = put_in(state.up_streams[protocol_id], %{stream: stream})
         state = put_in(state.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
@@ -265,7 +267,7 @@ defmodule Network.Client do
           # 2. could be an up_stream, but we expect up stream to be used for cast, not waiting for response
 
           # so finally we just ignore it
-          log_stream(:debug, "ignoring unsolicited data from stream", stream)
+          Logger.stream(:debug, "ignoring unsolicited data from stream", stream)
           state
 
         # Task.start(fn -> Network.ClientCalls.call(protocol_id, msg) end)

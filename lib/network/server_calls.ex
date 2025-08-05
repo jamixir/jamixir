@@ -10,12 +10,15 @@ defmodule Network.ServerCalls do
   alias Codec.VariableSize
   use Sizes
   import RangeMacros
+  alias Util.Logger
 
   @behaviour Network.ServerCallsBehaviour
   @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
 
   @log_context "[QUIC_SERVER_CALLS]"
-  use Util.Logger
+  alias Util.Logger
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   def call(protocol_id, [single_message]) do
     call(protocol_id, single_message)

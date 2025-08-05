@@ -4,10 +4,12 @@ defmodule Network.Server do
   alias Network.UpStreamManager
   import Bitwise, only: [&&&: 2]
   alias Network.MessageParsers
+  alias Util.Logger
 
   @log_context "[QUIC_SERVER]"
 
-  use Util.Logger
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   def handle_info(:accept_connection, %{socket: socket} = state) do
     case :quicer.accept(socket, [], :infinity) do
@@ -28,7 +30,7 @@ defmodule Network.Server do
   def handle_info(:accept_stream, %{connection: conn} = state) do
     case :quicer.accept_stream(conn, [{:active, true}], 0) do
       {:ok, stream} ->
-        log_stream(:debug, "Stream accepted", stream)
+        Logger.stream(:debug, "Stream accepted", stream)
         send(self(), :accept_stream)
         {:noreply, state}
 
@@ -110,7 +112,7 @@ defmodule Network.Server do
         {:noreply, put_in(state.up_stream_data[stream].buffer, new_buffer)}
 
       {:protocol, protocol_id, rest} ->
-        log_stream(:debug, "Received protocol ID #{protocol_id} for stream", stream, protocol_id)
+        Logger.stream(:debug, "Received protocol ID #{protocol_id} for stream", stream, protocol_id)
 
         # Update stream with extracted protocol_id
         stream_data = %{stream_data | protocol_id: protocol_id, buffer: rest}

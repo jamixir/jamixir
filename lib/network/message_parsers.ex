@@ -1,58 +1,63 @@
 defmodule Network.MessageParsers do
   import Codec.Encoder
-  use Util.Logger
+  alias Util.Logger
+
+  @log_context "[MESSAGE_PARSERS]"
+
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   def parse_ce_messages(data) do
     parse_ce_messages(data, [])
   end
 
   defp parse_ce_messages(<<>>, acc) do
-    log(:debug, "PARSE_MESSAGES: Empty binary, returning accumulated messages: #{length(acc)}")
+    log(:debug, "Empty binary, returning accumulated messages: #{length(acc)}")
     Enum.reverse(acc)
   end
 
   defp parse_ce_messages(buffer, acc) do
     log(
       :debug,
-      "PARSE_MESSAGES: Processing buffer of size #{byte_size(buffer)}, current messages: #{length(acc)}"
+      "Processing buffer of size #{byte_size(buffer)}, current messages: #{length(acc)}"
     )
 
     case buffer do
       <<length::32-little, rest::binary>> ->
         log(
           :debug,
-          "PARSE_MESSAGES: Message length: #{length}, remaining buffer size: #{byte_size(rest)}"
+          "Message length: #{length}, remaining buffer size: #{byte_size(rest)}"
         )
 
         case rest do
           <<message::binary-size(length), remaining::binary>> ->
             log(
               :debug,
-              "PARSE_MESSAGES: Extracted message of size #{byte_size(message)}, remaining buffer size: #{byte_size(remaining)}"
+              "Extracted message of size #{byte_size(message)}, remaining buffer size: #{byte_size(remaining)}"
             )
 
             message_preview =
               if byte_size(message) > 0, do: inspect(binary_slice(message, 0, 16)), else: "empty"
 
-            log(:debug, "PARSE_MESSAGES: Message preview: #{message_preview}")
+            log(:debug, "Message preview: #{message_preview}")
 
             parse_ce_messages(remaining, [message | acc])
 
           _ ->
             log(
               :error,
-              "PARSE_MESSAGES: Buffer incomplete. Length header: #{length}, but only #{byte_size(rest)} bytes available"
+              "Buffer incomplete. Length header: #{length}, but only #{byte_size(rest)} bytes available"
             )
 
             # Not enough data for a complete message - shouldn't happen with FIN flag
-            log(:debug, "PARSE_MESSAGES: Returning accumulated messages: #{length(acc)}")
+            log(:debug, "Returning accumulated messages: #{length(acc)}")
             Enum.reverse(acc)
         end
 
       malformed ->
         log(
           :error,
-          "PARSE_MESSAGES: Malformed buffer without proper length header. Size: #{byte_size(malformed)}, Preview: #{inspect(binary_part(malformed, 0, min(16, byte_size(malformed))))}"
+          "Malformed buffer without proper length header. Size: #{byte_size(malformed)}, Preview: #{inspect(binary_part(malformed, 0, min(16, byte_size(malformed))))}"
         )
 
         Enum.reverse(acc)
@@ -98,11 +103,11 @@ defmodule Network.MessageParsers do
     log_tag = "PARSE_UP_PROTOCOL_ID"
 
     if byte_size(buffer) < 1 do
-      log(:debug, "#{log_tag}: Buffer too small for protocol ID")
+      Logger.log(:debug, "Buffer too small for protocol ID", log_tag)
       {:need_more, buffer}
     else
       <<protocol_id::8, rest::binary>> = buffer
-      log(:debug, "#{log_tag}: Protocol ID #{protocol_id} extracted")
+      Logger.log(:debug, "Protocol ID #{protocol_id} extracted", log_tag)
       {:protocol, protocol_id, rest}
     end
   end
@@ -111,19 +116,20 @@ defmodule Network.MessageParsers do
     log_tag = "PARSE_UP_MESSAGE"
 
     if byte_size(buffer) < 4 do
-      log(:debug, "#{log_tag}: Buffer too small for message length")
+      Logger.log(:debug, "Buffer too small for message length", log_tag)
       {:need_more, buffer}
     else
       <<length::32-little, rest::binary>> = buffer
 
       if byte_size(rest) >= length do
         <<message::binary-size(length), remaining::binary>> = rest
-        log(:debug, "#{log_tag}: Parsed complete message of size #{length}")
+        Logger.log(:debug, "Parsed complete message of size #{length}", log_tag)
         {:complete, message, remaining}
       else
-        log(
+        Logger.log(
           :debug,
-          "#{log_tag}: Incomplete message, needed #{length}, have #{byte_size(rest)}"
+          "Incomplete message, needed #{length}, have #{byte_size(rest)}",
+          log_tag
         )
 
         {:need_more, buffer}

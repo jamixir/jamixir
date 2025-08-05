@@ -7,9 +7,12 @@ defmodule Storage do
   import Codec.Encoder
   import Util.Hex, only: [b16: 1]
   use StoragePrefix
+  alias Util.Logger
 
   @log_context "[STORAGE]"
-  use Util.Logger
+
+  def log(level, message), do: Logger.log(level, message, @log_context)
+  def log(message), do: Logger.info(message, @log_context)
 
   @latest_timeslot "latest_timeslot"
 

@@ -14,6 +14,10 @@ defmodule Util.Logger do
   def get_node_alias do
     Application.get_env(:jamixir, :node_alias)
   end
+  def log(level, message, context \\ nil) do
+    formatted_message = format_message(message, context)
+    Logger.log(level, formatted_message)
+  end
 
   def info(message, context \\ nil) do
     formatted_message = format_message(message, context)
@@ -84,14 +88,4 @@ defmodule Util.Logger do
   defp get_key_prefix(ed25519_key), do: KeyManager.get_known_key(b16(ed25519_key))
   defp format_ip_port(ip, port), do: "#{:inet.ntoa(ip)}:#{port}"
 
-  defmacro __using__(_) do
-    quote do
-      alias Util.Logger
-      def log(:debug, message), do: Logger.debug(message, @log_context)
-      def log(:error, message), do: Logger.error(message, @log_context)
-      def log(:info, message), do: Logger.info(message, @log_context)
-      def log(message), do: Logger.info(message, @log_context)
-      def log_stream(level, message, stream_ref, protocol_id \\ nil), do: Logger.stream(level, message, stream_ref, protocol_id)
-    end
-  end
 end
