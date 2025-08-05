@@ -130,7 +130,7 @@ defmodule System.State.Accumulation do
     accumulation_stats = accumulate_statistics(w_star_n, u)
 
     # Formula (12.29) v0.6.5
-    x =
+    services_intermediate_2 =
       apply_transfers(
         services_intermediate,
         deferred_transfers,
@@ -138,8 +138,6 @@ defmodule System.State.Accumulation do
         MapSet.new(Map.keys(accumulation_stats)),
         extra_args
       )
-
-    services_intermediate_2 = for {s, {a, _gas}} <- x, into: %{}, do: {s, a}
 
     # Formula (12.32) v0.6.5
     work_package_hashes = WorkReport.work_package_hashes(w_star_n)
@@ -173,7 +171,7 @@ defmodule System.State.Accumulation do
       accumulation_outputs: accumulation_outputs,
       accumulation_stats: accumulation_stats,
       # Formula (12.31) v0.6.5
-      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, x)
+      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, services_intermediate_2)
     }
   end
 

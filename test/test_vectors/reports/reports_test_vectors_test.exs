@@ -40,10 +40,6 @@ defmodule ReportsTestVectorsTest do
       :ok
     end
 
-    test "reports test vectors" do
-      execute_test("high_work_report_gas-1", "stf/reports/tiny")
-    end
-
     define_vector_tests("reports")
   end
 end
