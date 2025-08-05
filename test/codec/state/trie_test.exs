@@ -175,6 +175,13 @@ defmodule Codec.State.TrieTest do
       assert state_keys(state)[15] == e(for a <- state.ready_to_accumulate, do: vs(a))
     end
 
+    test "accumulation outputs serialization - C(16)", %{state: state} do
+      assert state_keys(state)[16] ==
+               e(
+                 vs(for {s, h} <- state.accumulation_outputs, do: {<<s::m(service), h::b(hash)>>})
+               )
+    end
+
     test "service accounts storage serialization", %{state: state} do
       # Test storage encoding (2^32 - 1 prefix)
       state.services

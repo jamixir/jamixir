@@ -154,7 +154,7 @@ defmodule System.StateTest do
       assert state.timeslot == 0
     end
 
-    test "decode/encode genesis state" do
+    test "decode/encode genesis state" daccumulation_outputso
       genesis_json = JsonReader.read("priv/genesis.json")
       assert JsonEncoder.encode(Json.decode(genesis_json)) == genesis_json
     end

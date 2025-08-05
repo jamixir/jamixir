@@ -15,6 +15,7 @@ defmodule System.State do
           # Formula (8.1) v0.6.6
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
+          accumulation_outputs: list({Types.service_index(), Types.hash()}),
           safrole: Safrole.t(),
           # Formula (9.1) v0.6.6
           # Formula (9.2) v0.6.6
@@ -37,12 +38,14 @@ defmodule System.State do
           accumulation_history: list(MapSet.t(Types.hash()))
         }
 
-  # Formula (4.4) v0.6.6 σ ≡ (α, β, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
+  # Formula (4.4) v0.7.0 σ ≡ (α, β, θ, γ, δ, η, ι, κ, λ, ρ, τ, φ, χ, ψ, π, ϑ, ξ)
   defstruct [
     # α
     authorizer_pool: List.duplicate([], Constants.core_count()),
     # β
     recent_history: %RecentHistory{},
+    # θ
+    accumulation_outputs: [],
     # γ
     safrole: %Safrole{},
     # δ
@@ -187,6 +190,8 @@ defmodule System.State do
          authorizer_pool: authorizer_pool_,
          # β'
          recent_history: recent_history_,
+         # θ'
+         accumulation_outputs: accumulation_outputs_,
          # γ'
          safrole: safrole_,
          # δ'
