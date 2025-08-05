@@ -58,7 +58,8 @@ defmodule Codec.State.Trie do
       # C(13) ↦ E4(π)
       13 => e(s.validator_statistics),
       14 => e(Enum.map(s.ready_to_accumulate, &vs/1)),
-      15 => e(Enum.map(s.accumulation_history, &vs/1))
+      15 => e(Enum.map(s.accumulation_history, &vs/1)),
+      16 => e(vs(for {s, h} <- s.accumulation_outputs, do: {<<s::m(service), h::b(hash)>>}))
     }
     |> encode_accounts(s)
     |> encode_accounts_storage_s(s, :storage)

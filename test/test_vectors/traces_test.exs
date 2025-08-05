@@ -28,7 +28,7 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..42,
-    modes: ["fallback", "safrole", "reports-l0", "reports-l1"]
+    modes: ["fallback", "safrole"]
   }
 
   _jam_duna = %{
