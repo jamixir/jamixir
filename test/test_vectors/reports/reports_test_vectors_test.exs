@@ -12,6 +12,7 @@ defmodule ReportsTestVectorsTest do
   setup_all do
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
     Application.put_env(:jamixir, :validator_statistics, ValidatorStatisticsMock)
+    Application.put_env(:jamixir, :accumulation, MockAccumulation)
 
     Application.put_env(:jamixir, :original_modules, [
       Block.Extrinsic.Guarantee,
@@ -25,6 +26,7 @@ defmodule ReportsTestVectorsTest do
       Application.put_env(:jamixir, :header_seal, System.HeaderSeal)
       Application.put_env(:jamixir, :validator_statistics, System.State.ValidatorStatistics)
       Application.delete_env(:jamixir, :original_modules)
+      Application.delete_env(:jamixir, :accumulation)
     end)
 
     :ok
@@ -32,12 +34,16 @@ defmodule ReportsTestVectorsTest do
 
   describe "vectors" do
     setup do
+
       mock_header_seal()
 
       :ok
     end
 
-    # TODO test vecotrs are not yet updated to new recent history form of 0.6.7 (pre-state.recent_blocks are in pre 0.6.7 form)
+    test "reports test vectors" do
+      execute_test("high_work_report_gas-1", "stf/reports/tiny")
+    end
+
     define_vector_tests("reports")
   end
 end

@@ -1,0 +1,119 @@
+sushi-arroz:
+  ingredientes:
+    - 2 xícaras de arroz japonês
+    - 2 1/2 xícaras de água
+    - 1/3 xícara de vinagre de arroz
+    - 3 colheres de sopa de açúcar
+    - 1 colher de chá de sal
+  preparo:
+    - Lave o arroz em água corrente até que a água saia clara.
+    - Deixe o arroz de molho por 30 minutos e escorra.
+    - Cozinhe o arroz com a água em fogo baixo por cerca de 20 minutos.
+    - Misture o vinagre, açúcar e sal em uma panela até dissolver.
+    - Despeje a mistura sobre o arroz cozido e misture delicadamente.
+sushi-peixe:
+  ingredientes:
+    - 200g de salmão fresco
+    - 200g de atum fresco
+    - 1 colher de sopa de molho de soja
+    - 1 colher de chá de wasabi
+  preparo:
+    - Corte o salmão e o atum em fatias finas.
+    - Sirva com molho de soja e wasabi a gosto.
+sushi-alga:
+  ingredientes:
+    - Folhas de alga nori
+    - Arroz de sushi preparado
+    - Peixe fatiado (salmão, atum, etc.)
+    - Legumes fatiados (pepino, abacate, cenoura)
+  preparo:
+    - Coloque uma folha de alga nori sobre uma esteira de sushi.
+    - Espalhe uma camada fina de arroz sobre a alga.
+    - Adicione fatias de peixe e legumes no centro.
+    - Enrole a alga com cuidado usando a esteira.
+    - Corte em pedaços e sirva com molho de soja.
+
+    waffle:
+  ingredientes:
+    - 2 xícaras de farinha de trigo
+    - 2 colheres de sopa de açúcar
+    - 1 colher de sopa de fermento em pó
+    - 1/2 colher de chá de sal
+    - 2 ovos
+    - 1 3/4 xícaras de leite
+    - 1/2 xícara de óleo vegetal
+  preparo:
+    - Em uma tigela, misture a farinha, açúcar, fermento e sal.
+    - Em outra tigela, bata os ovos e adicione o leite e o óleo.
+    - Combine as duas misturas até ficar homogêneo.
+    - Preaqueça a máquina de waffle e despeje a massa.
+    - Cozinhe até dourar e sirva com mel ou frutas.
+
+    bolo de banana:
+  ingredientes:
+    - 3 bananas maduras
+    - 1/2 xícara de manteiga derretida
+    - 1 xícara de açúcar
+    - 2 ovos
+    - 1 colher de chá de essência de baunilha
+    - 1 1/2 xícaras de farinha de trigo
+    - 1 colher de chá de bicarbonato de sódio
+    - 1/2 colher de chá de sal
+  preparo:
+    - Preaqueça o forno a 180°C e unte uma forma de bolo.
+    - Amasse as bananas em uma tigela grande.
+    - Adicione a manteiga derretida, açúcar, ovos e baunilha, misturando bem.
+    - Em outra tigela, misture a farinha, bicarbonato e sal.
+    - Combine as duas misturas até ficar homogêneo.
+    - Despeje na forma e asse por 60 minutos ou até dourar.
+
+    panqueca:
+  ingredientes:
+    - 1 xícara de farinha de trigo
+    - 2 colheres de sopa de açúcar
+    - 1 colher de sopa de fermento em pó
+    - 1/2 colher de chá de sal
+    - 1 ovo
+    - 1 xícara de leite
+    - 2 colheres de sopa de manteiga derretida
+  preparo:
+    - Em uma tigela, misture a farinha, açúcar, fermento e sal.
+    - Em outra tigela, bata o ovo e adicione o leite e a manteiga.
+    - Combine as duas misturas até ficar homogêneo.
+    - Aqueça uma frigideira untada em fogo médio.
+    - Despeje porções da massa na frigideira e cozinhe até borbulhar.
+    - Vire e cozinhe até dourar dos dois lados. Sirva com mel ou frutas.
+
+
+
+
+comesando matemateca
+1+2=_ 3
+5-1=_ 4
+ou
+3+_2=5
+_7-3=4
+
+numeros   1   2   3   
+1+2=_ 3
+2+1=_ 3
+3-2=_ 1
+3-1=_ 2
+
+doses      balas   
+14         12
+
+tem mais doses do que balas.
+tem menos balas do que doses.
+tem 2 doses a mais do que balas.
+tem 2 balas a menos do que doses.
+
+continuando reseitas
+
+
+
+
+
+
+
+

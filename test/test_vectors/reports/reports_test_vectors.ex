@@ -1,9 +1,11 @@
 defmodule ReportsTestVectors do
   import TestVectorUtil
   import TestHelper
+  alias System.State.Services
   alias Block.Extrinsic
   alias Block.Extrinsic.Disputes
   use ExUnit.Case
+  import Mox
 
   def files_to_test,
     do:
@@ -65,6 +67,13 @@ defmodule ReportsTestVectors do
     ok_output = json_data[:output][:ok]
 
     mock_statistics()
+
+    pre_services = Services.from_json(json_data[:pre_state][:accounts] || [])
+
+    stub(MockAccumulation, :do_transition, fn _, _, _ ->
+      %{accumulate_mock_return() | services: pre_services}
+    end)
+
 
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
