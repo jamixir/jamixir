@@ -99,16 +99,13 @@ defmodule Jamixir.Fuzzer.Util do
 
   defp parse(:peer_info, bin) do
     try do
-      versions_bytes = 6
-      message_length = byte_size(bin)
+      <<name_length::8, rest::binary>> = bin
 
-      if message_length < versions_bytes do
+      if byte_size(rest) < name_length + 6 do
         {:error, :peer_info_too_short}
       else
-        name_length = message_length - versions_bytes
-
         <<name::binary-size(name_length), version_major::8, version_minor::8, version_patch::8,
-          protocol_major::8, protocol_minor::8, protocol_patch::8>> = bin
+          protocol_major::8, protocol_minor::8, protocol_patch::8>> = rest
 
         parsed_data = %{
           name: name,

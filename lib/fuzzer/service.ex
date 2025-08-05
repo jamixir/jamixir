@@ -150,7 +150,7 @@ defmodule Jamixir.Fuzzer.Service do
     )
 
     our_info =
-      <<Meta.name()::binary, app_version_major::8, app_version_minor::8, app_version_patch::8,
+      <<byte_size(Meta.name())::8, Meta.name()::binary, app_version_major::8, app_version_minor::8, app_version_patch::8,
         jam_version_major::8, jam_version_minor::8, jam_version_patch::8>>
 
     :socket.send(sock, encode_message(:peer_info, our_info))

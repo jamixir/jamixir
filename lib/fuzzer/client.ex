@@ -36,8 +36,8 @@ defmodule Jamixir.Fuzzer.Client do
     {protocol_major, protocol_minor, protocol_patch} = protocol
 
     message =
-      <<name::binary, version_major::8, version_minor::8, version_patch::8, protocol_major::8,
-        protocol_minor::8, protocol_patch::8>>
+      <<byte_size(name)::8, name::binary, version_major::8, version_minor::8, version_patch::8,
+        protocol_major::8, protocol_minor::8, protocol_patch::8>>
 
     send_message(client, :peer_info, message)
   end
