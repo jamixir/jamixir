@@ -1,12 +1,13 @@
 defmodule Jamixir.Fuzzer.Service do
   require Logger
   alias Codec.State.Trie
-  alias Util.Logger, as: Log
+  alias System.State
   alias Jamixir.Meta
   import Util.Hex, only: [b16: 1]
   import Jamixir.Fuzzer.Util
+  require Logger, as: Log
 
-  def accept(socket_path, timeout \\ 60_000) do
+  def accept(socket_path, timeout \\ 600_000) do
     if File.exists?(socket_path), do: File.rm!(socket_path)
 
     {:ok, sock} =
@@ -22,7 +23,7 @@ defmodule Jamixir.Fuzzer.Service do
   defp loop_acceptor(listener, timeout) do
     case :socket.accept(listener, timeout) do
       {:ok, client} ->
-        Log.info("New fuzzer  connected")
+        Log.debug("New fuzzer connected")
         Task.start(fn -> handle_client(client, timeout) end)
         loop_acceptor(listener, timeout)
 
@@ -41,8 +42,52 @@ defmodule Jamixir.Fuzzer.Service do
         Log.info("Client disconnected")
         :ok
 
+
+      {:error, {:recv_message_failed, reason}} ->
+        case reason do
+          {:timeout, partial_data} when is_binary(partial_data) ->
+            Log.debug("Message timeout with #{byte_size(partial_data)} bytes partial data")
+          {:timeout_with_partial, received, expected, hex_data} ->
+            Log.debug("Message timeout: #{received}/#{expected} bytes (#{hex_data})")
+          other ->
+            Log.warning("Failed to read message data: #{inspect(other)}")
+        end
+        handle_client(sock, timeout)
+
+
+      {:error, {:unknown_protocol, protocol_number}} ->
+        Log.warning("Unknown protocol number: #{protocol_number} - ignoring message")
+        handle_client(sock, timeout)
+
+      {:error, {:message_too_short, message_type, received, expected}} ->
+        Log.warning("Message too short for #{message_type}: received #{received} bytes, expected at least #{expected} bytes - ignoring message")
+        handle_client(sock, timeout)
+
+      {:error, {:empty_state_data, message_type}} ->
+        Log.warning("Empty state data in #{message_type} message - ignoring message")
+        handle_client(sock, timeout)
+
+      {:error, {:empty_message_data, message_type}} ->
+        Log.warning("Empty message data for #{message_type} - ignoring message")
+        handle_client(sock, timeout)
+
+
+
+      {:error, {error_atom, received, expected}} ->
+        Log.debug("#{error_atom}: #{received}/#{expected} bytes - continuing")
+        handle_client(sock, timeout)
+
+      {:error, {error_atom, received, expected, hex_data}} ->
+        Log.debug("#{error_atom}: #{received}/#{expected} bytes (#{hex_data}) - continuing")
+        handle_client(sock, timeout)
+
+      {:error, {error_atom, reason}} ->
+          Log.warning("#{error_atom}: #{inspect(reason)}")
+          handle_client(sock, timeout)
+
+
       {:error, reason} ->
-        Log.error("Message handling error: #{inspect(reason)}")
+        Log.error(" #{inspect(reason)} - ignoring message")
         handle_client(sock, timeout)
     end
   end
@@ -59,17 +104,23 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp handle_message(:set_state, %{header_hash: header_hash, state: state}, sock) do
-    state_root = Storage.put(header_hash, state)
+    case validate_state(state) do
+      :ok ->
+        state_root = Storage.put(header_hash, state)
+        Log.info("State successfully stored for header hash: #{b16(header_hash)}")
+        :socket.send(sock, encode_message(:state_root, state_root))
 
-    Log.info("State successfully stored for header hash: #{b16(header_hash)}")
-    :socket.send(sock, encode_message(:state_root, state_root))
+      {:error, reason} ->
+        Log.error("Invalid state received for header hash #{b16(header_hash)}: #{reason}")
+        :socket.close(sock)
+    end
   end
 
   defp handle_message(:get_state, %{header_hash: header_hash}, sock) do
     case Storage.get_state(header_hash) do
       nil ->
-        Log.error("State not found for header hash: #{b16(header_hash)}")
-        :socket.close(sock)
+        Log.info("State not found for header hash: #{b16(header_hash)}")
+        :socket.send(sock, encode_message(:state, <<>>))
 
       state ->
         :socket.send(sock, encode_message(:state, Trie.to_binary(state)))
@@ -82,8 +133,7 @@ defmodule Jamixir.Fuzzer.Service do
         :socket.send(sock, encode_message(:state_root, state_root))
 
       {:error, reason} ->
-        Log.error("Failed to import block: #{reason}")
-        :socket.close(sock)
+        Log.info("Block import failed: #{reason}")
     end
   end
 
@@ -105,4 +155,32 @@ defmodule Jamixir.Fuzzer.Service do
 
     :socket.send(sock, encode_message(:peer_info, our_info))
   end
+
+  defp validate_state(%State{} = state) do
+    required_fields = [
+      :authorizer_pool,
+      :authorizer_queue,
+      :recent_history,
+      :safrole,
+      :judgements,
+      :entropy_pool,
+      :next_validators,
+      :curr_validators,
+      :prev_validators,
+      :core_reports,
+      :timeslot,
+      :privileged_services,
+      :validator_statistics,
+      :ready_to_accumulate,
+      :accumulation_history,
+      :services
+    ]
+
+    case Enum.find(required_fields, &(Map.get(state, &1) == nil)) do
+      nil -> :ok
+      field -> {:error, "missing or nil field: #{field}"}
+    end
+  end
+
+  defp validate_state(_), do: {:error, "not a valid State struct"}
 end
