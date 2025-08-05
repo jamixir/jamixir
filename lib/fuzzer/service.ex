@@ -120,7 +120,7 @@ defmodule Jamixir.Fuzzer.Service do
     case Storage.get_state(header_hash) do
       nil ->
         Log.info("State not found for header hash: #{b16(header_hash)}")
-        :socket.send(sock, encode_message(:state, <<>>))
+        :socket.close(sock)
 
       state ->
         :socket.send(sock, encode_message(:state, Trie.to_binary(state)))
