@@ -21,52 +21,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Git for private deps
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Set up Elixir
-        uses: erlef/setup-beam@v1
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          elixir-version: "1.17.2"
-          otp-version: "27.0.1"
+          context: .
+          target: release-export
+          platforms: linux/${{ matrix.platform }}
+          build-args: |
+            GH_TOKEN=${{ secrets.GH_PAT }}
+            MIX_ENV=${{ matrix.env }}
+          outputs: type=local,dest=./release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install cross-compilation dependencies
+      - name: List release files
         run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Configure cross-compilation
-        if: matrix.platform == 'arm64'
-        run: |
-          echo "[target.aarch64-unknown-linux-gnu]" >> ~/.cargo/config.toml
-          echo "linker = \"aarch64-linux-gnu-gcc\"" >> ~/.cargo/config.toml
-
-      - name: Compile
-        run: MIX_ENV=${{ matrix.env }} mix compile
-        env:
-          RUSTLER_TARGET: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
-
-      - name: Build Release
-        run: MIX_ENV=${{ matrix.env }} mix release --overwrite
-        env:
-          RUSTLER_TARGET: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
+          echo "Release files:"
+          find ./release -name "*.tar.gz" -type f
+          ls -la ./release/
 
       - name: Rename release archive
         run: |
-          cd _build/${{ matrix.env }}
+          cd release
           # Find the tar.gz file (should be jamixir-*.tar.gz)
           ORIGINAL_FILE=$(ls jamixir-*.tar.gz)
           # Rename to include platform and environment
@@ -79,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}
-          path: _build/${{ matrix.env }}/jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
+          path: release/jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
 
   publish:
     name: Create GitHub Release
