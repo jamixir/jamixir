@@ -27,8 +27,10 @@ defmodule TracesTest do
     repo: "jam-test-vectors",
     branch: "master",
     path: &__MODULE__.traces_path/1,
-    block_range: 1..42,
+    block_range: 1..100,
     modes: ["fallback", "safrole"]
+    # modes: ["storage_light", "storage"]
+    # modes: ["preimages_light", "preimages"]
   }
 
   _jam_duna = %{
