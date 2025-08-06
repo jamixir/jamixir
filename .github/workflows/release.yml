@@ -30,20 +30,53 @@ jobs:
           elixir-version: "1.17.2"
           otp-version: "27.0.1"
 
+      - name: Install cross-compilation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
+
       - name: Install dependencies
         run: mix deps.get
 
+      - name: Configure cross-compilation
+        if: matrix.platform == 'arm64'
+        run: |
+          echo "[target.aarch64-unknown-linux-gnu]" >> ~/.cargo/config.toml
+          echo "linker = \"aarch64-linux-gnu-gcc\"" >> ~/.cargo/config.toml
+
       - name: Compile
         run: MIX_ENV=${{ matrix.env }} mix compile
+        env:
+          RUSTLER_TARGET: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
 
       - name: Build Release
         run: MIX_ENV=${{ matrix.env }} mix release --overwrite
+        env:
+          RUSTLER_TARGET: ${{ matrix.platform == 'amd64' && 'x86_64-unknown-linux-gnu' || 'aarch64-unknown-linux-gnu' }}
+
+      - name: Rename release archive
+        run: |
+          cd _build/${{ matrix.env }}
+          # Find the tar.gz file (should be jamixir-*.tar.gz)
+          ORIGINAL_FILE=$(ls jamixir-*.tar.gz)
+          # Rename to include platform and environment
+          NEW_NAME="jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz"
+          mv "$ORIGINAL_FILE" "$NEW_NAME"
+          echo "Renamed $ORIGINAL_FILE to $NEW_NAME"
+          ls -la "$NEW_NAME"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}
-          path: _build/${{ matrix.env }}/jamixir-*.tar.gz
+          path: _build/${{ matrix.env }}/jamixir-${{ matrix.env }}-${{ matrix.platform }}-${{ github.ref_name }}.tar.gz
 
   publish:
     name: Create GitHub Release
@@ -57,16 +90,25 @@ jobs:
         with:
           path: dist/
 
+      - name: List downloaded files
+        run: |
+          echo "Downloaded artifacts:"
+          find dist/ -name "*.tar.gz" -type f
+          ls -la dist/
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_name }}
           files: dist/**/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
