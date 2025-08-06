@@ -8,6 +8,7 @@ on:
       - 'gp-*.*.*_app-*.*.*'          # GP releases, e.g. gp-0.6.6_app-0.6.6
 
 jobs:
+    
   build:
     name: Build ${{ matrix.platform }} ${{ matrix.env }}
     runs-on: ubuntu-latest
