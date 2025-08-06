@@ -85,30 +85,58 @@ RUN mix local.hex --force && \
 
 # Copy and compile source
 COPY . .
+
 RUN RUSTFLAGS="-L /opt/openssl-static/lib" mix compile && mix release
 
-# Runtime OpenSSL (for dynamic fallback)
-RUN mkdir -p /node/_build/${MIX_ENV}/rel/jamixir/lib && \
-    cp /opt/openssl-static/lib/libcrypto.so.1.1 /node/_build/${MIX_ENV}/rel/jamixir/lib/ && \
-    cp /opt/openssl-static/lib/libssl.so.1.1 /node/_build/${MIX_ENV}/rel/jamixir/lib/
 
-# Create wrapper script
-RUN cat << 'EOF' > /node/_build/${MIX_ENV}/rel/jamixir/bin/jamixir-wrapper
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export LD_LIBRARY_PATH="$SCRIPT_DIR/../lib:$LD_LIBRARY_PATH"
-exec "$SCRIPT_DIR/jamixir.real" "$@"
-EOF
 
-RUN chmod +x /node/_build/${MIX_ENV}/rel/jamixir/bin/jamixir-wrapper
+# Step 2: Extract the tarball from the correct location
+RUN cd /node/_build/${MIX_ENV} && \
+    ls -la jamixir-*.tar.gz && \
+    tar -xzf jamixir-*.tar.gz && \
+    ls -la
 
-# Debug: Check what libraries the crypto module needs
+# Step 3: Copy OpenSSL libraries to crypto module
+RUN cd /node/_build/${MIX_ENV} && \
+    find lib -name "crypto-*" -type d && \
+    cp /opt/openssl-static/lib/libcrypto.so.1.1 lib/crypto-*/priv/lib/ && \
+    cp /opt/openssl-static/lib/libssl.so.1.1 lib/crypto-*/priv/lib/ && \
+    echo "Verifying OpenSSL libraries are in place:" && \
+    ls -la lib/crypto-*/priv/lib/
+
+# Step 4: Copy jamixir bin to jamixir.real
+RUN cd /node/_build/${MIX_ENV} && \
+    cp jamixir jamixir.real && \
+    chmod +x jamixir.real
+
+# Step 4: Copy wrapper script to release
+RUN cd /node/_build/${MIX_ENV} && \
+    echo "Copying wrapper script..." && \
+    cp /node/priv/jamixir_wrapper.sh jamixir && \
+    chmod +x jamixir && \
+    echo "Wrapper script copied and made executable"
+
+# Step 5: Repack the tarball
+RUN cd /node/_build/${MIX_ENV} && \
+    echo "Repacking tarball..." && \
+    ORIGINAL_TAR=$(ls jamixir-*.tar.gz) && \
+    echo "Original tarball name: $ORIGINAL_TAR" && \
+    tar -czf jamixir-modified.tar.gz bin erts-* jamixir jamixir.real lib rel releases && \
+    mv jamixir-modified.tar.gz "$ORIGINAL_TAR" && \
+    echo "Final tarball:" && \
+    ls -la jamixir-*.tar.gz
+
+# Debug: Check what libraries the crypto module needs   
 RUN ldd /node/_build/${MIX_ENV}/rel/jamixir/lib/crypto*/priv/lib/crypto.so || true
 
-# Install wrapper as the new bin/jamixir
-RUN cd /node/_build/${MIX_ENV}/rel/jamixir/bin && \
-    cp jamixir jamixir.real && \
-    mv jamixir-wrapper jamixir
+# Debug: Check if OpenSSL libraries made it into the release
+RUN echo "Checking if OpenSSL libraries are in the release:" && \
+    find /node/_build/${MIX_ENV}/rel/jamixir -name "libcrypto*" -o -name "libssl*" || echo "No OpenSSL libraries found in release"
+
+# # Install wrapper as the new bin/jamixir
+# RUN cd /node/_build/${MIX_ENV}/rel/jamixir/bin && \
+#     cp jamixir jamixir.real && \
+#     mv jamixir-wrapper jamixir
 
 # Export stage for CI to extract release
 FROM scratch AS release-export
@@ -138,4 +166,4 @@ COPY --from=builder --chown=nobody:root /node/_build/${MIX_ENV}/rel/jamixir /nod
 
 USER nobody
 
-CMD ["/node/jamixir/bin/jamixir", "start"]
+CMD ["/node/jamixir/jamixir", "start"]
