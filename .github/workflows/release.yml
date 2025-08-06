@@ -2,8 +2,6 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - release-workflow
     tags:
       - 'gp-*.*.*_app-*.*.*'          # GP releases, e.g. gp-0.6.6_app-0.6.6
 

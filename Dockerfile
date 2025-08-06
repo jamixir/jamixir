@@ -1,3 +1,6 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ARGs
+# ─────────────────────────────────────────────────────────────────────────────
 ARG EX_VSN=1.17.3
 ARG OTP_VSN=26.2.5.9
 ARG DEB_VSN=bullseye-20250224-slim
@@ -6,81 +9,106 @@ ARG RUNNER_IMG="debian:${DEB_VSN}"
 ARG MIX_ENV=prod
 ARG GH_TOKEN
 
-# A minimal Elixir image (Debian-based for gcc) as the builder
+# ─────────────────────────────────────────────────────────────────────────────
+# Builder Stage
+# ─────────────────────────────────────────────────────────────────────────────
 FROM ${BUILDER_IMG} AS builder
 
-# Re-declare build args that are needed in this stage
+
+ARG MIX_ENV
 ARG GH_TOKEN
-ARG MIX_ENV=prod
 
 WORKDIR /node
 
-# Install build dependencies
+# Dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    build-essential \
-    bash \
-    gcc \
-    gcc-aarch64-linux-gnu \
-    libc6-dev-arm64-cross \
-    make \
-    cmake \
-    git \
-    curl \
-    openssl \
-    libssl-dev \
-    wget \
-  && rm -rf /var/lib/apt/lists/*
+    build-essential gcc g++ cmake make \
+    bash curl wget git \
+    libssl-dev openssl \
+    gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
+ && rm -rf /var/lib/apt/lists/*
 
-# Build static OpenSSL 1.1.1w
+# Static OpenSSL 1.1.1w build
+ENV OPENSSL_VERSION=1.1.1w
 RUN cd /tmp && \
     wget https://www.openssl.org/source/openssl-1.1.1w.tar.gz && \
-    tar -xzf openssl-1.1.1w.tar.gz && \
+    tar -xvzf openssl-1.1.1w.tar.gz && \
     cd openssl-1.1.1w && \
-    ./config --prefix=/opt/openssl-static no-shared no-tests && \
+    ./config enable-ec_nistp_64_gcc_128 shared --prefix=/opt/openssl-static && \
     make -j$(nproc) && \
-    make install_sw && \
-    cd / && rm -rf /tmp/openssl-1.1.1w*
+    make install_sw
 
-
-ENV CARGO_HOME=/root/.cargo
-ENV PATH="$CARGO_HOME/bin:$PATH"
-
-# Install Rust using rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    /root/.cargo/bin/rustup default stable && \
-    /root/.cargo/bin/rustup update stable && \
-    /root/.cargo/bin/rustup target add aarch64-unknown-linux-gnu && \
-    /root/.cargo/bin/rustup target add x86_64-unknown-linux-gnu
-
-# Configure Cargo for cross-compilation
-RUN echo "[target.aarch64-unknown-linux-gnu]" >> /root/.cargo/config.toml && \
-    echo "linker = \"aarch64-linux-gnu-gcc\"" >> /root/.cargo/config.toml
-
-# Copy mix files and fetch dependencies
-COPY mix.exs mix.lock ./
-
-# Set static OpenSSL environment variables
+ENV OPENSSL_STATIC=yes
 ENV OPENSSL_LIB_DIR=/opt/openssl-static/lib
 ENV OPENSSL_INCLUDE_DIR=/opt/openssl-static/include
-ENV OPENSSL_STATIC=yes
-ENV MIX_ENV=${MIX_ENV}
 
-# Configure git with token and install dependencies
+ENV CPPFLAGS="-I/opt/openssl-static/include"
+ENV LDFLAGS="-L/opt/openssl-static/lib"
+
+# Rust toolchain
+ENV OPENSSL_NO_VENDOR=1
+ENV PKG_CONFIG_ALLOW_CROSS=1
+ENV CARGO_HOME=/root/.cargo
+ENV PATH="$CARGO_HOME/bin:$PATH"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+ENV LD_LIBRARY_PATH="/opt/openssl-static/lib:$LD_LIBRARY_PATH"
+
+RUN rustup default stable && \
+    rustup update stable && \
+    rustup target add aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu
+
+
+# Cross-compile config
+RUN echo '[target.aarch64-unknown-linux-gnu]' >> /root/.cargo/config.toml && \
+    echo 'linker = "aarch64-linux-gnu-gcc"' >> /root/.cargo/config.toml
+
+
+# Install Elixir deps
+COPY mix.exs mix.lock ./
+
+# Install jamixir_vm dependency separately
 RUN git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/" && \
-    git config --global user.email "docker@build.local" && \
     git config --global user.name "Docker Build" && \
-    mix local.hex --if-missing --force && \
+    git config --global user.email "docker@build.local" && \
+    mix deps.get --only jamixir_vm && \
+    mix deps.compile jamixir_vm && \
+    git config --global --unset url."https://${GH_TOKEN}@github.com/".insteadOf || true
+
+ENV MIX_ENV="${MIX_ENV}"
+# Install other dependencies
+RUN mix local.hex --force && \
     mix local.rebar --force && \
-    mix deps.get --only ${MIX_ENV}
+    mix deps.get --only ${MIX_ENV} && \
+    mix deps.compile
 
 
-RUN mix deps.compile
-
-# Copy source and build
+# Copy and compile source
 COPY . .
-RUN mix compile
-RUN mix release
+RUN RUSTFLAGS="-L /opt/openssl-static/lib" mix compile && mix release
+
+# Runtime OpenSSL (for dynamic fallback)
+RUN mkdir -p /node/_build/${MIX_ENV}/rel/jamixir/lib && \
+    cp /opt/openssl-static/lib/libcrypto.so.1.1 /node/_build/${MIX_ENV}/rel/jamixir/lib/ && \
+    cp /opt/openssl-static/lib/libssl.so.1.1 /node/_build/${MIX_ENV}/rel/jamixir/lib/
+
+# Create wrapper script
+RUN cat << 'EOF' > /node/_build/${MIX_ENV}/rel/jamixir/bin/jamixir-wrapper
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export LD_LIBRARY_PATH="$SCRIPT_DIR/../lib:$LD_LIBRARY_PATH"
+exec "$SCRIPT_DIR/jamixir.real" "$@"
+EOF
+
+RUN chmod +x /node/_build/${MIX_ENV}/rel/jamixir/bin/jamixir-wrapper
+
+# Debug: Check what libraries the crypto module needs
+RUN ldd /node/_build/${MIX_ENV}/rel/jamixir/lib/crypto*/priv/lib/crypto.so || true
+
+# Install wrapper as the new bin/jamixir
+RUN cd /node/_build/${MIX_ENV}/rel/jamixir/bin && \
+    cp jamixir jamixir.real && \
+    mv jamixir-wrapper jamixir
 
 # Export stage for CI to extract release
 FROM scratch AS release-export
@@ -91,7 +119,7 @@ FROM ${RUNNER_IMG} AS runtime
 
 # Install minimal running system dependencies
 RUN apt-get update -y \
-&& apt-get install -y libstdc++6 openssl libncurses5 locales \
+&& apt-get install -y libstdc++6 libncurses5 locales \
 && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # set the locale
