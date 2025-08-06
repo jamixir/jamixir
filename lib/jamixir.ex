@@ -27,7 +27,6 @@ defmodule Jamixir do
   end
 
   defp fuzzer_children do
-    Util.Logger.info("🔧 Running in fuzzer environment")
     persist_storage? = Jamixir.config()[:storage_persist] || false
     socket_path = Application.get_env(:jamixir, :fuzzer_socket_path) ||
                   System.get_env("SOCKET_PATH") ||
@@ -124,7 +123,7 @@ defmodule Jamixir do
 
       ["fuzzer" | rest] ->
         Application.put_env(:jamixir, :fuzzer_mode, true)
-        Jamixir.Commands.Run.run(rest)
+        Jamixir.Commands.Fuzzer.run(rest)
 
       [cmd | _] ->
         IO.puts("Unknown command: #{cmd}")

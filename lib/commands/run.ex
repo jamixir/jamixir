@@ -36,23 +36,30 @@ defmodule Jamixir.Commands.Run do
     Log.info("🟣 Pump up the JAM, pump it up...")
     Log.debug("System loaded with config: #{inspect(Jamixir.config())}")
 
-    case KeyManager.load_keys(opts[:keys]) do
-      {:ok, _} -> :ok
-      {:error, e} -> raise e
+    # Only load keys and generate TLS certificates if not in fuzzer mode
+    unless Application.get_env(:jamixir, :fuzzer_mode, false) do
+      case KeyManager.load_keys(opts[:keys]) do
+        {:ok, _} -> :ok
+        {:error, e} -> raise e
+      end
+
+      if genesis_file = opts[:genesis],
+        do: Application.put_env(:jamixir, :genesis_file, genesis_file)
+
+      if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
+
+      generate_tls_certificates()
     end
-
-    if genesis_file = opts[:genesis],
-      do: Application.put_env(:jamixir, :genesis_file, genesis_file)
-
-    if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
     # Set socket path for fuzzer mode
     if socket_path = opts[:socket_path],
       do: Application.put_env(:jamixir, :fuzzer_socket_path, socket_path)
 
-    generate_tls_certificates()
-
-    Log.info("🎭 Starting as validator")
+    if Application.get_env(:jamixir, :fuzzer_mode, false) do
+      Log.info("🎭 Starting as fuzzer")
+    else
+      Log.info("🎭 Starting as validator")
+    end
 
     Application.ensure_all_started(:jamixir)
 
@@ -123,7 +130,7 @@ defmodule Jamixir.Commands.Run do
           --genesis <GENESIS>        Genesis file to use
           --port <PORT>              Port to listen on
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
-          --log <LEVEL>              Log level (info | warn | error | debug) default: info)
+          --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
       -h, --help                     Print help
 
     Examples:
