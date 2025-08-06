@@ -3,8 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*.*.*'          # GP releases, e.g. v0.6.6
-      - 'v*.*.*-app.*'    # App releases, e.g. v0.6.6-app.1
+      - 'gp-*.*.*_app-*.*.*'          # GP releases, e.g. gp-0.6.6_app-0.6.6
 
 jobs:
   build:
