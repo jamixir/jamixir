@@ -5,7 +5,6 @@ defmodule PVM.Host.GeneralTest do
   alias System.State.ServiceAccount
   alias Util.Hash
   import PVM.Constants.HostCallResult
-  import Codec.Encoder
 
   @doc """
   Returns the base memory address used in tests.
@@ -234,9 +233,7 @@ defmodule PVM.Host.GeneralTest do
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       other_key = "other_key" |> String.pad_trailing(32, "\0")
 
-      storage_key = Hash.default(Hash.zero())
-      other_storage_key = Hash.default(<<1::32-little, 0::28*8>>)
-
+      storage_key = other_storage_key = <<0::28*8>>
       service_account = %ServiceAccount{storage: %{storage_key => value}}
       services = %{1 => %ServiceAccount{storage: %{other_storage_key => other_value}}}
       gas = 100
@@ -382,8 +379,7 @@ defmodule PVM.Host.GeneralTest do
     setup do
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(28, "\0")
-      storage_key = Hash.default(<<1::service()>> <> key)
-      c = %ServiceAccount{storage: %{storage_key => value}, balance: 2000}
+      c = %ServiceAccount{storage: %{key => value}, balance: 2000}
       g = 100
 
       registers = %Registers{
@@ -402,7 +398,7 @@ defmodule PVM.Host.GeneralTest do
 
         |> PreMemory.finalize()
 
-      {:ok, m: m, c: c, g: g, registers: registers, storage_key: storage_key}
+      {:ok, m: m, c: c, g: g, registers: registers, storage_key: key}
     end
 
     test "returns panic when key memory read fails", %{m: m, c: c, g: g, registers: registers} do
