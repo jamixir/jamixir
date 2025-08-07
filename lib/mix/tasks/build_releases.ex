@@ -78,7 +78,7 @@ defmodule Mix.Tasks.BuildReleases do
       platform_suffix: platform_suffix,
       tiny_file: generate_filename(platform_suffix, jam_version, app_version, "tiny"),
       full_file: generate_filename(platform_suffix, jam_version, app_version, "full"),
-      release_title: "gp-#{jam_version}-#{app_version}"
+      release_title: "gp-#{jam_version}-v#{app_version}"
     }
 
     Mix.shell().info("Building releases for platform: #{ctx.platform_suffix}")
