@@ -211,7 +211,8 @@ defmodule BlockTest do
 
       for i <- [1, 2], reduce: state do
         state ->
-          {{priv, pub}, _} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
+          {priv, pub} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
+
           KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
           {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
           {:ok, state} = State.add_block(state, block)
@@ -221,7 +222,7 @@ defmodule BlockTest do
 
     @tag :slow
     test "can't create block ticket proofs from other validator" do
-      %{state: state, key_pairs: [{{priv0, _}, pub0} | _]} = build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: [{priv0, pub0} | _]} = build(:genesis_state_with_safrole)
 
       # Set the first key in the environment
       KeyManager.load_keys(%{bandersnatch: pub0, bandersnatch_priv: priv0})
