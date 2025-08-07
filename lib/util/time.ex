@@ -87,4 +87,16 @@ defmodule Util.Time do
   Returns a tuple containing the epoch index and phase for a given timeslot.
   """
   def epoch_index_and_phase(timeslot), do: {epoch_index(timeslot), epoch_phase(timeslot)}
+
+  def epoch_transition?(slot) do
+    rem(slot, Constants.epoch_length()) == 0
+  end
+
+  def rotation?(slot) do
+    rem(slot, Constants.rotation_period()) == 0
+  end
+
+  def current_epoch_index do
+    epoch_index(current_timeslot())
+  end
 end
