@@ -1,14 +1,13 @@
 # Formula (B.18) v0.6.8
 defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
-  alias Block.Extrinsic.WorkPackage
-  alias System.DeferredTransfer
   alias Block.Extrinsic.WorkItem
+  alias Block.Extrinsic.WorkPackage
   alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
   alias PVM.{Memory, Registers}
+  alias System.DeferredTransfer
   alias System.State.ServiceAccount
-  alias Util.Hash
   import Codec.Encoder
   import PVM.Host.Util
   import Constants
@@ -259,12 +258,7 @@ defmodule PVM.Host.General.Internal do
 
     [ko, kz, o] = Registers.get(registers, [8, 9, 10])
 
-    storage_key =
-      try do
-        Memory.read!(memory, ko, kz)
-      rescue
-        _ -> :error
-      end
+    storage_key = read_storage_key(memory, ko, kz)
 
     v =
       cond do
@@ -305,12 +299,10 @@ defmodule PVM.Host.General.Internal do
           non_neg_integer()
         ) ::
           Result.Internal.t()
-  def write_internal(registers, memory, service_account, service_index) do
+  def write_internal(registers, memory, service_account, _service_index) do
     [ko, kz, vo, vz] = Registers.get(registers, [7, 8, 9, 10])
 
-    k = read_storage_key(memory, ko, kz, service_index)
-
-    log(:debug, "Write storage key: #{b16(k)}")
+    k = read_storage_key(memory, ko, kz)
 
     a =
       cond do
@@ -321,7 +313,7 @@ defmodule PVM.Host.General.Internal do
         k != :error ->
           try do
             value = Memory.read!(memory, vo, vz)
-            log(:debug, "Write storage value: #{b16(value)}")
+            log(:debug, "Write to storage key #{b16(k)} => #{b16(value)}")
             put_in(service_account, [:storage, k], value)
           rescue
             _ -> :error
@@ -348,13 +340,10 @@ defmodule PVM.Host.General.Internal do
     }
   end
 
-  defp read_storage_key(memory, ko, kz, service_id) do
-    try do
-      # ) |> Hash.default()
-      Memory.read!(memory, ko, kz)
-    rescue
-      _ -> :error
-    end
+  defp read_storage_key(memory, ko, kz) do
+    Memory.read!(memory, ko, kz)
+  rescue
+    _ -> :error
   end
 
   defp current_value_length(:error, _service_account), do: none()

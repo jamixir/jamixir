@@ -29,10 +29,8 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    # modes: ["fallback", "safrole"]
-    # , "storage"]
-    modes: ["storage_light", "preimages_light"]
-    # modes: ["preimages_light", "preimages"]
+    modes: ["fallback", "safrole", "storage_light", "preimages_light"]
+    # modes: ["storage", "preimages"]
   }
 
   _jam_duna = %{

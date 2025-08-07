@@ -71,7 +71,7 @@ defmodule System.State.AccumulationTest do
     :ok
   end
 
-  defp base_accumulation_state(overrides \\ %{}) do
+  defp base_accumulation_state(overrides) do
     base = %Accumulation{
       manager: 1,
       assigners: [3],
@@ -327,10 +327,7 @@ defmodule System.State.AccumulationTest do
         ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
       }
 
-      initial_state =
-        base_accumulation_state(%{
-          assigners: [2]
-        })
+      initial_state = base_accumulation_state(%{assigners: [2]})
 
       work_reports = []
       always_acc_services = %{}
@@ -364,15 +361,9 @@ defmodule System.State.AccumulationTest do
       services = %{4 => :service4, 5 => :service5}
       always_acc_services = %{6 => 30}
 
-      initial_state =
-        base_accumulation_state(%{
-          services: services
-        })
+      initial_state = base_accumulation_state(%{services: services})
 
-      work_reports = [
-        simple_work_report(4, 10),
-        simple_work_report(5, 20)
-      ]
+      work_reports = [simple_work_report(4, 10), simple_work_report(5, 20)]
 
       extra_args = base_extra_args(%{timeslot_: 100})
 
@@ -599,10 +590,7 @@ defmodule System.State.AccumulationTest do
 
       extra_args = base_extra_args()
 
-      initial_state =
-        base_accumulation_state(%{
-          assigners: [2]
-        })
+      initial_state = base_accumulation_state(%{assigners: [2]})
 
       work_reports = [
         simple_work_report(4, 30),
