@@ -7,6 +7,7 @@ defmodule Util.Logger do
   require Logger
   import Util.Hex, only: [b16: 1]
   alias Network.StreamUtils
+
   def get_node_name do
     get_node_alias() || "NODE"
   end
@@ -65,7 +66,10 @@ defmodule Util.Logger do
 
   def stream(level, message, stream_ref, protocol_id \\ nil) do
     stream_id = StreamUtils.format_stream_ref(stream_ref)
-    protocol_desc = if protocol_id, do: " (#{StreamUtils.protocol_description(protocol_id)})", else: ""
+
+    protocol_desc =
+      if protocol_id, do: " (#{StreamUtils.protocol_description(protocol_id)})", else: ""
+
     context = "[STREAM:#{stream_id}#{protocol_desc}]"
     formatted_message = format_message(message, context)
     Logger.log(level, formatted_message)
@@ -87,11 +91,12 @@ defmodule Util.Logger do
   defmacro __using__(_) do
     quote do
       alias Util.Logger
-      def log(:debug, message), do: Logger.debug(message, @log_context)
-      def log(:error, message), do: Logger.error(message, @log_context)
-      def log(:info, message), do: Logger.info(message, @log_context)
-      def log(message), do: Logger.info(message, @log_context)
-      def log_stream(level, message, stream_ref, protocol_id \\ nil), do: Logger.stream(level, message, stream_ref, protocol_id)
+
+      def log(level, message), do: apply(Logger, level, [message, @log_context])
+      def log(message), do: log(:info, message)
+
+      def log_stream(level, message, stream_ref, protocol_id \\ nil),
+        do: Logger.stream(level, message, stream_ref, protocol_id)
     end
   end
 end

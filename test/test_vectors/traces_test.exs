@@ -6,6 +6,7 @@ defmodule TracesTest do
   import Jamixir.Factory
   use ExUnit.Case
   require Logger
+  import Util.Hex
 
   setup_all do
     RingVrf.init_ring_context()
@@ -28,8 +29,9 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    modes: ["fallback", "safrole"]
-    # modes: ["storage_light", "storage"]
+    # modes: ["fallback", "safrole"]
+    # , "storage"]
+    modes: ["storage_light"]
     # modes: ["preimages_light", "preimages"]
   }
 
@@ -97,16 +99,43 @@ defmodule TracesTest do
                     Storage.put(block.header)
                     Logger.info("🔄 State Updated successfully")
                     expected_state = Trie.trie_to_state(expected_trie)
-
-                    #
                     Logger.info("🔍 Comparing state")
-                    # uncomment to delete statistics from state trie
-                    # |> Map.delete(<<13, 0::30*8>>)
-                    %{data: trie1} = Trie.serialize(new_state)
-                    # |> Map.delete(<<13, 0::30*8>>)
-                    trie2 = expected_trie
 
-                    if trie1 != trie2 do
+                    %{data: new_state_trie} = Trie.serialize(new_state)
+
+                    for {k, v} <- new_state_trie do
+                      case Map.get(expected_trie, k) do
+                        nil ->
+                          Logger.error("not found in expected trie: #{b16(k)} => #{b16(v)}")
+
+                        v2 when v2 != v ->
+                          Logger.error(
+                            "diffent in expected trie: #{b16(k)} => \n#{b16(v)}\n#{b16(v2)}"
+                          )
+
+                        _ ->
+                          true
+                      end
+                    end
+
+                    for {k, v} <- expected_trie do
+                      case Map.get(new_state_trie, k) do
+                        nil ->
+                          Logger.error("not found in new state trie: #{b16(k)} => #{b16(v)}")
+
+                        v2 when v2 != v ->
+                          Logger.error(
+                            "diffent in new state trie: #{b16(k)} => \n#{b16(v)}\n#{b16(v2)}"
+                          )
+
+                        _ ->
+                          true
+                      end
+                    end
+
+                    if new_state_trie != expected_trie do
+                      raise "error"
+
                       failed_fields =
                         for field <- Utils.list_struct_fields(System.State), reduce: [] do
                           acc ->
