@@ -91,6 +91,15 @@ defmodule Jamixir.FuzzerTest do
   describe "set_state handler" do
     test "handles set_state request", %{client: client} do
       state = build(:genesis_state_with_safrole).state
+      # Clear storage from all services
+      state = %{
+        state
+        | services:
+            for {service_id, service_account} <- state.services, into: %{} do
+              {service_id, %{service_account | storage: %{}}}
+            end
+      }
+
       serialized_state = Trie.serialize(state)
       expected_state_root = Trie.state_root(serialized_state)
       header_hash = Hash.two()
