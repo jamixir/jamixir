@@ -31,7 +31,7 @@ defmodule TracesTest do
     block_range: 1..100,
     # modes: ["fallback", "safrole"]
     # , "storage"]
-    modes: ["storage_light"]
+    modes: ["storage_light", "preimages_light"]
     # modes: ["preimages_light", "preimages"]
   }
 

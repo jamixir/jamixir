@@ -12,6 +12,7 @@ defmodule PVM.Host.General.Internal do
   import Codec.Encoder
   import PVM.Host.Util
   import Constants
+  import Util.Hex
 
   @log_context "[PVM]"
   use Util.Logger
@@ -260,7 +261,7 @@ defmodule PVM.Host.General.Internal do
 
     storage_key =
       try do
-        (<<s_star::service()>> <> Memory.read!(memory, ko, kz)) |> Hash.default()
+        Memory.read!(memory, ko, kz)
       rescue
         _ -> :error
       end
@@ -309,6 +310,8 @@ defmodule PVM.Host.General.Internal do
 
     k = read_storage_key(memory, ko, kz, service_index)
 
+    log(:debug, "Write storage key: #{b16(k)}")
+
     a =
       cond do
         k != :error and vz == 0 ->
@@ -318,6 +321,7 @@ defmodule PVM.Host.General.Internal do
         k != :error ->
           try do
             value = Memory.read!(memory, vo, vz)
+            log(:debug, "Write storage value: #{b16(value)}")
             put_in(service_account, [:storage, k], value)
           rescue
             _ -> :error
@@ -346,7 +350,8 @@ defmodule PVM.Host.General.Internal do
 
   defp read_storage_key(memory, ko, kz, service_id) do
     try do
-      (t(service_id) <> Memory.read!(memory, ko, kz)) |> Hash.default()
+      # ) |> Hash.default()
+      Memory.read!(memory, ko, kz)
     rescue
       _ -> :error
     end
@@ -450,17 +455,15 @@ defmodule PVM.Host.General.Internal do
   end
 
   # According to https://github.com/polkadot-fellows/JIPs/pull/6/files
-  defp print_log_message(log_level, target, message, core_index, service_index) do
+  defp print_log_message(_log_level, target, message, core_index, service_index) do
     # Format timestamp
 
     target = if target != "", do: " [#{target}]", else: ""
 
     message = "#{prefixed(core_index, "@")}#{prefixed(service_index, "#")}#{target} #{message}"
 
-    level =
-      %{0 => :debug, 1 => :debug, 2 => :info, 3 => :warning, 4 => :error}[log_level] || :info
-
-    log(level, message)
+    # PVM log will always be DEBUG
+    log(:debug, message)
   end
 
   defp prefixed(s, prefix), do: if(s != nil, do: "#{prefix}#{s}", else: "")
