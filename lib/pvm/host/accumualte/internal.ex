@@ -91,11 +91,11 @@ defmodule PVM.Host.Accumulate.Internal do
         q == :error ->
           {:panic, w7, context_pair}
 
-        x.service != x.accumulation.assigners |> Enum.at(c) ->
-          {:continue, huh(), context_pair}
-
         c >= Constants.core_count() ->
           {:continue, core(), context_pair}
+
+        x.service != x.accumulation.assigners |> Enum.at(c) ->
+          {:continue, huh(), context_pair}
 
         true ->
           queue_ =

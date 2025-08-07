@@ -501,7 +501,7 @@ defmodule PVM.Host.GeneralTest do
       }
 
       g = 100
-      registers = %Registers{r7: 1, r8: a_0(), r11: 0, r12: 1000}
+      registers = %Registers{r7: 1, r8: a_0(), r9: 0, r10: 1000}
       context = %ServiceAccount{}
 
       {:ok,
