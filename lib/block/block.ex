@@ -69,11 +69,10 @@ defmodule Block do
       {priv, pub} ->
         # Check if we own/can sign for this slot
         if key_matches?(keypair, slot_sealer, entropy_pool) do
-          #  this is only corret for fallback case, does not work for SealKeyTicket
-          new_index =
-            Enum.find_index(curr_validators_, fn v -> v.bandersnatch == slot_sealer end)
+          block_author_key_index_ =
+            Enum.find_index(curr_validators_, fn v -> v.bandersnatch == pub end)
 
-          header = put_in(header.block_author_key_index, new_index)
+          header = put_in(header.block_author_key_index, block_author_key_index_)
           Logger.debug("timeslot slot_sealer: #{inspect(slot_sealer)}")
 
           {:ok,
@@ -113,9 +112,9 @@ defmodule Block do
     }
   end
 
-  def key_matches?({priv, pub}, %SealKeyTicket{id: id, attempt: r}, pool) do
+  def key_matches?(keypair, %SealKeyTicket{id: id, attempt: r}, pool) do
     context = HeaderSeal.construct_seal_context(%{attempt: r}, pool)
-    RingVrf.ietf_vrf_output({priv, pub}, context) == id
+    RingVrf.ietf_vrf_output(keypair, context) == id
   end
 
   def key_matches?({_priv, pub}, pubkey, _pool) when is_binary(pubkey), do: pub == pubkey
