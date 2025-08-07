@@ -12,7 +12,9 @@ defmodule PVM.Host.General.Internal do
   import Codec.Encoder
   import PVM.Host.Util
   import Constants
-  require Logger
+
+  @log_context "[PVM]"
+  use Util.Logger
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
@@ -450,23 +452,15 @@ defmodule PVM.Host.General.Internal do
   # According to https://github.com/polkadot-fellows/JIPs/pull/6/files
   defp print_log_message(log_level, target, message, core_index, service_index) do
     # Format timestamp
-    {{year, month, day}, {hour, minute, second}} = :calendar.universal_time()
-
-    timestamp =
-      :io_lib.format(
-        "~4..0w/~2..0w/~2..0w ~2..0w:~2..0w:~2..0w",
-        [year, month, day, hour, minute, second]
-      )
 
     target = if target != "", do: " [#{target}]", else: ""
 
-    message =
-      "#{timestamp}#{prefixed(core_index, "@")}#{prefixed(service_index, "#")}#{target} #{message}"
+    message = "#{prefixed(core_index, "@")}#{prefixed(service_index, "#")}#{target} #{message}"
 
     level =
       %{0 => :debug, 1 => :debug, 2 => :info, 3 => :warning, 4 => :error}[log_level] || :info
 
-    Logger.bare_log(level, message)
+    log(level, message)
   end
 
   defp prefixed(s, prefix), do: if(s != nil, do: "#{prefix}#{s}", else: "")
