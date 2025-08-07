@@ -28,7 +28,6 @@ defmodule HistoryTestVectorsTest do
       :ok
     end
 
-    # TODO test vectors are not yet updated to new form of recent history in 0.6.7
     define_vector_tests("history")
   end
 end
