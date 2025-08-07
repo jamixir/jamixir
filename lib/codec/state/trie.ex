@@ -128,9 +128,12 @@ defmodule Codec.State.Trie do
   def to_binary(%SerializedState{data: data}) do
     key_value_list =
       for {key, value} <- data do
-        vs(key <> value)
+        # TrieKey ::= OCTET STRING (SIZE(31))
+        # value   OCTET STRING  (SEQUENCE of u8) [includes length prefix]
+        (key <> e(vs(value)))
       end
 
+    # State ::= SEQUENCE OF KeyValue [includes length prefix]
     e(vs(key_value_list))
   end
 
@@ -138,10 +141,19 @@ defmodule Codec.State.Trie do
           {:ok, %SerializedState{data: map()}} | {:error, :invalid_state_format}
   def from_binary(binary) do
     try do
+      # State ::= SEQUENCE OF KeyValue [includes length prefix]
       {key_value_list, _rest} =
-        VariableSize.decode(binary, fn key_value_bin ->
-          {key_value, rest} = VariableSize.decode(key_value_bin, :binary)
-          <<key::binary-size(31), value::binary>> = key_value
+        VariableSize.decode(binary, fn bin ->
+          #   KeyValue ::= SEQUENCE {
+          #     key     TrieKey ::= OCTET STRING (SIZE(31)),
+          #     value   OCTET STRING (SEQUENCE of u8) [includes length prefix]
+          # }
+          
+          # TrieKey
+          <<key::binary-size(31), rest::binary>> = bin
+          # value
+          {value, rest} = VariableSize.decode(rest, :binary)
+
           {{key, value}, rest}
         end)
 

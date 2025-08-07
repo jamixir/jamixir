@@ -266,4 +266,17 @@ defmodule Codec.State.TrieTest do
       assert serialize(recovered_state) == trie
     end
   end
+
+  describe "fuzzer: encode/decode" do
+    test "to -> from binary", %{state: state} do
+      assert {:ok, decoded} = from_binary(to_binary(state))
+      assert %State{} = trie_to_state(decoded)
+      decoded_state = trie_to_state(decoded)
+      state_fields = Map.drop(Map.from_struct(state), [:services])
+
+      for {key, value} <- state_fields do
+        assert Map.get(decoded_state, key) == value
+      end
+    end
+  end
 end
