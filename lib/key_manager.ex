@@ -78,6 +78,16 @@ defmodule KeyManager do
     end
   end
 
+  def get_our_bandersnatch_keypair do
+    case Application.get_env(:jamixir, :keys) do
+      %{bandersnatch: pubkey, bandersnatch_priv: privkey} ->
+        {privkey, pubkey}
+
+      _ ->
+        nil
+    end
+  end
+
   defp decrypt_private_key(encrypted_data, password) do
     <<iv::binary-size(16), ciphertext::binary>> = encrypted_data
     key = :crypto.hash(:sha256, password) |> binary_part(0, 32)
