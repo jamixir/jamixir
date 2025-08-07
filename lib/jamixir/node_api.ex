@@ -12,17 +12,12 @@ defmodule Jamixir.NodeAPI do
               {:error, :key_not_found | :no_state} | {:ok, any()}
   @callback get_blocks(Types.hash(), :asc | :desc, integer()) ::
               {:ok, list(Block.t())} | {:error, any}
-  # CE 131/132 Safrole ticket distribution (epoch index, attempt, proof)
-  @callback add_ticket(
-              Types.epoch_index(),
-              integer(),
-              Types.bandersnatch_ringVRF_proof_of_knowledge()
-            ) :: :ok | {:error, any}
   # CE 133 - Work-package submission (core index, WP, extrinsic data)
   @callback receive_preimage(Types.service_index(), Types.hash(), non_neg_integer()) ::
               :ok | {:error, any}
   @callback get_preimage(Types.hash()) :: {:ok, binary} | {:error, any}
   @callback save_preimage(binary()) :: :ok | {:error, any}
+  # CE 131/132 Safrole ticket distribution (epoch index, attempt, proof)
   @callback process_ticket(:proxy | :validator, Types.epoch_index(), TicketProof.t()) ::
               :ok | {:error, any}
   @callback save_assurance(Assurance.t()) :: :ok | {:error, any}
@@ -50,7 +45,6 @@ defmodule Jamixir.NodeAPI do
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)
   def get_blocks(hash, order, count), do: impl().get_blocks(hash, order, count)
-  def add_ticket(epoch, attempt, proof), do: impl().add_ticket(epoch, attempt, proof)
   def receive_preimage(service, hash, length), do: impl().receive_preimage(service, hash, length)
   def get_preimage(hash), do: impl().get_preimage(hash)
   def save_preimage(preimage), do: impl().save_preimage(preimage)

@@ -1,4 +1,6 @@
 defmodule Storage do
+  alias Block.Extrinsic.TicketProof
+  alias Codec.VariableSize
   alias Block.Extrinsic.WorkPackage
   alias Block.Header
   alias Codec.State.Trie
@@ -121,6 +123,11 @@ defmodule Storage do
     KVStorage.put(%{key => e(work_package)})
   end
 
+  def put(epoch, %TicketProof{} = ticket) do
+    key = @p_ticket <> <<epoch::little-16>>
+    KVStorage.put(key, e(vs(get_tickets(epoch) ++ [ticket])))
+  end
+
   def put(key, value), do: KVStorage.put(key, value)
 
   defp prepare_entry({key, value}), do: {:ok, {key, value}}
@@ -210,6 +217,13 @@ defmodule Storage do
 
   def set_segment_core(merkle_root, core_index) do
     KVStorage.put(@p_segment_core <> merkle_root, core_index)
+  end
+
+  def get_tickets(epoch) do
+    case KVStorage.get(@p_ticket <> <<epoch::little-16>>) do
+      nil -> []
+      tickets_bin -> VariableSize.decode(tickets_bin, TicketProof) |> elem(0)
+    end
   end
 
   # Private Functions

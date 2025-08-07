@@ -1,12 +1,13 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
-  alias Util.Hash
+  alias Jamixir.Genesis
   alias Storage
+  alias Util.Hash
   import Jamixir.Factory
   import TestHelper
   import Codec.Encoder
   import Jamixir.Node
-  alias Jamixir.Genesis
+  import Mox
   use StoragePrefix
 
   @genesis_file Genesis.default_file()
@@ -167,6 +168,47 @@ defmodule Jamixir.NodeTest do
 
   describe "save_work_package_bundle/3" do
     test "save bundle returning validator signature" do
+    end
+  end
+
+  describe "process_ticket/3" do
+    setup do
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :node_state_server)
+        Application.delete_env(:jamixir, :network_client)
+      end)
+
+      {:ok, epochs: for(_ <- 1..2, do: :rand.uniform(100_000))}
+    end
+
+    test "process_ticket with :proxy mode", %{epochs: [e1, e2]} do
+      [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
+
+      stub(NodeStateServerMock, :validator_connections, fn ->
+        [{"validator1", 101}, {"validator2", 102}]
+      end)
+
+      expect(ClientMock, :distribute_ticket, fn 101, :validator, ^e1, ^t1 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 102, :validator, ^e1, ^t1 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 101, :validator, ^e2, ^t2 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 102, :validator, ^e2, ^t2 -> :ok end)
+
+      process_ticket(:proxy, e1, t1)
+      process_ticket(:proxy, e2, t2)
+      assert Storage.get_tickets(e1) == [t1]
+      assert Storage.get_tickets(e2) == [t2]
+      verify!()
+    end
+
+    test "process_ticket with :validator mode", %{epochs: [e1, e2]} do
+      [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
+      process_ticket(:validator, e1, t1)
+      process_ticket(:validator, e2, t2)
+      assert Storage.get_tickets(e1) == [t1]
+      assert Storage.get_tickets(e2) == [t2]
     end
   end
 end

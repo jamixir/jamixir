@@ -96,12 +96,12 @@ defmodule Block do
 
   defp get_signing_key(nil, %SealKeyTicket{id: id, attempt: r}, pool, _) do
     case my_key() do
-      {{priv, pub}, pub} ->
+      {priv, pub} ->
         # my_index = Enum.find_index(safrole_.pending, fn v -> v.bandersnatch == pub end)
         context = HeaderSeal.construct_seal_context(%{attempt: r}, %EntropyPool{n3: pool.n3})
 
-        case RingVrf.ietf_vrf_output({priv, pub}, context) do
-          ^id -> {:ok, {{priv, pub}, pub}}
+        case RingVrf.ietf_vrf_output({{priv, pub}, pub}, context) do
+          ^id -> {:ok, {priv, pub}}
           _ -> {:error, :no_valid_keys_found}
         end
 
@@ -128,8 +128,8 @@ defmodule Block do
 
   defp get_signing_key(nil, pubkey, _, _) do
     case my_key() do
-      {{priv, ^pubkey}, ^pubkey} ->
-        {:ok, {{priv, pubkey}, pubkey}}
+      {priv, ^pubkey} ->
+        {:ok, {priv, pubkey}}
 
       _ ->
         {:error, :no_valid_keys_found}
@@ -145,7 +145,7 @@ defmodule Block do
 
   def my_key do
     case Application.get_env(:jamixir, :keys) do
-      %{bandersnatch_priv: priv, bandersnatch: pubkey} -> {{priv, pubkey}, pubkey}
+      %{bandersnatch_priv: priv, bandersnatch: pubkey} -> {priv, pubkey}
       _ -> nil
     end
   end
