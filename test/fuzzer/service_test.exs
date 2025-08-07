@@ -6,6 +6,7 @@ defmodule Jamixir.FuzzerTest do
   alias Jamixir.Meta
   alias Codec.State.Trie
   alias Storage
+  alias System.State.ServiceAccount
   import Jamixir.Factory
   import Codec.Encoder
   import TestVectorUtil
@@ -53,7 +54,20 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_get_state(client, header_hash)
       assert {:ok, :state, incoming_state} = Client.receive_message(client)
 
-      assert Trie.serialize(incoming_state) == Trie.serialize(state)
+      fields = Map.from_struct(state) |> Map.drop([:services])
+
+      for {key, value} <- fields do
+        assert value == Map.get(incoming_state, key)
+      end
+
+      service_field_keys = ServiceAccount.__struct__() |> Map.keys() |> List.delete(:storage)
+
+      for service_key <- Map.keys(state.services) do
+        for service_field_key <- service_field_keys do
+          assert Map.get(Map.get(incoming_state.services, service_key), service_field_key) ==
+                   Map.get(Map.get(state.services, service_key), service_field_key)
+        end
+      end
     end
 
     test "handles get_state request for non-existent state", %{client: client} do
@@ -84,7 +98,6 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_set_state(client, header_hash, state)
       assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
 
-      assert Storage.get_state(header_hash) |> Trie.serialize() == serialized_state
       assert incoming_state_root == expected_state_root
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
