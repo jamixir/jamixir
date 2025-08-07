@@ -387,8 +387,8 @@ defmodule PVM.Host.General.Internal do
         nil
       end
 
-    f = min(registers.r11, safe_byte_size(v))
-    l = min(registers.r12, safe_byte_size(v) - f)
+    f = min(registers.r9, safe_byte_size(v))
+    l = min(registers.r10, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
