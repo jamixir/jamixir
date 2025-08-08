@@ -2,7 +2,14 @@ defmodule Clock.Event do
   alias Util.Time
 
   @type event_type ::
-          :slot_tick | :slot_phase_tick | :audit_tranche | :rotation_check | :assurance_timeout | :epoch_transition | :compute_authoring_slots
+          :slot_tick #every 6 seconds
+          | :slot_phase_tick #every 1 second
+          | :audit_tranche #every 8 seconds
+          | :rotate_core_assignments #every 10 slots
+          | :assurance_timeout #every 30 seconds
+          | :epoch_transition
+          | :compute_authoring_slots # on the 2nd second of the slot before the epoch transition (impl detail, not a GP constat)
+          | :author_block # accoording to the sarfole.slot_sealer list
 
   @type t :: %__MODULE__{
           event: event_type(),

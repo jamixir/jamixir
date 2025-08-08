@@ -26,7 +26,6 @@ defmodule Jamixir.NodeStateServer do
   # Will store {epoch_index, epoch_phase} tuples
   defstruct [
     :jam_state,
-    :authoring_slots,
     :bandersnatch_keypair
   ]
 
@@ -168,7 +167,7 @@ defmodule Jamixir.NodeStateServer do
   @impl true
   def handle_info(
         {:check_jam_state, s},
-        %__MODULE__{jam_state: nil, bandersnatch_keypair: bandersnatch_keypair} = state
+        %__MODULE__{jam_state: nil} = state
       ) do
     case s || Storage.get_state(Genesis.genesis_header_hash()) do
       nil ->
@@ -178,12 +177,12 @@ defmodule Jamixir.NodeStateServer do
 
       jam_state ->
         # JAM state is now available!
-        Log.info("🎯 NodeStateServer received JAM state")
-        Phoenix.PubSub.subscribe(Jamixir.PubSub, "clock_events")
+        Log.info("📨 NodeStateServer received JAM state")
+        Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
         Phoenix.PubSub.subscribe(Jamixir.PubSub, "clock_phase_events")
 
-        # Start with empty authoring slots - they'll be computed at the end of current epoch
-        {:noreply, %__MODULE__{state | jam_state: jam_state, authoring_slots: MapSet.new()}}
+        # No longer need to track authoring slots locally
+        {:noreply, %__MODULE__{state | jam_state: jam_state}}
     end
   end
 
@@ -199,58 +198,37 @@ defmodule Jamixir.NodeStateServer do
     current_epoch = Util.Time.epoch_index(slot)
     next_epoch = current_epoch + 1
 
-    Log.debug("🎯 Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}")
+    Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}")
 
-    new_authoring_slots = compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
+    authoring_slots = compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
 
-    {:noreply, %__MODULE__{state | authoring_slots: new_authoring_slots}}
+    # Send authoring slots to Clock server
+    Clock.set_authoring_slots(authoring_slots)
+
+    {:noreply, state}
   end
 
-  # Regular slot tick handler - back to original pattern without slot_phase
+  # Handle author_block events from Clock
   @impl true
   def handle_info(
-        {:clock, %{event: :slot_tick, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
-        %__MODULE__{jam_state: jam_state, authoring_slots: authoring_slots} = state
-      )
-      when not is_nil(authoring_slots) do
-    Log.debug("Node received new timeslot: #{slot}")
+        {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    Log.debug("📨 Received author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
+    {_, parent_header} = Storage.get_latest_header()
+    parent_hash = h(e(parent_header))
 
-    if MapSet.member?(authoring_slots, {epoch, epoch_phase}) do
-      Log.debug("🎯 This is our slot to author: #{slot} (epoch #{epoch}, phase #{epoch_phase})")
-      {_, parent_header} = Storage.get_latest_header()
-      parent_hash = h(e(parent_header))
+    case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, slot) do
+      {:ok, block} ->
+        header_hash = h(e(block.header))
+        Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
+        Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
+        Task.start(fn -> add_block(block) end)
 
-      case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, slot) do
-        {:ok, block} ->
-          header_hash = h(e(block.header))
-          Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
-          Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
-          Task.start(fn -> add_block(block) end)
-
-        {:error, reason} ->
-          Log.consensus(:debug, "Failed to create block: #{reason}")
-      end
-    else
-      Log.debug("🎯 Not our turn to author slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
+      {:error, reason} ->
+        Log.consensus(:debug, "Failed to create block: #{reason}")
     end
 
-    {:noreply, state}
-  end
-
-  # Handle slot_tick when authoring_slots is nil (shouldn't happen after initialization)
-  @impl true
-  def handle_info(
-        {:clock, %{event: :slot_tick, slot: slot}},
-        %__MODULE__{authoring_slots: nil} = state
-      ) do
-    Log.debug("Node received new timeslot: #{slot}, but authoring slots not yet calculated")
-    {:noreply, state}
-  end
-
-  # Catch-all handler for other clock events we don't care about
-  @impl true
-  def handle_info({:clock, %{event: event}}, state) do
-    # Log.debug("NodeStateServer ignoring clock event: #{event}")
     {:noreply, state}
   end
 
@@ -281,7 +259,7 @@ defmodule Jamixir.NodeStateServer do
     next_epoch_first_slot = next_epoch * Constants.epoch_length()
 
     Log.debug(
-      "🎯 Computing authoring slots for epoch #{next_epoch} (starting from slot #{next_epoch_first_slot}) - current epoch: #{current_epoch}"
+      "⚙️ Computing authoring slots for epoch #{next_epoch} (starting from slot #{next_epoch_first_slot}) - current epoch: #{current_epoch}"
     )
 
     # Create a header for the first slot of the next epoch to get seal components
@@ -311,7 +289,7 @@ defmodule Jamixir.NodeStateServer do
       |> MapSet.new()
 
     Log.info(
-      "🎯 We are assigned to author #{inspect(authoring_slots)} slots in epoch #{next_epoch}"
+      "✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{next_epoch}"
     )
 
     authoring_slots
