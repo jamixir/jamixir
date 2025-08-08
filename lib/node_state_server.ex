@@ -23,7 +23,6 @@ defmodule Jamixir.NodeStateServer do
     Application.get_env(:jamixir, :node_state_server, Jamixir.NodeStateServer)
   end
 
-  # Will store {epoch_index, epoch_phase} tuples
   defstruct [
     :jam_state,
     :bandersnatch_keypair
@@ -176,12 +175,10 @@ defmodule Jamixir.NodeStateServer do
         {:noreply, state}
 
       jam_state ->
-        # JAM state is now available!
         Log.info("📨 NodeStateServer received JAM state")
         Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
         Phoenix.PubSub.subscribe(Jamixir.PubSub, "clock_phase_events")
 
-        # No longer need to track authoring slots locally
         {:noreply, %__MODULE__{state | jam_state: jam_state}}
     end
   end
@@ -202,13 +199,11 @@ defmodule Jamixir.NodeStateServer do
 
     authoring_slots = compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
 
-    # Send authoring slots to Clock server
     Clock.set_authoring_slots(authoring_slots)
 
     {:noreply, state}
   end
 
-  # Handle author_block events from Clock
   @impl true
   def handle_info(
         {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
@@ -262,7 +257,6 @@ defmodule Jamixir.NodeStateServer do
       "⚙️ Computing authoring slots for epoch #{next_epoch} (starting from slot #{next_epoch_first_slot}) - current epoch: #{current_epoch}"
     )
 
-    # Create a header for the first slot of the next epoch to get seal components
     header = %Header{timeslot: next_epoch_first_slot}
     entropy_pool_ = EntropyPool.rotate(next_epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
 
@@ -278,7 +272,6 @@ defmodule Jamixir.NodeStateServer do
         curr_validators_
       )
 
-    # Compute authoring slots for next epoch
     authoring_slots =
       0..(Constants.epoch_length() - 1)
       |> Enum.filter(fn phase ->
