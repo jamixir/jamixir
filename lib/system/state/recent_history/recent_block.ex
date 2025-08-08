@@ -16,7 +16,6 @@ defmodule System.State.RecentHistory.RecentBlock do
   # βH ∈ ⟦(h ∈ H, s ∈ H, b ∈ H, p ∈ H → H)⟧∶H
   # h
   defstruct header_hash: Hash.zero(),
-            accumulated_result_mmb: Hash.zero(),
             # b
             beefy_root: Hash.zero(),
             # s

@@ -133,7 +133,7 @@ defmodule System.State.RecentHistory do
       e(
         {vs(
            for b <- rh.blocks do
-             {b.header_hash, b.accumulated_result_mmb, b.state_root, e(b.work_report_hashes)}
+             {b.header_hash, b.beefy_root, b.state_root, e(b.work_report_hashes)}
            end
          ), encode_mmr(rh.beefy_belt)}
       )
