@@ -17,7 +17,6 @@ defmodule Clock do
   end
 
   def init(_opts) do
-
     timers = %{
       slot: schedule_slot_timer(),
       audit: schedule_audit_timer(),
@@ -33,18 +32,17 @@ defmodule Clock do
   def handle_info(:slot_tick, state) do
     current_slot = Time.current_timeslot()
 
-
     event = Clock.Event.new(:slot_tick, current_slot)
-    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock_event, event})
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock, event})
 
     if Time.rotation?(current_slot) do
       rotation_event = Clock.Event.new(:rotation_check, current_slot)
-      Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock_event, rotation_event})
+      Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock, rotation_event})
     end
 
     if Time.epoch_transition?(current_slot) do
       epoch_event = Clock.Event.new(:epoch_transition, current_slot)
-      Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock_event, epoch_event})
+      Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock, epoch_event})
     end
 
     new_timers = Map.put(state.timers, :slot, schedule_slot_timer())
@@ -53,7 +51,7 @@ defmodule Clock do
 
   def handle_info(:audit_tranche, state) do
     event = Clock.Event.new(:audit_tranche)
-    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock_event, event})
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock, event})
 
     new_timers = Map.put(state.timers, :audit, schedule_audit_timer())
     {:noreply, %{state | timers: new_timers}}
@@ -61,7 +59,7 @@ defmodule Clock do
 
   def handle_info(:assurance_timeout, state) do
     event = Clock.Event.new(:assurance_timeout)
-    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock_event, event})
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, "clock_events", {:clock, event})
 
     new_timers = Map.put(state.timers, :assurance, schedule_assurance_timer())
     {:noreply, %{state | timers: new_timers}}
