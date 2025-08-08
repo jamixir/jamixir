@@ -1,9 +1,9 @@
 defmodule TracesTest do
   alias Codec.State.Trie
   alias IO.ANSI
+  alias Jamixir.Genesis
   alias System.State
   import TestVectorUtil
-  import Jamixir.Factory
   use ExUnit.Case
   require Logger
   import Util.Hex
@@ -29,8 +29,8 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    modes: ["fallback", "safrole", "storage_light", "preimages_light"]
-    # modes: ["storage", "preimages"]
+    # modes: ["fallback", "safrole", "storage_light", "preimages_light"]
+    modes: ["storage", "preimages"]
   }
 
   _jam_duna = %{
@@ -83,7 +83,7 @@ defmodule TracesTest do
                 parent_hash = JsonDecoder.from_json(block_json[:block][:header][:parent])
 
                 unless Storage.get(parent_hash),
-                  do: Storage.put(parent_hash, build(:header, timeslot: 0))
+                  do: Storage.put(parent_hash, Genesis.genesis_block_header())
 
                 pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
 

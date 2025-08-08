@@ -5,23 +5,14 @@ defmodule Jamixir.Genesis do
   #Could be anything, the important thing is to put genesis state under this key
   def genesis_header_hash, do: h(e(genesis_block_header()))
   def genesis_block_header do
-    %Block.Header{
-      parent_hash: <<0::hash()>>,
-      prior_state_root: <<0::hash()>>,
-      extrinsic_hash: <<0::hash()>>,
-      timeslot: 0,
-      epoch_mark: [
-
-      ],
-      winning_tickets_marker: nil,
-      offenders_marker: [],
-      block_author_key_index: 65_535,
-      vrf_signature: <<0::m(bandersnatch_signature)>>,
-      block_seal: <<0::m(bandersnatch_signature)>>
-    }
+    JsonReader.read(header_file()) |> Block.Header.from_json()
   end
 
   def default_file do
     Path.join(:code.priv_dir(:jamixir), "genesis.json")
+  end
+
+  def header_file do
+    Path.join(:code.priv_dir(:jamixir), "genesis_header.json")
   end
 end
