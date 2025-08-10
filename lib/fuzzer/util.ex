@@ -1,7 +1,9 @@
 defmodule Jamixir.Fuzzer.Util do
-  alias Codec.State.Trie.SerializedState
+  alias Block.Header
   alias Codec.State.Trie
+  alias Codec.State.Trie.SerializedState
   import Util.Hex, only: [b16: 1]
+
   @protocol_to_message_type %{
     0 => :peer_info,
     1 => :import_block,
@@ -61,13 +63,14 @@ defmodule Jamixir.Fuzzer.Util do
     case receive_exact_bytes(socket, 4, timeout) do
       {:ok, length_bytes} ->
         <<length::32-little>> = length_bytes
-            case receive_exact_bytes(socket, length, timeout) do
-              {:ok, message_data} ->
-                {:ok, message_data}
 
-              {:error, reason} ->
-                {:error, {:recv_message_failed, reason}}
-            end
+        case receive_exact_bytes(socket, length, timeout) do
+          {:ok, message_data} ->
+            {:ok, message_data}
+
+          {:error, reason} ->
+            {:error, {:recv_message_failed, reason}}
+        end
 
       {:error, :closed} ->
         {:error, :closed}
@@ -91,9 +94,11 @@ defmodule Jamixir.Fuzzer.Util do
         {:error, {:timeout_waiting, 0, bytes_needed}}
 
       {:error, {:timeout, partial_data}} ->
-        {:error, {:timeout_with_partial, byte_size(partial_data), bytes_needed, b16(partial_data)}}
+        {:error,
+         {:timeout_with_partial, byte_size(partial_data), bytes_needed, b16(partial_data)}}
 
-      error -> error
+      error ->
+        error
     end
   end
 
@@ -129,7 +134,7 @@ defmodule Jamixir.Fuzzer.Util do
       {:error, {:message_too_short, :set_state, byte_size(bin), 32}}
     else
       try do
-        <<header_hash::binary-size(32), state_bin::binary>> = bin
+        {header, state_bin} = Header.decode(bin)
 
         if byte_size(state_bin) == 0 do
           {:error, {:empty_state_data, :set_state}}
@@ -137,7 +142,7 @@ defmodule Jamixir.Fuzzer.Util do
           case Trie.from_binary(state_bin) do
             {:ok, serialized_state} ->
               state = Trie.trie_to_state(serialized_state)
-              {:ok, :set_state, %{header_hash: header_hash, state: state}}
+              {:ok, :set_state, %{header: header, state: state}}
 
             {:error, reason} ->
               {:error, reason}

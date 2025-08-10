@@ -102,13 +102,21 @@ defmodule Jamixir.FuzzerTest do
 
       serialized_state = Trie.serialize(state)
       expected_state_root = Trie.state_root(serialized_state)
-      header_hash = Hash.two()
+      header = build(:decodable_header)
+      header_hash = h(e(header))
 
-      assert :ok = Client.send_set_state(client, header_hash, state)
+      assert :ok = Client.send_set_state(client, header, state)
       assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
 
       assert incoming_state_root == expected_state_root
       assert Storage.get_state_root(header_hash) == incoming_state_root
+    end
+
+    test "set state fuzzer binary", %{client: client} do
+      <<_protocol::8, message::binary>> = File.read!("test/fuzzer/2_set_state.bin")
+
+      assert :ok = Client.send_message(client, :set_state, message)
+      assert {:ok, :state_root, _} = Client.receive_message(client)
     end
   end
 
