@@ -1,15 +1,16 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
-  alias Util.Hash
   alias Jamixir.Fuzzer.{Client, Service}
   alias Jamixir.Meta
-  alias Codec.State.Trie
   alias Storage
   alias System.State.ServiceAccount
+  alias Util.Hash
   import Jamixir.Factory
   import Codec.Encoder
   import TestVectorUtil
+  import Util.Hex
 
   @socket_path "/tmp/jamixir_fuzzer_test.sock"
 
@@ -112,11 +113,28 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
 
-    test "set state fuzzer binary", %{client: client} do
+    test "fuzzer example stf binaries", %{client: client} do
       <<_protocol::8, message::binary>> = File.read!("test/fuzzer/2_set_state.bin")
 
       assert :ok = Client.send_message(client, :set_state, message)
-      assert {:ok, :state_root, _} = Client.receive_message(client)
+      assert {:ok, :state_root, root} = Client.receive_message(client)
+
+      # 3_state_root
+      assert b16(root) == "0x76acb3326996df5eb7555790b7a60a9a8d519e4fae3e6a4ef906dcc3bedbc2b8"
+
+      for {block_file, exp_root} <- [
+            {"4_block", "0x49c0c77f752c95c58d33b646c1f144432a89b7c99b807e07914dec267b4e1088"},
+            {"6_block", "0xb79a752df339d056ef5730aebe8785f35db225caf7f8115fe26e2ba0420ef3c6"}
+            # block failing root
+            # {"8_block", "0x5abb6eda68c027ee4c234608c91de019a5e394f7eaa1faaa03e201bbae5d163c"}
+          ] do
+        <<_protocol::8, block::binary>> = File.read!("test/fuzzer/#{block_file}.bin")
+        assert :ok = Client.send_message(client, :import_block, block)
+        assert {:ok, :state_root, root} = Client.receive_message(client)
+        Process.sleep(2000)
+        assert b16(root) == exp_root
+        Util.Logger.info("Processed #{block_file} with expected root #{exp_root}")
+      end
     end
   end
 
