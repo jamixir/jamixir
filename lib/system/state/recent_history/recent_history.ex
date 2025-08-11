@@ -40,7 +40,9 @@ defmodule System.State.RecentHistory do
 
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
-  def mock(:get_well_balanced_merkle_root, context), do: context[:lastaccout]
+
+  def mock(:get_well_balanced_merkle_root, context), do: context[:lastaccouts]
+
   def mock(:transition, context), do: context[:recent_history]
 
   @doc """
