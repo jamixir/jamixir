@@ -1,8 +1,9 @@
 defmodule Jamixir.Fuzzer.Service do
   require Logger
   alias Codec.State.Trie
-  alias System.State
   alias Jamixir.Meta
+  alias System.State
+  import Codec.Encoder
   import Util.Hex, only: [b16: 1]
   import Jamixir.Fuzzer.Util
   require Logger, as: Log
@@ -42,25 +43,29 @@ defmodule Jamixir.Fuzzer.Service do
         Log.info("Client disconnected")
         :ok
 
-
       {:error, {:recv_message_failed, reason}} ->
         case reason do
           {:timeout, partial_data} when is_binary(partial_data) ->
             Log.debug("Message timeout with #{byte_size(partial_data)} bytes partial data")
+
           {:timeout_with_partial, received, expected, hex_data} ->
             Log.debug("Message timeout: #{received}/#{expected} bytes (#{hex_data})")
+
           other ->
             Log.warning("Failed to read message data: #{inspect(other)}")
         end
-        handle_client(sock, timeout)
 
+        handle_client(sock, timeout)
 
       {:error, {:unknown_protocol, protocol_number}} ->
         Log.warning("Unknown protocol number: #{protocol_number} - ignoring message")
         handle_client(sock, timeout)
 
       {:error, {:message_too_short, message_type, received, expected}} ->
-        Log.warning("Message too short for #{message_type}: received #{received} bytes, expected at least #{expected} bytes - ignoring message")
+        Log.warning(
+          "Message too short for #{message_type}: received #{received} bytes, expected at least #{expected} bytes - ignoring message"
+        )
+
         handle_client(sock, timeout)
 
       {:error, {:empty_state_data, message_type}} ->
@@ -71,8 +76,6 @@ defmodule Jamixir.Fuzzer.Service do
         Log.warning("Empty message data for #{message_type} - ignoring message")
         handle_client(sock, timeout)
 
-
-
       {:error, {error_atom, received, expected}} ->
         Log.debug("#{error_atom}: #{received}/#{expected} bytes - continuing")
         handle_client(sock, timeout)
@@ -82,9 +85,8 @@ defmodule Jamixir.Fuzzer.Service do
         handle_client(sock, timeout)
 
       {:error, {error_atom, reason}} ->
-          Log.warning("#{error_atom}: #{inspect(reason)}")
-          handle_client(sock, timeout)
-
+        Log.warning("#{error_atom}: #{inspect(reason)}")
+        handle_client(sock, timeout)
 
       {:error, reason} ->
         Log.error(" #{inspect(reason)} - ignoring message")
@@ -103,10 +105,12 @@ defmodule Jamixir.Fuzzer.Service do
     send_peer_info(sock)
   end
 
-  defp handle_message(:set_state, %{header_hash: header_hash, state: state}, sock) do
+  defp handle_message(:set_state, %{header: header, state: state}, sock) do
+    header_hash = h(e(header))
+
     case validate_state(state) do
       :ok ->
-        state_root = Storage.put(header_hash, state)
+        state_root = Storage.put(header, state)
         Log.info("State successfully stored for header hash: #{b16(header_hash)}")
         :socket.send(sock, encode_message(:state_root, state_root))
 
@@ -128,6 +132,8 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp handle_message(:import_block, block, sock) do
+    Logger.info("Importing block: #{b16(h(e(block.header)))}")
+
     case Jamixir.Node.add_block(block) do
       {:ok, _new_app_state, state_root} ->
         :socket.send(sock, encode_message(:state_root, state_root))
@@ -150,8 +156,9 @@ defmodule Jamixir.Fuzzer.Service do
     )
 
     our_info =
-      <<byte_size(Meta.name())::8, Meta.name()::binary, app_version_major::8, app_version_minor::8, app_version_patch::8,
-        jam_version_major::8, jam_version_minor::8, jam_version_patch::8>>
+      <<byte_size(Meta.name())::8, Meta.name()::binary, app_version_major::8,
+        app_version_minor::8, app_version_patch::8, jam_version_major::8, jam_version_minor::8,
+        jam_version_patch::8>>
 
     :socket.send(sock, encode_message(:peer_info, our_info))
   end

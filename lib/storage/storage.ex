@@ -96,12 +96,12 @@ defmodule Storage do
     put(h(e(h)), s)
   end
 
-  def put(header_hash, %State{} = posterior_state) do
+  def put(header_hash, %State{} = state) do
     log(:debug, "Storing state for header #{b16(header_hash)}")
-    state_root = Trie.state_root(posterior_state)
+    state_root = Trie.state_root(state)
 
     state_fields =
-      Map.from_struct(posterior_state)
+      Map.from_struct(state)
       |> Enum.map(fn {key, value} -> {@p_state <> header_hash <> to_string(key), value} end)
       |> Map.new()
 
@@ -109,7 +109,7 @@ defmodule Storage do
       Map.merge(
         state_fields,
         %{
-          (@p_state <> header_hash) => posterior_state,
+          (@p_state <> header_hash) => state,
           (@p_state_root <> header_hash) => state_root
         }
       )

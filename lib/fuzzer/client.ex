@@ -46,9 +46,10 @@ defmodule Jamixir.Fuzzer.Client do
     send_message(client, :get_state, header_hash)
   end
 
-  def send_set_state(client, header_hash, state) do
+  def send_set_state(client, header, state) do
+    header_bin = e(header)
     serialized_state = Trie.to_binary(state)
-    message = <<header_hash::binary-size(32), serialized_state::binary>>
+    message = header_bin <> serialized_state
     send_message(client, :set_state, message)
   end
 
@@ -61,7 +62,7 @@ defmodule Jamixir.Fuzzer.Client do
     :socket.send(client.socket, bin)
   end
 
-  def receive_message(client, timeout \\ 1000) do
+  def receive_message(client, timeout \\ 30_000) do
     receive_and_parse_message(client.socket, timeout)
   end
 end

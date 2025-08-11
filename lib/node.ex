@@ -16,7 +16,6 @@ defmodule Jamixir.Node do
 
   @impl true
   def add_block(block_binary) when is_binary(block_binary) do
-    IO.puts("Adding block: #{b16(block_binary)}")
     {block, _} = Block.decode(block_binary)
     add_block(block)
   end
