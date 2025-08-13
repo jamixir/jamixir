@@ -6,7 +6,7 @@ defmodule Jamixir.MixProject do
       app: :jamixir,
       name: "Jamixir",
       version: "0.6.7",
-      app_version: {0, 2, 2},
+      app_version: {0, 2, 3},
       jam_version: {0, 6, 7},
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
@@ -73,7 +73,7 @@ defmodule Jamixir.MixProject do
       jamixir: [
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
-        steps: [:assemble, &copy_quicer_priv/1, :tar]
+        steps: [:assemble, &copy_quicer_priv/1]
       ]
     ]
   end
