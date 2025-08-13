@@ -5,7 +5,7 @@ defmodule TracesTest do
   alias System.State
   import TestVectorUtil
   use ExUnit.Case
-  require Logger
+  alias Util.Logger
   import Util.Hex
 
   setup_all do

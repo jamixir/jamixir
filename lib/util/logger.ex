@@ -9,31 +9,27 @@ defmodule Util.Logger do
   alias Network.StreamUtils
 
   def get_node_name do
-    get_node_alias() || "NODE"
-  end
-
-  def get_node_alias do
-    Application.get_env(:jamixir, :node_alias)
+    Application.get_env(:jamixir, :node_alias) || "NODE"
   end
 
   def info(message, context \\ nil) do
     formatted_message = format_message(message, context)
-    Logger.info(formatted_message)
+    Logger.info(formatted_message, node: get_node_name())
   end
 
   def debug(message, context \\ nil) do
     formatted_message = format_message(message, context)
-    Logger.debug(formatted_message)
+    Logger.debug(formatted_message, node: get_node_name())
   end
 
   def warning(message, context \\ nil) do
     formatted_message = format_message(message, context)
-    Logger.warning(formatted_message)
+    Logger.warning(formatted_message, node: get_node_name())
   end
 
   def error(message, context \\ nil) do
     formatted_message = format_message(message, context)
-    Logger.error(formatted_message)
+    Logger.error(formatted_message, node: get_node_name())
   end
 
   def connection(level, message, ed25519_key, connection_info \\ nil)
@@ -44,24 +40,24 @@ defmodule Util.Logger do
 
     context = "[CONN:#{key_prefix}@#{formatted_address}]"
     formatted_message = format_message(message, context)
-    Logger.log(level, formatted_message)
+    Logger.log(level, formatted_message, node: get_node_name())
   end
 
   def connection(level, message, ed25519_key, _connection_info) do
     key_prefix = get_key_prefix(ed25519_key)
     context = "[CONN:#{key_prefix}]"
     formatted_message = format_message(message, context)
-    Logger.log(level, formatted_message)
+    Logger.log(level, formatted_message, node: get_node_name())
   end
 
   def consensus(level, message) do
     formatted_message = format_message(message, "[CONSENSUS]")
-    Logger.log(level, formatted_message)
+    Logger.log(level, formatted_message, node: get_node_name())
   end
 
   def block(level, message) do
     formatted_message = format_message(message, "[BLOCK]")
-    Logger.log(level, formatted_message)
+    Logger.log(level, formatted_message, node: get_node_name())
   end
 
   def stream(level, message, stream_ref, protocol_id \\ nil) do
@@ -72,16 +68,14 @@ defmodule Util.Logger do
 
     context = "[STREAM:#{stream_id}#{protocol_desc}]"
     formatted_message = format_message(message, context)
-    Logger.log(level, formatted_message)
+    Logger.log(level, formatted_message, node: get_node_name())
   end
 
   # Private helper to format messages consistently
   defp format_message(message, context) do
-    node_name = get_node_name()
-
     case context do
-      nil -> "[#{node_name}] #{message}"
-      context -> "[#{node_name}]#{context} #{message}"
+      nil -> message
+      context -> "#{context} #{message}"
     end
   end
 

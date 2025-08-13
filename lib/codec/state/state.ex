@@ -1,7 +1,7 @@
 defmodule Codec.State do
   alias Jamixir.Genesis
   alias Codec.State.Json
-  require Logger
+  alias Util.Logger
 
   def from_file(file) do
     case File.read(file) do

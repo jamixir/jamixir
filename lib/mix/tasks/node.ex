@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.Node do
   use Mix.Task
-  require Logger
   @shortdoc "Manage the Jamixir node"
 
   @node_name :"jamixir@127.0.0.1"

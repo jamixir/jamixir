@@ -10,7 +10,7 @@ defmodule Block.Header do
   import Codec.{Decoder, Encoder}
   import Codec.Decoder
   import Util.Hex, only: [b16: 1]
-  require Logger
+  alias Util.Logger
 
   @type t :: %__MODULE__{
           # Formula (5.2) v0.6.6

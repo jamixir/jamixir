@@ -6,7 +6,7 @@ defmodule Block do
   alias System.State.{EntropyPool, RotateKeys, SealKeyTicket}
   alias System.Validators.Safrole
   alias Util.{Hash, Time}
-  require Logger
+  alias Util.Logger
   use SelectiveMock
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}

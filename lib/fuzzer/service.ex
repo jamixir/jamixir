@@ -1,12 +1,11 @@
 defmodule Jamixir.Fuzzer.Service do
-  require Logger
   alias Codec.State.Trie
   alias Jamixir.Meta
   alias System.State
   import Codec.Encoder
   import Util.Hex, only: [b16: 1]
   import Jamixir.Fuzzer.Util
-  require Logger, as: Log
+  alias Util.Logger, as: Log
 
   def accept(socket_path, timeout \\ 600_000) do
     if File.exists?(socket_path), do: File.rm!(socket_path)
@@ -132,7 +131,7 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp handle_message(:import_block, block, sock) do
-    Logger.info("Importing block: #{b16(h(e(block.header)))}")
+    Log.info("Importing block: #{b16(h(e(block.header)))}")
 
     case Jamixir.Node.add_block(block) do
       {:ok, _new_app_state, state_root} ->

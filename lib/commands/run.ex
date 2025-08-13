@@ -30,7 +30,13 @@ defmodule Jamixir.Commands.Run do
   defp start_node(opts) do
     if log_level = opts[:log] || "info" do
       Log.info("Setting log level to #{log_level}")
-      Logger.configure(level: :"#{log_level}")
+
+      Logger.configure_backend(:console,
+        format: "$date $time [$level] $message $metadata\n",
+        metadata: [:module, :line, :request_id, :node]
+      )
+
+      # Logger.configure(format: "%%%[$level] $message $metadata\n")
     end
 
     Log.info("🟣 Pump up the JAM, pump it up...")

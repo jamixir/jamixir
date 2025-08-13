@@ -1,5 +1,5 @@
 defmodule Network.Codec do
-  require Logger
+  alias Util.Logger
 
   def encode_message(message) when is_binary(message) do
     length = byte_size(message)

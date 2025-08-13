@@ -10,7 +10,7 @@ defmodule Jamixir.Node do
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
   alias Jamixir.Genesis
-  require Logger
+  alias Util.Logger
 
   @behaviour Jamixir.NodeAPI
 

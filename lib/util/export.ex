@@ -3,7 +3,6 @@ defmodule Util.Export do
   alias Codec.JsonEncoder
   alias Util.Time
   import Util.Hex
-  require Logger
 
   def canonical_order(state_map) do
     key_order = [

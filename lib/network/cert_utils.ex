@@ -1,8 +1,6 @@
 defmodule Network.CertUtils do
-  require Logger
   import Bitwise, only: [>>>: 2]
   @dialyzer {:nowarn_function, create_pkcs12_bundle: 1}
-
 
   @ans1prefix <<48, 46, 2, 1, 0, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32>>
   @ed25519_curve_oid {1, 3, 101, 112}

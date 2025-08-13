@@ -1,5 +1,4 @@
 defmodule Network.UpStreamManager do
-  require Logger
   alias Network.{ConnectionState, StreamUtils}
   alias Util.Logger, as: Log
 
@@ -18,7 +17,13 @@ defmodule Network.UpStreamManager do
         if current_stream_ref do
           current_id = StreamUtils.format_stream_ref(current_stream_ref)
           new_id = StreamUtils.format_stream_ref(stream_ref)
-          Log.stream(:debug, "#{log_tag} Replacing UP stream: #{current_id} -> #{new_id}", stream_ref, protocol_id)
+
+          Log.stream(
+            :debug,
+            "#{log_tag} Replacing UP stream: #{current_id} -> #{new_id}",
+            stream_ref,
+            protocol_id
+          )
 
           # :quicer.shutdown_stream(current_stream_ref)
         else

@@ -9,7 +9,7 @@ defmodule CommsTest do
   import Jamixir.Factory
   alias Jamixir.Node
   import TestHelper
-  require Logger
+  alias Util.Logger
   alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
   alias Network.{Config, Connection, Types.SegmentShardsRequest}
   alias Quicer.Flags

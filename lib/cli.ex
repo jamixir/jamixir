@@ -1,5 +1,5 @@
 defmodule Jamixir.CLI do
-  require Logger
+  alias Util.Logger
 
   @keys_dir Path.join([System.user_home(), "Library", "Application Support", "jamixir", "keys"])
 

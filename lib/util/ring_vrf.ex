@@ -1,6 +1,6 @@
 defmodule RingVrf do
   use Rustler, otp_app: :jamixir, crate: :bandersnatch_ring_vrf
-  require Logger
+  alias Util.Logger
   # load static ring context data from a file
   # following the example https://github.com/davxy/bandersnatch-vrfs-spec/blob/main/example/src/main.rs
   def create_ring_context(_ring_size), do: :erlang.nif_error(:nif_not_loaded)
