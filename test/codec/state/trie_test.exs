@@ -292,7 +292,7 @@ defmodule Codec.State.TrieTest do
 
   describe "fuzzer: encode/decode" do
     test "to -> from binary", %{state: state} do
-      assert {:ok, decoded} = from_binary(to_binary(state))
+      assert {:ok, decoded, _} = from_binary(to_binary(state))
       assert %State{} = trie_to_state(decoded)
       decoded_state = trie_to_state(decoded)
       state_fields = Map.drop(Map.from_struct(state), [:services])

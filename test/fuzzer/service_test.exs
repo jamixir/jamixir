@@ -131,9 +131,37 @@ defmodule Jamixir.FuzzerTest do
         <<_protocol::8, block::binary>> = File.read!("test/fuzzer/#{block_file}.bin")
         assert :ok = Client.send_message(client, :import_block, block)
         assert {:ok, :state_root, root} = Client.receive_message(client)
-        Process.sleep(2000)
         assert b16(root) == exp_root
         Util.Logger.info("Processed #{block_file} with expected root #{exp_root}")
+      end
+    end
+
+    # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
+    @tag :skip
+    test "fuzzer blocks", %{client: client} do
+      genesis_bin =
+        File.read!("../jam-conformance/fuzz-reports/jamixir/1754983524/traces/genesis.bin")
+
+      {header, <<_root::b(hash), state_bin::binary>>} = Block.Header.decode(genesis_bin)
+
+      message = e(header) <> state_bin
+      assert :ok = Client.send_message(client, :set_state, message)
+      assert {:ok, :state_root, root} = Client.receive_message(client)
+
+      for i <- 1..12, reduce: root do
+        root ->
+          file = String.pad_leading("#{i}", 8, "0")
+          # IO.puts("Processing block #{i} with root #{b16(root)}")
+
+          <<block_pre_state_root::b(hash), rest::binary>> =
+            File.read!("../jam-conformance/fuzz-reports/jamixir/1754983524/traces/#{file}.bin")
+
+          assert block_pre_state_root == root
+          {:ok, _pre_state, rest} = Trie.from_binary(rest)
+          {block, _rest} = Block.decode(rest)
+          assert :ok = Client.send_message(client, :import_block, e(block))
+          assert {:ok, :state_root, root} = Client.receive_message(client)
+          root
       end
     end
   end

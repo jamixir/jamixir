@@ -140,7 +140,7 @@ defmodule Jamixir.Fuzzer.Util do
           {:error, {:empty_state_data, :set_state}}
         else
           case Trie.from_binary(state_bin) do
-            {:ok, serialized_state} ->
+            {:ok, serialized_state, _} ->
               state = Trie.trie_to_state(serialized_state)
               {:ok, :set_state, %{header: header, state: state}}
 
@@ -156,7 +156,7 @@ defmodule Jamixir.Fuzzer.Util do
 
   defp parse(:state, bin) do
     case Trie.from_binary(bin) do
-      {:ok, %SerializedState{data: state_map}} ->
+      {:ok, %SerializedState{data: state_map}, _} ->
         state = Trie.trie_to_state(state_map)
         {:ok, :state, state}
 
