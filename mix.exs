@@ -73,7 +73,7 @@ defmodule Jamixir.MixProject do
       jamixir: [
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
-        steps: [:assemble, &copy_quicer_priv/1]
+        steps: [:assemble, &copy_quicer_priv/1, :tar]
       ]
     ]
   end
