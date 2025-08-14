@@ -138,10 +138,10 @@ defmodule Jamixir.FuzzerTest do
     end
 
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
-    @tag :skip
+    @base_path "../jam-conformance/fuzz-reports/jamixir/1755151590"
+    # @tag :skip
     test "fuzzer blocks", %{client: client} do
-      genesis_bin =
-        File.read!("../jam-conformance/fuzz-reports/jamixir/1755106159/traces/genesis.bin")
+      genesis_bin = File.read!("#{@base_path}/genesis.bin")
 
       {header, <<_root::b(hash), state_bin::binary>>} = Block.Header.decode(genesis_bin)
 
@@ -149,13 +149,13 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_message(client, :set_state, message)
       assert {:ok, :state_root, root} = Client.receive_message(client)
 
-      for i <- 1..1, reduce: root do
+      for i <- 1..4, reduce: root do
         root ->
           file = String.pad_leading("#{i}", 8, "0")
           # IO.puts("Processing block #{i} with root #{b16(root)}")
 
           <<block_pre_state_root::b(hash), rest::binary>> =
-            File.read!("../jam-conformance/fuzz-reports/jamixir/1755106159/traces/#{file}.bin")
+            File.read!("#{@base_path}/#{file}.bin")
 
           assert block_pre_state_root == root
           {:ok, _pre_state, rest} = Trie.from_binary(rest)

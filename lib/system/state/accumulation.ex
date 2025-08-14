@@ -171,7 +171,7 @@ defmodule System.State.Accumulation do
       accumulation_outputs: accumulation_outputs,
       accumulation_stats: accumulation_stats,
       # Formula (12.31) v0.6.5
-      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, services_intermediate_2)
+      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers)
     }
   end
 
@@ -199,16 +199,15 @@ defmodule System.State.Accumulation do
 
   # Formula (12.30) v0.6.5
   # Formula (12.31) v0.6.5
-  def deferred_transfers_stats(deferred_transfers, x) do
+  def deferred_transfers_stats(deferred_transfers) do
     for t <- deferred_transfers, reduce: %{} do
       stat ->
         case Map.get(stat, t.receiver) do
           nil ->
-            {_, gas} = Map.get(x, t.receiver)
-            Map.put(stat, t.receiver, {1, gas})
+            Map.put(stat, t.receiver, {1, t.amount})
 
           {count, g} ->
-            Map.put(stat, t.receiver, {count + 1, g})
+            Map.put(stat, t.receiver, {count + 1, g + t.amount})
         end
     end
   end

@@ -958,7 +958,7 @@ defmodule System.State.AccumulationTest do
 
   describe "deferred_transfers_stats/1" do
     test "returns empty map for empty transfers" do
-      result = Accumulation.deferred_transfers_stats([], %{})
+      result = Accumulation.deferred_transfers_stats([])
       assert result == %{}
     end
 
@@ -967,8 +967,8 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers, %{1 => {nil, 2}})
-      assert result == %{1 => {1, 2}}
+      result = Accumulation.deferred_transfers_stats(transfers)
+      assert result == %{1 => {1, 100}}
     end
 
     test "aggregates multiple transfers to same destination" do
@@ -977,9 +977,9 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 200}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers, %{1 => {nil, 777}})
+      result = Accumulation.deferred_transfers_stats(transfers)
       # count: 2, total_amount: 300
-      assert result == %{1 => {2, 777}}
+      assert result == %{1 => {2, 300}}
     end
 
     test "aggregates transfers to multiple destinations" do
@@ -991,19 +991,15 @@ defmodule System.State.AccumulationTest do
       ]
 
       result =
-        Accumulation.deferred_transfers_stats(transfers, %{
-          1 => {nil, 5},
-          2 => {nil, 10},
-          3 => {nil, 16}
-        })
+        Accumulation.deferred_transfers_stats(transfers)
 
       assert result == %{
                # count: 2, total_amount: 100 + 300
-               1 => {2, 5},
+               1 => {2, 400},
                # count: 1, total_amount: 200
-               2 => {1, 10},
+               2 => {1, 200},
                # count: 1, total_amount: 400
-               3 => {1, 16}
+               3 => {1, 400}
              }
     end
   end
