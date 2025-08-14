@@ -3,6 +3,7 @@ defmodule Jamixir.FuzzerTest do
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
   alias Jamixir.Fuzzer.{Client, Service}
+  alias Jamixir.Genesis
   alias Jamixir.Meta
   alias Storage
   alias System.State.ServiceAccount
@@ -140,7 +141,7 @@ defmodule Jamixir.FuzzerTest do
     @tag :skip
     test "fuzzer blocks", %{client: client} do
       genesis_bin =
-        File.read!("../jam-conformance/fuzz-reports/jamixir/1754983524/traces/genesis.bin")
+        File.read!("../jam-conformance/fuzz-reports/jamixir/1755106159/traces/genesis.bin")
 
       {header, <<_root::b(hash), state_bin::binary>>} = Block.Header.decode(genesis_bin)
 
@@ -148,13 +149,13 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_message(client, :set_state, message)
       assert {:ok, :state_root, root} = Client.receive_message(client)
 
-      for i <- 1..12, reduce: root do
+      for i <- 1..1, reduce: root do
         root ->
           file = String.pad_leading("#{i}", 8, "0")
           # IO.puts("Processing block #{i} with root #{b16(root)}")
 
           <<block_pre_state_root::b(hash), rest::binary>> =
-            File.read!("../jam-conformance/fuzz-reports/jamixir/1754983524/traces/#{file}.bin")
+            File.read!("../jam-conformance/fuzz-reports/jamixir/1755106159/traces/#{file}.bin")
 
           assert block_pre_state_root == root
           {:ok, _pre_state, rest} = Trie.from_binary(rest)
@@ -168,36 +169,22 @@ defmodule Jamixir.FuzzerTest do
 
   describe "import_block handler" do
     setup %{client: client} do
-      {:ok, block_json} =
-        fetch_and_parse_json(
-          "00000001.json",
-          "traces/fallback",
-          "davxy",
-          "jam-test-vectors",
-          "master"
-        )
+      {:ok, block_json} = block_json("00000001.json")
 
       parent_hash = JsonDecoder.from_json(block_json[:block][:header][:parent])
-      Storage.put(parent_hash, build(:header, timeslot: 0))
+      header = Genesis.genesis_block_header()
+      Storage.put(parent_hash, header)
 
       # put the pre_state in storage under the parent hash
       pre_state_trie = Trie.from_json(block_json[:pre_state][:keyvals])
       pre_state = Trie.trie_to_state(pre_state_trie)
-      Storage.put(parent_hash, pre_state)
+      Storage.put(header, pre_state)
 
-      {:ok, client: client, parent_hash: parent_hash, pre_state: pre_state}
+      {:ok,
+       client: client, parent_hash: parent_hash, pre_state: pre_state, block_json: block_json}
     end
 
-    test "handles single import_block request", %{client: client} do
-      {:ok, block_json} =
-        fetch_and_parse_json(
-          "00000001.json",
-          "traces/fallback",
-          "davxy",
-          "jam-test-vectors",
-          "master"
-        )
-
+    test "handles single import_block request", %{client: client, block_json: block_json} do
       block = Block.from_json(block_json[:block])
       expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
       expected_state_root = Trie.state_root(%SerializedState{data: expected_trie})
@@ -212,6 +199,30 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_block(header_hash) == block
     end
 
+    test "return response when block import fails", %{
+      client: client,
+      block_json: block_json,
+      pre_state: pre_state
+    } do
+      block = Block.from_json(block_json[:block])
+      block = put_in(block.header.prior_state_root, Hash.random())
+      assert :ok = Client.send_import_block(client, block)
+      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
+      assert incoming_state_root == Trie.state_root(pre_state)
+    end
+
+    test "return response when block parent state is invalid", %{
+      client: client,
+      block_json: block_json,
+      pre_state: pre_state
+    } do
+      block = Block.from_json(block_json[:block])
+      block = put_in(block.header.parent_hash, Hash.random())
+      assert :ok = Client.send_import_block(client, block)
+      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
+      assert incoming_state_root == Trie.state_root(pre_state)
+    end
+
     @tag :slow
     test "handles sequential import of 10 blocks", %{client: client} do
       block_range = 1..10
@@ -219,14 +230,7 @@ defmodule Jamixir.FuzzerTest do
       for block_number <- block_range do
         file = String.pad_leading("#{block_number}", 8, "0")
 
-        {:ok, block_json} =
-          fetch_and_parse_json(
-            "#{file}.json",
-            "traces/fallback",
-            "davxy",
-            "jam-test-vectors",
-            "master"
-          )
+        {:ok, block_json} = block_json("#{file}.json")
 
         block = Block.from_json(block_json[:block])
         expected_trie = Trie.from_json(block_json[:post_state][:keyvals])
@@ -241,14 +245,7 @@ defmodule Jamixir.FuzzerTest do
         assert Storage.get_state_root(header_hash) == expected_state_root
       end
 
-      {:ok, final_block_json} =
-        fetch_and_parse_json(
-          "00000010.json",
-          "traces/fallback",
-          "davxy",
-          "jam-test-vectors",
-          "master"
-        )
+      {:ok, final_block_json} = block_json("00000010.json")
 
       final_block = Block.from_json(final_block_json[:block])
       final_header_hash = h(e(final_block.header))
@@ -261,4 +258,7 @@ defmodule Jamixir.FuzzerTest do
       assert Trie.serialize(retrieved_state).data == expected_final_trie
     end
   end
+
+  defp block_json(file),
+    do: fetch_and_parse_json(file, "traces/fallback", "davxy", "jam-test-vectors", "master")
 end

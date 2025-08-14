@@ -24,7 +24,7 @@ defmodule Jamixir.Node do
     case Storage.get_state(block.header.parent_hash) do
       nil ->
         Logger.error("Parent state not found for hash: #{b16(block.header.parent_hash)}")
-        {:error, :parent_state_not_found}
+        {:error, nil, :parent_state_not_found}
 
       app_state ->
         add_block(block, app_state)
@@ -38,8 +38,8 @@ defmodule Jamixir.Node do
         Storage.put(block)
         {:ok, new_app_state, state_root}
 
-      {:error, _pre_state, reason} ->
-        {:error, reason}
+      {:error, pre_state, reason} ->
+        {:error, pre_state, reason}
     end
   end
 

@@ -137,8 +137,19 @@ defmodule Jamixir.Fuzzer.Service do
       {:ok, _new_app_state, state_root} ->
         :socket.send(sock, encode_message(:state_root, state_root))
 
-      {:error, reason} ->
+      {:error, nil, reason} ->
         Log.info("Block import failed: #{reason}")
+
+        {_ts, header} = Storage.get_latest_header()
+
+        state = Storage.get_state(header)
+        state_root = Trie.state_root(state)
+        :socket.send(sock, encode_message(:state_root, state_root))
+
+      {:error, pre_state, reason} ->
+        state_root = Trie.state_root(pre_state)
+        Log.info("Block import failed: #{reason}")
+        :socket.send(sock, encode_message(:state_root, state_root))
     end
   end
 
