@@ -141,9 +141,9 @@ defmodule Block.Header do
       e({
         NilDiscriminator.new(header.epoch_mark),
         NilDiscriminator.new(header.winning_tickets_marker),
-        vs(header.offenders_marker),
         <<header.block_author_key_index::m(validator_index)>>,
-        header.vrf_signature
+        header.vrf_signature,
+        vs(header.offenders_marker)
       })
   end
 
@@ -179,9 +179,9 @@ defmodule Block.Header do
         &decode_list(&1, Constants.epoch_length(), SealKeyTicket)
       )
 
-    {offenders_marker, bin} = VariableSize.decode(bin, :hash)
     <<block_author_key_index::16-little, bin::binary>> = bin
-    <<vrf_signature::binary-size(96), rest::binary>> = bin
+    <<vrf_signature::binary-size(96), bin::binary>> = bin
+    {offenders_marker, rest} = VariableSize.decode(bin, :hash)
 
     {%__MODULE__{
        parent_hash: parent_hash,

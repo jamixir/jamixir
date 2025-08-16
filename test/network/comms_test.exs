@@ -114,7 +114,9 @@ defmodule CommsTest do
   # # CE 128
   describe "request_blocks/4" do
     setup do
-      blocks = for _ <- 1..300, {b, _} = Block.decode(File.read!("test/block_mock.bin")), do: b
+      {b, _} = Block.decode(File.read!("test/block_mock.bin"))
+      # File.write!("test/new_block_mock.bin", Encodable.encode(b))
+      blocks = for _ <- 1..300, do: b
       {:ok, blocks: blocks}
     end
 
