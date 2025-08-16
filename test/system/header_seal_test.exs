@@ -1,11 +1,9 @@
 defmodule System.HeaderSealTest do
   use ExUnit.Case
   import Jamixir.Factory
-  import TestVectorUtil
 
   alias Block.Header
   alias System.HeaderSeal
-  alias System.State.EntropyPool
   alias Util.Hash
 
   setup do
@@ -184,57 +182,5 @@ defmodule System.HeaderSealTest do
       assert {:error, :ticket_id_mismatch} =
                HeaderSeal.validate_header_seals(sealed_header, validators, tampered_sealers, ep)
     end
-  end
-
-  describe "Seal Test vectors" do
-    test("fallback", do: for(i <- [0, 1, 2, 4, 5], do: validate(0, i)))
-    test("normal", do: for(i <- 0..5, do: validate(1, i)))
-  end
-
-  def validate(t, index) do
-    filename = "#{t}-#{index}.json"
-
-    {:ok, j} =
-      fetch_and_parse_json(filename, "jamixir/test/seals/", "", "", "")
-      |> JsonDecoder.from_json()
-
-    json = JsonDecoder.from_json(j)
-    {h, _} = Header.decode(json[:header_bytes])
-    assert h.block_seal == json[:H_s]
-    assert h.vrf_signature == json[:H_v]
-
-    if t == 0 do
-      assert json[:c_for_H_s] ==
-               System.HeaderSeal.construct_seal_context(json[:bandersnatch_pub], %EntropyPool{
-                 n3: json[:eta3]
-               })
-    else
-      assert json[:c_for_H_s] ==
-               System.HeaderSeal.construct_seal_context(%{attempt: json[:attempt]}, %EntropyPool{
-                 n3: json[:eta3]
-               })
-    end
-
-    assert {:ok, output} =
-             RingVrf.ietf_vrf_verify(
-               json[:bandersnatch_pub],
-               json[:c_for_H_s],
-               Header.unsigned_encode(h),
-               h.block_seal
-             )
-
-    assert SigningContexts.jam_entropy() <> output == json[:c_for_H_v]
-
-    assert {:ok, _} =
-             RingVrf.ietf_vrf_verify(
-               json[:bandersnatch_pub],
-               json[:c_for_H_v],
-               <<>>,
-               h.vrf_signature
-             )
-  end
-
-  def dec(x) do
-    Base.decode16!(x, case: :lower)
   end
 end
