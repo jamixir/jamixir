@@ -126,15 +126,12 @@ defmodule Block.Extrinsic.WorkPackage do
     %{
       authorization_token: :authorization,
       service: :auth_code_host,
-      authorization_code_hash: [&extract_code_hash/1, :authorizer],
-      parameterization_blob: [&extract_params/1, :authorizer],
+      authorization_code_hash: :auth_code_hash,
+      parameterization_blob: :authorizer_config,
       context: %{m: RefinementContext, f: :context},
       work_items: [[WorkItem], :items]
     }
   end
-
-  defp extract_code_hash(%{code_hash: c}), do: JsonDecoder.from_json(c)
-  defp extract_params(%{params: p}), do: JsonDecoder.from_json(p)
 
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
