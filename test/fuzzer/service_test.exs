@@ -137,33 +137,56 @@ defmodule Jamixir.FuzzerTest do
       end
     end
 
-    # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
-    @base_path "../jam-conformance/fuzz-reports/jamixir/1755151590"
-    # @tag :skip
-    test "fuzzer blocks", %{client: client} do
-      genesis_bin = File.read!("#{@base_path}/genesis.bin")
+    @base_path "../jam-conformance/fuzz-reports/archive/0.6.7"
 
-      {header, <<_root::b(hash), state_bin::binary>>} = Block.Header.decode(genesis_bin)
+    for case_dir <- File.ls!(@base_path) do
+      dir = "#{@base_path}/#{case_dir}/"
 
-      message = e(header) <> state_bin
-      assert :ok = Client.send_message(client, :set_state, message)
-      assert {:ok, :state_root, root} = Client.receive_message(client)
+      @tag :fuzzer
+      @tag dir: dir
+      @tag :skip
+      test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
+        files =
+          File.ls!(dir)
+          |> Enum.filter(fn file -> String.match?(file, ~r/\d+\.bin/) end)
+          |> Enum.sort()
 
-      for i <- 1..4, reduce: root do
-        root ->
-          file = String.pad_leading("#{i}", 8, "0")
-          # IO.puts("Processing block #{i} with root #{b16(root)}")
-
-          <<block_pre_state_root::b(hash), rest::binary>> =
-            File.read!("#{@base_path}/#{file}.bin")
-
-          assert block_pre_state_root == root
-          {:ok, _pre_state, rest} = Trie.from_binary(rest)
-          {block, _rest} = Block.decode(rest)
-          assert :ok = Client.send_message(client, :import_block, e(block))
-          assert {:ok, :state_root, root} = Client.receive_message(client)
-          root
+        test_case(client, files, dir)
       end
+    end
+
+    # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
+    @tag :skip
+    test "fuzzer blocks", %{client: client} do
+      dir = "../jam-conformance/fuzz-reports/jamixir/0.6.7/1755151480"
+      files = ["00000005.bin", "00000006.bin"]
+
+      test_case(client, files, dir)
+    end
+
+    @tag :skip
+    test "fuzzer blocks 3", %{client: client} do
+      dir = "../jam-conformance/fuzz-reports/archive/0.6.7/1755186771"
+      files = ["00000029.bin", "00000030.bin"]
+
+      test_case(client, files, dir)
+    end
+
+    @tag :skip
+    test "test" do
+      exp =
+        Util.Hex.decode16!(
+          "0x01000000000000000000000000000000030000000500000000000000000000000000000000000000020000000400000001000000000000000000000000000000020000000400000002000000000000000000000000000000030000000400000000000000000000000000000000000000030000000400000002000000000000000000000000000000020000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080f3050000000088c7c1cf4700030000000000000100000000000001c1cf470000000001af280000"
+        )
+
+      got =
+        Util.Hex.decode16!(
+          "0x01000000000000000000000000000000030000000500000000000000000000000000000000000000020000000400000001000000000000000000000000000000020000000400000002000000000000000000000000000000030000000400000000000000000000000000000000000000030000000400000002000000000000000000000000000000020000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080f3050000000088c7c1cf4700030000000000000100000000000001c1cf470000000001a7300000"
+        )
+
+      t_exp = Trie.decode_value(13, exp)
+      t_got = Trie.decode_value(13, got)
+      assert t_exp == t_got
     end
   end
 
@@ -261,4 +284,64 @@ defmodule Jamixir.FuzzerTest do
 
   defp block_json(file),
     do: fetch_and_parse_json(file, "traces/fallback", "davxy", "jam-test-vectors", "master")
+
+  defp test_block(client, file, root, dir) do
+    IO.puts("Processing block #{file} with root #{b16(root)}")
+
+    <<block_pre_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
+
+    assert b16(block_pre_state_root) == b16(root)
+    {:ok, _pre_state, rest} = Trie.from_binary(rest)
+    {block, rest} = Block.decode(rest)
+    <<_state_root::b(hash), rest::binary>> = rest
+    {:ok, exp_post_state, _} = Trie.from_binary(rest)
+
+    assert :ok = Client.send_message(client, :import_block, e(block))
+    assert {:ok, :state_root, root} = Client.receive_message(client)
+
+    assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
+    assert {:ok, :state, post_state} = Client.receive_message(client)
+
+    post_state_trie = Trie.serialize(post_state)
+
+    if exp_post_state != post_state_trie do
+      for {k, exp_v} <- exp_post_state.data do
+        v = Map.get(post_state_trie.data, k)
+
+        if v != exp_v do
+          Util.Logger.error("key doesn't match #{b16(k)}")
+          key = Trie.octet31_to_key(k)
+          exp_obj = Trie.decode_value(key, exp_v)
+          obj = Trie.decode_value(key, v)
+          assert exp_obj == obj
+        end
+      end
+    end
+
+    root
+  end
+
+  defp test_case(client, files, dir) do
+    Util.Logger.info("Testing case #{dir}")
+    [f1 | all_but_first] = files
+    <<_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{f1}")
+    {:ok, _pre_state, rest} = Trie.from_binary(rest)
+    {block, rest} = Block.decode(rest)
+    <<_state_root::b(hash), rest::binary>> = rest
+
+    {:ok, b1_post_state, _rest} = Trie.from_binary(rest)
+
+    message = e(block.header) <> Trie.to_binary(b1_post_state)
+    assert :ok = Client.send_message(client, :set_state, message)
+    assert {:ok, :state_root, root} = Client.receive_message(client)
+
+    state = Trie.deserialize(b1_post_state)
+
+    assert b1_post_state == Trie.serialize(state)
+    assert root == Trie.state_root(state)
+
+    for file <- all_but_first, reduce: root do
+      root -> test_block(client, file, root, dir)
+    end
+  end
 end
