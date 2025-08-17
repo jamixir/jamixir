@@ -98,7 +98,7 @@ defmodule Jamixir.FuzzerTest do
         state
         | services:
             for {service_id, service_account} <- state.services, into: %{} do
-              {service_id, %{service_account | storage: %{}}}
+              {service_id, %{service_account | storage: HashedKeysMap.new(%{})}}
             end
       }
 

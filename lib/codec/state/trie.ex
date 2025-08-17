@@ -62,7 +62,7 @@ defmodule Codec.State.Trie do
       16 => e(vs(for {s, h} <- s.accumulation_outputs, do: {<<s::m(service), h::b(hash)>>}))
     }
     |> encode_accounts(s)
-    |> encode_accounts_storage_s(s, :storage)
+    |> encode_accounts_storage_s(s)
     |> encode_accounts_storage_p(s, :preimage_storage_p)
     |> encode_accounts_preimage_storage_l(s)
   end
@@ -175,10 +175,10 @@ defmodule Codec.State.Trie do
   end
 
   # ∀(s ↦ a) ∈ δ,(k ↦ v) ∈ as ∶ C(s,E4(2^32−1) ⌢ k) ↦ v
-  defp encode_accounts_storage_s(state_keys, %State{} = state, property) do
+  defp encode_accounts_storage_s(state_keys, %State{} = state) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
-      Map.get(a, property)
+      a.storage.original_map
       |> Enum.reduce(ac, fn {h, v}, ac ->
         Map.put(ac, {s, e_le(@storage_prefix, 4) <> h}, v)
       end)
@@ -223,7 +223,7 @@ defmodule Codec.State.Trie do
       for {{255, service_id}, v} <- dict, reduce: %{} do
         acc ->
           # storage keys can't be recovered
-          storage = %{}
+          storage = HashedKeysMap.new(%{})
 
           preimage_storage_p =
             for {{^service_id, bin_key}, v} <- dict,

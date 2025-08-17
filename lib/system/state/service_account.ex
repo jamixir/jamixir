@@ -12,7 +12,7 @@ defmodule System.State.ServiceAccount do
 
   @type t :: %__MODULE__{
           # s
-          storage: %{binary() => binary()},
+          storage: HashedKeysMap.t(),
           # p
           preimage_storage_p: %{Types.hash() => binary()},
           # l
@@ -35,7 +35,7 @@ defmodule System.State.ServiceAccount do
           parent_service: non_neg_integer()
         }
 
-  defstruct storage: %{},
+  defstruct storage: HashedKeysMap.new(%{}),
             preimage_storage_p: %{},
             preimage_storage_l: %{},
             code_hash: Hash.zero(),
@@ -50,13 +50,12 @@ defmodule System.State.ServiceAccount do
   # Formula (9.8) v0.6.7
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    2 * length(Map.keys(l)) + length(Map.keys(s))
+    2 * length(Map.keys(l)) + s.items_in_storage
   end
 
   # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    sum_by(Map.keys(l), fn {_h, z} -> 81 + z end) +
-      sum_by(s, fn {key, value} -> 34 + byte_size(key) + byte_size(value) end)
+    sum_by(Map.keys(l), fn {_h, z} -> 81 + z end) + s.octets_in_storage
   end
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
@@ -191,6 +190,7 @@ defmodule System.State.ServiceAccount do
     for %{key: k, value: v} <- storage || [], into: %{} do
       {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
     end
+    |> HashedKeysMap.new()
   end
 
   def extract_preimages_p(preimages) do
@@ -227,7 +227,7 @@ defmodule System.State.ServiceAccount do
         end}}
 
     %{
-      storage: {:storage, &for({k, v} <- &1, do: %{key: k, value: v})},
+      storage: {:storage, &for({k, v} <- &1.original_map, do: %{key: k, value: v})},
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
       preimage_storage_l:
         {:lookup_meta,

@@ -867,7 +867,13 @@ defmodule PVM.Host.AccumulateTest do
       timeslot: timeslot
     } do
       # this will make items_in_storage != 2
-      x = put_in(x, [:accumulation, :services, 456, :storage], %{<<1, 2, 3, 4>> => Hash.five()})
+      x =
+        put_in(
+          x,
+          [:accumulation, :services, 456, :storage],
+          HashedKeysMap.new(%{<<1, 2, 3, 4>> => Hash.five()})
+        )
+
       huh = huh()
 
       assert %{
