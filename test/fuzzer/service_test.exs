@@ -1,5 +1,6 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias Codec.JsonEncoder
   alias System.State
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
@@ -137,56 +138,38 @@ defmodule Jamixir.FuzzerTest do
       end
     end
 
-    @base_path "../jam-conformance/fuzz-reports/archive/0.6.7"
+    @fuzz_path "../jam-conformance/fuzz-reports"
+    @base_path "#{@fuzz_path}/0.6.7/traces/"
 
     for case_dir <- File.ls!(@base_path) do
       dir = "#{@base_path}/#{case_dir}/"
 
       @tag :fuzzer
+      @tag :skip
       @tag dir: dir
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
-        files =
-          File.ls!(dir)
-          |> Enum.filter(fn file -> String.match?(file, ~r/\d+\.bin/) end)
-          |> Enum.sort()
-
-        test_case(client, files, dir)
+        test_case(client, dir)
       end
     end
 
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
     # @tag :skip
     @tag :fuzzer2
+    @tag :skip
     test "fuzzer blocks", %{client: client} do
-      dir = "../jam-conformance/fuzz-reports/jamixir/0.6.7/1755151480"
-      files = ["00000005.bin", "00000006.bin"]
-
-      test_case(client, files, dir)
+      test_case(client, "#{@base_path}/1755151480")
     end
 
     @tag :fuzzer2
-    test "fuzzer blocks 3", %{client: client} do
-      dir = "../jam-conformance/fuzz-reports/archive/0.6.7/1755186771"
-      files = ["00000029.bin", "00000030.bin"]
-
-      test_case(client, files, dir)
+    @tag :skip
+    test "fuzzer blocks 2", %{client: client} do
+      test_case(client, "#{@base_path}/1755248982")
     end
 
+    @tag :fuzzer2
     @tag :skip
-    test "test" do
-      exp =
-        Util.Hex.decode16!(
-          "0x01000000000000000000000000000000030000000500000000000000000000000000000000000000020000000400000001000000000000000000000000000000020000000400000002000000000000000000000000000000030000000400000000000000000000000000000000000000030000000400000002000000000000000000000000000000020000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080f3050000000088c7c1cf4700030000000000000100000000000001c1cf470000000001af280000"
-        )
-
-      got =
-        Util.Hex.decode16!(
-          "0x01000000000000000000000000000000030000000500000000000000000000000000000000000000020000000400000001000000000000000000000000000000020000000400000002000000000000000000000000000000030000000400000000000000000000000000000000000000030000000400000002000000000000000000000000000000020000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080f3050000000088c7c1cf4700030000000000000100000000000001c1cf470000000001a7300000"
-        )
-
-      t_exp = Trie.decode_value(13, exp)
-      t_got = Trie.decode_value(13, got)
-      assert t_exp == t_got
+    test "fuzzer blocks 3", %{client: client} do
+      test_case(client, "#{@base_path}/1755186771")
     end
   end
 
@@ -294,7 +277,7 @@ defmodule Jamixir.FuzzerTest do
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
     {block, rest} = Block.decode(rest)
     <<_state_root::b(hash), rest::binary>> = rest
-    {:ok, exp_post_state, _} = Trie.from_binary(rest)
+    {:ok, exp_post_state_trie, _} = Trie.from_binary(rest)
 
     assert :ok = Client.send_message(client, :import_block, e(block))
     assert {:ok, :state_root, root} = Client.receive_message(client)
@@ -304,12 +287,16 @@ defmodule Jamixir.FuzzerTest do
 
     post_state_trie = Trie.serialize(post_state)
 
-    if exp_post_state != post_state_trie do
-      for {k, exp_v} <- exp_post_state.data do
+    exp_post_state = Trie.deserialize(exp_post_state_trie)
+
+    if exp_post_state_trie != post_state_trie do
+      for {k, exp_v} <- exp_post_state_trie.data do
         v = Map.get(post_state_trie.data, k)
 
         if v != exp_v do
           Util.Logger.error("key doesn't match #{b16(k)}")
+          Util.Logger.error("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
+
           key = Trie.octet31_to_key(k)
           exp_obj = Trie.decode_value(key, exp_v)
           obj = Trie.decode_value(key, v)
@@ -318,11 +305,14 @@ defmodule Jamixir.FuzzerTest do
       end
     end
 
+    assert post_state == exp_post_state
+
     root
   end
 
-  defp test_case(client, files, dir) do
+  defp test_case(client, dir) do
     Util.Logger.info("Testing case #{dir}")
+    files = files_in_dir(dir)
     [f1 | all_but_first] = files
     <<_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{f1}")
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
@@ -343,5 +333,11 @@ defmodule Jamixir.FuzzerTest do
     for file <- all_but_first, reduce: root do
       root -> test_block(client, file, root, dir)
     end
+  end
+
+  defp files_in_dir(dir) do
+    File.ls!(dir)
+    |> Enum.filter(fn file -> String.match?(file, ~r/\d+\.bin/) end)
+    |> Enum.sort()
   end
 end
