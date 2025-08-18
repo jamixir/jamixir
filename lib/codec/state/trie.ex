@@ -25,7 +25,6 @@ defmodule Codec.State.Trie do
     defstruct [:data]
   end
 
-  @storage_prefix (1 <<< 32) - 1
   @preimage_prefix (1 <<< 32) - 2
 
   # Formula (D.2) v0.6.7
@@ -72,6 +71,12 @@ defmodule Codec.State.Trie do
   def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)
     <<i::8>> <> <<n0, 0, n1, 0, n2, 0, n3, 0>> <> <<0::176>>
+  end
+
+  def key_to_31_octet({s, :storage, h}) do
+    <<n0, n1, n2, n3>> = e_le(s, 4)
+    <<a0, a1, a2, a3, rest::binary>> = h
+    <<n0, a0, n1, a1, n2, a2, n3, a3>> <> rest
   end
 
   # (s, h) ↦ [n0, h0, n1, h1, n2, h2, n3, h3, h4, h5, . . . , h27] where
@@ -176,9 +181,9 @@ defmodule Codec.State.Trie do
   defp encode_accounts_storage_s(state_keys, %State{} = state) do
     state.services
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
-      a.storage.original_map
+      a.storage.hashed_map
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, e_le(@storage_prefix, 4) <> h}, v)
+        Map.put(ac, {s, :storage, h}, v)
       end)
     end)
   end

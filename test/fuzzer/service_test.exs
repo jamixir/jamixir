@@ -1,5 +1,6 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
+  alias System.State
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
   alias Jamixir.Fuzzer.{Client, Service}
@@ -56,22 +57,18 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_get_state(client, header_hash)
       assert {:ok, :state, incoming_state} = Client.receive_message(client)
 
-      fields = Map.from_struct(state) |> Map.drop([:services])
+      # clear service original storage map, as it is lost on encoding process
+      old_storage = state.services[1].storage
 
-      for {key, value} <- fields do
+      service = %ServiceAccount{
+        state.services[1]
+        | storage: HashedKeysMap.new_without_original(old_storage.original_map)
+      }
+
+      state = %State{state | services: %{1 => service}}
+
+      for {key, value} <- Map.from_struct(state) do
         assert value == Map.get(incoming_state, key)
-      end
-
-      assert state.services == incoming_state.services
-
-      service_field_keys = ServiceAccount.__struct__() |> Map.keys()
-      service_field_keys = for k <- service_field_keys, k not in [:storage], do: k
-
-      for service_key <- Map.keys(state.services) do
-        for service_field_key <- service_field_keys do
-          assert Map.get(Map.get(incoming_state.services, service_key), service_field_key) ==
-                   Map.get(Map.get(state.services, service_key), service_field_key)
-        end
       end
     end
 

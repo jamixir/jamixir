@@ -17,6 +17,11 @@ defmodule HashedKeysMap do
             items_in_storage: 0,
             hash_prefix: @storage_prefix
 
+  def new_without_original(map) do
+    m = new(map)
+    %__MODULE__{m | original_map: %{}}
+  end
+
   def new(map), do: new(map, @storage_prefix)
 
   def new(map, hash_prefix) do

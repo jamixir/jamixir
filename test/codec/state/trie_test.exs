@@ -186,9 +186,9 @@ defmodule Codec.State.TrieTest do
       # Test storage encoding (2^32 - 1 prefix)
       state.services
       |> Enum.each(fn {s, service_account} ->
-        service_account.storage.original_map
+        service_account.storage.hashed_map
         |> Enum.each(fn {h, v} ->
-          key = {s, <<(1 <<< 32) - 1::32-little>> <> h}
+          key = {s, :storage, h}
           assert state_keys(state)[key] == v
         end)
       end)
@@ -276,7 +276,7 @@ defmodule Codec.State.TrieTest do
     end
 
     test "trie_to_state/1 - service accounts with storage", %{state: state} do
-      storage = HashedKeysMap.new(%{<<1>> => <<2>>})
+      storage = HashedKeysMap.new_without_original(%{<<1>> => <<2>>})
 
       trie_state = %State{
         state
