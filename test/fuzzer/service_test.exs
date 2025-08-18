@@ -62,7 +62,10 @@ defmodule Jamixir.FuzzerTest do
         assert value == Map.get(incoming_state, key)
       end
 
-      service_field_keys = ServiceAccount.__struct__() |> Map.keys() |> List.delete(:storage)
+      assert state.services == incoming_state.services
+
+      service_field_keys = ServiceAccount.__struct__() |> Map.keys()
+      service_field_keys = for k <- service_field_keys, k not in [:storage], do: k
 
       for service_key <- Map.keys(state.services) do
         for service_field_key <- service_field_keys do

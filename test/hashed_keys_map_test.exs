@@ -35,6 +35,15 @@ defmodule HashedKeysMapTest do
       assert HashedKeysMap.has_key?(map, <<7>>)
       refute HashedKeysMap.has_key?(map, <<9>>)
     end
+
+    test "works without original_map" do
+      map = HashedKeysMap.new(%{<<1>> => <<2>>, <<7>> => <<8>>})
+      map = %{map | original_map: %{}}
+      assert HashedKeysMap.has_key?(map, <<1>>)
+      assert map[<<1>>] == <<2>>
+      {<<2>>, new_map} = pop_in(map, [<<1>>])
+      assert map_size(new_map.hashed_map) == 1
+    end
   end
 
   describe "Access Behaviour" do

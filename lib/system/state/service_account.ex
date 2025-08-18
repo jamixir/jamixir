@@ -32,7 +32,11 @@ defmodule System.State.ServiceAccount do
           # a
           last_accumulation_slot: Types.timeslot(),
           # p
-          parent_service: non_neg_integer()
+          parent_service: non_neg_integer(),
+          # i
+          items_in_storage: non_neg_integer(),
+          # o
+          octets_in_storage: non_neg_integer()
         }
 
   defstruct storage: HashedKeysMap.new(%{}),
@@ -45,18 +49,24 @@ defmodule System.State.ServiceAccount do
             gas_limit_m: 0,
             creation_slot: 0,
             last_accumulation_slot: 0,
-            parent_service: 0
+            parent_service: 0,
+            items_in_storage: nil,
+            octets_in_storage: nil
 
   # Formula (9.8) v0.6.7
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    2 * length(Map.keys(l)) + s.items_in_storage
+    items_in_preimage_storage_l(l) + s.items_in_storage
   end
+
+  def items_in_preimage_storage_l(l), do: 2 * length(Map.keys(l))
 
   # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    sum_by(Map.keys(l), fn {_h, z} -> 81 + z end) + s.octets_in_storage
+    octets_in_preimage_storage_l(l) + s.octets_in_storage
   end
+
+  def octets_in_preimage_storage_l(l), do: sum_by(Map.keys(l), fn {_h, z} -> 81 + z end)
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
   @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
@@ -150,7 +160,7 @@ defmodule System.State.ServiceAccount do
   # octets_in_storage and items_in_storage are ignored, since they are calculated values
   def decode(bin) do
     <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
-      _octets_in_storage::64-little, deposit_offset::64-little, _items_in_storage::32-little,
+      octets_in_storage::64-little, deposit_offset::64-little, items_in_storage::32-little,
       creation_slot::m(timeslot), last_accumulation_slot::m(timeslot), parent_service::service(),
       rest::binary>> = bin
 
@@ -162,7 +172,9 @@ defmodule System.State.ServiceAccount do
        deposit_offset: deposit_offset,
        creation_slot: creation_slot,
        last_accumulation_slot: last_accumulation_slot,
-       parent_service: parent_service
+       parent_service: parent_service,
+       items_in_storage: items_in_storage,
+       octets_in_storage: octets_in_storage
      }, rest}
   end
 
@@ -243,7 +255,9 @@ defmodule System.State.ServiceAccount do
       deposit_offset: custom_map,
       creation_slot: custom_map,
       last_accumulation_slot: custom_map,
-      parent_service: custom_map
+      parent_service: custom_map,
+      items_in_storage: custom_map,
+      octets_in_storage: custom_map
     }
   end
 end

@@ -141,27 +141,25 @@ defmodule Codec.State.Trie do
   @spec from_binary(nonempty_binary()) ::
           {:ok, %SerializedState{data: map()}, binary()} | {:error, :invalid_state_format}
   def from_binary(binary) do
-    try do
-      # State ::= SEQUENCE OF KeyValue [includes length prefix]
-      {key_value_list, rest} =
-        VariableSize.decode(binary, fn bin ->
-          #   KeyValue ::= SEQUENCE {
-          #     key     TrieKey ::= OCTET STRING (SIZE(31)),
-          #     value   OCTET STRING (SEQUENCE of u8) [includes length prefix]
-          # }
+    # State ::= SEQUENCE OF KeyValue [includes length prefix]
+    {key_value_list, rest} =
+      VariableSize.decode(binary, fn bin ->
+        #   KeyValue ::= SEQUENCE {
+        #     key     TrieKey ::= OCTET STRING (SIZE(31)),
+        #     value   OCTET STRING (SEQUENCE of u8) [includes length prefix]
+        # }
 
-          # TrieKey
-          <<key::binary-size(31), rest::binary>> = bin
-          # value
-          {value, rest} = VariableSize.decode(rest, :binary)
-          {{key, value}, rest}
-        end)
+        # TrieKey
+        <<key::binary-size(31), rest::binary>> = bin
+        # value
+        {value, rest} = VariableSize.decode(rest, :binary)
+        {{key, value}, rest}
+      end)
 
-      data = Map.new(key_value_list)
-      {:ok, %SerializedState{data: data}, rest}
-    rescue
-      MatchError -> {:error, :invalid_state_format}
-    end
+    data = Map.new(key_value_list)
+    {:ok, %SerializedState{data: data}, rest}
+  rescue
+    MatchError -> {:error, :invalid_state_format}
   end
 
   def deserialize(%SerializedState{data: data}), do: trie_to_state(data)
@@ -215,45 +213,77 @@ defmodule Codec.State.Trie do
     dict =
       for {k, v} <- trie, into: %{} do
         id = octet31_to_key(k)
-        value = decode_value(id, v)
-        {id, elem(value, 0)}
+        {value, _} = decode_value(id, v)
+        {id, value}
       end
 
     services =
       for {{255, service_id}, v} <- dict, reduce: %{} do
         acc ->
-          # storage keys can't be recovered
-          storage = HashedKeysMap.new(%{})
-
-          preimage_storage_p =
+          preimage_storage_p_keys =
             for {{^service_id, bin_key}, v} <- dict,
                 recovered_key =
                   key_to_31_octet({service_id, <<@preimage_prefix::little-32>> <> h(v)}),
-                recovered_key |> binary_slice(8, 20) == bin_key |> binary_slice(4, 20),
-                into: %{} do
-              {Hash.default(v), v}
-            end
+                <<_::8, a0, _::8, a1, _::8, a2, _::8, a3::binary>> = recovered_key,
+                <<a0>> <> <<a1>> <> <<a2>> <> a3 == bin_key,
+                do: bin_key
+
+          preimage_storage_p =
+            for {{^service_id, bin_key}, v} <- dict,
+                bin_key in preimage_storage_p_keys,
+                into: %{},
+                do: {h(v), v}
 
           preimage_storage_l =
             for {h, p} <- preimage_storage_p, into: %{} do
               l = byte_size(p)
               trie_key = key_to_31_octet({service_id, e_le(l, 4) <> h})
 
-              value =
+              {value, _} =
                 VariableSize.decode(trie[trie_key], fn <<x::little-32, rest::binary>> ->
                   {x, rest}
                 end)
-                |> elem(0)
 
               {{h, l}, p}
               {{h, l}, value}
             end
 
+          preimage_storage_l_keys =
+            for {{h, l}, _v} <- preimage_storage_l do
+              k = e_le(l, 4) <> h
+              <<a_part::binary-size(27), _rest::binary>> = h(k)
+              a_part
+            end
+
+          hashed_map =
+            for {{^service_id, bin_key}, v} <- dict,
+                bin_key not in preimage_storage_p_keys,
+                bin_key not in preimage_storage_l_keys,
+                into: %{},
+                do: {bin_key, v}
+
+          # first create empty storage
+          storage = HashedKeysMap.new(%{})
+          # set the storage size, based on decoded service information and subtracting preimage_l
+          storage = %HashedKeysMap{
+            storage
+            | hashed_map: hashed_map,
+              octets_in_storage:
+                v.octets_in_storage -
+                  ServiceAccount.octets_in_preimage_storage_l(preimage_storage_l),
+              items_in_storage:
+                v.items_in_storage -
+                  ServiceAccount.items_in_preimage_storage_l(preimage_storage_l)
+          }
+
           Map.put(acc, service_id, %ServiceAccount{
             v
             | storage: storage,
               preimage_storage_p: preimage_storage_p,
-              preimage_storage_l: preimage_storage_l
+              preimage_storage_l: preimage_storage_l,
+              # reset these fields, as they are used only for decoding and calculating storage size
+              items_in_storage: nil,
+              octets_in_storage: nil
           })
       end
 

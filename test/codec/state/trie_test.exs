@@ -276,16 +276,19 @@ defmodule Codec.State.TrieTest do
     end
 
     test "trie_to_state/1 - service accounts with storage", %{state: state} do
+      storage = HashedKeysMap.new(%{<<1>> => <<2>>})
+
       trie_state = %State{
         state
         | services: %{
-            1_234_567 => build(:service_account, storage: HashedKeysMap.new(%{}))
+            1_234_567 => build(:service_account, storage: storage)
           }
       }
 
       trie = serialize(trie_state)
       recovered_state = trie_to_state(trie)
 
+      put_in(trie_state.services, [1_234_567, :storage], %{})
       assert recovered_state == trie_state
     end
   end

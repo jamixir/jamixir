@@ -1,6 +1,9 @@
 defmodule HashedKeysMap do
   alias Util.Collections
   import Codec.Encoder
+  import Bitwise
+
+  @storage_prefix <<(1 <<< 32) - 1::little-32>>
 
   @type t :: %__MODULE__{
           original_map: map(),
@@ -11,12 +14,15 @@ defmodule HashedKeysMap do
   defstruct original_map: %{},
             hashed_map: %{},
             octets_in_storage: 0,
-            items_in_storage: 0
+            items_in_storage: 0,
+            hash_prefix: @storage_prefix
 
-  def new(map) do
+  def new(map), do: new(map, @storage_prefix)
+
+  def new(map, hash_prefix) do
     hashed_map =
       for {key, value} <- map, into: %{} do
-        {hkey(key), value}
+        {hkey(hash_prefix <> key), value}
       end
 
     octets =
@@ -26,19 +32,20 @@ defmodule HashedKeysMap do
       original_map: map,
       hashed_map: hashed_map,
       items_in_storage: Kernel.map_size(hashed_map),
-      octets_in_storage: octets
+      octets_in_storage: octets,
+      hash_prefix: hash_prefix
     }
   end
 
   def get(map, key) do
-    Map.get(map.hashed_map, hkey(key))
+    Map.get(map.hashed_map, hkey(map.hash_prefix <> key))
   end
 
   def drop(map, keys) do
     {items_in_storage, octets_in_storage} =
       for k <- keys, reduce: {map.items_in_storage, map.octets_in_storage} do
         {items_in_storage, octets_in_storage} ->
-          hkey = hkey(k)
+          hkey = hkey(map.hash_prefix <> k)
 
           case Map.get(map.hashed_map, hkey) do
             nil ->
@@ -51,7 +58,8 @@ defmodule HashedKeysMap do
 
     %__MODULE__{
       original_map: Map.drop(map.original_map, keys),
-      hashed_map: Map.drop(map.hashed_map, Enum.map(keys, &hkey/1)),
+      hashed_map:
+        Map.drop(map.hashed_map, Enum.map(keys, fn k -> hkey(map.hash_prefix <> k) end)),
       items_in_storage: items_in_storage,
       octets_in_storage: octets_in_storage
     }
@@ -59,14 +67,14 @@ defmodule HashedKeysMap do
 
   # Access callbacks
   def fetch(%__MODULE__{} = m, key) do
-    case Map.fetch(m.hashed_map, hkey(key)) do
+    case Map.fetch(m.hashed_map, hkey(m.hash_prefix <> key)) do
       {:ok, v} -> {:ok, v}
       :error -> :error
     end
   end
 
   def get_and_update(%__MODULE__{} = m, key, fun) do
-    hashed = hkey(key)
+    hashed = hkey(m.hash_prefix <> key)
     old = Map.get(m.hashed_map, hashed)
 
     case fun.(old) do
@@ -102,12 +110,12 @@ defmodule HashedKeysMap do
   end
 
   def pop(%__MODULE__{} = m, key) do
-    val = Map.get(m.hashed_map, hkey(key))
+    val = Map.get(m.hashed_map, hkey(m.hash_prefix <> key))
 
     {val, drop(m, [key])}
   end
 
-  def has_key?(map, key), do: Map.has_key?(map.hashed_map, hkey(key))
+  def has_key?(map, key), do: Map.has_key?(map.hashed_map, hkey(map.hash_prefix <> key))
 
   defp hkey(key) do
     <<hashed_key::binary-size(27), _::binary>> = h(key)
