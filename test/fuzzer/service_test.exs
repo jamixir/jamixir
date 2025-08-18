@@ -98,7 +98,7 @@ defmodule Jamixir.FuzzerTest do
         state
         | services:
             for {service_id, service_account} <- state.services, into: %{} do
-              {service_id, %{service_account | storage: HashedKeysMap.new(%{})}}
+              {service_id, %{service_account | storage: HashedKeysMap.new()}}
             end
       }
 
@@ -144,7 +144,6 @@ defmodule Jamixir.FuzzerTest do
 
       @tag :fuzzer
       @tag dir: dir
-      @tag :skip
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         files =
           File.ls!(dir)
@@ -156,7 +155,8 @@ defmodule Jamixir.FuzzerTest do
     end
 
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
-    @tag :skip
+    # @tag :skip
+    @tag :fuzzer2
     test "fuzzer blocks", %{client: client} do
       dir = "../jam-conformance/fuzz-reports/jamixir/0.6.7/1755151480"
       files = ["00000005.bin", "00000006.bin"]
@@ -164,7 +164,7 @@ defmodule Jamixir.FuzzerTest do
       test_case(client, files, dir)
     end
 
-    @tag :skip
+    @tag :fuzzer2
     test "fuzzer blocks 3", %{client: client} do
       dir = "../jam-conformance/fuzz-reports/archive/0.6.7/1755186771"
       files = ["00000029.bin", "00000030.bin"]

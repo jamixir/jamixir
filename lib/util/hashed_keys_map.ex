@@ -23,6 +23,7 @@ defmodule HashedKeysMap do
   end
 
   def new(map), do: new(map, @storage_prefix)
+  def new, do: new(%{})
 
   def new(map, hash_prefix) do
     hashed_map =

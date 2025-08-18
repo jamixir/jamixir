@@ -39,7 +39,7 @@ defmodule System.State.ServiceAccount do
           octets_in_storage: non_neg_integer()
         }
 
-  defstruct storage: HashedKeysMap.new(%{}),
+  defstruct storage: HashedKeysMap.new(),
             preimage_storage_p: %{},
             preimage_storage_l: %{},
             code_hash: Hash.zero(),

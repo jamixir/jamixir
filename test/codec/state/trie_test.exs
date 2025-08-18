@@ -259,7 +259,7 @@ defmodule Codec.State.TrieTest do
         state
         | services: %{
             1_234_567 => %ServiceAccount{
-              storage: HashedKeysMap.new(%{}),
+              storage: HashedKeysMap.new(),
               preimage_storage_p: %{},
               preimage_storage_l: %{},
               code_hash: Hash.random(),

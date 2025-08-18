@@ -268,7 +268,7 @@ defmodule Codec.State.Trie do
                 do: {bin_key, v}
 
           # first create empty storage
-          storage = HashedKeysMap.new(%{})
+          storage = HashedKeysMap.new()
           # set the storage size, based on decoded service information and subtracting preimage_l
           storage = %HashedKeysMap{
             storage
