@@ -161,9 +161,8 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @tag :fuzzer2
-    @tag :skip
     test "fuzzer blocks 2", %{client: client} do
-      test_case(client, "#{@base_path}/1755248982")
+      test_case(client, "#{@base_path}/1754982087")
     end
 
     @tag :fuzzer2
@@ -276,36 +275,41 @@ defmodule Jamixir.FuzzerTest do
     assert b16(block_pre_state_root) == b16(root)
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
     {block, rest} = Block.decode(rest)
-    <<_state_root::b(hash), rest::binary>> = rest
+    <<exp_post_state_root::b(hash), rest::binary>> = rest
     {:ok, exp_post_state_trie, _} = Trie.from_binary(rest)
 
     assert :ok = Client.send_message(client, :import_block, e(block))
     assert {:ok, :state_root, root} = Client.receive_message(client)
 
-    assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
-    assert {:ok, :state, post_state} = Client.receive_message(client)
+    if root == block_pre_state_root do
+      Util.Logger.info("Block transition failed. Check if trace root matches")
+      assert b16(exp_post_state_root) == b16(root)
+    else
+      assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
+      assert {:ok, :state, post_state} = Client.receive_message(client)
 
-    post_state_trie = Trie.serialize(post_state)
+      post_state_trie = Trie.serialize(post_state)
 
-    exp_post_state = Trie.deserialize(exp_post_state_trie)
+      exp_post_state = Trie.deserialize(exp_post_state_trie)
 
-    if exp_post_state_trie != post_state_trie do
-      for {k, exp_v} <- exp_post_state_trie.data do
-        v = Map.get(post_state_trie.data, k)
+      if exp_post_state_trie != post_state_trie do
+        for {k, exp_v} <- exp_post_state_trie.data do
+          v = Map.get(post_state_trie.data, k)
 
-        if v != exp_v do
-          Util.Logger.error("key doesn't match #{b16(k)}")
-          Util.Logger.error("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
+          if v != exp_v do
+            Util.Logger.error("key doesn't match #{b16(k)}")
+            Util.Logger.error("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
 
-          key = Trie.octet31_to_key(k)
-          exp_obj = Trie.decode_value(key, exp_v)
-          obj = Trie.decode_value(key, v)
-          assert exp_obj == obj
+            key = Trie.octet31_to_key(k)
+            exp_obj = Trie.decode_value(key, exp_v)
+            obj = Trie.decode_value(key, v)
+            assert exp_obj == obj
+          end
         end
       end
-    end
 
-    assert post_state == exp_post_state
+      assert post_state == exp_post_state
+    end
 
     root
   end

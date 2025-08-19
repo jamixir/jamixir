@@ -1,8 +1,10 @@
 defmodule Block.Extrinsic.Preimage do
   alias Codec.VariableSize
   alias Util.Collections
+  alias Util.Logger
   import SelectiveMock
   import Codec.Encoder
+  import Util.Hex
 
   # Formula (12.35) v0.6.6
   @type t :: %__MODULE__{
@@ -43,6 +45,10 @@ defmodule Block.Extrinsic.Preimage do
       if not_provided?(preimage, services) do
         {:cont, :ok}
       else
+        Logger.info(
+          "Preimage hash #{b16(h(preimage.blob))} already in service (#{preimage.service}) state"
+        )
+
         {:halt, {:error, :preimage_unneeded}}
       end
     end)
