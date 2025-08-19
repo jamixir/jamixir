@@ -2,6 +2,7 @@ defmodule Jamixir.Fuzzer.Util do
   alias Block.Header
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
+  alias Util.Logger
   import Util.Hex, only: [b16: 1]
 
   @protocol_to_message_type %{
@@ -170,12 +171,12 @@ defmodule Jamixir.Fuzzer.Util do
   end
 
   defp parse(:import_block, bin) do
-    try do
-      {block, _rest} = Block.decode(bin)
-      {:ok, :import_block, block}
-    rescue
-      MatchError -> {:error, :invalid_import_block_format}
-    end
+    {block, _rest} = Block.decode(bin)
+    {:ok, :import_block, block}
+  rescue
+    e ->
+      Logger.error(inspect(e))
+      {:error, :invalid_import_block_format}
   end
 
   defp parse(message_type, bin) do

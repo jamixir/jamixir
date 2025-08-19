@@ -1,13 +1,13 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
-  alias Codec.JsonEncoder
-  alias System.State
+  require Logger
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
   alias Jamixir.Fuzzer.{Client, Service}
   alias Jamixir.Genesis
   alias Jamixir.Meta
   alias Storage
+  alias System.State
   alias System.State.ServiceAccount
   alias Util.Hash
   import Jamixir.Factory
@@ -155,19 +155,8 @@ defmodule Jamixir.FuzzerTest do
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
     # @tag :skip
     @tag :fuzzer2
-    @tag :skip
     test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755151480")
-    end
-
-    @tag :fuzzer2
-    test "fuzzer blocks 2", %{client: client} do
-      test_case(client, "#{@base_path}/1754982087")
-    end
-
-    @tag :fuzzer2
-    test "fuzzer blocks 3", %{client: client} do
-      test_case(client, "#{@base_path}/1755531265")
+      test_case(client, "#{@base_path}/1755252727")
     end
   end
 
@@ -267,13 +256,16 @@ defmodule Jamixir.FuzzerTest do
     do: fetch_and_parse_json(file, "traces/fallback", "davxy", "jam-test-vectors", "master")
 
   defp test_block(client, file, root, dir) do
-    IO.puts("Processing block #{file} with root #{b16(root)}")
+    Logger.info("Processing block #{file} with root #{b16(root)}")
 
     <<block_pre_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
 
     assert b16(block_pre_state_root) == b16(root)
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
+    before_size = byte_size(rest)
     {block, rest} = Block.decode(rest)
+    block_bin_size = before_size - byte_size(rest)
+    assert block_bin_size == byte_size(e(block))
     <<exp_post_state_root::b(hash), rest::binary>> = rest
     {:ok, exp_post_state_trie, _} = Trie.from_binary(rest)
 
@@ -296,8 +288,8 @@ defmodule Jamixir.FuzzerTest do
           v = Map.get(post_state_trie.data, k)
 
           if v != exp_v do
-            Util.Logger.error("key doesn't match #{b16(k)}")
-            Util.Logger.error("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
+            Util.Logger.debug("key doesn't match #{b16(k)}")
+            Util.Logger.debug("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
 
             key = Trie.octet31_to_key(k)
             exp_obj = Trie.decode_value(key, exp_v)
@@ -336,6 +328,8 @@ defmodule Jamixir.FuzzerTest do
     for file <- all_but_first, reduce: root do
       root -> test_block(client, file, root, dir)
     end
+
+    Logger.warning("Passing test case #{dir}")
   end
 
   defp files_in_dir(dir) do
