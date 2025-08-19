@@ -59,7 +59,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       byte_size(wr.output) +
         Enum.sum(
           for %WorkDigest{result: {_, o}} <- wr.digests,
-              do: byte_size(o)
+              do: if(is_atom(o), do: 0, else: byte_size(o))
         ) <=
         Constants.max_work_report_size()
   end
