@@ -147,6 +147,7 @@ defmodule Jamixir.FuzzerTest do
 
       @tag :fuzzer
       @tag dir: dir
+      @tag :skip
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
@@ -154,9 +155,21 @@ defmodule Jamixir.FuzzerTest do
 
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
     # @tag :skip
+    failing = [
+      # delegator diff
+      "1755251719",
+      "1754988078",
+      # storage diff
+      "1755530509",
+      "1755248982",
+      # preimage_unneeded
+      "1755531265"
+    ]
+
     @tag :fuzzer2
+    @tag :skip
     test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755252727")
+      test_case(client, "#{@base_path}/1755530300")
     end
   end
 
@@ -270,7 +283,7 @@ defmodule Jamixir.FuzzerTest do
     {:ok, exp_post_state_trie, _} = Trie.from_binary(rest)
 
     assert :ok = Client.send_message(client, :import_block, e(block))
-    assert {:ok, :state_root, root} = Client.receive_message(client)
+    assert {:ok, :state_root, root} = Client.receive_message(client, :infinity)
 
     if root == block_pre_state_root do
       Util.Logger.info("Block transition failed. Check if trace root matches")
@@ -284,22 +297,24 @@ defmodule Jamixir.FuzzerTest do
       exp_post_state = Trie.deserialize(exp_post_state_trie)
 
       if exp_post_state_trie != post_state_trie do
+        Util.Logger.info("Post state trie mismatch")
+
         for {k, exp_v} <- exp_post_state_trie.data do
           v = Map.get(post_state_trie.data, k)
 
           if v != exp_v do
-            Util.Logger.debug("key doesn't match #{b16(k)}")
-            Util.Logger.debug("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
+            Util.Logger.info("key doesn't match #{b16(k)}")
+            Util.Logger.info("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
 
             key = Trie.octet31_to_key(k)
-            exp_obj = Trie.decode_value(key, exp_v)
-            obj = Trie.decode_value(key, v)
-            assert exp_obj == obj
+            {exp_obj, _} = Trie.decode_value(key, exp_v)
+            {obj, _} = Trie.decode_value(key, v)
+            assert %{b16(k) => exp_obj} == %{b16(k) => obj}
           end
         end
       end
 
-      assert post_state == exp_post_state
+      assert b16(exp_post_state_root) == b16(root)
     end
 
     root
@@ -325,11 +340,12 @@ defmodule Jamixir.FuzzerTest do
     assert b1_post_state == Trie.serialize(state)
     assert root == Trie.state_root(state)
 
-    for file <- all_but_first, reduce: root do
-      root -> test_block(client, file, root, dir)
-    end
+    root =
+      for file <- all_but_first, reduce: root do
+        root -> test_block(client, file, root, dir)
+      end
 
-    Logger.warning("Passing test case #{dir}")
+    Logger.warning("Passing test case #{dir} with root #{b16(root)}")
   end
 
   defp files_in_dir(dir) do

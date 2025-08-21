@@ -308,6 +308,7 @@ defmodule Codec.State.Trie do
       validator_statistics: dict[13],
       ready_to_accumulate: dict[14],
       accumulation_history: dict[15],
+      accumulation_outputs: dict[16],
       services: services
     }
   end
@@ -349,6 +350,13 @@ defmodule Codec.State.Trie do
   # accumulation_history
   def decode_value(15, value) do
     decode_list(value, Constants.epoch_length(), &VariableSize.decode(&1, :mapset, 32))
+  end
+
+  def decode_value(16, value) do
+    VariableSize.decode(value, fn
+      <<service::m(service), h::b(hash), rest::binary>> ->
+        {{service, h}, rest}
+    end)
   end
 
   def decode_value({255, _service_id}, bin) do
