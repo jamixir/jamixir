@@ -114,7 +114,7 @@ defmodule Block.Extrinsic.TicketProof do
     import Codec.Encoder
 
     def encode(%Block.Extrinsic.TicketProof{} = tp) do
-      e({tp.attempt, tp.signature})
+      e({<<tp.attempt::8>>, tp.signature})
     end
   end
 

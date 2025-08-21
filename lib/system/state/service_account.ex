@@ -12,7 +12,7 @@ defmodule System.State.ServiceAccount do
 
   @type t :: %__MODULE__{
           # s
-          storage: %{binary() => binary()},
+          storage: HashedKeysMap.t(),
           # p
           preimage_storage_p: %{Types.hash() => binary()},
           # l
@@ -32,10 +32,14 @@ defmodule System.State.ServiceAccount do
           # a
           last_accumulation_slot: Types.timeslot(),
           # p
-          parent_service: non_neg_integer()
+          parent_service: non_neg_integer(),
+          # i
+          items_in_storage: non_neg_integer(),
+          # o
+          octets_in_storage: non_neg_integer()
         }
 
-  defstruct storage: %{},
+  defstruct storage: HashedKeysMap.new(),
             preimage_storage_p: %{},
             preimage_storage_l: %{},
             code_hash: Hash.zero(),
@@ -45,19 +49,24 @@ defmodule System.State.ServiceAccount do
             gas_limit_m: 0,
             creation_slot: 0,
             last_accumulation_slot: 0,
-            parent_service: 0
+            parent_service: 0,
+            items_in_storage: nil,
+            octets_in_storage: nil
 
   # Formula (9.8) v0.6.7
   # ai ≡ 2⋅∣al∣ + ∣as∣
   def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    2 * length(Map.keys(l)) + length(Map.keys(s))
+    items_in_preimage_storage_l(l) + s.items_in_storage
   end
+
+  def items_in_preimage_storage_l(l), do: 2 * length(Map.keys(l))
 
   # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
   def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    sum_by(Map.keys(l), fn {_h, z} -> 81 + z end) +
-      sum_by(s, fn {key, value} -> 34 + byte_size(key) + byte_size(value) end)
+    octets_in_preimage_storage_l(l) + s.octets_in_storage
   end
+
+  def octets_in_preimage_storage_l(l), do: sum_by(Map.keys(l), fn {_h, z} -> 81 + z end)
 
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
   @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
@@ -151,7 +160,7 @@ defmodule System.State.ServiceAccount do
   # octets_in_storage and items_in_storage are ignored, since they are calculated values
   def decode(bin) do
     <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
-      _octets_in_storage::64-little, deposit_offset::64-little, _items_in_storage::32-little,
+      octets_in_storage::64-little, deposit_offset::64-little, items_in_storage::32-little,
       creation_slot::m(timeslot), last_accumulation_slot::m(timeslot), parent_service::service(),
       rest::binary>> = bin
 
@@ -163,7 +172,9 @@ defmodule System.State.ServiceAccount do
        deposit_offset: deposit_offset,
        creation_slot: creation_slot,
        last_accumulation_slot: last_accumulation_slot,
-       parent_service: parent_service
+       parent_service: parent_service,
+       items_in_storage: items_in_storage,
+       octets_in_storage: octets_in_storage
      }, rest}
   end
 
@@ -191,6 +202,7 @@ defmodule System.State.ServiceAccount do
     for %{key: k, value: v} <- storage || [], into: %{} do
       {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
     end
+    |> HashedKeysMap.new()
   end
 
   def extract_preimages_p(preimages) do
@@ -227,7 +239,7 @@ defmodule System.State.ServiceAccount do
         end}}
 
     %{
-      storage: {:storage, &for({k, v} <- &1, do: %{key: k, value: v})},
+      storage: {:storage, &for({k, v} <- &1.original_map, do: %{key: k, value: v})},
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
       preimage_storage_l:
         {:lookup_meta,
@@ -243,7 +255,9 @@ defmodule System.State.ServiceAccount do
       deposit_offset: custom_map,
       creation_slot: custom_map,
       last_accumulation_slot: custom_map,
-      parent_service: custom_map
+      parent_service: custom_map,
+      items_in_storage: custom_map,
+      octets_in_storage: custom_map
     }
   end
 end

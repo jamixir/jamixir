@@ -263,7 +263,7 @@ defmodule PVM.Host.General.Internal do
     v =
       cond do
         storage_key == :error -> :error
-        a != nil -> Map.get(a.storage, storage_key)
+        a != nil -> get_in(a, [:storage, storage_key])
         true -> nil
       end
 
@@ -307,8 +307,8 @@ defmodule PVM.Host.General.Internal do
     a =
       cond do
         k != :error and vz == 0 ->
-          storage_ = Map.get(service_account, :storage) |> Map.drop([k])
-          put_in(service_account, [:storage], storage_)
+          {_, new_s} = pop_in(service_account, [:storage, k])
+          new_s
 
         k != :error ->
           try do
@@ -349,7 +349,7 @@ defmodule PVM.Host.General.Internal do
   defp current_value_length(:error, _service_account), do: none()
 
   defp current_value_length(k, service_account) do
-    if k in Map.keys(service_account.storage),
+    if HashedKeysMap.has_key?(service_account.storage, k),
       do: safe_byte_size(get_in(service_account, [:storage, k])),
       else: none()
   end

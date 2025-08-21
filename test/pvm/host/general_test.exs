@@ -234,8 +234,12 @@ defmodule PVM.Host.GeneralTest do
       other_key = "other_key" |> String.pad_trailing(32, "\0")
 
       storage_key = other_storage_key = <<0::28*8>>
-      service_account = %ServiceAccount{storage: %{storage_key => value}}
-      services = %{1 => %ServiceAccount{storage: %{other_storage_key => other_value}}}
+      service_account = %ServiceAccount{storage: HashedKeysMap.new(%{storage_key => value})}
+
+      services = %{
+        1 => %ServiceAccount{storage: HashedKeysMap.new(%{other_storage_key => other_value})}
+      }
+
       gas = 100
 
       {:ok,
@@ -379,7 +383,7 @@ defmodule PVM.Host.GeneralTest do
     setup do
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(28, "\0")
-      c = %ServiceAccount{storage: %{key => value}, balance: 2000}
+      c = %ServiceAccount{storage: HashedKeysMap.new(%{key => value}), balance: 2000}
       g = 100
 
       registers = %Registers{
@@ -425,7 +429,7 @@ defmodule PVM.Host.GeneralTest do
         |> Memory.write!(registers.r9, new_value)
         |> Memory.set_access_by_page(16, 2, :read)
 
-      service_account = %{c | storage: %{storage_key => "b"}}
+      service_account = %{c | storage: HashedKeysMap.new(%{storage_key => "b"})}
 
       assert %{
                exit_reason: :continue,

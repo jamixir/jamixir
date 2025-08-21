@@ -453,32 +453,18 @@ defmodule System.State.Accumulation do
       single_accumulation(acc_state, work_reports, always_accumulated, manager, extra_args)
       |> Map.get(:state)
 
-    #     ∀c ∈ NC ∶ a′ c = ((∆1(o, w, f , a∗ c )o)a)c
+    # ∀c ∈ NC ∶ a′ c = ((∆1(o, w, f , a∗ c )_o)_a)_c
     assigners_ =
       for {a_c_star, core_index} <- Enum.with_index(assigners_star) do
         # (∆1(o, w, f , a∗ c)
-        single_accumulation(acc_state, work_reports, always_accumulated, a_c_star, extra_args)
-        # o
-        |> Map.get(:state)
-        # a
-        |> Map.get(:assigners)
+        single_accumulation(acc_state, work_reports, always_accumulated, a_c_star, extra_args).state.assigners
         # c
         |> Enum.at(core_index)
       end
 
-    # v′ = (∆1(o, w, f , v∗)o)v
+    # v′ = (∆1(o, w, f , v∗)_o)_v
     delegator_ =
-      single_accumulation(
-        acc_state,
-        work_reports,
-        always_accumulated,
-        delegator_star,
-        extra_args
-      )
-      # o
-      |> Map.get(:state)
-      # v
-      |> Map.get(:delegator)
+      single_accumulation(acc_state, work_reports, always_accumulated, delegator_star, extra_args).state.delegator
 
     %PrivilegedServices{
       manager: manager_,

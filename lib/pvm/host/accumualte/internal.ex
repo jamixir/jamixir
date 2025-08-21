@@ -27,13 +27,18 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     z =
-      case Memory.read(memory, o, 12 * n) do
-        {:ok, data} ->
-          for <<service::service(), value::64-little <- data>>, into: %{}, do: {service, value}
+      if n == 0,
+        do: %{},
+        else:
+          (case Memory.read(memory, o, 12 * n) do
+             {:ok, data} ->
+               for <<service::service(), value::64-little <- data>>,
+                 into: %{},
+                 do: {service, value}
 
-        _ ->
-          :error
-      end
+             _ ->
+               :error
+           end)
 
     {exit_reason_, w7_, context_} =
       cond do

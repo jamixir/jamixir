@@ -16,7 +16,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "empty items in storage", %{sa: sa} do
-      assert ServiceAccount.items_in_storage(%{sa | storage: %{}}) == 2
+      assert ServiceAccount.items_in_storage(%{sa | storage: HashedKeysMap.new()}) == 2
     end
 
     test "empty items in preimage storage l", %{sa: sa} do
@@ -31,7 +31,7 @@ defmodule System.State.ServiceAccountTest do
     end
 
     test "empty items in storage", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(%{sa | storage: %{}}) == 85
+      assert ServiceAccount.octets_in_storage(%{sa | storage: HashedKeysMap.new()}) == 85
     end
 
     test "empty items in preimage storage l", %{sa: sa} do
