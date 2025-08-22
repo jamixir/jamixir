@@ -182,7 +182,11 @@ defmodule Codec.State.Trie do
     |> Enum.reduce(state_keys, fn {s, a}, ac ->
       a.storage.hashed_map
       |> Enum.reduce(ac, fn {h, v}, ac ->
-        Map.put(ac, {s, :storage, h}, v)
+        if is_list(v) do
+          Map.put(ac, {s, :storage, h}, e(vs(v)))
+        else
+          Map.put(ac, {s, :storage, h}, v)
+        end
       end)
     end)
   end

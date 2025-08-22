@@ -173,12 +173,14 @@ defmodule HashedKeysMap do
     hashed_key
   end
 
+<<<<<<< HEAD
   # Preimage storage key: {hash, length} -> hash(length + hash)
   defp hash_key({hash, length}) do
     key = <<length::32-little>> <> hash
     <<hashed_key::binary-size(@hash_key_size), _::binary>> = h(key)
     hashed_key
   end
+  defp hkey({:error, l}), do: nil
 
   # Direct key hashing
   defp hash_key(key) do
