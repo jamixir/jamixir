@@ -59,14 +59,14 @@ defmodule Block.Extrinsic.Preimage do
   def not_provided?(preimage, services) do
     case services[preimage.service] do
       nil ->
-        false
+        true
 
       service_account ->
         preimage_hash = h(preimage.blob)
         preimage_size = byte_size(preimage.blob)
 
         not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
-          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}) == []
+          Map.get(service_account.preimage_storage_l, {preimage_hash, preimage_size}) in [[], nil]
     end
   end
 

@@ -5,13 +5,14 @@ defmodule Block.Extrinsic.PreimageTest do
   alias Util.Hash
 
   describe "validate/2 - fail cases" do
-    test "fails when service indices are not unique" do
+    test "fails when preimages are not unique" do
       preimages = [
-        build(:preimage, service: 1),
-        build(:preimage, service: 1)
+        build(:preimage, service: 1, blob: <<1, 2, 3>>),
+        build(:preimage, service: 1, blob: <<1, 2, 3>>)
       ]
 
       services = %{1 => build(:service_account)}
+
       assert {:error, _} = Preimage.validate(preimages, services)
     end
 
