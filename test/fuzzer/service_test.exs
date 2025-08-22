@@ -156,9 +156,6 @@ defmodule Jamixir.FuzzerTest do
     # here just while fuzzer are being test to make it easy fuzzer traces debug. Remove when done.
     # @tag :skip
     failing = [
-      # delegator diff
-      "1755251719",
-      "1754988078",
       # storage diff
       "1755530509",
       "1755248982",
@@ -174,7 +171,7 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzer2
     # @tag :skip
     test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755530535")
+      test_case(client, "#{@base_path}/1755530300")
     end
   end
 
