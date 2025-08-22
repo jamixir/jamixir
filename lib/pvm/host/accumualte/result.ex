@@ -41,7 +41,7 @@ defmodule PVM.Host.Accumulate.Result do
   def new(%__MODULE__{} = self, %Internal{} = internal) do
     %__MODULE__{
       self
-      | exit_reason: Map.get(internal, :exit_reason, :continue),
+      | exit_reason: internal.exit_reason || :continue,
         registers: internal.registers,
         memory: internal.memory,
         context: internal.context
