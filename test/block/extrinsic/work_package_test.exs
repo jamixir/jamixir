@@ -157,7 +157,7 @@ defmodule WorkPackageTest do
       service_account =
         build(:service_account,
           preimage_storage_p: %{h => <<32, p_m::binary-size(32), 7, 7, 7>>},
-          preimage_storage_l: %{{h, 36} => [1]},
+          storage: HashedKeysMap.new(%{{h, 36} => [1]}),
           code_hash: h
         )
 

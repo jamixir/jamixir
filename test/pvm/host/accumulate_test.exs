@@ -916,7 +916,7 @@ defmodule PVM.Host.AccumulateTest do
       preimage_l_key: preimage_l_key
     } do
       # not [x,y]
-      x = put_in(x, [:accumulation, :services, 456, :preimage_storage_l, preimage_l_key], [1])
+      x = put_in(x, [:accumulation, :services, 456, :storage, preimage_l_key], [1])
       huh = huh()
 
       assert %{
@@ -936,7 +936,7 @@ defmodule PVM.Host.AccumulateTest do
       preimage_l_key: preimage_l_key
     } do
       x =
-        put_in(x, [:accumulation, :services, 456, :preimage_storage_l, preimage_l_key], [
+        put_in(x, [:accumulation, :services, 456, :storage, preimage_l_key], [
           1,
           timeslot - Constants.forget_delay() + 10
         ])
@@ -1072,7 +1072,7 @@ defmodule PVM.Host.AccumulateTest do
       hash: hash
     } do
       registers = %{registers | r8: 2}
-      [x] = Context.accumulating_service(c_x).preimage_storage_l[{hash, 2}]
+      [x] = Context.accumulating_service(c_x).storage[{hash, 2}]
       expected_r7 = 1 + 0x1_0000_0000 * x
 
       assert %{
@@ -1091,7 +1091,7 @@ defmodule PVM.Host.AccumulateTest do
       hash: hash
     } do
       registers = %{registers | r8: 3}
-      [x, y] = Context.accumulating_service(c_x).preimage_storage_l[{hash, 3}]
+      [x, y] = Context.accumulating_service(c_x).storage[{hash, 3}]
       expected_r7 = 2 + 0x1_0000_0000 * x
 
       assert %{
@@ -1110,7 +1110,7 @@ defmodule PVM.Host.AccumulateTest do
       hash: hash
     } do
       registers = %{registers | r8: 4}
-      [x, y, z] = Context.accumulating_service(c_x).preimage_storage_l[{hash, 4}]
+      [x, y, z] = Context.accumulating_service(c_x).storage[{hash, 4}]
       expected_r7 = 3 + 0x1_0000_0000 * x
       expected_r8 = y + 0x1_0000_0000 * z
 
@@ -1199,7 +1199,7 @@ defmodule PVM.Host.AccumulateTest do
                context: {c_x_, ^c_y}
              } = Accumulate.solicit(gas, registers, memory, {c_x, c_y}, timeslot)
 
-      assert get_in(Context.accumulating_service(c_x_), [:preimage_storage_l, {Hash.one(), 999}]) ==
+      assert get_in(Context.accumulating_service(c_x_), [:storage, {Hash.one(), 999}]) ==
                []
     end
 
@@ -1271,7 +1271,7 @@ defmodule PVM.Host.AccumulateTest do
 
       # Verify timeslot was appended to [x,y]
       updated_storage =
-        get_in(x_, [:accumulation, :services, x.service, :preimage_storage_l, {Hash.one(), 1}])
+        get_in(x_, [:accumulation, :services, x.service, :storage, {Hash.one(), 1}])
 
       assert updated_storage == [42, 17, timeslot]
     end
@@ -1362,7 +1362,7 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
 
       x_s_ = Context.accumulating_service(x_)
-      refute Map.has_key?(x_s_.preimage_storage_l, {hash, 1})
+      refute HashedKeysMap.has_key?(x_s_.storage, {hash, 1})
       refute Map.has_key?(x_s_.preimage_storage_p, hash)
     end
 
@@ -1385,7 +1385,7 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
 
       x_s_ = Context.accumulating_service(x_)
-      refute Map.has_key?(x_s_.preimage_storage_l, {hash, 2})
+      refute HashedKeysMap.has_key?(x_s_.storage, {hash, 2})
       refute Map.has_key?(x_s_.preimage_storage_p, hash)
     end
 
@@ -1408,7 +1408,7 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
 
       x_s_ = Context.accumulating_service(x_)
-      assert x_s_.preimage_storage_l[{hash, 3}] == [99, timeslot]
+      assert x_s_.storage[{hash, 3}] == [99, timeslot]
     end
 
     test "updates entry to [w,t] for [x,y,w] when y < t-D", %{
@@ -1430,7 +1430,7 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
 
       x_s_ = Context.accumulating_service(x_)
-      assert x_s_.preimage_storage_l[{hash, 4}] == [3, timeslot]
+      assert x_s_.storage[{hash, 4}] == [3, timeslot]
     end
 
     test "returns {:continue, huh()} for invalid cases", %{

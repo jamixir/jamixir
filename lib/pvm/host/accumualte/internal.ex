@@ -527,14 +527,14 @@ defmodule PVM.Host.Accumulate.Internal do
         [] ->
           %{
             xs
-            | storage: pop_in(xs, [:storage, {h, z}]),
+            | storage: pop_in(xs.storage, [{h, z}]) |> elem(1),
               preimage_storage_p: Map.delete(xs.preimage_storage_p, h)
           }
 
         [_, y] when y < timeslot - d ->
           %{
             xs
-            | storage: pop_in(xs, [:storage, {h, z}]),
+            | storage: pop_in(xs.storage, [{h, z}]) |> elem(1),
               preimage_storage_p: Map.delete(xs.preimage_storage_p, h)
           }
 
