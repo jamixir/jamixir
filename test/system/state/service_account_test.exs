@@ -10,35 +10,6 @@ defmodule System.State.ServiceAccountTest do
     {:ok, %{sa: build(:service_account), preimage: Hash.random()}}
   end
 
-  describe "items in storage" do
-    test "return correct value for itens in storage", %{sa: sa} do
-      assert ServiceAccount.items_in_storage(sa) == 3
-    end
-
-    test "empty items in storage", %{sa: sa} do
-      assert ServiceAccount.items_in_storage(%{sa | storage: HashedKeysMap.new()}) == 2
-    end
-
-    test "empty items in preimage storage l", %{sa: sa} do
-      assert ServiceAccount.items_in_storage(%{sa | preimage_storage_l: %{}}) == 1
-    end
-  end
-
-  describe "octets in storage" do
-    test "return correct value for octets in storage", %{sa: sa} do
-      # 81 + bytes size of single item in preimage_l + 34+ byte_size(key) + byte_size(value) of single item in storage
-      assert ServiceAccount.octets_in_storage(sa) == 81 + 4 + 34 + 32 + 4
-    end
-
-    test "empty items in storage", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(%{sa | storage: HashedKeysMap.new()}) == 85
-    end
-
-    test "empty items in preimage storage l", %{sa: sa} do
-      assert ServiceAccount.octets_in_storage(%{sa | preimage_storage_l: %{}}) == 34 + 32 + 4
-    end
-  end
-
   describe "code/1" do
     test "return nil value when code does not exist", %{sa: sa} do
       assert ServiceAccount.code(%{sa | code_hash: Hash.four()}) == nil
@@ -72,15 +43,15 @@ defmodule System.State.ServiceAccountTest do
       expected_hash = h(preimage)
 
       p_key_count = Map.keys(sa.preimage_storage_p) |> length()
-      l_key_count = Map.keys(sa.preimage_storage_l) |> length()
+      l_key_count = Map.keys(sa.storage.hashed_map) |> length()
 
       sa = ServiceAccount.store_preimage(sa, preimage, 1)
 
       assert sa.preimage_storage_p[expected_hash] == preimage
-      assert sa.preimage_storage_l[{expected_hash, byte_size(preimage)}] == [1]
+      assert sa.storage[{expected_hash, byte_size(preimage)}] == [1]
 
       assert Map.keys(sa.preimage_storage_p) |> length() == p_key_count + 1
-      assert Map.keys(sa.preimage_storage_l) |> length() == l_key_count + 1
+      assert Map.keys(sa.storage.hashed_map) |> length() == l_key_count + 1
     end
   end
 
@@ -111,7 +82,7 @@ defmodule System.State.ServiceAccountTest do
     test "marked as unavailable ", %{sa: sa, preimage: preimage} do
       expected_hash = h(preimage)
       sa = ServiceAccount.store_preimage(sa, preimage, 10)
-      sa = sa |> Map.put(:preimage_storage_l, %{{expected_hash, byte_size(preimage)} => [10, 20]})
+      sa = put_in(sa, [:storage, {expected_hash, byte_size(preimage)}], [10, 20])
 
       # case t >= x and t < y
       assert ServiceAccount.historical_lookup(sa, 15, expected_hash) == preimage
@@ -119,11 +90,11 @@ defmodule System.State.ServiceAccountTest do
       assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
 
       # case in_storage?([], _)
-      sa = sa |> Map.put(:preimage_storage_l, %{{expected_hash, byte_size(preimage)} => []})
+      sa = put_in(sa, [:storage, {expected_hash, byte_size(preimage)}], [])
       assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
 
       # case in_storage?(nil, _)
-      sa = sa |> Map.put(:preimage_storage_l, %{})
+      sa = %{sa | storage: HashedKeysMap.new()}
       assert ServiceAccount.historical_lookup(sa, 20, expected_hash) == nil
     end
 
@@ -131,9 +102,7 @@ defmodule System.State.ServiceAccountTest do
       expected_hash = h(preimage)
       sa = ServiceAccount.store_preimage(sa, preimage, 10)
 
-      sa =
-        sa
-        |> Map.put(:preimage_storage_l, %{{expected_hash, byte_size(preimage)} => [10, 20, 30]})
+      sa = put_in(sa, [:storage, {expected_hash, byte_size(preimage)}], [10, 20, 30])
 
       # case t >= x and t < y
       assert ServiceAccount.historical_lookup(sa, 15, expected_hash) == preimage
@@ -168,9 +137,9 @@ defmodule System.State.ServiceAccountTest do
           <<sa.balance::64-little>> <>
           <<sa.gas_limit_g::64-little>> <>
           <<sa.gas_limit_m::64-little>> <>
-          <<ServiceAccount.octets_in_storage(sa)::64-little>> <>
+          <<sa.storage.octets_in_storage::64-little>> <>
           <<sa.deposit_offset::64-little>> <>
-          <<ServiceAccount.items_in_storage(sa)::32-little>> <>
+          <<sa.storage.items_in_storage::32-little>> <>
           <<sa.creation_slot::32-little>> <>
           <<sa.last_accumulation_slot::32-little>> <>
           <<sa.parent_service::32-little>>

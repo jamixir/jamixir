@@ -16,10 +16,11 @@ defmodule PVM.RefineIntegrationTest do
 
     service_account = %ServiceAccount{
       preimage_storage_p: %{code_hash => bin, auth_code_hash => auth_code},
-      preimage_storage_l: %{
-        {code_hash, byte_size(bin)} => [0],
-        {auth_code_hash, byte_size(auth_code)} => [0]
-      }
+      storage:
+        HashedKeysMap.new(%{
+          {code_hash, byte_size(bin)} => [0],
+          {auth_code_hash, byte_size(auth_code)} => [0]
+        })
     }
 
     services = %{service_account_index => service_account}
@@ -64,10 +65,11 @@ defmodule PVM.RefineIntegrationTest do
 
       service_account = %ServiceAccount{
         preimage_storage_p: %{hash => binary, auth_code_hash => auth_code},
-        preimage_storage_l: %{
-          {hash, byte_size(binary)} => [0],
-          {auth_code_hash, byte_size(auth_code)} => [0]
-        }
+        storage:
+          HashedKeysMap.new(%{
+            {hash, byte_size(binary)} => [0],
+            {auth_code_hash, byte_size(auth_code)} => [0]
+          })
       }
 
       services = %{1 => service_account}

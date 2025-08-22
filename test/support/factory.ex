@@ -257,9 +257,12 @@ defmodule Jamixir.Factory do
     hash = Hash.default(preimage_value)
 
     %System.State.ServiceAccount{
-      storage: HashedKeysMap.new(%{Hash.default(storage_value) => storage_value}),
+      storage:
+        HashedKeysMap.new(%{
+          Hash.default(storage_value) => storage_value,
+          {hash, 4} => [1, 2, 3]
+        }),
       preimage_storage_p: %{hash => preimage_value},
-      preimage_storage_l: %{{hash, 4} => [1, 2, 3]},
       code_hash: Hash.default(storage_value),
       balance: 1000,
       gas_limit_g: 5000,

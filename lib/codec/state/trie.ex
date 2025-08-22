@@ -63,7 +63,6 @@ defmodule Codec.State.Trie do
     |> encode_accounts(s)
     |> encode_accounts_storage_s(s)
     |> encode_accounts_storage_p(s, :preimage_storage_p)
-    |> encode_accounts_preimage_storage_l(s)
   end
 
   # Formula (D.1) v0.6.7 - C constructor
@@ -199,19 +198,6 @@ defmodule Codec.State.Trie do
     end)
   end
 
-  # ∀(s ↦ a) ∈ δ, ((h, l) ↦ t) ∈ al ∶ C(s, E4 (l) ⌢ H(h)2...30 ) ↦ E(↕[E4 (x) ∣ x −< t])
-  defp encode_accounts_preimage_storage_l(state_keys, %State{} = state) do
-    state.services
-    |> Enum.reduce(state_keys, fn {s, a}, ac ->
-      a.preimage_storage_l
-      |> Enum.reduce(ac, fn {{h, l}, t}, ac ->
-        value = e(vs(for x <- t, do: e_le(x, 4)))
-        key = e_le(l, 4) <> h
-        Map.put(ac, {s, key}, value)
-      end)
-    end)
-  end
-
   def trie_to_state(%SerializedState{data: trie}), do: trie_to_state(trie)
 
   def trie_to_state(trie) do
@@ -239,31 +225,9 @@ defmodule Codec.State.Trie do
                 into: %{},
                 do: {h(v), v}
 
-          preimage_storage_l =
-            for {h, p} <- preimage_storage_p, into: %{} do
-              l = byte_size(p)
-              trie_key = key_to_31_octet({service_id, e_le(l, 4) <> h})
-
-              {value, _} =
-                VariableSize.decode(trie[trie_key], fn <<x::little-32, rest::binary>> ->
-                  {x, rest}
-                end)
-
-              {{h, l}, p}
-              {{h, l}, value}
-            end
-
-          preimage_storage_l_keys =
-            for {{h, l}, _v} <- preimage_storage_l do
-              k = e_le(l, 4) <> h
-              <<a_part::binary-size(27), _rest::binary>> = h(k)
-              a_part
-            end
-
           hashed_map =
             for {{^service_id, bin_key}, v} <- dict,
                 bin_key not in preimage_storage_p_keys,
-                bin_key not in preimage_storage_l_keys,
                 into: %{},
                 do: {bin_key, v}
 
@@ -273,19 +237,14 @@ defmodule Codec.State.Trie do
           storage = %HashedKeysMap{
             storage
             | hashed_map: hashed_map,
-              octets_in_storage:
-                v.octets_in_storage -
-                  ServiceAccount.octets_in_preimage_storage_l(preimage_storage_l),
-              items_in_storage:
-                v.items_in_storage -
-                  ServiceAccount.items_in_preimage_storage_l(preimage_storage_l)
+              octets_in_storage: v.octets_in_storage,
+              items_in_storage: v.items_in_storage
           }
 
           Map.put(acc, service_id, %ServiceAccount{
             v
             | storage: storage,
               preimage_storage_p: preimage_storage_p,
-              preimage_storage_l: preimage_storage_l,
               # reset these fields, as they are used only for decoding and calculating storage size
               items_in_storage: nil,
               octets_in_storage: nil

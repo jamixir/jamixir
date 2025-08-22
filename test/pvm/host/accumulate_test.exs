@@ -527,7 +527,7 @@ defmodule PVM.Host.AccumulateTest do
       # Verify new service properties
       assert new_service == %ServiceAccount{
                code_hash: Hash.one(),
-               preimage_storage_l: %{{Hash.one(), 1} => []},
+               storage: HashedKeysMap.new(%{{Hash.one(), 1} => []}),
                gas_limit_g: 100,
                gas_limit_m: 200,
                balance: ServiceAccount.threshold_balance(new_service),
@@ -776,10 +776,11 @@ defmodule PVM.Host.AccumulateTest do
         balance: 500,
         # matches x.service
         code_hash: <<123::service()>>,
-        preimage_storage_l: %{
-          # Valid entry with [x,y]
-          preimage_l_key => [1, 2]
-        }
+        storage:
+          HashedKeysMap.new(%{
+            # Valid entry with [x,y]
+            preimage_l_key => [1, 2]
+          })
       }
 
       initial_service = %ServiceAccount{balance: 1000}
@@ -986,16 +987,17 @@ defmodule PVM.Host.AccumulateTest do
         |> PreMemory.finalize()
 
       service_account = %ServiceAccount{
-        preimage_storage_l: %{
-          # Empty list case
-          {hash, 1} => [],
-          # Single element case
-          {hash, 2} => [42],
-          # Two element case
-          {hash, 3} => [42, 17],
-          # Three element case
-          {hash, 4} => [42, 17, 99]
-        }
+        storage:
+          HashedKeysMap.new(%{
+            # Empty list case
+            {hash, 1} => [],
+            # Single element case
+            {hash, 2} => [42],
+            # Two element case
+            {hash, 3} => [42, 17],
+            # Three element case
+            {hash, 4} => [42, 17, 99]
+          })
       }
 
       context = %Context{
@@ -1133,15 +1135,16 @@ defmodule PVM.Host.AccumulateTest do
 
       # Create service with test cases in preimage_storage_l
       service_account = %ServiceAccount{
-        balance: 10000,
-        preimage_storage_l: %{
-          # Valid [x,y] case
-          {hash, 1} => [42, 17],
-          # Invalid length case
-          {hash, 2} => [1, 2, 3],
-          # Invalid empty case
-          {hash, 3} => []
-        }
+        balance: 10_000,
+        storage:
+          HashedKeysMap.new(%{
+            # Valid [x,y] case
+            {hash, 1} => [42, 17],
+            # Invalid length case
+            {hash, 2} => [1, 2, 3],
+            # Invalid empty case
+            {hash, 3} => []
+          })
       }
 
       context =
@@ -1286,18 +1289,19 @@ defmodule PVM.Host.AccumulateTest do
 
       # Create service with test cases in preimage_storage_l
       service_account = %ServiceAccount{
-        preimage_storage_l: %{
-          # Empty list case
-          {hash, 1} => [],
-          # [x,y] case with y < t-D
-          {hash, 2} => [42, 17],
-          # [x] case
-          {hash, 3} => [99],
-          # [x,y,w] case with y < t-D
-          {hash, 4} => [1, 2, 3],
-          # [x,y,w] case with y >= t-D
-          {hash, 5} => [1, 999, 3]
-        },
+        storage:
+          HashedKeysMap.new(%{
+            # Empty list case
+            {hash, 1} => [],
+            # [x,y] case with y < t-D
+            {hash, 2} => [42, 17],
+            # [x] case
+            {hash, 3} => [99],
+            # [x,y,w] case with y < t-D
+            {hash, 4} => [1, 2, 3],
+            # [x,y,w] case with y >= t-D
+            {hash, 5} => [1, 999, 3]
+          }),
         preimage_storage_p: %{hash => "test"}
       }
 
@@ -1522,17 +1526,15 @@ defmodule PVM.Host.AccumulateTest do
       # Service that exists in accumulation
       service_account = %ServiceAccount{
         balance: 1000,
-        preimage_storage_l: %{
-          # This preimage already exists
-          {hash_of_data, byte_size(preimage_data)} => [42, 17]
-        }
+        storage:
+          HashedKeysMap.new(%{
+            # This preimage already exists
+            {hash_of_data, byte_size(preimage_data)} => [42, 17]
+          })
       }
 
       # Service without the preimage
-      clean_service = %ServiceAccount{
-        balance: 1000,
-        preimage_storage_l: %{}
-      }
+      clean_service = %ServiceAccount{balance: 1000}
 
       context = %Context{
         service: 123,

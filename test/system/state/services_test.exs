@@ -36,7 +36,7 @@ defmodule System.State.ServicesTest do
       init_services = %{
         1 => %ServiceAccount{
           preimage_storage_p: %{preimage_hash => "existing_data"},
-          preimage_storage_l: %{{preimage_hash, 3} => [50]}
+          storage: HashedKeysMap.new(%{{preimage_hash, 3} => [50]})
         }
       }
 
@@ -59,11 +59,11 @@ defmodule System.State.ServicesTest do
         1 => %ServiceAccount{
           # Empty storage - preimage not provided
           preimage_storage_p: %{},
-          preimage_storage_l: %{{preimage_hash, 3} => []}
+          storage: HashedKeysMap.new(%{{preimage_hash, 3} => []})
         },
         2 => %ServiceAccount{
           preimage_storage_p: %{preimage_hash2 => "keep_this"},
-          preimage_storage_l: %{{preimage_hash2, 3} => [75]}
+          storage: HashedKeysMap.new(%{{preimage_hash2, 3} => [75]})
         }
       }
 

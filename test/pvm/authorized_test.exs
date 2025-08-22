@@ -9,10 +9,7 @@ defmodule PVM.AuthorizedTest do
   describe "authorized/3" do
     setup do
       # Create a service account that will store our test programs
-      service_account = %ServiceAccount{
-        preimage_storage_p: %{},
-        preimage_storage_l: %{}
-      }
+      service_account = %ServiceAccount{preimage_storage_p: %{}}
 
       {:ok, service_account: service_account}
     end
@@ -43,7 +40,7 @@ defmodule PVM.AuthorizedTest do
       service_account = %{
         service_account
         | preimage_storage_p: %{hash => binary},
-          preimage_storage_l: %{{hash, byte_size(binary)} => [0]}
+          storage: HashedKeysMap.new(%{{hash, byte_size(binary)} => [0]})
       }
 
       work_package = %WorkPackage{

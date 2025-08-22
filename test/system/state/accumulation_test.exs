@@ -1023,7 +1023,7 @@ defmodule System.State.AccumulationTest do
     end
 
     test "dont update when preimage_storage_l alread exists", %{services: services} do
-      new_services = put_in(services, [1, :preimage_storage_l, {h("hash1"), 5}], 9)
+      new_services = put_in(services, [1, :storage, {h("hash1"), 5}], 9)
       updated_services = Accumulation.integrate_preimages(new_services, [{1, "hash1"}], 9)
 
       assert new_services == updated_services
@@ -1034,11 +1034,11 @@ defmodule System.State.AccumulationTest do
 
       updated_services = Accumulation.integrate_preimages(services, preimages, 9)
 
-      expected_services = put_in(services, [1, :preimage_storage_l, {h("hash1"), 5}], [9])
+      expected_services = put_in(services, [1, :storage, {h("hash1"), 5}], [9])
       expected_services = put_in(expected_services, [1, :preimage_storage_p, h("hash1")], "hash1")
 
       expected_services =
-        put_in(expected_services, [2, :preimage_storage_l, {h("hash2"), 5}], [9])
+        put_in(expected_services, [2, :storage, {h("hash2"), 5}], [9])
 
       expected_services = put_in(expected_services, [2, :preimage_storage_p, h("hash2")], "hash2")
 

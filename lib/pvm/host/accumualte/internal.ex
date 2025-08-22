@@ -198,7 +198,7 @@ defmodule PVM.Host.Accumulate.Internal do
         :error
       else
         a = %ServiceAccount{
-          preimage_storage_l: %{{c, l} => []},
+          storage: HashedKeysMap.new(%{{c, l} => []}),
           code_hash: c,
           gas_limit_g: g,
           gas_limit_m: m,
@@ -379,18 +379,18 @@ defmodule PVM.Host.Accumulate.Internal do
 
         true ->
           l =
-            max(81, ServiceAccount.octets_in_storage(service)) - 81
+            max(81, service.storage.octets_in_storage) - 81
 
           s_ = Context.accumulating_service(x)
           s_ = %{s_ | balance: s_.balance + service.balance}
 
           cond do
-            ServiceAccount.items_in_storage(service) != 2 or
-                !Map.has_key?(service.preimage_storage_l, {h, l}) ->
+            service.storage.items_in_storage != 2 or
+                !HashedKeysMap.has_key?(service.storage, {h, l}) ->
               {:continue, huh(), x}
 
-            match?([_x, _y], Map.get(service.preimage_storage_l, {h, l})) and
-                Map.get(service.preimage_storage_l, {h, l}) |> Enum.at(1) <
+            match?([_x, _y], get_in(service, [:storage, {h, l}])) and
+                get_in(service, [:storage, {h, l}]) |> Enum.at(1) <
                   timeslot - Constants.forget_delay() ->
               x_u_d_ = Map.delete(x.accumulation.services, d) |> Map.merge(%{x.service => s_})
               x_ = put_in(x, [:accumulation, :services], x_u_d_)
@@ -425,7 +425,7 @@ defmodule PVM.Host.Accumulate.Internal do
         {:panic, registers.r7, registers.r8}
       else
         xs = Context.accumulating_service(x)
-        a = Map.get(xs.preimage_storage_l, {h, z}, :error)
+        a = get_in(xs, [:storage, {h, z}]) || :error
 
         two_32 = 0x1_0000_0000
 
@@ -460,7 +460,7 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     xs = Context.accumulating_service(x)
-    at_h_z = get_in(xs, [:preimage_storage_l, {h, z}])
+    at_h_z = get_in(xs, [:storage, {h, z}])
 
     a =
       cond do
@@ -469,11 +469,11 @@ defmodule PVM.Host.Accumulate.Internal do
 
         # if h ≠ ∇ ∧ (h,z) ∉ (xs)l
         at_h_z == nil ->
-          put_in(xs, [:preimage_storage_l, {h, z}], [])
+          put_in(xs, [:storage, {h, z}], [])
 
         # if (xs)l[(h,z)] = [x,y]
         length(at_h_z) == 2 ->
-          update_in(xs, [:preimage_storage_l, {h, z}], &(&1 ++ [timeslot]))
+          update_in(xs, [:storage, {h, z}], &(&1 ++ [timeslot]))
 
         true ->
           :error
@@ -518,7 +518,7 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     xs = Context.accumulating_service(x)
-    at_h_z = get_in(xs, [:preimage_storage_l, {h, z}])
+    at_h_z = get_in(xs, [:storage, {h, z}])
     d = Constants.forget_delay()
 
     a =
@@ -527,23 +527,23 @@ defmodule PVM.Host.Accumulate.Internal do
         [] ->
           %{
             xs
-            | preimage_storage_l: Map.delete(xs.preimage_storage_l, {h, z}),
+            | storage: pop_in(xs, [:storage, {h, z}]),
               preimage_storage_p: Map.delete(xs.preimage_storage_p, h)
           }
 
         [_, y] when y < timeslot - d ->
           %{
             xs
-            | preimage_storage_l: Map.delete(xs.preimage_storage_l, {h, z}),
+            | storage: pop_in(xs, [:storage, {h, z}]),
               preimage_storage_p: Map.delete(xs.preimage_storage_p, h)
           }
 
         [x] ->
-          put_in(xs, [:preimage_storage_l, {h, z}], [x, timeslot])
+          put_in(xs, [:storage, {h, z}], [x, timeslot])
 
         # if (xs)l[h,z] = [x,y,w], y < t-D
         [_x, y, w] when y < timeslot - d ->
-          put_in(xs, [:preimage_storage_l, {h, z}], [w, timeslot])
+          put_in(xs, [:storage, {h, z}], [w, timeslot])
 
         _ ->
           :error
@@ -626,7 +626,7 @@ defmodule PVM.Host.Accumulate.Internal do
         service == nil ->
           {:continue, who(), x}
 
-        Map.get(service.preimage_storage_l, {h(i), z}) != nil ->
+        get_in(service, [:storage, {h(i), z}]) != nil ->
           {:continue, huh(), x}
 
         MapSet.member?(x.preimages, {s_star, i}) ->
