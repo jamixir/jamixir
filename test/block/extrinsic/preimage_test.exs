@@ -38,9 +38,10 @@ defmodule Block.Extrinsic.PreimageTest do
 
       service_account =
         build(:service_account,
-          preimage_storage_l: %{
-            {Hash.default(preimage.blob), byte_size(preimage.blob)} => [:some_existing_data]
-          }
+          storage:
+            HashedKeysMap.new(%{
+              {Hash.default(preimage.blob), byte_size(preimage.blob)} => [:some_existing_data]
+            })
         )
 
       services = %{1 => service_account}
@@ -54,8 +55,8 @@ defmodule Block.Extrinsic.PreimageTest do
       keys = Enum.map(preimages, &{Hash.default(&1.blob), byte_size(&1.blob)})
 
       services = %{
-        1 => build(:service_account, preimage_storage_l: %{Enum.at(keys, 0) => []}),
-        2 => build(:service_account, preimage_storage_l: %{Enum.at(keys, 1) => []})
+        1 => build(:service_account, storage: HashedKeysMap.new(%{Enum.at(keys, 0) => []})),
+        2 => build(:service_account, storage: HashedKeysMap.new(%{Enum.at(keys, 1) => []}))
       }
 
       assert :ok = Preimage.validate(preimages, services)

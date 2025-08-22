@@ -205,18 +205,6 @@ defmodule Codec.State.TrieTest do
         end)
       end)
     end
-
-    test "service accounts preimage_storage_l serialization", %{state: state} do
-      state.services
-      |> Enum.each(fn {s, service_account} ->
-        service_account.preimage_storage_l
-        |> Enum.each(fn {{h, l}, t} ->
-          key = <<l::32-little>> <> h
-          value = e(vs(for x <- t, do: <<x::32-little>>))
-          assert state_keys(state)[{s, key}] == value
-        end)
-      end)
-    end
   end
 
   describe "trie_to_state/1" do
@@ -261,7 +249,6 @@ defmodule Codec.State.TrieTest do
             1_234_567 => %ServiceAccount{
               storage: HashedKeysMap.new(),
               preimage_storage_p: %{},
-              preimage_storage_l: %{},
               code_hash: Hash.random(),
               balance: 900,
               gas_limit_g: 90_000,

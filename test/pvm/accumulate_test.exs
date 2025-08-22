@@ -57,7 +57,7 @@ defmodule PVM.AccumulateTest do
         balance: 100,
         code_hash: hash,
         preimage_storage_p: %{hash => <<0>> <> binary},
-        preimage_storage_l: %{{hash, byte_size(binary)} => [0]}
+        storage: HashedKeysMap.new(%{{hash, byte_size(binary)} => [0]})
       }
 
       accumulation = %{accumulation | services: %{256 => service_with_code}}

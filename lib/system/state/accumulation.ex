@@ -409,11 +409,9 @@ defmodule System.State.Accumulation do
           nil ->
             acc
 
-          %ServiceAccount{preimage_storage_l: l} = sa ->
-            if Map.get(l, {h(preimage), byte_size(preimage)}, []) == [] do
-              sa =
-                put_in(sa, [:preimage_storage_l, {h(preimage), byte_size(preimage)}], [timeslot_])
-
+          %ServiceAccount{} = sa ->
+            if get_in(sa, [:storage, {h(preimage), byte_size(preimage)}]) || [] == [] do
+              sa = put_in(sa, [:storage, {h(preimage), byte_size(preimage)}], [timeslot_])
               sa = put_in(sa, [:preimage_storage_p, h(preimage)], preimage)
               Map.put(acc, service_index, sa)
             else
@@ -472,7 +470,6 @@ defmodule System.State.Accumulation do
         delegator_star,
         extra_args
       ).state.delegator
-
 
     %PrivilegedServices{
       manager: manager_,

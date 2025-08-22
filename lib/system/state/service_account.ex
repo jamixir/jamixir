@@ -11,12 +11,10 @@ defmodule System.State.ServiceAccount do
   import Util.Collections, only: [sum_by: 2]
 
   @type t :: %__MODULE__{
-          # s
+          # s and l
           storage: HashedKeysMap.t(),
           # p
           preimage_storage_p: %{Types.hash() => binary()},
-          # l
-          preimage_storage_l: %{{Types.hash(), non_neg_integer()} => list(non_neg_integer())},
           # c
           code_hash: Types.hash(),
           # f
@@ -41,7 +39,6 @@ defmodule System.State.ServiceAccount do
 
   defstruct storage: HashedKeysMap.new(),
             preimage_storage_p: %{},
-            preimage_storage_l: %{},
             code_hash: Hash.zero(),
             deposit_offset: 0,
             balance: 0,
@@ -53,30 +50,15 @@ defmodule System.State.ServiceAccount do
             items_in_storage: nil,
             octets_in_storage: nil
 
-  # Formula (9.8) v0.6.7
-  # ai ≡ 2⋅∣al∣ + ∣as∣
-  def items_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    items_in_preimage_storage_l(l) + s.items_in_storage
-  end
-
-  def items_in_preimage_storage_l(l), do: 2 * length(Map.keys(l))
-
-  # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
-  def octets_in_storage(%__MODULE__{storage: s, preimage_storage_l: l}) do
-    octets_in_preimage_storage_l(l) + s.octets_in_storage
-  end
-
-  def octets_in_preimage_storage_l(l), do: sum_by(Map.keys(l), fn {_h, z} -> 81 + z end)
-
   # at ∈ NB ≡ BS + BI⋅ai + BL⋅al
   @spec threshold_balance(System.State.ServiceAccount.t()) :: Types.balance()
   def threshold_balance(%__MODULE__{} = sa) do
     # Bs
     base_balance = Constants.service_minimum_balance()
     # Bi * ai
-    item_cost = Constants.additional_minimum_balance_per_item() * items_in_storage(sa)
+    item_cost = Constants.additional_minimum_balance_per_item() * sa.storage.items_in_storage
     # BL * ao
-    octet_cost = Constants.additional_minimum_balance_per_octet() * octets_in_storage(sa)
+    octet_cost = Constants.additional_minimum_balance_per_octet() * sa.storage.octets_in_storage
     # Bs + Bi * ai + BL * ao - af
     threshold = base_balance + item_cost + octet_cost - sa.deposit_offset
     max(0, threshold)
@@ -107,19 +89,19 @@ defmodule System.State.ServiceAccount do
   def store_preimage(%__MODULE__{} = a, preimage, timeslot) do
     hash = h(preimage)
 
-    p2 = put_in(a.preimage_storage_p[hash], preimage)
-    put_in(p2.preimage_storage_l[{hash, byte_size(preimage)}], [timeslot])
+    p2 = put_in(a, [:preimage_storage_p, hash], preimage)
+    put_in(p2, [:storage, {hash, byte_size(preimage)}], [timeslot])
   end
 
   # Formula (9.7) v0.6.6
   @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary() | nil
   def historical_lookup(
-        %__MODULE__{preimage_storage_p: ap, preimage_storage_l: al},
+        %__MODULE__{preimage_storage_p: ap, storage: s},
         timeslot,
         hash
       ) do
     with value <- ap[hash] do
-      if value != nil and in_storage?(al[{hash, byte_size(value)}], timeslot),
+      if value != nil and in_storage?(get_in(s, [{hash, byte_size(value)}]), timeslot),
         do: value,
         else: nil
     end
@@ -141,16 +123,13 @@ defmodule System.State.ServiceAccount do
     # C(255, s) ↦ ac ⌢ E8(ab, ag , am, ao, af ) ⌢ E4(ai, ar , aa, ap)
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
-      octets_in_storage = ServiceAccount.octets_in_storage(s)
-      items_in_storage = ServiceAccount.items_in_storage(s)
-
       s.code_hash <>
         t(s.balance) <>
         <<s.gas_limit_g::m(gas)>> <>
         <<s.gas_limit_m::m(gas)>> <>
-        <<octets_in_storage::64-little>> <>
+        <<s.storage.octets_in_storage::64-little>> <>
         <<s.deposit_offset::64-little>> <>
-        <<items_in_storage::32-little>> <>
+        <<s.storage.items_in_storage::32-little>> <>
         <<s.creation_slot::m(timeslot)>> <>
         <<s.last_accumulation_slot::m(timeslot)>> <>
         <<s.parent_service::service()>>

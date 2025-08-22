@@ -55,6 +55,9 @@ defmodule HashedKeysMap do
               {items_in_storage, octets_in_storage}
 
             value ->
+              # Formula (9.8) v0.6.7
+              # ai ≡ 2⋅∣al∣ + ∣as∣
+              # ao ∈ N2^64 ≡ sum(81 + z) + sum(34 + |x| + |y|),
               case key do
                 {_, l} ->
                   {items_in_storage - 2, octets_in_storage - 81 - l}

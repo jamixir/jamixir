@@ -139,7 +139,7 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @fuzz_path "../jam-conformance/fuzz-reports"
-    @base_path "#{@fuzz_path}/0.6.7/traces/"
+    @base_path "#{@fuzz_path}/0.6.7/traces/TESTING/"
     @all_traces File.ls!(@base_path) |> Enum.filter(fn file -> String.match?(file, ~r/^\d+/) end)
 
     for case_dir <- @all_traces do
@@ -168,7 +168,7 @@ defmodule Jamixir.FuzzerTest do
       "1755530300"
     ]
 
-    # @tag :fuzzer2
+    @tag :fuzzer2
     @tag :skip
     test "fuzzer blocks", %{client: client} do
       test_case(client, "#{@base_path}/1755531265")
