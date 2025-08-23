@@ -159,10 +159,11 @@ defmodule Jamixir.FuzzerTest do
       # storage diff
       "1755530509",
       "1755248982",
-      # preimage_unneeded
+      "1755531265",
+      "1755796995",
+      # statistics diff
       "1755530896",
       "1755530728",
-      "1755531265",
       "1755620371",
       # accumulation output diff
       "1755530300"
