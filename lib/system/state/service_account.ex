@@ -8,7 +8,6 @@ defmodule System.State.ServiceAccount do
   import Codec.Encoder
   use AccessStruct
   import Codec.JsonEncoder
-  import Util.Collections, only: [sum_by: 2]
 
   @type t :: %__MODULE__{
           # s and l

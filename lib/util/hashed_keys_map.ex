@@ -1,4 +1,5 @@
 defmodule HashedKeysMap do
+  alias Codec.VariableSize
   import Codec.Encoder
   import Bitwise
 
@@ -90,12 +91,28 @@ defmodule HashedKeysMap do
 
   # Access callbacks
   def fetch(%__MODULE__{} = m, key) do
-    Map.fetch(m.hashed_map, hash_key(m.hash_prefix, key))
+    case m.hashed_map[hash_key(m.hash_prefix, key)] do
+      nil ->
+        :error
+
+      v ->
+        case key do
+          {_, _} ->
+            {:ok,
+             VariableSize.decode(v, fn <<n::32-little, rest::binary>> -> {n, rest} end) |> elem(0)}
+
+          _ ->
+            {:ok, v}
+        end
+    end
   end
 
   def get_and_update(%__MODULE__{} = m, key, fun) when is_function(fun) do
-    hashed_key = hash_key(m.hash_prefix, key)
-    old = Map.get(m.hashed_map, hashed_key)
+    old =
+      case fetch(m, key) do
+        {:ok, v} -> v
+        :error -> nil
+      end
 
     case fun.(old) do
       :pop -> get_and_update(m, old, key, :pop)
@@ -145,9 +162,17 @@ defmodule HashedKeysMap do
           end
       end
 
+    original_val = new_val
+
+    new_val =
+      case key do
+        {_, _} -> e(vs(for i <- new_val, do: <<i::32-little>>))
+        _ -> new_val
+      end
+
     # Update both maps
     new_struct = %__MODULE__{
-      original_map: Map.put(m.original_map, key, new_val),
+      original_map: Map.put(m.original_map, key, original_val),
       hashed_map: Map.put(m.hashed_map, hashed_key, new_val),
       items_in_storage: updated_items_count,
       octets_in_storage: updated_octets_size
@@ -164,7 +189,6 @@ defmodule HashedKeysMap do
 
   def has_key?(map, key), do: Map.has_key?(map.hashed_map, hash_key(map.hash_prefix, key))
 
-
   defp hash_key(_, {hash, length}), do: hash_key({hash, length})
 
   # "Regular" storage key: prefix + key -> hash(prefix + key)
@@ -173,14 +197,14 @@ defmodule HashedKeysMap do
     hashed_key
   end
 
-<<<<<<< HEAD
   # Preimage storage key: {hash, length} -> hash(length + hash)
+  defp hash_key({:error, _}), do: nil
+
   defp hash_key({hash, length}) do
     key = <<length::32-little>> <> hash
     <<hashed_key::binary-size(@hash_key_size), _::binary>> = h(key)
     hashed_key
   end
-  defp hkey({:error, l}), do: nil
 
   # Direct key hashing
   defp hash_key(key) do

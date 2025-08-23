@@ -40,7 +40,7 @@ defmodule Block.Extrinsic.PreimageTest do
         build(:service_account,
           storage:
             HashedKeysMap.new(%{
-              {Hash.default(preimage.blob), byte_size(preimage.blob)} => [:some_existing_data]
+              {Hash.default(preimage.blob), byte_size(preimage.blob)} => [4]
             })
         )
 
