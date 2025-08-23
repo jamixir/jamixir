@@ -34,10 +34,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
           preimage_storage_p: %{
             test_map.hash => test_value
           },
-          storage:
-            HashedKeysMap.new(%{
-              {test_map.hash, test_map.length} => [1]
-            })
+          storage: HashedKeysMap.new(%{{test_map.hash, test_map.length} => [1]})
         }
       }
 

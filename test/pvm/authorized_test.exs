@@ -76,7 +76,7 @@ defmodule PVM.AuthorizedTest do
       service_account = %{
         service_account
         | preimage_storage_p: %{hash => binary},
-          preimage_storage_l: %{{hash, byte_size(binary)} => [0]}
+          storage: HashedKeysMap.new(%{{hash, byte_size(binary)} => [0]})
       }
 
       work_package = %WorkPackage{

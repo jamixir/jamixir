@@ -132,7 +132,7 @@ defmodule WorkPackageTest do
       service_account =
         build(:service_account,
           preimage_storage_p: %{h => <<0, 7, 7, 7>>},
-          preimage_storage_l: %{{h, 4} => [1]},
+          storage: HashedKeysMap.new(%{{h, 4} => [1]}),
           code_hash: h
         )
 

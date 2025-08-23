@@ -124,6 +124,7 @@ defmodule HashedKeysMapTest do
       k = {h(<<4, 4>>), 77}
       service = %ServiceAccount{storage: map}
       new_s = put_in(service, [:storage, k], [3, 2])
+      assert get_in(new_s, [:storage, k]) == [3, 2]
 
       old_count = new_s.storage.items_in_storage
       old_octets = new_s.storage.octets_in_storage
@@ -132,6 +133,14 @@ defmodule HashedKeysMapTest do
       assert new_s.storage.items_in_storage == old_count - 2
       # 1 byte less for key and 1 byte less for value
       assert new_s.storage.octets_in_storage == old_octets - 81 - 77
+    end
+
+    test "update_in should work for preimage_storage_l", %{map: map} do
+      service = %ServiceAccount{storage: map}
+      k = {h(<<4, 4>>), 77}
+      new_s = put_in(service, [:storage, k], [3, 2])
+      new_s = update_in(new_s, [:storage, k], &(&1 ++ [4]))
+      assert get_in(new_s, [:storage, k]) == [3, 2, 4]
     end
   end
 end

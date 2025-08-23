@@ -19,8 +19,7 @@ defmodule PVM.ServicesTest do
         0 => %ServiceAccount{
           code_hash: code_hash,
           preimage_storage_p: %{code_hash => bin_with_metadata},
-          storage:
-            HashedKeysMap.new(%{{code_hash, byte_size(bin_with_metadata)} => bin_with_metadata})
+          storage: HashedKeysMap.new(%{{code_hash, byte_size(bin_with_metadata)} => [1]})
         }
       }
     }
