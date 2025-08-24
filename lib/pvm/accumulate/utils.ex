@@ -13,7 +13,7 @@ defmodule PVM.Accumulate.Utils do
           Context.t()
   def initializer(n0_, header_timeslot, accumulation_state, service_index) do
     computed_service_index =
-      <<service_index::m(service_index), n0_::binary, header_timeslot::m(timeslot)>>
+      e(service_index) <> n0_ <> e(header_timeslot)
       |> Hash.default()
       |> de_le(4)
       |> rem(0xFFFFFE00)

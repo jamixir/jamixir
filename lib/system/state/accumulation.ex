@@ -128,7 +128,6 @@ defmodule System.State.Accumulation do
 
     # Formula (12.25) v0.6.5
     accumulation_stats = accumulate_statistics(w_star_n, u)
-
     # Formula (12.29) v0.6.5
     services_intermediate_2 =
       apply_transfers(
@@ -289,13 +288,8 @@ defmodule System.State.Accumulation do
     services = collect_services(work_reports, always_accumulated)
 
     # {m′, a′, v′, z′}
-    privileged_services_ =
-      accumulate_privileged_services(
-        acc_state,
-        work_reports,
-        always_accumulated,
-        extra_args
-      )
+    {privileged_services_, manager_result} =
+      accumulate_privileged_services(acc_state, work_reports, always_accumulated, extra_args)
 
     # i′ = (∆1(o, w, f , v)o)i
     next_validators_ =
@@ -340,7 +334,7 @@ defmodule System.State.Accumulation do
           single_accumulation(
             acc_state,
             work_reports,
-            services,
+            always_accumulated,
             service,
             extra_args
           )
@@ -438,8 +432,12 @@ defmodule System.State.Accumulation do
     %__MODULE__{manager: manager} = acc_state
 
     # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
-    %AccumulationResult{state: state_star} =
+    manager_result =
       single_accumulation(acc_state, work_reports, always_accumulated, manager, extra_args)
+
+
+
+    %AccumulationResult{state: state_star} = manager_result
 
     %{
       # m′
@@ -471,12 +469,12 @@ defmodule System.State.Accumulation do
         extra_args
       ).state.delegator
 
-    %PrivilegedServices{
-      manager: manager_,
-      assigners: assigners_,
-      delegator: delegator_,
-      always_accumulated: always_accumulated_
-    }
+    {%PrivilegedServices{
+       manager: manager_,
+       assigners: assigners_,
+       delegator: delegator_,
+       always_accumulated: always_accumulated_
+     }, manager_result}
   end
 
   # Formula (12.20) v0.6.5
