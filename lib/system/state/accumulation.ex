@@ -201,12 +201,16 @@ defmodule System.State.Accumulation do
   def deferred_transfers_stats(deferred_transfers) do
     for t <- deferred_transfers, reduce: %{} do
       stat ->
+        # For endowment transfers, count them but set amount to 0
+        amount =
+          if t.is_endowment, do: 0, else: t.amount
+
         case Map.get(stat, t.receiver) do
           nil ->
-            Map.put(stat, t.receiver, {1, t.amount})
+            Map.put(stat, t.receiver, {1, amount})
 
           {count, g} ->
-            Map.put(stat, t.receiver, {count + 1, g + t.amount})
+            Map.put(stat, t.receiver, {count + 1, g + amount})
         end
     end
   end
@@ -288,7 +292,7 @@ defmodule System.State.Accumulation do
     services = collect_services(work_reports, always_accumulated)
 
     # {m′, a′, v′, z′}
-    {privileged_services_, manager_result} =
+    privileged_services_=
       accumulate_privileged_services(acc_state, work_reports, always_accumulated, extra_args)
 
     # i′ = (∆1(o, w, f , v)o)i
@@ -432,12 +436,8 @@ defmodule System.State.Accumulation do
     %__MODULE__{manager: manager} = acc_state
 
     # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
-    manager_result =
+    %AccumulationResult{state: state_star} =
       single_accumulation(acc_state, work_reports, always_accumulated, manager, extra_args)
-
-
-
-    %AccumulationResult{state: state_star} = manager_result
 
     %{
       # m′
@@ -469,12 +469,12 @@ defmodule System.State.Accumulation do
         extra_args
       ).state.delegator
 
-    {%PrivilegedServices{
-       manager: manager_,
-       assigners: assigners_,
-       delegator: delegator_,
-       always_accumulated: always_accumulated_
-     }, manager_result}
+    %PrivilegedServices{
+      manager: manager_,
+      assigners: assigners_,
+      delegator: delegator_,
+      always_accumulated: always_accumulated_
+    }
   end
 
   # Formula (12.20) v0.6.5
