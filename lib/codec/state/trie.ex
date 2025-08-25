@@ -60,14 +60,12 @@ defmodule Codec.State.Trie do
       14 => e(Enum.map(s.ready_to_accumulate, &vs/1)),
       15 => e(Enum.map(s.accumulation_history, &vs/1)),
       16 =>
-        (fn ->
-           e(
-             vs(
-               for a <- s.accumulation_outputs,
-                   do: {<<a.service::m(service), a.accumulated_output::b(hash)>>}
-             )
-           )
-         end).()
+        e(
+          vs(
+            for a <- s.accumulation_outputs,
+                do: {<<a.service::m(service), a.accumulated_output::b(hash)>>}
+          )
+        )
     }
     |> encode_accounts(s)
     |> encode_accounts_storage_s(s)
