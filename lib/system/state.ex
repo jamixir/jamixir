@@ -1,7 +1,5 @@
 defmodule System.State do
-  alias System.State.Accumulation
   alias System.State.RecentHistory.AccumulationOutput
-  alias System.State.Services
   alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Constants
   alias System.State
