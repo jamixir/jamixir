@@ -20,6 +20,7 @@ defmodule System.State.Accumulation do
   use AccessStruct
   import Codec.Encoder
   import Utils
+  import Logger
 
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   @callback do_single_accumulation(
@@ -291,13 +292,43 @@ defmodule System.State.Accumulation do
     # s
     services = collect_services(work_reports, always_accumulated)
 
+    comprehensive_services = MapSet.union(services, MapSet.new([acc_state.manager] ++ acc_state.assigners ++ [acc_state.delegator]))
+
+
+    tasks =
+      Enum.map(comprehensive_services, fn service_id ->
+        Task.async(fn ->
+          Logger.info("parallelized_accumulation: Starting accumulation for service #{service_id}")
+          result = single_accumulation(acc_state, work_reports, always_accumulated, service_id, extra_args)
+          Logger.info("parallelized_accumulation: Completed accumulation for service #{service_id}")
+          {service_id, result}
+        end)
+      end)
+
+    # Wait for all tasks to complete and build the cache
+    service_cache =
+      Enum.reduce(tasks, %{}, fn task, cache ->
+        {service_id, result} = Task.await(task)
+        Map.put(cache, service_id, result)
+      end)
+
+
+    cached_single_accumulation = fn acc_state, work_reports, always_accumulated, service_id, extra_args ->
+      case Map.get(service_cache, service_id) do
+        nil ->
+          single_accumulation(acc_state, work_reports, always_accumulated, service_id, extra_args)
+        cached_result ->
+          cached_result
+      end
+    end
+
     # {m′, a′, v′, z′}
     privileged_services_=
-      accumulate_privileged_services(acc_state, work_reports, always_accumulated, extra_args)
+      accumulate_privileged_services(acc_state, work_reports, always_accumulated, extra_args, cached_single_accumulation)
 
     # i′ = (∆1(o, w, f , v)o)i
     next_validators_ =
-      single_accumulation(
+      cached_single_accumulation.(
         acc_state,
         work_reports,
         always_accumulated,
@@ -312,7 +343,7 @@ defmodule System.State.Accumulation do
     #     ∀c ∈ NC ∶ q′ c = ((∆1(o, w, f , ac)o)q)c
     authorizer_queue_ =
       for {a_c, core_index} <- Enum.with_index(acc_state.assigners) do
-        single_accumulation(
+        cached_single_accumulation.(
           acc_state,
           work_reports,
           always_accumulated,
@@ -335,7 +366,7 @@ defmodule System.State.Accumulation do
         # ar stands for accumulation result
         # ∆1(o,w,f,s)
         ar =
-          single_accumulation(
+          cached_single_accumulation.(
             acc_state,
             work_reports,
             always_accumulated,
@@ -431,13 +462,14 @@ defmodule System.State.Accumulation do
         acc_state,
         work_reports,
         always_accumulated,
-        extra_args
+        extra_args,
+        cached_single_accumulation
       ) do
     %__MODULE__{manager: manager} = acc_state
 
     # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
     %AccumulationResult{state: state_star} =
-      single_accumulation(acc_state, work_reports, always_accumulated, manager, extra_args)
+      cached_single_accumulation.(acc_state, work_reports, always_accumulated, manager, extra_args)
 
     %{
       # m′
@@ -454,14 +486,14 @@ defmodule System.State.Accumulation do
     assigners_ =
       for {a_c_star, core_index} <- Enum.with_index(assigners_star) do
         # (∆1(o, w, f , a∗ c)
-        single_accumulation(state_star, work_reports, always_accumulated, a_c_star, extra_args).state.assigners
+        cached_single_accumulation.(state_star, work_reports, always_accumulated, a_c_star, extra_args).state.assigners
         # c
         |> Enum.at(core_index)
       end
 
     # v′ = (∆1(o, w, f , v∗)_o)_v
     delegator_ =
-      single_accumulation(
+      cached_single_accumulation.(
         state_star,
         work_reports,
         always_accumulated,
