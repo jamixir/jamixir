@@ -46,6 +46,9 @@ defmodule JsonDecoder do
                v -> Enum.map(v, &module.from_json/1)
              end
 
+           {:_custom, fun} ->
+             fun.(json_data)
+
            %{m: module, f: f} ->
              module.from_json(json_data[f])
 
