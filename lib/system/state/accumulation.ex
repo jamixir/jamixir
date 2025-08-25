@@ -20,7 +20,6 @@ defmodule System.State.Accumulation do
   use AccessStruct
   import Codec.Encoder
   import Utils
-  import Logger
 
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   @callback do_single_accumulation(
