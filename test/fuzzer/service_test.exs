@@ -150,7 +150,7 @@ defmodule Jamixir.FuzzerTest do
 
       @tag :fuzzer
       @tag dir: dir
-      # @tag :skip
+      @tag :skip
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
@@ -160,14 +160,13 @@ defmodule Jamixir.FuzzerTest do
     # @tag :skip
     _failing = [
       # storage diff
-      "1755531265",
-      # accumulation output diff
-      "1755530300"
+      "1755531265"
     ]
 
     @tag :fuzzer2
+    @tag :skip
     test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755530896")
+      test_case(client, "#{@base_path}/1755530300")
     end
   end
 

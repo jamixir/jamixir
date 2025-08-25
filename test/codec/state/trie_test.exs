@@ -3,6 +3,7 @@ defmodule Codec.State.TrieTest do
   import Jamixir.Factory
   import Codec.State.Trie
   import Bitwise
+  alias System.State.RecentHistory.AccumulationOutput
   alias Codec.NilDiscriminator
   alias System.State
   alias System.State.ServiceAccount
@@ -217,27 +218,11 @@ defmodule Codec.State.TrieTest do
           accumulation_history:
             for(_ <- 1..(Constants.epoch_length() - 1), do: MapSet.new([Hash.random()])) ++
               [MapSet.new()],
-          ready_to_accumulate: build(:ready_to_accumulate)
+          ready_to_accumulate: build(:ready_to_accumulate),
+          accumulation_outputs: [%AccumulationOutput{service: 1, accumulated_output: Hash.one()}]
       }
 
       recovered_state = serialize(trie_state) |> trie_to_state()
-
-      assert recovered_state.authorizer_pool == trie_state.authorizer_pool
-      assert recovered_state.recent_history == trie_state.recent_history
-      assert recovered_state.safrole == trie_state.safrole
-      assert recovered_state.services == trie_state.services
-      assert recovered_state.entropy_pool == trie_state.entropy_pool
-      assert recovered_state.next_validators == trie_state.next_validators
-      assert recovered_state.curr_validators == trie_state.curr_validators
-      assert recovered_state.prev_validators == trie_state.prev_validators
-      assert recovered_state.core_reports == trie_state.core_reports
-      assert recovered_state.timeslot == trie_state.timeslot
-      assert recovered_state.authorizer_queue == trie_state.authorizer_queue
-      assert recovered_state.privileged_services == trie_state.privileged_services
-      assert recovered_state.judgements == trie_state.judgements
-      assert recovered_state.validator_statistics == trie_state.validator_statistics
-      assert recovered_state.ready_to_accumulate == trie_state.ready_to_accumulate
-      assert recovered_state.accumulation_history == trie_state.accumulation_history
 
       assert recovered_state == trie_state
     end
@@ -259,7 +244,7 @@ defmodule Codec.State.TrieTest do
 
       recovered_state = serialize(trie_state) |> trie_to_state()
 
-      assert recovered_state.services == trie_state.services
+      assert recovered_state == trie_state
     end
 
     test "trie_to_state/1 - service accounts with storage", %{state: state} do
