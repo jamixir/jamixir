@@ -289,139 +289,202 @@ defmodule System.State.Accumulation do
           {t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()),
            list({Types.service_index(), Types.gas()})}
   def parallelized_accumulation(acc_state, work_reports, always_accumulated, extra_args) do
-    # s
+    # s = {rs | w ∈ w, r ∈ wr} ∪ K(f)
     services = collect_services(work_reports, always_accumulated)
 
-    comprehensive_services = MapSet.union(services, MapSet.new([acc_state.manager] ++ acc_state.assigners ++ [acc_state.delegator]))
+    # Pre-calculate all single accumulations for caching
+    all_relevant_services =
+      services
+      |> MapSet.union(
+        MapSet.new([acc_state.manager] ++ acc_state.assigners ++ [acc_state.delegator])
+      )
 
+    accumulation_cache =
+      build_accumulation_cache(
+        all_relevant_services,
+        acc_state,
+        work_reports,
+        always_accumulated,
+        extra_args
+      )
 
+    cached_accumulation = fn service_id ->
+      case Map.get(accumulation_cache, service_id) do
+        nil ->
+          single_accumulation(
+            acc_state,
+            work_reports,
+            always_accumulated,
+            service_id,
+            extra_args
+          )
+
+        result ->
+          result
+      end
+    end
+
+    # u = [(s, Δ₁(o, w, f, s)u) | s ∈ s]
+    gas_used = for s <- services, do: {s, cached_accumulation.(s).gas_used}
+
+    # b = {(s, b) | s ∈ s, b = Δ₁(o, w, f, s)b, b ≠ ∅}
+    accumulation_outputs =
+      for s <- services,
+          accumulation_result = cached_accumulation.(s),
+          is_binary(accumulation_result.output),
+          do: %AccumulationOutput{service: s, accumulated_output: accumulation_result.output}
+
+    # t = [Δ₁(o, w, f, s)t | s ∈ s] (flattened transfers)
+    transfers =
+      Enum.flat_map(services, fn s ->
+        accumulation_result = cached_accumulation.(s)
+        accumulation_result.transfers
+      end)
+
+    original_services = acc_state.services
+
+    # n = ⋃({(Δ₁(o, w, f, s)o)d \ K(d ∖ {s})})
+    # - The post-accumulation state for service s (the accumulating service)
+    # - but not in the original state (excluding the accumulating service itself)
+    # aka newly created services + accumulating service
+    newly_created_services =
+      Enum.reduce(services, %{}, fn accumulating_service, acc_n ->
+        post_accumulation_services = cached_accumulation.(accumulating_service).state.services
+
+        original_keys_excluding_s = Map.keys(Map.delete(original_services, accumulating_service))
+
+        newly_created_services_by_accumulating_service =
+          Map.drop(post_accumulation_services, original_keys_excluding_s)
+
+        # Union with accumulator
+        Map.merge(acc_n, newly_created_services_by_accumulating_service)
+      end)
+
+    # m = ⋃(K(d) ∖ K((Δ₁(o, w, f, s)o)d))
+    # m collects service keys that are:
+    # - Present in the original state
+    # - But absent from the post-accumulation state
+    # aka deleted services
+    deleted_services =
+      Enum.reduce(services, MapSet.new(), fn accumulating_service, acc_m ->
+        post_accumulation_services = cached_accumulation.(accumulating_service).state.services
+
+        original_keys = keys_set(original_services)
+        post_accumulation_keys = keys_set(post_accumulation_services)
+
+        # keys that are present in the original state but not in the post-accumulation state => removed services
+        removed_keys_by_accumulating_service = MapSet.difference(original_keys, post_accumulation_keys)
+
+        # Union with accumulator
+        MapSet.union(acc_m, removed_keys_by_accumulating_service)
+      end)
+
+    # Calculate preimages for d'
+    service_preimages =
+      for s <- services,
+          accumulation_result = cached_accumulation.(s),
+          do:
+            accumulation_result.preimages
+            |> List.flatten()
+
+    # d' = P((d ∪ n) ∖ m, ⋃ Δ₁(o, w, f, s)p)
+    # original services + newly created services + accumulating service
+    all_services = Map.merge(original_services, newly_created_services)
+    # without deleted services
+    all_services_without_deleted_services =
+      Map.drop(all_services, MapSet.to_list(deleted_services))
+
+    services_ =
+      integrate_preimages(
+        all_services_without_deleted_services,
+        service_preimages,
+        extra_args.timeslot_
+      )
+
+    %AccumulationResult{state: state_star_manager} = cached_accumulation.(acc_state.manager)
+
+    %{
+      manager: manager_,
+      assigners: a_star,
+      delegator: v_star,
+      always_accumulated: always_accumulated_
+    } = state_star_manager
+
+    # ∀c ∈ NC : a'c = ((Δ₁(o, w, f, a*c)o)a)c
+    assigners_ =
+      for {a_c_star, core_index} <- Enum.with_index(a_star) do
+        a_c_accumulation =
+          single_accumulation(
+            state_star_manager,
+            work_reports,
+            always_accumulated,
+            a_c_star,
+            extra_args
+          )
+
+        Enum.at(a_c_accumulation.state.assigners, core_index)
+      end
+
+    # v' = (Δ₁(o, w, f, v*)o)v
+    delegator_ =
+      single_accumulation(
+        state_star_manager,
+        work_reports,
+        always_accumulated,
+        v_star,
+        extra_args
+      ).state.delegator
+
+    # i' = (Δ₁(o, w, f, v)o)i
+    next_validators_ = cached_accumulation.(acc_state.delegator).state.next_validators
+
+    # ∀c ∈ NC : q'c = (Δ₁(o, w, f, ac)o)_q_c
+    authorizer_queue_ =
+      for {a_c, core_index} <- Enum.with_index(acc_state.assigners) do
+        a_c_accumulation = cached_accumulation.(a_c)
+        Enum.at(a_c_accumulation.state.authorizer_queue, core_index)
+      end
+
+    accumulation_state = %__MODULE__{
+      services: services_,
+      next_validators: next_validators_,
+      authorizer_queue: authorizer_queue_,
+      manager: manager_,
+      assigners: assigners_,
+      delegator: delegator_,
+      always_accumulated: always_accumulated_
+    }
+
+    {accumulation_state, transfers, accumulation_outputs, gas_used}
+  end
+
+  defp build_accumulation_cache(
+         all_services,
+         acc_state,
+         work_reports,
+         always_accumulated,
+         extra_args
+       ) do
     tasks =
-      Enum.map(comprehensive_services, fn service_id ->
+      Enum.map(all_services, fn service_id ->
         Task.async(fn ->
-          Logger.info("parallelized_accumulation: Starting accumulation for service #{service_id}")
-          result = single_accumulation(acc_state, work_reports, always_accumulated, service_id, extra_args)
-          Logger.info("parallelized_accumulation: Completed accumulation for service #{service_id}")
+          result =
+            single_accumulation(
+              acc_state,
+              work_reports,
+              always_accumulated,
+              service_id,
+              extra_args
+            )
+
           {service_id, result}
         end)
       end)
 
-    # Wait for all tasks to complete and build the cache
-    service_cache =
-      Enum.reduce(tasks, %{}, fn task, cache ->
-        {service_id, result} = Task.await(task)
-        Map.put(cache, service_id, result)
-      end)
-
-
-    cached_single_accumulation = fn acc_state, work_reports, always_accumulated, service_id, extra_args ->
-      case Map.get(service_cache, service_id) do
-        nil ->
-          single_accumulation(acc_state, work_reports, always_accumulated, service_id, extra_args)
-        cached_result ->
-          cached_result
-      end
-    end
-
-    # {m′, a′, v′, z′}
-    privileged_services_=
-      accumulate_privileged_services(acc_state, work_reports, always_accumulated, extra_args, cached_single_accumulation)
-
-    # i′ = (∆1(o, w, f , v)o)i
-    next_validators_ =
-      cached_single_accumulation.(
-        acc_state,
-        work_reports,
-        always_accumulated,
-        # v
-        acc_state.delegator,
-        extra_args
-      )
-      |> Map.get(:state)
-      |> Map.get(:next_validators)
-
-    # Formula (12.17) v0.6.8 (we're in the future :))
-    #     ∀c ∈ NC ∶ q′ c = ((∆1(o, w, f , ac)o)q)c
-    authorizer_queue_ =
-      for {a_c, core_index} <- Enum.with_index(acc_state.assigners) do
-        cached_single_accumulation.(
-          acc_state,
-          work_reports,
-          always_accumulated,
-          a_c,
-          extra_args
-        )
-        |> Map.get(:state)
-        |> Map.get(:authorizer_queue)
-        |> Enum.at(core_index)
-      end
-
-    d = acc_state.services
-
-    {accumulation_outputs, transfers, n, m, service_gas, service_preimages} =
-      Enum.reduce(services, {[], [], %{}, MapSet.new(), [], []}, fn service,
-                                                                    {acc_accumulation_outputs,
-                                                                     acc_transfers, acc_n, acc_m,
-                                                                     acc_service_gas,
-                                                                     acc_preimages} ->
-        # ar stands for accumulation result
-        # ∆1(o,w,f,s)
-        ar =
-          cached_single_accumulation.(
-            acc_state,
-            work_reports,
-            always_accumulated,
-            service,
-            extra_args
-          )
-
-        # K(d ∖{s})
-        keys_to_drop = Map.keys(Map.delete(d, service))
-        # ar.state.services = ∆1(o,w,f,s)_o_d
-        # ∆1(o,w,f,s)_o_d ∖ K(d ∖ {s})
-        service_n = Map.drop(ar.state.services, keys_to_drop)
-
-        # K(d) \ K(∆1(o,w,f,s)_o_d)
-        service_m =
-          MapSet.difference(keys_set(d), keys_set(ar.state.services))
-
-        {
-          if(is_binary(ar.output),
-            do:
-              acc_accumulation_outputs ++
-                [%AccumulationOutput{service: service, accumulated_output: ar.output}],
-            else: acc_accumulation_outputs
-          ),
-          acc_transfers ++ ar.transfers,
-          acc_n ++ service_n,
-          acc_m ++ service_m,
-          acc_service_gas ++ [{service, ar.gas_used}],
-          acc_preimages ++ ar.preimages
-        }
-      end)
-
-    accumulation_state = %__MODULE__{
-      # d'
-      services:
-        integrate_preimages(
-          Map.drop(d ++ n, MapSet.to_list(m)),
-          service_preimages,
-          extra_args.timeslot_
-        ),
-      # ι'
-      next_validators: next_validators_,
-      # q'
-      authorizer_queue: authorizer_queue_,
-      # m'
-      manager: privileged_services_.manager,
-      # a'
-      assigners: privileged_services_.assigners,
-      # v'
-      delegator: privileged_services_.delegator,
-      # z'
-      always_accumulated: privileged_services_.always_accumulated
-    }
-
-    {accumulation_state, List.flatten(transfers), accumulation_outputs, service_gas}
+    Enum.reduce(tasks, %{}, fn task, cache ->
+      {service_id, result} = Task.await(task)
+      Map.put(cache, service_id, result)
+    end)
   end
 
   # Formula (12.18) v0.6.6
@@ -456,57 +519,6 @@ defmodule System.State.Accumulation do
       do: d.service,
       into: MapSet.new()
     ) ++ keys_set(always_accumulated)
-  end
-
-  def accumulate_privileged_services(
-        acc_state,
-        work_reports,
-        always_accumulated,
-        extra_args,
-        cached_single_accumulation
-      ) do
-    %__MODULE__{manager: manager} = acc_state
-
-    # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
-    %AccumulationResult{state: state_star} =
-      cached_single_accumulation.(acc_state, work_reports, always_accumulated, manager, extra_args)
-
-    %{
-      # m′
-      manager: manager_,
-      # a∗
-      assigners: assigners_star,
-      # v∗
-      delegator: delegator_star,
-      # z′
-      always_accumulated: always_accumulated_
-    } = state_star
-
-    # ∀c ∈ NC ∶ a′ c = ((∆1(o, w, f , a∗ c )_o)_a)_c
-    assigners_ =
-      for {a_c_star, core_index} <- Enum.with_index(assigners_star) do
-        # (∆1(o, w, f , a∗ c)
-        cached_single_accumulation.(state_star, work_reports, always_accumulated, a_c_star, extra_args).state.assigners
-        # c
-        |> Enum.at(core_index)
-      end
-
-    # v′ = (∆1(o, w, f , v∗)_o)_v
-    delegator_ =
-      cached_single_accumulation.(
-        state_star,
-        work_reports,
-        always_accumulated,
-        delegator_star,
-        extra_args
-      ).state.delegator
-
-    %PrivilegedServices{
-      manager: manager_,
-      assigners: assigners_,
-      delegator: delegator_,
-      always_accumulated: always_accumulated_
-    }
   end
 
   # Formula (12.20) v0.6.5
