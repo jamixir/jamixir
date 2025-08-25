@@ -219,19 +219,30 @@ defmodule System.State.ServiceAccount do
               deposit_offset: service.deposit_offset,
               creation_slot: service.creation_slot,
               last_accumulation_slot: service.last_accumulation_slot,
-              parent_service: service.parent_service,
-              storage:
-                for({k, v} <- service.storage.original_map, is_binary(k), do: %{key: k, value: v}),
-              lookup_meta:
-                for(
-                  {{h, l}, v} <- service.storage.original_map,
-                  do: %{key: to_object({h, l}, :hash, :length), value: v}
-                )
+              parent_service: service.parent_service
             }
         end}}
 
+    storage_map =
+      {:_module,
+       {:storage,
+        fn service ->
+          for({k, v} <- service.storage.original_map, is_binary(k), do: %{key: k, value: v})
+        end}}
+
+    preimage_storage_l_map =
+      {:_module,
+       {:lookup_meta,
+        fn service ->
+          for(
+            {{h, l}, v} <- service.storage.original_map,
+            do: %{key: to_object({h, l}, :hash, :length), value: v}
+          )
+        end}}
+
     %{
-      storage: custom_map,
+      storage: storage_map,
+      preimage_storage_l: preimage_storage_l_map,
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
       balance: custom_map,
       code_hash: custom_map,
