@@ -1,4 +1,5 @@
 defmodule System.State do
+  alias System.State.RecentHistory.AccumulationOutput
   alias System.State.Services
   alias System.State.Accumulation
   alias Block.Extrinsic.Assurance
@@ -15,7 +16,7 @@ defmodule System.State do
           # Formula (8.1) v0.6.6
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
-          accumulation_outputs: list({Types.service_index(), Types.hash()}),
+          accumulation_outputs: list(AccumulationOutput.t()),
           safrole: Safrole.t(),
           # Formula (9.1) v0.6.6
           # Formula (9.2) v0.6.6
