@@ -162,8 +162,7 @@ defmodule System.State.ServiceAccount do
   def json_mapping do
     %{
       preimage_storage_p: [&extract_preimages_p/1, :preimages],
-      preimage_storage_l: [&extract_preimages_l/1, :lookup_meta],
-      storage: [&extract_storage/1, :storage],
+      storage: {:_custom, &extract_storage/1},
       gas_limit_g: {:service, :min_item_gas},
       gas_limit_m: {:service, :min_memo_gas},
       balance: {:service, :balance},
@@ -177,11 +176,18 @@ defmodule System.State.ServiceAccount do
 
   def extract_code_hash(service), do: JsonDecoder.from_json(service[:code_hash])
 
-  def extract_storage(storage) do
-    for %{key: k, value: v} <- storage || [], into: %{} do
-      {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
-    end
-    |> HashedKeysMap.new()
+  def extract_storage(json_data) do
+    storage =
+      for %{key: k, value: v} <- json_data[:storage] || [] do
+        {JsonDecoder.from_json(k), JsonDecoder.from_json(v)}
+      end
+
+    preimage_storage_l =
+      for %{key: %{hash: h, length: l}, value: v} <- json_data[:lookup_meta] || [] do
+        {{JsonDecoder.from_json(h), l}, JsonDecoder.from_json(v)}
+      end
+
+    HashedKeysMap.new(Map.new(storage ++ preimage_storage_l))
   end
 
   def extract_preimages_p(preimages) do
@@ -213,20 +219,20 @@ defmodule System.State.ServiceAccount do
               deposit_offset: service.deposit_offset,
               creation_slot: service.creation_slot,
               last_accumulation_slot: service.last_accumulation_slot,
-              parent_service: service.parent_service
+              parent_service: service.parent_service,
+              storage:
+                for({k, v} <- service.storage.original_map, is_binary(k), do: %{key: k, value: v}),
+              lookup_meta:
+                for(
+                  {{h, l}, v} <- service.storage.original_map,
+                  do: %{key: to_object({h, l}, :hash, :length), value: v}
+                )
             }
         end}}
 
     %{
-      storage: {:storage, &for({k, v} <- &1.original_map, do: %{key: k, value: v})},
+      storage: custom_map,
       preimage_storage_p: {:preimages, &to_list(&1, :hash, :blob)},
-      preimage_storage_l:
-        {:lookup_meta,
-         &to_list(
-           &1,
-           {:key, fn key -> to_object(key, :hash, :length) end},
-           :value
-         )},
       balance: custom_map,
       code_hash: custom_map,
       gas_limit_g: custom_map,
