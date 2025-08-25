@@ -31,19 +31,19 @@ defmodule Mix.Tasks.BuildReleases do
 
   1. **Build Releases**: MIX_ENV=tiny and MIX_ENV=prod (with auto-confirm overwrite)
   2. **Rename Files**: Platform-specific naming format:
-    - `jamixir_linux-x86-64-gp_JAM_VERSION_vAPP_VERSION_SIZE.tar.gz`
-    - `jamixir_macos-arm64-gp_JAM_VERSION_vAPP_VERSION_SIZE.tar.gz`
+    - `jamixir_linux-x86-64-JAM_VERSION.tar.gz`
+    - `jamixir_macos-arm64-JAM_VERSION.tar.gz`
   3. **Copy Files**: To `../jamixir-releases/` folder
   4. **GitHub Release**: Create new release or add to existing one
-    - Tag/Release name: `gp-JAM_VERSION-APP_VERSION`
+    - Tag/Release name: `JAM_VERSION`
     - Auto-generated release notes (first creation only)
 
   ## Example Workflow
 
   1. Developer on Linux runs: `mix build_releases`
-    - Creates release `gp-0.6.6-1.6.0` with Linux files
+    - Creates release `0.6.6` with Linux files
   2. Developer on macOS runs: `mix build_releases`
-    - Adds macOS files to existing `gp-0.6.6-1.6.0` release
+    - Adds macOS files to existing `0.6.6` release
 
   ## Version Source
   Versions are read from `Jamixir.Meta` module which pulls from `mix.exs`:
@@ -51,7 +51,7 @@ defmodule Mix.Tasks.BuildReleases do
   - App version: `app_version` config
 
   **To create a new release**: Bump either `jam_version` or `app_version` in `mix.exs`
-  - Release name format: `gp-JAM_VERSION-APP_VERSION`
+  - Release name format: `JAM_VERSION`
   - Same versions = files added to existing release
   - Different versions = new release created
   """
@@ -78,7 +78,7 @@ defmodule Mix.Tasks.BuildReleases do
       platform_suffix: platform_suffix,
       tiny_file: generate_filename(platform_suffix, jam_version, app_version, "tiny"),
       full_file: generate_filename(platform_suffix, jam_version, app_version, "full"),
-      release_title: "gp-#{jam_version}-v#{app_version}"
+      release_title: jam_version
     }
 
     Mix.shell().info("Building releases for platform: #{ctx.platform_suffix}")
@@ -106,8 +106,8 @@ defmodule Mix.Tasks.BuildReleases do
     Mix.shell().info("Release builds completed successfully!")
   end
 
-  defp generate_filename(platform_suffix, jam_version, app_version, size) do
-    "jamixir_#{platform_suffix}_#{jam_version}_v#{app_version}_#{size}.tar.gz"
+  defp generate_filename(platform_suffix, jam_version, _app_version, size) do
+    "jamixir_#{platform_suffix}_#{jam_version}_#{size}.tar.gz"
   end
 
   defp detect_platform do
@@ -124,7 +124,7 @@ defmodule Mix.Tasks.BuildReleases do
           System.halt(1)
       end
 
-    "#{os}-#{arch}-gp"
+    "#{os}-#{arch}"
   end
 
   defp detect_arch do
