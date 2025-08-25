@@ -278,7 +278,7 @@ defmodule Codec.State.Trie do
       validator_statistics: dict[13],
       ready_to_accumulate: dict[14],
       accumulation_history: dict[15],
-      accumulation_outputs: dict[16],
+      lastaccout: dict[16],
       services: services
     }
   end
