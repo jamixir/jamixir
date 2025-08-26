@@ -12,7 +12,7 @@ defmodule System.State do
           # Formula (8.1) v0.7.0
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
-          lastaccout: list(AccumulationOutput.t()),
+          accumulation_outputs: list(AccumulationOutput.t()),
           safrole: Safrole.t(),
           # Formula (9.1) v0.7.0
           # Formula (9.2) v0.7.0
@@ -42,7 +42,7 @@ defmodule System.State do
     # β
     recent_history: %RecentHistory{},
     # θ
-    lastaccout: [],
+    accumulation_outputs: [],
     # γ
     safrole: %Safrole{},
     # δ
@@ -188,7 +188,7 @@ defmodule System.State do
          # β'
          recent_history: recent_history_,
          # θ'
-         lastaccout: lastaccout_,
+         accumulation_outputs: accumulation_outputs_,
          # γ'
          safrole: safrole_,
          # δ'
