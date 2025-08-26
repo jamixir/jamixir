@@ -179,7 +179,7 @@ defmodule Codec.State.TrieTest do
     test "accumulation outputs serialization - C(16)", %{state: state} do
       assert state_keys(state)[16] ==
                e(
-                 vs(for {s, h} <- state.lastaccout, do: {<<s::m(service), h::b(hash)>>})
+                 vs(for {s, h} <- state.accumulation_outputs, do: {<<s::m(service), h::b(hash)>>})
                )
     end
 
