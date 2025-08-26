@@ -11,17 +11,14 @@ defmodule System.DeferredTransfer do
           # m ∈ 𝕐_W_T
           memo: binary(),
           # g ∈ ℕ_G
-          gas_limit: non_neg_integer(),
-          # Flag to indicate if this is an endowment transfer (should not be counted in statistics)
-          is_endowment: boolean()
+          gas_limit: non_neg_integer()
         }
 
   defstruct sender: 0,
             receiver: 0,
             amount: 0,
             memo: <<0::size(Constants.memo_size() * 8)>>,
-            gas_limit: 0,
-            is_endowment: false
+            gas_limit: 0
 
   # Formula (12.27) v0.6.7
   @spec select_transfers_for_destination(list(t()), non_neg_integer()) :: list(t())
@@ -37,7 +34,6 @@ defmodule System.DeferredTransfer do
     alias System.DeferredTransfer
     # Formula (C.28) v0.6.7
     def encode(%DeferredTransfer{} = t) do
-      # Note: is_endowment is not encoded as it's only used internally for statistics
       <<t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance), t.memo::binary,
         t.gas_limit::m(gas)>>
     end

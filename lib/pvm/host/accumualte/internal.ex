@@ -301,15 +301,12 @@ defmodule PVM.Host.Accumulate.Internal do
     t =
       case Memory.read(memory, o, Constants.memo_size()) do
         {:ok, memo} ->
-          #  from manager to any other service
-          is_endowment = (x.service == x.accumulation.manager and d != x.accumulation.manager)
           %DeferredTransfer{
             sender: x.service,
             receiver: d,
             amount: a,
             memo: memo,
             gas_limit: l,
-            is_endowment: is_endowment
           }
 
         _ ->
