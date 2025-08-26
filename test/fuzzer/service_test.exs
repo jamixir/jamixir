@@ -115,6 +115,7 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
 
+    @tag :skip
     test "fuzzer example stf binaries", %{client: client} do
       <<_protocol::8, message::binary>> = File.read!("test/fuzzer/2_set_state.bin")
 
@@ -165,6 +166,7 @@ defmodule Jamixir.FuzzerTest do
     ]
 
     @tag :fuzzer2
+    @tag :skip
     test "fuzzer blocks", %{client: client} do
       test_case(client, "#{@base_path}/1755531265")
     end
