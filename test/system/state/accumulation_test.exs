@@ -568,6 +568,16 @@ defmodule System.State.AccumulationTest do
   end
 
   describe "calculate_posterior_services/2" do
+    setup do
+      Application.put_env(:jamixir, :pvm, MockPVM)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, :pvm, PVM)
+      end)
+
+      :ok
+    end
+
     test "applies transfers correctly" do
       services_intermediate_2 = %{
         1 => %ServiceAccount{balance: 100},
@@ -583,7 +593,20 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      {%{1 => s1, 2 => s2, 3 => s3}, _transfer_gas_usage} =
+      MockPVM
+      |> stub(:do_on_transfer, fn services,
+                                  _timeslot,
+                                  service_index,
+                                  selected_transfers,
+                                  _extra_args ->
+        service = services[service_index]
+        total_received = Enum.sum(for t <- selected_transfers, do: t.amount)
+        updated_service = %{service | balance: service.balance + total_received}
+        gas_used = service_index * 10
+        {updated_service, gas_used}
+      end)
+
+      {%{1 => s1, 2 => s2, 3 => s3}, transfer_stats} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -597,6 +620,10 @@ defmodule System.State.AccumulationTest do
       assert s1.balance == 200
       assert s2.balance == 250
       assert s3.balance == 375
+
+      assert transfer_stats[1] == {1, 10}
+      assert transfer_stats[2] == {1, 20}
+      assert transfer_stats[3] == {1, 30}
     end
 
     test "handles empty transfers" do
@@ -607,13 +634,25 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
+      MockPVM
+      |> stub(:do_on_transfer, fn services,
+                                  _timeslot,
+                                  service_index,
+                                  _selected_transfers,
+                                  _extra_args ->
+        {services[service_index], 0}
+      end)
+
+      {%{1 => s1, 2 => s2}, transfer_stats} =
         Accumulation.apply_transfers(services_intermediate_2, [], 0, accumualted_services_keys, %{
           n0_: Util.Hash.one()
         })
 
       assert s1.balance == 100
       assert s2.balance == 200
+
+      # No transfers means empty transfer stats
+      assert transfer_stats == %{}
     end
 
     test "transfers to non-existent services is a noop" do
@@ -628,7 +667,16 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
+      MockPVM
+      |> stub(:do_on_transfer, fn services,
+                                  _timeslot,
+                                  service_index,
+                                  _selected_transfers,
+                                  _extra_args ->
+        {services[service_index], 0}
+      end)
+
+      {%{1 => s1, 2 => s2}, transfer_stats} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -641,6 +689,9 @@ defmodule System.State.AccumulationTest do
 
       assert s1.balance == 100
       assert s2.balance == 200
+
+      # No transfers to existing services means empty transfer stats
+      assert transfer_stats == %{}
     end
 
     test "updates last_accumulation_slot, but only to accumulated_services" do
@@ -656,7 +707,21 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 2, amount: 50}
       ]
 
-      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
+      # Mock PVM.do_on_transfer
+      MockPVM
+      |> stub(:do_on_transfer, fn services,
+                                  _timeslot,
+                                  service_index,
+                                  selected_transfers,
+                                  _extra_args ->
+        service = services[service_index]
+        total_received = Enum.sum(for t <- selected_transfers, do: t.amount)
+        updated_service = %{service | balance: service.balance + total_received}
+        gas_used = service_index * 15
+        {updated_service, gas_used}
+      end)
+
+      {%{1 => s1, 2 => s2}, transfer_stats} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -669,6 +734,11 @@ defmodule System.State.AccumulationTest do
       assert s2.last_accumulation_slot == 2
       assert s1.balance == 100
       assert s2.balance == 250
+
+      # Service 2 receives 1 transfer, gas_used = 2 * 15 = 30
+      assert transfer_stats[2] == {1, 30}
+      # Service 1 receives no transfers, so no entry in transfer_stats
+      refute Map.has_key?(transfer_stats, 1)
     end
   end
 
@@ -867,78 +937,6 @@ defmodule System.State.AccumulationTest do
                2 => {1, 500},
                # Total gas: 400, Count: 1
                3 => {1, 400}
-             }
-    end
-  end
-
-  describe "build_deferred_transfers_stats/2" do
-    test "returns empty map for empty transfers" do
-      result = Accumulation.build_deferred_transfers_stats([], %{})
-      assert result == %{}
-    end
-
-    test "aggregates single transfer" do
-      transfers = [
-        %DeferredTransfer{receiver: 1, amount: 100}
-      ]
-
-      gas_usage = %{1 => 200}
-
-      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
-      assert result == %{1 => {1, 200}}
-    end
-
-    test "aggregates multiple transfers to same destination" do
-      transfers = [
-        %DeferredTransfer{receiver: 1, amount: 100},
-        %DeferredTransfer{receiver: 1, amount: 200}
-      ]
-
-      gas_usage = %{1 => 300}
-
-      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
-      # count: 2, gas_used: 300
-      assert result == %{1 => {2, 300}}
-    end
-
-    test "aggregates transfers to multiple destinations" do
-      transfers = [
-        %DeferredTransfer{receiver: 1, amount: 100},
-        %DeferredTransfer{receiver: 2, amount: 200},
-        %DeferredTransfer{receiver: 1, amount: 300},
-        %DeferredTransfer{receiver: 3, amount: 400}
-      ]
-
-      gas_usage = %{1 => 345, 2 => 456, 3 => 678}
-
-      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
-
-      assert result == %{
-               # count: 2, gas_used: 345
-               1 => {2, 345},
-               # count: 1, gas_used: 456
-               2 => {1, 456},
-               # count: 1, gas_used: 678
-               3 => {1, 678}
-             }
-    end
-
-    test "handles missing gas usage entries" do
-      transfers = [
-        %DeferredTransfer{receiver: 1, amount: 100},
-        %DeferredTransfer{receiver: 2, amount: 200}
-      ]
-
-      # missing entry for service 2
-      gas_usage = %{1 => 300}
-
-      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
-
-      assert result == %{
-               # has gas usage
-               1 => {1, 300},
-               # missing gas usage, defaults to 0
-               2 => {1, 0}
              }
     end
   end

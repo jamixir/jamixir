@@ -15,6 +15,14 @@ defmodule PVM do
   @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
               binary() | WorkExecutionError.t()
 
+  @callback do_on_transfer(
+              %{integer() => ServiceAccount.t()},
+              non_neg_integer(),
+              non_neg_integer(),
+              list(DeferredTransfer.t()),
+              %{n0_: Types.hash()}
+            ) :: {ServiceAccount.t(), non_neg_integer()}
+
   def authorized(p, core, services) do
     module = Application.get_env(:jamixir, :pvm, __MODULE__)
     module.do_authorized(p, core, services)
@@ -162,7 +170,12 @@ defmodule PVM do
           transfers :: list(DeferredTransfer.t()),
           extra_args :: %{n0_: Types.hash()}
         ) :: {ServiceAccount.t(), non_neg_integer()}
-  def on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
+  def on_transfer(services, timeslot, service_index, transfers, extra_args) do
+    module = Application.get_env(:jamixir, :pvm, __MODULE__)
+    module.do_on_transfer(services, timeslot, service_index, transfers, extra_args)
+  end
+
+  def do_on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
     # Formula (B.16) v0.6.6
     f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
