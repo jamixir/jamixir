@@ -8,7 +8,7 @@ config :jamixir, Jamixir,
   # E
   epoch_length: 12,
   # K
-  max_tickets_pre_extrinsic: 16,
+  max_tickets_pre_extrinsic: 3,
   # N
   tickets_per_validator: 3,
   # P
@@ -19,8 +19,12 @@ config :jamixir, Jamixir,
   validator_count: 6,
   # Y
   ticket_submission_end: 10,
-  # GA
-  gas_accumulation: 10_000_000
+  # G_A
+  gas_accumulation: 10_000_000,
+  # G_T
+  gas_total_accumulation: 20_000_000,
+  # G_R
+  gas_refine: 1_000_000_000
 
 config :logger, level: :debug
 

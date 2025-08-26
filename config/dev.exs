@@ -19,8 +19,12 @@ config :jamixir, Jamixir,
   validator_count: 6,
   # Y
   ticket_submission_end: 10,
-  # GA
+  # G_A
   gas_accumulation: 1_000_000,
+  # G_T
+  gas_total_accumulation: 20_000_000,
+  # G_R
+  gas_refine: 1_000_000_000,
   storage_persist: false,
   test_env: true
 
