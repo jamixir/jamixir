@@ -129,7 +129,7 @@ defmodule System.State.Accumulation do
     # Formula (12.25) v0.6.5
     accumulation_stats = accumulate_statistics(w_star_n, u)
     # Formula (12.29) v0.6.5
-    {services_intermediate_2, transfer_gas_usage} =
+    {services_intermediate_2, deferred_transfers_stats} =
       apply_transfers(
         services_intermediate,
         deferred_transfers,
@@ -137,11 +137,6 @@ defmodule System.State.Accumulation do
         MapSet.new(Map.keys(accumulation_stats)),
         extra_args
       )
-
-    # Formula (12.31) v0.6.7
-    # Formula (12.32) v0.6.7
-    deferred_transfers_stats =
-      build_deferred_transfers_stats(deferred_transfers, transfer_gas_usage)
 
     # Formula (12.32) v0.6.5
     work_package_hashes = WorkReport.work_package_hashes(w_star_n)
@@ -198,31 +193,6 @@ defmodule System.State.Accumulation do
           {count, total_gas} -> Map.put(stat, d.service, {count + 1, total_gas})
         end
     end
-  end
-
-  # Formula (12.30) v0.6.7
-  # Formula (12.31) v0.6.7
-  # Formula (12.32) v0.6.7
-  @spec build_deferred_transfers_stats(
-          list(DeferredTransfer.t()),
-          %{Types.service_index() => Types.gas()}
-        ) :: %{Types.service_index() => {non_neg_integer(), Types.gas()}}
-  def build_deferred_transfers_stats(transfers, gas_usage_map) do
-    # Equivalent to: |R(t, d)|, where R(t, d) is the set of all transfers t that are destined for service d
-    transfer_counts =
-      Enum.reduce(transfers, %{}, fn transfer, acc ->
-        Map.update(acc, transfer.receiver, 1, &(&1 + 1))
-      end)
-
-    # Formula (12.32) v0.6.7
-    Enum.reduce(transfer_counts, %{}, fn {service_id, count}, stats ->
-      if count > 0 do
-        gas_used = Map.get(gas_usage_map, service_id, 0)
-        Map.put(stats, service_id, {count, gas_used})
-      else
-        stats
-      end
-    end)
   end
 
   # Formula (12.16) v0.6.5
@@ -382,7 +352,8 @@ defmodule System.State.Accumulation do
         post_accumulation_keys = keys_set(post_accumulation_services)
 
         # keys that are present in the original state but not in the post-accumulation state => removed services
-        removed_keys_by_accumulating_service = MapSet.difference(original_keys, post_accumulation_keys)
+        removed_keys_by_accumulating_service =
+          MapSet.difference(original_keys, post_accumulation_keys)
 
         # Union with accumulator
         MapSet.union(acc_m, removed_keys_by_accumulating_service)
@@ -588,6 +559,8 @@ defmodule System.State.Accumulation do
   # Formula (12.28) v0.6.7
   # Formula (12.29) v0.6.7
   # Formula (12.30) v0.6.7
+  # Formula (12.31) v0.6.7
+  # Formula (12.32) v0.6.7
   @spec apply_transfers(
           services_intermediate :: %{non_neg_integer() => ServiceAccount.t()},
           transfers :: list(DeferredTransfer.t()),
@@ -596,7 +569,7 @@ defmodule System.State.Accumulation do
           extra_args :: extra_args()
         ) ::
           {%{Types.service_index() => ServiceAccount.t()},
-           %{Types.service_index() => Types.gas()}}
+           %{Types.service_index() => {non_neg_integer(), Types.gas()}}}
   def apply_transfers(
         services_intermediate,
         transfers,
@@ -604,10 +577,13 @@ defmodule System.State.Accumulation do
         accumulates_service_keys,
         extra_args
       ) do
-    {services, gas_usage} =
-      Enum.reduce(Map.keys(services_intermediate), {%{}, %{}}, fn s, {services_acc, gas_acc} ->
+    {services, transfer_stats} =
+      Enum.reduce(Map.keys(services_intermediate), {%{}, %{}}, fn s,
+                                                                  {services_acc,
+                                                                   transfer_stats_acc} ->
         # Formula (12.27) v0.6.7
         selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
+        transfer_count = length(selected_transfers)
 
         # Formula (12.28) v0.6.7
         {service_with_transfers_applied, used_gas} =
@@ -621,11 +597,19 @@ defmodule System.State.Accumulation do
             else: service_with_transfers_applied
 
         updated_services_acc = Map.put(services_acc, s, service_with_transfers_applied_)
-        updated_gas_acc = Map.put(gas_acc, s, used_gas)
-        {updated_services_acc, updated_gas_acc}
+
+        # Formula (12.32) v0.6.7
+        updated_transfer_stats_acc =
+          if transfer_count > 0 do
+            Map.put(transfer_stats_acc, s, {transfer_count, used_gas})
+          else
+            transfer_stats_acc
+          end
+
+        {updated_services_acc, updated_transfer_stats_acc}
       end)
 
-    {services, gas_usage}
+    {services, transfer_stats}
   end
 
   # Formula (12.34) v0.6.5
