@@ -115,7 +115,6 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
 
-    @tag :fuzzer
     test "fuzzer example stf binaries", %{client: client} do
       <<_protocol::8, message::binary>> = File.read!("test/fuzzer/2_set_state.bin")
 
@@ -292,8 +291,6 @@ defmodule Jamixir.FuzzerTest do
       assert {:ok, :state, post_state} = Client.receive_message(client)
 
       post_state_trie = Trie.serialize(post_state)
-
-      exp_post_state = Trie.deserialize(exp_post_state_trie)
 
       if exp_post_state_trie != post_state_trie do
         Util.Logger.info("Post state trie mismatch")
