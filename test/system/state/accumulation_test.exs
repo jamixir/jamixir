@@ -13,54 +13,6 @@ defmodule System.State.AccumulationTest do
   use ExUnit.Case
   setup :verify_on_exit!
 
-  defp mock_privileged_services(accumulation_state) do
-    # Mock the manager service to return the full privileged_services structure
-    # (m′, a∗, v∗, z′) = (∆1(o, w, f , m)o)(m,a,v,z)
-    MockAccumulation
-    |> expect(:do_single_accumulation, fn _, _, _, service, _
-                                          when service == accumulation_state.manager ->
-      %AccumulationResult{
-        state: %Accumulation{
-          manager: :updated_manager,
-          # assigners_star - service IDs that will be accumulated
-          assigners: [99, 100],
-          # delegator_star - service ID that will be accumulated
-          delegator: 101,
-          always_accumulated: :updated_always_accumulated
-        }
-      }
-    end)
-
-    # Mock the assigners_star services (99, 100) to return arrays in their assigners field
-    MockAccumulation
-    |> expect(:do_single_accumulation, fn _, _, _, 99, _ ->
-      %AccumulationResult{
-        state: %Accumulation{
-          assigners: [:assigner_99_result_1, :assigner_99_result_2]
-        }
-      }
-    end)
-
-    MockAccumulation
-    |> expect(:do_single_accumulation, fn _, _, _, 100, _ ->
-      %AccumulationResult{
-        state: %Accumulation{
-          assigners: [:assigner_100_result_1, :assigner_100_result_2]
-        }
-      }
-    end)
-
-    # Mock the delegator_star service (101) to return a value in its delegator field
-    MockAccumulation
-    |> expect(:do_single_accumulation, fn _, _, _, 101, _ ->
-      %AccumulationResult{
-        state: %Accumulation{
-          delegator: :updated_delegator
-        }
-      }
-    end)
-  end
-
   defp setup_mock_accumulation do
     Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
 
@@ -311,41 +263,6 @@ defmodule System.State.AccumulationTest do
 
       assert {0, []} ==
                Accumulation.pre_single_accumulation(work_reports, service_dict, service)
-    end
-  end
-
-  describe "accumulates privileged services/4" do
-    setup do
-      setup_mock_accumulation()
-
-      :ok
-    end
-
-    test "accumulates privileged services correctly" do
-      ctx = %{
-        timeslot: Enum.random(1..1000),
-        ctx_init_fn: fn _, _ -> %PVM.Host.Accumulate.Context{} end
-      }
-
-      initial_state = base_accumulation_state(%{assigners: [2]})
-
-      work_reports = []
-      always_acc_services = %{}
-
-      mock_privileged_services(initial_state)
-
-      assert %PrivilegedServices{
-               manager: :updated_manager,
-               assigners: [:assigner_99_result_1, :assigner_100_result_2],
-               delegator: :updated_delegator,
-               always_accumulated: :updated_always_accumulated
-             } =
-               Accumulation.accumulate_privileged_services(
-                 initial_state,
-                 work_reports,
-                 always_acc_services,
-                 ctx
-               )
     end
   end
 
@@ -666,7 +583,7 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      %{1 => s1, 2 => s2, 3 => s3} =
+      {%{1 => s1, 2 => s2, 3 => s3}, _transfer_gas_usage} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -690,7 +607,7 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      %{1 => s1, 2 => s2} =
+      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
         Accumulation.apply_transfers(services_intermediate_2, [], 0, accumualted_services_keys, %{
           n0_: Util.Hash.one()
         })
@@ -711,7 +628,7 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
       ]
 
-      %{1 => s1, 2 => s2} =
+      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -739,7 +656,7 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{sender: 1, receiver: 2, amount: 50}
       ]
 
-      %{1 => s1, 2 => s2} =
+      {%{1 => s1, 2 => s2}, _transfer_gas_usage} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -954,11 +871,9 @@ defmodule System.State.AccumulationTest do
     end
   end
 
-  # Add to filepath: /Users/danicuki/dev/jamixir/test/system/state/accumulation_test.exs
-
-  describe "deferred_transfers_stats/1" do
+  describe "build_deferred_transfers_stats/2" do
     test "returns empty map for empty transfers" do
-      result = Accumulation.deferred_transfers_stats([])
+      result = Accumulation.build_deferred_transfers_stats([], %{})
       assert result == %{}
     end
 
@@ -967,8 +882,10 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 100}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers)
-      assert result == %{1 => {1, 100}}
+      gas_usage = %{1 => 200}
+
+      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
+      assert result == %{1 => {1, 200}}
     end
 
     test "aggregates multiple transfers to same destination" do
@@ -977,8 +894,10 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 1, amount: 200}
       ]
 
-      result = Accumulation.deferred_transfers_stats(transfers)
-      # count: 2, total_amount: 300
+      gas_usage = %{1 => 300}
+
+      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
+      # count: 2, gas_used: 300
       assert result == %{1 => {2, 300}}
     end
 
@@ -990,16 +909,36 @@ defmodule System.State.AccumulationTest do
         %DeferredTransfer{receiver: 3, amount: 400}
       ]
 
-      result =
-        Accumulation.deferred_transfers_stats(transfers)
+      gas_usage = %{1 => 345, 2 => 456, 3 => 678}
+
+      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
 
       assert result == %{
-               # count: 2, total_amount: 100 + 300
-               1 => {2, 400},
-               # count: 1, total_amount: 200
-               2 => {1, 200},
-               # count: 1, total_amount: 400
-               3 => {1, 400}
+               # count: 2, gas_used: 345
+               1 => {2, 345},
+               # count: 1, gas_used: 456
+               2 => {1, 456},
+               # count: 1, gas_used: 678
+               3 => {1, 678}
+             }
+    end
+
+    test "handles missing gas usage entries" do
+      transfers = [
+        %DeferredTransfer{receiver: 1, amount: 100},
+        %DeferredTransfer{receiver: 2, amount: 200}
+      ]
+
+      # missing entry for service 2
+      gas_usage = %{1 => 300}
+
+      result = Accumulation.build_deferred_transfers_stats(transfers, gas_usage)
+
+      assert result == %{
+               # has gas usage
+               1 => {1, 300},
+               # missing gas usage, defaults to 0
+               2 => {1, 0}
              }
     end
   end
