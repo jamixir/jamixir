@@ -138,6 +138,11 @@ defmodule System.State.Accumulation do
         extra_args
       )
 
+    # Formula (12.31) v0.6.7
+    # Formula (12.32) v0.6.7
+    deferred_transfers_stats =
+      build_deferred_transfers_stats(deferred_transfers, transfer_gas_usage)
+
     # Formula (12.32) v0.6.5
     work_package_hashes = WorkReport.work_package_hashes(w_star_n)
     # Formula (12.33) v0.6.5
@@ -169,8 +174,7 @@ defmodule System.State.Accumulation do
       accumulation_history: accumulation_history_,
       accumulation_outputs: accumulation_outputs,
       accumulation_stats: accumulation_stats,
-      # Formula (12.31) v0.6.5
-      deferred_transfers_stats: deferred_transfers_stats(deferred_transfers, transfer_gas_usage)
+      deferred_transfers_stats: deferred_transfers_stats
     }
   end
 
@@ -196,21 +200,29 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.30) v0.6.5
-  # Formula (12.31) v0.6.5
-  def deferred_transfers_stats(deferred_transfers, transfer_gas_usage) do
-    for t <- deferred_transfers, reduce: %{} do
-      stat ->
-        gas_used = Map.get(transfer_gas_usage, t.receiver)
+  # Formula (12.30) v0.6.7
+  # Formula (12.31) v0.6.7
+  # Formula (12.32) v0.6.7
+  @spec build_deferred_transfers_stats(
+          list(DeferredTransfer.t()),
+          %{Types.service_index() => Types.gas()}
+        ) :: %{Types.service_index() => {non_neg_integer(), Types.gas()}}
+  def build_deferred_transfers_stats(transfers, gas_usage_map) do
+    # Equivalent to: |R(t, d)|, where R(t, d) is the set of all transfers t that are destined for service d
+    transfer_counts =
+      Enum.reduce(transfers, %{}, fn transfer, acc ->
+        Map.update(acc, transfer.receiver, 1, &(&1 + 1))
+      end)
 
-        case Map.get(stat, t.receiver) do
-          nil ->
-            Map.put(stat, t.receiver, {1, gas_used})
-
-          {count, g} ->
-            Map.put(stat, t.receiver, {count + 1, g + gas_used})
-        end
-    end
+    # Formula (12.32) v0.6.7
+    Enum.reduce(transfer_counts, %{}, fn {service_id, count}, stats ->
+      if count > 0 do
+        gas_used = Map.get(gas_usage_map, service_id, 0)
+        Map.put(stats, service_id, {count, gas_used})
+      else
+        stats
+      end
+    end)
   end
 
   # Formula (12.16) v0.6.5
@@ -583,7 +595,8 @@ defmodule System.State.Accumulation do
           accumulates_service_keys :: MapSet.t(non_neg_integer()),
           extra_args :: extra_args()
         ) ::
-          {%{Types.service_index() => ServiceAccount.t()}, %{Types.service_index() => Types.gas()}}
+          {%{Types.service_index() => ServiceAccount.t()},
+           %{Types.service_index() => Types.gas()}}
   def apply_transfers(
         services_intermediate,
         transfers,
@@ -593,12 +606,15 @@ defmodule System.State.Accumulation do
       ) do
     {services, gas_usage} =
       Enum.reduce(Map.keys(services_intermediate), {%{}, %{}}, fn s, {services_acc, gas_acc} ->
+        # Formula (12.27) v0.6.7
         selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
 
+        # Formula (12.28) v0.6.7
         {service_with_transfers_applied, used_gas} =
           PVM.on_transfer(services_intermediate, timeslot_, s, selected_transfers, extra_args)
 
-
+        # Formula (12.29) v0.6.7
+        # Formula (12.30) v0.6.7
         service_with_transfers_applied_ =
           if s in accumulates_service_keys,
             do: %{service_with_transfers_applied | last_accumulation_slot: timeslot_},
