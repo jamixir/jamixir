@@ -6,7 +6,7 @@ defmodule System.State.RecentHistory do
   alias Block.Extrinsic.Guarantee
   alias Block.Header
   alias System.State.RecentHistory
-  alias System.State.RecentHistory.{Lastaccout, RecentBlock}
+  alias System.State.RecentHistory.{AccumulationOutput, RecentBlock}
   alias Util.{Hash, MMR}
   import Codec.{Encoder, Decoder}
 
@@ -41,7 +41,7 @@ defmodule System.State.RecentHistory do
   # when we want to have a provided header hash, we take the value from header extrinsic_hash
   def mock(:calculate_header_hash, context), do: context[:header].extrinsic_hash
 
-  def mock(:get_well_balanced_merkle_root, context), do: context[:lastaccouts]
+  def mock(:get_well_balanced_merkle_root, context), do: context[:accumulation_outputs]
 
   def mock(:transition, context), do: context[:recent_history]
 
@@ -68,12 +68,12 @@ defmodule System.State.RecentHistory do
   Adds a new block to the recent history.
   # Formula (7.8) v0.7.0
   """
-  @spec transition(Header.t(), t(), list(Guarantee.t()), list(Lastaccout.t())) :: t()
+  @spec transition(Header.t(), t(), list(Guarantee.t()), list(AccumulationOutput.t())) :: t()
   mockable transition(
              %Header{prior_state_root: prior_state_root} = header,
              %RecentHistory{beefy_belt: beefy_belt} = recent_history,
              guarantees,
-             lastaccouts
+             accumulation_outputs
            ) do
     # β†H Formula (4.6) v0.7.0
     recent_history =
@@ -84,7 +84,7 @@ defmodule System.State.RecentHistory do
     header_hash = calculate_header_hash(header)
 
     # Formula (7.6) v0.7.0
-    merkle_root = get_well_balanced_merkle_root(lastaccouts)
+    merkle_root = get_well_balanced_merkle_root(accumulation_outputs)
 
     # Formula (7.7) v0.7.0
     beefy_belt_ =
@@ -109,8 +109,8 @@ defmodule System.State.RecentHistory do
     RecentHistory.add(recent_history, new_block) |> Map.put(:beefy_belt, beefy_belt_)
   end
 
-  mockable get_well_balanced_merkle_root(lastaccouts) do
-    case lastaccouts do
+  mockable get_well_balanced_merkle_root(accumulation_outputs) do
+    case accumulation_outputs do
       nil ->
         Hash.zero()
 
@@ -120,7 +120,7 @@ defmodule System.State.RecentHistory do
       _ ->
         # Formula (7.6) v0.7.0
         s =
-          for %Lastaccout{service: service, accumulated_output: h} <- lastaccouts,
+          for %AccumulationOutput{service: service, accumulated_output: h} <- accumulation_outputs,
               do: <<service::service(), h::binary>>
 
         well_balanced_merkle_root(s, &keccak_256/1)
