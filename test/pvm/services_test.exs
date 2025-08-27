@@ -78,7 +78,7 @@ defmodule PVM.ServicesTest do
              transfers: [],
              output: nil,
              gas_used: 59,
-             preimages: []
+             preimages: MapSet.new()
            }
   end
 end
