@@ -37,10 +37,10 @@ defmodule Constants do
   defmockable(:gas_is_authorized, do: 50_000_000)
 
   @doc "G_R: The total gas allocated for a work-package's Refine logic."
-  defmockable(:gas_refine, do: 5_000_000_000)
+  defmockable(:gas_refine, do: Jamixir.config(:gas_refine))
 
   @doc "G_T: The total gas allocated across all cores for Accumulation."
-  defmockable(:gas_total_accumulation, do: 3_500_000_000)
+  defmockable(:gas_total_accumulation, do: Jamixir.config(:gas_total_accumulation))
 
   @doc "H - The size of recent history, in blocks."
   defmockable(:recent_history_size, do: 8)
