@@ -60,7 +60,7 @@ defmodule PVM.Accumulate.Utils do
       transfers: y.transfers,
       output: y.accumulation_trie_result,
       gas_used: gas,
-      preimages: MapSet.to_list(y.preimages)
+      preimages: y.preimages
     }
 
   def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
@@ -69,7 +69,7 @@ defmodule PVM.Accumulate.Utils do
       transfers: x.transfers,
       output: output,
       gas_used: gas,
-      preimages: MapSet.to_list(x.preimages)
+      preimages: x.preimages
     }
 
   def collapse({gas, _output, {x, _y}}),
@@ -78,7 +78,7 @@ defmodule PVM.Accumulate.Utils do
       transfers: x.transfers,
       output: x.accumulation_trie_result,
       gas_used: gas,
-      preimages: MapSet.to_list(x.preimages)
+      preimages: x.preimages
     }
 
   # Formula (B.12) v0.7.0

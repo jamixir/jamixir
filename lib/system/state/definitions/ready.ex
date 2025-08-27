@@ -4,7 +4,7 @@ defmodule System.State.Ready do
   use JsonDecoder
 
   @type t :: %__MODULE__{
-          # w
+          # r
           work_report: WorkReport.t(),
           # d
           dependencies: MapSet.t(Types.hash())

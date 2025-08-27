@@ -4,16 +4,18 @@ defmodule System.State.PrivilegedServices do
   alias Codec.VariableSize
   use JsonDecoder
 
+  @type free_accumulating_services :: %{Types.service_index() => Types.gas()}
+
   # Formula (9.9) v0.7.0
   @type t :: %__MODULE__{
           # χ_M
-          manager: non_neg_integer(),
+          manager: Types.service_index(),
           # χ_A
-          assigners: list(non_neg_integer()),
+          assigners: list(Types.service_index()),
           # χ_V
-          delegator: non_neg_integer(),
+          delegator: Types.service_index(),
           # χ_Z
-          always_accumulated: %{non_neg_integer() => non_neg_integer()}
+          always_accumulated: free_accumulating_services()
         }
 
   defstruct manager: 0,
