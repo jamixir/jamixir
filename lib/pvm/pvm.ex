@@ -1,4 +1,5 @@
 defmodule PVM do
+  alias System.AccumulationResult
   alias PVM.Host.General
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}

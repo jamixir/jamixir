@@ -13,9 +13,9 @@ defmodule System.AccumulationResult do
           # u
           gas_used: non_neg_integer(),
           # p
-          preimages: list({Types.service_index(), binary()})
+          preimages: MapSet.t({Types.service_index(), binary()})
         }
-  defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: []
+  defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: MapSet.new()
 
   def new({state, transfers, output, gas_used, preimages}) do
     %__MODULE__{

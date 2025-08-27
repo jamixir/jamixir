@@ -107,10 +107,10 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def separate_work_reports(work_reports, accumulated) do
     {immediate_work_reports, pre_w_q} =
       Enum.split_with(work_reports, fn %WorkReport{
-                                         refinement_context: wx,
+                                         refinement_context: wc,
                                          segment_root_lookup: wl
                                        } ->
-        MapSet.size(wx.prerequisite) == 0 and Enum.empty?(wl)
+        MapSet.size(wc.prerequisite) == 0 and Enum.empty?(wl)
       end)
 
     queued_work_reports =
