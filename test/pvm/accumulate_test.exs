@@ -26,7 +26,7 @@ defmodule PVM.AccumulateTest do
     end
 
     test "handles service without code", %{accumulation: accumulation, n0_: n0_, timeslot_: t_} do
-      assert AccumulationResult.new({accumulation, [], nil, 0, []}) ==
+      assert AccumulationResult.new({accumulation, [], nil, 0, MapSet.new()}) ==
                PVM.accumulate(accumulation, t_, 256, 1000, [], %{n0_: n0_})
     end
 
@@ -38,7 +38,7 @@ defmodule PVM.AccumulateTest do
 
       t_ = 0
 
-      assert AccumulationResult.new({accumulation, [], nil, 0, []}) ==
+      assert AccumulationResult.new({accumulation, [], nil, 0, MapSet.new()}) ==
                Accumulate.execute(accumulation, t_, 256, 1000, [], %{n0_: n0_})
     end
 

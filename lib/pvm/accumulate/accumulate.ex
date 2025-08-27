@@ -141,7 +141,7 @@ defmodule PVM.Accumulate do
     args = e({timeslot, service_index, length(operands)})
 
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
-      AccumulationResult.new({x.accumulation, [], nil, 0, []})
+      AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
       ArgInvoc.execute(service_code, 5, gas, args, f, {x, x}, opts)
       |> Utils.collapse()

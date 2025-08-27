@@ -151,7 +151,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert result.transfers == x.transfers
       assert result.output == Hash.two()
       assert result.gas_used == gas
-      assert result.preimages == MapSet.to_list(x.preimages)
+      assert result.preimages ==x.preimages
     end
 
     test "handles non-32-byte output", %{ctx: ctx} do
@@ -165,7 +165,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert result.transfers == x.transfers
       assert result.output == nil
       assert result.gas_used == gas
-      assert result.preimages == MapSet.to_list(x.preimages)
+      assert result.preimages == x.preimages
     end
 
     test "handles panic output", %{ctx: ctx} do
@@ -177,7 +177,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert result.transfers == y.transfers
       assert result.output == nil
       assert result.gas_used == gas
-      assert result.preimages == MapSet.to_list(y.preimages)
+      assert result.preimages == y.preimages
     end
   end
 
