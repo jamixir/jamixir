@@ -25,6 +25,8 @@ config :jamixir, Jamixir,
   gas_total_accumulation: 20_000_000,
   # G_R
   gas_refine: 1_000_000_000,
+  # W_P
+  erasure_coded_pieces_per_segment: 1026,
   storage_persist: false,
   test_env: true
 

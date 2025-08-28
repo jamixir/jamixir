@@ -104,7 +104,8 @@ defmodule Constants do
   def max_imports, do: 3_072
 
   @doc "W_P - The number of erasure-coded pieces in a segment."
-  def erasure_coded_pieces_per_segment, do: 6
+  def erasure_coded_pieces_per_segment,
+    do: Jamixir.config()[:erasure_coded_pieces_per_segment] || 6
 
   @doc "W_R - The maximum size of an encoded work-report in octets."
   def max_work_report_size, do: 48 * 2 ** 10

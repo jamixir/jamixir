@@ -34,7 +34,10 @@ defmodule PVM.Accumulate do
       case System.get_env("PVM_TRACE") do
         "true" ->
           Keyword.put(opts, :trace, true)
-          |> Keyword.put(:trace_name, System.get_env("TRACE_NAME"))
+          |> Keyword.put(
+            :trace_name,
+            System.get_env("TRACE_NAME") || "service_#{service_index}"
+          )
 
         _ ->
           opts
