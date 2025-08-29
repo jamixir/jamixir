@@ -150,7 +150,7 @@ defmodule Jamixir.FuzzerTest do
 
       @tag :fuzzer
       @tag dir: dir
-      @tag :skip
+      # @tag :skip
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end

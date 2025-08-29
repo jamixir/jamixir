@@ -304,22 +304,30 @@ defmodule PVM.Host.General.Internal do
 
     k = read_storage_key(memory, ko, kz)
 
+    log(:debug, "STORAGE_WRITE_DEBUG: Attempting write to key #{if k == :error, do: "ERROR", else: b16(k)}, vz=#{vz}")
+
     a =
       cond do
         k != :error and vz == 0 ->
+          log(:debug, "STORAGE_WRITE_DEBUG: Deleting storage key #{b16(k)}")
           {_, new_s} = pop_in(service_account, [:storage, k])
           new_s
 
         k != :error ->
           try do
             value = Memory.read!(memory, vo, vz)
-            log(:debug, "Write to storage key #{b16(k)} => #{b16(value)}")
-            put_in(service_account, [:storage, k], value)
+            log(:debug, "STORAGE_WRITE_DEBUG: Write to storage key #{b16(k)} => #{b16(value)}")
+            updated_service = put_in(service_account, [:storage, k], value)
+            log(:debug, "STORAGE_WRITE_DEBUG: Storage write succeeded, service updated")
+            updated_service
           rescue
-            _ -> :error
+            e ->
+              log(:warning, "STORAGE_WRITE_DEBUG: Memory read failed: #{inspect(e)}")
+              :error
           end
 
         true ->
+          log(:warning, "STORAGE_WRITE_DEBUG: Invalid storage key, k=:error")
           :error
       end
 
@@ -327,10 +335,18 @@ defmodule PVM.Host.General.Internal do
 
     {exit_reason_, w7_, service_account_} =
       cond do
-        k == :error or a == :error -> {:panic, registers.r7, service_account}
-        ServiceAccount.threshold_balance(a) > a.balance -> {:continue, full(), service_account}
-        true -> {:continue, l, a}
+        k == :error or a == :error ->
+          log(:warning, "STORAGE_WRITE_DEBUG: PANIC! k=#{if k == :error, do: ":error", else: "ok"}, a=#{if a == :error, do: ":error", else: "ok"} - Storage write will be LOST!")
+          {:panic, registers.r7, service_account}
+        ServiceAccount.threshold_balance(a) > a.balance ->
+          log(:warning, "STORAGE_WRITE_DEBUG: Threshold balance exceeded, storage write will be LOST!")
+          {:continue, full(), service_account}
+        true ->
+          log(:debug, "STORAGE_WRITE_DEBUG: Storage write successful, continuing with updated service")
+          {:continue, l, a}
       end
+
+    log(:debug, "STORAGE_WRITE_DEBUG: Exiting write_internal with reason=#{exit_reason_}, service_updated=#{service_account_ != service_account}")
 
     %Result.Internal{
       exit_reason: exit_reason_,

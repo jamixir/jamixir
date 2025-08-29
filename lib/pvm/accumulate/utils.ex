@@ -54,16 +54,37 @@ defmodule PVM.Accumulate.Utils do
   @spec collapse({Types.gas(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
           {Accumulation.t(), list(DeferredTransfer.t()), Types.hash() | nil, Types.gas(),
            list({Types.service_index(), binary()})}
-  def collapse({gas, output, {_x, y}}) when output in [:panic, :out_of_gas],
-    do:
-      {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
+  def collapse({gas, output, {x, y}}) when output in [:panic, :out_of_gas] do
+    require Logger
 
-  def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size,
-    do: {x.accumulation, x.transfers, output, gas, MapSet.to_list(x.preimages)}
+    # Compare the service states to see if there were any updates
+    x_service = Map.get(x.accumulation.services, x.service)
+    y_service = Map.get(y.accumulation.services, y.service)
 
-  def collapse({gas, _output, {x, _y}}),
-    do:
-      {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
+    service_changed = x_service != y_service
+
+    if service_changed do
+      Logger.warning("COLLAPSE_DEBUG: #{output} occurred but service #{x.service} was modified during execution - SERVICE CHANGES WILL BE LOST!")
+      Logger.warning("COLLAPSE_DEBUG: Original service storage items: #{if y_service, do: y_service.storage.items_in_storage, else: "nil"}")
+      Logger.warning("COLLAPSE_DEBUG: Updated service storage items: #{if x_service, do: x_service.storage.items_in_storage, else: "nil"}")
+    else
+      Logger.debug("COLLAPSE_DEBUG: #{output} occurred, no service changes detected")
+    end
+
+    {y.accumulation, y.transfers, y.accumulation_trie_result, gas, MapSet.to_list(y.preimages)}
+  end
+
+  def collapse({gas, output, {x, _y}}) when is_binary(output) and byte_size(output) == @hash_size do
+    require Logger
+    Logger.debug("COLLAPSE_DEBUG: Success with hash output, returning updated accumulation with service #{x.service}")
+    {x.accumulation, x.transfers, output, gas, MapSet.to_list(x.preimages)}
+  end
+
+  def collapse({gas, _output, {x, _y}}) do
+    require Logger
+    Logger.debug("COLLAPSE_DEBUG: Success with other output, returning updated accumulation with service #{x.service}")
+    {x.accumulation, x.transfers, x.accumulation_trie_result, gas, MapSet.to_list(x.preimages)}
+  end
 
   # Formula (B.12) v0.6.6
   @spec replace_service(
@@ -71,6 +92,22 @@ defmodule PVM.Accumulate.Utils do
           {Context.t(), Context.t()}
         ) :: Host.Accumulate.Result.t()
   def replace_service(%Host.General.Result{context: service_account} = general_result, {x, y}) do
+    require Logger
+
+    old_service = Map.get(x.accumulation.services, x.service)
+    service_changed = old_service != service_account
+
+    if service_changed do
+      Logger.debug("REPLACE_SERVICE_DEBUG: Service #{x.service} updated, exit_reason=#{general_result.exit_reason}")
+      if old_service && service_account do
+        old_storage_size = old_service.storage.items_in_storage
+        new_storage_size = service_account.storage.items_in_storage
+        if old_storage_size != new_storage_size do
+          Logger.debug("REPLACE_SERVICE_DEBUG: Storage size changed from #{old_storage_size} to #{new_storage_size}")
+        end
+      end
+    end
+
     new_x = put_in(x, [:accumulation, :services, x.service], service_account)
     %{struct(Host.Accumulate.Result, Map.from_struct(general_result)) | context: {new_x, y}}
   end

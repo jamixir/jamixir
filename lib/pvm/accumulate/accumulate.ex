@@ -75,7 +75,10 @@ defmodule PVM.Accumulate do
             |> Utils.replace_service(context)
 
           :write ->
-            General.write(gas, registers, memory, s, x.service) |> Utils.replace_service(context)
+            Logger.debug("ACCUMULATE_DEBUG: Processing write host call for service #{x.service}")
+            result = General.write(gas, registers, memory, s, x.service) |> Utils.replace_service(context)
+            Logger.debug("ACCUMULATE_DEBUG: Write host call returned exit_reason=#{result.exit_reason}")
+            result
 
           :lookup ->
             General.lookup(gas, registers, memory, s, x.service, d)
@@ -142,6 +145,10 @@ defmodule PVM.Accumulate do
 
       %{exit_reason: e, gas: g, registers: r, memory: m, context: c} = host_call_result
 
+      if e == :panic do
+        Logger.warning("ACCUMULATE_DEBUG: Host call #{host(n)} resulted in PANIC!")
+      end
+
       {e, %{gas: g, registers: r, memory: m}, c}
     end
 
@@ -150,10 +157,15 @@ defmodule PVM.Accumulate do
     args = e({timeslot, service_index, length(operands)})
 
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
+      Logger.debug("ACCUMULATE_DEBUG: Service #{service_index} has no code or code too large, returning original accumulation")
       {x.accumulation, [], nil, 0, []}
     else
-      ArgInvoc.execute(service_code, 5, gas, args, f, {x, x}, opts)
-      |> Utils.collapse()
+      Logger.debug("ACCUMULATE_DEBUG: Executing service #{service_index} code")
+      result = ArgInvoc.execute(service_code, 5, gas, args, f, {x, x}, opts)
+      Logger.debug("ACCUMULATE_DEBUG: ArgInvoc.execute returned: #{inspect(elem(result, 1))}")
+      collapsed = Utils.collapse(result)
+      Logger.debug("ACCUMULATE_DEBUG: Utils.collapse completed for service #{service_index}")
+      collapsed
     end
   end
 end
