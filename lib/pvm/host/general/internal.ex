@@ -304,7 +304,14 @@ defmodule PVM.Host.General.Internal do
 
     k = read_storage_key(memory, ko, kz)
 
-    log(:debug, "STORAGE_WRITE_DEBUG: Attempting write to key #{if k == :error, do: "ERROR", else: b16(k)}, vz=#{vz}")
+    if k != :error and b16(k) == "0x0d686f737463616c6c2d696e666f" do
+      log(:warning, "HOSTCALL_INFO_WRITE_DEBUG: Write to hostcall-info key! vz=#{vz}")
+
+      log(
+        :warning,
+        "HOSTCALL_INFO_WRITE_DEBUG: Service account balance: #{service_account.balance}"
+      )
+    end
 
     a =
       cond do
@@ -316,9 +323,51 @@ defmodule PVM.Host.General.Internal do
         k != :error ->
           try do
             value = Memory.read!(memory, vo, vz)
-            log(:debug, "STORAGE_WRITE_DEBUG: Write to storage key #{b16(k)} => #{b16(value)}")
+
+            # Special tracking for hostcall-info key
+            if b16(k) == "0x0d686f737463616c6c2d696e666f" do
+              value_hex = b16(value)
+
+              if String.contains?(
+                   value_hex,
+                   "9a30010000000000102700000000000010270000000000002230010000000000020000000000000000000000060000000000000000000000"
+                 ) do
+                log(:warning, "HOSTCALL_INFO_VALUE_DEBUG: This is the WRONG value!")
+              end
+
+              if String.contains?(
+                   value_hex,
+                   "763101000000000010270000000000001027000000000000e030010000000000050000000000000000000000060000000000000000000000"
+                 ) do
+                log(:info, "HOSTCALL_INFO_VALUE_DEBUG: This is the EXPECTED value!")
+              end
+            end
+
+            # Check if this is the problematic value from trie mismatch
+            value_hex = b16(value)
+
+            if String.contains?(
+                 value_hex,
+                 "9a30010000000000102700000000000010270000000000002230010000000000020000000000000000000000060000000000000000000000"
+               ) do
+              log(:warning, "PROBLEM_VALUE_DEBUG: Found the WRONG value being written!")
+              log(:warning, "PROBLEM_VALUE_DEBUG: Storage key: #{b16(k)}")
+
+              log(
+                :warning,
+                "PROBLEM_VALUE_DEBUG: Service account ID: #{inspect(service_account)}"
+              )
+            end
+
+            if String.contains?(
+                 value_hex,
+                 "763101000000000010270000000000001027000000000000e030010000000000050000000000000000000000060000000000000000000000"
+               ) do
+              log(:info, "EXPECTED_VALUE_DEBUG: Found the EXPECTED value being written!")
+              log(:info, "EXPECTED_VALUE_DEBUG: Storage key: #{b16(k)}")
+            end
+
             updated_service = put_in(service_account, [:storage, k], value)
-            log(:debug, "STORAGE_WRITE_DEBUG: Storage write succeeded, service updated")
             updated_service
           rescue
             e ->
@@ -336,17 +385,24 @@ defmodule PVM.Host.General.Internal do
     {exit_reason_, w7_, service_account_} =
       cond do
         k == :error or a == :error ->
-          log(:warning, "STORAGE_WRITE_DEBUG: PANIC! k=#{if k == :error, do: ":error", else: "ok"}, a=#{if a == :error, do: ":error", else: "ok"} - Storage write will be LOST!")
+          log(
+            :warning,
+            "STORAGE_WRITE_DEBUG: PANIC! k=#{if k == :error, do: ":error", else: "ok"}, a=#{if a == :error, do: ":error", else: "ok"} - Storage write will be LOST!"
+          )
+
           {:panic, registers.r7, service_account}
+
         ServiceAccount.threshold_balance(a) > a.balance ->
-          log(:warning, "STORAGE_WRITE_DEBUG: Threshold balance exceeded, storage write will be LOST!")
+          log(
+            :warning,
+            "STORAGE_WRITE_DEBUG: Threshold balance exceeded, storage write will be LOST!"
+          )
+
           {:continue, full(), service_account}
+
         true ->
-          log(:debug, "STORAGE_WRITE_DEBUG: Storage write successful, continuing with updated service")
           {:continue, l, a}
       end
-
-    log(:debug, "STORAGE_WRITE_DEBUG: Exiting write_internal with reason=#{exit_reason_}, service_updated=#{service_account_ != service_account}")
 
     %Result.Internal{
       exit_reason: exit_reason_,

@@ -166,7 +166,7 @@ defmodule Jamixir.FuzzerTest do
 
     @tag :fuzzer2
     test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755531265")
+      test_case(client, "#{@base_path}/1755796995")
     end
   end
 
