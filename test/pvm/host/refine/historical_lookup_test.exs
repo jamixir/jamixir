@@ -118,9 +118,11 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       context: context,
       service_accounts: service_accounts,
       timeslot: timeslot,
+      test_map: test_map,
       gas: gas,
       registers: registers
     } do
+      memory = Memory.write!(memory, registers.r8, test_map.hash)
       memory = Memory.set_access_by_page(memory, 17, 1, :read)
 
       assert %{

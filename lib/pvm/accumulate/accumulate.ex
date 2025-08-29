@@ -43,9 +43,9 @@ defmodule PVM.Accumulate do
     # Formula (B.10) v0.6.6
     x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
 
-    d = x.accumulation.services
     # Formula (B.11) v0.6.7
     f = fn n, %{gas: gas, registers: registers, memory: memory}, {x, _y} = context ->
+      d = x.accumulation.services
       s = Context.accumulating_service(x)
 
       host_call_result =
