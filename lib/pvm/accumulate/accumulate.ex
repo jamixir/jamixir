@@ -9,6 +9,7 @@ defmodule PVM.Accumulate do
   alias PVM.Accumulate.Utils
   import PVM.Constants.{HostCallId, HostCallResult}
   import Codec.Encoder
+  require Logger
 
   @doc """
   Formula (B.9) v0.6.7
@@ -136,6 +137,8 @@ defmodule PVM.Accumulate do
               context: context
             }
         end
+
+      Logger.debug("host call: #{host(n)}, gas: #{host_call_result.gas}")
 
       %{exit_reason: e, gas: g, registers: r, memory: m, context: c} = host_call_result
 
