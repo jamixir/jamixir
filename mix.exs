@@ -51,7 +51,7 @@ defmodule Jamixir.MixProject do
       {:rustler, "~> 0.34.0"},
       {:dotenv, "~> 3.1.0"},
       {:temp, "~> 0.4"},
-      {:jamixir_vm, git: "https://github.com/jamixir/jamixir-vm.git", branch: "main"},
+      {:jamixir_vm, git: "git@github.com:jamixir/jamixir-vm.git", branch: "main"},
       {:cubdb, "~> 2.0.2"},
       {:muontrap, "~> 1.0"}
     ]
