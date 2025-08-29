@@ -17,10 +17,12 @@ defmodule System.State.Accumulation do
   }
 
   alias Types
+  import Util.Hex, only: [b16: 1]
   use MapUnion
   use AccessStruct
   import Codec.Encoder
   import Utils
+  require Logger
 
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   # Formula (12.15) v0.7.0
@@ -223,30 +225,110 @@ defmodule System.State.Accumulation do
         always_accumulated_services,
         extra_args
       ) do
+    total_work_reports = length(work_reports)
+
+    counter = next_counter()
+
+    Logger.info("=== Sequential Accumulation ##{counter} START ===")
+
+    if total_work_reports > 0 do
+      all_hashes =
+        work_reports |> Enum.map(&b16(&1.specification.work_package_hash)) |> Enum.join(", ")
+
+      Logger.debug("Work packages (#{total_work_reports}): #{all_hashes}")
+    end
+
+    result =
+      sequential_accumulation_recursive(
+        gas_limit,
+        work_reports,
+        acc_state,
+        always_accumulated,
+        extra_args,
+        total_work_reports,
+        # accumulated_so_far
+        0,
+        counter
+      )
+
+    Logger.info("=== Sequential Accumulation ##{counter} END ===")
+    result
+  end
+
+  defp next_counter() do
+    key = {__MODULE__, :counter}
+
+    current = :persistent_term.get(key, 0)
+    next = current + 1
+    :persistent_term.put(key, next)
+    next
+  end
+
+  defp sequential_accumulation_recursive(
+         gas_limit,
+         work_reports,
+         acc_state,
+         always_accumulated,
+         extra_args,
+         total_work_reports,
+         accumulated_so_far,
+         seq_counter
+       ) do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
+    remaining = length(work_reports)
 
     if i == 0 do
+      # Log remaining work reports
+      if remaining > 0 do
+        remaining_info =
+          work_reports
+          |> Enum.map(fn wr ->
+            services = wr.digests |> Enum.map(& &1.service) |> Enum.uniq() |> Enum.join(",")
+            "#{b16(wr.specification.work_package_hash)}(#{services})"
+          end)
+          |> Enum.join(", ")
+
+        Logger.info("Left unaccumulated (#{remaining}): #{remaining_info}")
+      end
+
       {0, acc_state, [], [], []}
     else
-      {first_work_reports, remaining_work_reports} = Enum.split(work_reports, i)
+      {current_batch, remaining_work_reports} = Enum.split(work_reports, i)
+      current_info =
+        current_batch
+        |> Enum.map(fn wr ->
+          services = wr.digests |> Enum.map(& &1.service) |> Enum.uniq() |> Enum.join(",")
+          "#{b16(wr.specification.work_package_hash)}(#{services})"
+        end)
+        |> Enum.join(", ")
+
+      Logger.debug("Accumulating (#{i}/#{remaining}): #{current_info}")
+      Logger.debug(">>> Parallel Accumulation START")
+
+
 
       {acc_state_star, transfers_star, accumulation_outputs_star, used_gas_star} =
         parallelized_accumulation(
           acc_state,
-          first_work_reports,
+          current_batch,
           always_accumulated_services,
           extra_args
         )
 
+      Logger.debug("<<< Parallel Accumulation END")
+
       consumed_gas = Enum.sum(for {_, g} <- used_gas_star, do: g)
 
       {number_of_accumulated_work_reports, acc_state_, transfers, accumulation_outputs, used_gas} =
-        sequential_accumulation(
+        sequential_accumulation_recursive(
           gas_limit - consumed_gas,
           remaining_work_reports,
           acc_state_star,
           Map.new(),
-          extra_args
+          extra_args,
+          total_work_reports,
+          accumulated_so_far + i,
+          seq_counter
         )
 
       {i + number_of_accumulated_work_reports, acc_state_, transfers_star ++ transfers,
@@ -412,7 +494,10 @@ defmodule System.State.Accumulation do
     } = state_star_manager
 
     Agent.update(cache_agent, fn %{available: available, results: results} ->
-      new_available = MapSet.union(available, MapSet.new(a_star ++ [v_star]))
+      new_services = MapSet.new(a_star ++ [v_star])
+      # Only add services that don't already have cached results
+      services_to_add = MapSet.difference(new_services, keys_set(results))
+      new_available = MapSet.union(available, services_to_add)
       %{available: new_available, results: results}
     end)
 
@@ -520,6 +605,11 @@ defmodule System.State.Accumulation do
         %{timeslot_: timeslot_, n0_: n0_}
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, always_accumulating_services, service)
+
+    for %WorkReport{specification: ws, digests: digests} <- work_reports,
+        %WorkDigest{service: ^service} <- digests do
+      Logger.debug("Accumulating work report #{b16(ws.work_package_hash)} for service #{service}")
+    end
 
     PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
   end
