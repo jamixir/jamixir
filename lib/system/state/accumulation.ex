@@ -447,6 +447,8 @@ defmodule System.State.Accumulation do
       always_accumulated: always_accumulated_
     }
 
+    Agent.stop(cache_agent)
+
     {accumulation_state, transfers, accumulation_outputs, gas_used}
   end
 
