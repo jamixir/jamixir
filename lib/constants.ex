@@ -92,7 +92,8 @@ defmodule Constants do
   # W_B = W_M * (W_G + 1 + 32 ⌈log2(W_T)⌉) + 4096 + 1
   # should be 13_794_305, but it is not https://github.com/gavofyork/graypaper/issues/458
   def max_work_package_size,
-    do: max_imports() * (segment_size() + 1 + 32 * ceil(:math.log2(memo_size()))) + 4096 + 1
+    # max_imports() * (segment_size() + 1 + 32 * ceil(:math.log2(memo_size()))) + 4096 + 1
+    do: 13_794_305
 
   @doc "W_C - The maximum size of service code in octets"
   def max_service_code_size, do: 4_000_000
