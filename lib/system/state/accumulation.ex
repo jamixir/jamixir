@@ -227,10 +227,12 @@ defmodule System.State.Accumulation do
     if i == 0 do
       {0, acc_state, [], [], []}
     else
+      {first_work_reports, remaining_work_reports} = Enum.split(work_reports, i)
+
       {acc_state_star, transfers_star, accumulation_outputs_star, used_gas_star} =
         parallelized_accumulation(
           acc_state,
-          Enum.take(work_reports, i),
+          first_work_reports,
           always_accumulated_services,
           extra_args
         )
@@ -240,7 +242,7 @@ defmodule System.State.Accumulation do
       {number_of_accumulated_work_reports, acc_state_, transfers, accumulation_outputs, used_gas} =
         sequential_accumulation(
           gas_limit - consumed_gas,
-          Enum.drop(work_reports, i),
+          remaining_work_reports,
           acc_state_star,
           Map.new(),
           extra_args
@@ -476,7 +478,7 @@ defmodule System.State.Accumulation do
       end)
 
     Enum.reduce(tasks, %{}, fn task, cache ->
-      {service_id, result} = Task.await(task)
+      {service_id, result} = Task.await(task, 120_000)
       Map.put(cache, service_id, result)
     end)
   end
