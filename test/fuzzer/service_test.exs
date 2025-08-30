@@ -140,7 +140,7 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @fuzz_path "../jam-conformance/fuzz-reports"
-    @base_path "#{@fuzz_path}/0.6.7/traces/"
+    @base_path "#{@fuzz_path}/0.7.0/traces/"
     @all_traces (case File.ls(@base_path) do
                    {:ok, files} ->
                      files |> Enum.filter(fn file -> String.match?(file, ~r/^\d+/) end)
@@ -152,16 +152,24 @@ defmodule Jamixir.FuzzerTest do
     for case_dir <- @all_traces do
       dir = "#{@base_path}/#{case_dir}/"
 
-      @tag :slow
       @tag dir: dir
+      @tag :fuzzer
+      @tag :slow
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
     end
+  end
 
-    @tag :slow
-    test "fuzzer blocks", %{client: client} do
-      test_case(client, "#{@base_path}/1755796995")
+  describe "test vectors with fuzzer" do
+    @modes ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages"]
+    for mode <- @modes do
+      @tag mode: mode
+      @tag :perf
+      @tag :slow
+      test "fuzzer #{mode} traces", %{client: client, mode: mode} do
+        test_case(client, "../jam-test-vectors/traces/#{mode}")
+      end
     end
   end
 
