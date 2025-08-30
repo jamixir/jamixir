@@ -243,7 +243,7 @@ defmodule System.State.Accumulation do
         gas_limit,
         work_reports,
         acc_state,
-        always_accumulated,
+        always_accumulated_services,
         extra_args,
         total_work_reports,
         # accumulated_so_far
@@ -268,7 +268,7 @@ defmodule System.State.Accumulation do
          gas_limit,
          work_reports,
          acc_state,
-         always_accumulated,
+         always_accumulated_services,
          extra_args,
          total_work_reports,
          accumulated_so_far,
@@ -606,10 +606,8 @@ defmodule System.State.Accumulation do
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, always_accumulating_services, service)
 
-    for %WorkReport{specification: ws, digests: digests} <- work_reports,
-        %WorkDigest{service: ^service} <- digests do
-      Logger.debug("Accumulating work report #{b16(ws.work_package_hash)} for service #{service}")
-    end
+    Logger.debug("Accumulating service #{service} with #{length(operands)} operands (gas: #{gas})")
+
 
     PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
   end
