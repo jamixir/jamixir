@@ -98,7 +98,7 @@ defmodule Constants do
   def max_service_code_size, do: 4_000_000
 
   @doc "W_E - The basic size of our erasure-coded pieces."
-  def erasure_coded_piece_size, do: Jamixir.config()[:ec_size] || 684
+  def erasure_coded_piece_size, do: Jamixir.config()[:erasure_coded_piece_size] || 684
 
   @doc "W_G = W_P W_E = 4104: The size of a segment in octets."
   def segment_size, do: erasure_coded_piece_size() * erasure_coded_pieces_per_segment()
@@ -107,7 +107,8 @@ defmodule Constants do
   def max_imports, do: 3_072
 
   @doc "W_P - The number of erasure-coded pieces in a segment."
-  def erasure_coded_pieces_per_segment, do: 6
+  def erasure_coded_pieces_per_segment,
+    do: Jamixir.config()[:erasure_coded_pieces_per_segment] || 6
 
   @doc "W_R - The maximum size of an encoded work-report in octets."
   # Formula (11.9) v0.7.0
