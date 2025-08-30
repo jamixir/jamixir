@@ -47,6 +47,7 @@ defmodule Jamixir.MixProject do
       {:x509, git: "https://github.com/jamixir/x509.git", branch: "master"},
       {:ex_fiskal, "~> 0.1.0"},
       {:blake2, "~> 1.0"},
+      {:memoize, "~> 1.4"},
       {:ex_keccak, "~> 0.7.4"},
       {:rustler, "~> 0.34.0"},
       {:dotenv, "~> 3.1.0"},
