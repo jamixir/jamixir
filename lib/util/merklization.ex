@@ -5,12 +5,51 @@ defmodule Util.Merklization do
   D.2.1. Node Encoding and Trie Identification
 
   """
+  use Memoize
 
   alias Util.Hash
   import Codec.Encoder
   alias Codec.State.Trie.SerializedState
+  import Bitwise
 
-  @doc """
+  @byte_to_bits_table (
+    for byte <- 0..255 do
+      for <<(bit::1 <- <<byte>>)>>, do: bit
+    end |> List.to_tuple()
+  )
+  @empty_hash Hash.zero()
+
+
+  defmemo encode_leaf_cached(key, value) do
+    bits_to_bytes(encode_leaf(key, value))
+  end
+
+
+  defmemo encode_branch_cached(left_hash, right_hash) do
+    bits_to_bytes(encode_branch(left_hash, right_hash))
+  end
+
+
+  defp split_trie_children(dict) do
+
+    {left_items, right_items} =
+      Enum.reduce(dict, {[], []}, fn
+        {[0 | rest], value}, {left_acc, right_acc} ->
+          {[{rest, value} | left_acc], right_acc}
+        {[1 | rest], value}, {left_acc, right_acc} ->
+          {left_acc, [{rest, value} | right_acc]}
+      end)
+
+    {Map.new(left_items), Map.new(right_items)}
+  end
+
+
+
+
+defmemo empty_leaf_hash(), do: Hash.default(encode_leaf_cached(<<>>, <<>>))
+defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash))
+
+@doc """
   Formula (D.3) v0.7.0:
      { (H, H) → b_512
   B: { (l,r) → [0] ~ bits(l)_1... ~ bits(r)
@@ -82,24 +121,27 @@ defmodule Util.Merklization do
   def merkelize(dict) do
     case map_size(dict) do
       0 ->
-        Hash.zero()
+        @empty_hash
 
       1 ->
         [{_, {k, v}}] = Map.to_list(dict)
-        Hash.default(bits_to_bytes(encode_leaf(k, v)))
+        if k == <<>> and v == <<>> do
+          empty_leaf_hash()
+        else
+          Hash.default(encode_leaf_cached(k, v))
+        end
 
       _ ->
-        {l, r} =
-          dict
-          |> Enum.split_with(fn {[b0 | _], _} -> b0 == 0 end)
-          |> (fn {left, right} ->
-                {
-                  for({[_ | rest], value} <- left, do: {rest, value}, into: %{}),
-                  for({[_ | rest], value} <- right, do: {rest, value}, into: %{})
-                }
-              end).()
+        {l, r} = split_trie_children(dict)
 
-        Hash.default(bits_to_bytes(encode_branch(merkelize(l), merkelize(r))))
+        left_hash = merkelize(l)
+        right_hash = merkelize(r)
+
+        if left_hash == @empty_hash and right_hash == @empty_hash do
+          empty_branch_hash()
+        else
+          Hash.default(encode_branch_cached(left_hash, right_hash))
+        end
     end
   end
 
@@ -108,26 +150,21 @@ defmodule Util.Merklization do
   Bits function, convers Bytes into octets.
   We use the function bits(Y) ∈ B to denote the sequence of bits, ordered with the least significant first,
   which represent the octet sequence Y, thus bits([5,0]) = [1,0,1,0,0,...].
+
   """
   def bits(binary) when is_binary(binary) do
     binary
     |> :binary.bin_to_list()
-    |> Enum.flat_map(fn byte ->
-      for <<(bit::1 <- <<byte>>)>>, do: bit
-    end)
+    |> Enum.flat_map(&elem(@byte_to_bits_table, &1))
   end
 
-  @doc """
-
-  """
 
   def bits_to_bytes(bits) do
     for chunk <- Enum.chunk_every(bits, 8) do
       Enum.with_index(chunk |> Enum.reverse())
       |> Enum.reduce(0, fn {bit, index}, acc ->
-        acc + bit * :math.pow(2, index)
+        acc + bit * (1 <<< index)
       end)
-      |> round()
     end
     |> :binary.list_to_bin()
   end
