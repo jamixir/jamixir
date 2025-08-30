@@ -43,7 +43,7 @@ fn vrf_input_point(vrf_input_data: &[u8]) -> Input {
 }
 
 #[rustler::nif]
-pub fn ring_vrf_verify<'a>(
+pub fn ring_vrf_verify_impl<'a>(
     env: Env<'a>,
     commitment: FixedColumnsCommittedBridge,
     vrf_input_data: Binary,

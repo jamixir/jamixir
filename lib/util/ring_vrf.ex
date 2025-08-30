@@ -1,5 +1,6 @@
 defmodule RingVrf do
   use Rustler, otp_app: :jamixir, crate: :bandersnatch_ring_vrf
+  use Memoize
   alias Util.Logger
   # load static ring context data from a file
   # following the example https://github.com/davxy/bandersnatch-vrfs-spec/blob/main/example/src/main.rs
@@ -7,9 +8,8 @@ defmodule RingVrf do
 
   def init_ring_context, do: init_ring_context(Constants.validator_count())
 
-  def init_ring_context(ring_size) do
+  defmemo init_ring_context(ring_size) do
     Logger.info("💍 Initializing ring context with size #{ring_size}")
-
     create_ring_context(ring_size)
   end
 
@@ -19,7 +19,11 @@ defmodule RingVrf do
 
   # Formula (G.4) v0.7.0
   # Formula (G.5) v0.7.0
-  def ring_vrf_verify(_commitment, _context, _message, _signature),
+  defmemo ring_vrf_verify(commitment, context, message, signature) do
+    ring_vrf_verify_impl(commitment, context, message, signature)
+  end
+
+  defp ring_vrf_verify_impl(_commitment, _context, _message, _signature),
     do: :erlang.nif_error(:nif_not_loaded)
 
   # No explicit formula
