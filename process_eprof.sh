@@ -32,7 +32,7 @@ total_line=$(grep -n "^Total:" "$EPROF_FILE" | head -1 | cut -d: -f1)
 
 if [ -n "$total_line" ]; then
     # Get 20 lines before the Total line
-    start_line=$((total_line - 20))
+    start_line=$((total_line - 30))
     end_line=$((total_line - 1))
     
     if [ $start_line -lt 1 ]; then
