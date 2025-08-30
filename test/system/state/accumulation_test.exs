@@ -15,9 +15,13 @@ defmodule System.State.AccumulationTest do
 
   defp setup_mock_accumulation do
     Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
+    Mox.set_mox_global()
+
 
     on_exit(fn ->
       Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
+      Mox.set_mox_private()
+
     end)
 
     :ok
@@ -286,7 +290,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock accumulation behavior
       MockAccumulation
-      |> stub(:do_single_accumulation, fn _, _, _, service, _ ->
+      |> stub(:single_accumulation, fn _, _, _, service, _ ->
         case service do
           # Regular services return updated state + outputs
           s when s in [4, 5] ->
@@ -381,7 +385,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock all services with a comprehensive stub to avoid conflicts
       MockAccumulation
-      |> stub(:do_single_accumulation, fn acc_state, _, _, service, _ ->
+      |> stub(:single_accumulation, fn acc_state, _, _, service, _ ->
         case service do
           # Manager service (1) - returns updated privileged services
           1 ->
@@ -519,7 +523,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock single_accumulation
       MockAccumulation
-      |> stub(:do_single_accumulation, fn acc_state, _, _, service, _ ->
+      |> stub(:single_accumulation, fn acc_state, _, _, service, _ ->
         gas_map = %{4 => 30, 5 => 40, 6 => 20}
         gas_used = Map.get(gas_map, service, 0)
 
@@ -881,7 +885,7 @@ defmodule System.State.AccumulationTest do
 
       # Set up expectations for the mock
       MockAccumulation
-      |> stub(:do_single_accumulation, fn _, _, _, _, _ ->
+      |> stub(:single_accumulation, fn _, _, _, _, _ ->
         %AccumulationResult{}
       end)
 

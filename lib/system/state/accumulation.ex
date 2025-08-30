@@ -27,7 +27,7 @@ defmodule System.State.Accumulation do
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
   # Formula (12.15) v0.7.0
   @type used_gas :: {Types.service_index(), Types.gas()}
-  @callback do_single_accumulation(
+  @callback single_accumulation(
               t(),
               list(),
               map(),
@@ -362,6 +362,8 @@ defmodule System.State.Accumulation do
         ) ::
           {t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()), list(used_gas())}
   def parallelized_accumulation(acc_state, work_reports, always_accumulated_services, extra_args) do
+    accumulation_module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
+
     # s = {rs | w ∈ w, r ∈ wr} ∪ K(f)
     services = collect_services(work_reports, always_accumulated_services)
 
@@ -380,7 +382,7 @@ defmodule System.State.Accumulation do
       Agent.get_and_update(cache_agent, fn %{available: available, results: results} ->
         if service_id in available do
           result =
-            single_accumulation(
+            accumulation_module.single_accumulation(
               state,
               work_reports,
               always_accumulated_services,
@@ -572,32 +574,7 @@ defmodule System.State.Accumulation do
   end
 
   # Formula (12.21) v0.7.0
-  @spec single_accumulation(
-          t(),
-          list(WorkReport.t()),
-          PrivilegedServices.free_accumulating_services(),
-          Types.service_index(),
-          extra_args()
-        ) :: AccumulationResult.t()
   def single_accumulation(
-        acc_state,
-        work_reports,
-        always_accumulating_services,
-        service,
-        extra_args
-      ) do
-    module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
-
-    module.do_single_accumulation(
-      acc_state,
-      work_reports,
-      always_accumulating_services,
-      service,
-      extra_args
-    )
-  end
-
-  def do_single_accumulation(
         acc_state,
         work_reports,
         always_accumulating_services,
