@@ -37,6 +37,7 @@ defmodule System.DataAvailabilityTest do
       assert get_segment(root, 5) == value
     end
 
+    @tag :full_vectors
     test "request segments from nodes when not found in storage", %{root: root, core: core} do
       segment = <<123_456_789_123_123_123::m(export_segment)>>
       segment_index = 3
