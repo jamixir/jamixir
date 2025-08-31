@@ -33,12 +33,12 @@ defmodule PVM.Host.Refine.PeekTest do
       context = %{context | m: %{1 => machine}}
 
       # r7: machine ID, r8: dest offset, r9: source offset, r10: length
-      registers = %Registers{
-        r7: 1,
-        r8: a_0(),
-        r9: a_0(),
-        r10: byte_size(test_data)
-      }
+      registers = Registers.new(%{
+        7 => 1,
+        8 => a_0(),
+        9 => a_0(),
+        10 => byte_size(test_data)
+      })
 
       {:ok,
        memory: memory,
@@ -56,15 +56,17 @@ defmodule PVM.Host.Refine.PeekTest do
       registers: registers
     } do
       # Set r7 to non-existent machine ID
-      registers = %{registers | r7: 999}
+      registers = %{registers | r: put_elem(registers.r, 7, 999)}
       who = who()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^who},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
+
+      assert registers_[7] == who
     end
 
     test "returns OOB when source (aka machine) memory not readable", %{
@@ -77,7 +79,7 @@ defmodule PVM.Host.Refine.PeekTest do
       # Make source memory unreadable at read location
       machine = %{
         machine
-        | memory: Memory.set_access(machine.memory, registers.r9, registers.r10, nil)
+        | memory: Memory.set_access(machine.memory, registers[9], registers[10], nil)
       }
 
       context = %{context | m: %{1 => machine}}
@@ -85,10 +87,12 @@ defmodule PVM.Host.Refine.PeekTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^oob},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
+
+      assert registers_[7] == oob
     end
 
     test "panic and untouched everything when destination memory not writable", %{
@@ -97,7 +101,7 @@ defmodule PVM.Host.Refine.PeekTest do
       registers: registers
     } do
       # Make destination memory unwritable
-      memory = Memory.set_access(%Memory{}, registers.r8, registers.r10, :read)
+      memory = Memory.set_access(%Memory{}, registers[8], registers[10], :read)
 
       assert %{
                exit_reason: :panic,
@@ -118,12 +122,13 @@ defmodule PVM.Host.Refine.PeekTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
 
-      assert Memory.read!(memory_, registers.r8, registers.r10) == test_data
+      assert Memory.read!(memory_, registers[8], registers[10]) == test_data
+      assert registers_[7] == ok
     end
 
     test "out of gas", %{

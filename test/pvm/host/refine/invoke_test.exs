@@ -16,7 +16,7 @@ defmodule PVM.Host.Refine.InvokeTest do
 
       # Create and encode the halt program
       {halt_program, halt_bitmask} = ProgramUtils.create_halt_program()
-      encoded_halt_program = PVM.Encoder.encode_program(halt_program, halt_bitmask, [], 1)
+      encoded_halt_program = PVM.Encoder.encode_program(halt_program, halt_bitmask, {}, 1)
 
       context = %Context{
         m: %{
@@ -39,12 +39,12 @@ defmodule PVM.Host.Refine.InvokeTest do
       gas = 100
 
       # Base registers setup
-      registers = %Registers{
+      registers = Registers.new(%{
         # machine ID
-        r7: 1,
+        7 => 1,
         # output address (second usable page)
-        r8: 0x1_1000
-      }
+        8 => 0x1_1000
+      })
 
       {:ok, memory: memory, context: context, gas: gas, registers: registers}
     end
@@ -55,7 +55,7 @@ defmodule PVM.Host.Refine.InvokeTest do
       registers: registers,
       memory: memory
     } do
-      memory = Memory.set_access(memory, registers.r8, 1, nil)
+      memory = Memory.set_access(memory, registers[8], 1, nil)
 
       assert %{
                exit_reason: :panic,
@@ -71,16 +71,19 @@ defmodule PVM.Host.Refine.InvokeTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r7: 999}
+      registers = %{registers | r: put_elem(registers.r, 7, 999)}
       who = who()
-      w8 = registers.r8
+      w8 = registers[8]
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^who, r8: ^w8},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.invoke(gas, registers, memory, context)
+
+      assert registers_[7] == who
+      assert registers_[8] == w8
     end
 
     test "executes program successfully", %{
@@ -90,32 +93,33 @@ defmodule PVM.Host.Refine.InvokeTest do
       registers: registers
     } do
       halt = halt()
-      registers = %{registers | r7: 2}
+      registers = %{registers | r: put_elem(registers.r, 7, 2)}
 
       registers_for_inner_execution =
         for x <- [42, 17, 83, 95, 29, 64, 71, 38, 56, 92, 13, 77],
             into: <<>>,
             do: <<x::64-little>>
 
-      memory = Memory.write!(memory, registers.r8 + 8, registers_for_inner_execution)
+      memory = Memory.write!(memory, registers[8] + 8, registers_for_inner_execution)
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^halt},
+               registers: registers_,
                memory: memory_,
                context: context_
              } = Refine.invoke(gas, registers, memory, context)
 
       # Read the execution results from memory
-      {:ok, _gas_bytes} = Memory.read(memory_, registers.r8, 8)
+      {:ok, _gas_bytes} = Memory.read(memory_, registers[8], 8)
 
       # Verify machine state in context
       machine = Map.get(context_.m, 2)
       # Should be at position 0 after halt
       assert machine.counter == 0
+      assert registers_[7] == halt
 
       assert {:ok, ^registers_for_inner_execution} =
-               Memory.read(memory_, registers.r8 + 8, 12 * 8)
+               Memory.read(memory_, registers[8] + 8, 12 * 8)
     end
   end
 end

@@ -56,7 +56,7 @@ defmodule PVM.Host.Accumulate do
   end
 
   def transfer(gas, registers, memory, context_pair) do
-    gas_cost = 10 + registers.r9
+    gas_cost = 10 + registers[9]
 
     with_gas(
       Result,

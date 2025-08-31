@@ -12,13 +12,13 @@ defmodule PVM.Host.Refine.MachineTest do
       gas = 100
 
       # r7: program start, r8: program length, r9: initial counter
-      test_program = PVM.Encoder.encode_program(<<1, 1, 1, 1, 1, 1, 1, 1>>, <<255>>, [], 1)
+      test_program = PVM.Encoder.encode_program(<<1, 1, 1, 1, 1, 1, 1, 1>>, <<255>>, {}, 1)
 
-      registers = %Registers{
-        r7: min_allowed_address(),
-        r8: byte_size(test_program),
-        r9: 42
-      }
+      registers = Registers.new(%{
+        7 => min_allowed_address(),
+        8 => byte_size(test_program),
+        9 => 42
+      })
 
       memory =
         PreMemory.init_nil_memory()
@@ -41,7 +41,7 @@ defmodule PVM.Host.Refine.MachineTest do
       registers: registers
     } do
       # Make memory unreadable at program location
-      memory = Memory.set_access(memory, registers.r7, registers.r8, nil)
+      memory = Memory.set_access(memory, registers[7], registers[8], nil)
 
       assert %{
                exit_reason: :panic,
@@ -60,10 +60,11 @@ defmodule PVM.Host.Refine.MachineTest do
     } do
       assert %{
                exit_reason: :continue,
-               registers: %{r7: 0},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
+      assert registers_[7] == 0
 
       # Verify new machine state
       assert %{0 => machine} = context_.m
@@ -91,10 +92,12 @@ defmodule PVM.Host.Refine.MachineTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: 1},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
+
+      assert registers_[7] == 1
 
       assert %{
                0 => %Integrated{program: "existing0"},
@@ -125,12 +128,14 @@ defmodule PVM.Host.Refine.MachineTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: 4},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
 
       # Verify new machine was added with ID 4
+
+      assert registers_[7] == 4
 
       assert %{
                0 => %Integrated{program: "existing0"},
@@ -153,21 +158,23 @@ defmodule PVM.Host.Refine.MachineTest do
     } do
       test_program = <<40, 30, 20>> <> test_program
 
-      registers = %Registers{
-        r7: 0x1_0000,
-        r8: byte_size(test_program),
-        r9: 42
-      }
+      registers = Registers.new(%{
+        7 => 0x1_0000,
+        8 => byte_size(test_program),
+        9 => 42
+      })
 
-      memory = Memory.write!(memory, registers.r7, test_program)
+      memory = Memory.write!(memory, registers[7], test_program)
       huh = huh()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.machine(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
   end
 end

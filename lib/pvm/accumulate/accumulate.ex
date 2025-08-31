@@ -1,7 +1,6 @@
 defmodule PVM.Accumulate do
   alias System.AccumulationResult
   alias PVM.Host.{Accumulate, Accumulate.Context, General}
-  alias PVM.Registers
   alias System.State.{Accumulation, ServiceAccount}
   alias PVM.{Accumulate.Operand, ArgInvoc}
   alias PVM.Host.General.FetchArgs
@@ -125,7 +124,7 @@ defmodule PVM.Accumulate do
             %Accumulate.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: Registers.set(registers, 7, what()),
+              registers: %{registers | r: put_elem(registers.r, 7, what())},
               memory: memory,
               context: context
             }

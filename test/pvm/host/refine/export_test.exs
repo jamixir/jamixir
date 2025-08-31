@@ -17,10 +17,10 @@ defmodule PVM.Host.Refine.ExportTest do
       export_offset = 0
       gas = 100
 
-      registers = %Registers{
-        r7: a_0(),
-        r8: 32
-      }
+      registers = Registers.new(%{
+        7 => a_0(),
+        8 => 32
+      })
 
       {:ok, memory: memory, export_offset: export_offset, gas: gas, registers: registers}
     end
@@ -32,7 +32,7 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       # Make memory unreadable at the location
-      memory = Memory.set_access(memory, registers.r7, registers.r8, nil)
+        memory = Memory.set_access(memory, registers[7], registers[8], nil)
 
       assert %{
                exit_reason: :panic,
@@ -54,10 +54,12 @@ defmodule PVM.Host.Refine.ExportTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^full},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.export(gas, registers, memory, context, 10)
+
+      assert registers_[7] == full
     end
 
     test "successful export with valid parameters", %{
@@ -71,17 +73,17 @@ defmodule PVM.Host.Refine.ExportTest do
 
       memory =
         Memory.set_access_by_page(memory, 16, 1, :write)
-        |> Memory.write!(registers.r7, test_data)
+        |> Memory.write!(registers[7], test_data)
         |> Memory.set_access_by_page(16, 1, :read)
 
-      registers = %{registers | r8: test_da_load}
+      registers = %{registers | r: put_elem(registers.r, 8, test_da_load)}
       context = %Context{e: [<<1>>, <<2>>, <<3>>, <<4>>, <<5>>]}
 
       expected_w7 = export_offset + length(context.e)
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^expected_w7},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.export(gas, registers, memory, context, export_offset)
@@ -90,6 +92,7 @@ defmodule PVM.Host.Refine.ExportTest do
       assert length(context_.e) == length(context.e) + 1
       # Verify the exported segment is padded correctly
       assert List.last(context_.e) == Utils.pad_binary_right(test_data, Constants.segment_size())
+      assert registers_[7] == expected_w7
     end
   end
 end

@@ -14,7 +14,7 @@ defmodule PVM.Host.Refine.Internal do
           non_neg_integer()
         ) :: Internal.t()
   def historical_lookup_internal(registers, memory, context, index, service_accounts, timeslot) do
-    w7 = registers.r7
+    {w7, h, o, w10, w11} = Registers.get_5(registers, 7, 8, 9, 10, 11)
 
     a =
       cond do
@@ -28,8 +28,6 @@ defmodule PVM.Host.Refine.Internal do
           nil
       end
 
-    [h, o] = Registers.get(registers, [8, 9])
-
     v =
       try do
         hash = PVM.Memory.read!(memory, h, 32)
@@ -42,14 +40,14 @@ defmodule PVM.Host.Refine.Internal do
         _ -> :error
       end
 
-    f = min(registers.r10, safe_byte_size(v))
-    l = min(registers.r11, safe_byte_size(v) - f)
+    f = min(w10, safe_byte_size(v))
+    l = min(w11, safe_byte_size(v) - f)
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason, w7_, memory_} =
       cond do
         v == :error or not is_writable ->
-          {:panic, registers.r7, memory}
+          {:panic, w7, memory}
 
         v == nil ->
           {:continue, none(), memory}
@@ -60,7 +58,7 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory_,
       context: context
     }
@@ -68,8 +66,9 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec export_internal(Registers.t(), Memory.t(), Context.t(), non_neg_integer()) :: Internal.t()
   def export_internal(registers, memory, %Context{e: e} = context, export_offset) do
-    p = registers.r7
-    z = min(registers.r8, Constants.segment_size())
+    {w7, w8} = Registers.get_2(registers, 7, 8)
+    p = w7
+    z = min(w8, Constants.segment_size())
 
     x =
       case PVM.Memory.read(memory, p, z) do
@@ -80,7 +79,7 @@ defmodule PVM.Host.Refine.Internal do
     {exit_reason, w7_, export_segments_} =
       cond do
         x == :error ->
-          {:panic, registers.r7, e}
+          {:panic, w7, e}
 
         length(e) + export_offset >= Constants.max_imports() ->
           {:continue, full(), e}
@@ -91,7 +90,7 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: %{context | e: export_segments_}
     }
@@ -99,7 +98,7 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def machine_internal(registers, memory, %Context{m: m} = context) do
-    [p0, pz, i] = Registers.get(registers, [7, 8, 9])
+    {p0, pz, i} = Registers.get_3(registers, 7, 8, 9)
 
     p =
       case Memory.read(memory, p0, pz) do
@@ -127,7 +126,7 @@ defmodule PVM.Host.Refine.Internal do
 
     {exit_reason, w7_, context_} =
       if p == :error do
-        {:panic, registers.r7, context}
+        {:panic, p0, context}
       else
         case PVM.Decoder.deblob(p) do
           {:ok, _} ->
@@ -141,7 +140,7 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -149,12 +148,12 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec peek_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def peek_internal(registers, memory, %Context{m: m} = context) do
-    [n, o, s, z] = Registers.get(registers, [7, 8, 9, 10])
+    {n, o, s, z} = Registers.get_4(registers, 7, 8, 9, 10)
 
     {exit_reason, w7_, memory_} =
       cond do
         !PVM.Memory.check_range_access?(memory, o, z, :write) ->
-          {:panic, registers.r7, memory}
+          {:panic, n, memory}
 
         !Map.has_key?(m, n) ->
           {:continue, who(), memory}
@@ -170,7 +169,7 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory_,
       context: context
     }
@@ -178,12 +177,12 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec poke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def poke_internal(registers, memory, %Context{m: m} = context) do
-    [n, s, o, z] = Registers.get(registers, [7, 8, 9, 10])
+    {n, s, o, z} = Registers.get_4(registers, 7, 8, 9, 10)
 
     {exit_reason, w7_, m_} =
       cond do
         !PVM.Memory.check_range_access?(memory, s, z, :read) ->
-          {:panic, registers.r7, m}
+          {:panic, n, m}
 
         !Map.has_key?(m, n) ->
           {:continue, who(), m}
@@ -205,7 +204,7 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: %{context | m: m_}
     }
@@ -213,7 +212,7 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec pages_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def pages_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
-    [n, p, c, r] = Registers.get(registers, [7, 8, 9, 10])
+    {n, p, c, r} = Registers.get_4(registers, 7, 8, 9, 10)
 
     u =
       Map.get(m, n, :error)
@@ -273,7 +272,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     %Internal{
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: %{context | m: m_}
     }
@@ -281,19 +280,20 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec invoke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def invoke_internal(registers, memory, %Context{m: m} = context) do
-    [n, o] = Registers.get(registers, [7, 8])
-
+    {w7, w8} = Registers.get_2(registers, 7, 8)
+    n = w7
+    o = w8
     {g, w} = read_invoke_params(memory, o)
 
     {exit_reason, w7_, w8_, memory_, m_} =
       case g do
         :error ->
-          {:panic, registers.r7, registers.r8, memory, m}
+          {:panic, w7, w8, memory, m}
 
         gas ->
           case Map.get(m, n) do
             nil ->
-              {:continue, who(), registers.r8, memory, m}
+              {:continue, who(), w8, memory, m}
 
             machine ->
               %{program: p, memory: u, counter: i} = machine
@@ -309,7 +309,7 @@ defmodule PVM.Host.Refine.Internal do
 
               write_value =
                 <<gas_::64-little>> <>
-                  for w <- Registers.get(w_, Enum.to_list(0..12)),
+                  for w <- Registers.to_list(w_),
                       into: <<>>,
                       do: <<w::64-little>>
 
@@ -335,20 +335,20 @@ defmodule PVM.Host.Refine.Internal do
                   {:continue, fault(), fault_address, memory_, m_}
 
                 :out_of_gas ->
-                  {:continue, oog(), registers.r8, memory_, m_}
+                  {:continue, oog(), w8, memory_, m_}
 
                 :panic ->
-                  {:continue, panic(), registers.r8, memory_, m_}
+                  {:continue, panic(), w8, memory_, m_}
 
                 :halt ->
-                  {:continue, halt(), registers.r8, memory_, m_}
+                  {:continue, halt(), w8, memory_, m_}
               end
           end
       end
 
     %Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, %{r7: w7_, r8: w8_}),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_) |> put_elem(8, w8_)},
       memory: memory_,
       context: %{context | m: m_}
     }
@@ -365,7 +365,7 @@ defmodule PVM.Host.Refine.Internal do
             into: %{},
             do: {index, chunk}
 
-      w = PVM.Registers.set(%PVM.Registers{}, values)
+      w = PVM.Registers.new(values)
       {g, w}
     else
       {:error, :error}
@@ -374,7 +374,7 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec expunge_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
   def expunge_internal(registers, memory, %Context{m: m} = context) do
-    n = registers.r7
+    n = registers[7]
 
     {w7_, m_} =
       case Map.get(m, n) do
@@ -386,7 +386,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     %Internal{
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: %{context | m: m_}
     }

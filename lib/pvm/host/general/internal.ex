@@ -46,7 +46,7 @@ defmodule PVM.Host.General.Internal do
         operands,
         transfers
       ) do
-    [w10, w11, w12] = Registers.get(registers, [10, 11, 12])
+    {w10, w11, w12} = Registers.get_3(registers, 10, 11, 12)
 
     v =
       cond do
@@ -179,7 +179,8 @@ defmodule PVM.Host.General.Internal do
           nil
       end
 
-    [o, w8, w9] = Registers.get(registers, [7, 8, 9])
+    {w7, w8, w9} = Registers.get_3(registers, 7, 8, 9)
+    o = w7
     f = min(w8, safe_byte_size(v))
     l = min(w9, safe_byte_size(v) - f)
 
@@ -188,7 +189,7 @@ defmodule PVM.Host.General.Internal do
     {exit_reason_, w7_, memory__} =
       cond do
         !is_writable ->
-          {:panic, registers.r7, memory}
+          {:panic, w7, memory}
 
         is_nil(v) ->
           {:continue, none(), memory}
@@ -199,7 +200,7 @@ defmodule PVM.Host.General.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory__,
       context: context
     }
@@ -208,12 +209,13 @@ defmodule PVM.Host.General.Internal do
   @spec lookup_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), services()) ::
           Result.Internal.t()
   def lookup_internal(registers, memory, service_account, service_index, services) do
+    {w7, h, o, w10, w11} = Registers.get_5(registers, 7, 8, 9, 10, 11)
     a =
-      if registers.r7 in [@max_64_bit_value, service_index],
+      if w7 in [@max_64_bit_value, service_index],
         do: service_account,
-        else: Map.get(services, registers.r7)
+        else: Map.get(services, w7)
 
-    [h, o] = Registers.get(registers, [8, 9])
+
 
     v =
       try do
@@ -224,15 +226,15 @@ defmodule PVM.Host.General.Internal do
         _ -> :error
       end
 
-    f = min(registers.r10, safe_byte_size(v))
-    l = min(registers.r11, safe_byte_size(v) - f)
+    f = min(w10, safe_byte_size(v))
+    l = min(w11, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason_, w7_, memory__} =
       cond do
         v == :error or !is_writable ->
-          {:panic, registers.r7, memory}
+          {:panic, w7, memory}
 
         is_nil(v) ->
           {:continue, none(), memory}
@@ -243,7 +245,7 @@ defmodule PVM.Host.General.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory__,
       context: service_account
     }
@@ -254,10 +256,11 @@ defmodule PVM.Host.General.Internal do
         }) ::
           Result.Internal.t()
   def read_internal(registers, memory, service_account, service_index, services) do
-    s_star = if registers.r7 == @max_64_bit_value, do: service_index, else: registers.r7
+    w7 = registers[7]
+    s_star = if w7 == @max_64_bit_value, do: service_index, else: w7
     a = if s_star == service_index, do: service_account, else: Map.get(services, s_star)
 
-    [ko, kz, o] = Registers.get(registers, [8, 9, 10])
+    {ko, kz, o, w11, w12} = Registers.get_5(registers, 8, 9, 10, 11, 12)
 
     storage_key = read_storage_key(memory, ko, kz)
 
@@ -268,15 +271,15 @@ defmodule PVM.Host.General.Internal do
         true -> nil
       end
 
-    f = min(registers.r11, safe_byte_size(v))
-    l = min(registers.r12, safe_byte_size(v) - f)
+    f = min(w11, safe_byte_size(v))
+    l = min(w12, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason_, w7_, memory__} =
       cond do
         v == :error or !is_writable ->
-          {:panic, registers.r7, memory}
+          {:panic, w7, memory}
 
         v == nil ->
           {:continue, none(), memory}
@@ -287,7 +290,7 @@ defmodule PVM.Host.General.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory__,
       context: service_account
     }
@@ -301,7 +304,8 @@ defmodule PVM.Host.General.Internal do
         ) ::
           Result.Internal.t()
   def write_internal(registers, memory, service_account, _service_index) do
-    [ko, kz, vo, vz] = Registers.get(registers, [7, 8, 9, 10])
+    {w7, kz, vo, vz} = Registers.get_4(registers, 7, 8, 9, 10)
+    ko = w7
 
     k = read_storage_key(memory, ko, kz)
 
@@ -328,14 +332,14 @@ defmodule PVM.Host.General.Internal do
 
     {exit_reason_, w7_, service_account_} =
       cond do
-        k == :error or a == :error -> {:panic, registers.r7, service_account}
+        k == :error or a == :error -> {:panic, w7, service_account}
         ServiceAccount.threshold_balance(a) > a.balance -> {:continue, full(), service_account}
         true -> {:continue, l, a}
       end
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: service_account_
     }
@@ -358,12 +362,14 @@ defmodule PVM.Host.General.Internal do
   @spec info_internal(Registers.t(), Memory.t(), ServiceAccount.t(), integer(), services()) ::
           Result.Internal.t()
   def info_internal(registers, memory, context, service_index, services) do
-    a =
-      if registers.r7 == @max_64_bit_value,
-        do: services[service_index],
-        else: services[registers.r7]
+    {w7, w8, w9, w10} = Registers.get_4(registers, 7, 8, 9, 10)
 
-    o = registers.r8
+    a =
+      if w7 == @max_64_bit_value,
+        do: services[service_index],
+        else: services[w7]
+
+    o = w8
 
     v =
       if a != nil do
@@ -384,15 +390,15 @@ defmodule PVM.Host.General.Internal do
         nil
       end
 
-    f = min(registers.r9, safe_byte_size(v))
-    l = min(registers.r10, safe_byte_size(v) - f)
+    f = min(w9, safe_byte_size(v))
+    l = min(w10, safe_byte_size(v) - f)
 
     is_writable = Memory.check_range_access?(memory, o, l, :write)
 
     {exit_reason_, w7_, memory_} =
       cond do
         !is_writable ->
-          {:panic, registers.r7, memory}
+          {:panic, w7, memory}
 
         v == nil ->
           {:continue, none(), memory}
@@ -403,7 +409,7 @@ defmodule PVM.Host.General.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory_,
       context: context
     }
@@ -412,8 +418,8 @@ defmodule PVM.Host.General.Internal do
   @spec log_internal(Registers.t(), Memory.t(), any(), integer() | nil, integer() | nil) ::
           Result.Internal.t()
   def log_internal(registers, memory, context, core_index, service_index) do
-    [log_level, target_addr, target_len, message_addr, message_len] =
-      Registers.get(registers, [7, 8, 9, 10, 11])
+    {log_level, target_addr, target_len, message_addr, message_len} =
+      Registers.get_5(registers, 7, 8, 9, 10, 11)
 
     target =
       if target_len == 0 and target_addr == 0 do
