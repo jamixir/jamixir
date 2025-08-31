@@ -275,11 +275,11 @@ defmodule System.State.Accumulation do
          seq_counter
        ) do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
-    remaining = length(work_reports)
+    total_count = length(work_reports)
 
     if i == 0 do
       # Log remaining work reports
-      if remaining > 0 do
+      if total_count > 0 do
         remaining_info =
           work_reports
           |> Enum.map(fn wr ->
@@ -288,7 +288,7 @@ defmodule System.State.Accumulation do
           end)
           |> Enum.join(", ")
 
-        Logger.info("Left unaccumulated (#{remaining}): #{remaining_info}")
+        Logger.info("Left unaccumulated (#{total_count}): #{remaining_info}")
       end
 
       {0, acc_state, [], [], []}
@@ -302,7 +302,7 @@ defmodule System.State.Accumulation do
         end)
         |> Enum.join(", ")
 
-      Logger.debug("Accumulating (#{i}/#{remaining}): #{current_info}")
+      Logger.debug("Accumulating (#{i}/#{total_count}): #{current_info}")
       Logger.debug(">>> Parallel Accumulation START")
 
 
