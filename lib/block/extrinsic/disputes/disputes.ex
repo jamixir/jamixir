@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.Disputes do
 
     cond do
       # Formula (10.2) - epoch index
-      !Enum.all?(verdicts, &(&1.epoch_index in [current_epoch, current_epoch - 1])) ->
+      !Enum.all?(verdicts, &(&1.epoch_index in (current_epoch - 1)..current_epoch)) ->
         {:error, Error.bad_judgement_age()}
 
       # Formula (10.2) - required length ⌊2/3V⌋+1

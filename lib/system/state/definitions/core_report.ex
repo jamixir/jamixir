@@ -47,8 +47,8 @@ defmodule System.State.CoreReport do
         do: nil,
         else:
           if(
-            cr.work_report in w or
-              h_t >= intermediate.timeslot + Constants.unavailability_period(),
+            h_t >= intermediate.timeslot + Constants.unavailability_period() or
+              cr.work_report in w,
             do: nil,
             else: intermediate
           )

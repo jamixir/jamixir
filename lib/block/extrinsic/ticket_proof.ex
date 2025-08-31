@@ -76,7 +76,9 @@ defmodule Block.Extrinsic.TicketProof do
   # Formula (6.29) v0.7.0 - r ∈ ℕ_N
   @spec validate_entry_indices(list(t())) :: :ok | {:error, String.t()}
   defp validate_entry_indices(ticket_proofs) do
-    if Enum.all?(ticket_proofs, &(&1.attempt in 0..(Constants.tickets_per_validator() - 1))) do
+    valid_range = 0..(Constants.tickets_per_validator() - 1)
+
+    if Enum.all?(ticket_proofs, &(&1.attempt in valid_range)) do
       :ok
     else
       {:error, "Invalid entry index"}

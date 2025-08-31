@@ -13,7 +13,7 @@ defmodule PVM.Accumulate.Utils do
           Context.t()
   def initializer(n0_, header_timeslot, accumulation_state, service_index) do
     computed_service_index =
-      e(service_index) <> n0_ <> e(header_timeslot)
+      (e(service_index) <> n0_ <> e(header_timeslot))
       |> Hash.default()
       |> de_le(4)
       |> rem(0xFFFFFE00)
@@ -34,7 +34,7 @@ defmodule PVM.Accumulate.Utils do
   # Formula (B.14) v0.7.0
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
-    if i in Map.keys(services) do
+    if Map.has_key?(services, i) do
       # check((i - 2^8 + 1) mod (2^32 - 2^9) + 2^8)
       new_i = rem(i - 0x100 + 1, 0xFFFFFE00) + 0x100
       check(new_i, accumulation)
