@@ -15,7 +15,8 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def bless_internal(registers, memory, {x, _y} = context_pair) do
-    [m, a, v, o, n] = Registers.get(registers, [7, 8, 9, 10, 11])
+    {w7, a, v, o, n} = Registers.get_5(registers, 7, 8, 9, 10, 11)
+    m = w7
 
     assigners_ =
       case Memory.read(memory, a, 4 * Constants.core_count()) do
@@ -43,7 +44,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason_, w7_, context_} =
       cond do
         :error in [z, assigners_] ->
-          {:panic, registers.r7, context_pair}
+          {:panic, w7, context_pair}
 
         x.service != x.accumulation.manager ->
           {:continue, huh(), context_pair}
@@ -69,7 +70,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -78,7 +79,8 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec assign_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def assign_internal(registers, memory, {x, _y} = context_pair) do
-    [c, o, a] = Registers.get(registers, [7, 8, 9])
+    {w7, o, a} = Registers.get_3(registers, 7, 8, 9)
+    c = w7
 
     q =
       case Memory.read(memory, o, 32 * Constants.max_authorization_queue_items()) do
@@ -88,8 +90,6 @@ defmodule PVM.Host.Accumulate.Internal do
         _ ->
           :error
       end
-
-    w7 = registers.r7
 
     {exit_reason, w7_, context_} =
       cond do
@@ -119,7 +119,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -128,8 +128,10 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec designate_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def designate_internal(registers, memory, {x, _y} = context_pair) do
+    w7 = registers[7]
+
     v =
-      case Memory.read(memory, registers.r7, 336 * Constants.validator_count()) do
+      case Memory.read(memory, w7, 336 * Constants.validator_count()) do
         {:ok, data} ->
           for <<validator_data::binary-size(336) <- data>> do
             {v, _} = Validator.decode(validator_data)
@@ -143,7 +145,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason, w7_, context_} =
       cond do
         v == :error ->
-          {:panic, registers.r7, context_pair}
+          {:panic, w7, context_pair}
 
         x.service != x.accumulation.delegator ->
           {:continue, huh(), context_pair}
@@ -156,7 +158,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -173,7 +175,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {_exit_reason, remaining_gas} = PVM.Host.Gas.check_gas(gas)
 
     %Result.Internal{
-      registers: Registers.set(registers, :r7, remaining_gas),
+      registers: %{registers | r: put_elem(registers.r, 7, remaining_gas)},
       memory: memory,
       context: {x, x}
     }
@@ -182,7 +184,8 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec new_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
   def new_internal(registers, memory, {x, _y} = context_pair, timeslot) do
-    [o, l, g, m, f] = Registers.get(registers, [7, 8, 9, 10, 11])
+    {w7, l, g, m, f} = Registers.get_5(registers, 7, 8, 9, 10, 11)
+    o = w7
 
     c =
       case Memory.read(memory, o, 32) do
@@ -223,7 +226,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
         cond do
           c == :error ->
-            {:panic, registers.r7, x_i, xu_d}
+            {:panic, w7, x_i, xu_d}
 
           f != 0 and x.service != x.accumulation.manager ->
             {:continue, huh(), x_i, xu_d}
@@ -237,7 +240,7 @@ defmodule PVM.Host.Accumulate.Internal do
         end
       )
 
-    registers_ = Registers.set(registers, 7, w7_)
+    registers_ = %{registers | r: put_elem(registers.r, 7, w7_)}
 
     x_ =
       %{
@@ -259,7 +262,8 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec upgrade_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def upgrade_internal(registers, memory, {x, _y} = context_pair) do
-    [o, g, m] = Registers.get(registers, [7, 8, 9])
+    {w7, g, m} = Registers.get_3(registers, 7, 8, 9)
+    o = w7
 
     c =
       case Memory.read(memory, o, 32) do
@@ -269,7 +273,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, w7_, context_} =
       if c == :error do
-        {:panic, registers.r7, context_pair}
+        {:panic, w7, context_pair}
       else
         xs_ =
           %{Context.accumulating_service(x) | code_hash: c, gas_limit_g: g, gas_limit_m: m}
@@ -281,7 +285,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -294,7 +298,8 @@ defmodule PVM.Host.Accumulate.Internal do
         ) ::
           Result.Internal.t()
   def transfer_internal(registers, memory, {x, _y} = context_pair) do
-    [d, a, l, o] = Registers.get(registers, [7, 8, 9, 10])
+    {w7, a, l, o} = Registers.get_4(registers, 7, 8, 9, 10)
+    d = w7
 
     services = x.accumulation.services
 
@@ -306,7 +311,7 @@ defmodule PVM.Host.Accumulate.Internal do
             receiver: d,
             amount: a,
             memo: memo,
-            gas_limit: l,
+            gas_limit: l
           }
 
         _ ->
@@ -319,7 +324,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason, w7_, context_} =
       cond do
         t == :error ->
-          {:panic, registers.r7, context_pair}
+          {:panic, w7, context_pair}
 
         # otherwise if d ∉ K(d)
         not Map.has_key?(services, d) ->
@@ -345,7 +350,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: context_
     }
@@ -355,7 +360,8 @@ defmodule PVM.Host.Accumulate.Internal do
           {:halt | :continue, Result.Internal.t()}
   def eject_internal(registers, memory, {x, _y} = context_pair, timeslot) do
     # let [d,o] = ω7..8
-    [d, o] = Registers.get(registers, [7, 8])
+    {w7, o} = Registers.get_2(registers, 7, 8)
+    d = w7
 
     h =
       case Memory.read(memory, o, 32) do
@@ -372,7 +378,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason, w7_, x_} =
       cond do
         h == :error ->
-          {:panic, registers.r7, x}
+          {:panic, w7, x}
 
         service == :error or service.code_hash != t(x.service) ->
           {:continue, who(), x}
@@ -403,7 +409,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -412,7 +418,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec query_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def query_internal(registers, memory, {x, _y} = context_pair) do
-    [o, z] = Registers.get(registers, [7, 8])
+    {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
       case Memory.read(memory, o, 32) do
@@ -422,7 +428,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, w7_, w8_} =
       if h == :error do
-        {:panic, registers.r7, registers.r8}
+        {:panic, o, z}
       else
         xs = Context.accumulating_service(x)
         a = get_in(xs, [:storage, {h, z}]) || :error
@@ -438,7 +444,7 @@ defmodule PVM.Host.Accumulate.Internal do
         end
       end
 
-    registers_ = Registers.set(registers, :r7, w7_) |> Registers.set(:r8, w8_)
+    registers_ = %{registers | r: put_elem(registers.r, 7, w7_) |> put_elem(8, w8_)}
 
     %Result.Internal{
       exit_reason: exit_reason,
@@ -451,7 +457,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec solicit_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
   def solicit_internal(registers, memory, {x, _y} = context_pair, timeslot) do
-    [o, z] = Registers.get(registers, [7, 8])
+    {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
       case Memory.read(memory, o, 32) do
@@ -483,7 +489,7 @@ defmodule PVM.Host.Accumulate.Internal do
       cond do
         # if h = ∇
         h == :error ->
-          {:panic, registers.r7, x}
+          {:panic, o, x}
 
         # otherwise if a = ∇
         a == :error ->
@@ -500,7 +506,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -509,7 +515,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec forget_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
   def forget_internal(registers, memory, {x, _y} = context_pair, timeslot) do
-    [o, z] = Registers.get(registers, [7, 8])
+    {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
       case Memory.read(memory, o, 32) do
@@ -552,7 +558,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason, w7_, x_} =
       cond do
         h == :error ->
-          {:panic, registers.r7, x}
+          {:panic, o, x}
 
         a == :error ->
           {:continue, huh(), x}
@@ -563,7 +569,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -572,7 +578,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec yield_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def yield_internal(registers, memory, {x, _y} = context_pair) do
-    o = registers.r7
+    o = registers[7]
 
     h =
       case Memory.read(memory, o, 32) do
@@ -582,14 +588,14 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {exit_reason, w7_, x_} =
       if h == :error do
-        {:panic, registers.r7, x}
+        {:panic, o, x}
       else
         {:continue, ok(), %{x | accumulation_trie_result: h}}
       end
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -603,11 +609,11 @@ defmodule PVM.Host.Accumulate.Internal do
         ) ::
           Result.Internal.t()
   def provide_internal(registers, memory, {x, _y} = context_pair, service_index) do
-    [o, z] = Registers.get(registers, [8, 9])
+    {w7, o, z} = Registers.get_3(registers, 7, 8, 9)
     # d
     services = x.accumulation.services
 
-    s_star = if registers.r7 == @max_64_bit_value, do: service_index, else: registers.r7
+    s_star = if w7 == @max_64_bit_value, do: service_index, else: w7
 
     i =
       case Memory.read(memory, o, z) do
@@ -621,7 +627,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {exit_reason, w7_, x_} =
       cond do
         i == :error ->
-          {:panic, registers.r7, x}
+          {:panic, w7, x}
 
         service == nil ->
           {:continue, who(), x}
@@ -638,7 +644,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: Registers.set(registers, :r7, w7_),
+      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }

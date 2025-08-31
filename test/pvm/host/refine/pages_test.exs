@@ -14,7 +14,6 @@ defmodule PVM.Host.Refine.PagesTest do
         |> PreMemory.set_access(min_allowed_address(), page_size() + 2, :write)
         |> PreMemory.write(min_allowed_address(), test_data)
         |> PreMemory.finalize()
-        
 
       machine = %Integrated{
         memory: machine_memory,
@@ -25,11 +24,12 @@ defmodule PVM.Host.Refine.PagesTest do
       gas = 100
 
       # r7: machine ID, r8: start page, r9: page count
-      registers = %Registers{
-        r7: 1,
-        r8: 16,
-        r9: 2
-      }
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => 16,
+          9 => 2
+        })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
@@ -40,8 +40,7 @@ defmodule PVM.Host.Refine.PagesTest do
        registers: registers,
        test_data: test_data,
        memory: memory,
-       test_data: test_data
-      }
+       test_data: test_data}
     end
 
     test "returns WHO when machine doesn't exist", %{
@@ -51,14 +50,16 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       who = who()
-      registers = %{registers | r7: 99}
+      registers = %{registers | r: put_elem(registers.r, 7, 99)}
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^who},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == who
     end
 
     test "returns HUH when page number is too small", %{
@@ -68,15 +69,17 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       # Set start page below minimum (16)
-      registers = %{registers | r8: 15}
+      registers = %{registers | r: put_elem(registers.r, 8, 15)}
       huh = huh()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
 
     test "returns HUH when page range is too large", %{
@@ -86,15 +89,17 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       # Set page count to exceed 2^32/page_size
-      registers = %{registers | r8: 0x1_FFFE, r9: 4}
+      registers = %{registers | r: put_elem(registers.r, 8, 0x1_FFFE) |> put_elem(9, 4)}
       huh = huh()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
 
     test "returns HUH when w10 > 4", %{
@@ -104,24 +109,26 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       huh = huh()
-      registers = %{registers | r10: 5}
+      registers = %{registers | r: put_elem(registers.r, 10, 5)}
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
   end
 
   describe "w10 is 3 or 4 and memory between w8 -> w8 + w9 has one or more nil access pages" do
     setup do
-      registers = %Registers{
-        r7: 1,
-        r8: 16,
-        r9: 100
-      }
+      registers = Registers.new(%{
+        7 => 1,
+        8 => 16,
+        9 => 100
+      })
 
       # Create a machine with memory that has nil access in the target range
       machine_memory =
@@ -147,15 +154,17 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r10: 3}
+      registers = %{registers | r: put_elem(registers.r, 10, 3)}
       huh = huh()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
 
     test "returns HUH when w10 = 4 and memory has nil access pages", %{
@@ -164,15 +173,17 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r10: 4}
+      registers = %{registers | r: put_elem(registers.r, 10, 4)}
       huh = huh()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^huh},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == huh
     end
   end
 
@@ -195,11 +206,11 @@ defmodule PVM.Host.Refine.PagesTest do
       gas = 100
 
       # r7: machine ID, r8: start page, r9: page count
-      registers = %Registers{
-        r7: 1,
-        r8: 16,
-        r9: 2
-      }
+      registers = Registers.new(%{
+        7 => 1,
+        8 => 16,
+        9 => 2
+      })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
@@ -218,23 +229,25 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r10: 0}
+      registers = %{registers | r: put_elem(registers.r, 10, 0)}
       ok = ok()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == ok
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
       page_size = machine.memory.page_size
 
       # Calculate range
-      start_offset = registers.r8 * page_size
-      length = registers.r9 * page_size
+      start_offset = registers[8] * page_size
+      length = registers[9] * page_size
 
       # Verify pages have nil access
       refute Memory.check_range_access?(machine.memory, start_offset, length, :read)
@@ -246,23 +259,25 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers
     } do
       memory = %Memory{}
-      registers = %{registers | r10: 1}
+      registers = %{registers | r: put_elem(registers.r, 10, 1)}
       ok = ok()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == ok
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
       page_size = machine.memory.page_size
 
       # Calculate range
-      start_offset = registers.r8 * page_size
-      length = registers.r9 * page_size
+      start_offset = registers[8] * page_size
+      length = registers[9] * page_size
 
       # Verify pages are zeroed
       {:ok, zeroed_data} = Memory.read(machine.memory, start_offset, length)
@@ -279,23 +294,25 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers
     } do
       memory = %Memory{}
-      registers = %{registers | r10: 2}
+      registers = %{registers | r: put_elem(registers.r, 10, 2)}
       ok = ok()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == ok
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
       page_size = machine.memory.page_size
 
       # Calculate range
-      start_offset = registers.r8 * page_size
-      length = registers.r9 * page_size
+      start_offset = registers[8] * page_size
+      length = registers[9] * page_size
 
       # Verify pages are zeroed
       {:ok, zeroed_data} = Memory.read(machine.memory, start_offset, length)
@@ -312,22 +329,24 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory,
       test_data: test_data
     } do
-      registers = %{registers | r10: 3}
+      registers = %{registers | r: put_elem(registers.r, 10, 3)}
       ok = ok()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == ok
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
       page_size = machine.memory.page_size
 
       # Calculate range
-      start_offset = registers.r8 * page_size
+      start_offset = registers[8] * page_size
       length = byte_size(test_data)
 
       # Verify pages still contain original data (not zeroed)
@@ -346,23 +365,24 @@ defmodule PVM.Host.Refine.PagesTest do
       test_data: test_data,
       context: context
     } do
-
-      registers = %{registers | r10: 4}
+      registers = %{registers | r: put_elem(registers.r, 10, 4)}
       ok = ok()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^ok},
+               registers: registers_,
                memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
+
+      assert registers_[7] == ok
 
       # Get updated machine
       machine = Map.get(context_.m, 1)
       page_size = machine.memory.page_size
 
       # Calculate range
-      start_offset = registers.r8 * page_size
+      start_offset = registers[8] * page_size
       length = byte_size(test_data)
 
       # Verify pages still contain original data (not zeroed)

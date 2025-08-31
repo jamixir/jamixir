@@ -3,7 +3,7 @@ defmodule PVM do
   alias PVM.Host.General
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
-  alias PVM.{Accumulate.Operand, ArgInvoc, Host, Registers}
+  alias PVM.{Accumulate.Operand, ArgInvoc, Host}
   alias PVM.Host.General.FetchArgs
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   import Codec.Encoder
@@ -60,7 +60,7 @@ defmodule PVM do
             %General.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: Registers.set(registers, 7, what()),
+              registers: %{registers | r: put_elem(registers.r, 7, what())},
               memory: memory
             }
         end
@@ -213,7 +213,7 @@ defmodule PVM do
             %{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: Registers.set(registers, 7, what()),
+              registers: %{registers | r: put_elem(registers.r, 7, what())},
               memory: memory,
               context: context
             }

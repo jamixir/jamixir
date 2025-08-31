@@ -19,12 +19,12 @@ defmodule PVM.Host.Refine.ExpungeTest do
     end
 
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
-      registers = %Registers{r7: 999}
+      registers = Registers.new(%{7 => 999})
 
       %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.expunge(gas, registers, %Memory{}, context)
 
-      assert registers_ == Registers.set(registers, 7, who())
+      assert registers_ == Registers.new(%{7 => who()})
       assert memory_ == %Memory{}
       assert context_ == context
     end
@@ -34,7 +34,7 @@ defmodule PVM.Host.Refine.ExpungeTest do
       machine: machine,
       gas: gas
     } do
-      registers = %Registers{r7: 1}
+      registers = Registers.new(%{7 => 1})
       # add another machine to the context
       machine2 = %Integrated{program: "program2"}
       context = %{context | m: Map.put(context.m, 2, machine2)}
@@ -43,7 +43,7 @@ defmodule PVM.Host.Refine.ExpungeTest do
         Refine.expunge(gas, registers, %Memory{}, context)
 
       # Should return the machine's counter value
-      assert registers_ == Registers.set(registers, 7, machine.counter)
+      assert registers_ == Registers.new(%{7 => machine.counter})
       assert memory_ == %Memory{}
 
       # Machine should be removed from context

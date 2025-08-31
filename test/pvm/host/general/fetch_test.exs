@@ -57,16 +57,17 @@ defmodule PVM.Host.General.FetchTest do
         }
       ]
 
-      registers = %Registers{
-        # output address
-        r7: min_allowed_address(),
-        # offset
-        r8: 0,
-        # length
-        r9: 999,
-        # selector
-        r10: 0
-      }
+      registers =
+        Registers.new(%{
+          # output address
+          7 => min_allowed_address(),
+          # offset
+          8 => 0,
+          # length
+          9 => 999,
+          # selector
+          10 => 0
+        })
 
       args = %FetchArgs{
         gas: 100,
@@ -129,155 +130,170 @@ defmodule PVM.Host.General.FetchTest do
       >>
 
       l = byte_size(expected_constants)
-      args = %{args | registers: %{args.registers | r10: 0}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 0)}}
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_constants
+      assert Memory.read!(memory_, args.registers[7], l) == expected_constants
+      assert registers_[7] == l
     end
 
     test "w10 = 1 returns n when provided", %{
       args: args
     } do
       l = byte_size(args.n)
-      args = %{args | registers: %{args.registers | r10: 1}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 1)}}
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == args.n
+      assert Memory.read!(memory_, args.registers[7], l) == args.n
+      assert registers_[7] == l
     end
 
     test "w10 = 2 returns authorizer output when provided", %{
       args: args
     } do
       l = byte_size(args.authorizer_trace)
-      args = %{args | registers: %{args.registers | r10: 2}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 2)}}
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == args.authorizer_trace
+      assert Memory.read!(memory_, args.registers[7], l) == args.authorizer_trace
+      assert registers_[7] == l
     end
 
     test "w10 = 3 returns preimage from specified work item", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 3, r11: 0, r12: 1}}
+      args = %{
+        args
+        | registers: %{
+            args.registers
+            | r: put_elem(args.registers.r, 10, 3) |> put_elem(11, 0) |> put_elem(12, 1)
+          }
+      }
+
       expected_preimage = args.preimages |> Enum.at(0) |> Enum.at(1)
       l = byte_size(expected_preimage)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_preimage
+      assert Memory.read!(memory_, args.registers[7], l) == expected_preimage
+      assert registers_[7] == l
     end
 
     test "w10 = 4 returns preimage from current work item", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 4, r11: 0}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 4) |> put_elem(11, 0)}}
       expected_preimage = args.preimages |> Enum.at(args.index) |> Enum.at(0)
       l = byte_size(expected_preimage)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_preimage
+      assert Memory.read!(memory_, args.registers[7], l) == expected_preimage
+      assert registers_[7] == l
     end
 
     test "w10 = 5 returns import segment", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 5, r11: 0, r12: 0}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 5) |> put_elem(11, 0) |> put_elem(12, 0)}}
       expected_segment = args.import_segments |> Enum.at(0) |> Enum.at(0)
       l = byte_size(expected_segment)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_segment
+      assert Memory.read!(memory_, args.registers[7], l) == expected_segment
+      assert registers_[7] == l
     end
 
     test "w10 = 6 returns current import segment", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 6, r11: 1}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 6) |> put_elem(11, 1)}}
       expected_segment = args.import_segments |> Enum.at(args.index) |> Enum.at(1)
       l = byte_size(expected_segment)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_segment
+      assert Memory.read!(memory_, args.registers[7], l) == expected_segment
+      assert registers_[7] == l
     end
 
     test "w10 = 7 returns encoded work package", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 7}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 7)}}
       encoded = e(args.work_package)
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 8 returns encoded authorization code hash and parameterization blob", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 8}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 8)}}
 
       encoded =
         e(
@@ -289,56 +305,59 @@ defmodule PVM.Host.General.FetchTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 9 returns authorization token", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 9}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 9)}}
       l = byte_size(args.work_package.authorization_token)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == args.work_package.authorization_token
+      assert Memory.read!(memory_, args.registers[7], l) == args.work_package.authorization_token
+      assert registers_[7] == l
     end
 
     test "w10 = 10 returns encoded refinement context", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 10}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 10)}}
       encoded = e(args.work_package.context)
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 11 returns encoded work items list", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 11}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 11)}}
 
       encoded =
         e(vs(for wi <- args.work_package.work_items, do: WorkItem.encode(wi, :fetch_host_call)))
@@ -348,162 +367,173 @@ defmodule PVM.Host.General.FetchTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 12 returns encoded specific work item", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 12, r11: 0}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 12) |> put_elem(11, 0)}}
       encoded = WorkItem.encode(Enum.at(args.work_package.work_items, 0), :fetch_host_call)
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 13 returns work item payload", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 13, r11: 1}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 13) |> put_elem(11, 1)}}
       expected_payload = args.work_package.work_items |> Enum.at(1) |> Map.get(:payload)
       l = byte_size(expected_payload)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_payload
+      assert Memory.read!(memory_, args.registers[7], l) == expected_payload
+      assert registers_[7] == l
     end
 
     test "w10 = 14 returns encoded operands list", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 14}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 14)}}
       encoded = e(vs(args.operands))
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 15 returns encoded specific operand", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 15, r11: 1}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 15) |> put_elem(11, 1)}}
       encoded = e(Enum.at(args.operands, 1))
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
-    end
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
+      end
 
     test "w10 = 16 returns encoded transfers list", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 16}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 16)}}
       encoded = e(vs(args.transfers))
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "w10 = 17 returns encoded specific transfer", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 17, r11: 0}}
-      encoded = e(Enum.at(args.transfers, args.registers.r11))
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 17) |> put_elem(11, 0)}}
+      encoded = e(Enum.at(args.transfers, args.registers[11]))
       l = byte_size(encoded)
       context = args.context
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == encoded
+      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert registers_[7] == l
     end
 
     test "returns none when no data found", %{
       args: args
     } do
       # Invalid selector
-      args = %{args | registers: %{args.registers | r10: 99}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 99)}}
       none = none()
       context = args.context
       memory = args.memory
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^none},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
+
+      assert registers_[7] == none
     end
 
     test "returns none when w10 = 1 but n is nil", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r10: 1}, n: nil}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 1)}, n: nil}
       none = none()
       context = args.context
       memory = args.memory
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^none},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
+
+      assert registers_[7] == none
     end
 
     test "panics when memory range check fails", %{
@@ -529,7 +559,7 @@ defmodule PVM.Host.General.FetchTest do
     } do
       # Test partial read with offset and length
       # w10=2 for authorizer_output, offset=2, length=3
-      args = %{args | registers: %{args.registers | r10: 2, r8: 2, r9: 3}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 2) |> put_elem(8, 2) |> put_elem(9, 3)}}
       expected_partial = binary_part(args.authorizer_trace, 2, 3)
       l = byte_size(expected_partial)
       v_size = byte_size(args.authorizer_trace)
@@ -537,13 +567,14 @@ defmodule PVM.Host.General.FetchTest do
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^v_size},
+               registers: registers_,
                memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers.r7, l) == expected_partial
+      assert Memory.read!(memory_, args.registers[7], l) == expected_partial
+      assert registers_[7] == v_size
     end
 
     test "handles out of gas condition", %{
@@ -569,18 +600,20 @@ defmodule PVM.Host.General.FetchTest do
     } do
       # Test out of bounds access
       # invalid w11
-      args = %{args | registers: %{args.registers | r10: 3, r11: 99, r12: 0}}
+      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 3) |> put_elem(11, 99) |> put_elem(12, 0)}}
       none = none()
       context = args.context
       memory = args.memory
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^none},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
+
+      assert registers_[7] == none
     end
   end
 end

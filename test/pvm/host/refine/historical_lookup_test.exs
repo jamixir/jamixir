@@ -38,13 +38,13 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
         }
       }
 
-      registers = %Registers{
-        r7: 1,
-        r8: a_0(),
-        r9: a_0() + page_size() + 100,
-        r10: 0,
-        r11: some_big_value
-      }
+      registers = Registers.new(%{
+        7 => 1,
+        8 => a_0(),
+        9 => a_0() + page_size() + 100,
+        10 => 0,
+        11 => some_big_value
+      })
 
       {:ok,
        memory: memory,
@@ -65,12 +65,12 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       # Set w7 to non-existent service account ID
-      registers = Registers.set(registers, :r7, 999)
+      registers = %{registers | r: put_elem(registers.r, 7, 999)}
       none = none()
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^none},
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } =
@@ -83,6 +83,8 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
                  service_accounts,
                  timeslot
                )
+
+      assert registers_[7] == none
     end
 
     test "{:panic, w7} when memory is not readable", %{
@@ -94,7 +96,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       # 1 is the start address in memory
-      registers = Registers.set(registers, :r8, 1)
+      registers = %{registers | r: put_elem(registers.r, 8, 1)}
 
       assert %{
                exit_reason: :panic,
@@ -122,7 +124,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       gas: gas,
       registers: registers
     } do
-      memory = Memory.write!(memory, registers.r8, test_map.hash)
+      memory = Memory.write!(memory, registers[8], test_map.hash)
       memory = Memory.set_access_by_page(memory, 17, 1, :read)
 
       assert %{
@@ -151,12 +153,12 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       gas: gas,
       registers: registers
     } do
-      memory = Memory.write!(memory, registers.r8, test_map.hash)
+      memory = Memory.write!(memory, registers[8], test_map.hash)
       %{length: l, value: v} = test_map
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: context_
              } =
@@ -170,8 +172,10 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
                  timeslot
                )
 
+      assert registers_[7] == l
+
       # Verify the value was written to memory
-      {:ok, ^v} = Memory.read(memory_, registers.r9, l)
+      {:ok, ^v} = Memory.read(memory_, registers[9], l)
 
       assert context_ == context
     end
@@ -186,14 +190,14 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       %{length: l, value: v} = test_map
-      memory = Memory.write!(memory, registers.r8, test_map.hash)
+      memory = Memory.write!(memory, registers[8], test_map.hash)
 
       # Setup registers with max 64-bit value (0xFFFF_FFFF_FFFF_FFFF)
-      registers = %{registers | r7: 0xFFFF_FFFF_FFFF_FFFF}
+      registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
 
       assert %{
                exit_reason: :continue,
-               registers: %{r7: ^l},
+               registers: registers_,
                memory: memory_,
                context: context_
              } =
@@ -207,8 +211,10 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
                  timeslot
                )
 
+      assert registers_[7] == l
+
       # Verify the value was written to memory
-      {:ok, ^v} = Memory.read(memory_, registers.r9, l)
+      {:ok, ^v} = Memory.read(memory_, registers[9], l)
 
       assert context_ == context
     end

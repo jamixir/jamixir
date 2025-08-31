@@ -26,7 +26,7 @@ defmodule PVM.Helper do
 
     z = 1
     s = 1
-    jump_table = []
+    jump_table = {}
 
     p =
       PVM.Encoder.encode_program(program, bitmask, jump_table, z)

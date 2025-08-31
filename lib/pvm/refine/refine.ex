@@ -1,6 +1,5 @@
 defmodule PVM.Refine do
   alias Util.Hash
-  alias PVM.Registers
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
   alias PVM.{ArgInvoc, Host.Refine, Host.General}
@@ -110,7 +109,7 @@ defmodule PVM.Refine do
               %Refine.Result{
                 exit_reason: :continue,
                 gas: gas - default_gas(),
-                registers: Registers.set(registers, 7, what()),
+                registers: %{registers | r: put_elem(registers.r, 7, what())},
                 memory: memory,
                 context: context
               }
