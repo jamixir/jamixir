@@ -67,9 +67,9 @@ defmodule Jamixir.Commands.Run do
       Log.info("🎭 Starting as validator")
     end
 
-    RingVrf.init_ring_context()
-
     Application.ensure_all_started(:jamixir)
+
+    RingVrf.init_ring_context()
 
     # Register this process so we can send it shutdown messages
     Process.register(self(), :shutdown_handler)

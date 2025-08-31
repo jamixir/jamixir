@@ -4,6 +4,6 @@ defmodule Mix.Tasks.RunFuzzer do
   @impl Mix.Task
   def run(args) do
     Application.put_env(:jamixir, :fuzzer_mode, true)
-    Mix.Task.run("run", args)
+    Jamixir.main(["fuzzer"] ++ args)
   end
 end
