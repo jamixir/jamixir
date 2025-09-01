@@ -48,7 +48,7 @@ defmodule Jamixir.MixProject do
       {:ex_fiskal, "~> 0.1.0"},
       {:blake2, "~> 1.0"},
       {:memoize, "~> 1.4"},
-      {:ex_keccak, "~> 0.7.4"},
+      {:ex_keccak, "~> 0.7.8"},
       {:rustler, "~> 0.34.0"},
       {:dotenv, "~> 3.1.0"},
       {:temp, "~> 0.4"},
@@ -74,7 +74,8 @@ defmodule Jamixir.MixProject do
       jamixir: [
         include_executables_for: [:unix],
         applications: [runtime_tools: :permanent],
-        steps: [:assemble, &copy_quicer_priv/1, :tar]
+        steps: [:assemble, &copy_quicer_priv/1, :tar],
+        vm_args: "rel/vm.args.eex"
       ]
     ]
   end
