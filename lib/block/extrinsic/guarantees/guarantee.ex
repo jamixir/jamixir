@@ -60,7 +60,11 @@ defmodule Block.Extrinsic.Guarantee do
          :ok <- validate_prerequisites(w, state.recent_history),
          # Formula (11.23) v0.7.0
          true <-
-           Enum.all?(guarantees, fn %__MODULE__{credentials: cred} -> length(cred) in [2, 3] end),
+           Enum.all?(guarantees, fn
+             %__MODULE__{credentials: [_, _]} -> true
+             %__MODULE__{credentials: [_, _, _]} -> true
+             _ -> false
+           end),
          # Formula (11.33) v0.7.0
          :ok <- validate_anchor_block(guarantees, state.recent_history, s),
          # Formula (11.25) v0.7.0

@@ -135,7 +135,7 @@ defmodule PVM.Accumulate do
 
       %{exit_reason: e, gas: g, registers: r, memory: m, context: c} = host_call_result
 
-      if e in [:panic, :out_of_gas] do
+      if e == :panic or e == :out_of_gas do
         Logger.warning("Host call #{host(n)} ended with exit reason: #{e}, remaining gas: #{g}")
       end
 
