@@ -229,7 +229,7 @@ defmodule System.State.Accumulation do
 
     counter = next_counter()
 
-    Logger.info("=== Sequential Accumulation ##{counter} START ===")
+    Logger.debug("=== Sequential Accumulation ##{counter} START ===")
 
     if total_work_reports > 0 do
       all_hashes =
@@ -251,7 +251,7 @@ defmodule System.State.Accumulation do
         counter
       )
 
-    Logger.info("=== Sequential Accumulation ##{counter} END ===")
+    Logger.debug("=== Sequential Accumulation ##{counter} END ===")
     result
   end
 
@@ -294,6 +294,7 @@ defmodule System.State.Accumulation do
       {0, acc_state, [], [], []}
     else
       {current_batch, remaining_work_reports} = Enum.split(work_reports, i)
+
       current_info =
         current_batch
         |> Enum.map(fn wr ->
@@ -304,8 +305,6 @@ defmodule System.State.Accumulation do
 
       Logger.debug("Accumulating (#{i}/#{total_count}): #{current_info}")
       Logger.debug(">>> Parallel Accumulation START")
-
-
 
       {acc_state_star, transfers_star, accumulation_outputs_star, used_gas_star} =
         parallelized_accumulation(
@@ -583,8 +582,9 @@ defmodule System.State.Accumulation do
       ) do
     {gas, operands} = pre_single_accumulation(work_reports, always_accumulating_services, service)
 
-    Logger.debug("Accumulating service #{service} with #{length(operands)} operands (gas: #{gas})")
-
+    Logger.debug(
+      "Accumulating service #{service} with #{length(operands)} operands (gas: #{gas})"
+    )
 
     PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
   end
