@@ -70,8 +70,6 @@ defmodule Jamixir.Commands.Run do
 
     Application.ensure_all_started(:jamixir)
 
-    RingVrf.init_ring_context()
-
     # Register this process so we can send it shutdown messages
     Process.register(self(), :shutdown_handler)
 

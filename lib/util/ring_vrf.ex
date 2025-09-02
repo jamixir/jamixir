@@ -8,7 +8,7 @@ defmodule RingVrf do
 
   def init_ring_context, do: init_ring_context(Constants.validator_count())
 
-  defmemo init_ring_context(ring_size) do
+  def init_ring_context(ring_size) do
     Logger.info("💍 Initializing ring context with size #{ring_size}")
     create_ring_context(ring_size)
   end
@@ -68,4 +68,8 @@ defmodule RingVrf do
 
   def ring_vrf_output(ring, secret, prover_idx, context),
     do: ring_vrf_sign(ring, secret, prover_idx, context, <<>>) |> elem(1)
+end
+
+defmodule PrecompileRing do
+  @ring RingVrf.init_ring_context(Constants.validator_count())
 end

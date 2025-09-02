@@ -15,9 +15,6 @@ defmodule Jamixir.InitializationTask do
   def run do
     Log.info("🚀 Starting initialization task...")
 
-    RingVrf.init_ring_context()
-    Log.info("✅ RingVrf context initialized")
-
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
 

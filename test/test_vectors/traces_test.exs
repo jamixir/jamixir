@@ -9,7 +9,6 @@ defmodule TracesTest do
   import Util.Hex
 
   setup_all do
-    RingVrf.init_ring_context()
     # uncomment if you want to get trace files
 
     # System.put_env("PVM_TRACE", "true")
