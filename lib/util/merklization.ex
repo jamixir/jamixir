@@ -12,44 +12,37 @@ defmodule Util.Merklization do
   alias Codec.State.Trie.SerializedState
   import Bitwise
 
-  @byte_to_bits_table (
-    for byte <- 0..255 do
-      for <<(bit::1 <- <<byte>>)>>, do: bit
-    end |> List.to_tuple()
-  )
+  @byte_to_bits_table (for byte <- 0..255 do
+                         for <<(bit::1 <- <<byte>>)>>, do: bit
+                       end)
+                      |> List.to_tuple()
   @empty_hash Hash.zero()
 
-
   defmemo encode_leaf_cached(key, value) do
-    bits_to_bytes(encode_leaf(key, value))
+    encode_leaf(key, value)
   end
-
 
   defmemo encode_branch_cached(left_hash, right_hash) do
-    bits_to_bytes(encode_branch(left_hash, right_hash))
+    encode_branch(left_hash, right_hash)
   end
 
-
   defp split_trie_children(dict) do
-
     {left_items, right_items} =
-      Enum.reduce(dict, {[], []}, fn
-        {[0 | rest], value}, {left_acc, right_acc} ->
+      Enum.reduce(dict, {<<>>, <<>>}, fn
+        {<<0::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
           {[{rest, value} | left_acc], right_acc}
-        {[1 | rest], value}, {left_acc, right_acc} ->
+
+        {<<1::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
           {left_acc, [{rest, value} | right_acc]}
       end)
 
     {Map.new(left_items), Map.new(right_items)}
   end
 
+  defmemo(empty_leaf_hash(), do: Hash.default(encode_leaf_cached(<<>>, <<>>)))
+  defmemo(empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash)))
 
-
-
-defmemo empty_leaf_hash(), do: Hash.default(encode_leaf_cached(<<>>, <<>>))
-defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash))
-
-@doc """
+  @doc """
   Formula (D.3) v0.7.0:
      { (H, H) → b_512
   B: { (l,r) → [0] ~ bits(l)_1... ~ bits(r)
@@ -61,8 +54,8 @@ defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, 
   using the last 255 bits of the 0-bit (left) sub-trie identity and the full 256 bits of the 1-bit (right) sub-trie identity.
   """
   def encode_branch(l, r) do
-    [_ | rest] = bits(l)
-    [0] ++ rest ++ bits(r)
+    <<_::1, rest::bitstring>> = l
+    <<0::1, rest::bitstring, r::bitstring>>
   end
 
   @doc """
@@ -81,16 +74,18 @@ defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, 
   """
 
   def encode_leaf(key, value) do
-    if byte_size(value) <= 32 do
-      result =
-        [1, 0] ++
-          (bits(e_le(byte_size(value), 1)) |> Enum.drop(2)) ++
-          (bits(key) |> Enum.take(248)) ++
-          bits(value)
+    size = byte_size(value)
+    <<key_part::bitstring-size(248), _::bitstring>> = key
 
-      result ++ List.duplicate(0, 512 - length(result))
+    if size <= 32 do
+      <<_::2, size_part::bitstring>> = e_le(size, 1)
+
+      result = <<0b10, size_part::bitstring, key_part::bitstring, value::bitstring>>
+
+      <<result::bitstring, 0::size(512 - bit_size(result))>>
     else
-      [1, 1, 0, 0, 0, 0, 0, 0] ++ (bits(key) |> Enum.take(248)) ++ bits(Hash.default(value))
+      hvalue = Hash.default(value)
+      <<0b11000000, key_part::bitstring, hvalue::bitstring>>
     end
   end
 
@@ -101,7 +96,7 @@ defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, 
   def merkelize_state(dict) do
     merkelize(
       for {k, v} <- dict do
-        {bits(k), {k, v}}
+        {<<k::bitstring>>, {k, v}}
       end
       |> Enum.into(%{})
     )
@@ -125,6 +120,7 @@ defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, 
 
       1 ->
         [{_, {k, v}}] = Map.to_list(dict)
+
         if k == <<>> and v == <<>> do
           empty_leaf_hash()
         else
@@ -152,20 +148,4 @@ defmemo empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, 
   which represent the octet sequence Y, thus bits([5,0]) = [1,0,1,0,0,...].
 
   """
-  def bits(binary) when is_binary(binary) do
-    binary
-    |> :binary.bin_to_list()
-    |> Enum.flat_map(&elem(@byte_to_bits_table, &1))
-  end
-
-
-  def bits_to_bytes(bits) do
-    for chunk <- Enum.chunk_every(bits, 8) do
-      Enum.with_index(chunk |> Enum.reverse())
-      |> Enum.reduce(0, fn {bit, index}, acc ->
-        acc + bit * (1 <<< index)
-      end)
-    end
-    |> :binary.list_to_bin()
-  end
 end
