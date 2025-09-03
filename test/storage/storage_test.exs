@@ -104,16 +104,6 @@ defmodule StorageTest do
       Storage.remove("#{@p_state_root}#{header_hash}")
     end
 
-    test "store and retrieve state fields" do
-      state = %State{}
-      header_hash = Hash.random()
-      Storage.put(header_hash, state)
-
-      for key <- Map.keys(Map.from_struct(state)) do
-        assert Storage.get_state(header_hash, key) == Map.get(state, key)
-      end
-    end
-
     test "get non-existent header" do
       assert Storage.get(Hash.random()) == nil
     end

@@ -120,7 +120,7 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp handle_message(:get_state, %{header_hash: header_hash}, sock) do
-    case Storage.get_state(header_hash) do
+    case Storage.get_state_trie(header_hash) do
       nil ->
         Log.info("State not found for header hash: #{b16(header_hash)}")
         :socket.close(sock)
