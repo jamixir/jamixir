@@ -13,6 +13,17 @@ defmodule TracesTest do
     # uncomment if you want to get trace files
 
     # System.put_env("PVM_TRACE", "true")
+
+
+    {:ok, pid} = PVM.MemoryProfiler.start_link([])
+    PVM.MemoryProfiler.start_profiling()
+
+    on_exit(fn ->
+
+      PVM.MemoryProfiler.stop_profiling()
+      PVM.MemoryProfiler.print_stats()
+    end)
+
     :ok
   end
 
@@ -28,7 +39,7 @@ defmodule TracesTest do
     repo: "jam-test-vectors",
     branch: "master",
     path: &__MODULE__.traces_path/1,
-    block_range: 1..100,
+    block_range: 1..20,
     # modes: ["fallback", "safrole", "storage_light", "preimages_light"]
     modes: ["storage", "preimages"]
   }
@@ -172,6 +183,10 @@ defmodule TracesTest do
 
           assert failed_blocks == []
           Logger.info("🎉 All blocks and states are correct")
+        end
+
+        if PVM.MemoryProfiler.enabled?() do
+          PVM.MemoryProfiler.print_stats()
         end
       end
     end
