@@ -98,22 +98,14 @@ defmodule Storage do
 
   def put(header_hash, %State{} = state) do
     log(:debug, "Storing state for header #{b16(header_hash)}")
-    state_root = Trie.state_root(state)
+    serial_state = Trie.serialize(state)
+    state_root = Trie.state_root(serial_state)
 
-    state_fields =
-      Map.from_struct(state)
-      |> Enum.map(fn {key, value} -> {@p_state <> header_hash <> to_string(key), value} end)
-      |> Map.new()
-
-    KVStorage.put(
-      Map.merge(
-        state_fields,
-        %{
-          (@p_state <> header_hash) => state,
-          (@p_state_root <> header_hash) => state_root
-        }
-      )
-    )
+    KVStorage.put(%{
+      (@p_state <> header_hash <> "t") => serial_state,
+      (@p_state <> header_hash) => state,
+      (@p_state_root <> header_hash) => state_root
+    })
 
     state_root
   end
@@ -188,6 +180,10 @@ defmodule Storage do
 
   def get_state(header_hash) do
     KVStorage.get(@p_state <> header_hash)
+  end
+
+  def get_state_trie(header_hash) do
+    KVStorage.get(@p_state <> header_hash <> "t")
   end
 
   def get_state(header_hash, key) do
