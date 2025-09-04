@@ -56,18 +56,19 @@ defmodule PVM.Host.AccumulateTest do
         |> PreMemory.set_access(2 * a_0(), 4 * Constants.core_count(), :read)
         |> PreMemory.finalize()
 
-      registers = Registers.new(%{
-        # manager
-        7 => 1,
-        # assigners offset
-        8 => 2 * a_0(),
-        # delegator
-        9 => 3,
-        # memory offset
-        10 => 0x1_0000,
-        # count of services
-        11 => 3
-      })
+      registers =
+        Registers.new(%{
+          # manager
+          7 => 1,
+          # assigners offset
+          8 => 2 * a_0(),
+          # delegator
+          9 => 3,
+          # memory offset
+          10 => 0x1_0000,
+          # count of services
+          11 => 3
+        })
 
       {:ok,
        memory: memory, gas_map: gas_map, registers: registers, gas: 100, assigners: assigners}
@@ -107,6 +108,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.bless(gas, registers, memory, context)
+
       assert registers_[7] == who
     end
 
@@ -128,6 +130,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.bless(gas, registers, memory, context)
+
       assert registers_[7] == huh
     end
 
@@ -148,6 +151,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.bless(gas, registers, memory, context)
+
       assert registers_[7] == ok
 
       # Verify privileged services in context
@@ -180,12 +184,13 @@ defmodule PVM.Host.AccumulateTest do
         }
       }
 
-      registers = Registers.new(%{
-        # core to assign
-        7 => 1,
-        # offset
-        8 => 0x1_0000
-      })
+      registers =
+        Registers.new(%{
+          # core to assign
+          7 => 1,
+          # offset
+          8 => 0x1_0000
+        })
 
       {:ok, memory: memory, context: {context, context}, gas: 100, registers: registers}
     end
@@ -223,6 +228,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.assign(gas, registers, memory, context)
+
       assert registers_[7] == huh
     end
 
@@ -243,6 +249,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.assign(gas, registers, memory, context)
+
       assert registers_[7] == core
     end
 
@@ -260,6 +267,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.assign(gas, registers, memory, {x, y})
+
       assert registers_[7] == ok
 
       # Verify the authorizer queue was updated in context
@@ -340,6 +348,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.designate(gas, registers, memory, context)
+
       assert registers_[7] == huh
     end
 
@@ -357,6 +366,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.designate(gas, registers, memory, {x, y})
+
       assert registers_[7] == ok
 
       # Verify the validators were added to context
@@ -435,16 +445,17 @@ defmodule PVM.Host.AccumulateTest do
       context: context,
       gas: gas
     } do
-      registers = Registers.new(%{
-        # offset
-        7 => 0x1_0000,
-        # l
-        8 => 1,
-        # g
-        9 => 100,
-        # m
-        10 => 200
-      })
+      registers =
+        Registers.new(%{
+          # offset
+          7 => 0x1_0000,
+          # l
+          8 => 1,
+          # g
+          9 => 100,
+          # m
+          10 => 200
+        })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
       timeslot_ = 1
@@ -474,12 +485,13 @@ defmodule PVM.Host.AccumulateTest do
            }
          }, y}
 
-      registers = Registers.new(%{
-        7 => 0x1_0000,
-        8 => 1,
-        9 => 100,
-        10 => 200
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          8 => 1,
+          9 => 100,
+          10 => 200
+        })
 
       cash = cash()
       timeslot_ = 1
@@ -490,7 +502,8 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.new(gas, registers, memory, context, timeslot_)
-             assert registers_[7] == cash
+
+      assert registers_[7] == cash
     end
 
     test "returns {:continue, computed_service} and updates context with valid parameters", %{
@@ -498,12 +511,13 @@ defmodule PVM.Host.AccumulateTest do
       context: {x, y},
       gas: gas
     } do
-      registers = Registers.new(%{
-        7 => 0x1_0000,
-        8 => 1,
-        9 => 100,
-        10 => 200
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          8 => 1,
+          9 => 100,
+          10 => 200
+        })
 
       %{computed_service: computed_service} = x
       timeslot_ = 1
@@ -514,6 +528,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.new(gas, registers, memory, {x, y}, timeslot_)
+
       assert registers_[7] == computed_service
       # Check computed_service was updated
       assert x_.computed_service == Utils.check(Utils.bump(x.computed_service), x.accumulation)
@@ -549,11 +564,12 @@ defmodule PVM.Host.AccumulateTest do
         |> PreMemory.set_access(a_0(), 32, :read)
         |> PreMemory.finalize()
 
-        registers = Registers.new(%{
-        7 => 0x1_0000,
-        8 => 999,
-        9 => 1999
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          8 => 999,
+          9 => 1999
+        })
 
       # Initial service account
       service_account = %ServiceAccount{
@@ -602,6 +618,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.upgrade(gas, registers, memory, {x, y})
+
       assert registers_[7] == ok
 
       # Check service was updated with new values
@@ -644,16 +661,17 @@ defmodule PVM.Host.AccumulateTest do
         }
       }
 
-      registers = Registers.new(%{
-        # destination
-        7 => 456,
-        # amount
-        8 => sender.balance - 200,
-        # gas limit
-        9 => 500,
-        # memo offset
-        10 => 0x1_0000
-      })
+      registers =
+        Registers.new(%{
+          # destination
+          7 => 456,
+          # amount
+          8 => sender.balance - 200,
+          # gas limit
+          9 => 500,
+          # memo offset
+          10 => 0x1_0000
+        })
 
       {:ok, memory: memory, context: {x, %Context{}}, gas: 1000, registers: registers}
     end
@@ -685,10 +703,11 @@ defmodule PVM.Host.AccumulateTest do
 
       assert %{
                exit_reason: :continue,
-                 registers: registers_,
+               registers: registers_,
                memory: ^memory,
                context: ^context
              } = Accumulate.transfer(gas, registers, memory, context)
+
       assert registers_[7] == who
     end
 
@@ -707,6 +726,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.transfer(gas + 100, registers, memory, context)
+
       assert registers_[7] == low
     end
 
@@ -731,6 +751,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.transfer(gas, registers, memory, {x, y})
+
       assert registers_[7] == cash
     end
 
@@ -764,6 +785,7 @@ defmodule PVM.Host.AccumulateTest do
                memo: <<1::Constants.memo_size()*8>>,
                gas_limit: registers[9]
              }
+
       assert registers_[7] == ok
     end
   end
@@ -782,7 +804,7 @@ defmodule PVM.Host.AccumulateTest do
       service_to_eject = %ServiceAccount{
         balance: 500,
         # matches x.service
-        code_hash: <<123::service()>>,
+        code_hash: <<123::256-little>>,
         storage:
           HashedKeysMap.new(%{
             # Valid entry with [x,y]
@@ -804,12 +826,13 @@ defmodule PVM.Host.AccumulateTest do
         }
       }
 
-      registers = Registers.new(%{
-        # service to eject
-        7 => 456,
-        # hash offset
-        8 => 0x1_0000
-      })
+      registers =
+        Registers.new(%{
+          # service to eject
+          7 => 456,
+          # hash offset
+          8 => 0x1_0000
+        })
 
       {:ok,
        memory: memory,
@@ -853,6 +876,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.eject(gas, registers, memory, context, timeslot)
+
       assert registers_[7] == who
 
       # Test wrong code hash
@@ -866,6 +890,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == who
     end
 
@@ -892,6 +917,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == huh
     end
 
@@ -915,6 +941,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == huh
     end
 
@@ -936,6 +963,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == huh
     end
 
@@ -961,6 +989,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == huh
     end
 
@@ -979,6 +1008,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.eject(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       # Check service was removed and balance transferred
       refute Map.has_key?(x_.accumulation.services, 456)
@@ -1020,11 +1050,12 @@ defmodule PVM.Host.AccumulateTest do
         }
       }
 
-      registers = Registers.new(%{
-        7 => 0x1_0000,
-        # z value
-        8 => 1
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          # z value
+          8 => 1
+        })
 
       {:ok,
        memory: memory, context: {context, context}, gas: 100, registers: registers, hash: hash}
@@ -1061,6 +1092,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.query(gas, registers, memory, context)
+
       assert registers_[7] == none
       assert registers_[8] == 0
     end
@@ -1077,6 +1109,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.query(gas, registers, memory, context)
+
       assert registers_[7] == 0
       assert registers_[8] == 0
     end
@@ -1098,6 +1131,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^c_x, ^c_y}
              } = Accumulate.query(gas, registers, memory, {c_x, c_y})
+
       assert registers_[7] == expected_r7
       assert registers_[8] == 0
     end
@@ -1119,6 +1153,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^c_x, ^c_y}
              } = Accumulate.query(gas, registers, memory, {c_x, c_y})
+
       assert registers_[7] == expected_r7
       assert registers_[8] == y
     end
@@ -1141,6 +1176,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^c_x, ^c_y}
              } = Accumulate.query(gas, registers, memory, {c_x, c_y})
+
       assert registers_[7] == expected_r7
       assert registers_[8] == expected_r8
     end
@@ -1178,12 +1214,13 @@ defmodule PVM.Host.AccumulateTest do
            }
          }, %Context{}}
 
-      registers = Registers.new(%{
-        # hash offset
-        7 => 0x1_0000,
-        # z value
-        8 => 1
-      })
+      registers =
+        Registers.new(%{
+          # hash offset
+          7 => 0x1_0000,
+          # z value
+          8 => 1
+        })
 
       {:ok, memory: memory, context: context, gas: 100, registers: registers, timeslot: 1000}
     end
@@ -1221,7 +1258,9 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {c_x_, ^c_y}
              } = Accumulate.solicit(gas, registers, memory, {c_x, c_y}, timeslot)
+
       assert registers_[7] == ok
+
       assert get_in(Context.accumulating_service(c_x_), [:storage, {Hash.one(), 999}]) ==
                []
     end
@@ -1244,6 +1283,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.solicit(gas, registers, memory, context, timeslot)
+
       assert registers_[7] == huh
       # Test with empty list
       # Points to []
@@ -1255,6 +1295,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.solicit(gas, registers, memory, context, timeslot)
+
       assert registers_[7] == huh
     end
 
@@ -1275,6 +1316,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.solicit(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == full
     end
 
@@ -1293,6 +1335,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.solicit(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       # Verify timeslot was appended to [x,y]
       updated_storage =
@@ -1337,10 +1380,11 @@ defmodule PVM.Host.AccumulateTest do
         }
       }
 
-      registers = Registers.new(%{
-        7 => 0x1_0000,
-        8 => 1
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          8 => 1
+        })
 
       timeslot = Constants.forget_delay() + 100
 
@@ -1385,6 +1429,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       x_s_ = Context.accumulating_service(x_)
       refute HashedKeysMap.has_key?(x_s_.storage, {hash, 1})
@@ -1408,6 +1453,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       x_s_ = Context.accumulating_service(x_)
       refute HashedKeysMap.has_key?(x_s_.storage, {hash, 2})
@@ -1431,6 +1477,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       x_s_ = Context.accumulating_service(x_)
       assert x_s_.storage[{hash, 3}] == [99, timeslot]
@@ -1453,6 +1500,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.forget(gas, registers, memory, {x, y}, timeslot)
+
       assert registers_[7] == ok
       x_s_ = Context.accumulating_service(x_)
       assert x_s_.storage[{hash, 4}] == [3, timeslot]
@@ -1475,6 +1523,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.forget(gas, registers, memory, context, timeslot)
+
       assert registers_[7] == huh
     end
   end
@@ -1496,9 +1545,10 @@ defmodule PVM.Host.AccumulateTest do
         accumulation_trie_result: nil
       }
 
-      registers = Registers.new(%{
-        7 => 0x1_0000
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000
+        })
 
       {:ok, memory: memory, context: {context, context}, gas: 100, registers: registers}
     end
@@ -1532,6 +1582,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.yield(gas, registers, memory, {x, y})
+
       assert registers_[7] == ok
       # Verify hash was stored in accumulation_trie_result
       assert x_.accumulation_trie_result == Hash.one()
@@ -1577,11 +1628,12 @@ defmodule PVM.Host.AccumulateTest do
 
       service_index = 456
 
-      registers = Registers.new(%{
-        7 => service_index,
-        8 => a_0(),
-        9 => byte_size(preimage_data)
-      })
+      registers =
+        Registers.new(%{
+          7 => service_index,
+          8 => a_0(),
+          9 => byte_size(preimage_data)
+        })
 
       {:ok,
        memory: memory,
@@ -1626,6 +1678,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.provide(gas, registers, memory, context, service_index)
+
       assert registers_[7] == who
     end
 
@@ -1647,6 +1700,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.provide(gas, registers, memory, context, unused_service_index)
+
       assert registers_[7] == huh
     end
 
@@ -1671,6 +1725,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {^x, ^y}
              } = Accumulate.provide(gas, registers, memory, {x, y}, unused_service_index)
+
       assert registers_[7] == huh
     end
 
@@ -1717,6 +1772,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: {x_, ^y}
              } = Accumulate.provide(gas, registers, memory, {x, y}, service_index)
+
       assert registers_[7] == ok
       # Verify preimage was added to context using service_index
       assert MapSet.member?(x_.preimages, {service_index, preimage_data})
@@ -1740,6 +1796,7 @@ defmodule PVM.Host.AccumulateTest do
                memory: ^memory,
                context: ^context
              } = Accumulate.provide(gas, registers, memory, context, service_index)
+
       assert registers_[7] == who
     end
   end
