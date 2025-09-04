@@ -10,7 +10,6 @@ defmodule Util.Merklization do
   alias Util.Hash
   import Codec.Encoder
   alias Codec.State.Trie.SerializedState
-  import Bitwise
 
   @byte_to_bits_table (for byte <- 0..255 do
                          for <<(bit::1 <- <<byte>>)>>, do: bit
@@ -27,16 +26,13 @@ defmodule Util.Merklization do
   end
 
   defp split_trie_children(dict) do
-    {left_items, right_items} =
-      Enum.reduce(dict, {<<>>, <<>>}, fn
-        {<<0::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
-          {[{rest, value} | left_acc], right_acc}
+    Enum.reduce(dict, {Map.new(), Map.new()}, fn
+      {<<0::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
+        {Map.put(left_acc, rest, value), right_acc}
 
-        {<<1::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
-          {left_acc, [{rest, value} | right_acc]}
-      end)
-
-    {Map.new(left_items), Map.new(right_items)}
+      {<<1::1, rest::bitstring>>, value}, {left_acc, right_acc} ->
+        {left_acc, Map.put(right_acc, rest, value)}
+    end)
   end
 
   defmemo(empty_leaf_hash(), do: Hash.default(encode_leaf_cached(<<>>, <<>>)))
@@ -75,17 +71,14 @@ defmodule Util.Merklization do
 
   def encode_leaf(key, value) do
     size = byte_size(value)
-    <<key_part::bitstring-size(248), _::bitstring>> = key
 
     if size <= 32 do
       <<_::2, size_part::bitstring>> = e_le(size, 1)
-
-      result = <<0b10, size_part::bitstring, key_part::bitstring, value::bitstring>>
-
+      result = <<0b10::2, size_part::bitstring, key::bitstring, value::bitstring>>
       <<result::bitstring, 0::size(512 - bit_size(result))>>
     else
       hvalue = Hash.default(value)
-      <<0b11000000, key_part::bitstring, hvalue::bitstring>>
+      <<0b11000000, key::bitstring, hvalue::bitstring>>
     end
   end
 
@@ -119,7 +112,7 @@ defmodule Util.Merklization do
         @empty_hash
 
       1 ->
-        [{_, {k, v}}] = Map.to_list(dict)
+        [{k, v}] = Map.values(dict)
 
         if k == <<>> and v == <<>> do
           empty_leaf_hash()
@@ -148,4 +141,9 @@ defmodule Util.Merklization do
   which represent the octet sequence Y, thus bits([5,0]) = [1,0,1,0,0,...].
 
   """
+  def bits(binary) when is_binary(binary) do
+    binary
+    |> :binary.bin_to_list()
+    |> Enum.flat_map(&elem(@byte_to_bits_table, &1))
+  end
 end

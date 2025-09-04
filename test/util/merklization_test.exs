@@ -46,19 +46,17 @@ defmodule Util.MerklizationTest do
       assert bit_size(result) == Sizes.merkle_root_bits()
 
       <<p1::bitstring-size(2), p2::bitstring-size(6), _::bitstring>> = result
-      assert p1 == <<0b10>>
-
-      assert Enum.slice(result, 2, 6) == Merklization.bits(<<16>>) |> Enum.drop(2)
+      assert p1 == <<0b10::size(2)>>
+      assert p2 == <<0b010000::size(6)>>
     end
 
     test "encode_leaf when byte_size(value) == 32" do
       key = :crypto.strong_rand_bytes(31)
-
       result = Merklization.encode_leaf(key, Hash.random())
 
       assert bit_size(result) == Sizes.merkle_root_bits()
       <<bits::bitstring-size(2), _::bitstring>> = result
-      assert bits == <<0b10>>
+      assert bits == <<0b10::2>>
     end
 
     test "encode_leaf when byte_size(value) > 32" do
@@ -77,21 +75,10 @@ defmodule Util.MerklizationTest do
   # Formula (D.5) v0.7.0
   # Formula (D.6) v0.7.0
   describe "meklelize_state/1" do
-    test "smoke test fake state" do
-      dict = %{<<1>> => "a", <<2>> => "b"}
-
-      transformed_dict = %{
-        [0, 0, 0, 0, 0, 0, 0, 1] => {<<1>>, "a"},
-        [0, 0, 0, 0, 0, 0, 1, 0] => {<<2>>, "b"}
-      }
-
-      assert Merklization.merkelize_state(dict) == Merklization.merkelize(transformed_dict)
-    end
-
     test "test big fake state" do
       dict =
         Enum.reduce(1..100, %{}, fn _, acc ->
-          key = Hash.random()
+          <<key::binary-size(31), _::binary>> = Hash.random()
           value = Hash.random()
           Map.put(acc, key, value)
         end)
