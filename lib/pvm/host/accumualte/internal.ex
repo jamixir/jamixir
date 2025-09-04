@@ -380,7 +380,7 @@ defmodule PVM.Host.Accumulate.Internal do
         h == :error ->
           {:panic, w7, x}
 
-        service == :error or service.code_hash != t(x.service) ->
+        service == :error or service.code_hash != <<x.service::256-little>> ->
           {:continue, who(), x}
 
         true ->
