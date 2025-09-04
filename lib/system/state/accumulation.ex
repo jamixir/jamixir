@@ -337,6 +337,7 @@ defmodule System.State.Accumulation do
 
   @spec number_of_work_reports_to_accumumulate(list(WorkReport.t()), non_neg_integer()) ::
           non_neg_integer()
+          def number_of_work_reports_to_accumumulate([], _), do: 0
   def number_of_work_reports_to_accumumulate(work_reports, gas_limit) do
     Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
