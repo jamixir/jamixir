@@ -1,4 +1,5 @@
 defmodule PVM.Host.General do
+  alias PVM.Registers
   alias System.State.ServiceAccount
   import PVM.Host.Gas
   import PVM.Host.General.Internal
@@ -19,12 +20,9 @@ defmodule PVM.Host.General do
       context: context
     }
 
-    if exit_reason == :continue do
-      registers_ = %{registers | r: put_elem(registers.r, 7, remaining_gas)}
-      %{result | registers: registers_}
-    else
-      result
-    end
+    if exit_reason == :continue, do: Registers.put_elem(registers.r, 7, remaining_gas)
+
+    result
   end
 
   # ΩY (ϱ, ω, µ, (m, e), p, n, r, i, i, x, o, t)

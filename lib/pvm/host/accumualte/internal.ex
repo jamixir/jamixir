@@ -68,9 +68,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), context_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -117,9 +119,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), context_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -156,9 +160,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), context_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -174,8 +180,10 @@ defmodule PVM.Host.Accumulate.Internal do
   def checkpoint_internal(registers, memory, {x, _y}, gas) do
     {_exit_reason, remaining_gas} = PVM.Host.Gas.check_gas(gas)
 
+    Registers.put_elem(registers.r, 7, remaining_gas)
+
     %Result.Internal{
-      registers: %{registers | r: put_elem(registers.r, 7, remaining_gas)},
+      registers: registers,
       memory: memory,
       context: {x, x}
     }
@@ -240,8 +248,6 @@ defmodule PVM.Host.Accumulate.Internal do
         end
       )
 
-    registers_ = %{registers | r: put_elem(registers.r, 7, w7_)}
-
     x_ =
       %{
         x
@@ -251,9 +257,11 @@ defmodule PVM.Host.Accumulate.Internal do
 
     context_ = put_elem(context_pair, 0, x_)
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: registers_,
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -283,9 +291,11 @@ defmodule PVM.Host.Accumulate.Internal do
         {:continue, ok(), context_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -348,9 +358,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), context_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -407,9 +419,11 @@ defmodule PVM.Host.Accumulate.Internal do
           end
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -444,11 +458,12 @@ defmodule PVM.Host.Accumulate.Internal do
         end
       end
 
-    registers_ = %{registers | r: put_elem(registers.r, 7, w7_) |> put_elem(8, w8_)}
+    Registers.put_elem(registers.r, 7, w7_)
+    Registers.put_elem(registers.r, 8, w8_)
 
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: registers_,
+      registers: registers,
       memory: memory,
       context: context_pair
     }
@@ -504,9 +519,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), put_in(x, [:accumulation, :services, x.service], a)}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -567,9 +584,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), put_in(x, [:accumulation, :services, x.service], a)}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -593,9 +612,11 @@ defmodule PVM.Host.Accumulate.Internal do
         {:continue, ok(), %{x | accumulation_trie_result: h}}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
@@ -642,9 +663,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), put_in(x, [:preimages], MapSet.put(x.preimages, {s_star, i}))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: put_elem(context_pair, 0, x_)
     }

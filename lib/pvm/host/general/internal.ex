@@ -198,9 +198,11 @@ defmodule PVM.Host.General.Internal do
           {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory__,
       context: context
     }
@@ -210,12 +212,11 @@ defmodule PVM.Host.General.Internal do
           Result.Internal.t()
   def lookup_internal(registers, memory, service_account, service_index, services) do
     {w7, h, o, w10, w11} = Registers.get_5(registers, 7, 8, 9, 10, 11)
+
     a =
       if w7 in [@max_64_bit_value, service_index],
         do: service_account,
         else: Map.get(services, w7)
-
-
 
     v =
       try do
@@ -243,9 +244,11 @@ defmodule PVM.Host.General.Internal do
           {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory__,
       context: service_account
     }
@@ -288,9 +291,11 @@ defmodule PVM.Host.General.Internal do
           {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory__,
       context: service_account
     }
@@ -337,9 +342,11 @@ defmodule PVM.Host.General.Internal do
         true -> {:continue, l, a}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: service_account_
     }
@@ -407,9 +414,11 @@ defmodule PVM.Host.General.Internal do
           {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Result.Internal{
       exit_reason: exit_reason_,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory_,
       context: context
     }

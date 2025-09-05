@@ -1,4 +1,5 @@
 defmodule PVM do
+  alias PVM.Registers
   alias System.AccumulationResult
   alias PVM.Host.General
   alias System.DeferredTransfer
@@ -57,10 +58,12 @@ defmodule PVM do
             Host.General.log(gas, registers, memory, nil)
 
           _ ->
+            Registers.put_elem(registers.r, 7, what())
+
             %General.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: %{registers | r: put_elem(registers.r, 7, what())},
+              registers: registers,
               memory: memory
             }
         end
@@ -210,10 +213,12 @@ defmodule PVM do
             General.log(gas, registers, memory, context, nil, service_index)
 
           _ ->
+            Registers.put_elem(registers.r, 7, what())
+
             %{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: %{registers | r: put_elem(registers.r, 7, what())},
+              registers: registers,
               memory: memory,
               context: context
             }

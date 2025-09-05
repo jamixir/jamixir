@@ -1,4 +1,5 @@
 defmodule PVM.Accumulate do
+  alias PVM.Registers
   alias System.AccumulationResult
   alias PVM.Host.{Accumulate, Accumulate.Context, General}
   alias System.State.{Accumulation, ServiceAccount}
@@ -122,10 +123,12 @@ defmodule PVM.Accumulate do
             |> Utils.replace_service(context)
 
           _ ->
+            Registers.put_elem(registers.r, 7, what())
+
             %Accumulate.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: %{registers | r: put_elem(registers.r, 7, what())},
+              registers: registers,
               memory: memory,
               context: context
             }

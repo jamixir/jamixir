@@ -1,4 +1,5 @@
 defmodule PVM.Refine do
+  alias PVM.Registers
   alias Util.Hash
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
@@ -106,10 +107,12 @@ defmodule PVM.Refine do
               General.log(gas, registers, memory, context, work_item_index, service_id)
 
             _ ->
+              Registers.put_elem(registers.r, 7, what())
+
               %Refine.Result{
                 exit_reason: :continue,
                 gas: gas - default_gas(),
-                registers: %{registers | r: put_elem(registers.r, 7, what())},
+                registers: registers,
                 memory: memory,
                 context: context
               }

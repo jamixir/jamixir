@@ -56,9 +56,11 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory_,
       context: context
     }
@@ -88,9 +90,11 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, length(e) + export_offset, e ++ [x]}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: %{context | e: export_segments_}
     }
@@ -138,9 +142,11 @@ defmodule PVM.Host.Refine.Internal do
         end
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: context_
     }
@@ -167,9 +173,11 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, ok(), memory_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory_,
       context: context
     }
@@ -202,9 +210,11 @@ defmodule PVM.Host.Refine.Internal do
           {:continue, ok(), %{m | n => machine_}}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: %{context | m: m_}
     }
@@ -271,8 +281,10 @@ defmodule PVM.Host.Refine.Internal do
           {ok(), m_}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: %{context | m: m_}
     }
@@ -346,9 +358,12 @@ defmodule PVM.Host.Refine.Internal do
           end
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+    Registers.put_elem(registers.r, 8, w7_)
+
     %Internal{
       exit_reason: exit_reason,
-      registers: %{registers | r: put_elem(registers.r, 7, w7_) |> put_elem(8, w8_)},
+      registers: registers,
       memory: memory_,
       context: %{context | m: m_}
     }
@@ -385,8 +400,10 @@ defmodule PVM.Host.Refine.Internal do
           {machine.counter, Map.delete(m, n)}
       end
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     %Internal{
-      registers: %{registers | r: put_elem(registers.r, 7, w7_)},
+      registers: registers,
       memory: memory,
       context: %{context | m: m_}
     }
