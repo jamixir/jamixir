@@ -30,12 +30,13 @@ defmodule PVM.Host.Refine.PokeTest do
       context = %Context{m: %{1 => machine}}
 
       # r7: machine ID, r8: source offset, r9: dest offset, r10: length
-      registers = Registers.new(%{
-        7 => 1,
-        8 => a_0(),
-        9 => a_0(),
-        10 => byte_size(test_data)
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0(),
+          9 => a_0(),
+          10 => byte_size(test_data)
+        })
 
       gas = 100
 
@@ -55,7 +56,7 @@ defmodule PVM.Host.Refine.PokeTest do
       registers: registers
     } do
       # Set r7 to non-existent machine ID
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       who = who()
 
       assert %{
@@ -116,7 +117,6 @@ defmodule PVM.Host.Refine.PokeTest do
       registers: registers,
       test_data: test_data
     } do
-
       assert %{
                exit_reason: :continue,
                registers: registers_,

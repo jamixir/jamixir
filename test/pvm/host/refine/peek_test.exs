@@ -33,12 +33,13 @@ defmodule PVM.Host.Refine.PeekTest do
       context = %{context | m: %{1 => machine}}
 
       # r7: machine ID, r8: dest offset, r9: source offset, r10: length
-      registers = Registers.new(%{
-        7 => 1,
-        8 => a_0(),
-        9 => a_0(),
-        10 => byte_size(test_data)
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0(),
+          9 => a_0(),
+          10 => byte_size(test_data)
+        })
 
       {:ok,
        memory: memory,
@@ -56,7 +57,7 @@ defmodule PVM.Host.Refine.PeekTest do
       registers: registers
     } do
       # Set r7 to non-existent machine ID
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       who = who()
 
       assert %{

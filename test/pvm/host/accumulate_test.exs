@@ -98,7 +98,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas,
       registers: registers
     } do
-      registers = %{registers | r: put_elem(registers.r, 7, 0x1_0000_0000)}
+      Registers.put_elem(registers.r, 7, 0x1_0000_0000)
 
       who = who()
 
@@ -241,7 +241,7 @@ defmodule PVM.Host.AccumulateTest do
       core_count = Constants.core_count()
       core = core()
 
-      registers = %{registers | r: put_elem(registers.r, 7, core_count + 1)}
+      Registers.put_elem(registers.r, 7, core_count + 1)
 
       assert %{
                exit_reason: :continue,
@@ -404,7 +404,7 @@ defmodule PVM.Host.AccumulateTest do
         Accumulate.checkpoint(gas, registers, memory, context)
 
       {_exit_reason, expected_gas} = PVM.Host.Gas.check_gas(gas)
-      assert registers_ == %{registers | r: put_elem(registers.r, 7, expected_gas)}
+      assert registers_[7] == expected_gas
 
       assert memory_ == memory
 
@@ -699,7 +699,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas,
       registers: registers
     } do
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       who = who()
 
       assert %{
@@ -718,7 +718,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas,
       registers: registers
     } do
-      registers = %{registers | r: put_elem(registers.r, 9, 150)}
+      Registers.put_elem(registers.r, 9, 150)
       low = low()
 
       assert %{
@@ -742,7 +742,8 @@ defmodule PVM.Host.AccumulateTest do
       sender = %{sender | balance: ServiceAccount.threshold_balance(sender) + 50}
       x = put_in(x, [:accumulation, :services, x.service], sender)
 
-      registers = %{registers | r: put_elem(registers.r, 8, 100) |> put_elem(9, 250)}
+      Registers.put_elem(registers.r, 8, 100)
+      Registers.put_elem(registers.r, 9, 250)
 
       cash = cash()
 
@@ -868,7 +869,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       # Test non-existent service
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       who = who()
 
       assert %{
@@ -1084,7 +1085,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       # Use z value not in storage
-      registers = %{registers | r: put_elem(registers.r, 8, 19)}
+      Registers.put_elem(registers.r, 8, 19)
       none = none()
 
       assert %{
@@ -1122,7 +1123,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       hash: hash
     } do
-      registers = %{registers | r: put_elem(registers.r, 8, 2)}
+      Registers.put_elem(registers.r, 8, 2)
       [x] = Context.accumulating_service(c_x).storage[{hash, 2}]
       expected_r7 = 1 + 0x1_0000_0000 * x
 
@@ -1144,7 +1145,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       hash: hash
     } do
-      registers = %{registers | r: put_elem(registers.r, 8, 3)}
+      Registers.put_elem(registers.r, 8, 3)
       [x, y] = Context.accumulating_service(c_x).storage[{hash, 3}]
       expected_r7 = 2 + 0x1_0000_0000 * x
 
@@ -1166,7 +1167,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       hash: hash
     } do
-      registers = %{registers | r: put_elem(registers.r, 8, 4)}
+      Registers.put_elem(registers.r, 8, 4)
       [x, y, z] = Context.accumulating_service(c_x).storage[{hash, 4}]
       expected_r7 = 3 + 0x1_0000_0000 * x
       expected_r8 = y + 0x1_0000_0000 * z
@@ -1250,7 +1251,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       # Use z value not in storage
-      registers = %{registers | r: put_elem(registers.r, 8, 999)}
+      Registers.put_elem(registers.r, 8, 999)
       ok = ok()
 
       assert %{
@@ -1275,7 +1276,7 @@ defmodule PVM.Host.AccumulateTest do
     } do
       # Use z value pointing to non [x,y] entries
       # Points to [1,2,3]
-      registers = %{registers | r: put_elem(registers.r, 8, 2)}
+      Registers.put_elem(registers.r, 8, 2)
       huh = huh()
 
       assert %{
@@ -1288,7 +1289,7 @@ defmodule PVM.Host.AccumulateTest do
       assert registers_[7] == huh
       # Test with empty list
       # Points to []
-      registers = %{registers | r: put_elem(registers.r, 8, 3)}
+      Registers.put_elem(registers.r, 8, 3)
 
       assert %{
                exit_reason: :continue,
@@ -1446,7 +1447,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       ok = ok()
-      registers = %{registers | r: put_elem(registers.r, 8, 2)}
+      Registers.put_elem(registers.r, 8, 2)
 
       assert %{
                exit_reason: :continue,
@@ -1470,7 +1471,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       ok = ok()
-      registers = %{registers | r: put_elem(registers.r, 8, 3)}
+      Registers.put_elem(registers.r, 8, 3)
 
       assert %{
                exit_reason: :continue,
@@ -1493,7 +1494,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       ok = ok()
-      registers = %{registers | r: put_elem(registers.r, 8, 4)}
+      Registers.put_elem(registers.r, 8, 4)
 
       assert %{
                exit_reason: :continue,
@@ -1516,7 +1517,7 @@ defmodule PVM.Host.AccumulateTest do
     } do
       huh = huh()
       # Points to [1,999,3] where 999 >= t-D
-      registers = %{registers | r: put_elem(registers.r, 8, 5)}
+      Registers.put_elem(registers.r, 8, 5)
 
       assert %{
                exit_reason: :continue,
@@ -1669,7 +1670,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers
     } do
       # Use service index that doesn't exist in services
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       service_index = 999
       who = who()
 
@@ -1691,7 +1692,7 @@ defmodule PVM.Host.AccumulateTest do
            registers: registers
          } do
       # Use r7 that points to service 123 which has the preimage
-      registers = %{registers | r: put_elem(registers.r, 7, 123)}
+      Registers.put_elem(registers.r, 7, 123)
       huh = huh()
       unused_service_index = 999
 
@@ -1716,7 +1717,7 @@ defmodule PVM.Host.AccumulateTest do
       x = %{x | preimages: MapSet.put(x.preimages, {456, preimage_data})}
 
       # Use r7 that points to service 456 (clean service)
-      registers = %{registers | r: put_elem(registers.r, 7, 456)}
+      Registers.put_elem(registers.r, 7, 456)
       huh = huh()
       unused_service_index = 999
 
@@ -1738,7 +1739,7 @@ defmodule PVM.Host.AccumulateTest do
       preimage_data: preimage_data
     } do
       # Use r7 that points to service 456 (clean service)
-      registers = %{registers | r: put_elem(registers.r, 7, 456)}
+      Registers.put_elem(registers.r, 7, 456)
       ok = ok()
       unused_service_index = 999
 
@@ -1762,7 +1763,7 @@ defmodule PVM.Host.AccumulateTest do
       preimage_data: preimage_data
     } do
       # Use max 64-bit value to trigger service_index usage
-      registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
+      Registers.put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)
       # Use service 456 (clean service) as service_index
       service_index = 456
       ok = ok()
@@ -1786,7 +1787,7 @@ defmodule PVM.Host.AccumulateTest do
            gas: gas,
            registers: registers
          } do
-      registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
+      Registers.put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)
       # Use non-existent service_index
       service_index = 999
       who = who()

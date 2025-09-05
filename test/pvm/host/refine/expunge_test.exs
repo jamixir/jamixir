@@ -24,7 +24,7 @@ defmodule PVM.Host.Refine.ExpungeTest do
       %Result{registers: registers_, memory: memory_, context: context_} =
         Refine.expunge(gas, registers, %Memory{}, context)
 
-      assert registers_ == Registers.new(%{7 => who()})
+      assert registers_[7] == who()
       assert memory_ == %Memory{}
       assert context_ == context
     end
@@ -43,7 +43,7 @@ defmodule PVM.Host.Refine.ExpungeTest do
         Refine.expunge(gas, registers, %Memory{}, context)
 
       # Should return the machine's counter value
-      assert registers_ == Registers.new(%{7 => machine.counter})
+      assert registers_[7] == machine.counter
       assert memory_ == %Memory{}
 
       # Machine should be removed from context

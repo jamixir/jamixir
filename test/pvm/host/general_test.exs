@@ -187,7 +187,7 @@ defmodule PVM.Host.GeneralTest do
 
       assert %{
                exit_reason: :continue,
-                registers: registers_,
+               registers: registers_,
                memory: ^memory
              } = General.lookup(gas, r, memory, service_account, 0, services)
 
@@ -276,7 +276,8 @@ defmodule PVM.Host.GeneralTest do
       o = a_0() + 200
       v = byte_size(value)
 
-      r = Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
+      r =
+        Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
 
       assert %{
                exit_reason: :continue,
@@ -345,7 +346,9 @@ defmodule PVM.Host.GeneralTest do
       o = a_0() + 200
       {:ok, memory} = Memory.write(memory, ko, <<0xAA::32-little>>)
 
-      r = Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
+      r =
+        Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
+
       none = none()
 
       assert %{
@@ -388,7 +391,8 @@ defmodule PVM.Host.GeneralTest do
       o = a_0() + 200
       memory = Memory.set_access(memory, o, 1, :read)
 
-      r = Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
+      r =
+        Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
 
       assert %{
                exit_reason: :panic,
@@ -407,12 +411,13 @@ defmodule PVM.Host.GeneralTest do
       c = %ServiceAccount{storage: HashedKeysMap.new(%{key => value}), balance: 2000}
       g = 100
 
-      registers = Registers.new(%{
-        7 => a_0(),
-        8 => 28,
-        9 => a_0() + %Memory{}.page_size + 100,
-        10 => 32
-      })
+      registers =
+        Registers.new(%{
+          7 => a_0(),
+          8 => 28,
+          9 => a_0() + %Memory{}.page_size + 100,
+          10 => 32
+        })
 
       m =
         PreMemory.init_nil_memory()
@@ -471,7 +476,7 @@ defmodule PVM.Host.GeneralTest do
       registers: registers
     } do
       m = Memory.set_access_by_page(m, 16, 1, :read)
-      registers = %{registers | r: put_elem(registers.r, 10, 0)}
+      Registers.put_elem(registers.r, 10, 0)
       l = get_in(c, [:storage, storage_key]) |> byte_size()
 
       assert %{
@@ -545,11 +550,11 @@ defmodule PVM.Host.GeneralTest do
       context: context,
       registers: registers
     } do
-      r = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       none = none()
 
       assert %{exit_reason: :continue, registers: registers_, memory: ^m, context: ^context} =
-               General.info(g, r, m, context, 42, services)
+               General.info(g, registers, m, context, 42, services)
 
       assert registers_[7] == none
     end
@@ -614,7 +619,7 @@ defmodule PVM.Host.GeneralTest do
       registers: registers
     } do
       # selects service from args rather than registers
-      r = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
+      Registers.put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)
 
       t = Map.get(services, 1)
 
@@ -641,7 +646,7 @@ defmodule PVM.Host.GeneralTest do
                memory: memory_,
                context: ^context
              } =
-               General.info(g, r, m, context, 1, services)
+               General.info(g, registers, m, context, 1, services)
 
       assert registers_[7] == expected_size
       assert Memory.read!(memory_, a_0(), expected_size) == expected_encoded_data
@@ -685,13 +690,14 @@ defmodule PVM.Host.GeneralTest do
     } do
       g = 100
 
-      r = Registers.new(%{
-        7 => 1,
-        8 => a_0() + 0x1000,
-        9 => byte_size(target),
-        10 => a_0() + 0x2000,
-        11 => byte_size(message)
-      })
+      r =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0() + 0x1000,
+          9 => byte_size(target),
+          10 => a_0() + 0x2000,
+          11 => byte_size(message)
+        })
 
       assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^memory, context: nil} =
                General.log(g, r, memory, nil, core_index, service_index)
@@ -705,13 +711,14 @@ defmodule PVM.Host.GeneralTest do
     } do
       g = 100
 
-      r = Registers.new(%{
-        7 => 2,
-        8 => a_0() + 0x1000,
-        9 => byte_size(target),
-        10 => a_0() + 0x2000,
-        11 => byte_size(message)
-      })
+      r =
+        Registers.new(%{
+          7 => 2,
+          8 => a_0() + 0x1000,
+          9 => byte_size(target),
+          10 => a_0() + 0x2000,
+          11 => byte_size(message)
+        })
 
       assert %{exit_reason: :continue, gas: 100, registers: ^r, memory: ^memory, context: nil} =
                General.log(g, r, memory, nil, nil, nil)

@@ -39,12 +39,13 @@ defmodule PVM.Host.Refine.InvokeTest do
       gas = 100
 
       # Base registers setup
-      registers = Registers.new(%{
-        # machine ID
-        7 => 1,
-        # output address (second usable page)
-        8 => 0x1_1000
-      })
+      registers =
+        Registers.new(%{
+          # machine ID
+          7 => 1,
+          # output address (second usable page)
+          8 => 0x1_1000
+        })
 
       {:ok, memory: memory, context: context, gas: gas, registers: registers}
     end
@@ -71,7 +72,7 @@ defmodule PVM.Host.Refine.InvokeTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       who = who()
       w8 = registers[8]
 
@@ -93,7 +94,7 @@ defmodule PVM.Host.Refine.InvokeTest do
       registers: registers
     } do
       halt = halt()
-      registers = %{registers | r: put_elem(registers.r, 7, 2)}
+      Registers.put_elem(registers.r, 7, 2)
 
       registers_for_inner_execution =
         for x <- [42, 17, 83, 95, 29, 64, 71, 38, 56, 92, 13, 77],

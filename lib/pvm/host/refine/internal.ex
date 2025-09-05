@@ -321,7 +321,7 @@ defmodule PVM.Host.Refine.Internal do
 
               write_value =
                 <<gas_::64-little>> <>
-                  for w <- Registers.to_list(w_),
+                  for w <- Registers.values(w_),
                       into: <<>>,
                       do: <<w::64-little>>
 
@@ -359,7 +359,7 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     Registers.put_elem(registers.r, 7, w7_)
-    Registers.put_elem(registers.r, 8, w7_)
+    Registers.put_elem(registers.r, 8, w8_)
 
     %Internal{
       exit_reason: exit_reason,

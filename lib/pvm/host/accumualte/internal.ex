@@ -248,6 +248,8 @@ defmodule PVM.Host.Accumulate.Internal do
         end
       )
 
+    Registers.put_elem(registers.r, 7, w7_)
+
     x_ =
       %{
         x

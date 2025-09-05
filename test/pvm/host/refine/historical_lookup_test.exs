@@ -38,13 +38,14 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
         }
       }
 
-      registers = Registers.new(%{
-        7 => 1,
-        8 => a_0(),
-        9 => a_0() + page_size() + 100,
-        10 => 0,
-        11 => some_big_value
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0(),
+          9 => a_0() + page_size() + 100,
+          10 => 0,
+          11 => some_big_value
+        })
 
       {:ok,
        memory: memory,
@@ -65,7 +66,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       # Set w7 to non-existent service account ID
-      registers = %{registers | r: put_elem(registers.r, 7, 999)}
+      Registers.put_elem(registers.r, 7, 999)
       none = none()
 
       assert %{
@@ -96,7 +97,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       registers: registers
     } do
       # 1 is the start address in memory
-      registers = %{registers | r: put_elem(registers.r, 8, 1)}
+      Registers.put_elem(registers.r, 8, 1)
 
       assert %{
                exit_reason: :panic,
@@ -193,7 +194,7 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       memory = Memory.write!(memory, registers[8], test_map.hash)
 
       # Setup registers with max 64-bit value (0xFFFF_FFFF_FFFF_FFFF)
-      registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
+      Registers.put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)
 
       assert %{
                exit_reason: :continue,

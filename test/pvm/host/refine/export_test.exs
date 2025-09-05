@@ -17,10 +17,11 @@ defmodule PVM.Host.Refine.ExportTest do
       export_offset = 0
       gas = 100
 
-      registers = Registers.new(%{
-        7 => a_0(),
-        8 => 32
-      })
+      registers =
+        Registers.new(%{
+          7 => a_0(),
+          8 => 32
+        })
 
       {:ok, memory: memory, export_offset: export_offset, gas: gas, registers: registers}
     end
@@ -32,7 +33,7 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       # Make memory unreadable at the location
-        memory = Memory.set_access(memory, registers[7], registers[8], nil)
+      memory = Memory.set_access(memory, registers[7], registers[8], nil)
 
       assert %{
                exit_reason: :panic,
@@ -76,7 +77,7 @@ defmodule PVM.Host.Refine.ExportTest do
         |> Memory.write!(registers[7], test_data)
         |> Memory.set_access_by_page(16, 1, :read)
 
-      registers = %{registers | r: put_elem(registers.r, 8, test_da_load)}
+      Registers.put_elem(registers.r, 8, test_da_load)
       context = %Context{e: [<<1>>, <<2>>, <<3>>, <<4>>, <<5>>]}
 
       expected_w7 = export_offset + length(context.e)

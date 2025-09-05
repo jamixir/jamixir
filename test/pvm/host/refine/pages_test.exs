@@ -50,7 +50,7 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       who = who()
-      registers = %{registers | r: put_elem(registers.r, 7, 99)}
+      Registers.put_elem(registers.r, 7, 99)
 
       assert %{
                exit_reason: :continue,
@@ -69,7 +69,7 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       # Set start page below minimum (16)
-      registers = %{registers | r: put_elem(registers.r, 8, 15)}
+      Registers.put_elem(registers.r, 8, 15)
       huh = huh()
 
       assert %{
@@ -89,7 +89,8 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       # Set page count to exceed 2^32/page_size
-      registers = %{registers | r: put_elem(registers.r, 8, 0x1_FFFE) |> put_elem(9, 4)}
+      Registers.put_elem(registers.r, 8, 0x1_FFFE)
+      Registers.put_elem(registers.r, 9, 4)
       huh = huh()
 
       assert %{
@@ -109,7 +110,7 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory
     } do
       huh = huh()
-      registers = %{registers | r: put_elem(registers.r, 10, 5)}
+      Registers.put_elem(registers.r, 10, 5)
 
       assert %{
                exit_reason: :continue,
@@ -124,11 +125,12 @@ defmodule PVM.Host.Refine.PagesTest do
 
   describe "w10 is 3 or 4 and memory between w8 -> w8 + w9 has one or more nil access pages" do
     setup do
-      registers = Registers.new(%{
-        7 => 1,
-        8 => 16,
-        9 => 100
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => 16,
+          9 => 100
+        })
 
       # Create a machine with memory that has nil access in the target range
       machine_memory =
@@ -154,7 +156,7 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r: put_elem(registers.r, 10, 3)}
+      Registers.put_elem(registers.r, 10, 3)
       huh = huh()
 
       assert %{
@@ -173,7 +175,7 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r: put_elem(registers.r, 10, 4)}
+      Registers.put_elem(registers.r, 10, 4)
       huh = huh()
 
       assert %{
@@ -206,11 +208,12 @@ defmodule PVM.Host.Refine.PagesTest do
       gas = 100
 
       # r7: machine ID, r8: start page, r9: page count
-      registers = Registers.new(%{
-        7 => 1,
-        8 => 16,
-        9 => 2
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => 16,
+          9 => 2
+        })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
@@ -229,7 +232,7 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers,
       memory: memory
     } do
-      registers = %{registers | r: put_elem(registers.r, 10, 0)}
+      Registers.put_elem(registers.r, 10, 0)
       ok = ok()
 
       assert %{
@@ -259,7 +262,7 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers
     } do
       memory = %Memory{}
-      registers = %{registers | r: put_elem(registers.r, 10, 1)}
+      Registers.put_elem(registers.r, 10, 1)
       ok = ok()
 
       assert %{
@@ -294,7 +297,7 @@ defmodule PVM.Host.Refine.PagesTest do
       registers: registers
     } do
       memory = %Memory{}
-      registers = %{registers | r: put_elem(registers.r, 10, 2)}
+      Registers.put_elem(registers.r, 10, 2)
       ok = ok()
 
       assert %{
@@ -329,7 +332,7 @@ defmodule PVM.Host.Refine.PagesTest do
       memory: memory,
       test_data: test_data
     } do
-      registers = %{registers | r: put_elem(registers.r, 10, 3)}
+      Registers.put_elem(registers.r, 10, 3)
       ok = ok()
 
       assert %{
@@ -365,7 +368,7 @@ defmodule PVM.Host.Refine.PagesTest do
       test_data: test_data,
       context: context
     } do
-      registers = %{registers | r: put_elem(registers.r, 10, 4)}
+      Registers.put_elem(registers.r, 10, 4)
       ok = ok()
 
       assert %{
