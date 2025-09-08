@@ -28,7 +28,9 @@ config :jamixir, Jamixir,
   # W_E
   erasure_coded_piece_size: 4,
   # W_P
-  erasure_coded_pieces_per_segment: 1026
+  erasure_coded_pieces_per_segment: 1026,
+  ignore_refinement_context: true,
+  ignore_future_time: true
 
 config :logger, level: :debug
 

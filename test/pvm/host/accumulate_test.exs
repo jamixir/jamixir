@@ -393,7 +393,7 @@ defmodule PVM.Host.AccumulateTest do
       gas = 100
       # r7 should be overwritten
       registers = Registers.new(%{1 => 1, 7 => 42})
-      memory = %Memory{}
+      memory = Memory.new()
       # some arbitrary context
       x = %Context{service: 123}
       # different from x
@@ -458,6 +458,7 @@ defmodule PVM.Host.AccumulateTest do
         })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
+
       timeslot_ = 1
 
       assert %{
@@ -849,7 +850,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       timeslot: timeslot
     } do
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = Memory.set_access(Memory.new(), 0x1_0000, 32, nil)
 
       assert %{
                exit_reason: :panic,
@@ -1066,7 +1067,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas,
       registers: registers
     } do
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = Memory.set_access(Memory.new(), 0x1_0000, 32, nil)
 
       assert %{
                exit_reason: :panic,
@@ -1231,7 +1232,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       timeslot: timeslot
     } do
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = Memory.set_access(Memory.new(), 0x1_0000, 32, nil)
 
       assert %{
                exit_reason: :panic,
@@ -1403,7 +1404,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       timeslot: timeslot
     } do
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = Memory.set_access(Memory.new(), 0x1_0000, 32, nil)
 
       assert %{
                exit_reason: :panic,
@@ -1558,7 +1559,7 @@ defmodule PVM.Host.AccumulateTest do
       gas: gas,
       registers: registers
     } do
-      memory = Memory.set_access(%Memory{}, 0x1_0000, 32, nil)
+      memory = Memory.set_access(Memory.new(), 0x1_0000, 32, nil)
 
       assert %{
                exit_reason: :panic,
@@ -1651,7 +1652,7 @@ defmodule PVM.Host.AccumulateTest do
       registers: registers,
       service_index: service_index
     } do
-      memory = Memory.set_access(%Memory{}, a_0(), 10, nil)
+      memory = Memory.set_access(Memory.new(), a_0(), 10, nil)
 
       assert %{
                exit_reason: :panic,

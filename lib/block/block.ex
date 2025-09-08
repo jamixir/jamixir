@@ -176,19 +176,20 @@ defmodule Block do
   import Codec.Encoder
   # Formula (11.35) v0.7.0
   mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
-    Enum.reduce_while(guarantees, :ok, fn g, _ ->
-      x = g.work_report.refinement_context
+    if Jamixir.config()[:ignore_refinement_context] do
+      :ok
+    else
+      Enum.reduce_while(guarantees, :ok, fn g, _ ->
+        x = g.work_report.refinement_context
 
-      case Enum.any?(Header.ancestors(header), fn h ->
-             h.timeslot == x.timeslot and h(e(h)) == x.lookup_anchor
-           end) do
-        true -> {:cont, :ok}
-        false -> {:halt, {:error, "Refinement context is invalid"}}
-      end
-    end)
-
-    # THIS IS TEMPORARY TO PASS FUZZER TESTS.
-    :ok
+        case Enum.any?(Header.ancestors(header), fn h ->
+               h.timeslot == x.timeslot and h(e(h)) == x.lookup_anchor
+             end) do
+          true -> {:cont, :ok}
+          false -> {:halt, {:error, "Refinement context is invalid"}}
+        end
+      end)
+    end
   end
 
   defimpl Encodable do

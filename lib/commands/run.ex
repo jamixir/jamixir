@@ -175,7 +175,7 @@ defmodule Jamixir.Commands.Run do
       "├─ OS: #{inspect(:erlang.system_info(:os_type))} #{inspect(:erlang.system_info(:os_version))}"
     )
 
-    Log.info("├─ Elixir: #{System.version()}")
+    Log.info("├─ Elixir: #{elixir_version}")
     Log.info("└─ Erlang/OTP: #{otp_version}")
   end
 
