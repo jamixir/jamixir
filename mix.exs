@@ -46,7 +46,7 @@ defmodule Jamixir.MixProject do
       {:quicer, git: "https://github.com/jamixir/quic", branch: "always-on-certificates"},
       {:x509, git: "https://github.com/jamixir/x509.git", branch: "master"},
       {:ex_fiskal, "~> 0.1.0"},
-      {:blake2, "~> 1.0"},
+      {:blake2_elixir, "~> 0.9.0"},
       {:memoize, "~> 1.4"},
       {:ex_keccak, "~> 0.7.8"},
       {:rustler, "~> 0.34.0"},

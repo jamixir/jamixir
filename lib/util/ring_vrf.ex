@@ -14,6 +14,11 @@ defmodule RingVrf do
   end
 
   # Formula (G.3) v0.7.0
+  @spec cached_commitment(any()) :: any()
+  defmemo cached_commitment(keys) do
+    create_commitment(keys)
+  end
+
   @spec create_commitment(any()) :: any()
   def create_commitment(_keys), do: :erlang.nif_error(:nif_not_loaded)
 
