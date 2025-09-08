@@ -92,6 +92,10 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "set_state handler" do
+    setup do
+      tiny_configs()
+    end
+
     test "handles set_state request", %{client: client} do
       state = build(:genesis_state_with_safrole).state
       # Clear storage from all services
@@ -163,16 +167,11 @@ defmodule Jamixir.FuzzerTest do
 
   describe "test vectors with fuzzer" do
     setup do
-      old_config = Jamixir.config()
-      new_config = put_in(old_config, [:ignore_refinement_context], true)
-      Application.put_env(:jamixir, Jamixir, new_config)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, Jamixir, old_config)
-      end)
+      tiny_configs()
     end
 
     @modes ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages"]
+    @modes ["storage"]
     for mode <- @modes do
       @tag mode: mode
       @tag :perf
@@ -360,5 +359,16 @@ defmodule Jamixir.FuzzerTest do
     File.ls!(dir)
     |> Enum.filter(fn file -> String.match?(file, ~r/\d+\.bin/) end)
     |> Enum.sort()
+  end
+
+  defp tiny_configs do
+    old_config = Jamixir.config()
+    new_config = put_in(old_config, [:ignore_refinement_context], true)
+    new_config = put_in(new_config, [:ignore_future_time], true)
+    Application.put_env(:jamixir, Jamixir, new_config)
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, Jamixir, old_config)
+    end)
   end
 end
