@@ -82,8 +82,7 @@ defmodule Jamixir.Fuzzer.Util do
   end
 
   defp receive_exact_bytes(socket, bytes_needed, timeout) do
-    # min(timeout, 10_000)
-    short_timeout = 100_000_000
+    short_timeout = min(timeout, 10_000)
 
     case :socket.recv(socket, bytes_needed, short_timeout) do
       {:ok, data} when byte_size(data) == bytes_needed ->

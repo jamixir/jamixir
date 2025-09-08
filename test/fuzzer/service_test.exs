@@ -162,6 +162,16 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "test vectors with fuzzer" do
+    setup do
+      old_config = Jamixir.config()
+      new_config = put_in(old_config, [:ignore_refinement_context], true)
+      Application.put_env(:jamixir, Jamixir, new_config)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, Jamixir, old_config)
+      end)
+    end
+
     @modes ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages"]
     for mode <- @modes do
       @tag mode: mode
