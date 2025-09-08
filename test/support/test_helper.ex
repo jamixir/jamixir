@@ -55,22 +55,6 @@ defmodule TestHelper do
     end
   end
 
-  defmacro setup_validators(validator_count) do
-    quote do
-      defmodule ConstantsMock do
-        def validator_count, do: unquote(validator_count)
-      end
-
-      setup do
-        Application.put_env(:jamixir, Constants, ConstantsMock)
-
-        on_exit(fn ->
-          Application.delete_env(:jamixir, Constants)
-        end)
-      end
-    end
-  end
-
   defmacro setup_constants(do: block) do
     quote do
       defmodule ConstantsMock do

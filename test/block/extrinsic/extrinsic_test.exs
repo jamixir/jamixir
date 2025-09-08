@@ -2,8 +2,6 @@ defmodule Block.ExtrinsicTest do
   alias Block.Extrinsic
   use ExUnit.Case
   import Jamixir.Factory
-  import TestHelper
-  setup_validators(1)
 
   describe "encode / decode" do
     test "smoke test" do

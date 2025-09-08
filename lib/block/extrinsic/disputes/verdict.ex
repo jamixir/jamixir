@@ -31,15 +31,16 @@ defmodule Block.Extrinsic.Disputes.Verdict do
 
   import Codec.Encoder, only: [b: 1, m: 1]
 
-  def decode(bin) do
-    judgements_count = div(2 * Constants.validator_count(), 3) + 1
-    judgements_size = Judgement.size() * judgements_count
+  @judgements_count div(2 * Constants.validator_count(), 3) + 1
+  @judgements_size Judgement.size() * @judgements_count
+  def judgements_count, do: @judgements_count
 
+  def decode(bin) do
     <<work_report_hash::b(hash), epoch_index::m(epoch),
-      judgements_bin::binary-size(judgements_size), rest::binary>> = bin
+      judgements_bin::binary-size(@judgements_size), rest::binary>> = bin
 
     {judgements, _} =
-      Enum.reduce(1..judgements_count, {[], judgements_bin}, fn _, {list, bin} ->
+      Enum.reduce(1..@judgements_count, {[], judgements_bin}, fn _, {list, bin} ->
         {judgement, rest} = Judgement.decode(bin)
         {list ++ [judgement], rest}
       end)
