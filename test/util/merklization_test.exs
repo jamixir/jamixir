@@ -14,22 +14,20 @@ defmodule Util.MerklizationTest do
 
       result = Merklization.encode_branch(l, r)
 
-      assert is_list(result)
-      assert length(result) == Sizes.merkle_root_bits()
-      [b | _] = result
+      assert bit_size(result) == Sizes.merkle_root_bits()
+      <<b::1, _::bitstring>> = result
       assert b == 0
     end
 
     test "encode_branch with random inputs" do
-      for _ <- 1..100 do
+      for _ <- 1..1_000_000 do
         l = Hash.random()
         r = Hash.random()
 
         result = Merklization.encode_branch(l, r)
 
-        assert is_list(result)
-        assert length(result) == Sizes.merkle_root_bits()
-        [b | _] = result
+        assert bit_size(result) == Sizes.merkle_root_bits()
+        <<b::1, _::bitstring>> = result
         assert b == 0
       end
     end
@@ -45,21 +43,20 @@ defmodule Util.MerklizationTest do
 
       result = Merklization.encode_leaf(key, value)
 
-      assert length(result) == Sizes.merkle_root_bits()
+      assert bit_size(result) == Sizes.merkle_root_bits()
 
-      assert Enum.slice(result, 0, 2) == [1, 0]
-
-      assert Enum.slice(result, 2, 6) == Merklization.bits(<<16>>) |> Enum.drop(2)
+      <<p1::bitstring-size(2), p2::bitstring-size(6), _::bitstring>> = result
+      assert p1 == <<0b10::size(2)>>
+      assert p2 == <<0b010000::size(6)>>
     end
 
     test "encode_leaf when byte_size(value) == 32" do
       key = :crypto.strong_rand_bytes(31)
-
       result = Merklization.encode_leaf(key, Hash.random())
 
-      assert length(result) == Sizes.merkle_root_bits()
-
-      assert Enum.slice(result, 0, 2) == [1, 0]
+      assert bit_size(result) == Sizes.merkle_root_bits()
+      <<bits::bitstring-size(2), _::bitstring>> = result
+      assert bits == <<0b10::2>>
     end
 
     test "encode_leaf when byte_size(value) > 32" do
@@ -68,94 +65,20 @@ defmodule Util.MerklizationTest do
 
       result = Merklization.encode_leaf(key, value)
 
-      assert length(result) == Sizes.merkle_root_bits()
+      assert bit_size(result) == Sizes.merkle_root_bits()
+      <<bits::bitstring-size(8), _::bitstring>> = result
 
-      assert Enum.slice(result, 0, 8) == [1, 1, 0, 0, 0, 0, 0, 0]
-    end
-  end
-
-  describe "bits" do
-    test "bits function with single byte" do
-      # Binary representation: 00101010
-      input = <<42>>
-      expected = [0, 0, 1, 0, 1, 0, 1, 0]
-      assert Merklization.bits(input) == expected
-    end
-
-    test "bits function most significant first" do
-      input = <<160, 0>>
-      expected = [1, 0, 1] ++ List.duplicate(0, 13)
-      assert Merklization.bits(input) == expected
-    end
-
-    test "bits for multiple octets(bytes)" do
-      octets = <<5, 0, 5>>
-      # 505 in binary
-      expected_bits = [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1]
-
-      assert Merklization.bits(octets) == expected_bits
-    end
-
-    test "bits function with empty binary" do
-      input = <<>>
-      expected = []
-      assert Merklization.bits(input) == expected
-    end
-
-    test "bits function with all bits set" do
-      # Binary: 11111111 11111111
-      input = <<255, 255>>
-      expected_bits = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-      assert Merklization.bits(input) == expected_bits
-    end
-  end
-
-  describe "bits_to_bytes/1" do
-    test "bits_to_bytes with empty list" do
-      assert Merklization.bits_to_bytes([]) == <<>>
-    end
-
-    test "bits_to_bytes with single byte" do
-      bits = [1, 0, 1, 0, 1, 0, 1, 0]
-      assert Merklization.bits_to_bytes(bits) == <<170>>
-    end
-
-    test "bits_to_bytes with multiple bytes" do
-      bits = [1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1]
-      assert Merklization.bits_to_bytes(bits) == <<170, 85>>
-    end
-
-    test "bits_to_bytes with partial byte" do
-      bits = [1, 0, 1, 0, 1]
-      assert Merklization.bits_to_bytes(bits) == <<21>>
-    end
-
-    test "bits_to_bytes reversibility" do
-      original = :crypto.strong_rand_bytes(10)
-      bits = Merklization.bits(original)
-      result = Merklization.bits_to_bytes(bits)
-      assert result == original
+      assert bits == <<0b11000000>>
     end
   end
 
   # Formula (D.5) v0.7.0
   # Formula (D.6) v0.7.0
   describe "meklelize_state/1" do
-    test "smoke test fake state" do
-      dict = %{<<1>> => "a", <<2>> => "b"}
-
-      transformed_dict = %{
-        [0, 0, 0, 0, 0, 0, 0, 1] => {<<1>>, "a"},
-        [0, 0, 0, 0, 0, 0, 1, 0] => {<<2>>, "b"}
-      }
-
-      assert Merklization.merkelize_state(dict) == Merklization.merkelize(transformed_dict)
-    end
-
     test "test big fake state" do
       dict =
         Enum.reduce(1..100, %{}, fn _, acc ->
-          key = Hash.random()
+          <<key::binary-size(31), _::binary>> = Hash.random()
           value = Hash.random()
           Map.put(acc, key, value)
         end)
