@@ -7,7 +7,6 @@ defmodule BlockTest do
   alias System.State
   alias Util.{Export, Hash, Time}
   import Mox
-  import TestHelper
   import OriginalModules
   import Codec.Encoder
   setup :verify_on_exit!
@@ -55,8 +54,6 @@ defmodule BlockTest do
   end
 
   describe "encode/1" do
-    setup_validators(1)
-
     test "encode block smoke test" do
       Codec.Encoder.encode(build(:block))
     end

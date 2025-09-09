@@ -10,14 +10,14 @@ defmodule Util.Hash do
   @doc """
   256 bits Blake2b hash function.
   """
-  defmemo blake2b_256(data), do: Blake2.hash2b(data, 32)
+  defmemo(blake2b_256(data), do: Blake2.Blake2b.hash(data, <<>>, 32))
 
   @doc """
   256 bits keccak hash function.
   """
-  defmemo keccak_256(data), do: ExKeccak.hash_256(data)
+  defmemo(keccak_256(data), do: ExKeccak.hash_256(data))
 
-  defmemo default(data), do: blake2b_256(data)
+  defmemo(default(data), do: blake2b_256(data))
 
   # Generate hash functions for numbers 0 to 5
   # use as Hash.zero(), Hash.one()  etc.

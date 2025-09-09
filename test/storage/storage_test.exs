@@ -6,7 +6,6 @@ defmodule StorageTest do
   use StoragePrefix
   import Jamixir.Factory
   import Codec.Encoder
-  import TestHelper
   use StoragePrefix
 
   setup_all do
@@ -115,8 +114,6 @@ defmodule StorageTest do
   end
 
   describe "put and get block" do
-    setup_validators(1)
-
     test "put and get block" do
       block = build(:decodable_block)
       {:ok, _key} = Storage.put(block)

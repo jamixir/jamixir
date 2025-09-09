@@ -1,5 +1,6 @@
 # test/support/factory.ex
 defmodule Jamixir.Factory do
+  alias Block.Extrinsic.Disputes.Verdict
   alias Encodable.System.State.RecentHistory
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.{Assurance, Disputes, Guarantee, TicketProof}
@@ -307,7 +308,7 @@ defmodule Jamixir.Factory do
     %Block.Extrinsic.Disputes.Verdict{
       epoch_index: Time.epoch_index(build(:header).timeslot),
       work_report_hash: Hash.random(),
-      judgements: build_list(1, :judgement)
+      judgements: build_list(Verdict.judgements_count(), :judgement)
     }
   end
 

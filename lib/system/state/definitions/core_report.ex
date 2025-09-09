@@ -12,14 +12,16 @@ defmodule System.State.CoreReport do
           timeslot: Types.timeslot()
         }
 
+  @initial_core_reports for(_ <- 1..Constants.core_count(), do: nil)
+
   defstruct work_report: %WorkReport{}, timeslot: 0
-  def initial_core_reports, do: for(_ <- 1..Constants.core_count(), do: nil)
+  def initial_core_reports, do: @initial_core_reports
 
   # Formula (10.15) v0.7.0
+  def process_disputes(core_reports, []), do: core_reports
+
   def process_disputes(core_reports, bad_wonky_verdicts) do
-    for c <- core_reports do
-      process_report(c, MapSet.new(bad_wonky_verdicts))
-    end
+    for c <- core_reports, do: process_report(c, MapSet.new(bad_wonky_verdicts))
   end
 
   defp process_report(nil, _bad_wonky_set), do: nil

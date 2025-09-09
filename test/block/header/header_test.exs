@@ -11,8 +11,6 @@ defmodule Block.HeaderTest do
   alias Util.Hash
   import TestHelper
 
-  setup_validators(1)
-
   describe "validate_parent/1" do
     test "validate_parent/1 returns true when parent_hash is nil and timeslot is 0" do
       header = build(:decodable_header, parent_hash: nil, timeslot: 0)

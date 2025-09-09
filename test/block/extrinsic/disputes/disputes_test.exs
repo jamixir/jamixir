@@ -1,5 +1,6 @@
 defmodule Block.Extrinsic.Disputes.Test do
   use ExUnit.Case
+  alias Block.Extrinsic.Disputes.Verdict
   alias Block.Extrinsic.Disputes
   alias Block.Extrinsic.Disputes.Error
   alias System.State.Judgements
@@ -19,10 +20,14 @@ defmodule Block.Extrinsic.Disputes.Test do
     {current_pub, _} = :crypto.generate_key(:eddsa, :ed25519)
     {prev_pub, _} = :crypto.generate_key(:eddsa, :ed25519)
 
+    state = build(:genesis_state)
+    [_ | curr_rest] = state.curr_validators
+    [_ | prev_rest] = state.curr_validators
+
     state = %{
-      build(:genesis_state)
-      | curr_validators: [build(:validator, ed25519: current_pub)],
-        prev_validators: [build(:validator, ed25519: prev_pub)],
+      state
+      | curr_validators: [build(:validator, ed25519: current_pub) | curr_rest],
+        prev_validators: [build(:validator, ed25519: prev_pub) | prev_rest],
         judgements: %Judgements{}
     }
 
@@ -90,7 +95,8 @@ defmodule Block.Extrinsic.Disputes.Test do
             verdicts: [
               build(:verdict,
                 work_report_hash: wrh,
-                judgements: [build(:judgement, signature: <<1::512>>)]
+                judgements:
+                  build_list(Verdict.judgements_count(), :judgement, signature: <<1::512>>)
               )
             ]
           }
@@ -640,11 +646,7 @@ defmodule Block.Extrinsic.Disputes.Test do
     end
   end
 
-  import TestHelper
-
   describe "encode / decode" do
-    setup_validators(1)
-
     test "encodes and decodes disputes" do
       disputes = build(:disputes)
       encoded = Codec.Encoder.encode(disputes)

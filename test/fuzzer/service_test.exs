@@ -15,7 +15,7 @@ defmodule Jamixir.FuzzerTest do
   import TestVectorUtil
   import Util.Hex
 
-  @socket_path "/tmp/jamixir_fuzzer_test.sock"
+  @socket_path "/tmp/jam_conformance.sock"
 
   setup do
     if File.exists?(@socket_path), do: File.rm!(@socket_path)
@@ -24,8 +24,9 @@ defmodule Jamixir.FuzzerTest do
 
     # Give it a moment to start
     Process.sleep(100)
-
     {:ok, client} = Client.connect(@socket_path)
+    Client.send_peer_info(client, Meta.name(), {0, 1, 0}, {1, 0, 0})
+    Client.receive_message(client)
 
     on_exit(fn ->
       Client.disconnect(client)
@@ -33,7 +34,7 @@ defmodule Jamixir.FuzzerTest do
       Storage.remove_all()
     end)
 
-    {:ok, client: client, fuzzer_pid: fuzzer_pid}
+    {:ok, client: client}
   end
 
   describe "peer_info handler" do
@@ -171,7 +172,6 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @modes ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages"]
-    @modes ["storage"]
     for mode <- @modes do
       @tag mode: mode
       @tag :perf

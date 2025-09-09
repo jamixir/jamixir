@@ -40,7 +40,7 @@ defmodule System.State.RotateKeys do
       # λ' = κ (current -> prev)
       prev_ = curr_validators
       # γ_Z' = z, z = O([kb ∣ k <- γk ])
-      epoch_root_ = RingVrf.create_commitment(for p <- pending_, do: p.bandersnatch)
+      epoch_root_ = RingVrf.cached_commitment(for p <- pending_, do: p.bandersnatch)
 
       {pending_, current_, prev_, epoch_root_}
     else
