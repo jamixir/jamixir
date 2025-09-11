@@ -46,7 +46,7 @@ defmodule Block.Extrinsic.Preimage do
         {:cont, :ok}
       else
         Logger.info(
-          "Preimage hash #{b16(h(preimage.blob))} already in service (#{preimage.service}) state"
+          "Invalid Service or preimage hash #{b16(h(preimage.blob))} already in service (#{preimage.service})"
         )
 
         {:halt, {:error, :preimage_unneeded}}
@@ -59,7 +59,7 @@ defmodule Block.Extrinsic.Preimage do
   def not_provided?(preimage, services) do
     case services[preimage.service] do
       nil ->
-        true
+        false
 
       service_account ->
         preimage_hash = h(preimage.blob)

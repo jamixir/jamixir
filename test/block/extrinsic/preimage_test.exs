@@ -47,6 +47,12 @@ defmodule Block.Extrinsic.PreimageTest do
       services = %{1 => service_account}
       assert {:error, _} = Preimage.validate([preimage], services)
     end
+
+    test "fails when service does not exist" do
+      preimages = [build(:preimage, service: 1)]
+      services = %{}
+      assert {:error, _} = Preimage.validate(preimages, services)
+    end
   end
 
   describe "validate/2 - pass cases" do
