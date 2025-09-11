@@ -72,12 +72,17 @@ cd _build/tiny/rel/jamixir
 ./jamixir run --port 10001
 ./jamixir run --keys path/to/keys.seed --genesis path/to/genesis.json
 ```
-
+## Testing
 ### How to Run Unit Tests
-
 ```
 mix test
 ```
+
+### How to Run Performance Tests
+```
+mix test --only perf
+```
+
 
 ### How to Run Official Test Vectors
 ```

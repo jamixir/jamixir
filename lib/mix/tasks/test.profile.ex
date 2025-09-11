@@ -45,8 +45,6 @@ defmodule Mix.Tasks.Test.Profile do
       "fprof" ->
         run_fprof(test_args, timestamp)
 
-
-
       _ ->
         Mix.shell().error("Unknown mode: #{mode}")
         Mix.shell().info("Available modes: cprof, eprof, fprof,")
@@ -58,6 +56,7 @@ defmodule Mix.Tasks.Test.Profile do
 
     if mode_index do
       mode_value = Enum.at(args, mode_index + 1)
+
       test_args =
         args
         |> Enum.with_index()
@@ -145,7 +144,6 @@ defmodule Mix.Tasks.Test.Profile do
         top_time_filter = [
           {:filter,
            [
-
              {:time, 1.0}
            ]},
           {:sort, :time}
@@ -183,7 +181,6 @@ defmodule Mix.Tasks.Test.Profile do
   defp run_fprof(test_args, timestamp) do
     trace_file = "fprof_trace_#{timestamp}.trace"
     analysis_file = "fprof_analysis_#{timestamp}.txt"
-    summary_file = "fprof_summary_#{timestamp}.txt"
 
     Mix.shell().info("Starting fprof profiling (comprehensive call stack tracing)...")
     Mix.shell().info("Trace file: #{trace_file}")
@@ -200,22 +197,17 @@ defmodule Mix.Tasks.Test.Profile do
       Mix.shell().info("Processing trace file...")
       :fprof.profile(file: String.to_charlist(trace_file))
 
-      :fprof.analyse([
+      :fprof.analyse(
         dest: String.to_charlist(analysis_file),
         sort: :acc,
         totals: false,
         details: true,
         callers: true
-      ])
+      )
 
       :fprof.stop()
-
-
     end
 
     Mix.shell().info("\nFprof profiling completed!")
-
   end
-
-
 end
