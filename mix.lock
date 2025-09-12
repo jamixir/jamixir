@@ -21,7 +21,7 @@
   "hpax": {:hex, :hpax, "1.0.3", "ed67ef51ad4df91e75cc6a1494f851850c0bd98ebc0be6e81b026e765ee535aa", [:mix], [], "hexpm", "8eab6e1cfa8d5918c2ce4ba43588e894af35dbd8e91e6e55c817bca5847df34a"},
   "httpoison": {:hex, :httpoison, "2.2.3", "a599d4b34004cc60678999445da53b5e653630651d4da3d14675fedc9dd34bd6", [:mix], [{:hackney, "~> 1.21", [hex: :hackney, repo: "hexpm", optional: false]}], "hexpm", "fa0f2e3646d3762fdc73edb532104c8619c7636a6997d20af4003da6cfc53e53"},
   "idna": {:hex, :idna, "6.1.1", "8a63070e9f7d0c62eb9d9fcb360a7de382448200fbbd1b106cc96d3d8099df8d", [:rebar3], [{:unicode_util_compat, "~> 0.7.0", [hex: :unicode_util_compat, repo: "hexpm", optional: false]}], "hexpm", "92376eb7894412ed19ac475e4a86f7b413c1b9fbb5bd16dccd57934157944cea"},
-  "jamixir_vm": {:git, "git@github.com:jamixir/jamixir-vm.git", "aedea50e7fe67f86c64e223c522f698cb9a7f1c7", [branch: "main"]},
+  "jamixir_vm": {:git, "git@github.com:jamixir/jamixir-vm.git", "8ad45d57341d143e865702c720b98b8806929632", [branch: "main"]},
   "jason": {:hex, :jason, "1.4.4", "b9226785a9aa77b6857ca22832cffa5d5011a667207eb2a0ad56adb5db443b8a", [:mix], [{:decimal, "~> 1.0 or ~> 2.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "c5eb0cab91f094599f94d55bc63409236a8ec69a21a67814529e8d5f6cc90b3b"},
   "jsx": {:hex, :jsx, "2.10.0", "77760560d6ac2b8c51fd4c980e9e19b784016aa70be354ce746472c33beb0b1c", [:rebar3], [], "hexpm", "9a83e3704807298016968db506f9fad0f027de37546eb838b3ae1064c3a0ad62"},
   "memoize": {:hex, :memoize, "1.4.3", "ead4ba248291acbaecbfe7e68ed762d329dd9c29c727020c7393dda4060c4471", [:mix], [], "hexpm", "a75176b84b9ce92faaf567c82fcbc584ef95727e0827cb38606b0a197f7e47ef"},
