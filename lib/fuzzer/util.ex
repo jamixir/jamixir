@@ -104,26 +104,24 @@ defmodule Jamixir.Fuzzer.Util do
   end
 
   defp parse(:peer_info, bin) do
-    try do
-      <<name_length::8, rest::binary>> = bin
+    <<fuzz_version::8, fuzz_features::32, bin::binary>> = bin
+    <<jam_version_maj::8, jam_version_min::8, jam_version_patch::8, bin::binary>> = bin
+    <<app_version_maj::8, app_version_min::8, app_version_patch::8, bin::binary>> = bin
+    <<name_length::8, name::binary-size(name_length)>> = bin
 
-      if byte_size(rest) < name_length + 6 do
-        {:error, :peer_info_too_short}
-      else
-        <<name::binary-size(name_length), version_major::8, version_minor::8, version_patch::8,
-          protocol_major::8, protocol_minor::8, protocol_patch::8>> = rest
+    parsed_data = %{
+      name: name,
+      jam_version: {jam_version_maj, jam_version_min, jam_version_patch},
+      app_version: {app_version_maj, app_version_min, app_version_patch},
+      fuzz_version: fuzz_version,
+      fuzz_features: fuzz_features
+    }
 
-        parsed_data = %{
-          name: name,
-          version: {version_major, version_minor, version_patch},
-          protocol: {protocol_major, protocol_minor, protocol_patch}
-        }
-
-        {:ok, :peer_info, parsed_data}
-      end
-    rescue
-      MatchError -> {:error, :invalid_peer_info_format}
-    end
+    {:ok, :peer_info, parsed_data}
+  rescue
+    e ->
+      Logger.error(inspect(e))
+      {:error, :invalid_peer_info_format}
   end
 
   defp parse(:get_state, bin) do

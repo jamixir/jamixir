@@ -93,13 +93,8 @@ defmodule Jamixir.Fuzzer.Service do
     end
   end
 
-  defp handle_message(:peer_info, %{name: name, version: version, protocol: protocol}, sock) do
-    {version_major, version_minor, version_patch} = version
-    {protocol_major, protocol_minor, protocol_patch} = protocol
-
-    Log.info(
-      "Peer info: name=#{name}, version=#{version_major}.#{version_minor}.#{version_patch}, protocol=#{protocol_major}.#{protocol_minor}.#{protocol_patch}"
-    )
+  defp handle_message(:peer_info, peer_info, sock) do
+    Log.info("Peer info: #{inspect(peer_info)}")
 
     send_peer_info(sock)
   end
@@ -158,17 +153,17 @@ defmodule Jamixir.Fuzzer.Service do
   end
 
   defp send_peer_info(sock) do
-    {app_version_major, app_version_minor, app_version_patch} = Meta.app_version()
     {jam_version_major, jam_version_minor, jam_version_patch} = Meta.jam_version()
+    {app_version_major, app_version_minor, app_version_patch} = Meta.app_version()
 
     Log.info(
       "Sending peer info: #{Meta.name()}, #{app_version_major}.#{app_version_minor}.#{app_version_patch}, #{jam_version_major}.#{jam_version_minor}.#{jam_version_patch}"
     )
 
     our_info =
-      <<byte_size(Meta.name())::8, Meta.name()::binary, app_version_major::8,
-        app_version_minor::8, app_version_patch::8, jam_version_major::8, jam_version_minor::8,
-        jam_version_patch::8>>
+      <<Meta.fuzz_version()::8, Meta.features()::32, jam_version_major::8, jam_version_minor::8,
+        jam_version_patch::8, app_version_major::8, app_version_minor::8, app_version_patch::8,
+        byte_size(Meta.name())::8, Meta.name()::binary>>
 
     :socket.send(sock, encode_message(:peer_info, our_info))
   end
