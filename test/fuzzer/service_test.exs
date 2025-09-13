@@ -16,6 +16,7 @@ defmodule Jamixir.FuzzerTest do
   import Util.Hex
 
   @socket_path "/tmp/jam_conformance.sock"
+  @conformance_path "../jam-conformance"
 
   setup do
     if File.exists?(@socket_path), do: File.rm!(@socket_path)
@@ -43,10 +44,10 @@ defmodule Jamixir.FuzzerTest do
       assert :ok = Client.send_peer_info(client, Meta.name(), {0, 1, 0}, {1, 0, 0})
       assert {:ok, :peer_info, data} = Client.receive_message(client)
 
-      assert %{name: name, version: version, protocol: protocol} = data
+      assert %{name: name, jam_version: jam_version, app_version: app_version} = data
       assert name == Meta.name()
-      assert version == Meta.app_version()
-      assert protocol == Meta.jam_version()
+      assert app_version == Meta.app_version()
+      assert jam_version == Meta.jam_version()
     end
   end
 
@@ -127,7 +128,7 @@ defmodule Jamixir.FuzzerTest do
       tiny_configs()
     end
 
-    @fuzz_path "../jam-conformance/fuzz-reports"
+    @fuzz_path "#{@conformance_path}/fuzz-reports"
     @base_path "#{@fuzz_path}/0.7.0/traces/"
     @all_traces (case File.ls(@base_path) do
                    {:ok, files} ->
@@ -159,7 +160,8 @@ defmodule Jamixir.FuzzerTest do
               {"fuzzer 100 blocks #{mode}",
                fn -> test_case(client, "../jam-test-vectors/traces/#{mode}") end}
 
-      Benchee.run(test_dict)
+      Map.values(test_dict) |> Enum.each(& &1.())
+      # Benchee.run(test_dict)
     end
   end
 
@@ -252,6 +254,20 @@ defmodule Jamixir.FuzzerTest do
       assert {:ok, :state, retrieved_state} = Client.receive_message(client)
 
       assert Trie.serialize(retrieved_state).data == expected_final_trie
+    end
+  end
+
+  describe "protocol v1 examples" do
+    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
+    test "PeerInfo", %{client: client} do
+      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000000_fuzzer_peer_info.bin")
+      assert :ok = Client.send_message(client, :peer_info, bin)
+
+      assert {:ok, :peer_info, data} = Client.receive_message(client)
+      assert %{name: name, jam_version: jam_version, app_version: app_version} = data
+      assert name == Meta.name()
+      assert app_version == Meta.app_version()
+      assert jam_version == Meta.jam_version()
     end
   end
 

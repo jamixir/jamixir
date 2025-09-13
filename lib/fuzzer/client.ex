@@ -31,13 +31,21 @@ defmodule Jamixir.Fuzzer.Client do
     :socket.close(sock)
   end
 
-  def send_peer_info(client, name, version \\ {0, 1, 0}, protocol \\ {1, 0, 0}) do
-    {version_major, version_minor, version_patch} = version
-    {protocol_major, protocol_minor, protocol_patch} = protocol
+  def send_peer_info(
+        client,
+        name,
+        jam_version \\ {0, 1, 0},
+        app_version \\ {1, 0, 0},
+        fuzz_version \\ 1,
+        features \\ 2
+      ) do
+    {jam_version_maj, jam_version_min, jam_version_patch} = jam_version
+    {app_version_maj, app_version_min, app_version_patch} = app_version
 
     message =
-      <<byte_size(name)::8, name::binary, version_major::8, version_minor::8, version_patch::8,
-        protocol_major::8, protocol_minor::8, protocol_patch::8>>
+      <<fuzz_version::8, features::32, jam_version_maj::8, jam_version_min::8,
+        jam_version_patch::8, app_version_maj::8, app_version_min::8, app_version_patch::8,
+        byte_size(name)::8, name::binary>>
 
     send_message(client, :peer_info, message)
   end
