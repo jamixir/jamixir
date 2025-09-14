@@ -8,19 +8,21 @@ defmodule Jamixir.Fuzzer.Util do
   @protocol_to_message_type %{
     0 => :peer_info,
     1 => :import_block,
-    2 => :set_state,
+    2 => :initialize,
     3 => :get_state,
     4 => :state,
-    5 => :state_root
+    5 => :state_root,
+    255 => :error
   }
 
   @message_type_to_protocol %{
     :peer_info => 0,
     :import_block => 1,
-    :set_state => 2,
+    :initialize => 2,
     :get_state => 3,
     :state => 4,
-    :state_root => 5
+    :state_root => 5,
+    :error => 255
   }
 
   def receive_and_parse_message(socket, timeout) do
@@ -128,20 +130,20 @@ defmodule Jamixir.Fuzzer.Util do
     {:ok, :get_state, %{header_hash: bin}}
   end
 
-  defp parse(:set_state, bin) do
+  defp parse(:initialize, bin) do
     if byte_size(bin) < 32 do
-      {:error, {:message_too_short, :set_state, byte_size(bin), 32}}
+      {:error, {:message_too_short, :initialize, byte_size(bin), 32}}
     else
       try do
         {header, state_bin} = Header.decode(bin)
 
         if byte_size(state_bin) == 0 do
-          {:error, {:empty_state_data, :set_state}}
+          {:error, {:empty_state_data, :initialize}}
         else
           case Trie.from_binary(state_bin) do
             {:ok, serialized_state, _} ->
               state = Trie.trie_to_state(serialized_state)
-              {:ok, :set_state, %{header: header, state: state}}
+              {:ok, :initialize, %{header: header, state: state}}
 
             {:error, reason} ->
               {:error, reason}
@@ -166,6 +168,10 @@ defmodule Jamixir.Fuzzer.Util do
 
   defp parse(:state_root, bin) do
     {:ok, :state_root, bin}
+  end
+
+  defp parse(:error, bin) do
+    {:ok, :error, bin}
   end
 
   defp parse(:import_block, bin) do

@@ -58,7 +58,7 @@ defmodule Jamixir.Fuzzer.Client do
     header_bin = e(header)
     serialized_state = Trie.to_binary(state)
     message = header_bin <> serialized_state
-    send_message(client, :set_state, message)
+    send_message(client, :initialize, message)
   end
 
   def send_import_block(client, block) do

@@ -269,6 +269,26 @@ defmodule Jamixir.FuzzerTest do
       assert app_version == Meta.app_version()
       assert jam_version == Meta.jam_version()
     end
+
+    test "Initialize", %{client: client} do
+      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
+      assert :ok = Client.send_message(client, :initialize, bin)
+      assert {:ok, :state_root, root} = Client.receive_message(client)
+
+      assert b16(root) == "0xb1974bdc9f8073441dd2b203d1b75145bdeb5a968adcb35b5c60ab06f04183dc"
+    end
+
+    test "ImportBlock error", %{client: client} do
+      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
+      assert :ok = Client.send_message(client, :initialize, bin)
+      assert {:ok, :state_root, root} = Client.receive_message(client)
+
+      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000002_fuzzer_import_block.bin")
+      assert :ok = Client.send_message(client, :import_block, bin)
+      assert {:ok, :error, error} = Client.receive_message(client)
+
+      assert error == "Chain error: block execution failure: preimage_unneeded"
+    end
   end
 
   defp block_json(file),
@@ -335,7 +355,7 @@ defmodule Jamixir.FuzzerTest do
     {:ok, b1_post_state, _rest} = Trie.from_binary(rest)
 
     message = e(block.header) <> Trie.to_binary(b1_post_state)
-    assert :ok = Client.send_message(client, :set_state, message)
+    assert :ok = Client.send_message(client, :initialize, message)
     assert {:ok, :state_root, root} = Client.receive_message(client)
 
     state = Trie.deserialize(b1_post_state)
