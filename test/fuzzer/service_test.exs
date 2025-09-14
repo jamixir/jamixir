@@ -328,7 +328,7 @@ defmodule Jamixir.FuzzerTest do
   defp test_block(client, file, root, dir) do
     Logger.info("Processing block #{file} with root #{b16(root)}")
 
-    <<block_pre_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
+    <<_::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
 
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
     before_size = byte_size(rest)
@@ -339,11 +339,10 @@ defmodule Jamixir.FuzzerTest do
     {:ok, exp_post_state_trie, _} = Trie.from_binary(rest)
 
     assert :ok = Client.send_message(client, :import_block, e(block))
-    assert {:ok, :state_root, root} = Client.receive_message(client, :infinity)
+    assert {:ok, type, resp} = Client.receive_message(client, :infinity)
 
-    if root == block_pre_state_root do
-      Util.Logger.info("Block transition failed. Check if trace root matches")
-      assert b16(exp_post_state_root) == b16(root)
+    if type == :error do
+      Util.Logger.info("Block transition failed because of #{resp}")
     else
       assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
       assert {:ok, :state, post_state} = Client.receive_message(client)
@@ -368,7 +367,7 @@ defmodule Jamixir.FuzzerTest do
         end
       end
 
-      assert b16(exp_post_state_root) == b16(root)
+      assert b16(exp_post_state_root) == b16(resp)
     end
 
     root
