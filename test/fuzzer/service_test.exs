@@ -197,28 +197,22 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_block(header_hash) == block
     end
 
-    test "return response when block import fails", %{
-      client: client,
-      block_json: block_json,
-      pre_state: pre_state
-    } do
+    test "return response when block import fails", %{client: client, block_json: block_json} do
       block = Block.from_json(block_json[:block])
       block = put_in(block.header.prior_state_root, Hash.random())
       assert :ok = Client.send_import_block(client, block)
-      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
-      assert incoming_state_root == Trie.state_root(pre_state)
+      assert {:ok, :error, _} = Client.receive_message(client)
     end
 
     test "return response when block parent state is invalid", %{
       client: client,
-      block_json: block_json,
-      pre_state: pre_state
+      block_json: block_json
     } do
       block = Block.from_json(block_json[:block])
       block = put_in(block.header.parent_hash, Hash.random())
       assert :ok = Client.send_import_block(client, block)
-      assert {:ok, :state_root, incoming_state_root} = Client.receive_message(client)
-      assert incoming_state_root == Trie.state_root(pre_state)
+      assert {:ok, :error, error} = Client.receive_message(client)
+      assert String.contains?(error, "parent_state_not_found")
     end
 
     @tag :slow
@@ -281,13 +275,50 @@ defmodule Jamixir.FuzzerTest do
     test "ImportBlock error", %{client: client} do
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
       assert :ok = Client.send_message(client, :initialize, bin)
-      assert {:ok, :state_root, root} = Client.receive_message(client)
+      assert {:ok, :state_root, _} = Client.receive_message(client)
 
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000002_fuzzer_import_block.bin")
       assert :ok = Client.send_message(client, :import_block, bin)
       assert {:ok, :error, error} = Client.receive_message(client)
 
       assert error == "Chain error: block execution failure: preimage_unneeded"
+    end
+
+    @tag :slow
+    test "Import all blocks", %{client: client} do
+      for [fuzzer_file, target_file] <-
+            files_in_dir(@examples_path, ~r/.+\.bin/) |> Enum.chunk_every(2) do
+        Logger.info("Testing #{fuzzer_file}")
+
+        <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{fuzzer_file}")
+        <<_::8, exp_result::binary>> = File.read!("#{@examples_path}/#{target_file}")
+
+        if fuzzer_file =~ ~r/peer_info/ do
+          assert :ok = Client.send_message(client, :peer_info, bin)
+
+          assert {:ok, :peer_info, data} = Client.receive_message(client)
+          assert %{name: _, jam_version: _, app_version: _} = data
+        else
+          if fuzzer_file =~ ~r/initialize/ do
+            assert :ok = Client.send_message(client, :initialize, bin)
+            assert {:ok, :state_root, root} = Client.receive_message(client)
+            assert root == exp_result
+          else
+            if fuzzer_file =~ ~r/import_block/ do
+              assert :ok = Client.send_message(client, :import_block, bin)
+
+              case Client.receive_message(client) do
+                {:ok, :state_root, root} ->
+                  assert root == exp_result
+
+                {:ok, :error, error} ->
+                  assert String.contains?(error, "Chain error")
+                  assert String.contains?(exp_result, "Chain error")
+              end
+            end
+          end
+        end
+      end
     end
   end
 
@@ -371,9 +402,9 @@ defmodule Jamixir.FuzzerTest do
     Logger.warning("Passing test case #{dir} with root #{b16(root)}")
   end
 
-  defp files_in_dir(dir) do
+  defp files_in_dir(dir, filter \\ ~r/\d+\.bin/) do
     File.ls!(dir)
-    |> Enum.filter(fn file -> String.match?(file, ~r/\d+\.bin/) end)
+    |> Enum.filter(fn file -> String.match?(file, filter) end)
     |> Enum.sort()
   end
 
