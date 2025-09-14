@@ -99,7 +99,7 @@ defmodule Jamixir.Fuzzer.Service do
     send_peer_info(sock)
   end
 
-  defp handle_message(:set_state, %{header: header, state: state}, sock) do
+  defp handle_message(:initialize, %{header: header, state: state}, sock) do
     header_hash = h(e(header))
 
     case validate_state(state) do
@@ -132,19 +132,10 @@ defmodule Jamixir.Fuzzer.Service do
       {:ok, _new_app_state, state_root} ->
         :socket.send(sock, encode_message(:state_root, state_root))
 
-      {:error, nil, reason} ->
-        Log.info("Block import failed: #{reason}")
-
-        {_ts, header} = Storage.get_latest_header()
-
-        state = Storage.get_state(header)
-        state_root = Trie.state_root(state)
-        :socket.send(sock, encode_message(:state_root, state_root))
-
-      {:error, pre_state, reason} ->
-        state_root = Trie.state_root(pre_state)
-        Log.info("Block import failed: #{reason}")
-        :socket.send(sock, encode_message(:state_root, state_root))
+      {:error, _, reason} ->
+        msg = "Chain error: block execution failure: #{Atom.to_string(reason)}"
+        Log.info(msg)
+        :socket.send(sock, encode_message(:error, msg))
     end
   end
 
