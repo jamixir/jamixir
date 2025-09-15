@@ -288,7 +288,9 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzerv1
     test "Import all blocks", %{client: client} do
       for [fuzzer_file, target_file] <-
-            files_in_dir(@examples_path, ~r/.+\.bin/) |> Enum.chunk_every(2) do
+            files_in_dir(@examples_path, ~r/.+\.bin/) |> Enum.chunk_every(2),
+          # 29 example is broken for purpose (https://github.com/davxy/jam-conformance/issues/82)
+          not (fuzzer_file =~ ~r/29/) do
         Logger.info("Testing #{fuzzer_file}")
 
         <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{fuzzer_file}")
