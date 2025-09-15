@@ -285,6 +285,7 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @tag :slow
+    @tag :fuzzerv1
     test "Import all blocks", %{client: client} do
       for [fuzzer_file, target_file] <-
             files_in_dir(@examples_path, ~r/.+\.bin/) |> Enum.chunk_every(2) do
@@ -305,11 +306,26 @@ defmodule Jamixir.FuzzerTest do
             assert root == exp_result
           else
             if fuzzer_file =~ ~r/import_block/ do
-              assert :ok = Client.send_message(client, :import_block, bin)
+              block_bin = bin
+              assert :ok = Client.send_message(client, :import_block, block_bin)
 
               case Client.receive_message(client) do
                 {:ok, :state_root, root} ->
-                  assert root == exp_result
+                  if root != exp_result do
+                    <<_::8, bin::binary>> =
+                      File.read!("#{@examples_path}/00000030_target_state.bin")
+
+                    {:ok, exp_state_trie, _} = Trie.from_binary(bin)
+
+                    {block, _} = Block.decode(block_bin)
+                    assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
+
+                    {:ok, :state, post_state} = Client.receive_message(client)
+                    post_state_trie = Trie.serialize(post_state)
+
+                    compare_tries(exp_state_trie, post_state_trie)
+                    assert root == exp_result
+                  end
 
                 {:ok, :error, error} ->
                   assert String.contains?(error, "Chain error")
@@ -348,29 +364,31 @@ defmodule Jamixir.FuzzerTest do
       assert {:ok, :state, post_state} = Client.receive_message(client)
 
       post_state_trie = Trie.serialize(post_state)
-
-      if exp_post_state_trie != post_state_trie do
-        Util.Logger.info("Post state trie mismatch")
-
-        for {k, exp_v} <- exp_post_state_trie.data do
-          v = Map.get(post_state_trie.data, k)
-
-          if v != exp_v do
-            Util.Logger.info("key doesn't match #{b16(k)}")
-            Util.Logger.info("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
-
-            key = Trie.octet31_to_key(k)
-            {exp_obj, _} = Trie.decode_value(key, exp_v)
-            {obj, _} = Trie.decode_value(key, v)
-            assert %{b16(k) => exp_obj} == %{b16(k) => obj}
-          end
-        end
-      end
-
+      compare_tries(exp_post_state_trie, post_state_trie)
       assert b16(exp_post_state_root) == b16(resp)
     end
 
     root
+  end
+
+  defp compare_tries(exp_post_state_trie, post_state_trie) do
+    if exp_post_state_trie != post_state_trie do
+      Util.Logger.info("Expected trie doesn't match trie")
+
+      for {k, exp_v} <- exp_post_state_trie.data do
+        v = Map.get(post_state_trie.data, k)
+
+        if v != exp_v do
+          Util.Logger.info("key doesn't match #{b16(k)}")
+          Util.Logger.info("v=#{b16(v || "")}\nexp_v=#{b16(exp_v || "")}")
+
+          key = Trie.octet31_to_key(k)
+          {exp_obj, _} = Trie.decode_value(key, exp_v)
+          {obj, _} = Trie.decode_value(key, v)
+          assert %{b16(k) => exp_obj} == %{b16(k) => obj}
+        end
+      end
+    end
   end
 
   defp test_case(client, dir) do
