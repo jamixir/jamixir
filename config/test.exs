@@ -9,6 +9,8 @@ config :jamixir, Jamixir,
   epoch_length: 12,
   # K
   max_tickets_pre_extrinsic: 3,
+  # L
+  max_age_lookup_anchor: 24,
   # N
   tickets_per_validator: 3,
   # P
