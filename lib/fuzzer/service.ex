@@ -136,6 +136,7 @@ defmodule Jamixir.Fuzzer.Service do
         reason = if is_atom(reason), do: Atom.to_string(reason), else: reason
         msg = "Chain error: block execution failure: #{reason}"
         Log.info(msg)
+        msg = <<byte_size(msg)::8>> <> msg
         :socket.send(sock, encode_message(:error, msg))
     end
   end
