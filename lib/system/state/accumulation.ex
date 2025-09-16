@@ -121,6 +121,9 @@ defmodule System.State.Accumulation do
         extra_args
       )
 
+    # Formula (12.25) v0.7.3
+    accumulation_outputs_ = Enum.sort_by(accumulation_outputs_, & &1.service)
+
     # Formula (12.25) v0.7.0
     %__MODULE__{
       services: services_intermediate,
@@ -279,32 +282,34 @@ defmodule System.State.Accumulation do
 
     if i == 0 do
       # Log remaining work reports
-      if total_count > 0 do
+      if total_count > 0 and Logger.level() == :debug do
         remaining_info =
-          work_reports
-          |> Enum.map(fn wr ->
+          Enum.map_join(work_reports, ", ", fn wr ->
             services = wr.digests |> Enum.map(& &1.service) |> Enum.uniq() |> Enum.join(",")
             "#{b16(wr.specification.work_package_hash)}(#{services})"
           end)
-          |> Enum.join(", ")
 
-        Logger.info("Left unaccumulated (#{total_count}): #{remaining_info}")
+        Logger.debug("Left unaccumulated (#{total_count}): #{remaining_info}")
       end
 
       {0, acc_state, [], [], []}
     else
       {current_batch, remaining_work_reports} = Enum.split(work_reports, i)
 
-      current_info =
-        current_batch
-        |> Enum.map(fn wr ->
-          services = wr.digests |> Enum.map(& &1.service) |> Enum.uniq() |> Enum.join(",")
-          "#{b16(wr.specification.work_package_hash)}(#{services})"
-        end)
-        |> Enum.join(", ")
+      if Logger.level() == :debug do
+        hashes = work_reports |> Enum.map_join(", ", &b16(&1.specification.work_package_hash))
 
-      Logger.debug("Accumulating (#{i}/#{total_count}): #{current_info}")
-      Logger.debug(">>> Parallel Accumulation START")
+        Logger.debug("Gas limit: #{gas_limit}, can accumulate #{i}/#{total_count} (#{hashes})")
+
+        current_info =
+          Enum.map_join(current_batch, ", ", fn wr ->
+            services = wr.digests |> Enum.map(& &1.service) |> Enum.uniq() |> Enum.join(",")
+            "#{b16(wr.specification.work_package_hash)}(#{services})"
+          end)
+
+        Logger.debug("Accumulating (#{i}/#{total_count}): #{current_info}")
+        Logger.debug(">>> Parallel Accumulation START")
+      end
 
       {acc_state_star, transfers_star, accumulation_outputs_star, used_gas_star} =
         parallelized_accumulation(
@@ -337,7 +342,8 @@ defmodule System.State.Accumulation do
 
   @spec number_of_work_reports_to_accumumulate(list(WorkReport.t()), non_neg_integer()) ::
           non_neg_integer()
-          def number_of_work_reports_to_accumumulate([], _), do: 0
+  def number_of_work_reports_to_accumumulate([], _), do: 0
+
   def number_of_work_reports_to_accumumulate(work_reports, gas_limit) do
     Enum.reduce_while(1..length(work_reports), 0, fn i, _acc ->
       sum =
