@@ -7,21 +7,21 @@ defmodule Jamixir.Fuzzer.Util do
 
   @protocol_to_message_type %{
     0 => :peer_info,
-    1 => :import_block,
-    2 => :initialize,
-    3 => :get_state,
-    4 => :state,
-    5 => :state_root,
+    1 => :initialize,
+    2 => :state_root,
+    3 => :import_block,
+    4 => :get_state,
+    5 => :state,
     255 => :error
   }
 
   @message_type_to_protocol %{
     :peer_info => 0,
-    :import_block => 1,
-    :initialize => 2,
-    :get_state => 3,
-    :state => 4,
-    :state_root => 5,
+    :initialize => 1,
+    :state_root => 2,
+    :import_block => 3,
+    :get_state => 4,
+    :state => 5,
     :error => 255
   }
 

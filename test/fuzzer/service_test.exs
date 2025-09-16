@@ -252,7 +252,7 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "protocol v1 examples" do
-    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
+    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/no_forks/"
     test "PeerInfo", %{client: client} do
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000000_fuzzer_peer_info.bin")
       assert :ok = Client.send_message(client, :peer_info, bin)
@@ -266,22 +266,11 @@ defmodule Jamixir.FuzzerTest do
 
     test "Initialize", %{client: client} do
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
+
       assert :ok = Client.send_message(client, :initialize, bin)
       assert {:ok, :state_root, root} = Client.receive_message(client)
 
-      assert b16(root) == "0xb1974bdc9f8073441dd2b203d1b75145bdeb5a968adcb35b5c60ab06f04183dc"
-    end
-
-    test "ImportBlock error", %{client: client} do
-      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
-      assert :ok = Client.send_message(client, :initialize, bin)
-      assert {:ok, :state_root, _} = Client.receive_message(client)
-
-      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000002_fuzzer_import_block.bin")
-      assert :ok = Client.send_message(client, :import_block, bin)
-      assert {:ok, :error, error} = Client.receive_message(client)
-
-      assert error == "Chain error: block execution failure: preimage_unneeded"
+      assert b16(root) == "0x80748e40b5f83342b844a54aed5fd65861b982288e35ce1e7503fc45645d45b6"
     end
 
     @tag :slow
