@@ -170,7 +170,7 @@ defmodule Jamixir.Fuzzer.Util do
     {:ok, :state_root, bin}
   end
 
-  defp parse(:error, bin) do
+  defp parse(:error, <<_::8, bin::binary>>) do
     {:ok, :error, bin}
   end
 

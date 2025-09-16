@@ -252,9 +252,9 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "protocol v1 examples" do
-    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/no_forks/"
+    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
     test "PeerInfo", %{client: client} do
-      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000000_fuzzer_peer_info.bin")
+      <<_::8, bin::binary>> = File.read!("#{@examples_path}/faulty/00000000_fuzzer_peer_info.bin")
       assert :ok = Client.send_message(client, :peer_info, bin)
 
       assert {:ok, :peer_info, data} = Client.receive_message(client)
@@ -265,62 +265,83 @@ defmodule Jamixir.FuzzerTest do
     end
 
     test "Initialize", %{client: client} do
-      <<_::8, bin::binary>> = File.read!("#{@examples_path}/00000001_fuzzer_initialize.bin")
+      <<_::8, bin::binary>> =
+        File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
+
+      <<_::8, exp_root::binary>> =
+        File.read!("#{@examples_path}/faulty/00000001_target_state_root.bin")
 
       assert :ok = Client.send_message(client, :initialize, bin)
       assert {:ok, :state_root, root} = Client.receive_message(client)
 
-      assert b16(root) == "0x80748e40b5f83342b844a54aed5fd65861b982288e35ce1e7503fc45645d45b6"
+      assert b16(root) == b16(exp_root)
+    end
+
+    test "Error on import", %{client: client} do
+      <<_::8, bin::binary>> =
+        File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
+
+      assert :ok = Client.send_message(client, :initialize, bin)
+      assert {:ok, :state_root, _} = Client.receive_message(client)
+
+      <<_::8, bin::binary>> =
+        File.read!("#{@examples_path}/faulty/00000002_fuzzer_import_block.bin")
+
+      assert :ok = Client.send_message(client, :import_block, bin)
+      assert {:ok, :error, error} = Client.receive_message(client)
+      assert error == "Chain error: block execution failure: preimage_unneeded"
     end
 
     @tag :slow
     @tag :fuzzerv1
     test "Import all blocks", %{client: client} do
-      for [fuzzer_file, target_file] <-
-            files_in_dir(@examples_path, ~r/.+\.bin/) |> Enum.chunk_every(2),
-          # 29 example is broken for purpose (https://github.com/davxy/jam-conformance/issues/82)
-          not (fuzzer_file =~ ~r/29/) do
-        Logger.info("Testing #{fuzzer_file}")
+      for type <- ["faulty", "forks", "no_forks"] do
+        for [fuzzer_file, target_file] <-
+              files_in_dir("#{@examples_path}/#{type}/", ~r/.+\.bin/) |> Enum.chunk_every(2),
+            # 29 example is broken for purpose (https://github.com/davxy/jam-conformance/issues/82)
+            not (fuzzer_file =~ ~r/29/) do
+          Logger.info("Testing #{fuzzer_file}")
 
-        <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{fuzzer_file}")
-        <<_::8, exp_result::binary>> = File.read!("#{@examples_path}/#{target_file}")
+          <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{fuzzer_file}")
+          <<_::8, exp_result::binary>> = File.read!("#{@examples_path}/#{target_file}")
 
-        if fuzzer_file =~ ~r/peer_info/ do
-          assert :ok = Client.send_message(client, :peer_info, bin)
+          if fuzzer_file =~ ~r/peer_info/ do
+            assert :ok = Client.send_message(client, :peer_info, bin)
 
-          assert {:ok, :peer_info, data} = Client.receive_message(client)
-          assert %{name: _, jam_version: _, app_version: _} = data
-        else
-          if fuzzer_file =~ ~r/initialize/ do
-            assert :ok = Client.send_message(client, :initialize, bin)
-            assert {:ok, :state_root, root} = Client.receive_message(client)
-            assert root == exp_result
+            assert {:ok, :peer_info, data} = Client.receive_message(client)
+            assert %{name: _, jam_version: _, app_version: _} = data
           else
-            if fuzzer_file =~ ~r/import_block/ do
-              block_bin = bin
-              assert :ok = Client.send_message(client, :import_block, block_bin)
+            if fuzzer_file =~ ~r/initialize/ do
+              assert :ok = Client.send_message(client, :initialize, bin)
+              assert {:ok, :state_root, root} = Client.receive_message(client)
+              assert root == exp_result
+            else
+              if fuzzer_file =~ ~r/import_block/ do
+                block_bin = bin
+                assert :ok = Client.send_message(client, :import_block, block_bin)
 
-              case Client.receive_message(client) do
-                {:ok, :state_root, root} ->
-                  if root != exp_result do
-                    <<_::8, bin::binary>> =
-                      File.read!("#{@examples_path}/00000030_target_state.bin")
+                case Client.receive_message(client) do
+                  {:ok, :state_root, root} ->
+                    if root != exp_result do
+                      <<_::8, bin::binary>> =
+                        File.read!("#{@examples_path}/00000030_target_state.bin")
 
-                    {:ok, exp_state_trie, _} = Trie.from_binary(bin)
+                      {:ok, exp_state_trie, _} = Trie.from_binary(bin)
 
-                    {block, _} = Block.decode(block_bin)
-                    assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
+                      {block, _} = Block.decode(block_bin)
+                      assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
 
-                    {:ok, :state, post_state} = Client.receive_message(client)
-                    post_state_trie = Trie.serialize(post_state)
+                      {:ok, :state, post_state} = Client.receive_message(client)
+                      post_state_trie = Trie.serialize(post_state)
 
-                    compare_tries(exp_state_trie, post_state_trie)
-                    assert root == exp_result
-                  end
+                      compare_tries(exp_state_trie, post_state_trie)
+                      assert root == exp_result
+                    end
 
-                {:ok, :error, error} ->
-                  assert String.contains?(error, "Chain error")
-                  assert String.contains?(exp_result, "Chain error")
+                  {:ok, :error, error} ->
+                    assert String.contains?(error, "Chain error")
+                    assert String.contains?(exp_result, "Chain error")
+                end
               end
             end
           end
