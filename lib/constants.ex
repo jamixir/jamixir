@@ -112,7 +112,7 @@ defmodule Constants do
     do: Jamixir.config()[:erasure_coded_pieces_per_segment] || 6
 
   @doc "W_R - The maximum size of an encoded work-report in octets."
-  # Formula (11.9) v0.7.0
+  # Formula (11.9) v0.7.2
   def max_work_report_size, do: 48 * 2 ** 10
 
   @doc "W_T - The size of the memo component in a deferred transfer, in octets."

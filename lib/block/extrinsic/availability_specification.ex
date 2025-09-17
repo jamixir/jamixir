@@ -16,7 +16,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
           segment_count: non_neg_integer()
         }
 
-  # Formula (11.5) v0.7.0 - Y
+  # Formula (11.5) v0.7.2 - Y
   # p
   defstruct work_package_hash: Hash.zero(),
             # l

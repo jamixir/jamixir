@@ -1,8 +1,8 @@
 defmodule Block.Extrinsic.Disputes.Fault do
   alias Types
 
-  # Formula (10.2) v0.7.0
-  # Formula (10.8) v0.7.0
+  # Formula (10.2) v0.7.2
+  # Formula (10.8) v0.7.2
   @type t :: %__MODULE__{
           # r
           work_report_hash: Types.hash(),

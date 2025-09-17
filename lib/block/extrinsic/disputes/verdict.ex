@@ -2,8 +2,8 @@ defmodule Block.Extrinsic.Disputes.Verdict do
   alias Block.Extrinsic.Disputes.Judgement
   alias Types
 
-  # Formula (10.2) v0.7.0
-  # Formula (10.9) v0.7.0
+  # Formula (10.2) v0.7.2
+  # Formula (10.9) v0.7.2
   @type t :: %__MODULE__{
           # r
           work_report_hash: Types.hash(),
@@ -15,7 +15,7 @@ defmodule Block.Extrinsic.Disputes.Verdict do
 
   defstruct work_report_hash: <<>>, epoch_index: 0, judgements: []
 
-  # Formula (10.12) v0.7.0
+  # Formula (10.12) v0.7.2
   def sum_judgements(%__MODULE__{judgements: j}) do
     Enum.reduce(j, 0, &if(&1.vote, do: &2 + 1, else: &2))
   end

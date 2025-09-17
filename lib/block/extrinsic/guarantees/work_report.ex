@@ -12,7 +12,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   @type segment_root_lookup :: %{Types.hash() => Types.hash()}
 
-  # Formula (11.2) v0.7.0
+  # Formula (11.2) v0.7.2
   @type t :: %__MODULE__{
           # s
           specification: AvailabilitySpecification.t(),
@@ -32,7 +32,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           auth_gas_used: Types.gas()
         }
 
-  # Formula (11.2) v0.7.0
+  # Formula (11.2) v0.7.2
   defstruct specification: %AvailabilitySpecification{},
             refinement_context: %RefinementContext{},
             core_index: 0,
@@ -42,12 +42,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             digests: [],
             auth_gas_used: 0
 
-  # Formula (11.3) v0.7.0
+  # Formula (11.3) v0.7.2
   # ∀r ∈ R ∶ ∣rl∣ +∣(rc)p∣ ≤ J
   @spec valid_size?(WorkReport.t()) :: boolean()
   def valid_size?(%__MODULE__{} = wr) do
-    # Formula (11.3) v0.7.0
-    # Formula (11.8) v0.7.0
+    # Formula (11.3) v0.7.2
+    # Formula (11.8) v0.7.2
     # ∀r ∈ R ∶∣rt∣ + ∑∣dl∣ ≤ WR
     map_size(wr.segment_root_lookup) + MapSet.size(wr.refinement_context.prerequisite) <=
       Constants.max_work_report_dep_sum() and
@@ -60,7 +60,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   @threadhold 2 * Constants.validator_count() / 3
-  # Formula (11.16) v0.7.0 R ≡ [ ρ†[c]r | c <−ℕ_C, ∑a∈EA af[c] > 2/3V ]
+  # Formula (11.16) v0.7.2 R ≡ [ ρ†[c]r | c <−ℕ_C, ∑a∈EA af[c] > 2/3V ]
   @spec available_work_reports(list(Assurance.t()), list(CoreReport.t())) :: list(t() | nil)
   mockable available_work_reports(assurances, core_reports_intermediate_1) do
     a_bits = Enum.map(assurances, &Assurance.core_bits/1)

@@ -142,7 +142,7 @@ defmodule Block do
   def mock(:validate_refinement_context, _), do: :ok
 
   import Codec.Encoder
-  # Formula (11.35) v0.7.0
+  # Formula (11.35) v0.7.2
   mockable validate_refinement_context(%Header{} = header, %Extrinsic{guarantees: guarantees}) do
     if Jamixir.config()[:ignore_refinement_context] do
       :ok

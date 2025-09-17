@@ -4,11 +4,11 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
   alias Util.Hash
   import Codec.{Decoder, Encoder}
 
-  # Formula (11.7) v0.7.0
+  # Formula (11.7) v0.7.2
   # E ∈ {∞,☇,⊚,⊖,BAD,BIG}
   @type error :: :out_of_gas | :unexpected_termination | :bad_code | :code_too_large
 
-  # Formula (11.6) v0.7.0
+  # Formula (11.6) v0.7.2
   @type t :: %__MODULE__{
           # s
           service: non_neg_integer(),
