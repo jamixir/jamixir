@@ -11,10 +11,10 @@ defmodule System.State.EntropyPool do
 
   @type t :: %__MODULE__{n0: Types.hash(), n1: Types.hash(), n2: Types.hash(), n3: Types.hash()}
 
-  # Formula (6.21) v0.7.0
+  # Formula (6.21) v0.7.2
   defstruct n0: <<>>, n1: <<>>, n2: <<>>, n3: <<>>
 
-  # Formula (6.23) v0.7.0
+  # Formula (6.23) v0.7.2
   @spec rotate(Block.Header.t(), non_neg_integer(), t()) ::
           t()
   def rotate(%Header{timeslot: timeslot_}, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
@@ -34,7 +34,7 @@ defmodule System.State.EntropyPool do
     end
   end
 
-  # Formula (6.22) v0.7.0
+  # Formula (6.22) v0.7.2
   mockable transition(vrf_output, %EntropyPool{n0: n0} = pool) do
     %EntropyPool{pool | n0: h(n0 <> vrf_output)}
   end

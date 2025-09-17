@@ -8,21 +8,21 @@ defmodule System.State.Safrole do
   alias Util.{Hash, Time}
 
   @type t :: %__MODULE__{
-          # Formula (6.7) v0.7.0
+          # Formula (6.7) v0.7.2
           # γP
           pending: list(Validator.t()),
-          # Formula (6.4) v0.7.0
+          # Formula (6.4) v0.7.2
           # γZ
           epoch_root: Types.bandersnatch_ring_root(),
-          # Formula (6.5) v0.7.0
+          # Formula (6.5) v0.7.2
           # γS
           slot_sealers: list(SealKeyTicket.t()) | list(Types.hash()),
-          # Formula (6.5) v0.7.0
+          # Formula (6.5) v0.7.2
           # γA
           ticket_accumulator: list(SealKeyTicket.t())
         }
 
-  # Formula (6.3) v0.7.0
+  # Formula (6.3) v0.7.2
   defstruct pending: [], epoch_root: <<>>, slot_sealers: [], ticket_accumulator: []
 
   def transition(
@@ -43,7 +43,7 @@ defmodule System.State.Safrole do
              state.entropy_pool,
              pending_
            ),
-         # Formula (6.24) v0.7.0
+         # Formula (6.24) v0.7.2
          epoch_slot_sealers_ =
            Safrole.get_epoch_slot_sealers_(
              h,
@@ -52,7 +52,7 @@ defmodule System.State.Safrole do
              rotated_history_entropy_pool,
              curr_validators_
            ),
-         # Formula (6.34) v0.7.0
+         # Formula (6.34) v0.7.2
          {:ok, ticket_accumulator_} <-
            Safrole.calculate_ticket_accumulator_(
              h.timeslot,
@@ -71,7 +71,7 @@ defmodule System.State.Safrole do
     end
   end
 
-  # Formula (6.24) v0.7.0
+  # Formula (6.24) v0.7.2
   def get_epoch_slot_sealers_(
         %Header{timeslot: timeslot_},
         timeslot,
@@ -82,11 +82,11 @@ defmodule System.State.Safrole do
         %EntropyPool{n2: n2_},
         curr_validators
       ) do
-    # Formula (6.24) v0.7.0 - second arm
+    # Formula (6.24) v0.7.2 - second arm
     if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) do
       slot_sealers
     else
-      # Formula (6.24) v0.7.0 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
+      # Formula (6.24) v0.7.2 - if e' = e + 1 ∧ m ≥ Y ∧ ∣γa∣ = E
       if Time.epoch_index(timeslot_) == Time.epoch_index(timeslot) + 1 and
            length(ta) == Constants.epoch_length() and
            Time.epoch_phase(timeslot) >= Constants.ticket_submission_end() do
@@ -97,8 +97,8 @@ defmodule System.State.Safrole do
     end
   end
 
-  # Formula (6.34) v0.7.0
-  # Formula (6.35) v0.7.0
+  # Formula (6.34) v0.7.2
+  # Formula (6.35) v0.7.2
   def calculate_ticket_accumulator_(
         header_timeslot,
         state_timeslot,
@@ -135,7 +135,7 @@ defmodule System.State.Safrole do
 
   @doc """
   Z function: Outside-in sequencer function.
-  Formula (6.25) v0.7.0
+  Formula (6.25) v0.7.2
   """
   @spec outside_in_sequencer([SealKeyTicket.t()]) :: [SealKeyTicket.t()]
   def outside_in_sequencer(tickets) do
@@ -152,7 +152,7 @@ defmodule System.State.Safrole do
   end
 
   @doc """
-  Formula (6.26) v0.7.0
+  Formula (6.26) v0.7.2
   Fallback key sequence function.
   selects an epoch’s worth of validator Bandersnatch keys
   """

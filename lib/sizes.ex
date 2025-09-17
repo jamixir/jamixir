@@ -17,9 +17,9 @@ defmodule Sizes do
       @bitfield_size Sizes.bitfield()
       @hash_size Sizes.hash()
       @signature_size Sizes.signature()
-      # Formula (6.11) v0.7.0
+      # Formula (6.11) v0.7.2
       @bls_key_size 144
-      # Formula (6.12) v0.7.0
+      # Formula (6.12) v0.7.2
       @metadata_size 128
       @validator_index_size 2
       @export_segment_size Sizes.export_segment()
