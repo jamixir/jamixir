@@ -16,7 +16,7 @@ defmodule Block do
     # Hp
     header: nil,
     # Hr
-    extrinsic: nil
+    extrinsic: %Extrinsic{}
   ]
 
   @spec validate(t(), System.State.t()) :: :ok | {:error, String.t()}
@@ -46,32 +46,49 @@ defmodule Block do
     {pending_, _, _, _} = RotateKeys.rotate_keys(header, state, state.judgements)
     header = put_in(header.epoch_mark, choose_epoch_marker(header.timeslot, state, pending_))
 
-    params = get_seal_components(header, state)
+    %{
+      slot_sealer: slot_sealer,
+      safrole_: safrole_,
+      entropy_pool: entropy_pool,
+      curr_validators_: curr_validators_
+    } =
+      get_seal_components(header, state)
 
-    case get_signing_key(opts[:key_pairs], params.pubkey, params.entropy_pool, params.safrole_) do
-      {:ok, keypair} ->
-        {_, pubkey} = keypair
+    # Get keypair - from opts if provided, otherwise from KeyManager
+    keypair =
+      if opts[:key_pairs] do
+        Enum.find(opts[:key_pairs], &(elem(&1, 1) == slot_sealer))
+      else
+        KeyManager.get_our_bandersnatch_keypair()
+      end
 
-        new_index =
-          Enum.find_index(params.curr_validators_, fn v -> v.bandersnatch == pubkey end)
+    case keypair do
+      nil ->
+        {:error, :no_valid_keys_found}
 
-        header = put_in(header.block_author_key_index, new_index)
-        Logger.debug("timeslot pubkey: #{inspect(params.pubkey)}")
+      {priv, pub} ->
+        # Check if we own/can sign for this slot
+        if key_matches?(keypair, slot_sealer, entropy_pool) do
+          block_author_key_index_ =
+            Enum.find_index(curr_validators_, fn v -> v.bandersnatch == pub end)
 
-        {:ok,
-         %__MODULE__{
-           header:
-             HeaderSeal.seal_header(
-               header,
-               params.safrole_.slot_sealers,
-               params.entropy_pool,
-               keypair
-             ),
-           extrinsic: extrinsic
-         }}
+          header = put_in(header.block_author_key_index, block_author_key_index_)
+          Logger.debug("timeslot slot_sealer: #{inspect(slot_sealer)}")
 
-      {:error, e} ->
-        {:error, e}
+          {:ok,
+           %__MODULE__{
+             header:
+               HeaderSeal.seal_header(
+                 header,
+                 safrole_.slot_sealers,
+                 entropy_pool,
+                 {priv, pub}
+               ),
+             extrinsic: extrinsic
+           }}
+        else
+          {:error, :not_our_slot}
+        end
     end
   end
 
@@ -87,68 +104,20 @@ defmodule Block do
       )
 
     %{
-      pubkey: Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
+      slot_sealer:
+        Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
       safrole_: safrole_,
       entropy_pool: entropy_pool,
       curr_validators_: curr_validators_
     }
   end
 
-  defp get_signing_key(nil, %SealKeyTicket{id: id, attempt: r}, pool, _) do
-    case my_key() do
-      {priv, pub} ->
-        # my_index = Enum.find_index(safrole_.pending, fn v -> v.bandersnatch == pub end)
-        context = HeaderSeal.construct_seal_context(%{attempt: r}, %EntropyPool{n3: pool.n3})
-
-        case RingVrf.ietf_vrf_output({priv, pub}, context) do
-          ^id -> {:ok, {priv, pub}}
-          _ -> {:error, :no_valid_keys_found}
-        end
-
-      # output =
-      #   RingVrf.ring_vrf_output(
-      #     for(v <- safrole_.pending, do: v.bandersnatch),
-      #     {priv, pub},
-      #     my_index,
-      #     HeaderSeal.construct_seal_context(ticket, pool)
-      #   )
-
-      # output_hash = RingVrf.ring_vrf_output(public_keys, keypair, 0, context)
-
-      # if output == id do
-      # {:ok, {{priv, pub}, pub}}
-
-      # else
-      # end
-
-      _ ->
-        {:error, :no_valid_keys_found}
-    end
+  def key_matches?(keypair, %SealKeyTicket{id: id, attempt: r}, pool) do
+    context = HeaderSeal.construct_seal_context(%{attempt: r}, pool)
+    RingVrf.ietf_vrf_output(keypair, context) == id
   end
 
-  defp get_signing_key(nil, pubkey, _, _) do
-    case my_key() do
-      {priv, ^pubkey} ->
-        {:ok, {priv, pubkey}}
-
-      _ ->
-        {:error, :no_valid_keys_found}
-    end
-  end
-
-  defp get_signing_key(key_pairs, pubkey, _, _) do
-    case Enum.find(key_pairs, &(elem(&1, 1) == pubkey)) do
-      nil -> {:error, :key_not_found}
-      priv -> {:ok, priv}
-    end
-  end
-
-  def my_key do
-    case Application.get_env(:jamixir, :keys) do
-      %{bandersnatch_priv: priv, bandersnatch: pubkey} -> {priv, pubkey}
-      _ -> nil
-    end
-  end
+  def key_matches?({_priv, pub}, pubkey, _pool) when is_binary(pubkey), do: pub == pubkey
 
   def choose_epoch_marker(timeslot, state, pending_) do
     if Time.new_epoch?(state.timeslot, timeslot) do

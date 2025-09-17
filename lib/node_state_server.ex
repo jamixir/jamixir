@@ -7,9 +7,11 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias System.State.RotateKeys
+  alias System.State.EntropyPool
+  alias Block.Header
   alias Block.Extrinsic.GuarantorAssignments
   alias Jamixir.Genesis
-  alias Jamixir.TimeTicker
   alias Network.{Connection, ConnectionManager}
   alias System.State
   alias Util.Logger, as: Log
@@ -20,6 +22,11 @@ defmodule Jamixir.NodeStateServer do
   def instance do
     Application.get_env(:jamixir, :node_state_server, Jamixir.NodeStateServer)
   end
+
+  defstruct [
+    :jam_state,
+    :bandersnatch_keypair
+  ]
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -82,13 +89,18 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def init(opts) do
+    bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
     Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
-    {:ok, %{jam_state: opts[:jam_state]}}
+    {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
   end
 
   # Wait for initialization to complete and get jam_state
   @impl true
-  def handle_call({:add_block, block, announce}, _from, %{jam_state: jam_state} = state) do
+  def handle_call(
+        {:add_block, block, announce},
+        _from,
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
     new_jam_state =
       case Jamixir.Node.add_block(block, jam_state) do
         {:ok, %State{} = new_jam_state, state_root} ->
@@ -102,11 +114,13 @@ defmodule Jamixir.NodeStateServer do
           jam_state
       end
 
-    {:reply, {:ok, new_jam_state}, %{state | jam_state: new_jam_state}}
+    genServerState = %__MODULE__{state | jam_state: new_jam_state}
+
+    {:reply, {:ok, new_jam_state}, genServerState}
   end
 
   @impl true
-  def handle_call(:validator_connections, _from, %{jam_state: jam_state} = s) do
+  def handle_call(:validator_connections, _from, %__MODULE__{jam_state: jam_state} = s) do
     {:reply,
      for v <- jam_state.curr_validators do
        {v, ConnectionManager.get_connection(v.ed25519)}
@@ -114,19 +128,19 @@ defmodule Jamixir.NodeStateServer do
   end
 
   @impl true
-  def handle_call({:validator_index, ed25519_key}, _from, %{jam_state: jam_state} = s) do
+  def handle_call({:validator_index, ed25519_key}, _from, %__MODULE__{jam_state: jam_state} = s) do
     {:reply,
      jam_state.curr_validators
      |> Enum.find_index(fn v -> v.ed25519 == ed25519_key end), s}
   end
 
   @impl true
-  def handle_call(:current_timeslot, _from, %{jam_state: jam_state} = state) do
+  def handle_call(:current_timeslot, _from, %__MODULE__{jam_state: jam_state} = state) do
     {:reply, jam_state.timeslot, state}
   end
 
   @impl true
-  def handle_call(:guarantors, _from, %{jam_state: jam_state} = state) do
+  def handle_call(:guarantors, _from, %__MODULE__{jam_state: jam_state} = state) do
     guarantors =
       GuarantorAssignments.guarantors(
         jam_state.entropy_pool.n2,
@@ -139,7 +153,7 @@ defmodule Jamixir.NodeStateServer do
   end
 
   @impl true
-  def handle_call(:get_jam_state, _from, %{jam_state: jam_state} = state) do
+  def handle_call(:get_jam_state, _from, %__MODULE__{jam_state: jam_state} = state) do
     {:reply, jam_state, state}
   end
 
@@ -150,28 +164,10 @@ defmodule Jamixir.NodeStateServer do
   end
 
   @impl true
-  def handle_info({:new_timeslot, timeslot}, %{jam_state: jam_state} = state) do
-    Log.debug("Node received new timeslot: #{timeslot}")
-
-    {_, parent_header} = Storage.get_latest_header()
-    parent_hash = h(e(parent_header))
-
-    case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, timeslot) do
-      {:ok, block} ->
-        header_hash = h(e(block.header))
-        Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
-        Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
-        Task.start(fn -> add_block(block) end)
-
-      {:error, reason} ->
-        Log.consensus(:debug, "Not my turn to create block: #{reason}")
-    end
-
-    {:noreply, state}
-  end
-
-  @impl true
-  def handle_info({:check_jam_state, s}, %{jam_state: nil} = state) do
+  def handle_info(
+        {:check_jam_state, s},
+        %__MODULE__{jam_state: nil} = state
+      ) do
     case s || Storage.get_state(Genesis.genesis_header_hash()) do
       nil ->
         # Still not available, check again later
@@ -179,16 +175,57 @@ defmodule Jamixir.NodeStateServer do
         {:noreply, state}
 
       jam_state ->
-        # JAM state is now available!
-        Log.info("🎯 NodeStateServer received JAM state")
-        TimeTicker.subscribe()
-        {:noreply, %{state | jam_state: jam_state}}
+        Log.info("📨 NodeStateServer received JAM state")
+        Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
+        Phoenix.PubSub.subscribe(Jamixir.PubSub, "clock_phase_events")
+
+        {:noreply, %__MODULE__{state | jam_state: jam_state}}
     end
   end
 
-  @impl true
   # Already have JAM state, ignore
+  @impl true
   def handle_info({:check_jam_state, _}, state), do: {:noreply, state}
+
+  @impl true
+  def handle_info(
+        {:clock, %{event: :compute_authoring_slots, slot: slot, slot_phase: slot_phase}},
+        %__MODULE__{jam_state: jam_state, bandersnatch_keypair: bandersnatch_keypair} = state
+      ) do
+    current_epoch = Util.Time.epoch_index(slot)
+    next_epoch = current_epoch + 1
+
+    Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}")
+
+    authoring_slots = compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
+
+    Clock.set_authoring_slots(authoring_slots)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(
+        {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    Log.debug("📨 Received author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
+    {_, parent_header} = Storage.get_latest_header()
+    parent_hash = h(e(parent_header))
+
+    case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, slot) do
+      {:ok, block} ->
+        header_hash = h(e(block.header))
+        Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
+        Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
+        Task.start(fn -> add_block(block) end)
+
+      {:error, reason} ->
+        Log.consensus(:debug, "Failed to create block: #{reason}")
+    end
+
+    {:noreply, state}
+  end
 
   @impl true
   # i = (cR + v) mod V
@@ -209,5 +246,45 @@ defmodule Jamixir.NodeStateServer do
     for {_address, pid} <- client_pids do
       Connection.announce_block(pid, block.header, block.header.timeslot)
     end
+  end
+
+  defp compute_authoring_slots_for_next_epoch(jam_state, current_slot, bandersnatch_keypair) do
+    current_epoch = Util.Time.epoch_index(current_slot)
+    next_epoch = current_epoch + 1
+    next_epoch_first_slot = next_epoch * Constants.epoch_length()
+
+    Log.debug(
+      "⚙️ Computing authoring slots for epoch #{next_epoch} (starting from slot #{next_epoch_first_slot}) - current epoch: #{current_epoch}"
+    )
+
+    header = %Header{timeslot: next_epoch_first_slot}
+    entropy_pool_ = EntropyPool.rotate(next_epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
+
+    {_pending_, curr_validators_, _prev_validators_, _epoch_root_} =
+      RotateKeys.rotate_keys(header, jam_state, %System.State.Judgements{})
+
+    next_epoch_slot_sealers =
+      System.State.Safrole.get_epoch_slot_sealers_(
+        header,
+        jam_state.timeslot,
+        jam_state.safrole,
+        entropy_pool_,
+        curr_validators_
+      )
+
+    authoring_slots =
+      0..(Constants.epoch_length() - 1)
+      |> Enum.filter(fn phase ->
+        slot_sealer = Enum.at(next_epoch_slot_sealers, phase)
+        Block.key_matches?(bandersnatch_keypair, slot_sealer, entropy_pool_)
+      end)
+      |> Enum.map(fn phase -> {next_epoch, phase} end)
+      |> MapSet.new()
+
+    Log.info(
+      "✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{next_epoch}"
+    )
+
+    authoring_slots
   end
 end

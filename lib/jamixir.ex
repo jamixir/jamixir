@@ -33,6 +33,7 @@ defmodule Jamixir do
                   "/tmp/jamixir_fuzzer.sock"
 
     [
+      {Phoenix.PubSub, name: Jamixir.PubSub},
       {Storage, [persist: persist_storage?]},
       {Task.Supervisor, name: Fuzzer.TaskSupervisor},
       Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.Service.accept(socket_path) end},
@@ -46,9 +47,10 @@ defmodule Jamixir do
     persist_storage? = Jamixir.config()[:storage_persist] || false
 
     [
+      {Phoenix.PubSub, name: Jamixir.PubSub},
       {Storage, [persist: persist_storage?]},
       Network.ConnectionManager,
-      Jamixir.TimeTicker
+      Clock
     ]
   end
 
@@ -58,10 +60,11 @@ defmodule Jamixir do
     port = Application.get_env(:jamixir, :port, 9999)
 
     [
+      {Phoenix.PubSub, name: Jamixir.PubSub},
       {Storage, [persist: persist_storage?]},
       Network.ConnectionManager,
       {Network.Listener, [port: port]},
-      Jamixir.TimeTicker,
+      Clock,
       {Task.Supervisor, name: Jamixir.TaskSupervisor},
       Jamixir.InitializationTask,
       {Jamixir.NodeStateServer, []}

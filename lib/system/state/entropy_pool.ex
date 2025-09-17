@@ -3,6 +3,7 @@ defmodule System.State.EntropyPool do
   section 6.4 - Sealing and Entropy Accumulation
   """
 
+  alias Block.Header
   alias System.State.EntropyPool
   alias Util.Time
   import Codec.Encoder
@@ -16,8 +17,17 @@ defmodule System.State.EntropyPool do
   # Formula (6.23) v0.7.0
   @spec rotate(Block.Header.t(), non_neg_integer(), t()) ::
           t()
-  def rotate(header, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
-    if Time.new_epoch?(timeslot, header.timeslot) do
+  def rotate(%Header{timeslot: timeslot_}, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
+    if Time.new_epoch?(timeslot, timeslot_) do
+      %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
+    else
+      pool
+    end
+  end
+
+  @spec rotate(non_neg_integer(), non_neg_integer(), t()) :: t()
+  def rotate(header_timeslot, timeslot, %EntropyPool{n0: n0, n1: n1, n2: n2} = pool) do
+    if Time.new_epoch?(timeslot, header_timeslot) do
       %EntropyPool{pool | n1: n0, n2: n1, n3: n2}
     else
       pool

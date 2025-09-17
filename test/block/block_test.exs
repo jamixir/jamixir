@@ -224,11 +224,13 @@ defmodule BlockTest do
       # Set the first key in the environment
       KeyManager.load_keys(%{bandersnatch: pub0, bandersnatch_priv: priv0})
 
-      {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
+      {:error, :not_our_slot} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
     end
 
-    @tag :slow
     test "cant't create block if it doesnt have the author key" do
+      # test the no-keys scenario
+      Application.delete_env(:jamixir, :keys)
+
       %{state: state} = build(:genesis_state_with_safrole)
       {:error, :no_valid_keys_found} = Block.new(%Extrinsic{}, nil, state, 100)
     end
