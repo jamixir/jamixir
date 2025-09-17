@@ -298,12 +298,12 @@ defmodule Jamixir.FuzzerTest do
       for type <- ["faulty", "forks", "no_forks"] do
         for [fuzzer_file, target_file] <-
               files_in_dir("#{@examples_path}/#{type}/", ~r/.+\.bin/) |> Enum.chunk_every(2),
-            # 29 example is broken for purpose (https://github.com/davxy/jam-conformance/issues/82)
-            not (fuzzer_file =~ ~r/29/) do
-          Logger.info("Testing #{fuzzer_file}")
+            # # 29 example is broken for purpose (https://github.com/davxy/jam-conformance/issues/82)
+            not (type == "faulty" and fuzzer_file =~ ~r/29/) do
+          Logger.info("Testing #{type} #{fuzzer_file}")
 
-          <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{fuzzer_file}")
-          <<_::8, exp_result::binary>> = File.read!("#{@examples_path}/#{target_file}")
+          <<_::8, bin::binary>> = File.read!("#{@examples_path}/#{type}/#{fuzzer_file}")
+          <<_::8, exp_result::binary>> = File.read!("#{@examples_path}/#{type}/#{target_file}")
 
           if fuzzer_file =~ ~r/peer_info/ do
             assert :ok = Client.send_message(client, :peer_info, bin)
@@ -324,7 +324,7 @@ defmodule Jamixir.FuzzerTest do
                   {:ok, :state_root, root} ->
                     if root != exp_result do
                       <<_::8, bin::binary>> =
-                        File.read!("#{@examples_path}/00000030_target_state.bin")
+                        File.read!("#{@examples_path}/#{type}/00000030_target_state.bin")
 
                       {:ok, exp_state_trie, _} = Trie.from_binary(bin)
 
