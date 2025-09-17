@@ -8,8 +8,8 @@ defmodule System.State.PrivilegedServicesTest do
   describe "encode/1" do
     test "encode smoke test" do
       assert Codec.Encoder.encode(build(:privileged_services)) ==
-        <<1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 1, 131, 232, 2,
-        135, 208, 3, 139, 184, 4, 143, 160>>
+               <<1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 4, 1, 131, 232, 2, 135, 208, 3,
+                 139, 184, 4, 143, 160>>
     end
   end
 
@@ -29,6 +29,7 @@ defmodule System.State.PrivilegedServicesTest do
                chi_m: ps.manager,
                chi_a: ps.assigners,
                chi_v: ps.delegator,
+               chi_r: ps.registrar,
                chi_g: [
                  %{service: 1, gas: 1000},
                  %{service: 2, gas: 2000},
