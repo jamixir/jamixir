@@ -25,7 +25,7 @@ defmodule System.State.Accumulation do
   require Logger
 
   @type extra_args :: %{timeslot_: non_neg_integer(), n0_: Types.hash()}
-  # Formula (12.15) v0.7.0
+  # Formula (12.17) v0.7.2
   @type used_gas :: {Types.service_index(), Types.gas()}
   @callback single_accumulation(
               t(),
@@ -37,7 +37,7 @@ defmodule System.State.Accumulation do
               AccumulationResult.t()
   @callback do_transition(list(), State.t(), extra_args()) :: any()
 
-  # Formula (12.13) v0.7.0 - S
+  # Formula (12.16) v0.7.2 - S
   @type t :: %__MODULE__{
           # d: Service accounts state (δ)
           services: %{non_neg_integer() => ServiceAccount.t()},
@@ -50,7 +50,9 @@ defmodule System.State.Accumulation do
           # a: Assigners
           assigners: list(non_neg_integer()),
           # v: Delegator
-          delegator: non_neg_integer(),
+          delegator: Types.service_index(),
+          # r: Registrar
+          registrar: Types.service_index(),
           # z: Always accers
           always_accumulated: %{non_neg_integer() => non_neg_integer()}
         }
@@ -61,6 +63,7 @@ defmodule System.State.Accumulation do
             manager: 0,
             assigners: [],
             delegator: 0,
+            registrar: 0,
             always_accumulated: %{}
 
   def transition(w, t_, n0_, s) do
@@ -81,7 +84,7 @@ defmodule System.State.Accumulation do
         },
         %{timeslot_: timeslot_} = extra_args
       ) do
-    # Formula (12.22) v0.7.0
+    # Formula (12.25) v0.7.2
     gas_limit =
       max(
         Constants.gas_total_accumulation(),
@@ -98,8 +101,8 @@ defmodule System.State.Accumulation do
         ready_to_accumulate
       )
 
-    # Formula (12.23) v0.7.0
-    # e = (d: δ,i: ι,q: ϕ,m: χ_M ,a: χ_A,v: χ_V ,z: χ_Z)
+    # Formula (12.25) v0.7.2
+    # e = (d: δ, i: ι, q: ϕ, m: χ_M , a: χ_A, v: χ_V, r: χ_R, z: χ_Z)
     initial_state = %__MODULE__{
       services: services,
       next_validators: next_validators,
@@ -107,6 +110,7 @@ defmodule System.State.Accumulation do
       manager: privileged_services.manager,
       assigners: privileged_services.assigners,
       delegator: privileged_services.delegator,
+      registrar: privileged_services.registrar,
       always_accumulated: privileged_services.always_accumulated
     }
 
@@ -121,10 +125,10 @@ defmodule System.State.Accumulation do
         extra_args
       )
 
-    # Formula (12.25) v0.7.3
+    # Formula (12.26) v0.7.3
     accumulation_outputs_ = Enum.sort_by(accumulation_outputs_, & &1.service)
 
-    # Formula (12.25) v0.7.0
+    # Formula (12.27) v0.7.2
     %__MODULE__{
       services: services_intermediate,
       next_validators: next_validators_,
@@ -132,14 +136,15 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
+      registrar: registrar_,
       always_accumulated: always_accumulated_
     } = acc_state_
 
     # R∗...n
     accumulated_reports = Enum.take(accumulatable_reports, number_of_accumulated_work_reports)
 
-    # Formula (12.26) v0.7.0
-    # Formula (12.27) v0.7.0
+    # Formula (12.28) v0.7.2
+    # Formula (12.29) v0.7.2
     accumulation_stats = accumulate_statistics(accumulated_reports, used_gas)
 
     # Formula (12.31) v0.7.0
@@ -172,6 +177,7 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
+      registrar: registrar_,
       always_accumulated: always_accumulated_
     }
 
@@ -188,9 +194,8 @@ defmodule System.State.Accumulation do
     }
   end
 
-  # Formula (12.26) v0.7.0
-  # Formula (12.27) v0.7.0
-  # Formula (12.28) v0.7.0
+  # Formula (12.28) v0.7.2
+  # Formula (12.29) v0.7.2
   def accumulate_statistics(work_reports, service_gas_used) do
     gas_per_service =
       for {s, u} <- service_gas_used, reduce: %{} do

@@ -3,7 +3,7 @@ defmodule PVM.Accumulate.Operand do
   alias Types
   alias Util.Hash
 
-  # Formula (12.19) v0.7.0 - I
+  # Formula (12.13) v0.7.2 - U
   @type t :: %__MODULE__{
           # p
           package_hash: Types.hash(),

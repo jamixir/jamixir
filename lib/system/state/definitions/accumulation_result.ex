@@ -2,7 +2,7 @@ defmodule System.AccumulationResult do
   alias System.DeferredTransfer
   alias System.State.Accumulation
 
-  # Formula (12.20) v0.7.0 - O
+  # Formula (12.23) v0.7.2 - O
   @type t :: %__MODULE__{
           # e
           state: Accumulation.t(),
@@ -15,7 +15,11 @@ defmodule System.AccumulationResult do
           # p
           preimages: MapSet.t({Types.service_index(), binary()})
         }
-  defstruct state: %Accumulation{}, transfers: [], output: nil, gas_used: 0, preimages: MapSet.new()
+  defstruct state: %Accumulation{},
+            transfers: [],
+            output: nil,
+            gas_used: 0,
+            preimages: MapSet.new()
 
   def new({state, transfers, output, gas_used, preimages}) do
     %__MODULE__{
