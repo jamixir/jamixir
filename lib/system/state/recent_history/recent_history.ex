@@ -75,7 +75,7 @@ defmodule System.State.RecentHistory do
              guarantees,
              accumulation_outputs
            ) do
-    # β†H Formula (4.6) v0.7.0
+    # β†H Formula (4.6) v0.7.2
     recent_history =
       RecentHistory.update_latest_state_root(recent_history, prior_state_root)
 
@@ -120,7 +120,8 @@ defmodule System.State.RecentHistory do
       _ ->
         # Formula (7.6) v0.7.0
         s =
-          for %AccumulationOutput{service: service, accumulated_output: h} <- accumulation_outputs,
+          for %AccumulationOutput{service: service, accumulated_output: h} <-
+                accumulation_outputs,
               do: <<service::service(), h::binary>>
 
         well_balanced_merkle_root(s, &keccak_256/1)
