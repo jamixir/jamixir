@@ -1,18 +1,18 @@
 defmodule System.State.Validator do
   @moduledoc """
-   # Formula (6.8) v0.7.0
+   # Formula (6.8) v0.7.2
   """
   alias System.State.Validator
   import Codec.Encoder
 
   @type t :: %__MODULE__{
-          # Formula (6.9) v0.7.0 - b
+          # Formula (6.9) v0.7.2 - b
           bandersnatch: Types.bandersnatch_key(),
-          # Formula (6.10) v0.7.0 - e
+          # Formula (6.10) v0.7.2 - e
           ed25519: Types.ed25519_key(),
-          # Formula (6.11) v0.7.0 - BLS
+          # Formula (6.11) v0.7.2 - BLS
           bls: Types.bls_key(),
-          # Formula (6.12) v0.7.0 - m
+          # Formula (6.12) v0.7.2 - m
           metadata: <<_::1024>>
         }
 
@@ -43,7 +43,7 @@ defmodule System.State.Validator do
      }, rest}
   end
 
-  # Formula (6.14) v0.7.0
+  # Formula (6.14) v0.7.2
   @spec nullify_offenders(
           list(Validator.t()),
           MapSet.t(Types.ed25519_key())

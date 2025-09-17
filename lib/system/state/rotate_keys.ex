@@ -5,7 +5,7 @@ defmodule System.State.RotateKeys do
   alias Util.Time
 
   @doc """
-  Formula (6.13) v0.7.0
+  Formula (6.13) v0.7.2
 
   returns tuple :{pending_, current_, prev_, epoch_root_}
   """
@@ -30,7 +30,7 @@ defmodule System.State.RotateKeys do
         %Judgements{offenders: offenders}
       ) do
     if Time.new_epoch?(timeslot, timeslot_) do
-      # Formula (6.13) v0.7.0 -  new epoch - rotate keys
+      # Formula (6.13) v0.7.2 -  new epoch - rotate keys
       # {γ_P', κ', λ', γ_z'} = {Φ(ι), γ_P, κ, z}
 
       # γ_P' = Φ(ι) (next -> pending)
@@ -44,7 +44,7 @@ defmodule System.State.RotateKeys do
 
       {pending_, current_, prev_, epoch_root_}
     else
-      # Formula (6.13) v0.7.0 -  same epoch - no rotation
+      # Formula (6.13) v0.7.2 -  same epoch - no rotation
       # {γ_P', κ', λ', γ_z'} = {γ_P, κ, λ, γ_z}
       {pending, curr_validators, prev_validators, epoch_root}
     end

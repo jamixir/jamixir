@@ -1,5 +1,5 @@
 defmodule System.State.SealKeyTicket do
-  # Formula (6.6) v0.7.0 - T
+  # Formula (6.6) v0.7.2 - T
   @type t :: %__MODULE__{
           # y
           id: Types.hash(),

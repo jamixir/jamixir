@@ -18,7 +18,7 @@ defmodule System.State do
           # Formula (9.2) v0.7.0
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
-          # Formula (6.7) v0.7.0
+          # Formula (6.7) v0.7.2
           next_validators: list(Validator.t()),
           curr_validators: list(Validator.t()),
           prev_validators: list(Validator.t()),
@@ -82,7 +82,7 @@ defmodule System.State do
           {:ok, System.State.t()} | {:error, System.State.t(), :atom | String.t()}
   def add_block(%State{} = state, %Block{header: h, extrinsic: e} = block) do
     # Formula (4.5) v0.7.2
-    # Formula (6.1) v0.7.0
+    # Formula (6.1) v0.7.2
     timeslot_ = h.timeslot
 
     with :ok <- Block.validate(block, state),

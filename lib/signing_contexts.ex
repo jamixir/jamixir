@@ -11,11 +11,11 @@ defmodule SigningContexts do
   @doc "X_B - BLS Accumulate-result-root-mmr commitment context."
   def jam_beefy, do: "jam_beefy"
 
-  # Formula (6.18) v0.7.0
+  # Formula (6.18) v0.7.2
   @doc "X_E - On-chain entropy generation context."
   def jam_entropy, do: "jam_entropy"
 
-  # Formula (6.19) v0.7.0
+  # Formula (6.19) v0.7.2
   @doc "X_F - Bandersnatch Fallback block seal context."
   def jam_fallback_seal, do: "jam_fallback_seal"
 
@@ -27,7 +27,7 @@ defmodule SigningContexts do
   @doc "X_I - Ed25519 Audit announcement statements context."
   def jam_announce, do: "jam_announce"
 
-  # Formula (6.20) v0.7.0
+  # Formula (6.20) v0.7.2
   @doc "X_T - Bandersnatch RingVRF Ticket generation and regular block seal context."
   def jam_ticket_seal, do: "jam_ticket_seal"
 

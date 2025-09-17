@@ -64,9 +64,9 @@ defmodule Block.Extrinsic do
   end
 
   import Codec.Encoder
-  # Formula (5.4) v0.7.0
-  # Formula (5.5) v0.7.0
-  # Formula (5.6) v0.7.0
+  # Formula (5.4) v0.7.2
+  # Formula (5.5) v0.7.2
+  # Formula (5.6) v0.7.2
   def calculate_hash(%Block.Extrinsic{} = ex) do
     a = [
       e(vs(ex.tickets)),
@@ -79,7 +79,7 @@ defmodule Block.Extrinsic do
     h(e(for el <- a, do: h(el)))
   end
 
-  # Formula (5.6) v0.7.0
+  # Formula (5.6) v0.7.2
   def g(guarantees) do
     e(
       vs(

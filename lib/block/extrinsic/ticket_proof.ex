@@ -1,7 +1,7 @@
 defmodule Block.Extrinsic.TicketProof do
   @moduledoc """
   represent a ticket proof.
-  Formula (6.29) v0.7.0
+  Formula (6.29) v0.7.2
 
   the signature is construct out of 3 parts:
   ring root - gamma_z, the current epoch root
@@ -42,18 +42,18 @@ defmodule Block.Extrinsic.TicketProof do
              if(is_new_epoch, do: entropy_pool.n1, else: entropy_pool.n2),
              safrole.epoch_root
            ),
-         # Formula (6.32) v0.7.0
+         # Formula (6.32) v0.7.2
          :ok <-
            (case Collections.validate_unique_and_ordered(n, & &1.id) do
               {:error, :not_in_order} -> {:error, :bad_ticket_order}
               r -> r
             end) do
-      # Formula (6.34) v0.7.0
+      # Formula (6.34) v0.7.2
       Safrole.validate_new_tickets(safrole, MapSet.new(n, & &1.id))
     end
   end
 
-  # Formula (6.30) v0.7.0
+  # Formula (6.30) v0.7.2
   defp validate_ticket_count(tickets, header_timeslot) do
     epoch_phase = Time.epoch_phase(header_timeslot)
 
@@ -73,7 +73,7 @@ defmodule Block.Extrinsic.TicketProof do
     end
   end
 
-  # Formula (6.29) v0.7.0 - r ∈ ℕ_N
+  # Formula (6.29) v0.7.2 - r ∈ ℕ_N
   @spec validate_entry_indices(list(t())) :: :ok | {:error, String.t()}
   defp validate_entry_indices(ticket_proofs) do
     valid_range = 0..(Constants.tickets_per_validator() - 1)
@@ -85,8 +85,8 @@ defmodule Block.Extrinsic.TicketProof do
     end
   end
 
-  # Formula (6.29) v0.7.0
-  # Formula (6.31) v0.7.0
+  # Formula (6.29) v0.7.2
+  # Formula (6.31) v0.7.2
   @spec construct_n(list(t()), binary(), Types.bandersnatch_ring_root()) ::
           {:ok, list(SealKeyTicket.t())} | {:error, String.t()}
   mockable construct_n(ticket_proofs, eta2, epoch_root) do
