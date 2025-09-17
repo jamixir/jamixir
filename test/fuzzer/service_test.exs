@@ -160,8 +160,8 @@ defmodule Jamixir.FuzzerTest do
               {"fuzzer 100 blocks #{mode}",
                fn -> test_case(client, "../jam-test-vectors/traces/#{mode}") end}
 
-      Map.values(test_dict) |> Enum.each(& &1.())
-      # Benchee.run(test_dict)
+      # Map.values(test_dict) |> Enum.each(& &1.())
+      Benchee.run(test_dict)
     end
   end
 
@@ -380,7 +380,7 @@ defmodule Jamixir.FuzzerTest do
       assert b16(exp_post_state_root) == b16(resp)
     end
 
-    root
+    resp
   end
 
   defp compare_tries(exp_post_state_trie, post_state_trie) do
