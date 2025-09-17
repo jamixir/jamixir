@@ -34,7 +34,7 @@ defmodule System.State.CoreReport do
   @doc """
   Processes availability and updates the core reports accordingly.
   """
-  # ρ‡ Formula (4.13) v0.7.0
+  # ρ‡ Formula (4.13) v0.7.2
   mockable process_availability(
              core_reports,
              core_reports_intermediate_1,

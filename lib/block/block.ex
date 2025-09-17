@@ -11,7 +11,7 @@ defmodule Block do
 
   @type t :: %__MODULE__{header: Block.Header.t(), extrinsic: Block.Extrinsic.t()}
 
-  # Formula (4.2) v0.7.0
+  # Formula (4.2) v0.7.2
   defstruct [
     # Hp
     header: nil,
@@ -104,8 +104,7 @@ defmodule Block do
       )
 
     %{
-      slot_sealer:
-        Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
+      slot_sealer: Enum.at(safrole_.slot_sealers, rem(header.timeslot, Constants.epoch_length())),
       safrole_: safrole_,
       entropy_pool: entropy_pool,
       curr_validators_: curr_validators_
