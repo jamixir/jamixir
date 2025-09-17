@@ -1,6 +1,6 @@
 defmodule Block.Extrinsic.Guarantee.WorkExecutionError do
   alias Util.Collections
-  # Formula (11.7) v0.7.0
+  # Formula (11.7) v0.7.2
   # E ∈         {∞,           ☇,          ⊚,             ⊖,      BAD,   BIG}
   @type t :: :out_of_gas | :panic | :bad_exports | :oversize | :bad | :big
 

@@ -4,7 +4,7 @@ defmodule System.State.CoreReport do
   use SelectiveMock
   import Codec.Encoder
 
-  # Formula (11.1) v0.7.0
+  # Formula (11.1) v0.7.2
   @type t :: %__MODULE__{
           # r
           work_report: WorkReport.t(),
@@ -17,7 +17,7 @@ defmodule System.State.CoreReport do
   defstruct work_report: %WorkReport{}, timeslot: 0
   def initial_core_reports, do: @initial_core_reports
 
-  # Formula (10.15) v0.7.0
+  # Formula (10.15) v0.7.2
   def process_disputes(core_reports, []), do: core_reports
 
   def process_disputes(core_reports, bad_wonky_verdicts) do
@@ -43,7 +43,7 @@ defmodule System.State.CoreReport do
            ) do
     w = MapSet.new(available_work_reports)
 
-    # Formula (11.17) v0.7.0
+    # Formula (11.17) v0.7.2
     for {cr, intermediate} <- Enum.zip(core_reports, core_reports_intermediate_1) do
       if cr == nil or intermediate == nil,
         do: nil,
@@ -65,7 +65,7 @@ defmodule System.State.CoreReport do
   Updates core reports with guarantees and current validators.
   """
   def transition(core_reports_2, guarantees, timeslot_) do
-    # Formula (11.43) v0.7.0
+    # Formula (11.43) v0.7.2
     for index <- 0..(Constants.core_count() - 1) do
       case Enum.find(guarantees, &(&1.work_report.core_index == index)) do
         nil -> Enum.at(core_reports_2, index)

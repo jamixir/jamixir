@@ -11,7 +11,7 @@ defmodule Block.Extrinsic.Assurance do
   use SelectiveMock
   use Sizes
   import Codec.Encoder
-  # Formula (11.10) v0.7.0
+  # Formula (11.10) v0.7.2
   # EA ∈ ⟦(a ∈ H, f ∈ bC, v ∈ ℕ_V, s ∈ ¯V¯)⟧∶V
   defstruct hash: Hash.zero(),
             bitfield: <<0::@bitfield_size*8>>,
@@ -36,17 +36,17 @@ defmodule Block.Extrinsic.Assurance do
              curr_validators,
              core_reports_intermediate_1
            ) do
-    # Formula (11.11) v0.7.0
+    # Formula (11.11) v0.7.2
     with :ok <-
            if(Enum.all?(assurances, &(&1.hash == parent_hash)),
              do: :ok,
              else: {:error, :bad_attestation_parent}
            ),
-         # Formula (11.12) v0.7.0
+         # Formula (11.12) v0.7.2
          :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
-         # Formula (11.13) v0.7.0
+         # Formula (11.13) v0.7.2
          :ok <- validate_signatures(assurances, parent_hash, curr_validators),
-         # Formula (11.15) v0.7.0
+         # Formula (11.15) v0.7.2
          :ok <-
            validate_core_reports_bits(assurances, core_reports_intermediate_1) do
       :ok
@@ -57,7 +57,7 @@ defmodule Block.Extrinsic.Assurance do
 
   def mock(:validate_assurances, _), do: :ok
 
-  # Formula (11.15) v0.7.0
+  # Formula (11.15) v0.7.2
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
     all_ok =
       Enum.all?(assurances, fn assurance ->
