@@ -12,7 +12,7 @@ defmodule System.State.RecentHistory.RecentBlock do
           work_report_hashes: %{Types.hash() => Types.hash()}
         }
 
-  # Formula (7.2) v0.7.0
+  # Formula (7.2) v0.7.2
   # βH ∈ ⟦(h ∈ H, s ∈ H, b ∈ H, p ∈ H → H)⟧∶H
   # h
   defstruct header_hash: Hash.zero(),

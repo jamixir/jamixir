@@ -9,13 +9,13 @@ defmodule System.State do
   alias Util.Hash
 
   @type t :: %__MODULE__{
-          # Formula (8.1) v0.7.0
+          # Formula (8.1) v0.7.2
           authorizer_pool: list(list(Types.hash())),
           recent_history: RecentHistory.t(),
           accumulation_outputs: list(AccumulationOutput.t()),
           safrole: Safrole.t(),
-          # Formula (9.1) v0.7.0
-          # Formula (9.2) v0.7.0
+          # Formula (9.1) v0.7.2
+          # Formula (9.2) v0.7.2
           services: %{integer() => ServiceAccount.t()},
           entropy_pool: EntropyPool.t(),
           # Formula (6.7) v0.7.2
@@ -24,7 +24,7 @@ defmodule System.State do
           prev_validators: list(Validator.t()),
           core_reports: list(CoreReport.t() | nil),
           timeslot: integer(),
-          # Formula (8.1) v0.7.0
+          # Formula (8.1) v0.7.2
           authorizer_queue: list(list(Types.hash())),
           privileged_services: PrivilegedServices.t(),
           judgements: Judgements.t(),

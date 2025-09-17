@@ -6,21 +6,24 @@ defmodule System.State.PrivilegedServices do
 
   @type free_accumulating_services :: %{Types.service_index() => Types.gas()}
 
-  # Formula (9.9) v0.7.0
+  # Formula (9.9) v0.7.2
   @type t :: %__MODULE__{
-          # χ_M
+          # Formula (9.10) v0.7.2 - χ_M
           manager: Types.service_index(),
-          # χ_A
-          assigners: list(Types.service_index()),
-          # χ_V
+          # Formula (9.10) v0.7.2 - χ_V
           delegator: Types.service_index(),
-          # χ_Z
+          # Formula (9.10) v0.7.2 - χ_V
+          registrar: Types.service_index(),
+          # Formula (9.11) v0.7.2 - χ_A
+          assigners: list(Types.service_index()),
+          # Formula (9.11) v0.7.2 - χ_Z
           always_accumulated: free_accumulating_services()
         }
 
   defstruct manager: 0,
-            assigners: List.duplicate(0, Constants.core_count()),
             delegator: 0,
+            registrar: 0,
+            assigners: List.duplicate(0, Constants.core_count()),
             always_accumulated: %{}
 
   defimpl Encodable do
@@ -66,6 +69,7 @@ defmodule System.State.PrivilegedServices do
       manager: :chi_m,
       assigners: :chi_a,
       delegator: :chi_v,
+      registrar: :chi_r,
       always_accumulated: [:chi_g, %{}]
     }
   end
@@ -75,6 +79,7 @@ defmodule System.State.PrivilegedServices do
       manager: :chi_m,
       assigners: :chi_a,
       delegator: :chi_v,
+      registrar: :chi_r,
       always_accumulated: {:chi_g, &JsonEncoder.to_list(&1, :service, :gas)}
     }
 end

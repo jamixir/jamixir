@@ -24,7 +24,7 @@ defmodule System.State.RecentHistory do
           beefy_belt: list(Types.hash() | nil)
         }
 
-  # Formula (7.1) v0.7.0
+  # Formula (7.1) v0.7.2
   # β ≡ (βH ,βB )
   defstruct blocks: [], beefy_belt: []
 
@@ -46,7 +46,7 @@ defmodule System.State.RecentHistory do
   def mock(:transition, context), do: context[:recent_history]
 
   @doc """
-  Formula (7.5) v0.7.0
+  Formula (7.5) v0.7.2
   """
   def update_latest_state_root(nil, _), do: %__MODULE__{}
 
@@ -66,7 +66,7 @@ defmodule System.State.RecentHistory do
 
   @doc """
   Adds a new block to the recent history.
-  # Formula (7.8) v0.7.0
+  # Formula (7.8) v0.7.2
   """
   @spec transition(Header.t(), t(), list(Guarantee.t()), list(AccumulationOutput.t())) :: t()
   mockable transition(
@@ -83,16 +83,16 @@ defmodule System.State.RecentHistory do
     state_root_ = zero()
     header_hash = calculate_header_hash(header)
 
-    # Formula (7.6) v0.7.0
+    # Formula (7.6) v0.7.2
     merkle_root = get_well_balanced_merkle_root(accumulation_outputs)
 
-    # Formula (7.7) v0.7.0
+    # Formula (7.7) v0.7.2
     beefy_belt_ =
       MMR.from(beefy_belt)
       |> MMR.append(merkle_root, &keccak_256/1)
       |> MMR.to_list()
 
-    # Formula (7.8) v0.7.0
+    # Formula (7.8) v0.7.2
     wp_hashes =
       for g <- guarantees,
           spec = g.work_report.specification,
@@ -118,7 +118,7 @@ defmodule System.State.RecentHistory do
         Hash.zero()
 
       _ ->
-        # Formula (7.6) v0.7.0
+        # Formula (7.6) v0.7.2
         s =
           for %AccumulationOutput{service: service, accumulated_output: h} <-
                 accumulation_outputs,

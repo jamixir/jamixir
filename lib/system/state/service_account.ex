@@ -1,6 +1,6 @@
 defmodule System.State.ServiceAccount do
   @moduledoc """
-  Formula (9.3) v0.7.0
+  Formula (9.3) v0.7.2
   """
   alias Codec.VariableSize
   alias System.State.ServiceAccount
@@ -63,7 +63,7 @@ defmodule System.State.ServiceAccount do
     max(0, threshold)
   end
 
-  # Formula (9.4) v0.7.0
+  # Formula (9.4) v0.7.2
   def code(account) do
     {_, code} = code_and_metadata(account)
     code
@@ -83,8 +83,8 @@ defmodule System.State.ServiceAccount do
     end
   end
 
-  # Formula (9.5) v0.7.0
-  # Formula (9.6) v0.7.0
+  # Formula (9.5) v0.7.2
+  # Formula (9.6) v0.7.2
   def store_preimage(%__MODULE__{} = account, preimage, timeslot) do
     hash = h(preimage)
 
@@ -93,7 +93,7 @@ defmodule System.State.ServiceAccount do
     |> put_in([:storage, {hash, byte_size(preimage)}], [timeslot])
   end
 
-  # Formula (9.7) v0.7.0
+  # Formula (9.7) v0.7.2
   @spec historical_lookup(ServiceAccount.t(), integer(), Types.hash()) :: binary() | nil
   def historical_lookup(
         %__MODULE__{preimage_storage_p: ap, storage: s},
