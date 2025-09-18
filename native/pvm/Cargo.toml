@@ -1,0 +1,15 @@
+[package]
+name = "pvm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "pvm"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rustler = "0.36.2"
+memmap = "0.7.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
