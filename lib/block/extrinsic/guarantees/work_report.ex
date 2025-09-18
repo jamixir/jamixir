@@ -195,7 +195,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     immediate_work_reports ++ accumulation_priority_queue(q)
   end
 
-  # Formula (14.11) v0.7.0
+  # Formula (14.11) v0.7.2
   @spec paged_proofs(list(Types.export_segment())) :: list(Types.export_segment())
   def paged_proofs(exports) do
     segments_count = ceil(length(exports) / 64)
@@ -211,7 +211,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (14.12) v0.7.0
+  # Formula (14.12) v0.7.2
   @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
           :error | Task.t({WorkReport.t(), list(binary())})
   def execute_work_package(%WorkPackage{} = wp, core, services) do
@@ -250,7 +250,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
     exports = List.flatten(e)
 
-    # Formula (14.16) v0.7.0
+    # Formula (14.16) v0.7.2
     s =
       AvailabilitySpecification.from_execution(
         h(e(wp)),
@@ -311,11 +311,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defp zero_segments(size), do: List.duplicate(<<0::m(export_segment)>>, size)
 
-  # Formula (14.13) v0.7.0
+  # Formula (14.13) v0.7.2
   def segment_root({:tagged_hash, r}), do: Storage.get_segments_root(r)
   def segment_root(r), do: r
 
-  # Formula (14.13) v0.7.0
+  # Formula (14.13) v0.7.2
   def get_segment_lookup_dict(%WorkPackage{work_items: wi}) do
     for w <- wi,
         {{:tagged_hash, wp_hash} = r, _} <- w.import_segments,

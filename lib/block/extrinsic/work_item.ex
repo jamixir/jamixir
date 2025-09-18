@@ -34,7 +34,7 @@ defmodule Block.Extrinsic.WorkItem do
           extrinsic: list({Types.hash(), non_neg_integer()})
         }
 
-  # Formula (14.3) v0.7.0 - W
+  # Formula (14.3) v0.7.2 - W
   defstruct [
     # s: The identifier of the service to which it relates
     service: 0,
@@ -132,7 +132,7 @@ defmodule Block.Extrinsic.WorkItem do
      }, rest}
   end
 
-  # Formula (14.9) v0.7.0
+  # Formula (14.9) v0.7.2
   @spec to_work_digest(
           Block.Extrinsic.WorkItem.t(),
           binary() | WorkExecutionError.t(),
@@ -154,13 +154,13 @@ defmodule Block.Extrinsic.WorkItem do
     }
   end
 
-  # Formula (14.14) v0.7.0
+  # Formula (14.14) v0.7.2
   # X(w ∈ W) ≡ [d ∣ (H(d),∣d∣) −< wx]
   def extrinsic_data(%__MODULE__{} = w) do
     for {r, n} <- w.extrinsic, d = Storage.get(r), byte_size(d) == n, do: d
   end
 
-  # Formula (14.15) v0.7.0
+  # Formula (14.15) v0.7.2
   # S(w ∈ W) ≡ [b[n] ∣ M(b) = L(r),(r,n) <− wi]
   def import_segment_data(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,
@@ -169,7 +169,7 @@ defmodule Block.Extrinsic.WorkItem do
         do: %SegmentData{erasure_root: root, segment_index: n, data: data}
   end
 
-  # Formula (14.15) v0.7.0
+  # Formula (14.15) v0.7.2
   # J (w ∈ W) ≡ [↕J0(b,n) ∣ M(b) = L(r), (r,n) <− wi]
   def segment_justification(%__MODULE__{} = w) do
     for {r, n} <- w.import_segments,

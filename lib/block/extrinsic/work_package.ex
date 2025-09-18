@@ -27,7 +27,7 @@ defmodule Block.Extrinsic.WorkPackage do
           work_items: list(WorkItem.t())
         }
 
-  # Formula (14.2) v0.7.0
+  # Formula (14.2) v0.7.2
   defstruct [
     # j
     authorization_token: <<>>,
@@ -58,7 +58,7 @@ defmodule Block.Extrinsic.WorkPackage do
     }
   end
 
-  # Formula (14.10) v0.7.0
+  # Formula (14.10) v0.7.2
   # p_u
   def authorization_code(%__MODULE__{} = wp, services) do
     case ServiceAccount.historical_lookup(
@@ -75,13 +75,13 @@ defmodule Block.Extrinsic.WorkPackage do
     end
   end
 
-  # Formula (14.10) v0.7.0
+  # Formula (14.10) v0.7.2
   # pa
   def implied_authorizer(%__MODULE__{} = wp, services) do
     Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
   end
 
-  # Formula (14.5) v0.7.0
+  # Formula (14.5) v0.7.2
   defp valid_size?(%__MODULE__{work_items: work_items} = p) do
     byte_size(p.authorization_token) +
       byte_size(p.parameterization_blob) +
@@ -93,12 +93,12 @@ defmodule Block.Extrinsic.WorkPackage do
 
   use Sizes
 
-  # Formula (14.2) v0.7.0 - w  ∈ ⟦I⟧ 1∶I
+  # Formula (14.2) v0.7.2 - w  ∈ ⟦I⟧ 1∶I
   defp valid_items?(%__MODULE__{work_items: []}), do: false
   defp valid_items?(%__MODULE__{work_items: pw}) when length(pw) > @max_work_items, do: false
   defp valid_items?(_), do: true
 
-  # Formula (14.4) v0.7.0
+  # Formula (14.4) v0.7.2
   def valid_data_segments?(%__MODULE__{work_items: work_items}) do
     {exported_sum, imported_sum, extrinsic_sum} =
       Enum.reduce(work_items, {0, 0, 0}, fn item, {exported_acc, imported_acc, extrinsic_acc} ->
@@ -112,7 +112,7 @@ defmodule Block.Extrinsic.WorkPackage do
       extrinsic_sum <= Constants.max_extrinsics()
   end
 
-  # Formula (14.8) v0.7.0
+  # Formula (14.8) v0.7.2
   def valid_gas?(%__MODULE__{work_items: work_items}) do
     Enum.reduce(work_items, 0, fn w, acc -> acc + w.accumulate_gas_limit end) <
       Constants.gas_accumulation() and

@@ -87,19 +87,18 @@ defmodule Constants do
   @doc "W_A - The maximum size of is-authorized code in octets"
   def max_is_authorized_code_size, do: 64_000
 
-  # Formula (14.6) v0.7.0
-  # Formula (14.7) v0.7.0
-  # W_B = W_M * (W_G + 1 + 32 ⌈log2(W_T)⌉) + 4096 + 1
-  # should be 13_794_305, but it is not https://github.com/gavofyork/graypaper/issues/458
-  def max_work_package_size,
-    # max_imports() * (segment_size() + 1 + 32 * ceil(:math.log2(memo_size()))) + 4096 + 1
-    do: 13_794_305
+  # Formula (14.7) v0.7.2
+  # W_B = W_M * W_F + 4096 + 64 + 64
+  def max_work_package_size, do: max_imports() * audit_footprint() + 4096 + 64 + 64
 
-  @doc "W_C - The maximum size of service code in octets"
   def max_service_code_size, do: 4_000_000
 
   @doc "W_E - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: Jamixir.config()[:erasure_coded_piece_size] || 684
+
+  # Formula (14.6) v0.7.2
+  @doc "W_F = WG +32⌈log2(WM )⌉= 4488: The additional footprint in the Audits DA of a single imported segment."
+  def audit_footprint, do: segment_size() + 32 * ceil(:math.log2(max_imports()))
 
   @doc "W_G = W_P W_E = 4104: The size of a segment in octets."
   def segment_size, do: erasure_coded_piece_size() * erasure_coded_pieces_per_segment()
