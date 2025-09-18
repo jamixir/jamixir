@@ -17,7 +17,7 @@ impl StartSet {
     }
 
     pub fn build(program: &Program, bitmask: &BitMask) -> Self {
-        let num_words = (program.len() + 63) / 64;
+        let num_words = program.len().div_ceil(64);
         let mut start_set = Self::new(num_words);
         start_set.add(0);
 
@@ -25,8 +25,10 @@ impl StartSet {
         while pos < program.len() {
             let opcode = program[pos];
             let next_pos = pos + 1 + bitmask.skip(pos);
-            // Check if current position is a set bit in the bitmask
-            if bitmask.is_set(pos) && TERMINATION_INSTRUCTIONS[opcode as usize] {
+            // Check if current position is a termination instruction
+            // since we  are jumping using skip, we always land on an opcode
+            // so there is no need to check if the position is set in the bitmask
+            if TERMINATION_INSTRUCTIONS[opcode as usize] {
                 // Mark the next instruction after termination as jumpable
                 start_set.add(next_pos);
             }
