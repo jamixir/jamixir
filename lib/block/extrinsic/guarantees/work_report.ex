@@ -74,8 +74,8 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     end
   end
 
-  # Formula (17.1) v0.7.0
-  # Formula (17.2) v0.7.0
+  # Formula (17.1) v0.7.2
+  # Formula (17.2) v0.7.2
   @spec auditable_work_reports(list(Assurance.t()), list(CoreReport.t()), list(CoreReport.t())) ::
           list(t() | nil)
   def auditable_work_reports(assurances, core_reports_intermediate_1, core_reports) do
