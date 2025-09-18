@@ -24,15 +24,14 @@ impl StartSet {
         let mut pos = 0;
         while pos < program.len() {
             let opcode = program[pos];
+            let next_pos = pos + 1 + bitmask.skip(pos);
             // Check if current position is a set bit in the bitmask
             if bitmask.is_set(pos) && TERMINATION_INSTRUCTIONS[opcode as usize] {
                 // Mark the next instruction after termination as jumpable
-                let next_pos = bitmask.skip(pos);
-                start_set.add(pos + 1 + next_pos);
+                start_set.add(next_pos);
             }
 
-            let skip_count = bitmask.skip(pos);
-            pos += 1 + skip_count;
+            pos = next_pos;
         }
 
         start_set
