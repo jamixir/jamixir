@@ -90,7 +90,7 @@ mod tests {
         let word_index = trap_bit_pos / 64;
         let bit_index = trap_bit_pos % 64;
         assert_eq!(
-            (decoded_bitmask.as_slice()[word_index] >> bit_index) & 1,
+            (decoded_bitmask[word_index] >> bit_index) & 1,
             1,
             "Trap bit not set correctly"
         );

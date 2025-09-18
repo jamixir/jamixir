@@ -185,7 +185,7 @@ mod tests {
         let bit_index = trap_pos % 64;
 
         if word_index < deblob_result.bitmask.size() {
-            let trap_bit = (deblob_result.bitmask.as_slice()[word_index] >> bit_index) & 1;
+            let trap_bit = (deblob_result.bitmask[word_index] >> bit_index) & 1;
             assert_eq!(trap_bit, 1, "Trap bit should be set at program end");
         }
 

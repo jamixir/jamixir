@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 #[derive(Debug)]
 pub struct BitMask {
     pub bits: Vec<u64>,
@@ -28,10 +30,6 @@ impl BitMask {
         };
         bitmask.pad();
         bitmask
-    }
-
-    pub fn as_slice(&self) -> &[u64] {
-        &self.bits
     }
 
     fn assure_capacity(&mut self, index: usize) {
@@ -103,5 +101,23 @@ impl BitMask {
         self.bits[word_index] |= upper_mask;
 
         self.bits.push(u64::MAX);
+    }
+}
+
+impl Index<usize> for BitMask {
+    type Output = u64;
+
+    #[inline(always)]
+    fn index(&self, index: usize) -> &Self::Output {
+        unsafe { self.bits.get_unchecked(index) }
+    }
+}
+
+impl Index<std::ops::Range<usize>> for BitMask {
+    type Output = [u64];
+
+    #[inline(always)]
+    fn index(&self, range: std::ops::Range<usize>) -> &Self::Output {
+        unsafe { self.bits.get_unchecked(range) }
     }
 }
