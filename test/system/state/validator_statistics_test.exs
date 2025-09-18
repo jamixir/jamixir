@@ -63,7 +63,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           build(:extrinsic),
           500,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, timeslot: 1000),
           MapSet.new(),
@@ -94,7 +94,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           build(:extrinsic),
           1,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, timeslot: 2),
           MapSet.new(),
@@ -115,7 +115,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           build(:extrinsic),
           1,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: 1, timeslot: 2),
           MapSet.new(),
@@ -145,7 +145,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
           MapSet.new(),
@@ -174,7 +174,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
           MapSet.new(),
@@ -202,7 +202,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
           MapSet.new(),
@@ -231,7 +231,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           extrinsic,
           author_key_index,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: author_key_index, timeslot: 2),
           MapSet.new(),
@@ -255,7 +255,7 @@ defmodule System.State.ValidatorStatisticsTest do
         ValidatorStatistics.transition(
           build(:extrinsic),
           0,
-          {validator_statistics, %{}, %{}},
+          {validator_statistics, %{}},
           [],
           build(:header, block_author_key_index: 1000),
           MapSet.new(),

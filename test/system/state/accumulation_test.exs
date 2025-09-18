@@ -2,8 +2,8 @@ defmodule System.State.AccumulationTest do
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
+  alias System.AccumulationResult
   alias System.State
-  alias System.{AccumulationResult, DeferredTransfer}
   alias System.State.{Accumulation, PrivilegedServices, Ready, ServiceAccount}
   alias System.State.RecentHistory.AccumulationOutput
   import Jamixir.Factory
@@ -337,6 +337,7 @@ defmodule System.State.AccumulationTest do
       {updated_state, transfers, outputs, total_gas} =
         Accumulation.parallelized_accumulation(
           initial_state,
+          [],
           work_reports,
           always_acc_services,
           extra_args
@@ -455,6 +456,7 @@ defmodule System.State.AccumulationTest do
       {updated_state, transfers, outputs, total_gas} =
         Accumulation.parallelized_accumulation(
           initial_state,
+          [],
           work_reports,
           always_acc_services,
           extra_args
@@ -536,13 +538,14 @@ defmodule System.State.AccumulationTest do
       result =
         Accumulation.sequential_accumulation(
           gas_limit,
+          [],
           work_reports,
           initial_state,
           always_acc_services,
           extra_args
         )
 
-      assert {total_i, final_state, all_transfers, all_outputs, service_gas} = result
+      assert {total_i, final_state, all_outputs, service_gas} = result
       # Only two work reports should be processed due to gas limit
       assert total_i == 2
       assert service_gas == [{4, 30}, {5, 40}, {6, 20}]
@@ -555,31 +558,10 @@ defmodule System.State.AccumulationTest do
                  accumulated_output: "output#{i}"
                })
              end)
-
-      # Verify transfers are ordered by source service executions
-      # First all transfers from service 4, then service 5, then service 6
-      assert all_transfers == [
-               # From service 4
-               %{amount: 30},
-               # From service 5
-               %{amount: 40},
-               # From service 6
-               %{amount: 20}
-             ]
     end
   end
 
   describe "calculate_posterior_services/2" do
-    setup do
-      Application.put_env(:jamixir, :pvm, MockPVM)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, :pvm, PVM)
-      end)
-
-      :ok
-    end
-
     test "applies transfers correctly" do
       services_intermediate_2 = %{
         1 => %ServiceAccount{balance: 100},
@@ -587,41 +569,18 @@ defmodule System.State.AccumulationTest do
         3 => %ServiceAccount{balance: 300}
       }
 
-      transfers = [
-        %DeferredTransfer{sender: 1, receiver: 2, amount: 50},
-        %DeferredTransfer{sender: 2, receiver: 3, amount: 75},
-        %DeferredTransfer{sender: 3, receiver: 1, amount: 100}
-      ]
-
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      MockPVM
-      |> stub(:do_on_transfer, fn services,
-                                  _timeslot,
-                                  service_index,
-                                  selected_transfers,
-                                  _extra_args ->
-        service = services[service_index]
-        total_received = Enum.sum(for t <- selected_transfers, do: t.amount)
-        updated_service = %{service | balance: service.balance + total_received}
-        gas_used = service_index * 10
-        {updated_service, gas_used}
-      end)
-
-      {%{1 => s1, 2 => s2, 3 => s3}, _transfer_stats} =
-        Accumulation.apply_transfers(
+      %{1 => s1, 2 => s2, 3 => s3} =
+        Accumulation.apply_last_accumulation(
           services_intermediate_2,
-          transfers,
-          0,
-          accumualted_services_keys,
-          %{
-            n0_: Util.Hash.one()
-          }
+          1,
+          accumualted_services_keys
         )
 
-      assert s1.balance == 200
-      assert s2.balance == 250
-      assert s3.balance == 375
+      assert s1.last_accumulation_slot == 1
+      assert s2.last_accumulation_slot == 1
+      assert s3.last_accumulation_slot == 1
     end
 
     test "handles empty transfers" do
@@ -632,25 +591,15 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      MockPVM
-      |> stub(:do_on_transfer, fn services,
-                                  _timeslot,
-                                  service_index,
-                                  _selected_transfers,
-                                  _extra_args ->
-        {services[service_index], 0}
-      end)
-
-      {%{1 => s1, 2 => s2}, transfer_stats} =
-        Accumulation.apply_transfers(services_intermediate_2, [], 0, accumualted_services_keys, %{
-          n0_: Util.Hash.one()
-        })
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_last_accumulation(
+          services_intermediate_2,
+          0,
+          accumualted_services_keys
+        )
 
       assert s1.balance == 100
       assert s2.balance == 200
-
-      # No transfers means empty transfer stats
-      assert transfer_stats == %{}
     end
 
     test "transfers to non-existent services is a noop" do
@@ -661,35 +610,15 @@ defmodule System.State.AccumulationTest do
 
       accumualted_services_keys = Map.keys(services_intermediate_2) |> MapSet.new()
 
-      transfers = [
-        %DeferredTransfer{sender: 1, receiver: 3, amount: 50}
-      ]
-
-      MockPVM
-      |> stub(:do_on_transfer, fn services,
-                                  _timeslot,
-                                  service_index,
-                                  _selected_transfers,
-                                  _extra_args ->
-        {services[service_index], 0}
-      end)
-
-      {%{1 => s1, 2 => s2}, transfer_stats} =
-        Accumulation.apply_transfers(
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_last_accumulation(
           services_intermediate_2,
-          transfers,
           0,
-          accumualted_services_keys,
-          %{
-            n0_: Util.Hash.one()
-          }
+          accumualted_services_keys
         )
 
       assert s1.balance == 100
       assert s2.balance == 200
-
-      # No transfers to existing services means empty transfer stats
-      assert transfer_stats == %{}
     end
 
     test "updates last_accumulation_slot, but only to accumulated_services" do
@@ -701,37 +630,15 @@ defmodule System.State.AccumulationTest do
       accumualted_services_keys = MapSet.new([1])
       timeslot = 100
 
-      transfers = [
-        %DeferredTransfer{sender: 1, receiver: 2, amount: 50}
-      ]
-
-      # Mock PVM.do_on_transfer
-      MockPVM
-      |> stub(:do_on_transfer, fn services,
-                                  _timeslot,
-                                  service_index,
-                                  selected_transfers,
-                                  _extra_args ->
-        service = services[service_index]
-        total_received = Enum.sum(for t <- selected_transfers, do: t.amount)
-        updated_service = %{service | balance: service.balance + total_received}
-        gas_used = service_index * 15
-        {updated_service, gas_used}
-      end)
-
-      {%{1 => s1, 2 => s2}, _transfer_stats} =
-        Accumulation.apply_transfers(
+      %{1 => s1, 2 => s2} =
+        Accumulation.apply_last_accumulation(
           services_intermediate_2,
-          transfers,
           timeslot,
-          accumualted_services_keys,
-          %{n0_: Util.Hash.one()}
+          accumualted_services_keys
         )
 
       assert s1.last_accumulation_slot == timeslot
       assert s2.last_accumulation_slot == 2
-      assert s1.balance == 100
-      assert s2.balance == 250
     end
   end
 

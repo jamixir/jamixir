@@ -127,8 +127,7 @@ defmodule TestVectorUtil do
       privileged_services: %{},
       accumulation_history: %{},
       ready_to_accumulate: %{},
-      accumulation_stats: %{},
-      deferred_transfers_stats: %{}
+      accumulation_stats: %{}
     }
 
   def stats_mock,

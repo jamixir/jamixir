@@ -398,8 +398,7 @@ defmodule Jamixir.Factory do
       exports: 10_000_000,
       extrinsic_count: 100_000_000,
       extrinsic_size: 1,
-      accumulation: {9, 1},
-      transfers: {1000, 100_000}
+      accumulation: {9, 1}
     }
   end
 
