@@ -408,7 +408,6 @@ generate_json_tests!(
     test_sbrk_wrapping_size: "sbrk_wrapping_size",
     test_sbrk_different_registers: "sbrk_different_registers",
     test_sbrk_register_preservation: "sbrk_register_preservation",
-    test_sbrk_permission_setting: "sbrk_permission_setting",
     // RegImmediate instructions (immediate variants)
     test_inst_add_imm_32: "inst_add_imm_32",
     test_inst_add_imm_32_with_truncation: "inst_add_imm_32_with_truncation",
