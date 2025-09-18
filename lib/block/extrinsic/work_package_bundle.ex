@@ -20,7 +20,7 @@ defmodule Block.Extrinsic.WorkPackageBundle do
     alias Block.Extrinsic.WorkPackageBundle
     import Codec.Encoder
 
-    # Formula (14.16) v0.7.0
+    # Formula (14.16) v0.7.2
     def encode(%WorkPackageBundle{} = b) do
       e({b.work_package, b.import_segments, b.justifications, b.extrinsics})
     end
