@@ -113,8 +113,8 @@ impl Memory {
             return false;
         }
 
-        let page_start = addr / PAGE_SIZE;
-        let page_end: usize = (addr + len + PAGE_SIZE - 1) / PAGE_SIZE;
+        let page_start = addr >> 12;
+        let page_end: usize = (addr + len).div_ceil(PAGE_SIZE);
         let required_bits = required_permission as u64;
 
         unsafe {
@@ -135,8 +135,8 @@ impl Memory {
 
     #[inline]
     pub fn set_access(&mut self, addr: usize, len: usize, permissions: Permission) {
-        let start_page = addr / PAGE_SIZE;
-        let end_page = (addr + len + PAGE_SIZE - 1) / PAGE_SIZE;
+        let start_page = addr >> 12;
+        let end_page = (addr + len).div_ceil(PAGE_SIZE);
         let permission_bits = permissions as u64;
 
         unsafe {
