@@ -6,7 +6,7 @@ defmodule System.State.ValidatorStatistic do
             reports_guaranteed: 0,
             availability_assurances: 0
 
-  # Formula (13.2) v0.7.0
+  # Formula (13.2) v0.7.2
   @type t :: %__MODULE__{
           # b
           blocks_produced: non_neg_integer(),

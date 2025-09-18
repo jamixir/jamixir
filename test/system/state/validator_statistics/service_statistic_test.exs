@@ -6,7 +6,7 @@ defmodule System.State.ServiceStatisticTest do
 
   describe "calculate_stats/4" do
     test "returns empty map when no inputs" do
-      result = ServiceStatistic.calculate_stats([], [], [], [])
+      result = ServiceStatistic.calculate_stats([], [], [])
       assert result == %{}
     end
 
@@ -27,7 +27,6 @@ defmodule System.State.ServiceStatisticTest do
       ]
 
       accumulation_stats = %{1 => {800, 3}}
-      deferred_transfers_stats = %{1 => {2, 200}}
 
       preimages = [%Preimage{service: 1, blob: <<1, 2, 3, 4>>}]
 
@@ -35,7 +34,6 @@ defmodule System.State.ServiceStatisticTest do
         ServiceStatistic.calculate_stats(
           available_work_reports,
           accumulation_stats,
-          deferred_transfers_stats,
           preimages
         )
 
@@ -46,7 +44,6 @@ defmodule System.State.ServiceStatisticTest do
                extrinsic_size: 1000,
                exports: 2,
                accumulation: {800, 3},
-               transfers: {2, 200},
                preimage: {1, 4}
              }
     end
@@ -87,7 +84,7 @@ defmodule System.State.ServiceStatisticTest do
         }
       ]
 
-      result = ServiceStatistic.calculate_stats(available_work_reports, [], [], [])
+      result = ServiceStatistic.calculate_stats(available_work_reports, [], [])
 
       assert map_size(result) == 2
 
@@ -113,21 +110,10 @@ defmodule System.State.ServiceStatisticTest do
     test "correctly adds accumulation statistics" do
       accumulation_stats = [{1, {300, 2}}, {3, {400, 3}}]
 
-      result = ServiceStatistic.calculate_stats([nil, nil], accumulation_stats, [], [])
+      result = ServiceStatistic.calculate_stats([nil, nil], accumulation_stats, [])
 
       assert result[1].accumulation == {300, 2}
       assert result[3].accumulation == {400, 3}
-    end
-  end
-
-  describe "deferred_transfers_stats/2 (private function test)" do
-    test "correctly adds deferred transfer statistics" do
-      deferred_transfers_stats = %{1 => {2, 200}, 4 => {3, 300}}
-
-      result = ServiceStatistic.calculate_stats([], [], deferred_transfers_stats, [])
-
-      assert result[1].transfers == {2, 200}
-      assert result[4].transfers == {3, 300}
     end
   end
 
@@ -139,7 +125,7 @@ defmodule System.State.ServiceStatisticTest do
         %Preimage{service: 5, blob: <<7, 8, 9>>}
       ]
 
-      result = ServiceStatistic.calculate_stats([], [], [], preimages)
+      result = ServiceStatistic.calculate_stats([], [], preimages)
 
       assert result[1].preimage == {2, 6}
       assert result[5].preimage == {1, 3}
@@ -172,7 +158,6 @@ defmodule System.State.ServiceStatisticTest do
       ]
 
       accumulation_stats = [{1, {300, 2}}, {3, {400, 3}}]
-      deferred_transfers_stats = [{1, {2, 200}}, {4, {3, 300}}]
 
       preimages = [
         %Preimage{service: 1, blob: <<1, 2, 3, 4>>},
@@ -183,11 +168,10 @@ defmodule System.State.ServiceStatisticTest do
         ServiceStatistic.calculate_stats(
           available_work_reports,
           accumulation_stats,
-          deferred_transfers_stats,
           preimages
         )
 
-      assert map_size(result) == 5
+      assert map_size(result) == 4
 
       # Service 1 (present in all stat types)
       assert result[1] == %ServiceStatistic{
@@ -197,32 +181,22 @@ defmodule System.State.ServiceStatisticTest do
                extrinsic_size: 1000,
                exports: 2,
                accumulation: {300, 2},
-               transfers: {2, 200},
                preimage: {1, 4}
              }
 
       # Service 2 (only in work reports)
       assert result[2].refine == {1, 100}
       assert result[2].accumulation == {0, 0}
-      assert result[2].transfers == {0, 0}
       assert result[2].preimage == {0, 0}
 
       # Service 3 (only in accumulation stats)
       assert result[3].refine == {0, 0}
       assert result[3].accumulation == {400, 3}
-      assert result[3].transfers == {0, 0}
       assert result[3].preimage == {0, 0}
-
-      # Service 4 (only in deferred transfers)
-      assert result[4].refine == {0, 0}
-      assert result[4].accumulation == {0, 0}
-      assert result[4].transfers == {3, 300}
-      assert result[4].preimage == {0, 0}
 
       # Service 5 (only in preimages)
       assert result[5].refine == {0, 0}
       assert result[5].accumulation == {0, 0}
-      assert result[5].transfers == {0, 0}
       assert result[5].preimage == {1, 3}
     end
   end

@@ -138,8 +138,7 @@ defmodule System.State do
            privileged_services: privileged_services_,
            accumulation_history: accumulation_history_,
            accumulation_outputs: accumulation_outputs_,
-           accumulation_stats: accumulation_stats,
-           deferred_transfers_stats: deferred_transfers_stats
+           accumulation_stats: accumulation_stats
          } =
            Accumulation.transition(
              available_work_reports,
@@ -175,7 +174,7 @@ defmodule System.State do
            ValidatorStatistics.transition(
              e,
              state.timeslot,
-             {state.validator_statistics, accumulation_stats, deferred_transfers_stats},
+             {state.validator_statistics, accumulation_stats},
              curr_validators_,
              h,
              reporters_set,

@@ -15,11 +15,9 @@ defmodule System.State.ServiceStatistic do
             # e
             exports: 0,
             # a
-            accumulation: {0, 0},
-            # t
-            transfers: {0, 0}
+            accumulation: {0, 0}
 
-  # Formula (13.7) v0.7.0
+  # Formula (13.7) v0.7.2
   @type t :: %__MODULE__{
           preimage: {non_neg_integer(), non_neg_integer()},
           refine: {non_neg_integer(), Types.gas()},
@@ -27,37 +25,33 @@ defmodule System.State.ServiceStatistic do
           extrinsic_count: non_neg_integer(),
           extrinsic_size: non_neg_integer(),
           exports: non_neg_integer(),
-          accumulation: {non_neg_integer(), Types.gas()},
-          transfers: {non_neg_integer(), Types.gas()}
+          accumulation: {non_neg_integer(), Types.gas()}
         }
 
-  # Formula (13.12) v0.7.0
-  # Formula (13.13) v0.7.0
+  # Formula (13.12) v0.7.2
+  # Formula (13.13) v0.7.2
   @spec calculate_stats(
           list(WorkReport.t()),
           list(AccumulationStatistic.t()),
-          list(DefferedTransferStatistic.t()),
           list(Preimage.t())
         ) :: t
   def calculate_stats(
         incoming_work_reports,
         accumulation_stats,
-        deferred_transfers_stats,
         preimages
       ) do
-    # Formula (13.12) v0.7.0 - i, x, z, e, r
-    # Formula (13.14) v0.7.0
-    # Formula (13.16) v0.7.0
+    # Formula (13.12) v0.7.2 - i, x, z, e, r
+    # Formula (13.14) v0.7.2
+    # Formula (13.16) v0.7.2
     refine_stats(incoming_work_reports)
-    # Formula (13.12) v0.7.0 - a
+    # Formula (13.12) v0.7.2 - a
     |> accumulation_stats(accumulation_stats)
-    |> deferred_transfers_stats(deferred_transfers_stats)
-    # Formula (13.15) v0.7.0
+    # Formula (13.15) v0.7.2
     |> preimage_stats(preimages)
   end
 
-  # Formula (13.15) v0.7.0 - p
-  # Formula (13.12) v0.7.0
+  # Formula (13.15) v0.7.2 - p
+  # Formula (13.12) v0.7.2
   # p: ∑(s,d) ∈ EP (1,∣d∣)
   defp preimage_stats(previous_stats, preimages) do
     for %Preimage{service: s, blob: p} <- preimages, reduce: previous_stats do
@@ -69,21 +63,6 @@ defmodule System.State.ServiceStatistic do
           fn stat ->
             {count, bytes} = stat.preimage
             %ServiceStatistic{stat | preimage: {count + 1, bytes + byte_size(p)}}
-          end
-        )
-    end
-  end
-
-  # t
-  defp deferred_transfers_stats(previous_stats, deferred_transfers_stats) do
-    for {service, t_stat} <- deferred_transfers_stats, reduce: previous_stats do
-      map ->
-        Map.update(
-          map,
-          service,
-          previous_stats[service] || %ServiceStatistic{transfers: t_stat},
-          fn stat ->
-            %ServiceStatistic{stat | transfers: t_stat}
           end
         )
     end
@@ -131,8 +110,7 @@ defmodule System.State.ServiceStatistic do
       exports: json_data[:exports] || 0,
       extrinsic_count: json_data[:extrinsic_count] || 0,
       extrinsic_size: json_data[:extrinsic_size] || 0,
-      accumulation: {json_data[:accumulate_count] || 0, json_data[:accumulate_gas_used] || 0},
-      transfers: {json_data[:on_transfers_count] || 0, json_data[:on_transfers_gas_used] || 0}
+      accumulation: {json_data[:accumulate_count] || 0, json_data[:accumulate_gas_used] || 0}
     }
   end
 
@@ -156,8 +134,7 @@ defmodule System.State.ServiceStatistic do
         c.exports,
         c.extrinsic_size,
         c.extrinsic_count,
-        c.accumulation,
-        c.transfers
+        c.accumulation
       })
     end
   end
@@ -175,8 +152,6 @@ defmodule System.State.ServiceStatistic do
     {extrinsic_count, rest} = de_i(rest)
     {accumulation, rest} = de_i(rest)
     {accumulation_g, rest} = de_i(rest)
-    {transfers, rest} = de_i(rest)
-    {transfers_g, rest} = de_i(rest)
 
     {%__MODULE__{
        preimage: {preimage, preimage_g},
@@ -185,8 +160,7 @@ defmodule System.State.ServiceStatistic do
        exports: exports,
        extrinsic_size: extrinsic_size,
        extrinsic_count: extrinsic_count,
-       accumulation: {accumulation, accumulation_g},
-       transfers: {transfers, transfers_g}
+       accumulation: {accumulation, accumulation_g}
      }, rest}
   end
 end

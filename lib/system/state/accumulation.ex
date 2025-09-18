@@ -114,11 +114,11 @@ defmodule System.State.Accumulation do
       always_accumulated: privileged_services.always_accumulated
     }
 
-    # Formula (12.24) v0.7.0
-    {number_of_accumulated_work_reports, acc_state_, deferred_transfers, accumulation_outputs_,
-     used_gas} =
+    # Formula (12.25) v0.7.2
+    {number_of_accumulated_work_reports, acc_state_, accumulation_outputs_, used_gas} =
       sequential_accumulation(
         gas_limit,
+        [],
         accumulatable_reports,
         initial_state,
         privileged_services.always_accumulated,
@@ -149,13 +149,11 @@ defmodule System.State.Accumulation do
 
     # Formula (12.31) v0.7.0
     # Formula (12.33) v0.7.0
-    {services_intermediate_2, deferred_transfers_stats} =
-      apply_transfers(
+    services_intermediate_2 =
+      apply_last_accumulation(
         services_intermediate,
-        deferred_transfers,
         timeslot_,
-        MapSet.new(Map.keys(accumulation_stats)),
-        extra_args
+        MapSet.new(Map.keys(accumulation_stats))
       )
 
     # Formula (12.35) v0.7.0
@@ -189,8 +187,7 @@ defmodule System.State.Accumulation do
       privileged_services: privileged_services_,
       accumulation_history: accumulation_history_,
       accumulation_outputs: accumulation_outputs_,
-      accumulation_stats: accumulation_stats,
-      deferred_transfers_stats: deferred_transfers_stats
+      accumulation_stats: accumulation_stats
     }
   end
 
@@ -215,19 +212,20 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.16) v0.7.0
+  # Formula (12.18) v0.7.2
   @spec sequential_accumulation(
           non_neg_integer(),
+          list(DeferredTransfer.t()),
           list(WorkReport.t()),
           t(),
           PrivilegedServices.free_accumulating_services(),
           extra_args()
         ) ::
-          {non_neg_integer(), t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()),
-           list(used_gas())}
+          {non_neg_integer(), t(), list(AccumulationOutput.t()), list(used_gas())}
 
   def sequential_accumulation(
         gas_limit,
+        deferred_transfers,
         work_reports,
         acc_state,
         always_accumulated_services,
@@ -249,6 +247,7 @@ defmodule System.State.Accumulation do
     result =
       sequential_accumulation_recursive(
         gas_limit,
+        deferred_transfers,
         work_reports,
         acc_state,
         always_accumulated_services,
@@ -274,6 +273,7 @@ defmodule System.State.Accumulation do
 
   defp sequential_accumulation_recursive(
          gas_limit,
+         deferred_transfers,
          work_reports,
          acc_state,
          always_accumulated_services,
@@ -297,7 +297,7 @@ defmodule System.State.Accumulation do
         Logger.debug("Left unaccumulated (#{total_count}): #{remaining_info}")
       end
 
-      {0, acc_state, [], [], []}
+      {0, acc_state, [], []}
     else
       {current_batch, remaining_work_reports} = Enum.split(work_reports, i)
 
@@ -319,6 +319,7 @@ defmodule System.State.Accumulation do
       {acc_state_star, transfers_star, accumulation_outputs_star, used_gas_star} =
         parallelized_accumulation(
           acc_state,
+          deferred_transfers,
           current_batch,
           always_accumulated_services,
           extra_args
@@ -326,11 +327,13 @@ defmodule System.State.Accumulation do
 
       Logger.debug("<<< Parallel Accumulation END")
 
+      g_star = gas_limit + Enum.sum(for(d <- deferred_transfers, do: d.gas_limit))
       consumed_gas = Enum.sum(for {_, g} <- used_gas_star, do: g)
 
-      {number_of_accumulated_work_reports, acc_state_, transfers, accumulation_outputs, used_gas} =
+      {number_of_accumulated_work_reports, acc_state_, accumulation_outputs, used_gas} =
         sequential_accumulation_recursive(
-          gas_limit - consumed_gas,
+          g_star - consumed_gas,
+          transfers_star,
           remaining_work_reports,
           acc_state_star,
           Map.new(),
@@ -340,7 +343,7 @@ defmodule System.State.Accumulation do
           seq_counter
         )
 
-      {i + number_of_accumulated_work_reports, acc_state_, transfers_star ++ transfers,
+      {i + number_of_accumulated_work_reports, acc_state_,
        accumulation_outputs_star ++ accumulation_outputs, used_gas_star ++ used_gas}
     end
   end
@@ -364,15 +367,23 @@ defmodule System.State.Accumulation do
     end)
   end
 
-  # Formula (12.17) v0.7.0
+  # TODO
+  # Formula (12.19) v0.7.2
   @spec parallelized_accumulation(
           t(),
+          list(DeferredTransfer.t()),
           list(WorkReport.t()),
           PrivilegedServices.free_accumulating_services(),
           extra_args()
         ) ::
           {t(), list(DeferredTransfer.t()), list(AccumulationOutput.t()), list(used_gas())}
-  def parallelized_accumulation(acc_state, work_reports, always_accumulated_services, extra_args) do
+  def parallelized_accumulation(
+        acc_state,
+        deferred_transfers,
+        work_reports,
+        always_accumulated_services,
+        extra_args
+      ) do
     accumulation_module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
     # s = {rs | w ∈ w, r ∈ wr} ∪ K(f)
@@ -636,67 +647,26 @@ defmodule System.State.Accumulation do
     {total_gas, operands}
   end
 
-  # Formula (12.29) v0.7.0
-  # Formula (12.30) v0.7.0
-  # Formula (12.31) v0.7.0
-  # Formula (12.32) v0.7.0
-
-  @spec apply_transfers(
+  # Formula (12.30) v0.7.2
+  # Formula (12.31) v0.7.2
+  @spec apply_last_accumulation(
           services_intermediate :: %{non_neg_integer() => ServiceAccount.t()},
-          transfers :: list(DeferredTransfer.t()),
           timeslot_ :: Types.timeslot(),
-          accumulates_service_keys :: MapSet.t(non_neg_integer()),
-          extra_args :: extra_args()
-        ) ::
-          {%{Types.service_index() => ServiceAccount.t()},
-           %{Types.service_index() => {non_neg_integer(), Types.gas()}}}
-  def apply_transfers(
-        services_intermediate,
-        transfers,
-        timeslot_,
-        accumulates_service_keys,
-        extra_args
-      ) do
-    {services, transfer_stats} =
-      Enum.reduce(Map.keys(services_intermediate), {%{}, %{}}, fn s,
-                                                                  {services_acc,
-                                                                   transfer_stats_acc} ->
-        # Formula (12.29) v0.7.0
-        selected_transfers = DeferredTransfer.select_transfers_for_destination(transfers, s)
-        transfer_count = length(selected_transfers)
-
-        # Formula (12.30) v0.7.0
-        {service_with_transfers_applied, used_gas} =
-          PVM.OnTransfer.execute(
-            services_intermediate,
-            timeslot_,
-            s,
-            selected_transfers,
-            extra_args
+          accumulates_service_keys :: MapSet.t(non_neg_integer())
+        ) :: %{Types.service_index() => ServiceAccount.t()}
+  def apply_last_accumulation(services_intermediate, timeslot_, accumulates_service_keys) do
+    # Formula (12.30) v0.7.2 - δ‡ ≡ { (s ↦ a′) ∣ (s ↦ a) ∈ δ† }
+    for s <- accumulates_service_keys, reduce: services_intermediate do
+      acc ->
+        # Formula (12.31) v0.7.2 - a except a′_a = τ′ if s ∈ K(S)
+        Map.get_and_update(acc, s, fn service ->
+          if(service == nil,
+            do: {nil, nil},
+            else: {service, %{service | last_accumulation_slot: timeslot_}}
           )
-
-        # Formula (12.31) v0.7.0
-        # Formula (12.32) v0.7.0
-        service_with_transfers_applied_ =
-          if s in accumulates_service_keys,
-            do: %{service_with_transfers_applied | last_accumulation_slot: timeslot_},
-            else: service_with_transfers_applied
-
-        updated_services_acc = Map.put(services_acc, s, service_with_transfers_applied_)
-
-        # Formula (12.33) v0.7.0
-        # Formula (12.34) v0.7.0
-        updated_transfer_stats_acc =
-          if transfer_count > 0 do
-            Map.put(transfer_stats_acc, s, {transfer_count, used_gas})
-          else
-            transfer_stats_acc
-          end
-
-        {updated_services_acc, updated_transfer_stats_acc}
-      end)
-
-    {services, transfer_stats}
+        end)
+        |> elem(1)
+    end
   end
 
   # Formula (12.37) v0.7.0

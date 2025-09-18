@@ -11,7 +11,7 @@ defmodule System.State.CoreStatistic do
             bundle_size: 0,
             gas_used: 0
 
-  # Formula (13.6) v0.7.0
+  # Formula (13.6) v0.7.2
   @type t :: %__MODULE__{
           # d
           da_load: non_neg_integer(),
@@ -54,8 +54,8 @@ defmodule System.State.CoreStatistic do
       w_newly_available_specification = Map.get(w_newly_available, :specification, %{})
 
       %__MODULE__{
-        # Formula (13.8) v0.7.0
-        # Formula (13.9) v0.7.0
+        # Formula (13.8) v0.7.2
+        # Formula (13.9) v0.7.2
         # i: R(c)_i
         imports: sum_field(w_incoming_digests, :imports),
         # x: R(c)_x
@@ -66,16 +66,16 @@ defmodule System.State.CoreStatistic do
         exports: sum_field(w_incoming_digests, :exports),
         # u: R(c)_u
         gas_used: sum_field(w_incoming_digests, :gas_used),
-        # Formula (13.10) v0.7.0
+        # Formula (13.10) v0.7.2
         # l: L(c) - (r_s)_l
         bundle_size: (Map.get(w_incoming, :specification) || %{}) |> Map.get(:length, 0),
-        # Formula (13.11) v0.7.0
+        # Formula (13.11) v0.7.2
         # d: ∑(r_s)_l + W_G⌈(r_s)_n 65 /64⌉
         da_load:
           Map.get(w_newly_available_specification, :length, 0) +
             Constants.segment_size() *
               ceil(Map.get(w_newly_available_specification, :segment_count, 0) * (65 / 64)),
-        # Formula (13.8) v0.7.0
+        # Formula (13.8) v0.7.2
         # p: ∑a∈E_A a_f[c]
         popularity: sum_field(a_bits, c)
       }
