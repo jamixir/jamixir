@@ -29,8 +29,7 @@ mod tests {
         // 0x11 = register 1, immediate length 1
         let program = Program::from_vec(vec![LOAD_IMM_JUMP, 0x11, 42, 4]);
         // Bitmask: 8 = skip 3 bytes (1 for opcode + 1 for params + 1 for immediate + 1 for offset)
-        let mut bitmask = BitMask::from_bytes(&[0b0001], program.len());
-        bitmask.set_bit(program.len());
+        let bitmask = BitMask::from_bytes(&[0b0001], program.len());
         let context = create_test_context(program, bitmask);
         let mut state = create_test_state(0);
 
@@ -67,8 +66,7 @@ mod tests {
             5, // store_imm_u8 r0, 10, 5
             FALLTHROUGH,
         ]);
-        let mut bitmask = BitMask::from_bytes(&[0b00010001, 0b1], program.len());
-        bitmask.set_bit(program.len());
+        let bitmask = BitMask::from_bytes(&[0b00010001, 0b1], program.len());
         let context = create_test_context(program, bitmask);
         let mut registers = Registers::new();
         registers.set(1, 42);
@@ -93,8 +91,8 @@ mod tests {
             TRAP, // trap
             FALLTHROUGH,
         ]);
-        let mut bitmask = BitMask::from_bytes(&[0b00010001, 0b11], program.len());
-        bitmask.set_bit(program.len());
+        let bitmask = BitMask::from_bytes(&[0b00010001, 0b11], program.len());
+
         let context = create_test_context(program, bitmask);
         let mut registers = Registers::new();
         registers.set(1, 43); // Different value
