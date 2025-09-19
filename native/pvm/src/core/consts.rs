@@ -49,3 +49,7 @@ pub const TERMINATION_INSTRUCTIONS: [bool; 231] = {
 
     arr
 };
+
+pub fn is_termination_instruction(opcode: u8) -> bool {
+    unsafe { *TERMINATION_INSTRUCTIONS.get_unchecked(opcode as usize) }
+}

@@ -1,4 +1,4 @@
-use crate::core::{consts::TERMINATION_INSTRUCTIONS, BitMask, Program};
+use crate::core::{consts::is_termination_instruction, BitMask, Program};
 
 #[derive(Debug)]
 pub struct StartSet {
@@ -28,7 +28,7 @@ impl StartSet {
             // Check if current position is a termination instruction
             // since we  are jumping using skip, we always land on an opcode
             // so there is no need to check if the position is set in the bitmask
-            if TERMINATION_INSTRUCTIONS[opcode as usize] {
+            if is_termination_instruction(opcode) {
                 // Mark the next instruction after termination as jumpable
                 start_set.add(next_pos);
             }
