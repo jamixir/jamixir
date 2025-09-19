@@ -46,23 +46,6 @@ impl BitMask {
     }
 
     #[inline(always)]
-    pub fn is_set(&self, index: usize) -> bool {
-        let (word_index, bit_index) = self.to_index(index);
-
-        if word_index >= self.bits.len() {
-            return false;
-        }
-
-        (self.bits[word_index] & (1u64 << bit_index)) != 0
-    }
-    #[inline(always)]
-    pub fn set_bit(&mut self, index: usize) {
-        let (word_index, bit_index) = self.to_index(index);
-        self.assure_capacity(word_index);
-
-        self.bits[word_index] |= 1u64 << bit_index;
-    }
-    #[inline(always)]
     pub fn skip(&self, pc: usize) -> usize {
         let word_index = (pc + 1) >> 6;
         let bit_index = (pc + 1) & 63;
