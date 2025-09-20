@@ -13,7 +13,7 @@ defmodule PVM.Refine do
 
   @doc """
   ΨR: The Refine pvm invocation function.
-  # Formula (B.5) v0.7.0
+  # Formula (B.5) v0.7.2
   """
 
   # see here about where the preimages comes from , it is not in the GP
@@ -147,10 +147,13 @@ defmodule PVM.Refine do
           General.log(gas, registers, memory_ref, context, work_item_index, service_id)
 
         _ ->
-          %Refine.Result{
-            exit_reason: :continue,
+          g_ = gas - default_gas()
+
+          %General.Result{
+            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())},
+            memory: memory,
             context: context
           }
       end

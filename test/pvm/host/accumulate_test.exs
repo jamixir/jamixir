@@ -61,10 +61,12 @@ defmodule PVM.Host.AccumulateTest do
           8 => 2 * a_0(),
           # delegator
           9 => 3,
+          # registrar
+          10 => 999,
           # memory offset
-          10 => 0x1_0000,
+          11 => 0x1_0000,
           # count of services
-          11 => 3
+          12 => 3
         })
 
       {:ok,
@@ -103,24 +105,6 @@ defmodule PVM.Host.AccumulateTest do
       assert registers_[7] == who
     end
 
-    test "returns {:continue, huh()} when context.service != mamanger", %{
-      memory_ref: memory_ref,
-      context: context,
-      gas: gas,
-      registers: registers
-    } do
-      x = elem(context, 0)
-      x_ = %{x | service: 999}
-      context = {x_, elem(context, 1)}
-
-      huh = huh()
-
-      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
-               Accumulate.bless(gas, registers, memory_ref, context)
-
-      assert registers_[7] == huh
-    end
-
     test "returns {:continue, ok()} with valid parameters", %{
       memory_ref: memory_ref,
       context: context,
@@ -145,10 +129,17 @@ defmodule PVM.Host.AccumulateTest do
         manager: 1,
         assigners: assigners,
         delegator: 3,
-        always_accumulated: gas_map
+        always_accumulated: gas_map,
+        registrar: 999
       }
 
-      assert Map.take(x_.accumulation, [:manager, :assigners, :delegator, :always_accumulated]) ==
+      assert Map.take(x_.accumulation, [
+               :manager,
+               :assigners,
+               :delegator,
+               :always_accumulated,
+               :registrar
+             ]) ==
                expected_privileged
     end
   end

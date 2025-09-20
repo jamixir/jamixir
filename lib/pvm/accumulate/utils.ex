@@ -8,7 +8,7 @@ defmodule PVM.Accumulate.Utils do
 
   @hash_size 32
 
-  # Formula (B.10) v0.7.0
+  # Formula (B.10) v0.7.2
   @spec initializer(Types.hash(), non_neg_integer(), Accumulation.t(), non_neg_integer()) ::
           Context.t()
   def initializer(n0_, header_timeslot, accumulation_state, service_index) do
@@ -16,8 +16,8 @@ defmodule PVM.Accumulate.Utils do
       (e(service_index) <> n0_ <> e(header_timeslot))
       |> Hash.default()
       |> de_le(4)
-      |> rem(0xFFFFFE00)
-      |> Kernel.+(256)
+      |> rem(0xFFFFFF00 - Constants.minimum_service_id())
+      |> Kernel.+(Constants.minimum_service_id())
       |> check(accumulation_state)
 
     %Context{
@@ -31,12 +31,14 @@ defmodule PVM.Accumulate.Utils do
 
   @dialyzer {:no_return, check: 2}
 
-  # Formula (B.14) v0.7.0
+  # Formula (B.14) v0.7.2
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
     if Map.has_key?(services, i) do
-      # check((i - 2^8 + 1) mod (2^32 - 2^9) + 2^8)
-      new_i = rem(i - 0x100 + 1, 0xFFFFFE00) + 0x100
+      # check((i - S + 1) mod (2^32 - 2^8) + S)
+      new_i =
+        rem(i - Constants.minimum_service_id() + 1, 0xFFFFFF00) + Constants.minimum_service_id()
+
       check(new_i, accumulation)
     else
       i
@@ -50,7 +52,7 @@ defmodule PVM.Accumulate.Utils do
     256 + rem(i - 256 + 42, 0xFFFFFE00)
   end
 
-  # Formula (B.13) v0.7.0
+  # Formula (B.13) v0.7.2
   @spec collapse({Types.gas(), binary() | :panic | :out_of_gas, {Context.t(), Context.t()}}) ::
           AccumulationResult.t()
 
@@ -81,7 +83,7 @@ defmodule PVM.Accumulate.Utils do
       preimages: x.preimages
     }
 
-  # Formula (B.12) v0.7.0
+  # Formula (B.12) v0.7.2
   @spec replace_service(
           Host.General.Result.t(),
           {Context.t(), Context.t()}

@@ -27,7 +27,7 @@ defmodule PVM.Authorize do
   end
 
   def handle_host_call(n, %{gas: gas, registers: registers, memory_ref: memory_ref}, p) do
-    # Formula (B.2) v0.7.0
+    # Formula (B.2) v0.7.2
     host_call_result =
       case host(n) do
         :gas ->
@@ -53,10 +53,13 @@ defmodule PVM.Authorize do
           Host.General.log(gas, registers, memory_ref, nil)
 
         _ ->
+          g_ = gas - default_gas()
+
           %General.Result{
-            exit_reason: :continue,
+            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
             gas: gas - default_gas(),
-            registers: %{registers | r: put_elem(registers.r, 7, what())}
+            registers: %{registers | r: put_elem(registers.r, 7, what())},
+            memory: memory
           }
       end
 

@@ -7,7 +7,7 @@ defmodule SigningContexts do
   @doc "X_A - Ed25519 Availability assurances context."
   def jam_available, do: "jam_available"
 
-  # Formula (18.2) v0.7.0
+  # Formula (18.2) v0.7.2
   @doc "X_B - BLS Accumulate-result-root-mmr commitment context."
   def jam_beefy, do: "jam_beefy"
 

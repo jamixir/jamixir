@@ -301,10 +301,7 @@ defmodule PVM.Host.General.FetchTest do
     } do
       args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 8)}}
 
-      encoded =
-        e(
-          {args.work_package.authorization_code_hash, vs(args.work_package.parameterization_blob)}
-        )
+      encoded = args.work_package.parameterization_blob
 
       l = byte_size(encoded)
       context = args.context
@@ -456,48 +453,6 @@ defmodule PVM.Host.General.FetchTest do
       }
 
       encoded = e(Enum.at(args.operands, 1))
-      l = byte_size(encoded)
-      context = args.context
-
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } =
-               General.fetch(args)
-
-      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
-      assert registers_[7] == l
-    end
-
-    test "w10 = 16 returns encoded transfers list", %{
-      args: args
-    } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 16)}}
-      encoded = e(vs(args.transfers))
-      l = byte_size(encoded)
-      context = args.context
-
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } =
-               General.fetch(args)
-
-      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
-      assert registers_[7] == l
-    end
-
-    test "w10 = 17 returns encoded specific transfer", %{
-      args: args
-    } do
-      args = %{
-        args
-        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 17) |> put_elem(11, 0)}
-      }
-
-      encoded = e(Enum.at(args.transfers, args.registers[11]))
       l = byte_size(encoded)
       context = args.context
 
