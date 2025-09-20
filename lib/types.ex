@@ -47,6 +47,7 @@ defmodule Types do
   @type gas_result :: integer()
   # Formula (4.23) v0.7.2 - ℕ_R - shoud be a 64-bit integer <= 2^64
   @type register :: non_neg_integer()
+  # ℕ_S <= 2^32
   @type service_index :: non_neg_integer()
   @type memory_access :: :write | :read | nil
   @type vote :: boolean()

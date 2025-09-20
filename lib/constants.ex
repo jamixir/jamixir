@@ -1,5 +1,6 @@
 defmodule Constants do
   use Mockable
+  import Bitwise
 
   @moduledoc """
   A module to hold constants used throughout the system.
@@ -92,6 +93,9 @@ defmodule Constants do
   def max_work_package_size, do: max_imports() * audit_footprint() + 4096 + 64 + 64
 
   def max_service_code_size, do: 4_000_000
+  @max_service_id (1 <<< 32) - 1
+
+  def max_service_id, do: @max_service_id
 
   @doc "W_E - The basic size of our erasure-coded pieces."
   def erasure_coded_piece_size, do: Jamixir.config()[:erasure_coded_piece_size] || 684
