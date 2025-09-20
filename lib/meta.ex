@@ -7,5 +7,5 @@ defmodule Jamixir.Meta do
   def jam_version, do: @jam_version
   def name, do: @name
   def fuzz_version, do: 1
-  def features, do: 2
+  def features, do: 3
 end

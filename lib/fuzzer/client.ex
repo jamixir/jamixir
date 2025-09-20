@@ -43,7 +43,7 @@ defmodule Jamixir.Fuzzer.Client do
     {app_version_maj, app_version_min, app_version_patch} = app_version
 
     message =
-      <<fuzz_version::8, features::32, jam_version_maj::8, jam_version_min::8,
+      <<fuzz_version::8, features::32-little, jam_version_maj::8, jam_version_min::8,
         jam_version_patch::8, app_version_maj::8, app_version_min::8, app_version_patch::8,
         byte_size(name)::8, name::binary>>
 
