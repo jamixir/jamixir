@@ -4,7 +4,7 @@ defmodule PVM.Host.General.Internal do
   alias Block.Extrinsic.WorkPackage
   alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
-  alias PVM.{Registers}
+  alias PVM.Registers
   alias System.DeferredTransfer
   alias System.State.ServiceAccount
   import Codec.Encoder
@@ -19,7 +19,7 @@ defmodule PVM.Host.General.Internal do
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
-  # Formula (B.18) v0.7.0
+  # Formula (B.16) v0.7.2
   @spec fetch_internal(
           Registers.t(),
           reference(),
@@ -31,8 +31,7 @@ defmodule PVM.Host.General.Internal do
           non_neg_integer() | nil,
           list(list(binary())) | nil,
           list(list(binary())) | nil,
-          list(Operand.t()) | nil,
-          list(DeferredTransfer.t()) | nil
+          list(Operand.t()) | nil
         ) :: Result.Internal.t()
   def fetch_internal(
         registers,
@@ -44,8 +43,7 @@ defmodule PVM.Host.General.Internal do
         service_index,
         import_segments,
         preimages,
-        operands,
-        transfers
+        operands
       ) do
     {w10, w11, w12} = Registers.get_3(registers, 10, 11, 12)
 
@@ -147,7 +145,7 @@ defmodule PVM.Host.General.Internal do
           e(work_package)
 
         work_package != nil and w10 == 8 ->
-          e({work_package.authorization_code_hash, vs(work_package.parameterization_blob)})
+          work_package.parameterization_blob
 
         work_package != nil and w10 == 9 ->
           work_package.authorization_token
@@ -169,12 +167,6 @@ defmodule PVM.Host.General.Internal do
 
         operands != nil and w10 == 15 and w11 < length(operands) ->
           e(Enum.at(operands, w11))
-
-        transfers != nil and w10 == 16 ->
-          e(vs(transfers))
-
-        transfers != nil and w10 == 17 and w11 < length(transfers) ->
-          e(Enum.at(transfers, w11))
 
         true ->
           nil

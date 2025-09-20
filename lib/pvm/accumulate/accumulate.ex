@@ -13,7 +13,7 @@ defmodule PVM.Accumulate do
   require Logger
 
   @doc """
-  Formula (B.9) v0.7.0
+  Formula (B.9) v0.7.2
   ΨA: The Accumulate pvm invocation function.
   """
   @spec execute(
@@ -36,14 +36,16 @@ defmodule PVM.Accumulate do
           opts
       end
 
-    # Formula (B.10) v0.7.0
+    # Formula (B.10) v0.7.2
     x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
+
     service_code = ServiceAccount.code(accumulation_state.services[service_index])
 
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
       AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
       encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands)})
+
       Executor.run(
         service_code,
         x,
@@ -58,6 +60,7 @@ defmodule PVM.Accumulate do
     end
   end
 
+  # Formula (B.11) v0.7.2
   def handle_host_call(
         host_call_id,
         %{gas: gas, registers: registers, memory_ref: memory_ref},
@@ -152,10 +155,13 @@ defmodule PVM.Accumulate do
           |> Utils.replace_service(context)
 
         _ ->
-          %Accumulate.Result{
-            exit_reason: :continue,
+          g_ = gas - default_gas()
+
+          %General.Result{
+            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())},
+            memory: memory,
             context: context
           }
       end

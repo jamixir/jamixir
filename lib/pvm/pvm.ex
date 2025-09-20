@@ -1,18 +1,17 @@
 defmodule PVM do
+  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
+  alias PVM.{Accumulate.Operand, ArgInvoc, Host}
   alias PVM.Host.General
+  alias PVM.Host.General.FetchArgs
   alias System.AccumulationResult
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
-  alias PVM.{Accumulate.Operand, ArgInvoc}
-  alias PVM.Host.General.FetchArgs
-  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
   import Codec.Encoder
   import PVM.Constants.{HostCallId, HostCallResult}
   import PVM.Host.Gas
-  import Util.Collections, only: [sum_field: 2]
 
   # ΨI : The Is-Authorized pvm invocation function.
-  # Formula (B.1) v0.7.0
+  # Formula (B.1) v0.7.2
   @callback do_authorized(WorkPackage.t(), non_neg_integer(), %{integer() => ServiceAccount.t()}) ::
               binary() | WorkExecutionError.t()
 
@@ -24,7 +23,6 @@ defmodule PVM do
               %{n0_: Types.hash()}
             ) :: {ServiceAccount.t(), non_neg_integer()}
 
-  # Formula (B.5) v0.7.0
   @callback do_refine(
               non_neg_integer(),
               WorkPackage.t(),
@@ -96,108 +94,5 @@ defmodule PVM do
         ) :: AccumulationResult.t()
   def accumulate(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}) do
     PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_})
-  end
-
-  # Formula (B.15) v0.7.0
-  @spec on_transfer(
-          services :: %{integer() => ServiceAccount.t()},
-          timeslot :: non_neg_integer(),
-          service_index :: non_neg_integer(),
-          transfers :: list(DeferredTransfer.t()),
-          extra_args :: %{n0_: Types.hash()}
-        ) :: {ServiceAccount.t(), non_neg_integer()}
-  def on_transfer(services, timeslot, service_index, transfers, extra_args) do
-    module = Application.get_env(:jamixir, :pvm, __MODULE__)
-    module.do_on_transfer(services, timeslot, service_index, transfers, extra_args)
-  end
-
-  def do_on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
-    # Formula (B.16) v0.7.0
-
-    f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
-      host_call_result =
-        case host(n) do
-          :gas ->
-            General.gas(gas, registers, memory, context)
-
-          :fetch ->
-            General.fetch(%FetchArgs{
-              gas: gas,
-              registers: registers,
-              memory_ref: memory,
-              work_package: nil,
-              n: n0_,
-              authorizer_trace: nil,
-              index: nil,
-              import_segments: nil,
-              preimages: nil,
-              operands: nil,
-              transfers: transfers,
-              context: context
-            })
-
-          :lookup ->
-            General.lookup(gas, registers, memory, context, service_index, services)
-
-          :read ->
-            General.read(gas, registers, memory, context, service_index, services)
-
-          :write ->
-            General.write(gas, registers, memory, context, service_index)
-
-          :info ->
-            General.info(gas, registers, memory, context, service_index, services)
-
-          :log ->
-            General.log(gas, registers, memory, context, nil, service_index)
-
-          _ ->
-            %{
-              exit_reason: :continue,
-              gas: gas - default_gas(),
-              registers: %{registers | r: put_elem(registers.r, 7, what())},
-              context: context
-            }
-        end
-
-      %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
-
-      {e, %{gas: g, registers: r}, c}
-    end
-
-    # Formula (B.15) v0.7.0
-    service = Map.get(services, service_index)
-
-    service =
-      if service != nil do
-        update_in(
-          service,
-          [:balance],
-          fn balance -> balance + sum_field(transfers, :amount) end
-        )
-      else
-        nil
-      end
-
-    code = ServiceAccount.code(service)
-
-    if code == nil or byte_size(code) > Constants.max_service_code_size() or
-         Enum.empty?(transfers) do
-      {service, 0}
-    else
-      gas_limit = sum_field(transfers, :gas_limit)
-
-      {used_gas, _, service_} =
-        ArgInvoc.execute(
-          code,
-          10,
-          gas_limit,
-          e({timeslot, service_index, length(transfers)}),
-          f,
-          service
-        )
-
-      {service_, used_gas}
-    end
   end
 end

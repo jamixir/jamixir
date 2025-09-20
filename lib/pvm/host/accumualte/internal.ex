@@ -1,5 +1,3 @@
-# Formula (B.22) v0.7.0
-
 defmodule PVM.Host.Accumulate.Internal do
   alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.{Registers}
@@ -13,10 +11,11 @@ defmodule PVM.Host.Accumulate.Internal do
 
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
-  @spec bless_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
+  # Formula (B.20) v0.7.2
+  @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def bless_internal(registers, memory_ref, {x, _y} = context_pair) do
-    {w7, a, v, o, n} = Registers.get_5(registers, 7, 8, 9, 10, 11)
+    [w7, a, v, r, o, n] = Registers.get(registers, [7, 8, 9, 10, 11, 12])
     m = w7
 
     assigners_ =
@@ -47,10 +46,7 @@ defmodule PVM.Host.Accumulate.Internal do
         :error in [z, assigners_] ->
           {:panic, w7, context_pair}
 
-        x.service != x.accumulation.manager ->
-          {:continue, huh(), context_pair}
-
-        Enum.any?([m, v], &(not ServiceAccount.service_id?(&1))) ->
+        Enum.any?([m, v, r], &(not ServiceAccount.service_id?(&1))) ->
           {:continue, who(), context_pair}
 
         true ->
@@ -61,6 +57,7 @@ defmodule PVM.Host.Accumulate.Internal do
                 | manager: m,
                   assigners: assigners_,
                   delegator: v,
+                  registrar: r,
                   always_accumulated: z
               }
           }
@@ -446,7 +443,12 @@ defmodule PVM.Host.Accumulate.Internal do
     }
   end
 
-  @spec solicit_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec solicit_internal(
+          Registers.t(),
+          reference(),
+          {Context.t(), Context.t()},
+          non_neg_integer()
+        ) ::
           Result.Internal.t()
   def solicit_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
     {o, z} = Registers.get_2(registers, 7, 8)
@@ -505,7 +507,7 @@ defmodule PVM.Host.Accumulate.Internal do
 
   @spec forget_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
-  def forget_internal(registers, memory_ref , {x, _y} = context_pair, timeslot) do
+  def forget_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
     {o, z} = Registers.get_2(registers, 7, 8)
 
     h =

@@ -1,4 +1,4 @@
-# Formula (B.7) v0.7.0
+# Formula (B.7) v0.7.2
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
   use AccessStruct
@@ -26,7 +26,7 @@ defmodule PVM.Host.Accumulate.Context do
             accumulation_trie_result: nil,
             preimages: MapSet.new()
 
-  # Formula (B.8) v0.7.0
+  # Formula (B.8) v0.7.2
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
   def accumulating_service(%__MODULE__{} = x), do: x.accumulation.services[x.service]
 
