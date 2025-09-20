@@ -202,6 +202,24 @@ defmodule PVM.Host.AccumulateTest do
       assert registers_[7] == huh
     end
 
+    test "returns {:continue, who()} when assigned service not in N_S", %{
+      memory: memory,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      registers = %{registers | r: put_elem(registers.r, 9, Constants.max_service_id() + 1)}
+
+      assert %{
+               exit_reason: :continue,
+               registers: registers_,
+               memory: ^memory,
+               context: ^context
+             } = Accumulate.assign(gas, registers, memory, context)
+
+      assert registers_[7] == who()
+    end
+
     test "returns {:continue, core()} when core value is invalid", %{
       memory_ref: memory_ref,
       context: context,

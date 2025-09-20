@@ -99,16 +99,12 @@ defmodule PVM.Host.Accumulate.Internal do
         x.service != x.accumulation.assigners |> Enum.at(c) ->
           {:continue, huh(), context_pair}
 
+        a > Constants.max_service_id() ->
+          {:continue, who(), context_pair}
+
         true ->
-          queue_ =
-            x.accumulation.authorizer_queue |> List.replace_at(c, q)
-
-          assigners_ = x.accumulation.assigners |> List.replace_at(c, a)
-
-          x_ =
-            put_in(x.accumulation.authorizer_queue, queue_)
-
-          x_ = put_in(x_.accumulation.assigners, assigners_)
+          x_ = put_in(x, [:accumulation, :authorizer_queue, Access.at(c)], q)
+          x_ = put_in(x_, [:accumulation, :assigners, Access.at(c)], a)
 
           context_ = put_elem(context_pair, 0, x_)
           {:continue, ok(), context_}
