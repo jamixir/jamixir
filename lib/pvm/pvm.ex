@@ -31,17 +31,17 @@ defmodule PVM do
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
     # Formula (B.2) v0.7.0
-    f = fn n, %{gas: gas, registers: registers, memory: memory}, _context ->
+    f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, _context ->
       host_call_result =
         case host(n) do
           :gas ->
-            Host.General.gas(gas, registers, memory, nil)
+            Host.General.gas(gas, registers, memory_ref, nil)
 
           :fetch ->
             Host.General.fetch(%FetchArgs{
               gas: gas,
               registers: registers,
-              memory: memory,
+              memory_ref: memory_ref,
               work_package: p,
               n: nil,
               authorizer_trace: nil,
@@ -54,20 +54,19 @@ defmodule PVM do
             })
 
           :log ->
-            Host.General.log(gas, registers, memory, nil)
+            Host.General.log(gas, registers, memory_ref, nil)
 
           _ ->
             %General.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
               registers: %{registers | r: put_elem(registers.r, 7, what())},
-              memory: memory
             }
         end
 
-      %{exit_reason: e, gas: g, registers: r, memory: m, context: _c} = host_call_result
+      %{exit_reason: e, gas: g, registers: r, context: _c} = host_call_result
 
-      {e, %{gas: g, registers: r, memory: m}, nil}
+      {e, %{gas: g, registers: r}, nil}
     end
 
     p_u = WorkPackage.authorization_code(p, services)
@@ -172,17 +171,18 @@ defmodule PVM do
 
   def do_on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
     # Formula (B.16) v0.7.0
-    f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
+
+    f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, context ->
       host_call_result =
         case host(n) do
           :gas ->
-            General.gas(gas, registers, memory, context)
+            General.gas(gas, registers, memory_ref, context)
 
           :fetch ->
             General.fetch(%FetchArgs{
               gas: gas,
               registers: registers,
-              memory: memory,
+              memory_ref: memory_ref,
               work_package: nil,
               n: n0_,
               authorizer_trace: nil,
@@ -195,33 +195,32 @@ defmodule PVM do
             })
 
           :lookup ->
-            General.lookup(gas, registers, memory, context, service_index, services)
+            General.lookup(gas, registers, memory_ref, context, service_index, services)
 
           :read ->
-            General.read(gas, registers, memory, context, service_index, services)
+            General.read(gas, registers, memory_ref, context, service_index, services)
 
           :write ->
-            General.write(gas, registers, memory, context, service_index)
+            General.write(gas, registers, memory_ref, context, service_index)
 
           :info ->
-            General.info(gas, registers, memory, context, service_index, services)
+            General.info(gas, registers, memory_ref, context, service_index, services)
 
           :log ->
-            General.log(gas, registers, memory, context, nil, service_index)
+            General.log(gas, registers, memory_ref, context, nil, service_index)
 
           _ ->
             %{
               exit_reason: :continue,
               gas: gas - default_gas(),
               registers: %{registers | r: put_elem(registers.r, 7, what())},
-              memory: memory,
               context: context
             }
         end
 
-      %{exit_reason: e, gas: g, registers: r, memory: m, context: c} = host_call_result
+      %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
 
-      {e, %{gas: g, registers: r, memory: m}, c}
+      {e, %{gas: g, registers: r}, c}
     end
 
     # Formula (B.15) v0.7.0
@@ -245,6 +244,7 @@ defmodule PVM do
       {service, 0}
     else
       gas_limit = sum_field(transfers, :gas_limit)
+      IO.inspect("do_on_transfer")
 
       {used_gas, _, service_} =
         ArgInvoc.execute(

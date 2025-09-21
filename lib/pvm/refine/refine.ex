@@ -48,17 +48,17 @@ defmodule PVM.Refine do
     with {:ok, service} <- fetch_service(services, service_id),
          {:ok, program} <- fetch_lookup(service, px.timeslot, wc),
          :ok <- validate_code_size(program) do
-      f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
+      f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, context ->
         host_call_result =
           case host(n) do
             :gas ->
-              General.gas(gas, registers, memory, context)
+              General.gas(gas, registers, memory_ref, context)
 
             :fetch ->
               General.fetch(%FetchArgs{
                 gas: gas,
                 registers: registers,
-                memory: memory,
+                memory_ref: memory_ref,
                 work_package: work_package,
                 n: Hash.zero(),
                 authorizer_trace: authorizer_trace,
@@ -74,7 +74,7 @@ defmodule PVM.Refine do
               Refine.historical_lookup(
                 gas,
                 registers,
-                memory,
+                memory_ref,
                 context,
                 service_id,
                 services,
@@ -82,35 +82,34 @@ defmodule PVM.Refine do
               )
 
             :export ->
-              Refine.export(gas, registers, memory, context, export_segment_offset)
+              Refine.export(gas, registers, memory_ref, context, export_segment_offset)
 
             :machine ->
-              Refine.machine(gas, registers, memory, context)
+              Refine.machine(gas, registers, memory_ref, context)
 
             :peek ->
-              Refine.peek(gas, registers, memory, context)
+              Refine.peek(gas, registers, memory_ref, context)
 
             :pages ->
-              Refine.pages(gas, registers, memory, context)
+              Refine.pages(gas, registers, memory_ref, context)
 
             :poke ->
-              Refine.poke(gas, registers, memory, context)
+              Refine.poke(gas, registers, memory_ref, context)
 
             :invoke ->
-              Refine.invoke(gas, registers, memory, context)
+              Refine.invoke(gas, registers, memory_ref, context)
 
             :expunge ->
-              Refine.expunge(gas, registers, memory, context)
+              Refine.expunge(gas, registers, memory_ref, context)
 
             :log ->
-              General.log(gas, registers, memory, context, work_item_index, service_id)
+              General.log(gas, registers, memory_ref, context, work_item_index, service_id)
 
             _ ->
               %Refine.Result{
                 exit_reason: :continue,
                 gas: gas - default_gas(),
                 registers: %{registers | r: put_elem(registers.r, 7, what())},
-                memory: memory,
                 context: context
               }
           end
@@ -119,11 +118,10 @@ defmodule PVM.Refine do
           exit_reason: exit_reason,
           gas: gas,
           registers: registers,
-          memory: memory,
           context: context
         } = host_call_result
 
-        {exit_reason, %{gas: gas, registers: registers, memory: memory}, context}
+        {exit_reason, %{gas: gas, registers: registers}, context}
       end
 
       args = e({work_item_index, service_id, vs(wy), h(e(work_package))})

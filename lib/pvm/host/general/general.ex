@@ -8,14 +8,13 @@ defmodule PVM.Host.General do
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
-  def gas(gas, registers, memory, context, _args \\ []) do
+  def gas(gas, registers, _memory_ref, context, _args \\ []) do
     {exit_reason, remaining_gas} = check_gas(gas)
 
     result = %General.Result{
       exit_reason: exit_reason,
       gas: remaining_gas,
       registers: registers,
-      memory: memory,
       context: context
     }
 
@@ -32,7 +31,7 @@ defmodule PVM.Host.General do
   def fetch(%FetchArgs{} = args) do
     with_gas(
       General.Result,
-      {args.gas, args.registers, args.memory, args.context},
+      {args.gas, args.registers, args.memory_ref, args.context},
       &fetch_internal/11,
       [
         args.work_package,
@@ -47,46 +46,46 @@ defmodule PVM.Host.General do
     )
   end
 
-  def lookup(gas, registers, memory, context, service_index, services) do
+  def lookup(gas, registers, memory_ref, context, service_index, services) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {gas, registers, memory_ref , context},
       &lookup_internal/5,
       [service_index, services]
     )
   end
 
-  def read(gas, registers, memory, context, service_index, services) do
+  def read(gas, registers, memory_ref, context, service_index, services) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {gas, registers, memory_ref, context},
       &read_internal/5,
       [service_index, services]
     )
   end
 
-  def write(gas, registers, memory, context, service_index) do
+  def write(gas, registers, memory_ref, context, service_index) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {gas, registers, memory_ref, context},
       &write_internal/4,
       [service_index]
     )
   end
 
-  def info(gas, registers, memory, context, service_index, services) do
+  def info(gas, registers, memory_ref, context, service_index, services) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {gas, registers, memory_ref, context},
       &info_internal/5,
       [service_index, services]
     )
   end
 
-  def log(gas, registers, memory, context, core_index \\ nil, service_index \\ nil) do
+  def log(gas, registers, memory_ref, context, core_index \\ nil, service_index \\ nil) do
     with_gas(
       General.Result,
-      {gas, registers, memory, context},
+      {gas, registers, memory_ref, context},
       &log_internal/5,
       [core_index, service_index],
       0

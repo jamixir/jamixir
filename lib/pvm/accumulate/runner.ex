@@ -1,0 +1,179 @@
+defmodule PVM.Accumulate.Runner do
+  use GenServer
+  import Pvm.Native
+  alias Pvm.Native.ExecuteResult
+  require Logger
+
+  defstruct [
+    :service_code,
+    :gas,
+    :encoded_args,
+    :operands,
+    :ctx_pair,
+    :mem_ref,
+    :parent,
+    :n0_,
+    :timeslot,
+    :service_index
+  ]
+
+  def start(
+        service_code,
+        initial_context,
+        encoded_args,
+        gas,
+        operands,
+        n0_,
+        timeslot,
+        service_index,
+        opts \\ []
+      ) do
+    GenServer.start(
+      __MODULE__,
+      {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
+       self(), opts}
+    )
+  end
+
+  @impl true
+  def init(
+        {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
+         parent, _opts}
+      ) do
+    ctx_pair = {initial_context, initial_context}
+
+    mem_ref = memory_new()
+
+    state = %__MODULE__{
+      service_code: service_code,
+      gas: gas,
+      encoded_args: encoded_args,
+      operands: operands,
+      ctx_pair: ctx_pair,
+      mem_ref: mem_ref,
+      parent: parent,
+      n0_: n0_,
+      timeslot: timeslot,
+      service_index: service_index
+    }
+
+    GenServer.cast(self(), :execute)
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a, mem_ref: mr} = st) do
+    Logger.debug("Runner.handle_cast(:execute): Starting native execution with gas=#{g}")
+    case execute(sc, 5, g, a, mr) do
+      %ExecuteResult{output: :waiting} ->
+        # VM paused on host call; wait for :ecall message
+        Logger.debug("Runner.handle_cast(:execute): VM paused on host call, waiting for :ecall")
+        {:noreply, st}
+
+      %ExecuteResult{output: output, used_gas: used_gas} ->
+        Logger.debug("Runner.handle_cast(:execute): Execution completed - used_gas=#{used_gas}, output=#{inspect(output)}")
+        send(st.parent, {used_gas, output, st.ctx_pair})
+        {:stop, :normal, st}
+    end
+  end
+
+  @impl true
+  def handle_info({:ecall, host_call_id, state, mem_ref}, st) do
+    Logger.debug("Runner.handle_info({:ecall, #{host_call_id}, ...}): Processing host call")
+    %Pvm.Native.VmState{
+      registers: registers,
+      spent_gas: spent_gas,
+      initial_gas: initial_gas
+    } = state
+
+    gas_remaining = initial_gas - spent_gas
+    Logger.debug("Runner.handle_info({:ecall, ...}): gas_remaining=#{gas_remaining}, spent_gas=#{spent_gas}")
+
+    #  the assumption here is that converting once to tuple is faster then using list inside the host call
+    #  also just lazy to change all the host calls code to use list
+    registers_struct = PVM.Registers.from_list(registers)
+
+    Logger.debug("Runner.handle_info({:ecall, ...}): Calling handle_host_call")
+    {exit_reason, post_host_call_state, new_ctx_pair} =
+      PVM.Accumulate.handle_host_call(
+        host_call_id,
+        %{gas: gas_remaining, registers: registers_struct, memory_ref: mem_ref},
+        st.ctx_pair,
+        st.n0_,
+        st.operands,
+        st.timeslot,
+        st.service_index
+      )
+    Logger.debug("Runner.handle_info({:ecall, ...}): handle_host_call completed with exit_reason=#{exit_reason}")
+
+    #  the small gas math below is due to a differnt gas model between the inner vm and the host call
+    #  the host calls simply start from some gas amount and deduct from it
+    #  the inner vm keeps track of inital gas and spent gas (becuase gas is u64 but :out_of_gas exit is triggerd when gas < 0, u64 cannot be negative)
+
+    gas_consumed = gas_remaining - post_host_call_state.gas
+    spent_gas = state.spent_gas + gas_consumed
+
+    #  we could be lazy and pass this back to the inner vm and get the final result there (for all cases except :continue)
+    # but this would cost  two more extra NIF boundary crossing (encode/ decode /message send) => so we do it here
+
+    case exit_reason do
+      :out_of_gas ->
+        send(st.parent, {spent_gas, :out_of_gas, new_ctx_pair})
+        {:stop, :normal, st}
+
+      :halt ->
+        start_addr = elem(post_host_call_state.registers.r, 7)
+        length = elem(post_host_call_state.registers.r, 8)
+
+        result =
+          case memory_read(mem_ref, start_addr, length) do
+            {:ok, data} ->
+              {spent_gas, data, new_ctx_pair}
+
+            {:error, _error} ->
+              {spent_gas, <<>>, new_ctx_pair}
+          end
+
+        send(st.parent, result)
+        {:stop, :normal, st}
+
+      :continue ->
+        registers_list = PVM.Registers.to_list(post_host_call_state.registers)
+
+        updated_state = %Pvm.Native.VmState{
+          state
+          | registers: registers_list,
+            spent_gas: spent_gas
+        }
+
+        send(self(), {:resume_vm, mem_ref, updated_state})
+        {:noreply, %{st | ctx_pair: new_ctx_pair}}
+
+      _ ->
+        send(st.parent, {spent_gas, :panic, st.ctx_pair})
+    end
+  end
+
+  #  resume_vm is seperated like this so we can upadte the genserver state with the post host call context BEOFRE
+  #  resuming the inner vm execution
+  # if we hadn't done this, there would be a race condition where an next ecall message could of come in before the genserver state was updated
+  def handle_info({:resume_vm, mem_ref, updated_state}, st) do
+    Logger.debug("Runner.handle_info({:resume_vm, ...}): Resuming VM execution")
+    case resume(updated_state, mem_ref) do
+      %ExecuteResult{output: :waiting} ->
+        Logger.debug("Runner.handle_info({:resume_vm, ...}): VM paused again, waiting for :ecall")
+        {:noreply, st}
+
+      %ExecuteResult{} = final ->
+        Logger.debug("Runner.handle_info({:resume_vm, ...}): VM execution completed - used_gas=#{final.used_gas}, output=#{inspect(final.output)}")
+        send(st.parent, {final.used_gas, final.output, st.ctx_pair})
+        {:stop, :normal, st}
+    end
+  end
+
+  # Handle any unexpected messages
+  def handle_info(msg, st) do
+    Logger.warning("Runner.handle_info: Received unexpected message: #{inspect(msg)}")
+    {:noreply, st}
+  end
+end

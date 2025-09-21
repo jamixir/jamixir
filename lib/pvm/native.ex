@@ -1,7 +1,9 @@
 defmodule Pvm.Native do
+  alias Pvm.Native.ExecuteResult
   use Rustler, otp_app: :jamixir, crate: "pvm"
 
   # VM execution entry point
+  @spec execute(any(), any(), any(), any(), any()) :: ExecuteResult.t()
   def execute(_program, _pc, _gas, _args, _memory_ref) do
     :erlang.nif_error(:nif_not_loaded)
   end
@@ -30,4 +32,9 @@ end
 
 defmodule Pvm.Native.ExecuteResult do
   defstruct [:used_gas, :output]
+end
+
+
+defmodule Pvm.Native.VmState do
+  defstruct [:registers, :pc, :initial_gas, :spent_gas]
 end
