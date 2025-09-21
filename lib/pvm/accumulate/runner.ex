@@ -14,7 +14,8 @@ defmodule PVM.Accumulate.Runner do
     :parent,
     :n0_,
     :timeslot,
-    :service_index
+    :service_index,
+    :context_token
   ]
 
   def start(
@@ -54,7 +55,8 @@ defmodule PVM.Accumulate.Runner do
       parent: parent,
       n0_: n0_,
       timeslot: timeslot,
-      service_index: service_index
+      service_index: service_index,
+      context_token: nil
     }
 
     GenServer.cast(self(), :execute)
@@ -65,12 +67,12 @@ defmodule PVM.Accumulate.Runner do
   def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a, mem_ref: mr} = st) do
     Logger.debug("Runner.handle_cast(:execute): Starting native execution with gas=#{g}")
     case execute(sc, 5, g, a, mr) do
-      %ExecuteResult{output: :waiting} ->
+      %ExecuteResult{output: :waiting, context_token: token} ->
         # VM paused on host call; wait for :ecall message
         Logger.debug("Runner.handle_cast(:execute): VM paused on host call, waiting for :ecall")
-        {:noreply, st}
+        {:noreply, %{st | context_token: token}}
 
-      %ExecuteResult{output: output, used_gas: used_gas} ->
+      %ExecuteResult{output: output, used_gas: used_gas, context_token: token} ->
         Logger.debug("Runner.handle_cast(:execute): Execution completed - used_gas=#{used_gas}, output=#{inspect(output)}")
         send(st.parent, {used_gas, output, st.ctx_pair})
         {:stop, :normal, st}
@@ -78,7 +80,7 @@ defmodule PVM.Accumulate.Runner do
   end
 
   @impl true
-  def handle_info({:ecall, host_call_id, state, mem_ref}, st) do
+  def handle_info({:ecall, host_call_id, state, mem_ref, context_token}, st) do
     Logger.debug("Runner.handle_info({:ecall, #{host_call_id}, ...}): Processing host call")
     %Pvm.Native.VmState{
       registers: registers,
@@ -146,7 +148,7 @@ defmodule PVM.Accumulate.Runner do
             spent_gas: spent_gas
         }
 
-        send(self(), {:resume_vm, mem_ref, updated_state})
+        send(self(), {:resume_vm, mem_ref, updated_state, context_token})
         {:noreply, %{st | ctx_pair: new_ctx_pair}}
 
       _ ->
@@ -157,10 +159,10 @@ defmodule PVM.Accumulate.Runner do
   #  resume_vm is seperated like this so we can upadte the genserver state with the post host call context BEOFRE
   #  resuming the inner vm execution
   # if we hadn't done this, there would be a race condition where an next ecall message could of come in before the genserver state was updated
-  def handle_info({:resume_vm, mem_ref, updated_state}, st) do
+  def handle_info({:resume_vm, mem_ref, updated_state, context_token}, st) do
     Logger.debug("Runner.handle_info({:resume_vm, ...}): Resuming VM execution")
-    case resume(updated_state, mem_ref) do
-      %ExecuteResult{output: :waiting} ->
+    case resume(updated_state, mem_ref, context_token) do
+      %ExecuteResult{output: :waiting, context_token: _token} ->
         Logger.debug("Runner.handle_info({:resume_vm, ...}): VM paused again, waiting for :ecall")
         {:noreply, st}
 

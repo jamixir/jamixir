@@ -44,7 +44,6 @@ defmodule PVM.Accumulate do
       AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
       encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands)})
-      IO.inspect("do accumulate")
       Executor.run(
         service_code,
         x,
@@ -161,7 +160,7 @@ defmodule PVM.Accumulate do
           }
       end
 
-    Logger.debug("host call: #{host_call}, gas: #{host_call_result.gas}")
+      Logger.debug("host call: #{host_call}, gas: #{host_call_result.gas}")
 
     %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
 

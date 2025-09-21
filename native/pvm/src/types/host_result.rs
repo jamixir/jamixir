@@ -11,4 +11,5 @@ pub enum HostOutput {
 pub struct ExecuteResult {
     pub used_gas: u64,
     pub output: HostOutput,
+    pub context_token: u64,
 }

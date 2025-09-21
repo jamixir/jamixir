@@ -14,6 +14,7 @@ pub struct Vm {
     pub memory_ref: Option<MemoryRef>,
     pub memory: Option<Memory>,
     pub state: VmState,
+    pub context_token: u64,
 }
 
 impl Vm {
@@ -22,12 +23,14 @@ impl Vm {
         state: VmState,
         memory_ref: MemoryRef,
         memory: Option<Memory>,
+        context_token: u64,
     ) -> Self {
         Self {
             context,
             memory_ref: Some(memory_ref),
             memory,
             state,
+            context_token,
         }
     }
 
@@ -37,6 +40,7 @@ impl Vm {
             memory_ref: None,
             memory,
             state,
+            context_token: 0, // Test instances don't need real tokens
         }
     }
 
@@ -72,19 +76,22 @@ impl Vm {
                     Ok(bytes) => HostOutput::Bytes(bytes.to_vec()),
                     Err(_) => HostOutput::Bytes(vec![]),
                 };
-                Ok(ExecuteResult { used_gas, output })
+                Ok(ExecuteResult { used_gas, output, context_token: self.context_token })
             }
             ExecutionResult::Panic { .. } => Ok(ExecuteResult {
                 used_gas,
                 output: HostOutput::Atom(atoms::panic()),
+                context_token: self.context_token,
             }),
             ExecutionResult::OutOfGas { .. } => Ok(ExecuteResult {
                 used_gas,
                 output: HostOutput::Atom(atoms::out_of_gas()),
+                context_token: self.context_token,
             }),
             ExecutionResult::Fault { .. } => Ok(ExecuteResult {
                 used_gas,
                 output: HostOutput::Atom(atoms::panic()),
+                context_token: self.context_token,
             }),
             ExecutionResult::HostCall { call_id } => {
                 let memory_ref = match &self.memory_ref {
@@ -93,6 +100,7 @@ impl Vm {
                         return Ok(ExecuteResult {
                             used_gas,
                             output: HostOutput::Atom(atoms::panic()),
+                            context_token: self.context_token,
                         });
                     }
                 };
@@ -100,16 +108,17 @@ impl Vm {
                     let _ = put_owned(memory_ref, memory).to_nif(env)?;
                 }
 
-                // Send message to Elixir with VmState + memory_ref
+                // Send message to Elixir with VmState + memory_ref + context_token
                 let pid = env.pid();
                 let memory_ref = memory_ref.clone();
                 let state = self.state.clone();
+                let context_token = self.context_token;
 
                 std::thread::spawn(move || {
                     let mut owned_env = OwnedEnv::new();
 
                     if let Err(e) = owned_env.send_and_clear(&pid, move |env| {
-                        (atoms::ecall(), call_id, state, memory_ref).encode(env)
+                        (atoms::ecall(), call_id, state, memory_ref, context_token).encode(env)
                     }) {
                         println!("ERROR: Failed to send ecall message: {:?}", e);
                     }
@@ -118,6 +127,7 @@ impl Vm {
                 Ok(ExecuteResult {
                     used_gas,
                     output: HostOutput::Atom(atoms::waiting()),
+                    context_token: self.context_token,
                 })
             }
         }

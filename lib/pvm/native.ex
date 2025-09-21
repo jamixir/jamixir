@@ -9,7 +9,7 @@ defmodule Pvm.Native do
   end
 
   # Resume VM after handling a host call
-  def resume(_state, _memory_ref) do
+  def resume(_state, _memory_ref, _context_token) do
     :erlang.nif_error(:nif_not_loaded)
   end
 
@@ -31,7 +31,7 @@ end
 
 
 defmodule Pvm.Native.ExecuteResult do
-  defstruct [:used_gas, :output]
+  defstruct [:used_gas, :output, :context_token]
 end
 
 
