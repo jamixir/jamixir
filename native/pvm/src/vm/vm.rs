@@ -97,7 +97,7 @@ impl Vm {
                     }
                 };
                 if let Some(memory) = self.memory.take() {
-                    let _ = put_owned(memory_ref, memory).to_nif()?;
+                    let _ = put_owned(memory_ref, memory).to_nif(env)?;
                 }
 
                 // Send message to Elixir with VmState + memory_ref

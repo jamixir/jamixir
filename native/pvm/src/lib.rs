@@ -9,7 +9,7 @@ use rustler::{Binary, Decoder, Env, NifResult, Term};
 use std::sync::{Arc, OnceLock};
 
 use crate::{
-    core::errors::{to_rustler_error, ToNifResult},
+    core::errors::{to_rustler_error},
     core::StartSet,
     core::{get_owned, MemoryRef, MemoryResource},
     encoding::{deblob, Deblob},
@@ -86,7 +86,7 @@ fn resume<'a>(
         .ok_or(to_rustler_error!(atoms::no_vm_context()))?
         .clone();
 
-    let memory = get_owned(&memory_ref).to_nif()?;
+    let memory = get_owned(&memory_ref).map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
 
     Vm::new(context, new_state, memory_ref, memory).arg_invoke(env)
 }

@@ -3,10 +3,11 @@ use std::sync::Mutex;
 use crate::{
     atoms,
     core::consts::{MEMORY_SIZE, MIN_ADDR, PAGES_PER_ACCESS_WORD, PAGE_SIZE},
-    to_rustler_error, ToNifResult,
+    core::errors::ToNifResult,
+    to_rustler_error,
 };
 use memmap::{MmapMut, MmapOptions};
-use rustler::{Binary, NifResult, NifTuple, Resource, ResourceArc};
+use rustler::{Binary, Env, NifResult, NifTuple, OwnedBinary, Resource, ResourceArc};
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -208,25 +209,43 @@ pub fn put_owned(mem_ref: &MemoryRef, memory: Memory) -> Result<(), MutexError> 
 }
 
 #[rustler::nif]
-pub fn memory_read(mem_ref: MemoryRef, addr: usize, len: usize) -> NifResult<Vec<u8>> {
+pub fn memory_read<'a>(
+    env: Env<'a>,
+    mem_ref: MemoryRef,
+    addr: usize,
+    len: usize,
+) -> NifResult<(rustler::Atom, rustler::Term<'a>)> {
     let memory_guard: std::sync::MutexGuard<'_, Option<Memory>> = mem_ref
         .memory
         .lock()
         .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
+
     match memory_guard.as_ref() {
-        Some(memory) => memory.read(addr, len).map(|slice| slice.to_vec()).to_nif(),
+        Some(memory) => memory
+            .read(addr, len)
+            .map(|slice| {
+                let mut owned_binary = OwnedBinary::new(slice.len()).unwrap();
+                owned_binary.as_mut_slice().copy_from_slice(slice);
+                Binary::from_owned(owned_binary, env)
+            })
+            .to_nif(env),
         None => Err(to_rustler_error!(atoms::memory_not_available())),
     }
 }
 
 #[rustler::nif]
-pub fn memory_write(mem_ref: MemoryRef, addr: usize, data: Binary) -> NifResult<()> {
+pub fn memory_write<'a>(
+    env: Env<'a>,
+    mem_ref: MemoryRef,
+    addr: usize,
+    data: Binary,
+) -> NifResult<(rustler::Atom, rustler::Term<'a>)> {
     let mut memory_guard = mem_ref
         .memory
         .lock()
         .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
     match memory_guard.as_mut() {
-        Some(memory) => memory.write(addr, &data).to_nif(),
+        Some(memory) => memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
         None => Err(to_rustler_error!(atoms::memory_not_available())),
     }
 }

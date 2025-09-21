@@ -1,4 +1,4 @@
-use rustler::NifResult;
+use rustler::{NifResult, Env, Encoder};
 
 use crate::{
     atoms,
@@ -17,29 +17,32 @@ macro_rules! to_rustler_error {
 }
 
 pub trait ToNifResult<T> {
-    fn to_nif(self) -> NifResult<T>;
+    fn to_nif(self, env: Env) -> NifResult<(rustler::Atom, rustler::Term)>;
 }
 
-impl<T> ToNifResult<T> for Result<T, MemoryError> {
-    fn to_nif(self) -> NifResult<T> {
+impl<T: Encoder> ToNifResult<T> for Result<T, MemoryError> {
+    fn to_nif(self, env: Env) -> NifResult<(rustler::Atom, rustler::Term)> {
         match self {
-            Ok(val) => Ok(val),
-            Err(MemoryError::Fault { page_addr }) => Err(to_rustler_error!(FaultError {
-                fault: atoms::fault(),
-                page_addr,
-            })),
-            Err(MemoryError::Panic) => Err(to_rustler_error!(atoms::panic())),
+            Ok(val) => Ok((atoms::ok(), val.encode(env))),
+            Err(MemoryError::Fault { page_addr }) => {
+                let fault_error = FaultError {
+                    fault: atoms::fault(),
+                    page_addr,
+                };
+                Ok((atoms::error(), fault_error.encode(env)))
+            }
+            Err(MemoryError::Panic) => Ok((atoms::error(), atoms::panic().encode(env))),
         }
     }
 }
 
-impl<T> ToNifResult<T> for Result<T, MutexError> {
-    fn to_nif(self) -> NifResult<T> {
+impl<T: Encoder> ToNifResult<T> for Result<T, MutexError> {
+    fn to_nif(self, env: Env) -> NifResult<(rustler::Atom, rustler::Term)> {
         match self {
-            Ok(val) => Ok(val),
-            Err(MutexError::Poisoned) => Err(to_rustler_error!(atoms::mutex_poisoned())),
+            Ok(val) => Ok((atoms::ok(), val.encode(env))),
+            Err(MutexError::Poisoned) => Ok((atoms::error(), atoms::mutex_poisoned().encode(env))),
             Err(MutexError::MemoryAlreadyPresent) => {
-                Err(to_rustler_error!(atoms::memory_already_present()))
+                Ok((atoms::error(), atoms::memory_already_present().encode(env)))
             }
         }
     }

@@ -32,7 +32,7 @@ impl From<InstructionResult> for StepResult {
 }
 
 #[derive(Debug, Clone, NifStruct, Copy)]
-#[module = "VmState"]
+#[module = "Pvm.Native.VmState"]
 pub struct VmState {
     pub registers: Registers,
     pub pc: usize,
