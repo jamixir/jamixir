@@ -145,6 +145,7 @@ defmodule PVM.Accumulate.Runner do
 
       _ ->
         send(st.parent, {spent_gas, :panic, st.ctx_pair})
+        {:stop, :normal, st}
     end
   end
 
