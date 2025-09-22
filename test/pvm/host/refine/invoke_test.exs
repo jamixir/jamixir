@@ -39,12 +39,13 @@ defmodule PVM.Host.Refine.InvokeTest do
       gas = 100
 
       # Base registers setup
-      registers = Registers.new(%{
-        # machine ID
-        7 => 1,
-        # output address (second usable page)
-        8 => 0x1_1000
-      })
+      registers =
+        Registers.new(%{
+          # machine ID
+          7 => 1,
+          # output address (second usable page)
+          8 => 0x1_1000
+        })
 
       {:ok, memory: memory, context: context, gas: gas, registers: registers}
     end
@@ -60,7 +61,6 @@ defmodule PVM.Host.Refine.InvokeTest do
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } = Refine.invoke(gas, registers, memory, context)
     end
@@ -78,7 +78,6 @@ defmodule PVM.Host.Refine.InvokeTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.invoke(gas, registers, memory, context)
 

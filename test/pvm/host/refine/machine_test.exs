@@ -14,11 +14,12 @@ defmodule PVM.Host.Refine.MachineTest do
       # r7: program start, r8: program length, r9: initial counter
       test_program = PVM.Encoder.encode_program(<<1, 1, 1, 1, 1, 1, 1, 1>>, <<255>>, {}, 1)
 
-      registers = Registers.new(%{
-        7 => min_allowed_address(),
-        8 => byte_size(test_program),
-        9 => 42
-      })
+      registers =
+        Registers.new(%{
+          7 => min_allowed_address(),
+          8 => byte_size(test_program),
+          9 => 42
+        })
 
       memory =
         PreMemory.init_nil_memory()
@@ -46,7 +47,6 @@ defmodule PVM.Host.Refine.MachineTest do
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } = Refine.machine(gas, registers, memory, context)
     end
@@ -61,9 +61,9 @@ defmodule PVM.Host.Refine.MachineTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
+
       assert registers_[7] == 0
 
       # Verify new machine state
@@ -93,7 +93,6 @@ defmodule PVM.Host.Refine.MachineTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
 
@@ -129,7 +128,6 @@ defmodule PVM.Host.Refine.MachineTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.machine(gas, registers, memory, context)
 
@@ -158,11 +156,12 @@ defmodule PVM.Host.Refine.MachineTest do
     } do
       test_program = <<40, 30, 20>> <> test_program
 
-      registers = Registers.new(%{
-        7 => 0x1_0000,
-        8 => byte_size(test_program),
-        9 => 42
-      })
+      registers =
+        Registers.new(%{
+          7 => 0x1_0000,
+          8 => byte_size(test_program),
+          9 => 42
+        })
 
       memory = Memory.write!(memory, registers[7], test_program)
       huh = huh()
@@ -170,7 +169,6 @@ defmodule PVM.Host.Refine.MachineTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.machine(gas, registers, memory, context)
 

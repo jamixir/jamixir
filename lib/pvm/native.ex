@@ -14,7 +14,11 @@ defmodule Pvm.Native do
   end
 
   # Create a new memory reference
-  def memory_new() do
+  def memory_new do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def build_memory do
     :erlang.nif_error(:nif_not_loaded)
   end
 
@@ -27,13 +31,15 @@ defmodule Pvm.Native do
   def memory_write(_memory_ref, _addr, _data) do
     :erlang.nif_error(:nif_not_loaded)
   end
-end
 
+  def set_memory_access(_memory_ref, _addr, _len, _mode) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+end
 
 defmodule Pvm.Native.ExecuteResult do
   defstruct [:used_gas, :output, :context_token]
 end
-
 
 defmodule Pvm.Native.VmState do
   defstruct [:registers, :pc, :initial_gas, :spent_gas]

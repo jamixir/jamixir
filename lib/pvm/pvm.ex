@@ -31,7 +31,7 @@ defmodule PVM do
 
   def do_authorized(%WorkPackage{} = p, core_index, services) do
     # Formula (B.2) v0.7.0
-    f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, _context ->
+    f = fn n, %{gas: gas, registers: registers, memory: memory_ref}, _context ->
       host_call_result =
         case host(n) do
           :gas ->
@@ -60,7 +60,7 @@ defmodule PVM do
             %General.Result{
               exit_reason: :continue,
               gas: gas - default_gas(),
-              registers: %{registers | r: put_elem(registers.r, 7, what())},
+              registers: %{registers | r: put_elem(registers.r, 7, what())}
             }
         end
 

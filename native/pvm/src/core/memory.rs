@@ -193,6 +193,18 @@ pub fn memory_new() -> MemoryRef {
     })
 }
 
+#[rustler::nif]
+pub fn build_memory() -> MemoryRef {
+    let memory_ref =     ResourceArc::new(MemoryResource {
+        memory: Mutex::new(None),
+    });
+
+    let builder = Memory::builder();
+    let memory = builder.build();
+    let _ = put_owned(&memory_ref, memory);
+    memory_ref
+}
+
 pub fn get_owned(mem_ref: &MemoryRef) -> Result<Option<Memory>, MutexError> {
     let mut guard = mem_ref.memory.lock().map_err(|_| MutexError::Poisoned)?;
     Ok(guard.take())
@@ -248,4 +260,35 @@ pub fn memory_write<'a>(
         Some(memory) => memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
         None => Err(to_rustler_error!(atoms::memory_not_available())),
     }
+}
+
+#[rustler::nif]
+pub fn set_memory_access<'a>(
+    env: Env<'a>,
+    mem_ref: MemoryRef,
+    addr: usize,
+    len: usize,
+    permissions: usize,
+) -> NifResult<MemoryRef> {
+    let mut memory_guard = mem_ref
+        .memory
+        .lock()
+        .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
+    match memory_guard.as_mut() {
+        Some(memory) => {
+            memory.set_access(addr, len, Permission::ReadWrite);
+            Ok(mem_ref.clone())
+        }
+        //   memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
+        None => Err(to_rustler_error!(atoms::memory_not_available())),
+    }
+
+    // let mut builder = Memory::builder();
+    // builder.set_access(addr, len, Permission::ReadWrite);
+    // buil
+    // let result = get_owned(&mem_ref);
+    // let memory_option = result.unwrap_or(None);
+    // let mut memory: Memory = memory_option.unwrap();
+    // put_owned(&mem_ref, memory);
+    // mem_ref
 }

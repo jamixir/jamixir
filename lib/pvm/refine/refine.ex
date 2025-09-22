@@ -1,9 +1,9 @@
 defmodule PVM.Refine do
-  alias Util.Hash
-  alias System.State.ServiceAccount
-  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage, WorkItem}
+  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem, WorkPackage}
   alias PVM.{ArgInvoc, Host.Refine, Host.General}
   alias PVM.Host.General.FetchArgs
+  alias System.State.ServiceAccount
+  alias Util.Hash
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
   import PVM.Types
@@ -48,7 +48,7 @@ defmodule PVM.Refine do
     with {:ok, service} <- fetch_service(services, service_id),
          {:ok, program} <- fetch_lookup(service, px.timeslot, wc),
          :ok <- validate_code_size(program) do
-      f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, context ->
+      f = fn n, %{gas: gas, registers: registers, memory: memory_ref}, context ->
         host_call_result =
           case host(n) do
             :gas ->

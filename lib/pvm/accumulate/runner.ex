@@ -70,7 +70,7 @@ defmodule PVM.Accumulate.Runner do
         # VM paused on host call; wait for :ecall message
         {:noreply, %{st | context_token: token}}
 
-      %ExecuteResult{output: output, used_gas: used_gas, context_token: token} ->
+      %ExecuteResult{output: output, used_gas: used_gas, context_token: _token} ->
         send(st.parent, {used_gas, output, st.ctx_pair})
         {:stop, :normal, st}
     end
@@ -128,6 +128,7 @@ defmodule PVM.Accumulate.Runner do
             {:error, _error} ->
               {spent_gas, <<>>, new_ctx_pair}
           end
+
         send(st.parent, result)
         {:stop, :normal, st}
 

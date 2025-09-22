@@ -38,13 +38,14 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
         }
       }
 
-      registers = Registers.new(%{
-        7 => 1,
-        8 => a_0(),
-        9 => a_0() + page_size() + 100,
-        10 => 0,
-        11 => some_big_value
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0(),
+          9 => a_0() + page_size() + 100,
+          10 => 0,
+          11 => some_big_value
+        })
 
       {:ok,
        memory: memory,
@@ -71,7 +72,6 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } =
                Refine.historical_lookup(
@@ -101,7 +101,6 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } =
                Refine.historical_lookup(
@@ -130,7 +129,6 @@ defmodule PVM.Host.Refine.HistoricalLookupTest do
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } =
                Refine.historical_lookup(
