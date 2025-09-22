@@ -1,4 +1,4 @@
-use rustler::{Encoder, Env, NifResult, OwnedEnv};
+use rustler::{Binary, Encoder, Env, NifResult, OwnedBinary, OwnedEnv};
 
 use crate::{
     atoms,
@@ -59,7 +59,7 @@ impl Vm {
         }
     }
 
-    pub fn arg_invoke<'a>(&mut self, env: Env<'a>) -> NifResult<ExecuteResult> {
+    pub fn arg_invoke<'a>(&mut self, env: Env<'a>) -> NifResult<ExecuteResult<'a>> {
         let result = self.execute();
         let used_gas = self.state.spent_gas;
 
@@ -73,8 +73,15 @@ impl Vm {
                     .expect("Memory not available")
                     .read(start, len)
                 {
-                    Ok(bytes) => HostOutput::Bytes(bytes.to_vec()),
-                    Err(_) => HostOutput::Bytes(vec![]),
+                    Ok(bytes) => {
+                        let mut owned_binary = OwnedBinary::new(bytes.len()).unwrap();
+                        owned_binary.as_mut_slice().copy_from_slice(bytes);
+                        HostOutput::Bytes(Binary::from_owned(owned_binary, env))
+                    },
+                    Err(_) => {
+                        let owned_binary = OwnedBinary::new(0).unwrap();
+                        HostOutput::Bytes(Binary::from_owned(owned_binary, env))
+                    },
                 };
                 Ok(ExecuteResult { used_gas, output, context_token: self.context_token })
             }

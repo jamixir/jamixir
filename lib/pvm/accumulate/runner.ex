@@ -65,15 +65,12 @@ defmodule PVM.Accumulate.Runner do
 
   @impl true
   def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a, mem_ref: mr} = st) do
-    Logger.debug("Runner.handle_cast(:execute): Starting native execution with gas=#{g}")
     case execute(sc, 5, g, a, mr) do
       %ExecuteResult{output: :waiting, context_token: token} ->
         # VM paused on host call; wait for :ecall message
-        Logger.debug("Runner.handle_cast(:execute): VM paused on host call, waiting for :ecall")
         {:noreply, %{st | context_token: token}}
 
       %ExecuteResult{output: output, used_gas: used_gas, context_token: token} ->
-        Logger.debug("Runner.handle_cast(:execute): Execution completed - used_gas=#{used_gas}, output=#{inspect(output)}")
         send(st.parent, {used_gas, output, st.ctx_pair})
         {:stop, :normal, st}
     end
@@ -81,7 +78,6 @@ defmodule PVM.Accumulate.Runner do
 
   @impl true
   def handle_info({:ecall, host_call_id, state, mem_ref, context_token}, st) do
-    Logger.debug("Runner.handle_info({:ecall, #{host_call_id}, ...}): Processing host call")
     %Pvm.Native.VmState{
       registers: registers,
       spent_gas: spent_gas,
@@ -89,13 +85,11 @@ defmodule PVM.Accumulate.Runner do
     } = state
 
     gas_remaining = initial_gas - spent_gas
-    Logger.debug("Runner.handle_info({:ecall, ...}): gas_remaining=#{gas_remaining}, spent_gas=#{spent_gas}")
 
     #  the assumption here is that converting once to tuple is faster then using list inside the host call
     #  also just lazy to change all the host calls code to use list
     registers_struct = PVM.Registers.from_list(registers)
 
-    Logger.debug("Runner.handle_info({:ecall, ...}): Calling handle_host_call")
     {exit_reason, post_host_call_state, new_ctx_pair} =
       PVM.Accumulate.handle_host_call(
         host_call_id,
@@ -106,7 +100,6 @@ defmodule PVM.Accumulate.Runner do
         st.timeslot,
         st.service_index
       )
-    Logger.debug("Runner.handle_info({:ecall, ...}): handle_host_call completed with exit_reason=#{exit_reason}")
 
     #  the small gas math below is due to a differnt gas model between the inner vm and the host call
     #  the host calls simply start from some gas amount and deduct from it
@@ -160,14 +153,11 @@ defmodule PVM.Accumulate.Runner do
   #  resuming the inner vm execution
   # if we hadn't done this, there would be a race condition where an next ecall message could of come in before the genserver state was updated
   def handle_info({:resume_vm, mem_ref, updated_state, context_token}, st) do
-    Logger.debug("Runner.handle_info({:resume_vm, ...}): Resuming VM execution")
     case resume(updated_state, mem_ref, context_token) do
       %ExecuteResult{output: :waiting, context_token: _token} ->
-        Logger.debug("Runner.handle_info({:resume_vm, ...}): VM paused again, waiting for :ecall")
         {:noreply, st}
 
       %ExecuteResult{} = final ->
-        Logger.debug("Runner.handle_info({:resume_vm, ...}): VM execution completed - used_gas=#{final.used_gas}, output=#{inspect(final.output)}")
         send(st.parent, {final.used_gas, final.output, st.ctx_pair})
         {:stop, :normal, st}
     end
@@ -175,7 +165,6 @@ defmodule PVM.Accumulate.Runner do
 
   # Handle any unexpected messages
   def handle_info(msg, st) do
-    Logger.warning("Runner.handle_info: Received unexpected message: #{inspect(msg)}")
     {:noreply, st}
   end
 end

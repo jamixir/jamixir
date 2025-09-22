@@ -47,7 +47,7 @@ fn execute<'a>(
     gas_term: Term<'a>,
     args_term: Term<'a>,
     memory_ref_term: Term<'a>,
-) -> NifResult<ExecuteResult> {
+) -> NifResult<ExecuteResult<'a>> {
     let linked_program: Binary<'a> = Binary::decode(program_term)?;
     let pc: usize = usize::decode(pc_term)?;
     let gas: u64 = u64::decode(gas_term)?;
@@ -97,7 +97,7 @@ fn resume<'a>(
     new_state_term: Term<'a>,
     memory_ref_term: Term<'a>,
     context_token_term: Term<'a>,
-) -> NifResult<ExecuteResult> {
+) -> NifResult<ExecuteResult<'a>> {
     let new_state: VmState = VmState::decode(new_state_term)?;
     let memory_ref: MemoryRef = MemoryRef::decode(memory_ref_term)?;
     let context_token: u64 = u64::decode(context_token_term)?;

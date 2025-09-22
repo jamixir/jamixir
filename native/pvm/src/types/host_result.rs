@@ -1,15 +1,15 @@
-use rustler::{Atom, NifStruct, NifUntaggedEnum};
+use rustler::{Atom, Binary, NifStruct, NifUntaggedEnum};
 
-#[derive(Debug, Clone, NifUntaggedEnum)]
-pub enum HostOutput {
-    Bytes(Vec<u8>),
+#[derive(Clone, NifUntaggedEnum)]
+pub enum HostOutput<'a> {
+    Bytes(Binary<'a>),
     Atom(Atom),
 }
 
-#[derive(Debug, Clone, NifStruct)]
+#[derive(Clone, NifStruct)]
 #[module = "Pvm.Native.ExecuteResult"]
-pub struct ExecuteResult {
+pub struct ExecuteResult<'a> {
     pub used_gas: u64,
-    pub output: HostOutput,
+    pub output: HostOutput<'a>,
     pub context_token: u64,
 }

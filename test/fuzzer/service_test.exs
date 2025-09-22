@@ -145,13 +145,7 @@ defmodule Jamixir.FuzzerTest do
       "1757423271",
       "1757406079",
       "1757406238",
-      "1757421101",
-      # Beefy root
-      "1757422206",
-      "1757406598",
-      "1757421824",
-      "1757422178",
-      "1757406558"
+      "1757421101"
     ]
 
     # Focused test for debugging a specific failing case
