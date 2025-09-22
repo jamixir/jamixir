@@ -139,19 +139,13 @@ defmodule Jamixir.FuzzerTest do
                  end)
     @failing_cases [
       # trie Value mismatch
-      "1756548916",
-      # (service_statistics accumulation gas diff of 1)
-      "1757423102",
-      "1757423271",
-      "1757406079",
-      "1757406238",
-      "1757421101"
+      # "1756548916",
     ]
 
     # Focused test for debugging a specific failing case
     @tag :focused_debug
-    test "debug specific failing case 1757423102", %{client: client} do
-      dir = "#{@base_path}/1757423102/"
+    test "debug specific failing case 1756548916", %{client: client} do
+      dir = "#{@base_path}/1756548916/"
       test_case(client, dir)
     end
 

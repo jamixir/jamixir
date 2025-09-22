@@ -55,7 +55,7 @@ impl VmState {
     }
 
     pub fn has_gas(&self) -> bool {
-        self.initial_gas >= self.spent_gas
+        self.initial_gas > self.spent_gas
     }
 }
 
