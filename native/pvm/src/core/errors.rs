@@ -1,4 +1,4 @@
-use rustler::{NifResult, Env, Encoder};
+use rustler::{Encoder, Env, NifResult};
 
 use crate::{
     atoms,

@@ -13,3 +13,9 @@ pub struct ExecuteResult<'a> {
     pub output: HostOutput<'a>,
     pub context_token: u64,
 }
+
+impl<'a> ExecuteResult<'a> {
+    pub fn is_waiting(&self) -> bool {
+        matches!(self.output, HostOutput::Atom(a) if a == crate::atoms::waiting())
+    }
+}

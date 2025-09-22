@@ -6,11 +6,14 @@ pub mod types;
 pub mod vm;
 
 use rustler::{Binary, Decoder, Env, NifResult, Term};
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, LazyLock, Mutex,
+};
 
 use crate::{
-    core::errors::{to_rustler_error},
+    core::errors::to_rustler_error,
     core::StartSet,
     core::{get_owned, MemoryRef, MemoryResource},
     encoding::{deblob, Deblob},
@@ -19,19 +22,13 @@ use crate::{
     vm::{Vm, VmContext, VmState},
 };
 
-static VM_CONTEXTS: std::sync::LazyLock<Mutex<HashMap<u64, Arc<VmContext>>>> = 
-    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+static NEXT_CTX_ID: AtomicU64 = AtomicU64::new(1);
+
+static VM_CONTEXTS: LazyLock<Mutex<HashMap<u64, Arc<VmContext>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 fn generate_context_token() -> u64 {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    use std::time::{SystemTime, UNIX_EPOCH};
-    use std::thread;
-    
-    let mut hasher = DefaultHasher::new();
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().hash(&mut hasher);
-    thread::current().id().hash(&mut hasher);
-    hasher.finish()
+    NEXT_CTX_ID.fetch_add(1, Ordering::Relaxed)
 }
 
 rustler::init!("Elixir.Pvm.Native", load = load);
@@ -78,7 +75,7 @@ fn execute<'a>(
         jump_table,
         start_set,
     });
-    
+
     let token = generate_context_token();
     {
         let mut contexts = VM_CONTEXTS.lock().unwrap();
@@ -87,8 +84,22 @@ fn execute<'a>(
 
     let state = VmState::new(registers, pc, gas);
 
-    let mut vm = Vm::new(context, state, memory_ref.clone(), Some(memory), token);
-    vm.arg_invoke(env)
+    let mut vm = Vm::new(
+        context.clone(),
+        state,
+        memory_ref.clone(),
+        Some(memory),
+        token,
+    );
+
+    let result = vm.arg_invoke(env)?;
+
+    if !result.is_waiting() {
+        let mut contexts = VM_CONTEXTS.lock().unwrap();
+        contexts.remove(&token);
+    }
+
+    Ok(result)
 }
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -104,13 +115,28 @@ fn resume<'a>(
 
     let context = {
         let contexts = VM_CONTEXTS.lock().unwrap();
-        contexts.get(&context_token)
+        contexts
+            .get(&context_token)
             .ok_or(to_rustler_error!(atoms::no_vm_context()))?
             .clone()
     };
 
     let memory = get_owned(&memory_ref).map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
 
-    let mut vm = Vm::new(context, new_state, memory_ref, memory, context_token);
-    vm.arg_invoke(env)
+    let mut vm = Vm::new(
+        context.clone(),
+        new_state,
+        memory_ref.clone(),
+        memory,
+        context_token,
+    );
+
+    let result = vm.arg_invoke(env)?;
+
+    if !result.is_waiting() {
+        let mut contexts = VM_CONTEXTS.lock().unwrap();
+        contexts.remove(&context_token);
+    }
+
+    Ok(result)
 }

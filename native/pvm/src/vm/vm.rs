@@ -77,13 +77,17 @@ impl Vm {
                         let mut owned_binary = OwnedBinary::new(bytes.len()).unwrap();
                         owned_binary.as_mut_slice().copy_from_slice(bytes);
                         HostOutput::Bytes(Binary::from_owned(owned_binary, env))
-                    },
+                    }
                     Err(_) => {
                         let owned_binary = OwnedBinary::new(0).unwrap();
                         HostOutput::Bytes(Binary::from_owned(owned_binary, env))
-                    },
+                    }
                 };
-                Ok(ExecuteResult { used_gas, output, context_token: self.context_token })
+                Ok(ExecuteResult {
+                    used_gas,
+                    output,
+                    context_token: self.context_token,
+                })
             }
             ExecutionResult::Panic { .. } => Ok(ExecuteResult {
                 used_gas,
@@ -115,7 +119,6 @@ impl Vm {
                     let _ = put_owned(memory_ref, memory).to_nif(env)?;
                 }
 
-                // Send message to Elixir with VmState + memory_ref + context_token
                 let pid = env.pid();
                 let memory_ref = memory_ref.clone();
                 let state = self.state.clone();
