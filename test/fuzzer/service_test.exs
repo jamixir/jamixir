@@ -150,8 +150,8 @@ defmodule Jamixir.FuzzerTest do
 
     # Focused test for debugging a specific failing case
     @tag :focused_debug
-    test "debug specific failing case 1757406356", %{client: client} do
-      dir = "#{@base_path}/1757406558/"
+    test "debug specific failing case 1757423102", %{client: client} do
+      dir = "#{@base_path}/1757423102/"
       test_case(client, dir)
     end
 

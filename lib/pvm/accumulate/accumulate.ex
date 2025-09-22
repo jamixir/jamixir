@@ -70,6 +70,8 @@ defmodule PVM.Accumulate do
     d = x.accumulation.services
     s = Context.accumulating_service(x)
     host_call = host(host_call_id)
+    # Before host call 'log': gas = 8108
+    Logger.info("Before host call '#{host_call}': gas = #{gas}")
 
     host_call_result =
       case host_call do
@@ -159,8 +161,8 @@ defmodule PVM.Accumulate do
             context: context
           }
       end
-
-      Logger.debug("host call: #{host_call}, gas: #{host_call_result.gas}")
+# After host call: log, gas: 8108
+      Logger.info("After host call: #{host_call}, gas: #{host_call_result.gas}")
 
     %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
 

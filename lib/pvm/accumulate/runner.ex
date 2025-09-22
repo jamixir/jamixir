@@ -107,12 +107,14 @@ defmodule PVM.Accumulate.Runner do
 
     gas_consumed = gas_remaining - post_host_call_state.gas
     spent_gas = state.spent_gas + gas_consumed
+    Logger.info("gas_remaining=#{gas_remaining}, spent_gas=#{spent_gas}")
 
     #  we could be lazy and pass this back to the inner vm and get the final result there (for all cases except :continue)
     # but this would cost  two more extra NIF boundary crossing (encode/ decode /message send) => so we do it here
 
     case exit_reason do
       :out_of_gas ->
+        Logger.info("out of gas, spent_gas=#{spent_gas}")
         send(st.parent, {spent_gas, :out_of_gas, new_ctx_pair})
         {:stop, :normal, st}
 
@@ -128,7 +130,7 @@ defmodule PVM.Accumulate.Runner do
             {:error, _error} ->
               {spent_gas, <<>>, new_ctx_pair}
           end
-
+        Logger.info("halt: spent_gas=#{spent_gas}")
         send(st.parent, result)
         {:stop, :normal, st}
 
