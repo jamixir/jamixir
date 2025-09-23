@@ -1,7 +1,9 @@
 defmodule PVM.Refine do
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem, WorkPackage}
-  alias PVM.{ArgInvoc, Host.Refine, Host.General}
+  alias PVM.Refine.Executor
+  alias PVM.{Host.General, Host.Refine}
   alias PVM.Host.General.FetchArgs
+  alias PVM.Refine.RefineParams
   alias System.State.ServiceAccount
   alias Util.Hash
   import PVM.Constants.{HostCallResult, HostCallId}
@@ -48,97 +50,115 @@ defmodule PVM.Refine do
     with {:ok, service} <- fetch_service(services, service_id),
          {:ok, program} <- fetch_lookup(service, px.timeslot, wc),
          :ok <- validate_code_size(program) do
-      f = fn n, %{gas: gas, registers: registers, memory: memory_ref}, context ->
-        host_call_result =
-          case host(n) do
-            :gas ->
-              General.gas(gas, registers, memory_ref, context)
-
-            :fetch ->
-              General.fetch(%FetchArgs{
-                gas: gas,
-                registers: registers,
-                memory_ref: memory_ref,
-                work_package: work_package,
-                n: Hash.zero(),
-                authorizer_trace: authorizer_trace,
-                index: work_item_index,
-                import_segments: import_segments,
-                preimages: preimages,
-                operands: nil,
-                transfers: nil,
-                context: context
-              })
-
-            :historical_lookup ->
-              Refine.historical_lookup(
-                gas,
-                registers,
-                memory_ref,
-                context,
-                service_id,
-                services,
-                px.timeslot
-              )
-
-            :export ->
-              Refine.export(gas, registers, memory_ref, context, export_segment_offset)
-
-            :machine ->
-              Refine.machine(gas, registers, memory_ref, context)
-
-            :peek ->
-              Refine.peek(gas, registers, memory_ref, context)
-
-            :pages ->
-              Refine.pages(gas, registers, memory_ref, context)
-
-            :poke ->
-              Refine.poke(gas, registers, memory_ref, context)
-
-            :invoke ->
-              Refine.invoke(gas, registers, memory_ref, context)
-
-            :expunge ->
-              Refine.expunge(gas, registers, memory_ref, context)
-
-            :log ->
-              General.log(gas, registers, memory_ref, context, work_item_index, service_id)
-
-            _ ->
-              %Refine.Result{
-                exit_reason: :continue,
-                gas: gas - default_gas(),
-                registers: %{registers | r: put_elem(registers.r, 7, what())},
-                context: context
-              }
-          end
-
-        %{
-          exit_reason: exit_reason,
-          gas: gas,
-          registers: registers,
-          context: context
-        } = host_call_result
-
-        {exit_reason, %{gas: gas, registers: registers}, context}
-      end
-
       args = e({work_item_index, service_id, vs(wy), h(e(work_package))})
 
-      {gas, result, %Refine.Context{e: exports}} =
-        ArgInvoc.execute(program, 0, wg, args, f, %Refine.Context{})
-
-      if result in [:out_of_gas, :panic] do
-        {result, [], gas}
-      else
-        {result, exports, gas}
-      end
+      Executor.run(
+        program,
+        %Refine.Context{},
+        args,
+        wg,
+        %RefineParams{
+          work_package: work_package,
+          work_item_index: work_item_index,
+          authorizer_trace: authorizer_trace,
+          import_segments: import_segments,
+          export_segment_offset: export_segment_offset,
+          preimages: preimages,
+          services: services,
+          service_id: service_id
+        }
+      )
     else
       {:error, :service_not_found} -> {:bad, [], 0}
       {:error, :invalid_lookup} -> {:bad, [], 0}
       {:error, :code_too_large} -> {:big, [], 0}
     end
+  end
+
+  def handle_host_call(
+        host_call_id,
+        %{gas: gas, registers: registers, memory_ref: memory_ref},
+        context,
+        %RefineParams{
+          work_package: wp,
+          work_item_index: work_item_index,
+          authorizer_trace: authorizer_trace,
+          import_segments: import_segments,
+          preimages: preimages,
+          export_segment_offset: export_segment_offset,
+          services: services,
+          service_id: service_id
+        }
+      ) do
+    host_call_result =
+      case host(host_call_id) do
+        :gas ->
+          General.gas(gas, registers, memory_ref, context)
+
+        :fetch ->
+          General.fetch(%FetchArgs{
+            gas: gas,
+            registers: registers,
+            memory_ref: memory_ref,
+            work_package: wp,
+            n: Hash.zero(),
+            authorizer_trace: authorizer_trace,
+            index: work_item_index,
+            import_segments: import_segments,
+            preimages: preimages,
+            operands: nil,
+            transfers: nil,
+            context: context
+          })
+
+        :historical_lookup ->
+          Refine.historical_lookup(
+            gas,
+            registers,
+            memory_ref,
+            context,
+            service_id,
+            services,
+            wp.context.timeslot
+          )
+
+        :export ->
+          Refine.export(gas, registers, memory_ref, context, export_segment_offset)
+
+        :machine ->
+          Refine.machine(gas, registers, memory_ref, context)
+
+        :peek ->
+          Refine.peek(gas, registers, memory_ref, context)
+
+        :pages ->
+          Refine.pages(gas, registers, memory_ref, context)
+
+        :poke ->
+          Refine.poke(gas, registers, memory_ref, context)
+
+        :invoke ->
+          Refine.invoke(gas, registers, memory_ref, context)
+
+        :expunge ->
+          Refine.expunge(gas, registers, memory_ref, context)
+
+        :log ->
+          General.log(gas, registers, memory_ref, context, work_item_index, service_id)
+
+        _ ->
+          %Refine.Result{
+            exit_reason: :continue,
+            gas: gas - default_gas(),
+            registers: %{registers | r: put_elem(registers.r, 7, what())},
+            context: context
+          }
+      end
+
+    %{exit_reason: exit_reason, gas: gas, registers: registers, context: context} =
+      host_call_result
+
+    {exit_reason, %{gas: gas, registers: registers}, context}
   end
 
   defp fetch_service(services, service_id) do
