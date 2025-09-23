@@ -1,4 +1,4 @@
-defmodule PVM.Accumulate.Runner do
+defmodule PVM.Refine.Runner do
   use GenServer
   import Pvm.Native
   alias Pvm.Native.ExecuteResult
@@ -8,54 +8,32 @@ defmodule PVM.Accumulate.Runner do
     :service_code,
     :gas,
     :encoded_args,
-    :operands,
-    :ctx_pair,
+    :refine_context,
+    :refine_params,
     :mem_ref,
     :parent,
-    :n0_,
-    :timeslot,
-    :service_index,
     :context_token
   ]
 
-  def start(
-        service_code,
-        initial_context,
-        encoded_args,
-        gas,
-        operands,
-        n0_,
-        timeslot,
-        service_index,
-        opts \\ []
-      ) do
+  def start(service_code, initial_context, encoded_args, gas, refine_params, opts \\ []) do
     GenServer.start(
       __MODULE__,
-      {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
-       self(), opts}
+      {service_code, initial_context, encoded_args, gas, refine_params, self(), opts}
     )
   end
 
   @impl true
-  def init(
-        {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
-         parent, _opts}
-      ) do
-    ctx_pair = {initial_context, initial_context}
-
+  def init({service_code, refine_context, encoded_args, gas, refine_params, parent, _opts}) do
     mem_ref = memory_new()
 
     state = %__MODULE__{
       service_code: service_code,
       gas: gas,
       encoded_args: encoded_args,
-      operands: operands,
-      ctx_pair: ctx_pair,
+      refine_params: refine_params,
+      refine_context: refine_context,
       mem_ref: mem_ref,
       parent: parent,
-      n0_: n0_,
-      timeslot: timeslot,
-      service_index: service_index,
       context_token: nil
     }
 
@@ -65,13 +43,13 @@ defmodule PVM.Accumulate.Runner do
 
   @impl true
   def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a, mem_ref: mr} = st) do
-    case execute(sc, 5, g, a, mr) do
+    case execute(sc, 0, g, a, mr) do
       %ExecuteResult{output: :waiting, context_token: token} ->
         # VM paused on host call; wait for :ecall message
         {:noreply, %{st | context_token: token}}
 
       %ExecuteResult{output: output, used_gas: used_gas} ->
-        send(st.parent, {used_gas, output, st.ctx_pair})
+        send(st.parent, {used_gas, output, st.refine_context})
         {:stop, :normal, st}
     end
   end
@@ -90,30 +68,20 @@ defmodule PVM.Accumulate.Runner do
     #  also just lazy to change all the host calls code to use list
     registers_struct = PVM.Registers.from_list(registers)
 
-    {exit_reason, post_host_call_state, new_ctx_pair} =
-      PVM.Accumulate.handle_host_call(
+    {exit_reason, post_host_call_state, refine_context} =
+      PVM.Refine.handle_host_call(
         host_call_id,
         %{gas: gas_remaining, registers: registers_struct, memory_ref: mem_ref},
-        st.ctx_pair,
-        st.n0_,
-        st.operands,
-        st.timeslot,
-        st.service_index
+        st.refine_context,
+        st.refine_params
       )
-
-    #  the small gas math below is due to a differnt gas model between the inner vm and the host call
-    #  the host calls simply start from some gas amount and deduct from it
-    #  the inner vm keeps track of inital gas and spent gas (becuase gas is u64 but :out_of_gas exit is triggerd when gas < 0, u64 cannot be negative)
 
     gas_consumed = gas_remaining - post_host_call_state.gas
     spent_gas = state.spent_gas + gas_consumed
 
-    #  we could be lazy and pass this back to the inner vm and get the final result there (for all cases except :continue)
-    # but this would cost  two more extra NIF boundary crossing (encode/ decode /message send) => so we do it here
-
     case exit_reason do
       :out_of_gas ->
-        send(st.parent, {spent_gas, :out_of_gas, new_ctx_pair})
+        send(st.parent, {spent_gas, :out_of_gas, refine_context})
         {:stop, :normal, st}
 
       :halt ->
@@ -123,10 +91,10 @@ defmodule PVM.Accumulate.Runner do
         result =
           case memory_read(mem_ref, start_addr, length) do
             {:ok, data} ->
-              {spent_gas, data, new_ctx_pair}
+              {spent_gas, data, refine_context}
 
             {:error, _error} ->
-              {spent_gas, <<>>, new_ctx_pair}
+              {spent_gas, <<>>, refine_context}
           end
 
         send(st.parent, result)
@@ -142,10 +110,10 @@ defmodule PVM.Accumulate.Runner do
         }
 
         send(self(), {:resume_vm, mem_ref, updated_state, context_token})
-        {:noreply, %{st | ctx_pair: new_ctx_pair}}
+        {:noreply, %{st | refine_context: refine_context}}
 
       _ ->
-        send(st.parent, {spent_gas, :panic, st.ctx_pair})
+        send(st.parent, {spent_gas, :panic, st.refine_context})
         {:stop, :normal, st}
     end
   end
@@ -159,7 +127,7 @@ defmodule PVM.Accumulate.Runner do
         {:noreply, st}
 
       %ExecuteResult{} = final ->
-        send(st.parent, {final.used_gas, final.output, st.ctx_pair})
+        send(st.parent, {final.used_gas, final.output, st.refine_context})
         {:stop, :normal, st}
     end
   end
