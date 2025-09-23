@@ -11,18 +11,17 @@ defmodule PVM.Refine.Executor do
   def run(
         service_code,
         refine_context,
-        encoded_args,
+        args,
         gas,
         %RefineParams{work_package: wp} = refine_params,
         opts \\ []
       ) do
     Logger.debug("Refine.Executor.run: Starting with gas=#{gas}, service_index=#{wp.service}")
 
-    {:ok, pid} =
-      Runner.start(service_code, refine_context, encoded_args, gas, refine_params, opts)
+    {:ok, pid} = Runner.start(service_code, refine_context, args, gas, refine_params, opts)
 
     Logger.debug(
-      "Refine.Executor.run: Started Runner with pid=#{inspect(pid)}, waiting for result with timeout=#{@timeout}ms"
+      "Refine.Executor.run: Started Runner with pid=#{inspect(pid)}, waiting result timeout=#{@timeout}ms"
     )
 
     receive do

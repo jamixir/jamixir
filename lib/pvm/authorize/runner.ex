@@ -1,4 +1,4 @@
-defmodule PVM.Refine.Runner do
+defmodule PVM.Authorize.Runner do
   use GenServer
   import Pvm.Native
   alias Pvm.Native.ExecuteResult
@@ -6,29 +6,25 @@ defmodule PVM.Refine.Runner do
 
   defstruct [
     :service_code,
-    :gas,
     :encoded_args,
-    :refine_context,
-    :refine_params,
+    :authorize_params,
     :parent,
     :context_token
   ]
 
-  def start(service_code, initial_context, encoded_args, gas, refine_params, opts \\ []) do
+  def start(service_code, encoded_args, authorize_params, opts \\ []) do
     GenServer.start(
       __MODULE__,
-      {service_code, initial_context, encoded_args, gas, refine_params, self(), opts}
+      {service_code, encoded_args, authorize_params, self(), opts}
     )
   end
 
   @impl true
-  def init({service_code, refine_context, encoded_args, gas, refine_params, parent, _opts}) do
+  def init({service_code, encoded_args, authorize_params, parent, _opts}) do
     state = %__MODULE__{
       service_code: service_code,
-      gas: gas,
       encoded_args: encoded_args,
-      refine_params: refine_params,
-      refine_context: refine_context,
+      authorize_params: authorize_params,
       parent: parent,
       context_token: nil
     }
@@ -38,14 +34,14 @@ defmodule PVM.Refine.Runner do
   end
 
   @impl true
-  def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a} = st) do
-    case execute(sc, 0, g, a) do
+  def handle_cast(:execute, %{service_code: sc, encoded_args: a} = st) do
+    case execute(sc, 0, Constants.gas_is_authorized(), a) do
       %ExecuteResult{output: :waiting, context_token: token} ->
         # VM paused on host call; wait for :ecall message
         {:noreply, %{st | context_token: token}}
 
       %ExecuteResult{output: output, used_gas: used_gas} ->
-        send(st.parent, {used_gas, output, st.refine_context})
+        send(st.parent, {used_gas, output})
         {:stop, :normal, st}
     end
   end
@@ -61,12 +57,11 @@ defmodule PVM.Refine.Runner do
     #  also just lazy to change all the host calls code to use list
     registers_struct = PVM.Registers.from_list(registers)
 
-    {exit_reason, post_host_call_state, refine_context} =
-      PVM.Refine.handle_host_call(
+    {exit_reason, post_host_call_state} =
+      PVM.Authorize.handle_host_call(
         host_call_id,
         %{gas: gas_remaining, registers: registers_struct, memory_ref: mem_ref},
-        st.refine_context,
-        st.refine_params
+        st.authorize_params
       )
 
     gas_consumed = gas_remaining - post_host_call_state.gas
@@ -74,7 +69,7 @@ defmodule PVM.Refine.Runner do
 
     case exit_reason do
       :out_of_gas ->
-        send(st.parent, {spent_gas, :out_of_gas, refine_context})
+        send(st.parent, {spent_gas, :out_of_gas})
         {:stop, :normal, st}
 
       :halt ->
@@ -84,10 +79,10 @@ defmodule PVM.Refine.Runner do
         result =
           case memory_read(mem_ref, start_addr, length) do
             {:ok, data} ->
-              {spent_gas, data, refine_context}
+              {spent_gas, data}
 
             {:error, _error} ->
-              {spent_gas, <<>>, refine_context}
+              {spent_gas, <<>>}
           end
 
         send(st.parent, result)
@@ -103,24 +98,21 @@ defmodule PVM.Refine.Runner do
         }
 
         send(self(), {:resume_vm, mem_ref, updated_state, context_token})
-        {:noreply, %{st | refine_context: refine_context}}
+        {:noreply, st}
 
       _ ->
-        send(st.parent, {spent_gas, :panic, st.refine_context})
+        send(st.parent, {spent_gas, :panic})
         {:stop, :normal, st}
     end
   end
 
-  #  resume_vm is seperated like this so we can upadte the genserver state with the post host call context BEOFRE
-  #  resuming the inner vm execution
-  # if we hadn't done this, there would be a race condition where an next ecall message could of come in before the genserver state was updated
   def handle_info({:resume_vm, mem_ref, updated_state, context_token}, st) do
     case resume(updated_state, mem_ref, context_token) do
       %ExecuteResult{output: :waiting, context_token: _token} ->
         {:noreply, st}
 
       %ExecuteResult{} = final ->
-        send(st.parent, {final.used_gas, final.output, st.refine_context})
+        send(st.parent, {final.used_gas, final.output})
         {:stop, :normal, st}
     end
   end
