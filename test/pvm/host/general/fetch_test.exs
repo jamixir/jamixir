@@ -14,8 +14,8 @@ defmodule PVM.Host.General.FetchTest do
 
   describe "fetch/12" do
     setup do
-      memory = Pvm.Native.build_memory()
-      Pvm.Native.set_memory_access(memory, min_allowed_address(), 32, 0)
+      memory_ref = Pvm.Native.build_memory()
+      set_memory_access(memory_ref, min_allowed_address(), 32, 3)
 
       # Test data
       work_package = %WorkPackage{
@@ -71,7 +71,7 @@ defmodule PVM.Host.General.FetchTest do
       args = %FetchArgs{
         gas: 100,
         registers: registers,
-        memory_ref: memory,
+        memory_ref: memory_ref,
         work_package: work_package,
         n: "encoded_n",
         authorizer_trace: "auth_output",

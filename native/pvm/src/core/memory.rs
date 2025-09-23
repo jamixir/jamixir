@@ -135,10 +135,10 @@ impl Memory {
     }
 
     #[inline]
-    pub fn set_access(&mut self, addr: usize, len: usize, permissions: Permission) {
+    pub fn set_access(&mut self, addr: usize, len: usize, permission: Permission) {
         let start_page = addr >> 12;
         let end_page = (addr + len).div_ceil(PAGE_SIZE);
-        let permission_bits = permissions as u64;
+        let permission_bits = permission as u64;
 
         unsafe {
             for page in start_page..end_page {
@@ -162,8 +162,8 @@ impl MemoryBuilder {
     }
 
     #[inline(always)]
-    pub fn set_access(&mut self, addr: usize, len: usize, permissions: Permission) {
-        self.memory.set_access(addr, len, permissions);
+    pub fn set_access(&mut self, addr: usize, len: usize, permission: Permission) {
+        self.memory.set_access(addr, len, permission);
     }
 
     #[inline]
@@ -195,7 +195,7 @@ pub fn memory_new() -> MemoryRef {
 
 #[rustler::nif]
 pub fn build_memory() -> MemoryRef {
-    let memory_ref =     ResourceArc::new(MemoryResource {
+    let memory_ref = ResourceArc::new(MemoryResource {
         memory: Mutex::new(None),
     });
 
@@ -268,7 +268,7 @@ pub fn set_memory_access<'a>(
     mem_ref: MemoryRef,
     addr: usize,
     len: usize,
-    permissions: usize,
+    permission: u8,
 ) -> NifResult<MemoryRef> {
     let mut memory_guard = mem_ref
         .memory
@@ -276,19 +276,21 @@ pub fn set_memory_access<'a>(
         .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
     match memory_guard.as_mut() {
         Some(memory) => {
-            memory.set_access(addr, len, Permission::ReadWrite);
+            memory.set_access(addr, len, permission.into());
             Ok(mem_ref.clone())
         }
         //   memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
         None => Err(to_rustler_error!(atoms::memory_not_available())),
     }
+}
 
-    // let mut builder = Memory::builder();
-    // builder.set_access(addr, len, Permission::ReadWrite);
-    // buil
-    // let result = get_owned(&mem_ref);
-    // let memory_option = result.unwrap_or(None);
-    // let mut memory: Memory = memory_option.unwrap();
-    // put_owned(&mem_ref, memory);
-    // mem_ref
+impl From<u8> for Permission {
+    fn from(value: u8) -> Self {
+        match value {
+            0b00 => Permission::None,
+            0b01 => Permission::Read,
+            0b11 => Permission::ReadWrite,
+            _ => Permission::None,
+        }
+    }
 }

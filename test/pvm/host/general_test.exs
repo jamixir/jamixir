@@ -1,7 +1,7 @@
 defmodule PVM.Host.GeneralTest do
   use ExUnit.Case
   alias PVM.Host.General
-  alias PVM.{Memory, Registers}
+  alias PVM.Registers
   alias System.State.ServiceAccount
   alias Util.Hash
   import PVM.Constants.HostCallResult
@@ -46,7 +46,7 @@ defmodule PVM.Host.GeneralTest do
 
   describe "out of gas using" do
     setup do
-      m = %Memory{}
+      m = build_memory()
       value = "value" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
       hash = Hash.default(value)
@@ -57,9 +57,9 @@ defmodule PVM.Host.GeneralTest do
       {:ok, m: m, c: c, s: s}
     end
 
-    test "no change when out of gas", %{m: m, c: c, s: s} do
+    test "no change when out of gas", %{c: c, s: s} do
       r = Registers.new(%{7 => 1, 8 => 0})
-      m = Memory.set_access(m, 0, 32, nil)
+      m = build_memory()
       result = General.lookup(9, r, m, c, 0, s)
       assert result.registers == r
       assert result.context == c
@@ -70,8 +70,8 @@ defmodule PVM.Host.GeneralTest do
 
   describe "lookup/6" do
     setup do
-      memory = build_memory()
-      set_memory_access(memory, a_0(), 32, 0)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, a_0(), 32, 3)
 
       value = "value" |> String.pad_trailing(32, "\0")
       other_value = "other_value" |> String.pad_trailing(32, "\0")
@@ -82,7 +82,7 @@ defmodule PVM.Host.GeneralTest do
       gas = 100
 
       {:ok,
-       memory: memory,
+       memory_ref: memory_ref,
        service_account: service_account,
        services: services,
        gas: gas,
@@ -93,14 +93,14 @@ defmodule PVM.Host.GeneralTest do
     end
 
     test "lookup uses service_account when service index is 0", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas,
       value: value,
       hash: hash
     } do
-      memory_write(memory, a_0(), hash)
+      memory_write(memory_ref, a_0(), hash)
       o = a_0() + 100
       h = byte_size(value)
 
@@ -108,21 +108,21 @@ defmodule PVM.Host.GeneralTest do
       r = Registers.new(%{7 => 0, 8 => a_0(), 9 => o, 10 => 0, 11 => h})
 
       assert %{exit_reason: :continue, registers: registers_} =
-               General.lookup(gas, r, memory, service_account, 0, services)
+               General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == h
-      assert {:ok, ^value} = memory_read(memory, o, h)
+      assert {:ok, ^value} = memory_read(memory_ref, o, h)
     end
 
     test "lookup uses service_account when service index is max_64_bit", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas,
       value: value,
       hash: hash
     } do
-      memory_write(memory, a_0(), hash)
+      memory_write(memory_ref, a_0(), hash)
       o = a_0() + 100
       h = byte_size(value)
 
@@ -132,21 +132,21 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.lookup(gas, r, memory, service_account, 0, services)
+             } = General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == h
-      assert {:ok, ^value} = memory_read(memory, o, h)
+      assert {:ok, ^value} = memory_read(memory_ref, o, h)
     end
 
     test "lookup uses different service when valid service index provided", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas,
       other_value: other_value,
       other_hash: other_hash
     } do
-      memory_write(memory, a_0(), other_hash)
+      memory_write(memory_ref, a_0(), other_hash)
       o = a_0() + 100
       h = byte_size(other_value)
 
@@ -154,14 +154,14 @@ defmodule PVM.Host.GeneralTest do
       r = Registers.new(%{7 => 1, 8 => a_0(), 9 => o, 10 => 0, 11 => h})
 
       assert %{exit_reason: :continue, registers: registers_} =
-               General.lookup(gas, r, memory, service_account, 0, services)
+               General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == h
-      assert {:ok, ^other_value} = memory_read(memory, o, h)
+      assert {:ok, ^other_value} = memory_read(memory_ref, o, h)
     end
 
     test "lookup returns none when service index does not exist", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas
@@ -173,7 +173,7 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.lookup(gas, r, memory, service_account, 0, services)
+             } = General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == none
     end
@@ -184,10 +184,10 @@ defmodule PVM.Host.GeneralTest do
       gas: gas
     } do
       r = Registers.new(%{7 => 1, 8 => a_0(), 9 => a_0() + 100})
-      memory = build_memory()
+      memory_ref = build_memory()
 
       assert %{exit_reason: :panic, registers: registers_} =
-               General.lookup(gas, r, memory, service_account, 0, services)
+               General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == 1
     end
@@ -198,7 +198,7 @@ defmodule PVM.Host.GeneralTest do
       gas: gas,
       other_value: other_value
     } do
-      memory = build_memory()
+      memory_ref = build_memory()
       o = a_0() + 100
       h = byte_size(other_value)
 
@@ -206,7 +206,7 @@ defmodule PVM.Host.GeneralTest do
       r = Registers.new(%{7 => 1, 8 => a_0(), 9 => o, 10 => 0, 11 => h})
 
       assert %{exit_reason: :panic, registers: registers_} =
-               General.lookup(gas, r, memory, service_account, 0, services)
+               General.lookup(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == 1
     end
@@ -214,8 +214,8 @@ defmodule PVM.Host.GeneralTest do
 
   describe "read/6" do
     setup do
-      memory = build_memory()
-      set_memory_access(memory, a_0(), 32, 0)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, a_0(), 32, 3)
 
       value = "value" |> String.pad_trailing(32, "\0")
       key = "key" |> String.pad_trailing(32, "\0")
@@ -232,7 +232,7 @@ defmodule PVM.Host.GeneralTest do
       gas = 100
 
       {:ok,
-       memory: memory,
+       memory_ref: memory_ref,
        service_account: service_account,
        services: services,
        gas: gas,
@@ -243,7 +243,7 @@ defmodule PVM.Host.GeneralTest do
     end
 
     test "read uses service_account when service index is max_64_bit", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas,
@@ -260,14 +260,14 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.read(gas, r, memory, service_account, 0, services)
+             } = General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == v
-      assert {:ok, ^value} = memory_read(memory, o, v)
+      assert {:ok, ^value} = memory_read(memory_ref, o, v)
     end
 
     test "read uses different service when valid service index provided", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas,
@@ -283,14 +283,14 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.read(gas, r, memory, service_account, 0, services)
+             } = General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == v
-      assert {:ok, ^other_value} = memory_read(memory, o, v)
+      assert {:ok, ^other_value} = memory_read(memory_ref, o, v)
     end
 
     test "read returns none when service index does not exist", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas
@@ -305,13 +305,13 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.read(gas, r, memory, service_account, 0, services)
+             } = General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == none
     end
 
     test "handles key not in storage", %{
-      memory: memory,
+      memory_ref: memory_ref,
       service_account: service_account,
       services: services,
       gas: gas
@@ -319,7 +319,7 @@ defmodule PVM.Host.GeneralTest do
       ko = a_0() + 100
       kz = 28
       o = a_0() + 200
-      memory_write(memory, ko, <<0xAA::32-little>>)
+      memory_write(memory_ref, ko, <<0xAA::32-little>>)
 
       r =
         Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
@@ -329,7 +329,7 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :continue,
                registers: registers_
-             } = General.read(gas, r, memory, service_account, 0, services)
+             } = General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == none
     end
@@ -342,10 +342,10 @@ defmodule PVM.Host.GeneralTest do
       ko = a_0() + 100
       kz = 28
       r = Registers.new(%{7 => 1, 8 => ko, 9 => kz})
-      memory = build_memory()
+      memory_ref = build_memory()
 
       assert %{exit_reason: :panic, registers: registers_} =
-               General.read(gas, r, memory, service_account, 0, services)
+               General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == 1
     end
@@ -358,7 +358,7 @@ defmodule PVM.Host.GeneralTest do
       ko = a_0() + 100
       kz = 28
       o = a_0() + 200
-      memory = build_memory()
+      memory_ref = build_memory()
 
       r =
         Registers.new(%{7 => 0xFFFF_FFFF_FFFF_FFFF, 8 => ko, 9 => kz, 10 => o, 11 => 0, 12 => 300})
@@ -366,7 +366,7 @@ defmodule PVM.Host.GeneralTest do
       assert %{
                exit_reason: :panic,
                registers: registers_
-             } = General.read(gas, r, memory, service_account, 0, services)
+             } = General.read(gas, r, memory_ref, service_account, 0, services)
 
       assert registers_[7] == 0xFFFF_FFFF_FFFF_FFFF
     end
@@ -383,13 +383,13 @@ defmodule PVM.Host.GeneralTest do
         Registers.new(%{
           7 => a_0(),
           8 => 28,
-          9 => a_0() + %Memory{}.page_size + 100,
+          9 => a_0() + 4096 + 100,
           10 => 32
         })
 
       m = build_memory()
-      set_memory_access(m, a_0(), 64, 1)
-      # set_memory_access(m, a_0() + 32, 32, 1)
+      set_memory_access(m, a_0(), 64, 3)
+      # set_memory_access(m, a_0() + 32, 32, 3)
       memory_write(m, a_0(), key)
 
       memory_write(m, a_0() + 32, value)
@@ -420,7 +420,7 @@ defmodule PVM.Host.GeneralTest do
     } do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
 
-      set_memory_access(m, registers[9], byte_size(new_value), 1)
+      set_memory_access(m, registers[9], byte_size(new_value), 3)
       memory_write(m, registers[9], new_value)
 
       service_account = %{c | storage: HashedKeysMap.new(%{storage_key => "b"})}
@@ -458,7 +458,7 @@ defmodule PVM.Host.GeneralTest do
     test "returns FULL when threshold exceeded", %{m: m, c: c, g: g, registers: registers} do
       new_value = "new_value" |> String.pad_trailing(32, "\0")
 
-      set_memory_access(m, registers[9], byte_size(new_value), 0)
+      set_memory_access(m, registers[9], byte_size(new_value), 3)
       memory_write(m, registers[9], new_value)
 
       service_account = %{c | balance: 50}
@@ -477,7 +477,7 @@ defmodule PVM.Host.GeneralTest do
   describe "info/6" do
     setup do
       m = build_memory()
-      set_memory_access(m, a_0(), 128, 0)
+      set_memory_access(m, a_0(), 128, 3)
 
       service_account = %ServiceAccount{
         code_hash: "code_hash",
@@ -608,19 +608,19 @@ defmodule PVM.Host.GeneralTest do
 
   describe "log/6" do
     setup do
-      memory = build_memory()
-      set_memory_access(memory, a_0() + 0x1000, 32, 1)
-      set_memory_access(memory, a_0() + 0x2000, 32, 1)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, a_0() + 0x1000, 32, 3)
+      set_memory_access(memory_ref, a_0() + 0x2000, 32, 3)
 
       target = "bootstrap-refine"
       message = "Hello world!"
       core_index = 1
       service_index = 42
 
-      memory_write(memory, a_0() + 0x2000, message)
+      memory_write(memory_ref, a_0() + 0x2000, message)
 
       {:ok,
-       memory: memory,
+       memory_ref: memory_ref,
        target: target,
        message: message,
        core_index: core_index,
@@ -629,7 +629,7 @@ defmodule PVM.Host.GeneralTest do
 
     @tag :log
     test "logs with DEBUG level and all parts", %{
-      memory: memory,
+      memory_ref: memory_ref,
       target: target,
       message: message,
       core_index: core_index,
@@ -647,12 +647,12 @@ defmodule PVM.Host.GeneralTest do
         })
 
       assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
-               General.log(g, r, memory, nil, core_index, service_index)
+               General.log(g, r, memory_ref, nil, core_index, service_index)
     end
 
     @tag :log
     test "logs with missing core and service indices", %{
-      memory: memory,
+      memory_ref: memory_ref,
       message: message,
       target: target
     } do
@@ -668,7 +668,7 @@ defmodule PVM.Host.GeneralTest do
         })
 
       assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
-               General.log(g, r, memory, nil, nil, nil)
+               General.log(g, r, memory_ref, nil, nil, nil)
     end
 
     @tag :log
@@ -683,13 +683,13 @@ defmodule PVM.Host.GeneralTest do
     end
 
     @tag :log
-    test "logs with zero target address and length", %{memory: memory, message: message} do
+    test "logs with zero target address and length", %{memory_ref: memory_ref, message: message} do
       g = 100
       r = Registers.new(%{7 => 2, 8 => 0, 9 => 0, 10 => a_0() + 0x2000, 11 => byte_size(message)})
 
       # Test that the function executes successfully with zero target address
       assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
-               General.log(g, r, memory, nil, 1, 42)
+               General.log(g, r, memory_ref, nil, 1, 42)
     end
   end
 end
