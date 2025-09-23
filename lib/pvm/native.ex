@@ -3,18 +3,13 @@ defmodule Pvm.Native do
   use Rustler, otp_app: :jamixir, crate: "pvm"
 
   # VM execution entry point
-  @spec execute(any(), any(), any(), any(), any()) :: ExecuteResult.t()
-  def execute(_program, _pc, _gas, _args, _memory_ref) do
+  @spec execute(any(), any(), any(), any()) :: ExecuteResult.t()
+  def execute(_program, _pc, _gas, _args) do
     :erlang.nif_error(:nif_not_loaded)
   end
 
   # Resume VM after handling a host call
   def resume(_state, _memory_ref, _context_token) do
-    :erlang.nif_error(:nif_not_loaded)
-  end
-
-  # Create a new memory reference
-  def memory_new do
     :erlang.nif_error(:nif_not_loaded)
   end
 

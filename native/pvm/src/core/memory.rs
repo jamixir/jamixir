@@ -17,6 +17,17 @@ pub enum Permission {
     ReadWrite = 0b11,
 }
 
+impl From<u8> for Permission {
+    fn from(value: u8) -> Self {
+        match value {
+            0b00 => Permission::None,
+            0b01 => Permission::Read,
+            0b11 => Permission::ReadWrite,
+            _ => Permission::None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MemoryError {
     Fault { page_addr: usize },
@@ -184,23 +195,25 @@ pub struct MemoryResource {
 
 impl Resource for MemoryResource {}
 
+impl MemoryResource {
+    pub fn new() -> Self {
+        Self {
+            memory: Mutex::new(None),
+        }
+    }
+
+    pub fn new_ref() -> ResourceArc<Self> {
+        ResourceArc::new(Self::new())
+    }
+}
+
 pub type MemoryRef = ResourceArc<MemoryResource>;
 
 #[rustler::nif]
-pub fn memory_new() -> MemoryRef {
-    ResourceArc::new(MemoryResource {
-        memory: Mutex::new(None),
-    })
-}
-
-#[rustler::nif]
 pub fn build_memory() -> MemoryRef {
-    let memory_ref = ResourceArc::new(MemoryResource {
-        memory: Mutex::new(None),
-    });
+    let memory_ref = MemoryResource::new_ref();
 
-    let builder = Memory::builder();
-    let memory = builder.build();
+    let memory = Memory::builder().build();
     let _ = put_owned(&memory_ref, memory);
     memory_ref
 }
@@ -264,7 +277,6 @@ pub fn memory_write<'a>(
 
 #[rustler::nif]
 pub fn set_memory_access<'a>(
-    env: Env<'a>,
     mem_ref: MemoryRef,
     addr: usize,
     len: usize,
@@ -279,18 +291,6 @@ pub fn set_memory_access<'a>(
             memory.set_access(addr, len, permission.into());
             Ok(mem_ref.clone())
         }
-        //   memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
         None => Err(to_rustler_error!(atoms::memory_not_available())),
-    }
-}
-
-impl From<u8> for Permission {
-    fn from(value: u8) -> Self {
-        match value {
-            0b00 => Permission::None,
-            0b01 => Permission::Read,
-            0b11 => Permission::ReadWrite,
-            _ => Permission::None,
-        }
     }
 }

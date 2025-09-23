@@ -43,13 +43,11 @@ fn execute<'a>(
     pc_term: Term<'a>,
     gas_term: Term<'a>,
     args_term: Term<'a>,
-    memory_ref_term: Term<'a>,
 ) -> NifResult<ExecuteResult<'a>> {
     let linked_program: Binary<'a> = Binary::decode(program_term)?;
     let pc: usize = usize::decode(pc_term)?;
     let gas: u64 = u64::decode(gas_term)?;
     let args: Binary<'a> = Binary::decode(args_term)?;
-    let memory_ref: MemoryRef = MemoryRef::decode(memory_ref_term)?;
 
     let (code, registers, memory) = match initialize_program(&linked_program, &args) {
         None => {
@@ -83,14 +81,9 @@ fn execute<'a>(
     }
 
     let state = VmState::new(registers, pc, gas);
+    let memory_ref = MemoryResource::new_ref();
 
-    let mut vm = Vm::new(
-        context.clone(),
-        state,
-        memory_ref.clone(),
-        Some(memory),
-        token,
-    );
+    let mut vm = Vm::new(context.clone(), state, memory_ref, Some(memory), token);
 
     let result = vm.arg_invoke(env)?;
 
