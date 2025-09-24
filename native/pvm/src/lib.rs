@@ -81,9 +81,8 @@ fn execute<'a>(
     }
 
     let state = VmState::new(registers, pc, gas);
-    let memory_ref = MemoryResource::new_ref();
 
-    let mut vm = Vm::new(context.clone(), state, memory_ref, Some(memory), token);
+    let mut vm = Vm::new(context.clone(), state, None, Some(memory), token);
 
     let result = vm.arg_invoke(env)?;
 
@@ -119,7 +118,7 @@ fn resume<'a>(
     let mut vm = Vm::new(
         context.clone(),
         new_state,
-        memory_ref.clone(),
+        Some(memory_ref.clone()),
         memory,
         context_token,
     );
