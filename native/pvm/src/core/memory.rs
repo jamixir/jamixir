@@ -17,6 +17,17 @@ pub enum Permission {
     ReadWrite = 0b11,
 }
 
+impl From<u8> for Permission {
+    fn from(value: u8) -> Self {
+        match value {
+            0b00 => Permission::None,
+            0b01 => Permission::Read,
+            0b11 => Permission::ReadWrite,
+            _ => Permission::None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MemoryError {
     Fault { page_addr: usize },
@@ -135,10 +146,10 @@ impl Memory {
     }
 
     #[inline]
-    pub fn set_access(&mut self, addr: usize, len: usize, permissions: Permission) {
+    pub fn set_access(&mut self, addr: usize, len: usize, permission: Permission) {
         let start_page = addr >> 12;
         let end_page = (addr + len).div_ceil(PAGE_SIZE);
-        let permission_bits = permissions as u64;
+        let permission_bits = permission as u64;
 
         unsafe {
             for page in start_page..end_page {
@@ -162,8 +173,8 @@ impl MemoryBuilder {
     }
 
     #[inline(always)]
-    pub fn set_access(&mut self, addr: usize, len: usize, permissions: Permission) {
-        self.memory.set_access(addr, len, permissions);
+    pub fn set_access(&mut self, addr: usize, len: usize, permission: Permission) {
+        self.memory.set_access(addr, len, permission);
     }
 
     #[inline]
@@ -184,13 +195,27 @@ pub struct MemoryResource {
 
 impl Resource for MemoryResource {}
 
+impl MemoryResource {
+    pub fn new() -> Self {
+        Self {
+            memory: Mutex::new(None),
+        }
+    }
+
+    pub fn new_ref() -> ResourceArc<Self> {
+        ResourceArc::new(Self::new())
+    }
+}
+
 pub type MemoryRef = ResourceArc<MemoryResource>;
 
 #[rustler::nif]
-pub fn memory_new() -> MemoryRef {
-    ResourceArc::new(MemoryResource {
-        memory: Mutex::new(None),
-    })
+pub fn build_memory() -> MemoryRef {
+    let memory_ref = MemoryResource::new_ref();
+
+    let memory = Memory::builder().build();
+    let _ = put_owned(&memory_ref, memory);
+    memory_ref
 }
 
 pub fn get_owned(mem_ref: &MemoryRef) -> Result<Option<Memory>, MutexError> {
@@ -246,6 +271,26 @@ pub fn memory_write<'a>(
         .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
     match memory_guard.as_mut() {
         Some(memory) => memory.write(addr, &data).map(|_| atoms::ok()).to_nif(env),
+        None => Err(to_rustler_error!(atoms::memory_not_available())),
+    }
+}
+
+#[rustler::nif]
+pub fn set_memory_access<'a>(
+    mem_ref: MemoryRef,
+    addr: usize,
+    len: usize,
+    permission: u8,
+) -> NifResult<MemoryRef> {
+    let mut memory_guard = mem_ref
+        .memory
+        .lock()
+        .map_err(|_| to_rustler_error!(atoms::mutex_poisoned()))?;
+    match memory_guard.as_mut() {
+        Some(memory) => {
+            memory.set_access(addr, len, permission.into());
+            Ok(mem_ref.clone())
+        }
         None => Err(to_rustler_error!(atoms::memory_not_available())),
     }
 }

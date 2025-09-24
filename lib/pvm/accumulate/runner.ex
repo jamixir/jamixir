@@ -10,7 +10,6 @@ defmodule PVM.Accumulate.Runner do
     :encoded_args,
     :operands,
     :ctx_pair,
-    :mem_ref,
     :parent,
     :n0_,
     :timeslot,
@@ -43,15 +42,12 @@ defmodule PVM.Accumulate.Runner do
       ) do
     ctx_pair = {initial_context, initial_context}
 
-    mem_ref = memory_new()
-
     state = %__MODULE__{
       service_code: service_code,
       gas: gas,
       encoded_args: encoded_args,
       operands: operands,
       ctx_pair: ctx_pair,
-      mem_ref: mem_ref,
       parent: parent,
       n0_: n0_,
       timeslot: timeslot,
@@ -64,13 +60,13 @@ defmodule PVM.Accumulate.Runner do
   end
 
   @impl true
-  def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a, mem_ref: mr} = st) do
-    case execute(sc, 5, g, a, mr) do
+  def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a} = st) do
+    case execute(sc, 5, g, a) do
       %ExecuteResult{output: :waiting, context_token: token} ->
         # VM paused on host call; wait for :ecall message
         {:noreply, %{st | context_token: token}}
 
-      %ExecuteResult{output: output, used_gas: used_gas, context_token: token} ->
+      %ExecuteResult{output: output, used_gas: used_gas} ->
         send(st.parent, {used_gas, output, st.ctx_pair})
         {:stop, :normal, st}
     end
@@ -128,6 +124,7 @@ defmodule PVM.Accumulate.Runner do
             {:error, _error} ->
               {spent_gas, <<>>, new_ctx_pair}
           end
+
         send(st.parent, result)
         {:stop, :normal, st}
 
@@ -164,7 +161,7 @@ defmodule PVM.Accumulate.Runner do
   end
 
   # Handle any unexpected messages
-  def handle_info(msg, st) do
+  def handle_info(_msg, st) do
     {:noreply, st}
   end
 end

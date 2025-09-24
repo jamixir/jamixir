@@ -2,8 +2,7 @@ use rustler::{Binary, Encoder, Env, NifResult, OwnedBinary, OwnedEnv};
 
 use crate::{
     atoms,
-    core::errors::ToNifResult,
-    core::{put_owned, Memory, MemoryRef},
+    core::{errors::ToNifResult, put_owned, Memory, MemoryRef, MemoryResource},
     types::host_result::{ExecuteResult, HostOutput},
     vm::{ExecutionResult, StepResult, VmContext, VmState},
 };
@@ -21,13 +20,13 @@ impl Vm {
     pub fn new(
         context: Arc<VmContext>,
         state: VmState,
-        memory_ref: MemoryRef,
+        memory_ref: Option<MemoryRef>,
         memory: Option<Memory>,
         context_token: u64,
     ) -> Self {
         Self {
             context,
-            memory_ref: Some(memory_ref),
+            memory_ref: Some(memory_ref.unwrap_or_else(|| MemoryResource::new_ref())),
             memory,
             state,
             context_token,

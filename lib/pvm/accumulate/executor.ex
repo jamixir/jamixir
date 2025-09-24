@@ -2,9 +2,7 @@ defmodule PVM.Accumulate.Executor do
   alias PVM.Accumulate.{Utils, Runner}
   require Logger
 
-  @timeout 5_000  # Increased timeout to 60 seconds to match fuzzer expectations
-  #  this is a "sync" facade over the async runner
-  #  it allows to have a "function like" call "Executor.run" => return result
+  @timeout 500
   def run(
         service_code,
         initial_context,

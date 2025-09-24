@@ -137,28 +137,14 @@ defmodule Jamixir.FuzzerTest do
                    {:error, _} ->
                      []
                  end)
-    @failing_cases [
-      # trie Value mismatch
-      # "1756548916", (commented out means it WILL run )
-    ]
-
-    # Focused test for debugging a specific failing case
-    @tag :focused_debug
-    test "debug specific failing case 1756548916", %{client: client} do
-      dir = "#{@base_path}/1756548916/"
-      test_case(client, dir)
-    end
-
     for case_dir <- @all_traces do
       dir = "#{@base_path}/#{case_dir}/"
 
       @tag dir: dir
       @tag :fuzzer
       @tag :slow
-      if case_dir not in @failing_cases do
-        test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
-          test_case(client, dir)
-        end
+      test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
+        test_case(client, dir)
       end
     end
 

@@ -3,20 +3,19 @@ defmodule PVM.Host.General.FetchTest do
   alias Block.Extrinsic.{WorkItem, WorkPackage}
   alias PVM.Accumulate.Operand
   alias PVM.Host.{General, General.FetchArgs}
-  alias PVM.{Memory, PreMemory, Registers}
+  alias PVM.Registers
   alias System.{DeferredTransfer, State.ServiceAccount}
   alias Util.Hash
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants, only: [min_allowed_address: 0]
   import Codec.Encoder
   import Constants
+  import Pvm.Native
 
   describe "fetch/12" do
     setup do
-      memory =
-        PreMemory.init_nil_memory()
-        |> PreMemory.set_access(min_allowed_address(), 32, :write)
-        |> PreMemory.finalize()
+      memory_ref = Pvm.Native.build_memory()
+      set_memory_access(memory_ref, min_allowed_address(), 32, 3)
 
       # Test data
       work_package = %WorkPackage{
@@ -72,7 +71,7 @@ defmodule PVM.Host.General.FetchTest do
       args = %FetchArgs{
         gas: 100,
         registers: registers,
-        memory: memory,
+        memory_ref: memory_ref,
         work_package: work_package,
         n: "encoded_n",
         authorizer_trace: "auth_output",
@@ -136,12 +135,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_constants
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_constants}
       assert registers_[7] == l
     end
 
@@ -155,12 +153,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == args.n
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, args.n}
       assert registers_[7] == l
     end
 
@@ -174,12 +171,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == args.authorizer_trace
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, args.authorizer_trace}
       assert registers_[7] == l
     end
 
@@ -201,19 +197,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_preimage
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_preimage}
       assert registers_[7] == l
     end
 
     test "w10 = 4 returns preimage from current work item", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 4) |> put_elem(11, 0)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 4) |> put_elem(11, 0)}
+      }
+
       expected_preimage = args.preimages |> Enum.at(args.index) |> Enum.at(0)
       l = byte_size(expected_preimage)
       context = args.context
@@ -221,19 +220,25 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_preimage
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_preimage}
       assert registers_[7] == l
     end
 
     test "w10 = 5 returns import segment", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 5) |> put_elem(11, 0) |> put_elem(12, 0)}}
+      args = %{
+        args
+        | registers: %{
+            args.registers
+            | r: put_elem(args.registers.r, 10, 5) |> put_elem(11, 0) |> put_elem(12, 0)
+          }
+      }
+
       expected_segment = args.import_segments |> Enum.at(0) |> Enum.at(0)
       l = byte_size(expected_segment)
       context = args.context
@@ -241,19 +246,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_segment
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_segment}
       assert registers_[7] == l
     end
 
     test "w10 = 6 returns current import segment", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 6) |> put_elem(11, 1)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 6) |> put_elem(11, 1)}
+      }
+
       expected_segment = args.import_segments |> Enum.at(args.index) |> Enum.at(1)
       l = byte_size(expected_segment)
       context = args.context
@@ -261,12 +269,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_segment
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_segment}
       assert registers_[7] == l
     end
 
@@ -281,12 +288,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
@@ -306,12 +312,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
@@ -325,12 +330,13 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == args.work_package.authorization_token
+      assert memory_read(args.memory_ref, args.registers[7], l) ==
+               {:ok, args.work_package.authorization_token}
+
       assert registers_[7] == l
     end
 
@@ -345,12 +351,12 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      result = Pvm.Native.memory_read(args.memory_ref, args.registers[7], l)
+      assert result == {:ok, encoded}
       assert registers_[7] == l
     end
 
@@ -368,19 +374,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
     test "w10 = 12 returns encoded specific work item", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 12) |> put_elem(11, 0)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 12) |> put_elem(11, 0)}
+      }
+
       encoded = WorkItem.encode(Enum.at(args.work_package.work_items, 0), :fetch_host_call)
       l = byte_size(encoded)
       context = args.context
@@ -388,19 +397,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
     test "w10 = 13 returns work item payload", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 13) |> put_elem(11, 1)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 13) |> put_elem(11, 1)}
+      }
+
       expected_payload = args.work_package.work_items |> Enum.at(1) |> Map.get(:payload)
       l = byte_size(expected_payload)
       context = args.context
@@ -408,12 +420,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_payload
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_payload}
       assert registers_[7] == l
     end
 
@@ -428,19 +439,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
     test "w10 = 15 returns encoded specific operand", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 15) |> put_elem(11, 1)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 15) |> put_elem(11, 1)}
+      }
+
       encoded = e(Enum.at(args.operands, 1))
       l = byte_size(encoded)
       context = args.context
@@ -448,14 +462,13 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
-      end
+    end
 
     test "w10 = 16 returns encoded transfers list", %{
       args: args
@@ -468,19 +481,22 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
     test "w10 = 17 returns encoded specific transfer", %{
       args: args
     } do
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 17) |> put_elem(11, 0)}}
+      args = %{
+        args
+        | registers: %{args.registers | r: put_elem(args.registers.r, 10, 17) |> put_elem(11, 0)}
+      }
+
       encoded = e(Enum.at(args.transfers, args.registers[11]))
       l = byte_size(encoded)
       context = args.context
@@ -488,12 +504,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == encoded
+      assert Pvm.Native.memory_read(args.memory_ref, args.registers[7], l) == {:ok, encoded}
       assert registers_[7] == l
     end
 
@@ -504,12 +519,10 @@ defmodule PVM.Host.General.FetchTest do
       args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 99)}}
       none = none()
       context = args.context
-      memory = args.memory
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
@@ -523,12 +536,10 @@ defmodule PVM.Host.General.FetchTest do
       args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 1)}, n: nil}
       none = none()
       context = args.context
-      memory = args.memory
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
@@ -540,17 +551,12 @@ defmodule PVM.Host.General.FetchTest do
       args: args
     } do
       # Make memory read-only
-      memory_ = Memory.set_access_by_page(args.memory, 16, 1, :read)
-      args = %{args | memory: memory_}
+      memory_ = build_memory()
+      args = %{args | memory_ref: memory_}
       context = args.context
       registers = args.registers
 
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               memory: ^memory_,
-               context: ^context
-             } =
+      assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
                General.fetch(args)
     end
 
@@ -559,7 +565,14 @@ defmodule PVM.Host.General.FetchTest do
     } do
       # Test partial read with offset and length
       # w10=2 for authorizer_output, offset=2, length=3
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 2) |> put_elem(8, 2) |> put_elem(9, 3)}}
+      args = %{
+        args
+        | registers: %{
+            args.registers
+            | r: put_elem(args.registers.r, 10, 2) |> put_elem(8, 2) |> put_elem(9, 3)
+          }
+      }
+
       expected_partial = binary_part(args.authorizer_trace, 2, 3)
       l = byte_size(expected_partial)
       v_size = byte_size(args.authorizer_trace)
@@ -568,12 +581,11 @@ defmodule PVM.Host.General.FetchTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: memory_,
                context: ^context
              } =
                General.fetch(args)
 
-      assert Memory.read!(memory_, args.registers[7], l) == expected_partial
+      assert memory_read(args.memory_ref, args.registers[7], l) == {:ok, expected_partial}
       assert registers_[7] == v_size
     end
 
@@ -583,13 +595,11 @@ defmodule PVM.Host.General.FetchTest do
       args = %{args | gas: 0}
       context = args.context
       registers = args.registers
-      memory = args.memory
 
       assert %{
                exit_reason: :out_of_gas,
                gas: 0,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } =
                General.fetch(args)
@@ -600,17 +610,18 @@ defmodule PVM.Host.General.FetchTest do
     } do
       # Test out of bounds access
       # invalid w11
-      args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 3) |> put_elem(11, 99) |> put_elem(12, 0)}}
+      args = %{
+        args
+        | registers: %{
+            args.registers
+            | r: put_elem(args.registers.r, 10, 3) |> put_elem(11, 99) |> put_elem(12, 0)
+          }
+      }
+
       none = none()
       context = args.context
-      memory = args.memory
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               memory: ^memory,
-               context: ^context
-             } =
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
                General.fetch(args)
 
       assert registers_[7] == none
