@@ -2,10 +2,8 @@ defmodule PVM.Authorize.Executor do
   alias PVM.Authorize.Runner
   require Logger
 
-  # Increased timeout to 60 seconds to match fuzzer expectations
-  @timeout 5_000
-  #  this is a "sync" facade over the async runner
-  #  it allows to have a "function like" call "Executor.run" => return result
+  @timeout 200
+
   def run(service_code, args, wp, opts \\ []) do
     Logger.debug("Authorize.Executor.run: service_index=#{wp.service}")
 

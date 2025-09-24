@@ -53,8 +53,6 @@ defmodule PVM.Authorize.Runner do
 
     gas_remaining = initial_gas - spent_gas
 
-    #  the assumption here is that converting once to tuple is faster then using list inside the host call
-    #  also just lazy to change all the host calls code to use list
     registers_struct = PVM.Registers.from_list(registers)
 
     {exit_reason, post_host_call_state} =

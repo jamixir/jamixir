@@ -4,10 +4,7 @@ defmodule PVM.Refine.Executor do
   alias PVM.Refine.Runner
   require Logger
 
-  # Increased timeout to 60 seconds to match fuzzer expectations
-  @timeout 5_000
-  #  this is a "sync" facade over the async runner
-  #  it allows to have a "function like" call "Executor.run" => return result
+  @timeout 2_000
   def run(
         service_code,
         refine_context,

@@ -57,8 +57,6 @@ defmodule PVM.Refine.Runner do
 
     gas_remaining = initial_gas - spent_gas
 
-    #  the assumption here is that converting once to tuple is faster then using list inside the host call
-    #  also just lazy to change all the host calls code to use list
     registers_struct = PVM.Registers.from_list(registers)
 
     {exit_reason, post_host_call_state, refine_context} =
@@ -111,9 +109,6 @@ defmodule PVM.Refine.Runner do
     end
   end
 
-  #  resume_vm is seperated like this so we can upadte the genserver state with the post host call context BEOFRE
-  #  resuming the inner vm execution
-  # if we hadn't done this, there would be a race condition where an next ecall message could of come in before the genserver state was updated
   def handle_info({:resume_vm, mem_ref, updated_state, context_token}, st) do
     case resume(updated_state, mem_ref, context_token) do
       %ExecuteResult{output: :waiting, context_token: _token} ->
