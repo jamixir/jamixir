@@ -2,24 +2,25 @@
 
 defmodule PVM.Host.Accumulate.Internal do
   alias PVM.Host.Accumulate.{Context, Result}
-  alias PVM.{Memory, Registers}
+  alias PVM.{Registers}
   alias System.DeferredTransfer
   alias System.State.ServiceAccount
   alias System.State.Validator
   import PVM.{Constants.HostCallResult}
   import Codec.Encoder
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
+  import Pvm.Native
 
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
-  @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec bless_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def bless_internal(registers, memory, {x, _y} = context_pair) do
+  def bless_internal(registers, memory_ref, {x, _y} = context_pair) do
     {w7, a, v, o, n} = Registers.get_5(registers, 7, 8, 9, 10, 11)
     m = w7
 
     assigners_ =
-      case Memory.read(memory, a, 4 * Constants.core_count()) do
+      case memory_read(memory_ref, a, 4 * Constants.core_count()) do
         {:ok, data} ->
           for <<service::service() <- data>>, into: [], do: service
 
@@ -31,7 +32,7 @@ defmodule PVM.Host.Accumulate.Internal do
       if n == 0,
         do: %{},
         else:
-          (case Memory.read(memory, o, 12 * n) do
+          (case memory_read(memory_ref, o, 12 * n) do
              {:ok, data} ->
                for <<service::service(), value::64-little <- data>>,
                  into: %{},
@@ -71,19 +72,18 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason_,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
 
-  @spec assign_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec assign_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def assign_internal(registers, memory, {x, _y} = context_pair) do
+  def assign_internal(registers, memory_ref, {x, _y} = context_pair) do
     {w7, o, a} = Registers.get_3(registers, 7, 8, 9)
     c = w7
 
     q =
-      case Memory.read(memory, o, 32 * Constants.max_authorization_queue_items()) do
+      case memory_read(memory_ref, o, 32 * Constants.max_authorization_queue_items()) do
         {:ok, data} ->
           for <<hash::binary-size(32) <- data>>, do: hash
 
@@ -120,18 +120,17 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
 
-  @spec designate_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec designate_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def designate_internal(registers, memory, {x, _y} = context_pair) do
+  def designate_internal(registers, memory_ref, {x, _y} = context_pair) do
     w7 = registers[7]
 
     v =
-      case Memory.read(memory, w7, 336 * Constants.validator_count()) do
+      case memory_read(memory_ref, w7, 336 * Constants.validator_count()) do
         {:ok, data} ->
           for <<validator_data::binary-size(336) <- data>> do
             {v, _} = Validator.decode(validator_data)
@@ -159,36 +158,34 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
 
   @spec checkpoint_internal(
           Registers.t(),
-          Memory.t(),
+          reference(),
           {Context.t(), Context.t()},
           non_neg_integer()
         ) ::
           Result.Internal.t()
-  def checkpoint_internal(registers, memory, {x, _y}, gas) do
+  def checkpoint_internal(registers, _memory_ref, {x, _y}, gas) do
     {_exit_reason, remaining_gas} = PVM.Host.Gas.check_gas(gas)
 
     %Result.Internal{
       registers: %{registers | r: put_elem(registers.r, 7, remaining_gas)},
-      memory: memory,
       context: {x, x}
     }
   end
 
-  @spec new_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec new_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
-  def new_internal(registers, memory, {x, _y} = context_pair, timeslot) do
+  def new_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
     {w7, l, g, m, f} = Registers.get_5(registers, 7, 8, 9, 10, 11)
     o = w7
 
     c =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, data} ->
           if ServiceAccount.service_id?(l), do: data, else: :error
 
@@ -254,19 +251,18 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: registers_,
-      memory: memory,
       context: context_
     }
   end
 
-  @spec upgrade_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec upgrade_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def upgrade_internal(registers, memory, {x, _y} = context_pair) do
+  def upgrade_internal(registers, memory_ref, {x, _y} = context_pair) do
     {w7, g, m} = Registers.get_3(registers, 7, 8, 9)
     o = w7
 
     c =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, data} -> data
         _ -> :error
       end
@@ -286,25 +282,24 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
 
   @spec transfer_internal(
           Registers.t(),
-          Memory.t(),
+          reference(),
           {Context.t(), Context.t()}
         ) ::
           Result.Internal.t()
-  def transfer_internal(registers, memory, {x, _y} = context_pair) do
+  def transfer_internal(registers, memory_ref, {x, _y} = context_pair) do
     {w7, a, l, o} = Registers.get_4(registers, 7, 8, 9, 10)
     d = w7
 
     services = x.accumulation.services
 
     t =
-      case Memory.read(memory, o, Constants.memo_size()) do
+      case memory_read(memory_ref, o, Constants.memo_size()) do
         {:ok, memo} ->
           %DeferredTransfer{
             sender: x.service,
@@ -351,20 +346,19 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
 
-  @spec eject_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec eject_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           {:halt | :continue, Result.Internal.t()}
-  def eject_internal(registers, memory, {x, _y} = context_pair, timeslot) do
+  def eject_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
     # let [d,o] = ω7..8
     {w7, o} = Registers.get_2(registers, 7, 8)
     d = w7
 
     h =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, hash} -> hash
         _ -> :error
       end
@@ -410,18 +404,17 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
   end
 
-  @spec query_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec query_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def query_internal(registers, memory, {x, _y} = context_pair) do
+  def query_internal(registers, memory_ref, {x, _y} = context_pair) do
     {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, hash} -> hash
         _ -> :error
       end
@@ -449,18 +442,17 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: registers_,
-      memory: memory,
       context: context_pair
     }
   end
 
-  @spec solicit_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec solicit_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
-  def solicit_internal(registers, memory, {x, _y} = context_pair, timeslot) do
+  def solicit_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
     {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, hash} -> hash
         _ -> :error
       end
@@ -507,18 +499,17 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
   end
 
-  @spec forget_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}, non_neg_integer()) ::
+  @spec forget_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
-  def forget_internal(registers, memory, {x, _y} = context_pair, timeslot) do
+  def forget_internal(registers, memory_ref , {x, _y} = context_pair, timeslot) do
     {o, z} = Registers.get_2(registers, 7, 8)
 
     h =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, hash} -> hash
         _ -> :error
       end
@@ -570,18 +561,17 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
   end
 
-  @spec yield_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec yield_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
-  def yield_internal(registers, memory, {x, _y} = context_pair) do
+  def yield_internal(registers, memory_ref, {x, _y} = context_pair) do
     o = registers[7]
 
     h =
-      case Memory.read(memory, o, 32) do
+      case memory_read(memory_ref, o, 32) do
         {:ok, hash} -> hash
         _ -> :error
       end
@@ -596,19 +586,18 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
   end
 
   @spec provide_internal(
           Registers.t(),
-          Memory.t(),
+          reference(),
           {Context.t(), Context.t()},
           Types.service_index()
         ) ::
           Result.Internal.t()
-  def provide_internal(registers, memory, {x, _y} = context_pair, service_index) do
+  def provide_internal(registers, memory_ref, {x, _y} = context_pair, service_index) do
     {w7, o, z} = Registers.get_3(registers, 7, 8, 9)
     # d
     services = x.accumulation.services
@@ -616,7 +605,7 @@ defmodule PVM.Host.Accumulate.Internal do
     s_star = if w7 == @max_64_bit_value, do: service_index, else: w7
 
     i =
-      case Memory.read(memory, o, z) do
+      case memory_read(memory_ref, o, z) do
         {:ok, data} -> data
         _ -> :error
       end
@@ -645,7 +634,6 @@ defmodule PVM.Host.Accumulate.Internal do
     %Result.Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: put_elem(context_pair, 0, x_)
     }
   end

@@ -1,18 +1,16 @@
 defmodule PVM.Host.General.Result.Internal do
   alias System.State.ServiceAccount
-  alias PVM.{Memory, Registers}
+  alias PVM.{Registers}
 
   @type t() :: %__MODULE__{
           exit_reason: :continue | :out_of_gas | :panic,
           registers: Registers.t(),
-          memory: Memory.t(),
           context: ServiceAccount.t()
         }
 
   defstruct [
     :exit_reason,
     :registers,
-    :memory,
     :context
   ]
 end
@@ -20,13 +18,12 @@ end
 defmodule PVM.Host.General.Result do
   alias PVM.Host.General.Result.Internal
   alias System.State.ServiceAccount
-  alias PVM.{Memory, Registers}
+  alias PVM.{Registers}
 
   @type t() :: %__MODULE__{
           exit_reason: :continue | :out_of_gas | :panic,
           gas: non_neg_integer(),
           registers: Registers.t(),
-          memory: Memory.t(),
           context: ServiceAccount.t()
         }
 
@@ -34,7 +31,6 @@ defmodule PVM.Host.General.Result do
     :exit_reason,
     :gas,
     :registers,
-    :memory,
     :context
   ]
 
@@ -43,7 +39,6 @@ defmodule PVM.Host.General.Result do
       self
       | exit_reason: internal.exit_reason,
         registers: internal.registers,
-        memory: internal.memory,
         context: internal.context
     }
   end

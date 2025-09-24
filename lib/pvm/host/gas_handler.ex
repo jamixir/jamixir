@@ -8,7 +8,7 @@ defmodule PVM.Host.GasHandler do
         extra_args \\ [],
         gas_cost \\ default_gas()
       ) do
-    {gas, registers, memory, context} = common_args
+    {gas, registers, memory_ref, context} = common_args
     {gas_exit_reason, remaining_gas} = check_gas(gas, gas_cost)
 
     result =
@@ -16,14 +16,13 @@ defmodule PVM.Host.GasHandler do
         exit_reason: gas_exit_reason,
         gas: remaining_gas,
         registers: registers,
-        memory: memory,
         context: context
       })
 
     if gas_exit_reason == :out_of_gas do
       result
     else
-      all_args = [registers, memory, context | extra_args]
+      all_args = [registers, memory_ref, context | extra_args]
       operation_result = apply(operation_fn, all_args)
       result_module.new(result, operation_result)
     end

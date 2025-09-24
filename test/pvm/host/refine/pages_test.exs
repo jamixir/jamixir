@@ -55,7 +55,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -75,7 +74,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -95,7 +93,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -114,7 +111,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -124,11 +120,12 @@ defmodule PVM.Host.Refine.PagesTest do
 
   describe "w10 is 3 or 4 and memory between w8 -> w8 + w9 has one or more nil access pages" do
     setup do
-      registers = Registers.new(%{
-        7 => 1,
-        8 => 16,
-        9 => 100
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => 16,
+          9 => 100
+        })
 
       # Create a machine with memory that has nil access in the target range
       machine_memory =
@@ -160,7 +157,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -179,7 +175,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.pages(gas, registers, memory, context)
 
@@ -206,11 +201,12 @@ defmodule PVM.Host.Refine.PagesTest do
       gas = 100
 
       # r7: machine ID, r8: start page, r9: page count
-      registers = Registers.new(%{
-        7 => 1,
-        8 => 16,
-        9 => 2
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => 16,
+          9 => 2
+        })
 
       memory = PreMemory.init_nil_memory() |> PreMemory.finalize()
 
@@ -235,7 +231,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
 
@@ -265,7 +260,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
 
@@ -300,7 +294,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
 
@@ -335,7 +328,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
 
@@ -371,7 +363,6 @@ defmodule PVM.Host.Refine.PagesTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.pages(gas, registers, memory, context)
 

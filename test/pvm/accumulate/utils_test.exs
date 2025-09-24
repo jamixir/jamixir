@@ -151,7 +151,7 @@ defmodule PVM.Accumulate.UtilsTest do
       assert result.transfers == x.transfers
       assert result.output == Hash.two()
       assert result.gas_used == gas
-      assert result.preimages ==x.preimages
+      assert result.preimages == x.preimages
     end
 
     test "handles non-32-byte output", %{ctx: ctx} do
@@ -210,7 +210,6 @@ defmodule PVM.Accumulate.UtilsTest do
         exit_reason: :continue,
         gas: 1000,
         registers: %PVM.Registers{},
-        memory: %PVM.Memory{},
         context: %ServiceAccount{
           balance: 200,
           code_hash: Hash.one()

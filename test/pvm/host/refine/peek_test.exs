@@ -33,12 +33,13 @@ defmodule PVM.Host.Refine.PeekTest do
       context = %{context | m: %{1 => machine}}
 
       # r7: machine ID, r8: dest offset, r9: source offset, r10: length
-      registers = Registers.new(%{
-        7 => 1,
-        8 => a_0(),
-        9 => a_0(),
-        10 => byte_size(test_data)
-      })
+      registers =
+        Registers.new(%{
+          7 => 1,
+          8 => a_0(),
+          9 => a_0(),
+          10 => byte_size(test_data)
+        })
 
       {:ok,
        memory: memory,
@@ -62,7 +63,6 @@ defmodule PVM.Host.Refine.PeekTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
 
@@ -88,7 +88,6 @@ defmodule PVM.Host.Refine.PeekTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
 
@@ -106,7 +105,6 @@ defmodule PVM.Host.Refine.PeekTest do
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: ^context
              } = Refine.peek(gas, registers, memory, context)
     end
@@ -139,7 +137,6 @@ defmodule PVM.Host.Refine.PeekTest do
       assert %{
                exit_reason: :out_of_gas,
                registers: ^registers,
-               memory: ^memory,
                context: ^context,
                gas: 0
              } = Refine.peek(8, registers, memory, context)

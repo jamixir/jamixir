@@ -17,10 +17,11 @@ defmodule PVM.Host.Refine.ExportTest do
       export_offset = 0
       gas = 100
 
-      registers = Registers.new(%{
-        7 => a_0(),
-        8 => 32
-      })
+      registers =
+        Registers.new(%{
+          7 => a_0(),
+          8 => 32
+        })
 
       {:ok, memory: memory, export_offset: export_offset, gas: gas, registers: registers}
     end
@@ -32,12 +33,11 @@ defmodule PVM.Host.Refine.ExportTest do
       registers: registers
     } do
       # Make memory unreadable at the location
-        memory = Memory.set_access(memory, registers[7], registers[8], nil)
+      memory = Memory.set_access(memory, registers[7], registers[8], nil)
 
       assert %{
                exit_reason: :panic,
                registers: ^registers,
-               memory: ^memory,
                context: %Context{}
              } = Refine.export(gas, registers, memory, %Context{}, export_offset)
     end
@@ -55,7 +55,6 @@ defmodule PVM.Host.Refine.ExportTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
              } = Refine.export(gas, registers, memory, context, 10)
 
@@ -84,7 +83,6 @@ defmodule PVM.Host.Refine.ExportTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: context_
              } = Refine.export(gas, registers, memory, context, export_offset)
 

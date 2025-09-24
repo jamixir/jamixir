@@ -1,5 +1,5 @@
 defmodule PVM.Host.General.FetchArgs do
-  alias PVM.{Registers, Memory}
+  alias PVM.{Registers}
   alias Block.Extrinsic.WorkPackage
   alias System.DeferredTransfer
   alias PVM.Accumulate.Operand
@@ -7,7 +7,7 @@ defmodule PVM.Host.General.FetchArgs do
   @type t :: %__MODULE__{
           gas: non_neg_integer(),
           registers: Registers.t(),
-          memory: Memory.t(),
+          memory_ref: reference(),
           work_package: WorkPackage.t() | nil,
           n: binary() | nil,
           authorizer_trace: binary() | nil,
@@ -21,7 +21,7 @@ defmodule PVM.Host.General.FetchArgs do
   defstruct [
     :gas,
     :registers,
-    :memory,
+    :memory_ref,
     :work_package,
     :n,
     :authorizer_trace,

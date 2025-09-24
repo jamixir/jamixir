@@ -3,6 +3,7 @@ defmodule PVM.Host.Refine.Internal do
   alias System.State.ServiceAccount
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult, Host.Util}
+  import Pvm.Native
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
   @spec historical_lookup_internal(
@@ -101,7 +102,7 @@ defmodule PVM.Host.Refine.Internal do
     {p0, pz, i} = Registers.get_3(registers, 7, 8, 9)
 
     p =
-      case Memory.read(memory, p0, pz) do
+      case memory_read(memory, p0, pz) do
         {:ok, data} -> data
         {:error, _} -> :error
       end

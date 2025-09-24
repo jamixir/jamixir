@@ -19,7 +19,7 @@ defmodule Jamixir.FuzzerTest do
   @conformance_path "../jam-conformance"
 
   setup do
-    if File.exists?(@socket_path), do: File.rm!(@socket_path)
+    # if File.exists?(@socket_path), do: File.rm!(@socket_path)
 
     Task.start_link(fn -> Service.accept(@socket_path) end)
 
@@ -31,8 +31,8 @@ defmodule Jamixir.FuzzerTest do
     Client.receive_message(client)
 
     on_exit(fn ->
-      Client.disconnect(client)
-      if File.exists?(@socket_path), do: File.rm!(@socket_path)
+      # Client.disconnect(client)
+      # if File.exists?(@socket_path), do: File.rm!(@socket_path)
       Storage.remove_all()
     end)
 
@@ -137,7 +137,6 @@ defmodule Jamixir.FuzzerTest do
                    {:error, _} ->
                      []
                  end)
-
     for case_dir <- @all_traces do
       dir = "#{@base_path}/#{case_dir}/"
 
