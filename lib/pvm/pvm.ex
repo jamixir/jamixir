@@ -114,17 +114,17 @@ defmodule PVM do
   def do_on_transfer(services, timeslot, service_index, transfers, %{n0_: n0_}) do
     # Formula (B.16) v0.7.0
 
-    f = fn n, %{gas: gas, registers: registers, memory_ref: memory_ref}, context ->
+    f = fn n, %{gas: gas, registers: registers, memory: memory}, context ->
       host_call_result =
         case host(n) do
           :gas ->
-            General.gas(gas, registers, memory_ref, context)
+            General.gas(gas, registers, memory, context)
 
           :fetch ->
             General.fetch(%FetchArgs{
               gas: gas,
               registers: registers,
-              memory_ref: memory_ref,
+              memory_ref: memory,
               work_package: nil,
               n: n0_,
               authorizer_trace: nil,
@@ -137,19 +137,19 @@ defmodule PVM do
             })
 
           :lookup ->
-            General.lookup(gas, registers, memory_ref, context, service_index, services)
+            General.lookup(gas, registers, memory, context, service_index, services)
 
           :read ->
-            General.read(gas, registers, memory_ref, context, service_index, services)
+            General.read(gas, registers, memory, context, service_index, services)
 
           :write ->
-            General.write(gas, registers, memory_ref, context, service_index)
+            General.write(gas, registers, memory, context, service_index)
 
           :info ->
-            General.info(gas, registers, memory_ref, context, service_index, services)
+            General.info(gas, registers, memory, context, service_index, services)
 
           :log ->
-            General.log(gas, registers, memory_ref, context, nil, service_index)
+            General.log(gas, registers, memory, context, nil, service_index)
 
           _ ->
             %{
@@ -186,7 +186,6 @@ defmodule PVM do
       {service, 0}
     else
       gas_limit = sum_field(transfers, :gas_limit)
-      IO.inspect("do_on_transfer")
 
       {used_gas, _, service_} =
         ArgInvoc.execute(

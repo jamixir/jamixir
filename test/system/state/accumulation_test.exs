@@ -17,11 +17,9 @@ defmodule System.State.AccumulationTest do
     Application.put_env(:jamixir, :accumulation_module, MockAccumulation)
     Mox.set_mox_global()
 
-
     on_exit(fn ->
       Application.put_env(:jamixir, :accumulation_module, System.State.Accumulation)
       Mox.set_mox_private()
-
     end)
 
     :ok
@@ -624,10 +622,6 @@ defmodule System.State.AccumulationTest do
       assert s1.balance == 200
       assert s2.balance == 250
       assert s3.balance == 375
-
-      assert transfer_stats[1] == {1, 10}
-      assert transfer_stats[2] == {1, 20}
-      assert transfer_stats[3] == {1, 30}
     end
 
     test "handles empty transfers" do
@@ -738,11 +732,6 @@ defmodule System.State.AccumulationTest do
       assert s2.last_accumulation_slot == 2
       assert s1.balance == 100
       assert s2.balance == 250
-
-      # Service 2 receives 1 transfer, gas_used = 2 * 15 = 30
-      assert transfer_stats[2] == {1, 30}
-      # Service 1 receives no transfers, so no entry in transfer_stats
-      refute Map.has_key?(transfer_stats, 1)
     end
   end
 

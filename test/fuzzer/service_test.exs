@@ -129,7 +129,7 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @fuzz_path "#{@conformance_path}/fuzz-reports"
-    @base_path "#{@fuzz_path}/0.7.0/traces/"
+    @base_path "#{@fuzz_path}/0.7.0/traces/_new2/"
     @all_traces (case File.ls(@base_path) do
                    {:ok, files} ->
                      files |> Enum.filter(fn file -> String.match?(file, ~r/^\d+/) end)

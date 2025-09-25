@@ -662,7 +662,13 @@ defmodule System.State.Accumulation do
 
         # Formula (12.30) v0.7.0
         {service_with_transfers_applied, used_gas} =
-          PVM.on_transfer(services_intermediate, timeslot_, s, selected_transfers, extra_args)
+          PVM.OnTransfer.execute(
+            services_intermediate,
+            timeslot_,
+            s,
+            selected_transfers,
+            extra_args
+          )
 
         # Formula (12.31) v0.7.0
         # Formula (12.32) v0.7.0
