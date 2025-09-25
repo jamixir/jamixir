@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pvm-rust = { git = "https://github.com/jamixir/pvm-rust" }
-rustler = "0.34.0"
+rustler = "0.36.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
