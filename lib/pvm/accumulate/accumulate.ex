@@ -161,7 +161,6 @@ defmodule PVM.Accumulate do
             exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())},
-            memory: memory,
             context: context
           }
       end

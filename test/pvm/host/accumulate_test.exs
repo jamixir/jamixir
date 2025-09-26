@@ -203,7 +203,7 @@ defmodule PVM.Host.AccumulateTest do
     end
 
     test "returns {:continue, who()} when assigned service not in N_S", %{
-      memory: memory,
+      memory_ref: memory_ref,
       context: context,
       gas: gas,
       registers: registers
@@ -213,9 +213,8 @@ defmodule PVM.Host.AccumulateTest do
       assert %{
                exit_reason: :continue,
                registers: registers_,
-               memory: ^memory,
                context: ^context
-             } = Accumulate.assign(gas, registers, memory, context)
+             } = Accumulate.assign(gas, registers, memory_ref, context)
 
       assert registers_[7] == who()
     end
