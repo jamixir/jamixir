@@ -1,11 +1,10 @@
 defmodule PVM.OnTransfer do
-  alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkItem, WorkPackage}
+  alias System.DeferredTransfer
   alias PVM.OnTransfer.Executor
   alias PVM.{Host.General}
   alias PVM.Host.General.FetchArgs
   alias PVM.OnTransfer.OnTransferParams
   alias System.State.ServiceAccount
-  alias Util.Hash
   import PVM.Constants.{HostCallResult, HostCallId}
   import PVM.Host.Gas
   import PVM.Types

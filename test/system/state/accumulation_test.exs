@@ -608,7 +608,7 @@ defmodule System.State.AccumulationTest do
         {updated_service, gas_used}
       end)
 
-      {%{1 => s1, 2 => s2, 3 => s3}, transfer_stats} =
+      {%{1 => s1, 2 => s2, 3 => s3}, _transfer_stats} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,
@@ -719,7 +719,7 @@ defmodule System.State.AccumulationTest do
         {updated_service, gas_used}
       end)
 
-      {%{1 => s1, 2 => s2}, transfer_stats} =
+      {%{1 => s1, 2 => s2}, _transfer_stats} =
         Accumulation.apply_transfers(
           services_intermediate_2,
           transfers,

@@ -1,7 +1,6 @@
 defmodule PVM.OnTransfer.Executor do
   alias System.State.ServiceAccount
-  alias PVM.OnTransfer.OnTransferParams
-  alias PVM.OnTransfer.Runner
+  alias PVM.OnTransfer.{OnTransferParams, Runner}
   require Logger
 
   @timeout 2_000
