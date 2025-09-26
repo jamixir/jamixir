@@ -2,13 +2,24 @@ defmodule Util.Hex do
   @doc """
   Decodes a hex string that may optionally start with "0x"
   """
-  def decode16(hex_str, opts \\ [case: :lower])
-  def decode16("0x" <> hex_str, opts), do: Base.decode16(hex_str, opts)
-  def decode16(hex_str, opts), do: Base.decode16(hex_str, opts)
+  def decode16(hex_str, opts \\ [case: "lower"])
 
-  def decode16!(hex_str, opts \\ [case: :lower])
-  def decode16!("0x" <> hex_str, opts), do: Base.decode16!(hex_str, opts)
-  def decode16!(hex_str, opts), do: Base.decode16!(hex_str, opts)
+  def decode16(hex_str, _opts) when is_binary(hex_str) do
+    case Util.HexNative.decode16(hex_str) do
+      {:ok, result} -> {:ok, result}
+      {:error, _} -> :error
+    end
+  end
+
+  def decode16!(hex_str, opts \\ [case: "lower"])
+
+  def decode16!(hex_str, opts) do
+    case decode16(hex_str, opts) do
+      {:ok, result} -> result
+      :error -> raise ArgumentError, "non-alphabet character found: #{inspect(hex_str)}"
+    end
+  end
+
   def encode16(binary, opts \\ [])
 
   def encode16(binary, case: casing, prefix: prefix) do

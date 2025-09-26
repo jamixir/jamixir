@@ -1,0 +1,13 @@
+[package]
+name = "hex_helper"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "hex_helper"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.36.2"
+hex = "0.4"

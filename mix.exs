@@ -29,7 +29,7 @@ defmodule Jamixir.MixProject do
   def application do
     [
       mod: {Jamixir, []},
-      extra_applications: [:logger, :mnesia, :runtime_tools, :memoize]
+      extra_applications: [:logger, :mnesia, :runtime_tools, :tools, :memoize]
     ]
   end
 
