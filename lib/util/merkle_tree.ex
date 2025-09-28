@@ -98,7 +98,7 @@ defmodule Util.MerkleTree do
   def node([single_blob], _), do: single_blob
 
   def node(list_of_blobs, hash_func) do
-    mid = div(length(list_of_blobs), 2)
+    mid = ceil(length(list_of_blobs) / 2)
     {left, right} = Enum.split(list_of_blobs, mid)
     left_hash = node(left, hash_func)
     right_hash = node(right, hash_func)

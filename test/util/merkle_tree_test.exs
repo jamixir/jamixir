@@ -28,13 +28,13 @@ defmodule Util.MerkleTreeTest do
 
     test "correctly hashes three elements" do
       result = MerkleTree.node(["a", "b", "c"], &mock_hash/1)
-      expected = "hash(nodeahash(nodebc))"
+      expected = "hash(nodehash(nodeab)c)"
       assert result == expected
     end
 
     test "correctly hashes five elements" do
       result = MerkleTree.node(["a", "b", "c", "d", "e"], &mock_hash/1)
-      expected = "hash(nodehash(nodeab)hash(nodechash(nodede)))"
+      expected = "hash(nodehash(nodehash(nodeab)c)hash(nodede))"
       assert result == expected
     end
   end
@@ -62,8 +62,8 @@ defmodule Util.MerkleTreeTest do
 
     test "returns correct root for three elements" do
       blobs = ["blob1", "blob2", "blob3"]
-      left = "blob1"
-      right = Hash.default("node" <> "blob2" <> "blob3")
+      left = Hash.default("node" <> "blob1" <> "blob2")
+      right = "blob3"
       expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
@@ -78,10 +78,10 @@ defmodule Util.MerkleTreeTest do
 
     test "handles even number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5", "blob6"]
-      left_left = "blob1"
-      left_right = Hash.default("node" <> "blob2" <> "blob3")
-      right_left = "blob4"
-      right_right = Hash.default("node" <> "blob5" <> "blob6")
+      left_left = Hash.default("node" <> "blob1" <> "blob2")
+      left_right = "blob3"
+      right_left = Hash.default("node" <> "blob4" <> "blob5")
+      right_right = "blob6"
       left = Hash.default("node" <> left_left <> left_right)
       right = Hash.default("node" <> right_left <> right_right)
       expected_root = Hash.default("node" <> left <> right)
@@ -90,11 +90,8 @@ defmodule Util.MerkleTreeTest do
 
     test "handles odd number of elements" do
       blobs = ["blob1", "blob2", "blob3", "blob4", "blob5"]
-      left = Hash.default("node" <> "blob1" <> "blob2")
-
-      right =
-        Hash.default("node" <> "blob3" <> Hash.default("node" <> "blob4" <> "blob5"))
-
+      left = Hash.default("node" <> Hash.default("node" <> "blob1" <> "blob2") <> "blob3")
+      right = Hash.default("node" <> "blob4" <> "blob5")
       expected_root = Hash.default("node" <> left <> right)
       assert MerkleTree.well_balanced_merkle_root(blobs) == expected_root
     end
