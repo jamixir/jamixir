@@ -369,7 +369,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.27) v0.7.0
+    # Formula (C.27) v0.7.2
     # E(r_s,r_c,r_c,r_a,r_g,↕r_t,↕r_l,↕r_d)
     def encode(%WorkReport{} = wr) do
       e({

@@ -13,7 +13,6 @@ defmodule PVM.Accumulate.Runner do
     :parent,
     :n0_,
     :timeslot,
-    :service_index,
     :context_token
   ]
 
@@ -25,20 +24,17 @@ defmodule PVM.Accumulate.Runner do
         operands,
         n0_,
         timeslot,
-        service_index,
         opts \\ []
       ) do
     GenServer.start(
       __MODULE__,
-      {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
-       self(), opts}
+      {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, self(), opts}
     )
   end
 
   @impl true
   def init(
-        {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, service_index,
-         parent, _opts}
+        {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, parent, _opts}
       ) do
     ctx_pair = {initial_context, initial_context}
 
@@ -51,7 +47,6 @@ defmodule PVM.Accumulate.Runner do
       parent: parent,
       n0_: n0_,
       timeslot: timeslot,
-      service_index: service_index,
       context_token: nil
     }
 
@@ -93,8 +88,7 @@ defmodule PVM.Accumulate.Runner do
         st.ctx_pair,
         st.n0_,
         st.operands,
-        st.timeslot,
-        st.service_index
+        st.timeslot
       )
 
     #  the small gas math below is due to a differnt gas model between the inner vm and the host call

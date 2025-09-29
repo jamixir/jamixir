@@ -57,7 +57,7 @@ defmodule Block.Extrinsic.WorkItem do
   defimpl Encodable do
     alias Block.Extrinsic.WorkItem
     import Codec.Encoder
-    # Formula (C.29) v0.7.0
+    # Formula (C.29) v0.7.2
     def encode(%WorkItem{} = wi) do
       e({
         t(wi.service),
@@ -71,7 +71,7 @@ defmodule Block.Extrinsic.WorkItem do
       })
     end
 
-    # Formula (C.34) v0.7.0
+    # Formula (C.35) v0.7.2
     defp encode_import_segments(work_item) do
       for {h, i} <- work_item.import_segments,
           do: {Types.hash(h), <<i + if(Types.tagged?(h), do: 0x8000, else: 0)::m(segment_count)>>}
