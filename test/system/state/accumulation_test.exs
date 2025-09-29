@@ -1,4 +1,5 @@
 defmodule System.State.AccumulationTest do
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
@@ -127,7 +128,7 @@ defmodule System.State.AccumulationTest do
       work_reports = []
 
       assert {100, []} ==
-               Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+               Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
     end
 
     test "initial_g is 0 when service not in service_dict", %{service: service} do
@@ -135,7 +136,7 @@ defmodule System.State.AccumulationTest do
       work_reports = []
 
       assert {0, []} ==
-               Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+               Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
     end
 
     test "g is sum of all gas_ratio values for the service", %{
@@ -158,7 +159,7 @@ defmodule System.State.AccumulationTest do
         %{base_wr | digests: [%{base_wr_digest | gas_ratio: 40, service: 2}]}
       ]
 
-      {g, _p} = Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+      {g, _p} = Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
       assert g == 60
     end
 
@@ -204,7 +205,7 @@ defmodule System.State.AccumulationTest do
         }
       ]
 
-      {g, p} = Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+      {g, p} = Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
       assert g == 60
 
       assert p == [
@@ -243,7 +244,7 @@ defmodule System.State.AccumulationTest do
       work_reports = []
 
       assert {100, []} ==
-               Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+               Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
     end
 
     test "handles service not present in any WorkReport", %{
@@ -264,7 +265,7 @@ defmodule System.State.AccumulationTest do
       ]
 
       assert {0, []} ==
-               Accumulation.pre_single_accumulation(work_reports, service_dict, service)
+               Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
     end
   end
 
@@ -288,7 +289,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock accumulation behavior
       MockAccumulation
-      |> stub(:single_accumulation, fn _, _, _, service, _ ->
+      |> stub(:single_accumulation, fn _, _, _, _, service, _ ->
         case service do
           # Regular services return updated state + outputs
           s when s in [4, 5] ->
@@ -384,7 +385,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock all services with a comprehensive stub to avoid conflicts
       MockAccumulation
-      |> stub(:single_accumulation, fn acc_state, _, _, service, _ ->
+      |> stub(:single_accumulation, fn acc_state, _, _, _, service, _ ->
         case service do
           # Manager service (1) - returns updated privileged services
           1 ->
@@ -523,7 +524,7 @@ defmodule System.State.AccumulationTest do
 
       # Mock single_accumulation
       MockAccumulation
-      |> stub(:single_accumulation, fn acc_state, _, _, service, _ ->
+      |> stub(:single_accumulation, fn acc_state, _, _, _, service, _ ->
         gas_map = %{4 => 30, 5 => 40, 6 => 20}
         gas_used = Map.get(gas_map, service, 0)
 
@@ -781,7 +782,7 @@ defmodule System.State.AccumulationTest do
 
       # Set up expectations for the mock
       MockAccumulation
-      |> stub(:single_accumulation, fn _, _, _, _, _ ->
+      |> stub(:single_accumulation, fn _, _, _, _, _, _ ->
         %AccumulationResult{}
       end)
 
@@ -867,7 +868,7 @@ defmodule System.State.AccumulationTest do
     end
 
     test "add preimage hash to service account", %{services: services} do
-      preimages = [{1, "hash1"}, {2, "hash2"}]
+      preimages = [%Preimage{service: 1, blob: "hash1"}, %Preimage{service: 2, blob: "hash2"}]
 
       updated_services = Accumulation.integrate_preimages(services, preimages, 9)
 

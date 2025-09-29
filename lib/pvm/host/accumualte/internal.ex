@@ -1,4 +1,5 @@
 defmodule PVM.Host.Accumulate.Internal do
+  alias Block.Extrinsic.Preimage
   alias PVM.Host.Accumulate.{Context, Result}
   alias PVM.Registers
   alias System.DeferredTransfer
@@ -640,7 +641,8 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, huh(), x}
 
         true ->
-          {:continue, ok(), put_in(x, [:preimages], MapSet.put(x.preimages, {s, i}))}
+          {:continue, ok(),
+           put_in(x, [:preimages], MapSet.put(x.preimages, %Preimage{service: s, blob: i}))}
       end
 
     %Result.Internal{

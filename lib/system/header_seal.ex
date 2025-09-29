@@ -31,7 +31,7 @@ defmodule System.HeaderSeal do
         %EntropyPool{} = entropy_pool,
         keypair
       ) do
-    # associated with formula (6.15, 6.16) v0.7.0
+    # associated with formula (6.15, 6.16) v0.7.2
     # let i = γS′ [Ht]↺
     expected_slot_sealer =
       Enum.at(epoch_slot_sealers, rem(ts, length(epoch_slot_sealers)))
