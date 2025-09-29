@@ -320,22 +320,25 @@ defmodule PVM.Host.Accumulate.Internal do
     xs = Context.accumulating_service(x)
     b = Map.get(xs, :balance) - a
 
+    {c, t_gas} =
+      cond do
+        t == :error -> {:panic, 0}
+        # otherwise if d ∉ K(d)
+        not Map.has_key?(services, d) -> {who(), 0}
+        # otherwise if l < d[d]_m
+        l < get_in(services, [d, :gas_limit_m]) -> {low(), 0}
+        # otherwise if b < (x_s)_t
+        b < ServiceAccount.threshold_balance(xs) -> {cash(), 0}
+        true -> {ok(), l}
+      end
+
     {exit_reason, w7_, context_} =
       cond do
-        t == :error ->
+        c == :panic ->
           {:panic, w7, context_pair}
 
-        # otherwise if d ∉ K(d)
-        not Map.has_key?(services, d) ->
-          {:continue, who(), context_pair}
-
-        # otherwise if g < d[d]m
-        l < get_in(services, [d, :gas_limit_m]) ->
-          {:continue, low(), context_pair}
-
-        # otherwise if b < (xs)t
-        b < ServiceAccount.threshold_balance(xs) ->
-          {:continue, cash(), context_pair}
+        c != ok() ->
+          {:continue, c, context_pair}
 
         # otherwise (OK case)
         true ->
@@ -347,10 +350,11 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, ok(), context_}
       end
 
-    %Result.Internal{
+    %Result{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      context: context_
+      context: context_,
+      gas: 10 + t_gas
     }
   end
 
