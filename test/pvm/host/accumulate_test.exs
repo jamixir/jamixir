@@ -455,24 +455,73 @@ defmodule PVM.Host.AccumulateTest do
            }
          }, y}
 
-      registers =
-        Registers.new(%{
-          7 => 0x1_0000,
-          8 => 1,
-          9 => 100,
-          10 => 200
-        })
+      registers = Registers.new(%{7 => 0x1_0000, 8 => 1, 9 => 100, 10 => 200})
 
-      cash = cash()
       timeslot_ = 1
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Accumulate.new(gas, registers, memory_ref, context, timeslot_)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.new(gas, registers, memory_ref, context, timeslot_)
 
-      assert registers_[7] == cash
+      assert registers_[7] == cash()
+    end
+
+    test "returns {:continue, full()} when registrar is same and 'i' exists as service",
+         %{memory_ref: memory_ref, gas: gas, context: {_x, y}} do
+      # Create context with registrar and existing computed_service
+      service_account = %ServiceAccount{balance: 1000}
+
+      registers = Registers.new(%{7 => 0x1_0000, 8 => 1, 9 => 100, 10 => 200, 12 => 9999})
+
+      context =
+        {%Context{
+           service: 123,
+           computed_service: 9999,
+           accumulation: %Accumulation{
+             manager: 123,
+             services: %{
+               123 => service_account,
+               9999 => %ServiceAccount{}
+             },
+             registrar: 123
+           }
+         }, y}
+
+      timeslot_ = 1
+
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.new(gas, registers, memory_ref, context, timeslot_)
+
+      assert registers_[7] == full()
+    end
+
+    test "returns {:continue, i} when registrar is same and 'i' does not exist as service",
+         %{memory_ref: memory_ref, gas: gas, context: {_x, y}} do
+      # Create context with registrar and existing computed_service
+      service_account = %ServiceAccount{balance: 1000}
+
+      registers = Registers.new(%{7 => 0x1_0000, 8 => 1, 9 => 100, 10 => 200, 12 => 9999})
+
+      context =
+        {%Context{
+           service: 123,
+           computed_service: 9999,
+           accumulation: %Accumulation{
+             manager: 123,
+             services: %{
+               123 => service_account
+             },
+             registrar: 123
+           }
+         }, y}
+
+      timeslot_ = 1
+
+      assert %{exit_reason: :continue, registers: registers_, context: {x_, ^y}} =
+               Accumulate.new(gas, registers, memory_ref, context, timeslot_)
+
+      assert registers_[7] == 9999
+      services_ = x_.accumulation.services
+      assert Map.has_key?(services_, 9999)
     end
 
     test "returns {:continue, computed_service} and updates context with valid parameters", %{
@@ -480,13 +529,7 @@ defmodule PVM.Host.AccumulateTest do
       context: {x, y},
       gas: gas
     } do
-      registers =
-        Registers.new(%{
-          7 => 0x1_0000,
-          8 => 1,
-          9 => 100,
-          10 => 200
-        })
+      registers = Registers.new(%{7 => 0x1_0000, 8 => 1, 9 => 100, 10 => 200})
 
       %{computed_service: computed_service} = x
       timeslot_ = 1

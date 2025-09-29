@@ -46,10 +46,12 @@ defmodule PVM.Accumulate.Utils do
   end
 
   # inlined defintion in section B.8 (Accumulate function) => new = 9 host function
-  # where i = 2^8 + (i - 2^8 + 42) mod (2^32 - 2^9)
+  # where i = S + (i - S + 42) mod (2^32 - S - 2^8)
+  # 2^32 - S - 2^8
+  @bump_divisor 2 ** 32 - Constants.minimum_service_id() - 256
   @spec bump(non_neg_integer()) :: non_neg_integer()
   def bump(i) do
-    256 + rem(i - 256 + 42, 0xFFFFFE00)
+    Constants.minimum_service_id() + rem(i - Constants.minimum_service_id() + 42, @bump_divisor)
   end
 
   # Formula (B.13) v0.7.2

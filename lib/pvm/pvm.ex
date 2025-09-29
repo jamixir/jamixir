@@ -1,14 +1,9 @@
 defmodule PVM do
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
-  alias PVM.{Accumulate.Operand, ArgInvoc, Host}
-  alias PVM.Host.General
-  alias PVM.Host.General.FetchArgs
+  alias PVM.Accumulate.Operand
   alias System.AccumulationResult
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
-  import Codec.Encoder
-  import PVM.Constants.{HostCallId, HostCallResult}
-  import PVM.Host.Gas
 
   # ΨI : The Is-Authorized pvm invocation function.
   # Formula (B.1) v0.7.2

@@ -1,12 +1,12 @@
-# Formula (B.7) v0.7.2
 defmodule PVM.Host.Accumulate.Context do
   alias System.State.{Accumulation, ServiceAccount}
   use AccessStruct
 
+  # Formula (B.7) v0.7.2 - L
   @type t :: %__MODULE__{
           # s: Service index
           service: non_neg_integer(),
-          # u: Accumulation state
+          # e: Accumulation state
           accumulation: Accumulation.t(),
           # i: Computed service index from check function
           computed_service: non_neg_integer(),
@@ -27,6 +27,7 @@ defmodule PVM.Host.Accumulate.Context do
             preimages: MapSet.new()
 
   # Formula (B.8) v0.7.2
+  # ∀x ∈ L ∶ x_s ≡ (x_e)_d[x_s]
   @spec accumulating_service(PVM.Host.Accumulate.Context.t()) :: ServiceAccount.t()
   def accumulating_service(%__MODULE__{} = x), do: x.accumulation.services[x.service]
 
