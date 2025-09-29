@@ -1,4 +1,6 @@
 defmodule PVM.Host.Accumulate do
+  alias PVM.Host.Gas
+  alias PVM.Host.GasHandler
   alias PVM.Host.Accumulate.Result
   alias System.State.ServiceAccount
   import PVM.Host.{GasHandler, Accumulate.Internal}
@@ -56,15 +58,20 @@ defmodule PVM.Host.Accumulate do
   end
 
   def transfer(gas, registers, memory_ref, context_pair) do
-    gas_cost = 10 + registers[9]
+    internal_result = transfer_internal(registers, memory_ref, context_pair)
 
-    with_gas(
-      Result,
-      {gas, registers, memory_ref , context_pair},
-      &transfer_internal/3,
-      [],
-      gas_cost
-    )
+    {gas_exit_reason, remaining_gas} = Gas.check_gas(gas, internal_result.gas)
+
+    if gas_exit_reason == :out_of_gas do
+      %Result{
+        exit_reason: gas_exit_reason,
+        gas: remaining_gas,
+        registers: registers,
+        context: context_pair
+      }
+    else
+      %Result{internal_result | gas: remaining_gas}
+    end
   end
 
   def eject(gas, registers, memory_ref, context_pair, timeslot) do

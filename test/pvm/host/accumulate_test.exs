@@ -633,15 +633,9 @@ defmodule PVM.Host.AccumulateTest do
       set_memory_access(memory_ref, a_0(), Constants.memo_size(), 3)
       memory_write(memory_ref, a_0(), <<1::Constants.memo_size()*8>>)
 
-      sender = %ServiceAccount{
-        balance: 500,
-        gas_limit_m: 100
-      }
-
-      receiver = %ServiceAccount{
-        # Higher than sender
-        gas_limit_m: 200
-      }
+      sender = %ServiceAccount{balance: 500, gas_limit_m: 100}
+      # Higher than sender
+      receiver = %ServiceAccount{gas_limit_m: 200}
 
       x = %Context{
         service: 123,
@@ -676,11 +670,8 @@ defmodule PVM.Host.AccumulateTest do
     } do
       memory_ref = build_memory()
 
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               context: ^context
-             } = Accumulate.transfer(gas, registers, memory_ref, context)
+      assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
+               Accumulate.transfer(gas, registers, memory_ref, context)
     end
 
     test "returns WHO when destination service doesn't exist", %{
@@ -692,11 +683,8 @@ defmodule PVM.Host.AccumulateTest do
       registers = %{registers | r: put_elem(registers.r, 7, 999)}
       who = who()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Accumulate.transfer(gas, registers, memory_ref, context)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.transfer(gas, registers, memory_ref, context)
 
       assert registers_[7] == who
     end
@@ -710,11 +698,8 @@ defmodule PVM.Host.AccumulateTest do
       registers = %{registers | r: put_elem(registers.r, 9, 150)}
       low = low()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Accumulate.transfer(gas + 100, registers, memory_ref, context)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.transfer(gas + 100, registers, memory_ref, context)
 
       assert registers_[7] == low
     end
@@ -734,11 +719,8 @@ defmodule PVM.Host.AccumulateTest do
 
       cash = cash()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {^x, ^y}
-             } = Accumulate.transfer(gas, registers, memory_ref, {x, y})
+      assert %{exit_reason: :continue, registers: registers_, context: {^x, ^y}} =
+               Accumulate.transfer(gas, registers, memory_ref, {x, y})
 
       assert registers_[7] == cash
     end
@@ -752,11 +734,8 @@ defmodule PVM.Host.AccumulateTest do
       amount = 300
       ok = ok()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {x_, ^y}
-             } = Accumulate.transfer(gas + 20, registers, memory_ref, {x, y})
+      assert %{exit_reason: :continue, registers: registers_, context: {x_, ^y}} =
+               Accumulate.transfer(gas + 20, registers, memory_ref, {x, y})
 
       # Check sender's balance was reduced
       sender = get_in(x_, [:accumulation, :services, x.service])
@@ -836,11 +815,8 @@ defmodule PVM.Host.AccumulateTest do
     } do
       memory_ref = build_memory()
 
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               context: ^context
-             } = Accumulate.eject(gas, registers, memory_ref, context, timeslot)
+      assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
+               Accumulate.eject(gas, registers, memory_ref, context, timeslot)
     end
 
     test "returns {:continue, who()} when service doesn't exist or has wrong code hash", %{
@@ -854,11 +830,8 @@ defmodule PVM.Host.AccumulateTest do
       registers = %{registers | r: put_elem(registers.r, 7, 999)}
       who = who()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Accumulate.eject(gas, registers, memory_ref, context, timeslot)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.eject(gas, registers, memory_ref, context, timeslot)
 
       assert registers_[7] == who
 
@@ -867,11 +840,8 @@ defmodule PVM.Host.AccumulateTest do
       service_wrong_hash = %ServiceAccount{code_hash: <<999::32-little>>}
       x = put_in(x, [:accumulation, :services, 456], service_wrong_hash)
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {^x, ^y}
-             } = Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
+      assert %{exit_reason: :continue, registers: registers_, context: {^x, ^y}} =
+               Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
 
       assert registers_[7] == who
     end
@@ -893,11 +863,8 @@ defmodule PVM.Host.AccumulateTest do
 
       huh = huh()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {^x, ^y}
-             } = Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
+      assert %{exit_reason: :continue, registers: registers_, context: {^x, ^y}} =
+               Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
 
       assert registers_[7] == huh
     end
@@ -914,11 +881,8 @@ defmodule PVM.Host.AccumulateTest do
 
       huh = huh()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {^x, ^y}
-             } = Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
+      assert %{exit_reason: :continue, registers: registers_, context: {^x, ^y}} =
+               Accumulate.eject(gas, registers, memory_ref, {x, y}, timeslot)
 
       assert registers_[7] == huh
     end
