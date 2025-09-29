@@ -11,7 +11,7 @@ defmodule System.State.SealKeyTicket do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.30) v0.7.0
+    # Formula (C.30) v0.7.2
     def encode(%System.State.SealKeyTicket{} = skt), do: e({skt.id, <<skt.attempt::8>>})
   end
 

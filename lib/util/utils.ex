@@ -64,7 +64,7 @@ defmodule Utils do
 
   def keys_set(map), do: MapSet.new(Map.keys(map))
 
-  # Formula (H.3) v0.7.0
+  # Formula (H.3) v0.7.2
   def transpose([]), do: []
 
   def transpose([first | _] = matrix) when is_binary(first) do

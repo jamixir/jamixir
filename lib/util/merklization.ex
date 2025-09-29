@@ -39,7 +39,7 @@ defmodule Util.Merklization do
   defmemo(empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash)))
 
   @doc """
-  Formula (D.3) v0.7.0:
+  Formula (D.3) v0.7.2:
      { (H, H) → b_512
   B: { (l,r) → [0] ~ bits(l)_1... ~ bits(r)
 
@@ -55,7 +55,7 @@ defmodule Util.Merklization do
   end
 
   @doc """
-    Formula (D.4) v0.7.0
+    Formula (D.4) v0.7.2
     Encodes the leaf nodes distinguin between regular and embedded leafs.
       { (H, Y) → b_512
     L:{ (k, v）→{ [1,0] ~  bits(E1(|v|)_2... ~  bits(k)...248 ~ bits(v) ~ [0,0,...]  if|v|≤32
@@ -84,7 +84,7 @@ defmodule Util.Merklization do
 
   def merkelize_state(%SerializedState{data: dict}), do: merkelize_state(dict)
 
-  # Formula (D.5) v0.7.0
+  # Formula (D.5) v0.7.2
   # M(σ）= M（｛（bits(k) →（K,v））|（K → v）∈ T（σ）)
   def merkelize_state(dict) do
     merkelize(
@@ -98,7 +98,7 @@ defmodule Util.Merklization do
   @doc """
   General Merklization Function
 
-  Formula (D.6) v0.7.0
+  Formula (D.6) v0.7.2
                            { H°                        if |d| = 0
     M(d: <b → (B_31,B)>) = { H(bits-1 (L(k,v)))        if V（d） =｛（k，v）｝
                            { H(bits-1 (B(M(l), M(r)))) otherwise,

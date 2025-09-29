@@ -119,11 +119,12 @@ defmodule System.State.ServiceAccount do
 
   defimpl Encodable do
     alias System.State.ServiceAccount
-    # Formula (D.2) v0.7.0
-    # C(255, s) ↦ a_c ⌢ E8(a_b, a_g , a_m, a_o, a_f) ⌢ E4(a_i, a_r , a_a, a_p)
+    # Formula (D.2) v0.7.2
+    # C(255, s) ↦ E(0, a_c, E8(a_b, a_g , a_m, a_o, a_f), E4(a_i, a_r , a_a, a_p)
     @spec encode(System.State.ServiceAccount.t()) :: binary()
     def encode(%ServiceAccount{} = s) do
-      s.code_hash <>
+      <<0>> <>
+        s.code_hash <>
         t(s.balance) <>
         <<s.gas_limit_g::m(gas)>> <>
         <<s.gas_limit_m::m(gas)>> <>
@@ -137,7 +138,7 @@ defmodule System.State.ServiceAccount do
   end
 
   def decode(bin) do
-    <<code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
+    <<_::8, code_hash::b(hash), balance::m(balance), gas_limit_g::m(gas), gas_limit_m::m(gas),
       octets_in_storage::64-little, deposit_offset::64-little, items_in_storage::32-little,
       creation_slot::m(timeslot), last_accumulation_slot::m(timeslot), parent_service::service(),
       rest::binary>> = bin

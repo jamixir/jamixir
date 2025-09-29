@@ -27,13 +27,13 @@ defmodule Util.MMR do
 
   @doc """
   Add a new element to the MMR.
-  Formula (E.8) v0.7.0 - A
+  Formula (E.8) v0.7.2 - A
   """
   def append(%MMR{roots: r} = mmr, l, h \\ &Hash.default/1) do
     %MMR{mmr | roots: append_root(r, l, 0, h)}
   end
 
-  # Formula (E.8) v0.7.0 - P
+  # Formula (E.8) v0.7.2 - P
   defp append_root(r, l, n, h) do
     if n >= length(r) do
       r ++ [l]
@@ -45,7 +45,7 @@ defmodule Util.MMR do
     end
   end
 
-  # Formula (E.8) v0.7.0 - R
+  # Formula (E.8) v0.7.2 - R
   defp replace(s, i, v) do
     List.replace_at(s, i, v)
   end
