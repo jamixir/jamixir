@@ -13,7 +13,7 @@ defmodule RingVrf do
     create_ring_context(ring_size)
   end
 
-  # Formula (G.3) v0.7.0
+  # Formula (G.3) v0.7.2
   @spec cached_commitment(any()) :: any()
   defmemo cached_commitment(keys) do
     create_commitment(keys)
@@ -22,8 +22,8 @@ defmodule RingVrf do
   @spec create_commitment(any()) :: any()
   def create_commitment(_keys), do: :erlang.nif_error(:nif_not_loaded)
 
-  # Formula (G.4) v0.7.0
-  # Formula (G.5) v0.7.0
+  # Formula (G.4) v0.7.2
+  # Formula (G.5) v0.7.2
   defmemo ring_vrf_verify(commitment, context, message, signature) do
     ring_vrf_verify_impl(commitment, context, message, signature)
   end
@@ -57,8 +57,8 @@ defmodule RingVrf do
   # IETF VRF Sign
   # Non-Anonymous VRF signature
   # Used for ticket claiming during block production
-  # Formula (G.1) v0.7.0
-  # Formula (G.2) v0.7.0
+  # Formula (G.1) v0.7.2
+  # Formula (G.2) v0.7.2
   def ietf_vrf_sign(_keypair, _context, _message),
     do: :erlang.nif_error(:nif_not_loaded)
 

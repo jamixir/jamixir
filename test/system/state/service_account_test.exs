@@ -133,7 +133,8 @@ defmodule System.State.ServiceAccountTest do
       encoded = Codec.Encoder.encode(sa)
 
       expected_encoded =
-        sa.code_hash <>
+        <<0>> <>
+          sa.code_hash <>
           <<sa.balance::64-little>> <>
           <<sa.gas_limit_g::64-little>> <>
           <<sa.gas_limit_m::64-little>> <>

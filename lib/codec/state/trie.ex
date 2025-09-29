@@ -28,7 +28,7 @@ defmodule Codec.State.Trie do
 
   @preimage_prefix (1 <<< 32) - 2
 
-  # Formula (D.2) v0.7.0
+  # Formula (D.2) v0.7.2
   def state_keys(%State{} = s) do
     %{
       # C(1) ↦ E([↕x ∣ x <− α])
@@ -72,7 +72,7 @@ defmodule Codec.State.Trie do
     |> encode_accounts_storage_p(s, :preimage_storage_p)
   end
 
-  # Formula (D.1) v0.7.0 - C constructor
+  # Formula (D.1) v0.7.2 - C constructor
   # (i, s ∈ ℕ_S) ↦ [i, n0, 0, n1, 0, n2, 0, n3, 0, 0, . . . ] where n = E4(s)
   def key_to_31_octet({i, s}) when i < 256 and s < 4_294_967_296 do
     <<n0, n1, n2, n3>> = e_le(s, 4)

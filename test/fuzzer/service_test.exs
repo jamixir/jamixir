@@ -124,6 +124,9 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "test vectors with fuzzer" do
+    # TODO re-enable when fuzzer updates to 0.7.2
+    @describetag :skip
+
     setup do
       tiny_configs()
     end
@@ -165,6 +168,9 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "import_block handler" do
+    # TODO re-enable when fuzzer updates to 0.7.2
+    @describetag :skip
+
     setup %{client: client} do
       {:ok, block_json} = block_json("00000001.json")
 
@@ -251,6 +257,9 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "protocol v1 examples" do
+    # TODO re-enable when fuzzer updates to 0.7.2
+    @describetag :skip
+
     @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
     test "PeerInfo", %{client: client} do
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/faulty/00000000_fuzzer_peer_info.bin")
