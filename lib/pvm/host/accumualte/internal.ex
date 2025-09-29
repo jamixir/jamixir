@@ -1,6 +1,6 @@
 defmodule PVM.Host.Accumulate.Internal do
   alias PVM.Host.Accumulate.{Context, Result}
-  alias PVM.{Registers}
+  alias PVM.Registers
   alias System.DeferredTransfer
   alias System.State.ServiceAccount
   alias System.State.Validator
@@ -8,6 +8,7 @@ defmodule PVM.Host.Accumulate.Internal do
   import Codec.Encoder
   import PVM.Accumulate.Utils, only: [check: 2, bump: 1]
   import Pvm.Native
+  use MapUnion
 
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
@@ -174,7 +175,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec new_internal(Registers.t(), reference(), {Context.t(), Context.t()}, non_neg_integer()) ::
           Result.Internal.t()
   def new_internal(registers, memory_ref, {x, _y} = context_pair, timeslot) do
-    {w7, l, g, m, f} = Registers.get_5(registers, 7, 8, 9, 10, 11)
+    [w7, l, g, m, f, i] = Registers.get(registers, [7, 8, 9, 10, 11, 12])
     o = w7
 
     c =
@@ -205,28 +206,38 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     x_s = Context.accumulating_service(x)
-    a_t = if a == :error, do: 0, else: ServiceAccount.threshold_balance(a)
+    a_t = if a == :error, do: 0, else: a.balance
 
     s = %{x_s | balance: x_s.balance - a_t}
 
     {exit_reason, w7_, computed_service_, accumulation_services_} =
       (
         x_i = x.computed_service
-        xu_d = x.accumulation.services
+        xe_d = x.accumulation.services
 
         cond do
           c == :error ->
-            {:panic, w7, x_i, xu_d}
+            {:panic, w7, x_i, xe_d}
 
           f != 0 and x.service != x.accumulation.manager ->
-            {:continue, huh(), x_i, xu_d}
+            {:continue, huh(), x_i, xe_d}
 
           s.balance < ServiceAccount.threshold_balance(x_s) ->
-            {:continue, cash(), x_i, xu_d}
+            {:continue, cash(), x_i, xe_d}
+
+          # xs = (x_e)_r ∧ i < S
+          x.accumulation.registrar == x.service and i < Constants.minimum_service_id() ->
+            # i ∈ K((x_e)_d)
+
+            if Map.has_key?(xe_d, i) do
+              {:continue, full(), x_i, xe_d}
+            else
+              {:continue, i, x_i, xe_d ++ %{i => a, x.service => s}}
+            end
 
           true ->
-            {:continue, x_i, check(bump(x_i), x.accumulation),
-             Map.merge(xu_d, %{x_i => a, x.service => s})}
+            i_star = check(bump(x_i), x.accumulation)
+            {:continue, x_i, i_star, xe_d ++ %{x_i => a, x.service => s}}
         end
       )
 
