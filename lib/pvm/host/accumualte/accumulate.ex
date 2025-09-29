@@ -1,6 +1,5 @@
 defmodule PVM.Host.Accumulate do
   alias PVM.Host.Gas
-  alias PVM.Host.GasHandler
   alias PVM.Host.Accumulate.Result
   alias System.State.ServiceAccount
   import PVM.Host.{GasHandler, Accumulate.Internal}
@@ -117,12 +116,11 @@ defmodule PVM.Host.Accumulate do
         &yield_internal/3
       )
 
-  def provide(gas, registers, memory_ref, context_pair, service_index) do
+  def provide(gas, registers, memory_ref, context_pair) do
     with_gas(
       Result,
       {gas, registers, memory_ref, context_pair},
-      &provide_internal/4,
-      [service_index]
+      &provide_internal/3
     )
   end
 end

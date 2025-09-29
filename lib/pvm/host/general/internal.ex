@@ -5,7 +5,6 @@ defmodule PVM.Host.General.Internal do
   alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
   alias PVM.Registers
-  alias System.DeferredTransfer
   alias System.State.ServiceAccount
   import Codec.Encoder
   import PVM.Host.Util
