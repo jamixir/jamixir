@@ -1,4 +1,5 @@
 defmodule System.State.AccumulationTest do
+  alias System.DeferredTransfer
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
@@ -137,6 +138,14 @@ defmodule System.State.AccumulationTest do
 
       assert {0, []} ==
                Accumulation.pre_single_accumulation(work_reports, [], service_dict, service)
+    end
+
+    test "filters only transfer for service", %{service: service} do
+      service_dict = %{2 => 100}
+      [t1, t2] = [%DeferredTransfer{amount: 10, receiver: service}, %DeferredTransfer{amount: 20}]
+
+      assert {0, [t1]} ==
+               Accumulation.pre_single_accumulation([], [t1, t2], service_dict, service)
     end
 
     test "g is sum of all gas_ratio values for the service", %{
