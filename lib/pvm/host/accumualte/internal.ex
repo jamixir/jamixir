@@ -606,16 +606,15 @@ defmodule PVM.Host.Accumulate.Internal do
   @spec provide_internal(
           Registers.t(),
           reference(),
-          {Context.t(), Context.t()},
-          Types.service_index()
+          {Context.t(), Context.t()}
         ) ::
           Result.Internal.t()
-  def provide_internal(registers, memory_ref, {x, _y} = context_pair, service_index) do
+  def provide_internal(registers, memory_ref, {x, _y} = context_pair) do
     {w7, o, z} = Registers.get_3(registers, 7, 8, 9)
     # d
     services = x.accumulation.services
 
-    s_star = if w7 == @max_64_bit_value, do: service_index, else: w7
+    s = if w7 == @max_64_bit_value, do: x.service, else: w7
 
     i =
       case memory_read(memory_ref, o, z) do
@@ -624,7 +623,7 @@ defmodule PVM.Host.Accumulate.Internal do
       end
 
     # a
-    service = Map.get(services, s_star, nil)
+    service = Map.get(services, s, nil)
 
     {exit_reason, w7_, x_} =
       cond do
@@ -637,11 +636,11 @@ defmodule PVM.Host.Accumulate.Internal do
         get_in(service, [:storage, {h(i), z}]) != nil ->
           {:continue, huh(), x}
 
-        MapSet.member?(x.preimages, {s_star, i}) ->
+        MapSet.member?(x.preimages, {s, i}) ->
           {:continue, huh(), x}
 
         true ->
-          {:continue, ok(), put_in(x, [:preimages], MapSet.put(x.preimages, {s_star, i}))}
+          {:continue, ok(), put_in(x, [:preimages], MapSet.put(x.preimages, {s, i}))}
       end
 
     %Result.Internal{

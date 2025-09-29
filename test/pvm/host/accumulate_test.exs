@@ -1546,13 +1546,12 @@ defmodule PVM.Host.AccumulateTest do
     test "returns :panic when memory is not readable", %{
       context: context,
       gas: gas,
-      registers: registers,
-      service_index: service_index
+      registers: registers
     } do
       memory_ref = build_memory()
 
       assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
-               Accumulate.provide(gas, registers, memory_ref, context, service_index)
+               Accumulate.provide(gas, registers, memory_ref, context)
     end
 
     test "returns {:continue, who()} when service doesn't exist", %{
@@ -1563,14 +1562,13 @@ defmodule PVM.Host.AccumulateTest do
     } do
       # Use service index that doesn't exist in services
       registers = %{registers | r: put_elem(registers.r, 7, 999)}
-      service_index = 999
       who = who()
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
                context: ^context
-             } = Accumulate.provide(gas, registers, memory_ref, context, service_index)
+             } = Accumulate.provide(gas, registers, memory_ref, context)
 
       assert registers_[7] == who
     end
@@ -1585,13 +1583,9 @@ defmodule PVM.Host.AccumulateTest do
       # Use r7 that points to service 123 which has the preimage
       registers = %{registers | r: put_elem(registers.r, 7, 123)}
       huh = huh()
-      unused_service_index = 999
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Accumulate.provide(gas, registers, memory_ref, context, unused_service_index)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Accumulate.provide(gas, registers, memory_ref, context)
 
       assert registers_[7] == huh
     end
@@ -1609,13 +1603,12 @@ defmodule PVM.Host.AccumulateTest do
       # Use r7 that points to service 456 (clean service)
       registers = %{registers | r: put_elem(registers.r, 7, 456)}
       huh = huh()
-      unused_service_index = 999
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
                context: {^x, ^y}
-             } = Accumulate.provide(gas, registers, memory_ref, {x, y}, unused_service_index)
+             } = Accumulate.provide(gas, registers, memory_ref, {x, y})
 
       assert registers_[7] == huh
     end
@@ -1630,13 +1623,9 @@ defmodule PVM.Host.AccumulateTest do
       # Use r7 that points to service 456 (clean service)
       registers = %{registers | r: put_elem(registers.r, 7, 456)}
       ok = ok()
-      unused_service_index = 999
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: {x_, ^y}
-             } = Accumulate.provide(gas, registers, memory_ref, {x, y}, unused_service_index)
+      assert %{exit_reason: :continue, registers: registers_, context: {x_, ^y}} =
+               Accumulate.provide(gas, registers, memory_ref, {x, y})
 
       # Verify preimage was added to context
       assert MapSet.member?(x_.preimages, {456, preimage_data})
@@ -1653,39 +1642,39 @@ defmodule PVM.Host.AccumulateTest do
       # Use max 64-bit value to trigger service_index usage
       registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
       # Use service 456 (clean service) as service_index
-      service_index = 456
+      x = put_in(x, [:service], 456)
       ok = ok()
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
                context: {x_, ^y}
-             } = Accumulate.provide(gas, registers, memory_ref, {x, y}, service_index)
+             } = Accumulate.provide(gas, registers, memory_ref, {x, y})
 
       assert registers_[7] == ok
       # Verify preimage was added to context using service_index
-      assert MapSet.member?(x_.preimages, {service_index, preimage_data})
+      assert MapSet.member?(x_.preimages, {456, preimage_data})
     end
 
     test "returns {:continue, who()} when service_index doesn't exist and r7 = max_64_bit_value",
          %{
            memory_ref: memory_ref,
-           context: context,
+           context: {x, y},
            gas: gas,
            registers: registers
          } do
       registers = %{registers | r: put_elem(registers.r, 7, 0xFFFF_FFFF_FFFF_FFFF)}
       # Use non-existent service_index
-      service_index = 999
-      who = who()
+      x = put_in(x, [:service], 777)
+      context = {x, y}
 
       assert %{
                exit_reason: :continue,
                registers: registers_,
                context: ^context
-             } = Accumulate.provide(gas, registers, memory_ref, context, service_index)
+             } = Accumulate.provide(gas, registers, memory_ref, {x, y})
 
-      assert registers_[7] == who
+      assert registers_[7] == who()
     end
   end
 end

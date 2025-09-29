@@ -148,7 +148,7 @@ defmodule PVM.Accumulate do
           Accumulate.yield(gas, registers, memory_ref, context)
 
         :provide ->
-          Accumulate.provide(gas, registers, memory_ref, context, service_index)
+          Accumulate.provide(gas, registers, memory_ref, context)
 
         :log ->
           General.log(gas, registers, memory_ref, s, nil, x.service)
