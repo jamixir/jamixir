@@ -30,7 +30,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
 
   defimpl Encodable do
     import Codec.Encoder
-    # Formula (C.25) v0.7.0
+    # Formula (C.25) v0.7.2
     def encode(%Block.Extrinsic.AvailabilitySpecification{} = availability) do
       e(availability.work_package_hash) <>
         <<availability.length::m(work_bundle_length)>> <>

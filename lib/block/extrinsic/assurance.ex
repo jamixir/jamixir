@@ -105,7 +105,7 @@ defmodule Block.Extrinsic.Assurance do
     import Codec.Encoder
     alias Block.Extrinsic.Assurance
 
-    # Formula (C.20) v0.7.0
+    # Formula (C.20) v0.7.2
     def encode(%Assurance{} = a) do
       e(a.hash) <>
         e(a.bitfield) <>

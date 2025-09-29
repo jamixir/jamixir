@@ -163,7 +163,7 @@ defmodule Block do
   defimpl Encodable do
     import Codec.Encoder, only: [e: 1]
 
-    # Formula (C.16) v0.7.0
+    # Formula (C.16) v0.7.2
     def encode(%Block{extrinsic: e, header: h}), do: e({h, e})
   end
 

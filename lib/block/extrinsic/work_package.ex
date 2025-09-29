@@ -136,7 +136,7 @@ defmodule Block.Extrinsic.WorkPackage do
   defimpl Encodable do
     alias Block.Extrinsic.WorkPackage
     import Codec.Encoder
-    # Formula (C.28) v0.7.0
+    # Formula (C.28) v0.7.2
     def encode(%WorkPackage{} = wp) do
       e({
         t(wp.service),

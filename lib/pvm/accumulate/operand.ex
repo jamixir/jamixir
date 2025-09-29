@@ -33,7 +33,7 @@ defmodule PVM.Accumulate.Operand do
     alias Block.Extrinsic.Guarantee.WorkDigest
     import Codec.Encoder
 
-    # Formula (C.32) v0.7.0
+    # Formula (C.32) v0.7.2
     def encode(%PVM.Accumulate.Operand{} = o),
       do:
         e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
