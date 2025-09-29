@@ -68,7 +68,7 @@ defmodule PVM.Accumulate do
         n0_,
         operands,
         timeslot,
-        service_index
+        _service_index
       ) do
     d = x.accumulation.services
     s = Context.accumulating_service(x)
