@@ -1,4 +1,5 @@
 defmodule PVM.Accumulate do
+  alias System.DeferredTransfer
   alias PVM.Accumulate.Operand
   alias System.State.Accumulation
   alias System.State.ServiceAccount
@@ -21,10 +22,18 @@ defmodule PVM.Accumulate do
           timeslot :: non_neg_integer(),
           service_index :: non_neg_integer(),
           gas :: non_neg_integer(),
-          operands :: list(Operand.t()),
+          operands :: list(Operand.t() | DeferredTransfer.t()),
           extra_args :: %{n0_: Types.hash()}
         ) :: AccumulationResult.t()
-  def execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}, opts \\ []) do
+  def execute(
+        accumulation_state,
+        timeslot,
+        service_index,
+        gas,
+        operands_or_transfers,
+        %{n0_: n0_},
+        opts \\ []
+      ) do
     # Get trace setting from environment variable
     opts =
       case System.get_env("PVM_TRACE") do
@@ -36,22 +45,38 @@ defmodule PVM.Accumulate do
           opts
       end
 
+    #  s = e except s_d[s]_b = e_d[s]_b + ∑ r_a (r∈x)
+    update_path = [:services, service_index, :balance]
+
+    accumulation_state =
+      case get_in(accumulation_state, update_path) do
+        nil ->
+          accumulation_state
+
+        _ ->
+          transfers_amount =
+            for(%DeferredTransfer{} = d <- operands_or_transfers, do: d.amount) |> Enum.sum()
+
+          update_in(accumulation_state, update_path, &(&1 + transfers_amount))
+      end
+
     # Formula (B.10) v0.7.2
     x = Utils.initializer(n0_, timeslot, accumulation_state, service_index)
 
+    # c = e_d[s]_c
     service_code = ServiceAccount.code(accumulation_state.services[service_index])
 
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
       AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
-      encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands)})
+      encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands_or_transfers)})
 
       Executor.run(
         service_code,
         x,
         encoded_args,
         gas,
-        operands,
+        operands_or_transfers,
         n0_,
         timeslot,
         service_index,

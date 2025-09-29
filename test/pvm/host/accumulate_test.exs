@@ -1,5 +1,6 @@
 defmodule PVM.Host.AccumulateTest do
   use ExUnit.Case
+  alias Block.Extrinsic.Preimage
   alias PVM.Host.Accumulate
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
@@ -1628,7 +1629,7 @@ defmodule PVM.Host.AccumulateTest do
                Accumulate.provide(gas, registers, memory_ref, {x, y})
 
       # Verify preimage was added to context
-      assert MapSet.member?(x_.preimages, {456, preimage_data})
+      assert MapSet.member?(x_.preimages, %Preimage{service: 456, blob: preimage_data})
       assert registers_[7] == ok
     end
 
@@ -1653,7 +1654,7 @@ defmodule PVM.Host.AccumulateTest do
 
       assert registers_[7] == ok
       # Verify preimage was added to context using service_index
-      assert MapSet.member?(x_.preimages, {456, preimage_data})
+      assert MapSet.member?(x_.preimages, %Preimage{service: 456, blob: preimage_data})
     end
 
     test "returns {:continue, who()} when service_index doesn't exist and r7 = max_64_bit_value",

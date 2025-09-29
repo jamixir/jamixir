@@ -6,7 +6,7 @@ defmodule Block.Extrinsic.Preimage do
   import Codec.Encoder
   import Util.Hex
 
-  # Formula (12.38) v0.7.0
+  # Formula (12.35) v0.7.2
   @type t :: %__MODULE__{
           # s
           service: non_neg_integer(),
@@ -19,13 +19,13 @@ defmodule Block.Extrinsic.Preimage do
             # d
             blob: <<>>
 
-  # Formula (12.39) v0.7.0
+  # Formula (12.36) v0.7.2
   @spec validate(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   mockable validate(preimages, services) do
-    # Formula (12.39) v0.7.0
+    # Formula (12.36) v0.7.2
     with :ok <- Collections.validate_unique_and_ordered(preimages, &{&1.service, &1.blob}),
-         # Formula (12.40) v0.7.0
+         # Formula (12.37) v0.7.2
          :ok <- check_all_preimages(preimages, services) do
       :ok
     else
@@ -37,7 +37,7 @@ defmodule Block.Extrinsic.Preimage do
 
   def mock(:validate, _), do: :ok
 
-  # Formula (12.40) v0.7.0
+  # Formula (12.37) v0.7.2
   @spec check_all_preimages(list(t()), %{non_neg_integer() => System.State.ServiceAccount.t()}) ::
           :ok | {:error, String.t()}
   defp check_all_preimages(preimages, services) do
@@ -54,19 +54,22 @@ defmodule Block.Extrinsic.Preimage do
     end)
   end
 
-  # Formula (12.41) v0.7.0
+  # Formula (12.22) v0.7.2 - Y:
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
   def not_provided?(preimage, services) do
-    case services[preimage.service] do
-      nil ->
-        false
+    not_provided?(services, preimage.service, preimage.blob)
+  end
 
-      service_account ->
-        preimage_hash = h(preimage.blob)
-        preimage_size = byte_size(preimage.blob)
-
-        not Map.has_key?(service_account.preimage_storage_p, preimage_hash) and
-          get_in(service_account, [:storage, {preimage_hash, preimage_size}]) == []
+  # Formula (12.22) v0.7.2 - Y:
+  @spec not_provided?(
+          %{non_neg_integer() => System.State.ServiceAccount.t()},
+          non_neg_integer(),
+          binary()
+        ) :: boolean()
+  def not_provided?(services, service_index, blob) do
+    case Map.get(services, service_index) do
+      nil -> false
+      sa -> get_in(sa, [:storage, {h(blob), byte_size(blob)}]) == []
     end
   end
 

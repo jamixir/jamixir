@@ -29,6 +29,7 @@ defmodule System.State.Accumulation do
   @type used_gas :: {Types.service_index(), Types.gas()}
   @callback single_accumulation(
               t(),
+              list(DeferredTransfer.t()),
               list(),
               map(),
               non_neg_integer(),
@@ -147,8 +148,7 @@ defmodule System.State.Accumulation do
     # Formula (12.29) v0.7.2
     accumulation_stats = accumulate_statistics(accumulated_reports, used_gas)
 
-    # Formula (12.31) v0.7.0
-    # Formula (12.33) v0.7.0
+    # Formula (12.30) v0.7.2
     services_intermediate_2 =
       apply_last_accumulation(
         services_intermediate,
@@ -156,12 +156,12 @@ defmodule System.State.Accumulation do
         MapSet.new(Map.keys(accumulation_stats))
       )
 
-    # Formula (12.35) v0.7.0
+    # Formula (12.32) v0.7.2
     work_package_hashes = WorkReport.work_package_hashes(accumulated_reports)
-    # Formula (12.36) v0.7.0
+    # Formula (12.33) v0.7.2
     accumulation_history_ = Enum.drop(accumulation_history, 1) ++ [work_package_hashes]
     {_, r_q} = WorkReport.separate_work_reports(work_reports, accumulation_history)
-    # Formula (12.37) v0.7.0
+    # Formula (12.34) v0.7.2
     ready_to_accumulate_ =
       build_ready_to_accumulate_(
         ready_to_accumulate,
@@ -406,6 +406,7 @@ defmodule System.State.Accumulation do
           result =
             accumulation_module.single_accumulation(
               state,
+              deferred_transfers,
               work_reports,
               always_accumulated_services,
               service_id,
@@ -561,7 +562,7 @@ defmodule System.State.Accumulation do
     {accumulation_state, transfers, accumulation_outputs, gas_used}
   end
 
-  # Formula (12.18) v0.7.0
+  # Formula (12.21) v0.7.2 - I:
   @spec integrate_preimages(
           %{Types.service_index() => ServiceAccount.t()},
           MapSet.t({Types.service_index(), binary()}),
@@ -569,17 +570,20 @@ defmodule System.State.Accumulation do
         ) ::
           %{Types.service_index() => ServiceAccount.t()}
   def integrate_preimages(services, preimages, timeslot_) do
-    for {service_index, preimage} <- preimages, reduce: services do
+    for %{blob: blob, service: s} <- preimages, reduce: services do
       acc ->
-        case Map.get(acc, service_index) do
+        case Map.get(acc, s) do
+          # s ∈/ K(d)
           nil ->
             acc
 
           %ServiceAccount{} = sa ->
-            if get_in(sa, [:storage, {h(preimage), byte_size(preimage)}]) in [nil, []] do
-              sa = put_in(sa, [:storage, {h(preimage), byte_size(preimage)}], [timeslot_])
-              sa = put_in(sa, [:preimage_storage_p, h(preimage)], preimage)
-              Map.put(acc, service_index, sa)
+            hash = h(blob)
+
+            if get_in(sa, [:storage, {hash, byte_size(blob)}]) in [nil, []] do
+              sa = put_in(sa, [:storage, {hash, byte_size(blob)}], [timeslot_])
+              sa = put_in(sa, [:preimage_storage_p, hash], blob)
+              Map.put(acc, s, sa)
             else
               acc
             end
@@ -595,15 +599,22 @@ defmodule System.State.Accumulation do
     ) ++ keys_set(always_accumulated)
   end
 
-  # Formula (12.21) v0.7.0
+  # Formula (12.24) v0.7.2
   def single_accumulation(
         acc_state,
+        deffered_transfers,
         work_reports,
         always_accumulating_services,
         service,
         %{timeslot_: timeslot_, n0_: n0_}
       ) do
-    {gas, operands} = pre_single_accumulation(work_reports, always_accumulating_services, service)
+    {gas, operands} =
+      pre_single_accumulation(
+        work_reports,
+        deffered_transfers,
+        always_accumulating_services,
+        service
+      )
 
     Logger.debug(
       "Accumulating service #{service} with #{length(operands)} operands (gas: #{gas})"
@@ -612,7 +623,12 @@ defmodule System.State.Accumulation do
     PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
   end
 
-  def pre_single_accumulation(work_reports, always_accumulating_services, service) do
+  def pre_single_accumulation(
+        work_reports,
+        deferred_transfers,
+        always_accumulating_services,
+        service
+      ) do
     initial_g = Map.get(always_accumulating_services, service, 0)
 
     service_results =
@@ -624,7 +640,7 @@ defmodule System.State.Accumulation do
     total_gas =
       initial_g + Collections.sum_by(service_results, &elem(&1, 0))
 
-    operands =
+    operands_services =
       for {rg, rl, ry, wt, ws, wa} <- service_results do
         %Accumulate.Operand{
           # l
@@ -644,7 +660,10 @@ defmodule System.State.Accumulation do
         }
       end
 
-    {total_gas, operands}
+    # iT = [t ∣ t<−t, t_d = s]
+    transfers = for t <- deferred_transfers, t.receiver == service, do: t
+
+    {total_gas, operands_services ++ transfers}
   end
 
   # Formula (12.30) v0.7.2
@@ -669,7 +688,7 @@ defmodule System.State.Accumulation do
     end
   end
 
-  # Formula (12.37) v0.7.0
+  # Formula (12.34) v0.7.2
   @spec build_ready_to_accumulate_(
           ready_to_accumulate :: list(list(Ready.t())),
           w_star :: MapSet.t(WorkReport.t()),

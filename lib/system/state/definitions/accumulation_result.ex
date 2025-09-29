@@ -13,7 +13,7 @@ defmodule System.AccumulationResult do
           # u
           gas_used: non_neg_integer(),
           # p
-          preimages: MapSet.t({Types.service_index(), binary()})
+          preimages: MapSet.t(Preimage.t())
         }
   defstruct state: %Accumulation{},
             transfers: [],
