@@ -25,8 +25,9 @@ defmodule System.DeferredTransfer do
     alias System.DeferredTransfer
     # Formula (C.31) v0.7.2
     def encode(%DeferredTransfer{} = t) do
-      <<t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance), t.memo::binary,
-        t.gas_limit::m(gas)>>
+      # prefix with 1 Formula (C.33)
+      <<1::8, t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance),
+        t.memo::binary, t.gas_limit::m(gas)>>
     end
   end
 end

@@ -30,7 +30,7 @@ defmodule PVM.Accumulate do
         timeslot,
         service_index,
         gas,
-        operands_or_transfers,
+        operands,
         %{n0_: n0_},
         opts \\ []
       ) do
@@ -55,7 +55,7 @@ defmodule PVM.Accumulate do
 
         _ ->
           transfers_amount =
-            for(%DeferredTransfer{} = d <- operands_or_transfers, do: d.amount) |> Enum.sum()
+            for(%DeferredTransfer{} = d <- operands, do: d.amount) |> Enum.sum()
 
           update_in(accumulation_state, update_path, &(&1 + transfers_amount))
       end
@@ -69,14 +69,14 @@ defmodule PVM.Accumulate do
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
       AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
-      encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands_or_transfers)})
+      encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands)})
 
       Executor.run(
         service_code,
         x,
         encoded_args,
         gas,
-        operands_or_transfers,
+        operands,
         n0_,
         timeslot,
         service_index,
