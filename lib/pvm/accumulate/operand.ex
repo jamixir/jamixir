@@ -35,8 +35,10 @@ defmodule PVM.Accumulate.Operand do
 
     # Formula (C.32) v0.7.2
     def encode(%PVM.Accumulate.Operand{} = o),
+      # prefix with 0 Formula (C.33)
       do:
-        e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
+        <<0>> <>
+          e({o.package_hash, o.segment_root, o.authorizer, o.payload_hash, o.gas_limit}) <>
           WorkDigest.encode_result(o.data) <> e(vs(o.output))
   end
 end
