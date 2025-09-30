@@ -12,7 +12,7 @@ defmodule System.State.PrivilegedServices do
           manager: Types.service_index(),
           # Formula (9.10) v0.7.2 - χ_V
           delegator: Types.service_index(),
-          # Formula (9.10) v0.7.2 - χ_V
+          # Formula (9.10) v0.7.2 - χ_R
           registrar: Types.service_index(),
           # Formula (9.11) v0.7.2 - χ_A
           assigners: list(Types.service_index()),
@@ -33,9 +33,8 @@ defmodule System.State.PrivilegedServices do
     def encode(%PrivilegedServices{} = v) do
       assigners_encoded = for assigner <- v.assigners, into: <<>>, do: <<assigner::m(service)>>
 
-      <<v.manager::m(service)>> <>
-        assigners_encoded <>
-        <<v.delegator::m(service)>> <>
+      <<v.manager::m(service), assigners_encoded::binary, v.delegator::m(service),
+        v.registrar::m(service)>> <>
         e(v.always_accumulated)
     end
   end
@@ -53,6 +52,7 @@ defmodule System.State.PrivilegedServices do
       end)
 
     <<delegator::m(service), rest::binary>> = rest
+    <<registrar::m(service), rest::binary>> = rest
 
     {always_accumulated, rest} = VariableSize.decode(rest, :map_int)
 
@@ -60,6 +60,7 @@ defmodule System.State.PrivilegedServices do
        manager: manager,
        assigners: assigners,
        delegator: delegator,
+       registrar: registrar,
        always_accumulated: always_accumulated
      }, rest}
   end
