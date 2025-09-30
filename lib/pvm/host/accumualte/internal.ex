@@ -355,7 +355,7 @@ defmodule PVM.Host.Accumulate.Internal do
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
       context: context_,
-      gas: 10 + t_gas
+      gas: t_gas
     }
   end
 
