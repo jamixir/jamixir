@@ -59,7 +59,7 @@ defmodule PVM.Host.Accumulate do
   def transfer(gas, registers, memory_ref, context_pair) do
     internal_result = transfer_internal(registers, memory_ref, context_pair)
 
-    {gas_exit_reason, remaining_gas} = Gas.check_gas(gas, internal_result.gas)
+    {gas_exit_reason, remaining_gas} = Gas.check_gas(gas, 10 + internal_result.gas)
 
     if gas_exit_reason == :out_of_gas do
       %Result{
