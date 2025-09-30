@@ -73,8 +73,9 @@ defmodule Constants do
   @doc "R - The rotation period of validator-core assignments, in timeslots."
   defmockable(:rotation_period, do: Jamixir.config(:rotation_period))
 
-  @doc "S - The minimum public service index. Services of indices below these may only be created by the Registrar"
-  def minimum_service_id, do: 65_536
+  @doc "S - The minimum public service index. 2 ^ 16
+  Services of indices below these may only be created by the Registrar"
+  def minimum_service_id, do: 0x10000
 
   @doc "T - The maximum number of extrinsics in a work-package."
   def max_extrinsics, do: 128

@@ -35,9 +35,9 @@ defmodule PVM.Accumulate.Utils do
   @spec check(non_neg_integer(), Accumulation.t()) :: non_neg_integer()
   def check(i, %Accumulation{services: services} = accumulation) do
     if Map.has_key?(services, i) do
-      # check((i - S + 1) mod (2^32 - 2^8) + S)
-      new_i =
-        rem(i - Constants.minimum_service_id() + 1, 0xFFFFFF00) + Constants.minimum_service_id()
+      # check((i - S + 1) mod (2^32 - 2^8 - S) + S)
+      s = Constants.minimum_service_id()
+      new_i = rem(i - s + 1, 0xFFFFFF00 - s) + s
 
       check(new_i, accumulation)
     else
