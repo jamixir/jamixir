@@ -61,10 +61,10 @@ defmodule PVM.AccumulateTest do
 
       accumulation = %{accumulation | services: %{256 => service_with_code}}
 
-      operands = [%Operand{data: {:error, :big}}]
+      accumulation_inputs = [%Operand{data: {:error, :big}}]
       t_ = 0
 
-      acc_result = PVM.accumulate(accumulation, t_, 256, 1000, operands, %{n0_: n0_})
+      acc_result = PVM.accumulate(accumulation, t_, 256, 1000, accumulation_inputs, %{n0_: n0_})
 
       assert acc_result.state.services[256].balance == 100
       assert acc_result.transfers == []

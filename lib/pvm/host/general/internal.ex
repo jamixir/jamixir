@@ -30,7 +30,7 @@ defmodule PVM.Host.General.Internal do
           non_neg_integer() | nil,
           list(list(binary())) | nil,
           list(list(binary())) | nil,
-          list(Operand.t()) | nil
+          list(Types.accumulation_input()) | nil
         ) :: Result.Internal.t()
   def fetch_internal(
         registers,
@@ -42,7 +42,7 @@ defmodule PVM.Host.General.Internal do
         service_index,
         import_segments,
         preimages,
-        operands
+        accumulation_inputs
       ) do
     {w10, w11, w12} = Registers.get_3(registers, 10, 11, 12)
 
@@ -161,11 +161,11 @@ defmodule PVM.Host.General.Internal do
         work_package != nil and w10 == 13 and w11 < length(work_package.work_items) ->
           work_package.work_items |> Enum.at(w11) |> Map.get(:payload)
 
-        operands != nil and w10 == 14 ->
-          e(vs(operands))
+        accumulation_inputs != nil and w10 == 14 ->
+          e(vs(accumulation_inputs))
 
-        operands != nil and w10 == 15 and w11 < length(operands) ->
-          e(Enum.at(operands, w11))
+        accumulation_inputs != nil and w10 == 15 and w11 < length(accumulation_inputs) ->
+          e(Enum.at(accumulation_inputs, w11))
 
         true ->
           nil

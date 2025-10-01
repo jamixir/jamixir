@@ -14,7 +14,7 @@ defmodule PVM.Host.Accumulate.Internal do
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
 
   # Formula (B.20) v0.7.2
-  @spec bless_internal(Registers.t(), Memory.t(), {Context.t(), Context.t()}) ::
+  @spec bless_internal(Registers.t(), reference(), {Context.t(), Context.t()}) ::
           Result.Internal.t()
   def bless_internal(registers, memory_ref, {x, _y} = context_pair) do
     [w7, a, v, r, o, n] = Registers.get(registers, [7, 8, 9, 10, 11, 12])

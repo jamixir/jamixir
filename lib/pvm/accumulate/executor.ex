@@ -8,7 +8,7 @@ defmodule PVM.Accumulate.Executor do
         initial_context,
         encoded_args,
         gas,
-        operands,
+        accumulation_inputs,
         n0_,
         timeslot,
         service_index,
@@ -24,7 +24,7 @@ defmodule PVM.Accumulate.Executor do
         initial_context,
         encoded_args,
         gas,
-        operands,
+        accumulation_inputs,
         n0_,
         timeslot,
         opts

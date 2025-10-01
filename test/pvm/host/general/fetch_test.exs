@@ -41,7 +41,7 @@ defmodule PVM.Host.General.FetchTest do
         ]
       }
 
-      operands = [
+      accumulation_inputs = [
         %Operand{
           package_hash: Hash.one(),
           segment_root: Hash.two(),
@@ -78,7 +78,7 @@ defmodule PVM.Host.General.FetchTest do
         index: 0,
         import_segments: [["seg1_1", "seg1_2"], ["seg2_1"]],
         preimages: [["preimage1", "preimage2"], ["preimage3"]],
-        operands: operands,
+        accumulation_inputs: accumulation_inputs,
         transfers: [
           %DeferredTransfer{sender: 1, receiver: 2, amount: 100, memo: "memo1"},
           %DeferredTransfer{sender: 2, receiver: 3, amount: 200, memo: "memo2"}
@@ -425,11 +425,11 @@ defmodule PVM.Host.General.FetchTest do
       assert registers_[7] == l
     end
 
-    test "w10 = 14 returns encoded operands list", %{
+    test "w10 = 14 returns encoded accumulation_inputs list", %{
       args: args
     } do
       args = %{args | registers: %{args.registers | r: put_elem(args.registers.r, 10, 14)}}
-      encoded = e(vs(args.operands))
+      encoded = e(vs(args.accumulation_inputs))
       l = byte_size(encoded)
       context = args.context
 
@@ -452,7 +452,7 @@ defmodule PVM.Host.General.FetchTest do
         | registers: %{args.registers | r: put_elem(args.registers.r, 10, 15) |> put_elem(11, 1)}
       }
 
-      encoded = e(Enum.at(args.operands, 1))
+      encoded = e(Enum.at(args.accumulation_inputs, 1))
       l = byte_size(encoded)
       context = args.context
 

@@ -14,7 +14,7 @@ defmodule PVM.Host.General.FetchArgs do
           index: non_neg_integer() | nil,
           import_segments: list(list(binary())) | nil,
           preimages: list(list(binary())) | nil,
-          operands: list(Operand.t()) | nil,
+          accumulation_inputs: list(Operand.t()) | nil,
           transfers: list(DeferredTransfer.t()) | nil,
           context: any()
         }
@@ -28,7 +28,7 @@ defmodule PVM.Host.General.FetchArgs do
     :index,
     :import_segments,
     :preimages,
-    :operands,
+    :accumulation_inputs,
     :transfers,
     :context
   ]

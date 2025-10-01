@@ -40,7 +40,7 @@ defmodule PVM.Host.General do
         args.index,
         args.import_segments,
         args.preimages,
-        args.operands
+        args.accumulation_inputs
       ]
     )
   end
