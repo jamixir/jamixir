@@ -44,7 +44,7 @@ defmodule PVM.Authorize do
             index: nil,
             import_segments: nil,
             preimages: nil,
-            operands: nil,
+            accumulation_inputs: nil,
             transfers: nil,
             context: nil
           })

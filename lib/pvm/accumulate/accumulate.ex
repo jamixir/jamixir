@@ -1,6 +1,5 @@
 defmodule PVM.Accumulate do
   alias System.DeferredTransfer
-  alias PVM.Accumulate.Operand
   alias System.State.Accumulation
   alias System.State.ServiceAccount
   alias PVM.Accumulate.Executor
@@ -22,7 +21,7 @@ defmodule PVM.Accumulate do
           timeslot :: non_neg_integer(),
           service_index :: non_neg_integer(),
           gas :: non_neg_integer(),
-          operands :: list(Operand.t() | DeferredTransfer.t()),
+          accumulation_inputs :: list(Types.accumulation_input()),
           extra_args :: %{n0_: Types.hash()}
         ) :: AccumulationResult.t()
   def execute(
@@ -30,7 +29,7 @@ defmodule PVM.Accumulate do
         timeslot,
         service_index,
         gas,
-        operands,
+        accumulation_inputs,
         %{n0_: n0_},
         opts \\ []
       ) do
@@ -55,7 +54,7 @@ defmodule PVM.Accumulate do
 
         _ ->
           transfers_amount =
-            for(%DeferredTransfer{} = d <- operands, do: d.amount) |> Enum.sum()
+            for(%DeferredTransfer{} = d <- accumulation_inputs, do: d.amount) |> Enum.sum()
 
           update_in(accumulation_state, update_path, &(&1 + transfers_amount))
       end
@@ -69,14 +68,14 @@ defmodule PVM.Accumulate do
     if service_code == nil or byte_size(service_code) > Constants.max_service_code_size() do
       AccumulationResult.new({x.accumulation, [], nil, 0, MapSet.new()})
     else
-      encoded_args = Codec.Encoder.e({timeslot, service_index, length(operands)})
+      encoded_args = Codec.Encoder.e({timeslot, service_index, length(accumulation_inputs)})
 
       Executor.run(
         service_code,
         x,
         encoded_args,
         gas,
-        operands,
+        accumulation_inputs,
         n0_,
         timeslot,
         service_index,
@@ -91,7 +90,7 @@ defmodule PVM.Accumulate do
         %{gas: gas, registers: registers, memory_ref: memory_ref},
         {x, _y} = context,
         n0_,
-        operands,
+        accumulation_inputs,
         timeslot
       ) do
     d = x.accumulation.services
@@ -114,7 +113,7 @@ defmodule PVM.Accumulate do
             index: nil,
             import_segments: nil,
             preimages: nil,
-            operands: operands,
+            accumulation_inputs: accumulation_inputs,
             transfers: nil,
             context: context
           })

@@ -106,7 +106,7 @@ defmodule PVM.Refine do
             index: work_item_index,
             import_segments: import_segments,
             preimages: preimages,
-            operands: nil,
+            accumulation_inputs: nil,
             transfers: nil,
             context: context
           })
@@ -149,7 +149,7 @@ defmodule PVM.Refine do
         _ ->
           g_ = gas - default_gas()
 
-          %General.Result{
+          %Refine.Result{
             exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())},

@@ -55,6 +55,7 @@ defmodule Types do
   @type bandersnatch_ring_root :: <<_::1152>>
   # L
   @type max_age_timeslot_lookup_anchor :: non_neg_integer()
+  @type accumulation_input :: Operand.t() | DeferredTransfer.t()
 
   @type segment_ref ::
           hash()

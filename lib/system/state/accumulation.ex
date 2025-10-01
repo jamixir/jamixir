@@ -565,7 +565,7 @@ defmodule System.State.Accumulation do
   # Formula (12.21) v0.7.2 - I:
   @spec integrate_preimages(
           %{Types.service_index() => ServiceAccount.t()},
-          MapSet.t({Types.service_index(), binary()}),
+          MapSet.t(Preimage.t()),
           Types.timeslot()
         ) ::
           %{Types.service_index() => ServiceAccount.t()}
@@ -608,7 +608,7 @@ defmodule System.State.Accumulation do
         service,
         %{timeslot_: timeslot_, n0_: n0_}
       ) do
-    {gas, operands} =
+    {gas, accumulation_inputs} =
       pre_single_accumulation(
         work_reports,
         deffered_transfers,
@@ -617,10 +617,10 @@ defmodule System.State.Accumulation do
       )
 
     Logger.debug(
-      "Accumulating service #{service} with #{length(operands)} operands (gas: #{gas})"
+      "Accumulating service #{service} with #{length(accumulation_inputs)} accumulation_inputs (gas: #{gas})"
     )
 
-    PVM.accumulate(acc_state, timeslot_, service, gas, operands, %{n0_: n0_})
+    PVM.accumulate(acc_state, timeslot_, service, gas, accumulation_inputs, %{n0_: n0_})
   end
 
   def pre_single_accumulation(

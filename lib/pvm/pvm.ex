@@ -1,6 +1,5 @@
 defmodule PVM do
   alias Block.Extrinsic.{Guarantee.WorkExecutionError, WorkPackage}
-  alias PVM.Accumulate.Operand
   alias System.AccumulationResult
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
@@ -84,10 +83,19 @@ defmodule PVM do
           timeslot :: non_neg_integer(),
           service_index :: non_neg_integer(),
           gas :: non_neg_integer(),
-          operands :: list(Operand.t()),
+          accumulation_inputs :: list(Types.accumulation_input()),
           extra_args :: %{n0_: Types.hash()}
         ) :: AccumulationResult.t()
-  def accumulate(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_}) do
-    PVM.Accumulate.execute(accumulation_state, timeslot, service_index, gas, operands, %{n0_: n0_})
+  def accumulate(accumulation_state, timeslot, service_index, gas, accumulation_inputs, %{
+        n0_: n0_
+      }) do
+    PVM.Accumulate.execute(
+      accumulation_state,
+      timeslot,
+      service_index,
+      gas,
+      accumulation_inputs,
+      %{n0_: n0_}
+    )
   end
 end

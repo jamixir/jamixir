@@ -8,7 +8,7 @@ defmodule PVM.Accumulate.Runner do
     :service_code,
     :gas,
     :encoded_args,
-    :operands,
+    :accumulation_inputs,
     :ctx_pair,
     :parent,
     :n0_,
@@ -21,20 +21,22 @@ defmodule PVM.Accumulate.Runner do
         initial_context,
         encoded_args,
         gas,
-        operands,
+        accumulation_inputs,
         n0_,
         timeslot,
         opts \\ []
       ) do
     GenServer.start(
       __MODULE__,
-      {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, self(), opts}
+      {service_code, initial_context, encoded_args, gas, accumulation_inputs, n0_, timeslot,
+       self(), opts}
     )
   end
 
   @impl true
   def init(
-        {service_code, initial_context, encoded_args, gas, operands, n0_, timeslot, parent, _opts}
+        {service_code, initial_context, encoded_args, gas, accumulation_inputs, n0_, timeslot,
+         parent, _opts}
       ) do
     ctx_pair = {initial_context, initial_context}
 
@@ -42,7 +44,7 @@ defmodule PVM.Accumulate.Runner do
       service_code: service_code,
       gas: gas,
       encoded_args: encoded_args,
-      operands: operands,
+      accumulation_inputs: accumulation_inputs,
       ctx_pair: ctx_pair,
       parent: parent,
       n0_: n0_,
@@ -87,7 +89,7 @@ defmodule PVM.Accumulate.Runner do
         %{gas: gas_remaining, registers: registers_struct, memory_ref: mem_ref},
         st.ctx_pair,
         st.n0_,
-        st.operands,
+        st.accumulation_inputs,
         st.timeslot
       )
 

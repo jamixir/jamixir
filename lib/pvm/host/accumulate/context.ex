@@ -5,11 +5,11 @@ defmodule PVM.Host.Accumulate.Context do
   # Formula (B.7) v0.7.2 - L
   @type t :: %__MODULE__{
           # s: Service index
-          service: non_neg_integer(),
+          service: Types.service_index(),
           # e: Accumulation state
           accumulation: Accumulation.t(),
           # i: Computed service index from check function
-          computed_service: non_neg_integer(),
+          computed_service: Types.service_index(),
           # t: List of deferred transfers
           transfers: list(System.DeferredTransfer.t()),
           # y: accumulation trie result

@@ -56,18 +56,8 @@ defmodule Block.Extrinsic.Preimage do
 
   # Formula (12.22) v0.7.2 - Y:
   @spec not_provided?(t(), %{non_neg_integer() => System.State.ServiceAccount.t()}) :: boolean()
-  def not_provided?(preimage, services) do
-    not_provided?(services, preimage.service, preimage.blob)
-  end
-
-  # Formula (12.22) v0.7.2 - Y:
-  @spec not_provided?(
-          %{non_neg_integer() => System.State.ServiceAccount.t()},
-          non_neg_integer(),
-          binary()
-        ) :: boolean()
-  def not_provided?(services, service_index, blob) do
-    case Map.get(services, service_index) do
+  def not_provided?(%{service: service_id, blob: blob}, services) do
+    case Map.get(services, service_id) do
       nil -> false
       sa -> get_in(sa, [:storage, {h(blob), byte_size(blob)}]) == []
     end

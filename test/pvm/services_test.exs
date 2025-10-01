@@ -35,7 +35,7 @@ defmodule PVM.ServicesTest do
       0,
       # gas
       10000,
-      # operands
+      # accumulation_inputs
       [],
       # extra_args
       %{n0_: Util.Hash.one()}
@@ -70,8 +70,18 @@ defmodule PVM.ServicesTest do
       |> insert_instruction(2, [0, 0, 0, 0, 0], [0, 0, 0, 0, 0])
       |> PVM.Helper.init_bin()
 
-    {accumulation, timeslot, service_index, gas, operands, extra_args} = make_accumulate_args(bin)
-    result = Accumulate.execute(accumulation, timeslot, service_index, gas, operands, extra_args)
+    {accumulation, timeslot, service_index, gas, accumulation_inputs, extra_args} =
+      make_accumulate_args(bin)
+
+    result =
+      Accumulate.execute(
+        accumulation,
+        timeslot,
+        service_index,
+        gas,
+        accumulation_inputs,
+        extra_args
+      )
 
     assert result == %AccumulationResult{
              state: accumulation,
