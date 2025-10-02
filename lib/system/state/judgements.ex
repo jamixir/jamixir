@@ -123,8 +123,8 @@ defmodule System.State.Judgements do
     end)
   end
 
-  def union_all(%__MODULE__{good: g, bad: b, wonky: w}) do
-    g ++ b ++ w
+  def union_all(%__MODULE__{good: g, bad: b, wonky: w, offenders: o}) do
+    g ++ b ++ w ++ o
   end
 
   def mock(:transition, context),

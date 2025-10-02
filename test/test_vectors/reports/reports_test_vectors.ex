@@ -18,9 +18,11 @@ defmodule ReportsTestVectors do
         "bad_signature-1",
         "bad_state_root-1",
         "bad_validator_index-1",
+        "banned_validator_guarantee-1",
         "big_work_report_output-1",
         "core_engaged-1",
         "dependency_missing-1",
+        "different_core_same_guarantors-1",
         "duplicate_package_in_recent_history-1",
         "duplicated_package_in_report-1",
         "future_report_slot-1",
@@ -74,11 +76,19 @@ defmodule ReportsTestVectors do
       %{accumulate_mock_return() | services: pre_services}
     end)
 
-
     header =
       Map.merge(if(ok_output == nil, do: %{}, else: ok_output), json_data[:input])
 
     json_data = put_in(json_data[:pre_state][:slot], json_data[:input][:slot])
+
+    json_data =
+      put_in(json_data[:pre_state][:psi], %{
+        good: [],
+        bad: [],
+        wonky: [],
+        offenders: json_data[:pre_state][:offenders]
+      })
+
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
 end

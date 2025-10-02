@@ -23,5 +23,7 @@ defmodule CodecVectors do
     {"work_result_1", WorkDigest}
   ]
 
+  def files_to_test, do: Enum.map(@tests, fn {file, _} -> file end)
+
   def tests, do: @tests
 end

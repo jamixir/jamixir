@@ -6,39 +6,39 @@ defmodule CheckVectorsCountTest do
 
   describe "count test vector files" do
     test "assurances" do
-      assert_count(AssurancesTestVectors, "./assurances/tiny")
+      assert_count(AssurancesTestVectors, "./stf/assurances/tiny")
     end
 
     test "codec" do
-      assert_count(CodecVectors, "./codec/data")
+      assert_count(CodecVectors, "./codec/tiny")
     end
 
     test "disputes" do
-      assert_count(DisputesTestVectors, "./disputes/tiny")
+      assert_count(DisputesTestVectors, "./stf/disputes/tiny")
     end
 
     test "history" do
-      assert_count(HistoryTestVectors, "./history/data")
+      assert_count(HistoryTestVectors, "./stf/history/tiny")
     end
 
     test "preimages" do
-      assert_count(PreimagesTestVectors, "./preimages/data")
+      assert_count(PreimagesTestVectors, "./stf/preimages/tiny")
     end
 
     test "reports" do
-      assert_count(ReportsTestVectors, "./reports/tiny")
+      assert_count(ReportsTestVectors, "./stf/reports/tiny")
     end
 
     test "safrole" do
-      assert_count(SafroleTestVectors, "./safrole/tiny")
+      assert_count(SafroleTestVectors, "./stf/safrole/tiny")
     end
 
     test "statistics" do
-      assert_count(StatisticsTestVectors, "./statistics/tiny")
+      assert_count(StatisticsTestVectors, "./stf/statistics/tiny")
     end
 
     test "accumulate" do
-      assert_count(AccumulateTestVectors, "./accumulate/tiny")
+      assert_count(AccumulateTestVectors, "./stf/accumulate/tiny")
     end
   end
 
