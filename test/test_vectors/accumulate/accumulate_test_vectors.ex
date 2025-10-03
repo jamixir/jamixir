@@ -20,7 +20,9 @@ defmodule AccumulateTestVectors do
         "process_one_immediate_report-1",
         for(i <- 1..2, do: "queues_are_shifted-#{i}"),
         for(i <- 1..3, do: "ready_queue_editing-#{i}"),
-        "same_code_different_services-1"
+        "same_code_different_services-1",
+        "transfer_for_ejected_service-1",
+        for(i <- 1..3, do: "work_for_ejected_service-#{i}")
       ]
       |> List.flatten()
 
@@ -67,6 +69,10 @@ defmodule AccumulateTestVectors do
 
     json_data = put_in(json_data[:pre_state], Map.merge(json_data[:pre_state], mock_safrole))
 
+    # fix preimages in json
+    json_data = fix_accounts(json_data, :pre_state)
+    json_data = fix_accounts(json_data, :post_state)
+
     core_reports =
       for(
         r <- json_data[:input][:reports],
@@ -81,8 +87,27 @@ defmodule AccumulateTestVectors do
         for(_ <- 1..4, do: json_data[:post_state][:entropy])
       )
 
-    json_data = put_vector_services_stats_on_state(json_data)
+    json_data =
+      json_data = put_vector_services_stats_on_state(json_data)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
+  end
+
+  def fix_accounts(json_data, type) do
+    fixed_accounts =
+      for a <- json_data[type][:accounts] do
+        a = put_in(a, [:data, :preimages], a[:data][:preimages_blob])
+
+        fixed_status =
+          for s <- a[:data][:preimages_status],
+              do: %{
+                key: %{hash: s[:hash]},
+                value: s[:status]
+              }
+
+        put_in(a, [:data, :lookup_meta], fixed_status)
+      end
+
+    put_in(json_data[type][:accounts], fixed_accounts)
   end
 end

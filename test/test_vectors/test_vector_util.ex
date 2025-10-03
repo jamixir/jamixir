@@ -194,7 +194,21 @@ defmodule TestVectorUtil do
               {our_result, expected_result}
             end
 
-          assert our_result == expected_result
+          # special handling for services map - so many fields to compare full objects
+          if key == :services do
+            for {id, service} <- expected_result do
+              exp_service = Map.from_struct(service)
+
+              for {field, value} <- exp_service do
+                our_value = Map.get(our_result[id], field)
+
+                assert our_value == value,
+                       "In services[#{id}].#{field} - expected #{inspect(value)}, got #{inspect(our_value)}"
+              end
+            end
+          else
+            assert our_result == expected_result
+          end
         end)
 
       {{:ok, _}, error_expected} ->
