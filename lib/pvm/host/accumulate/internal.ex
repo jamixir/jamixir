@@ -387,11 +387,7 @@ defmodule PVM.Host.Accumulate.Internal do
           {:continue, who(), x}
 
         true ->
-          l =
-            max(81, service.storage.octets_in_storage) - 81
-
-          s_ = Context.accumulating_service(x)
-          s_ = %{s_ | balance: s_.balance + service.balance}
+          l = max(81, service.storage.octets_in_storage) - 81
 
           cond do
             service.storage.items_in_storage != 2 or
@@ -401,6 +397,8 @@ defmodule PVM.Host.Accumulate.Internal do
             match?([_x, _y], get_in(service, [:storage, {h, l}])) and
                 get_in(service, [:storage, {h, l}]) |> Enum.at(1) <
                   timeslot - Constants.forget_delay() ->
+              s_ = Context.accumulating_service(x)
+              s_ = %{s_ | balance: s_.balance + service.balance}
               x_u_d_ = Map.delete(x.accumulation.services, d) |> Map.merge(%{x.service => s_})
               x_ = put_in(x, [:accumulation, :services], x_u_d_)
               {:continue, ok(), x_}

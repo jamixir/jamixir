@@ -87,8 +87,7 @@ defmodule AccumulateTestVectors do
         for(_ <- 1..4, do: json_data[:post_state][:entropy])
       )
 
-    json_data =
-      json_data = put_vector_services_stats_on_state(json_data)
+    json_data = put_vector_services_stats_on_state(json_data)
 
     assert_expected_results(json_data, tested_keys(), file_name, extrinsic, header)
   end
@@ -101,7 +100,7 @@ defmodule AccumulateTestVectors do
         fixed_status =
           for s <- a[:data][:preimages_status],
               do: %{
-                key: %{hash: s[:hash]},
+                key: %{hash: s[:hash], length: 0},
                 value: s[:status]
               }
 
