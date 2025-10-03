@@ -2,7 +2,6 @@ defmodule PVM.Host.General.Internal do
   import PVM.{Constants.HostCallResult}
   alias Block.Extrinsic.WorkItem
   alias Block.Extrinsic.WorkPackage
-  alias PVM.Accumulate.Operand
   alias PVM.Host.General.Result
   alias PVM.Registers
   alias System.State.ServiceAccount

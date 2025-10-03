@@ -247,7 +247,7 @@ defmodule TestVectorUtil do
   # the key traformation logic comes from Chapter B.6 (General functions)
   # read host call https://graypaper.fluffylabs.dev/#/cc517d7/30bb0130c201?v=0.6.6
   defp transform_services(services) do
-    for {service_id, service_account} <- services, into: %{} do
+    for {service_id, service_account} <- services, service_account != nil, into: %{} do
       updated_storage =
         for {storage_key, storage_value} <- service_account.storage, into: %{} do
           new_key =
