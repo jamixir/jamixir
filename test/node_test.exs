@@ -135,6 +135,18 @@ defmodule Jamixir.NodeTest do
     end
   end
 
+  describe "save and get assurance" do
+    setup do
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
+    end
+
+    test "save_assurance with valid assurance" do
+      assurance = build(:assurance)
+      assert {:ok, _} = save_assurance(assurance)
+      assert [assurance] == Storage.get_assurances()
+    end
+  end
+
   describe "save and get work package" do
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()

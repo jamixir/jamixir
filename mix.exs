@@ -55,7 +55,9 @@ defmodule Jamixir.MixProject do
       {:temp, "~> 0.4"},
       {:jamixir_vm, git: "git@github.com:jamixir/jamixir-vm.git", branch: "main"},
       {:cubdb, "~> 2.0.2"},
-      {:muontrap, "~> 1.0"}
+      {:muontrap, "~> 1.0"},
+      {:ecto_sql, "~> 3.13.2"},
+      {:ecto_sqlite3, "~> 0.22.0"}
     ]
   end
 
@@ -66,7 +68,10 @@ defmodule Jamixir.MixProject do
   def aliases do
     [
       "test.full": "cmd MIX_ENV=full_test mix test --only full_vectors",
-      "test.tiny": "cmd mix test --only tiny_vectors"
+      "test.tiny": "cmd mix test --only tiny_vectors",
+      "test.setup": ["ecto.create --quiet", "ecto.migrate --quiet"],
+      "test.reset": ["ecto.drop --quiet", "test.setup"],
+      test: ["test.setup", "test"]
     ]
   end
 

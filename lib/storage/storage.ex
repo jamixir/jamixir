@@ -1,4 +1,6 @@
 defmodule Storage do
+  alias Block.Extrinsic.Assurance
+  alias Jamixir.SqlStorage
   alias Block.Extrinsic.TicketProof
   alias Codec.VariableSize
   alias Block.Extrinsic.WorkPackage
@@ -63,6 +65,10 @@ defmodule Storage do
   end
 
   def put(headers) when is_list(headers), do: put_headers(headers)
+
+  def put(assurance = %Assurance{}) do
+    SqlStorage.save(assurance)
+  end
 
   def put(object) when is_struct(object) do
     case encodable?(object) do
@@ -220,6 +226,10 @@ defmodule Storage do
       nil -> []
       tickets_bin -> VariableSize.decode(tickets_bin, TicketProof) |> elem(0)
     end
+  end
+
+  def get_assurances do
+    SqlStorage.get_all(Assurance)
   end
 
   # Private Functions
