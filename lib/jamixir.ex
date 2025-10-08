@@ -27,47 +27,48 @@ defmodule Jamixir do
   end
 
   defp fuzzer_children do
-    persist_storage? = Jamixir.config()[:storage_persist] || false
-    socket_path = Application.get_env(:jamixir, :fuzzer_socket_path) ||
-                  System.get_env("SOCKET_PATH") ||
-                  "/tmp/jamixir_fuzzer.sock"
+    socket_path =
+      Application.get_env(:jamixir, :fuzzer_socket_path) ||
+        System.get_env("SOCKET_PATH") ||
+        "/tmp/jamixir_fuzzer.sock"
 
-    [
-      {Phoenix.PubSub, name: Jamixir.PubSub},
-      {Storage, [persist: persist_storage?]},
-      {Task.Supervisor, name: Fuzzer.TaskSupervisor},
-      Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.Service.accept(socket_path) end},
-        restart: :permanent
-      )
-    ]
+    commom_children() ++
+      [
+        {Task.Supervisor, name: Fuzzer.TaskSupervisor},
+        Supervisor.child_spec({Task, fn -> Jamixir.Fuzzer.Service.accept(socket_path) end},
+          restart: :permanent
+        )
+      ]
   end
 
   defp test_children do
     Util.Logger.info("🔧 Running in test environment")
-    persist_storage? = Jamixir.config()[:storage_persist] || false
 
-    [
-      {Phoenix.PubSub, name: Jamixir.PubSub},
-      {Storage, [persist: persist_storage?]},
-      Network.ConnectionManager,
-      Clock
-    ]
+    commom_children() ++ [Network.ConnectionManager, Clock]
   end
 
   defp production_children do
     Util.Logger.info("🔧 Running in production environment")
-    persist_storage? = Jamixir.config()[:storage_persist] || false
     port = Application.get_env(:jamixir, :port, 9999)
+
+    commom_children() ++
+      [
+        Network.ConnectionManager,
+        Clock,
+        {Network.Listener, [port: port]},
+        {Task.Supervisor, name: Jamixir.TaskSupervisor},
+        Jamixir.InitializationTask,
+        {Jamixir.NodeStateServer, []}
+      ]
+  end
+
+  def commom_children do
+    persist_storage? = Jamixir.config()[:storage_persist] || false
 
     [
       {Phoenix.PubSub, name: Jamixir.PubSub},
       {Storage, [persist: persist_storage?]},
-      Network.ConnectionManager,
-      {Network.Listener, [port: port]},
-      Clock,
-      {Task.Supervisor, name: Jamixir.TaskSupervisor},
-      Jamixir.InitializationTask,
-      {Jamixir.NodeStateServer, []}
+      Jamixir.Repo
     ]
   end
 

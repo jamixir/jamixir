@@ -37,3 +37,9 @@ config :jamixir, Jamixir,
 config :logger, level: :debug
 
 config :jamixir, :server_calls, Network.ServerCalls
+
+config :jamixir, Jamixir.Repo,
+  adapter: Ecto.Adapters.SQLite3,
+  database: "db/jamixir.db",
+  pool_size: 5,
+  show_sensitive_data_on_connection_error: true

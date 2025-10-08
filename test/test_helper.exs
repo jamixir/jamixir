@@ -21,3 +21,6 @@ Mox.defmock(ClientMock, for: Network.ClientAPI)
 # Optional: remove or move to test setup unless needed globally
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
 Application.put_env(:jamixir, :data_availability, DAMock)
+
+# Set sandbox mode
+Ecto.Adapters.SQL.Sandbox.mode(Jamixir.Repo, :manual)

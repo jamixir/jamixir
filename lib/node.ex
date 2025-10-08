@@ -161,8 +161,8 @@ defmodule Jamixir.Node do
 
   # CE 141 - Assurance distribution
   @impl true
-  def save_assurance(_assurance) do
-    {:error, :not_implemented}
+  def save_assurance(assurance) do
+    Storage.put(assurance)
   end
 
   # CE 131 - Safrole ticket distribution
