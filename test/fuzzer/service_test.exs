@@ -124,9 +124,6 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "test vectors with fuzzer" do
-    # TODO re-enable when fuzzer updates to 0.7.2
-    @describetag :skip
-
     setup do
       tiny_configs()
     end
@@ -146,6 +143,8 @@ defmodule Jamixir.FuzzerTest do
       @tag dir: dir
       @tag :fuzzer
       @tag :slow
+      # TODO re-enable when fuzzer updates to 0.7.2
+      @tag :skip
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
