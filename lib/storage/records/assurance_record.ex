@@ -1,8 +1,4 @@
 defmodule Storage.AssuranceRecord do
-  @moduledoc """
-  Ecto schema for storing Assurance extrinsics in SQLite database.
-  """
-
   use Ecto.Schema
   import Ecto.Changeset
   alias Block.Extrinsic.Assurance
@@ -21,7 +17,6 @@ defmodule Storage.AssuranceRecord do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
   def changeset(assurance, attrs) do
     assurance
     |> cast(attrs, @field_names)
