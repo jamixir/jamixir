@@ -170,7 +170,7 @@ defmodule Jamixir.Node do
   def process_ticket(:proxy, epoch, ticket) do
     Storage.put(epoch, ticket)
 
-    for {_v, pid} <- NodeStateServer.instance().validator_connections() do
+    for {_v, pid} <- NodeStateServer.instance().current_connections() do
       Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
     end
 
@@ -185,8 +185,16 @@ defmodule Jamixir.Node do
 
   # CE 145 - Judgment publication
   @impl true
-  def save_judgement(_epoch, _hash, _judgement) do
-    {:error, :not_implemented}
+  def save_judgement(epoch, hash, judgement) do
+    if not judgement.vote do
+      for {_v, pid} <- NodeStateServer.instance().neighbours() do
+        Network.Connection.announce_judgement(pid, epoch, hash, judgement)
+      end
+    end
+
+    # TODO still need to save locally
+
+    :ok
   end
 
   # CE 135 - Work-report Guarantee distribution

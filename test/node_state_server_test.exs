@@ -84,6 +84,17 @@ defmodule NodeStateServerTest do
     end
   end
 
+  describe "neightbours/0" do
+    test "return my neightbours", %{state: state} do
+      assign_me_to_index(state, 0)
+      neighbours = neighbours()
+      assert map_size(neighbours) == 2
+      # I am not in my neightbours list
+      assert Enum.find(neighbours, fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end) ==
+               nil
+    end
+  end
+
   defp assign_me_to_index(state, index) do
     v = state.curr_validators |> Enum.at(index)
     v = put_in(v.ed25519, KeyManager.get_our_ed25519_key())

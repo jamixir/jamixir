@@ -199,7 +199,7 @@ defmodule Jamixir.NodeTest do
     test "process_ticket with :proxy mode", %{epochs: [e1, e2]} do
       [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
 
-      stub(NodeStateServerMock, :validator_connections, fn ->
+      stub(NodeStateServerMock, :current_connections, fn ->
         [{"validator1", 101}, {"validator2", 102}]
       end)
 
@@ -221,6 +221,40 @@ defmodule Jamixir.NodeTest do
       process_ticket(:validator, e2, t2)
       assert Storage.get_tickets(e1) == [t1]
       assert Storage.get_tickets(e2) == [t2]
+    end
+  end
+
+  describe "save_judgement/3" do
+    setup do
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :node_state_server)
+        Application.delete_env(:jamixir, :network_client)
+      end)
+
+      {:ok, epochs: for(_ <- 1..2, do: :rand.uniform(100_000))}
+    end
+
+    test "distribute judgement to neighbours" do
+      hash = Hash.random()
+      judgment = build(:judgement, vote: false)
+
+      neighbours = [{"validator1", 101}, {"validator2", 102}]
+
+      stub(NodeStateServerMock, :neighbours, fn -> neighbours end)
+
+      expect(ClientMock, :announce_judgement, fn 101, 1, ^hash, ^judgment -> :ok end)
+      expect(ClientMock, :announce_judgement, fn 102, 1, ^hash, ^judgment -> :ok end)
+
+      save_judgement(1, hash, judgment)
+
+      verify!()
+    end
+
+    test "don't distribute judgement to neighbours if it is positive" do
+      save_judgement(1, Hash.one(), build(:judgement, vote: true))
     end
   end
 end

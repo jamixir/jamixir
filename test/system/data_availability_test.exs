@@ -47,7 +47,7 @@ defmodule System.DataAvailabilityTest do
 
       # mock validators
       NodeStateServerMock
-      |> expect(:validator_connections, fn -> for v <- validators, do: {v, fake_pid} end)
+      |> expect(:current_connections, fn -> for v <- validators, do: {v, fake_pid} end)
 
       # for each validator, expects to get its share based on assigned shard index
       for {v, i} <- Enum.with_index(validators) do
