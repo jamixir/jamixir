@@ -41,7 +41,6 @@ config :jamixir, :server_calls, ServerCallsMock
 
 config :jamixir, Jamixir.Repo,
   adapter: Ecto.Adapters.SQLite3,
-  # Use an actual file
   database: "db/jamixir_test.db",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
