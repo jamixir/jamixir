@@ -30,7 +30,7 @@ defmodule System.DataAvailability do
         core = Storage.get_segment_core(erasure_root)
 
         {shards, indexes} =
-          for {v, pid} <- NodeStateServer.instance().validator_connections() do
+          for {v, pid} <- NodeStateServer.instance().current_connections() do
             Logger.debug(
               "Requesting segment shards for erasure root #{inspect(erasure_root)} and segment index #{segment_index} from validator #{v.ed25519}"
             )

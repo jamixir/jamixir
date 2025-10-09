@@ -1,12 +1,14 @@
 defmodule Jamixir.NodeStateServerBehaviour do
-  @callback validator_connections() :: list()
+  @callback current_connections() :: list()
   @callback assigned_shard_index(non_neg_integer(), binary()) :: non_neg_integer() | nil
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
+  @callback neighbours() :: list(Validator.t())
 end
 
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias System.State.Validator
   alias System.State.RotateKeys
   alias System.State.EntropyPool
   alias Block.Header
@@ -41,7 +43,10 @@ defmodule Jamixir.NodeStateServer do
 
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
   @impl true
-  def validator_connections, do: GenServer.call(__MODULE__, :validator_connections)
+  def current_connections, do: GenServer.call(__MODULE__, :current_connections)
+
+  @impl true
+  def neighbours(), do: GenServer.call(__MODULE__, :neighbours)
 
   def validator_index(ed25519_key) do
     GenServer.call(__MODULE__, {:validator_index, ed25519_key})
@@ -94,6 +99,10 @@ defmodule Jamixir.NodeStateServer do
     {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
   end
 
+  def connections(validators) do
+    for v <- validators, do: {v, ConnectionManager.get_connection(v.ed25519)}
+  end
+
   # Wait for initialization to complete and get jam_state
   @impl true
   def handle_call(
@@ -122,11 +131,25 @@ defmodule Jamixir.NodeStateServer do
   end
 
   @impl true
-  def handle_call(:validator_connections, _from, %__MODULE__{jam_state: jam_state} = s) do
-    {:reply,
-     for v <- jam_state.curr_validators do
-       {v, ConnectionManager.get_connection(v.ed25519)}
-     end, s}
+  def handle_call(:current_connections, _from, %__MODULE__{jam_state: jam_state} = s) do
+    {:reply, connections(jam_state.curr_validators), s}
+  end
+
+  def handle_call(:neighbours, _from, %__MODULE__{jam_state: jam_state} = s) do
+    me =
+      Enum.find(jam_state.curr_validators, fn v ->
+        v.ed25519 == KeyManager.get_our_ed25519_key()
+      end)
+
+    neighbours =
+      Validator.neighbours(
+        me,
+        jam_state.prev_validators,
+        jam_state.curr_validators,
+        jam_state.next_validators
+      )
+
+    {:reply, neighbours, s}
   end
 
   @impl true
