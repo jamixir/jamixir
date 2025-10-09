@@ -1,4 +1,5 @@
 defmodule Storage do
+  alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.Assurance
   alias Jamixir.SqlStorage
   alias Block.Extrinsic.TicketProof
@@ -128,6 +129,10 @@ defmodule Storage do
 
   def put(key, value), do: KVStorage.put(key, value)
 
+  def put(judgement = %Judgement{}, work_report_hash, epoch) do
+    SqlStorage.save(judgement, work_report_hash, epoch)
+  end
+
   defp prepare_entry({key, value}), do: {:ok, {key, value}}
 
   defp prepare_entry(blob) when is_binary(blob) do
@@ -230,6 +235,10 @@ defmodule Storage do
 
   def get_assurances do
     SqlStorage.get_all(Assurance)
+  end
+
+  def get_judgements(epoch) do
+    SqlStorage.get_all(Judgement, epoch)
   end
 
   # Private Functions

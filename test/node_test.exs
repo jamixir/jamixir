@@ -234,7 +234,20 @@ defmodule Jamixir.NodeTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
+
       {:ok, epochs: for(_ <- 1..2, do: :rand.uniform(100_000))}
+    end
+
+    test "save judgement locally for later block inclusion" do
+      hash = Hash.random()
+      j1 = build(:judgement, vote: true)
+      j2 = build(:judgement, vote: true, validator_index: 2)
+      save_judgement(1, hash, j1)
+      save_judgement(1, hash, j2)
+      save_judgement(2, Hash.random(), build(:judgement, vote: true))
+      assert Storage.get_judgements(1) == [j1, j2]
+      assert Storage.get_judgements(2) |> length() == 1
     end
 
     test "distribute judgement to neighbours" do

@@ -192,7 +192,7 @@ defmodule Jamixir.Node do
       end
     end
 
-    # TODO still need to save locally
+    Storage.put(judgement, hash, epoch)
 
     :ok
   end
