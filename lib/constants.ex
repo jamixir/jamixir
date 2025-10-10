@@ -86,7 +86,7 @@ defmodule Constants do
   defmockable(:validator_count, do: Jamixir.config(:validator_count))
 
   @doc "W_A - The maximum size of is-authorized code in octets"
-  def max_is_authorized_code_size, do: 64_000
+  def max_authorizer_code_size, do: 64_000
 
   # Formula (14.7) v0.7.2
   # W_B = W_M * W_F + 4096 + 64 + 64

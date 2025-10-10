@@ -91,7 +91,8 @@ defmodule Jamixir.RPC.Handler do
   end
 
   # Method not found
-  defp handle_method(method, _params, _websocket_pid) do
+  defp handle_method(method, params, _websocket_pid) do
+    Log.debug("Invalid RPC call: #{method} #{inspect(params)}")
     {:error, -32601, "Method not found: #{method}"}
   end
 
@@ -99,13 +100,15 @@ defmodule Jamixir.RPC.Handler do
 
   defp get_parameters do
     # Return JAM chain parameters according to JIP-2 spec
-    %{
+    params = %{
       # B_S
       "deposit_per_account" => Constants.service_minimum_balance(),
       # B_I
       "deposit_per_item" => Constants.additional_minimum_balance_per_item(),
       # B_L
       "deposit_per_byte" => Constants.additional_minimum_balance_per_octet(),
+      # C
+      "core_count" => Constants.core_count(),
       # D
       "min_turnaround_period" => Constants.forget_delay(),
       # E
@@ -132,6 +135,8 @@ defmodule Jamixir.RPC.Handler do
       "tickets_attempts_number" => Constants.tickets_per_validator(),
       # O
       "auth_window" => Constants.max_authorizations_items(),
+      # P
+      "slot_period_sec" => Constants.slot_period(),
       # Q
       "auth_queue_len" => Constants.max_authorization_queue_items(),
       # R
@@ -143,22 +148,31 @@ defmodule Jamixir.RPC.Handler do
       # V
       "val_count" => Constants.validator_count(),
       # W_A
-      "max_is_authorized_code_size" => Constants.max_is_authorized_code_size(),
+      "max_authorizer_code_size" => Constants.max_authorizer_code_size(),
       # W_B
       "max_input" => Constants.max_work_package_size(),
       # W_C
-      "max_refine_code_size" => Constants.max_service_code_size(),
+      "max_service_code_size" => Constants.max_service_code_size(),
       # W_E
       "basic_piece_len" => Constants.erasure_coded_piece_size(),
       # W_M
       "max_imports" => Constants.max_imports(),
+      # W_P
+      "segment_piece_count" => Constants.erasure_coded_pieces_per_segment(),
+      # W_T
+      "transfer_memo_size" => Constants.memo_size(),
       # W_X
       "max_exports" => Constants.max_exports(),
       # max_refine_memory - not in Constants, keeping as hardcoded for now
       "max_refine_memory" => 1_073_741_824,
       # max_is_authorized_memory - not in Constants, keeping as hardcoded for now
-      "max_is_authorized_memory" => 1_073_741_824
+      "max_is_authorized_memory" => 1_073_741_824,
+      # UNKNOWN BUT REQUIRED BY jamtop
+      "max_report_elective_data" => 0,
+      "epoch_tail_start" => 0
     }
+
+    %{"V1" => params}
   end
 
   def get_best_block do
