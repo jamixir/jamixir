@@ -96,7 +96,7 @@ defmodule PVM.Host.General.Internal do
             # E2(V)
             validator_count()::16-little,
             # E4(W_A)
-            max_is_authorized_code_size()::32-little,
+            max_authorizer_code_size()::32-little,
             # E4(W_B)
             max_work_package_size()::32-little,
             # E4(W_C)

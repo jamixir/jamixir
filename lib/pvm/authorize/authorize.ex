@@ -11,7 +11,7 @@ defmodule PVM.Authorize do
   def execute(%WorkPackage{} = p, core_index, services) do
     p_u = WorkPackage.authorization_code(p, services)
 
-    w_a = Constants.max_is_authorized_code_size()
+    w_a = Constants.max_authorizer_code_size()
 
     case p_u do
       nil ->

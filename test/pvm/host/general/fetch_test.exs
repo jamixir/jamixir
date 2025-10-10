@@ -116,7 +116,7 @@ defmodule PVM.Host.General.FetchTest do
         max_extrinsics()::16-little,
         unavailability_period()::16-little,
         validator_count()::16-little,
-        max_is_authorized_code_size()::32-little,
+        max_authorizer_code_size()::32-little,
         max_work_package_size()::32-little,
         max_service_code_size()::32-little,
         erasure_coded_piece_size()::32-little,
