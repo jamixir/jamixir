@@ -21,11 +21,11 @@ defmodule Jamixir.RPC.WebSocketHandler do
           # Handle subscription responses
           {:subscription, subscription_id} ->
             new_subscriptions = Map.put(state.subscriptions, subscription_id, json_rpc_request)
-            {:reply, :ok, %{state | subscriptions: new_subscriptions}}
+            {:reply, :ok, nil, %{state | subscriptions: new_subscriptions}}
 
           # Handle regular responses
           _ ->
-            {:reply, {:text, Jason.encode!(response)}, state}
+            {:reply, :ok, {:text, Jason.encode!(response)}, state}
         end
 
       {:error, _} ->
@@ -35,7 +35,7 @@ defmodule Jamixir.RPC.WebSocketHandler do
           id: nil
         }
 
-        {:reply, {:text, Jason.encode!(error_response)}, state}
+        {:reply, :ok, {:text, Jason.encode!(error_response)}, state}
     end
   end
 
@@ -50,7 +50,7 @@ defmodule Jamixir.RPC.WebSocketHandler do
       }
     }
 
-    {:reply, {:text, Jason.encode!(notification)}, state}
+    {:reply, :ok, {:text, Jason.encode!(notification)}, state}
   end
 
   def handle_info(_, state) do

@@ -106,6 +106,7 @@ defmodule Jamixir.NodeStateServer do
         {:ok, %State{} = new_jam_state, state_root} ->
           Log.info("🔄 State Updated successfully")
           Log.debug("🔄 New State Root: #{b16(state_root)}")
+          Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
           if announce, do: announce_block_to_peers(block)
           new_jam_state
 
@@ -195,9 +196,12 @@ defmodule Jamixir.NodeStateServer do
     current_epoch = Util.Time.epoch_index(slot)
     next_epoch = current_epoch + 1
 
-    Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}")
+    Log.debug(
+      "⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}"
+    )
 
-    authoring_slots = compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
+    authoring_slots =
+      compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
 
     Clock.set_authoring_slots(authoring_slots)
 
@@ -209,7 +213,10 @@ defmodule Jamixir.NodeStateServer do
         {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
         %__MODULE__{jam_state: jam_state} = state
       ) do
-    Log.debug("📨 Received author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
+    Log.debug(
+      "📨 Received author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})"
+    )
+
     {_, parent_header} = Storage.get_latest_header()
     parent_hash = h(e(parent_header))
 
@@ -226,6 +233,8 @@ defmodule Jamixir.NodeStateServer do
 
     {:noreply, state}
   end
+
+  def handle_info(_event, state), do: {:noreply, state}
 
   @impl true
   # i = (cR + v) mod V
@@ -258,7 +267,9 @@ defmodule Jamixir.NodeStateServer do
     )
 
     header = %Header{timeslot: next_epoch_first_slot}
-    entropy_pool_ = EntropyPool.rotate(next_epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
+
+    entropy_pool_ =
+      EntropyPool.rotate(next_epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
 
     {_pending_, curr_validators_, _prev_validators_, _epoch_root_} =
       RotateKeys.rotate_keys(header, jam_state, %System.State.Judgements{})

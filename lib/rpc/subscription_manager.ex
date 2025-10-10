@@ -26,6 +26,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   @impl true
   def init(_opts) do
+    Log.info("📡 Starting RPC Subscription Manager")
     Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
 
     {:ok, %{subscriptions: %{}, next_id: 1}}
@@ -71,13 +72,13 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   # Handle PubSub messages and convert them to subscription notifications
   @impl true
-  def handle_info({:node_event, :new_block}, state) do
+  def handle_info({:new_block, header}, state) do
+    Log.info("RPC Notify new block")
     # When we get new_block event, we can notify bestBlock subscribers
     Task.start(fn ->
-      case Handler.get_best_block() do
-        {:ok, block_data} -> notify_subscribers("bestBlock", block_data)
-        _ -> :ok
-      end
+      hash = h(e(header))
+
+      notify_subscribers("bestBlock", [hash |> :binary.bin_to_list(), header.timeslot])
     end)
 
     {:noreply, state}
