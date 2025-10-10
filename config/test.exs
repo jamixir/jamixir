@@ -38,6 +38,7 @@ config :jamixir, Jamixir,
 config :logger, level: :none
 
 config :jamixir, :server_calls, ServerCallsMock
+config :jamixir, :rpc_port, 19801
 
 config :jamixir, Jamixir.Repo,
   adapter: Ecto.Adapters.SQLite3,
