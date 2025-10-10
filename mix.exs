@@ -37,6 +37,8 @@ defmodule Jamixir.MixProject do
   defp deps do
     [
       {:phoenix_pubsub, "~> 2.1"},
+      {:bandit, "~> 1.8.0"},
+      {:websock_adapter, "~> 0.5.8"},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:benchee, "~> 1.1", only: [:dev, :test]},
       {:credo, "~> 1.6", only: [:dev, :test, :full_test], runtime: false},

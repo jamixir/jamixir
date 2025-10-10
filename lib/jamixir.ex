@@ -44,7 +44,7 @@ defmodule Jamixir do
   defp test_children do
     Util.Logger.info("🔧 Running in test environment")
 
-    commom_children() ++ [Network.ConnectionManager, Clock]
+    commom_children() ++ node_children()
   end
 
   defp production_children do
@@ -52,14 +52,24 @@ defmodule Jamixir do
     port = Application.get_env(:jamixir, :port, 9999)
 
     commom_children() ++
+      node_children() ++
       [
-        Network.ConnectionManager,
-        Clock,
         {Network.Listener, [port: port]},
         {Task.Supervisor, name: Jamixir.TaskSupervisor},
         Jamixir.InitializationTask,
         {Jamixir.NodeStateServer, []}
       ]
+  end
+
+  defp node_children() do
+    rpc_port = Application.get_env(:jamixir, :rpc_port, 19800)
+
+    [
+      Network.ConnectionManager,
+      Clock,
+      {Jamixir.RPC.SubscriptionManager, []},
+      {Jamixir.RPC.Server, [port: rpc_port]}
+    ]
   end
 
   def commom_children do
