@@ -7,7 +7,7 @@ defmodule Jamixir.NodeAPI do
   alias System.State
   @callback add_block(binary() | Block.t()) :: {:ok, State.t(), binary()} | {:error, any}
   @callback announce_block(Header.t(), Types.hash(), Types.timeslot()) :: :ok | {:error, any}
-  @callback inspect_state(Types.hash()) :: {:ok, any} | {:error, any}
+  @callback inspect_state(Types.hash()) :: {:ok, State.t()} | {:error, any}
   @callback inspect_state(Types.hash(), any()) ::
               {:error, :key_not_found | :no_state} | {:ok, any()}
   @callback get_blocks(Types.hash(), :asc | :desc, integer()) ::

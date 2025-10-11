@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
   alias Util.Logger, as: Log
   import Codec.Encoder
@@ -70,6 +71,17 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("subscribeBestBlock", [], websocket_pid) when websocket_pid != nil do
     subscription_id = SubscriptionManager.create_subscription("bestBlock", [], websocket_pid)
+    {:subscription, subscription_id}
+  end
+
+  defp handle_method("statistics", [header_hash], _websocket_pid) do
+    {:ok, stats} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, e(stats.validator_statistics) |> :binary.bin_to_list()}
+  end
+
+  defp handle_method("subscribeStatistics", [_finalized], websocket_pid)
+       when websocket_pid != nil do
+    subscription_id = SubscriptionManager.create_subscription("statistics", [], websocket_pid)
     {:subscription, subscription_id}
   end
 
