@@ -227,6 +227,5 @@ defmodule Jamixir.RPC.Handler do
   end
 
   # For now, we'll use the same as best block since finalization isn't fully implemented
-  # In a real implementation, you'd track finalized blocks separately
   defp get_finalized_block, do: get_best_block()
 end
