@@ -106,6 +106,7 @@ defmodule Jamixir.NodeStateServer do
         {:ok, %State{} = new_jam_state, state_root} ->
           Log.info("🔄 State Updated successfully")
           Log.debug("🔄 New State Root: #{b16(state_root)}")
+          #  Notify Subscription Manager, which will notify "bestBlock" subscribers
           Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
           if announce, do: announce_block_to_peers(block)
           new_jam_state
