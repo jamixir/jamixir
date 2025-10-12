@@ -1,6 +1,5 @@
 defmodule Jamixir.RPC.HandlerTest do
   alias Jamixir.Genesis
-  alias Jamixir.NodeStateServer
   use ExUnit.Case, async: false
   import Jamixir.Factory
   import Codec.Encoder

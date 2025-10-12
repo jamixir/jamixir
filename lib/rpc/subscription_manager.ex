@@ -4,7 +4,6 @@ defmodule Jamixir.RPC.SubscriptionManager do
   """
 
   use GenServer
-  alias Jamixir.RPC.Handler
   alias Util.Logger, as: Log
   import Codec.Encoder
 
