@@ -20,7 +20,7 @@ defmodule Jamixir.RPC.IntegrationTest do
       response = http_request(request)
 
       assert response["jsonrpc"] == "2.0"
-      assert response["result"]["val_count"] == Constants.validator_count()
+      assert response["result"]["V1"]["val_count"] == Constants.validator_count()
     end
 
     test "bestBlock endpoint works", %{header: header} do
