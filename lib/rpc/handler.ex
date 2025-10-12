@@ -75,8 +75,27 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("statistics", [header_hash], _websocket_pid) do
-    {:ok, stats} = Node.inspect_state(header_hash |> :binary.list_to_bin())
-    {:ok, e(stats.validator_statistics) |> :binary.bin_to_list()}
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, e(state.validator_statistics) |> :binary.bin_to_list()}
+  end
+
+  defp handle_method("listServices", [header_hash], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, Map.keys(state.services)}
+  end
+
+  defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, e(state.services[service_id]) |> :binary.bin_to_list()}
+  end
+
+  defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+
+    case get_in(state.services, [service_id, :storage, hash |> :binary.list_to_bin()]) do
+      nil -> {:ok, nil}
+      preimage -> {:ok, preimage |> :binary.bin_to_list()}
+    end
   end
 
   defp handle_method("subscribeStatistics", [_finalized], websocket_pid)

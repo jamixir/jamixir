@@ -5,7 +5,8 @@ defmodule Jamixir.RPC.HandlerTest do
   import Codec.Encoder
 
   setup do
-    s = build(:genesis_state)
+    services = %{1 => build(:service_account), 7 => build(:service_account)}
+    s = %{build(:genesis_state) | services: services}
     Storage.put(Genesis.genesis_block_header(), s)
 
     header = build(:decodable_header, timeslot: 42)
@@ -15,9 +16,9 @@ defmodule Jamixir.RPC.HandlerTest do
 
   describe "handle_request/2" do
     test "handles parameters method" do
-      request = %{"jsonrpc" => "2.0", "method" => "parameters", "id" => 1}
+      request = %{"method" => "parameters", "id" => 1}
 
-      response = Jamixir.RPC.Handler.handle_request(request)
+      response = response(request)
 
       assert response.jsonrpc == "2.0"
       assert response.id == 1
@@ -26,9 +27,9 @@ defmodule Jamixir.RPC.HandlerTest do
     end
 
     test "handles bestBlock method" do
-      request = %{"jsonrpc" => "2.0", "method" => "bestBlock", "id" => 2}
+      request = %{"method" => "bestBlock", "id" => 2}
 
-      response = Jamixir.RPC.Handler.handle_request(request)
+      response = response(request)
 
       assert response.jsonrpc == "2.0"
       assert response.id == 2
@@ -43,9 +44,8 @@ defmodule Jamixir.RPC.HandlerTest do
     end
 
     test "handles finalizedBlock method" do
-      request = %{"jsonrpc" => "2.0", "method" => "finalizedBlock", "id" => 3}
-
-      response = Jamixir.RPC.Handler.handle_request(request)
+      request = %{"method" => "finalizedBlock", "id" => 3}
+      response = response(request)
 
       assert response.jsonrpc == "2.0"
       assert response.id == 3
@@ -53,28 +53,49 @@ defmodule Jamixir.RPC.HandlerTest do
     end
 
     test "handles statistics method", %{state: state} do
-      request = %{
-        "jsonrpc" => "2.0",
-        "method" => "statistics",
-        "params" => [
-          Genesis.genesis_header_hash() |> :binary.bin_to_list()
-        ]
-      }
+      request = %{"method" => "statistics", "params" => [gen_head()]}
 
-      response = Jamixir.RPC.Handler.handle_request(request)
+      response = response(request)
 
       assert response.jsonrpc == "2.0"
-      assert is_list(response.result)
-
       blob = response.result |> :binary.list_to_bin()
       assert e(state.validator_statistics) == blob
     end
 
+    test "handles listServices method" do
+      response = response(%{"method" => "listServices", "params" => [gen_head()]})
+      assert response.result == [1, 7]
+    end
+
+    test "handles serviceData method", %{state: state} do
+      request = %{"method" => "serviceData", "params" => [gen_head(), 7]}
+      response = response(request)
+      assert response.result |> :binary.list_to_bin() == e(state.services[7])
+    end
+
+    test "handles serviceData method when service doesn't exist" do
+      request = %{"method" => "serviceData", "params" => [gen_head(), 8]}
+      response = response(request)
+      assert response.result |> :binary.list_to_bin() == <<>>
+    end
+
+    test "handles servicePreimage method", %{state: state} do
+      hash = state.services[7].code_hash
+
+      params = [gen_head(), 7, hash |> :binary.bin_to_list()]
+      request = %{"method" => "servicePreimage", "params" => params}
+
+      assert response(request).result |> :binary.list_to_bin() == state.services[7].storage[hash]
+    end
+
+    test "handles servicePreimage method when preimage is null" do
+      hash = Util.Hash.one() |> :binary.bin_to_list()
+      request = %{"method" => "servicePreimage", "params" => [gen_head(), 7, hash]}
+      assert response(request).result == nil
+    end
+
     test "handles unknown method" do
-      request = %{"jsonrpc" => "2.0", "method" => "unknownMethod", "id" => 4}
-
-      response = Jamixir.RPC.Handler.handle_request(request)
-
+      response = response(%{"method" => "unknownMethod", "id" => 4})
       assert response.jsonrpc == "2.0"
       assert response.id == 4
       assert response.error.code == -32601
@@ -107,5 +128,11 @@ defmodule Jamixir.RPC.HandlerTest do
         assert is_integer(response.id)
       end)
     end
+  end
+
+  def gen_head, do: Genesis.genesis_header_hash() |> :binary.bin_to_list()
+
+  def response(request) do
+    Jamixir.RPC.Handler.handle_request(put_in(request, ["jsonrpc"], "2.0"))
   end
 end
