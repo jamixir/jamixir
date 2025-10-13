@@ -1,4 +1,5 @@
 defmodule Jamixir.RPC.HandlerTest do
+  alias Block.Extrinsic
   alias Jamixir.Genesis
   use ExUnit.Case, async: false
   import Jamixir.Factory
@@ -92,6 +93,33 @@ defmodule Jamixir.RPC.HandlerTest do
       hash = Util.Hash.one() |> :binary.bin_to_list()
       request = %{"method" => "servicePreimage", "params" => [gen_head(), 7, hash]}
       assert response(request).result == nil
+    end
+
+    test "handles parent method parent" do
+      block1 =
+        build(:decodable_block,
+          parent_hash: Genesis.genesis_header_hash(),
+          extrinsic: %Extrinsic{}
+        )
+
+      hash1 = h(e(block1.header))
+      block2 = build(:decodable_block, parent_hash: hash1, extrinsic: %Extrinsic{})
+
+      Storage.put(block1)
+      Storage.put(block2)
+
+      hash2 = h(e(block2.header)) |> :binary.bin_to_list()
+
+      response = response(%{"method" => "parent", "params" => [hash2]})
+
+      [hash, timeslot] = response.result
+      assert hash |> :binary.list_to_bin() == hash1
+      assert timeslot == block1.header.timeslot
+    end
+
+    test "handles parent method parent is nil" do
+      response = response(%{"method" => "parent", "params" => [gen_head()]})
+      assert response.result == nil
     end
 
     test "handles unknown method" do
