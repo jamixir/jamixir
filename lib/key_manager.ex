@@ -2,6 +2,7 @@ defmodule KeyManager do
   @moduledoc """
   Manages the retrieval of public and private keys.
   """
+  alias System.State.Validator
   alias Util.Logger, as: Log
   import Util.Hex
   @private_key_file "private_key.enc"
@@ -68,6 +69,13 @@ defmodule KeyManager do
         # when no key in env, load default alice key
         load_keys(nil)
         get_our_ed25519_key()
+    end
+  end
+
+  def our_validator do
+    case Application.get_env(:jamixir, :keys) do
+      %{} = keys -> struct(Validator, keys)
+      _ -> load_keys(nil) and our_validator()
     end
   end
 
