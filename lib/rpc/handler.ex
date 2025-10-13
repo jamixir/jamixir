@@ -110,7 +110,28 @@ defmodule Jamixir.RPC.Handler do
     {:ok, e(state.services[service_id]) |> :binary.bin_to_list()}
   end
 
+  defp handle_method("subscribeServiceData", [service_id, finalized], websocket_pid)
+       when websocket_pid != nil do
+    subscription_id =
+      SubscriptionManager.create_subscription(
+        "serviceData",
+        [service_id, finalized],
+        websocket_pid
+      )
+
+    {:subscription, subscription_id}
+  end
+
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+
+    case get_in(state.services, [service_id, :preimage_storage_p, hash |> :binary.list_to_bin()]) do
+      nil -> {:ok, nil}
+      preimage -> {:ok, preimage |> :binary.bin_to_list()}
+    end
+  end
+
+  defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
     {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
 
     case get_in(state.services, [service_id, :storage, hash |> :binary.list_to_bin()]) do

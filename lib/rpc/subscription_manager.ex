@@ -76,7 +76,6 @@ defmodule Jamixir.RPC.SubscriptionManager do
     # When we get new_block event, we can notify bestBlock subscribers
     Task.start(fn ->
       hash = h(e(header))
-
       notify_subscribers("bestBlock", [hash |> :binary.bin_to_list(), header.timeslot])
     end)
 
