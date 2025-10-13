@@ -1,11 +1,11 @@
 defmodule Jamixir.RPC.HandlerTest do
-  alias Jamixir.Node
   alias Codec.State.Trie
   alias Block.Extrinsic
   alias Jamixir.Genesis
   use ExUnit.Case, async: false
   import Jamixir.Factory
   import Codec.Encoder
+  import Mox
 
   setup do
     services = %{1 => build(:service_account), 7 => build(:service_account)}
@@ -133,10 +133,26 @@ defmodule Jamixir.RPC.HandlerTest do
 
     test "handles submitPreimage method" do
       request = %{"method" => "submitPreimage", "params" => [7, [1, 2, 3, 4], gen_head()]}
+      Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3, 4>> -> :ok end)
+      response = response(request)
+      assert response.result == []
+      verify!()
+    end
+
+    test "handles submitWorkPackage method" do
+      {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
+      core = 3
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:save_work_package, fn ^work_package, ^core, ^extrinsics -> :ok end)
+
+      wp_bin = e(work_package) |> :binary.bin_to_list()
+      ex_bins = for e <- extrinsics, do: :binary.bin_to_list(e)
+      request = %{"method" => "submitWorkPackage", "params" => [core, wp_bin, ex_bins]}
       response = response(request)
       assert response.result == []
 
-      assert Node.get_preimage(h(<<1, 2, 3, 4>>)) == {:ok, <<1, 2, 3, 4>>}
+      verify!()
     end
 
     test "handles parent method with parent" do

@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
@@ -155,10 +156,17 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("submitPreimage", [_service_id, blob, _hash], _websocket_pid) do
-    # only saving preimages on disk for now
     # TODO we need to fix the preimage flow.
     # https://github.com/jamixir/jamixir/issues/561
-    Node.save_preimage(blob |> :binary.list_to_bin())
+    :ok = Jamixir.NodeAPI.save_preimage(blob |> :binary.list_to_bin())
+    {:ok, []}
+  end
+
+  defp handle_method("submitWorkPackage", [core, blob, extrinsics], _websocket_pid) do
+    {wp, _} = WorkPackage.decode(blob |> :binary.list_to_bin())
+    ext_bins = for e <- extrinsics, do: :binary.list_to_bin(e)
+    :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
+
     {:ok, []}
   end
 
