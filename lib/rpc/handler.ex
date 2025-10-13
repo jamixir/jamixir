@@ -154,6 +154,14 @@ defmodule Jamixir.RPC.Handler do
      end}
   end
 
+  defp handle_method("submitPreimage", [_service_id, blob, _hash], _websocket_pid) do
+    # only saving preimages on disk for now
+    # TODO we need to fix the preimage flow.
+    # https://github.com/jamixir/jamixir/issues/561
+    Node.save_preimage(blob |> :binary.list_to_bin())
+    {:ok, []}
+  end
+
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
     {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
 

@@ -1,4 +1,5 @@
 defmodule Jamixir.RPC.HandlerTest do
+  alias Jamixir.Node
   alias Codec.State.Trie
   alias Block.Extrinsic
   alias Jamixir.Genesis
@@ -128,6 +129,14 @@ defmodule Jamixir.RPC.HandlerTest do
       request = %{"method" => "beefyRoot", "params" => [hash]}
       response = response(request)
       assert response.result |> :binary.list_to_bin() == b2.beefy_root
+    end
+
+    test "handles submitPreimage method" do
+      request = %{"method" => "submitPreimage", "params" => [7, [1, 2, 3, 4], gen_head()]}
+      response = response(request)
+      assert response.result == []
+
+      assert Node.get_preimage(h(<<1, 2, 3, 4>>)) == {:ok, <<1, 2, 3, 4>>}
     end
 
     test "handles parent method with parent" do
