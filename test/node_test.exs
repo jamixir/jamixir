@@ -29,7 +29,7 @@ defmodule Jamixir.NodeTest do
 
   test "inspect_state with empty state" do
     Storage.remove(@genesis_state_key)
-    assert {:ok, :no_state} = inspect_state(@genesis_hash)
+    assert {:error, :no_state} = inspect_state(@genesis_hash)
   end
 
   test "load_state from file" do

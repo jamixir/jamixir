@@ -60,7 +60,7 @@ defmodule Jamixir.Node do
   @impl true
   def inspect_state(header_hash) do
     case Storage.get_state(header_hash) do
-      nil -> {:ok, :no_state}
+      nil -> {:error, :no_state}
       state -> {:ok, state}
     end
   end
@@ -68,11 +68,8 @@ defmodule Jamixir.Node do
   @impl true
   def inspect_state(header_hash, key) do
     case Storage.get_state(header_hash, key) do
-      nil ->
-        {:error, :no_state}
-
-      value ->
-        {:ok, value}
+      nil -> {:error, :no_state}
+      value -> {:ok, value}
     end
   end
 

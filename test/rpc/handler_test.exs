@@ -1,4 +1,5 @@
 defmodule Jamixir.RPC.HandlerTest do
+  alias Codec.State.Trie
   alias Block.Extrinsic
   alias Jamixir.Genesis
   use ExUnit.Case, async: false
@@ -95,7 +96,7 @@ defmodule Jamixir.RPC.HandlerTest do
       assert response(request).result == nil
     end
 
-    test "handles parent method parent" do
+    test "handles parent method with parent" do
       block1 =
         build(:decodable_block,
           parent_hash: Genesis.genesis_header_hash(),
@@ -120,6 +121,17 @@ defmodule Jamixir.RPC.HandlerTest do
     test "handles parent method parent is nil" do
       response = response(%{"method" => "parent", "params" => [gen_head()]})
       assert response.result == nil
+    end
+
+    test "handles stateRoot method", %{state: state} do
+      request = %{"method" => "stateRoot", "params" => [gen_head()]}
+      assert response(request).result |> :binary.list_to_bin() == Trie.state_root(state)
+    end
+
+    test "handles stateRoot method invalid header hash" do
+      hash = Util.Hash.one() |> :binary.bin_to_list()
+      request = %{"method" => "stateRoot", "params" => [hash]}
+      assert response(request).result == nil
     end
 
     test "handles unknown method" do

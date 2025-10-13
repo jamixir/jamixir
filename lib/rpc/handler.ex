@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias Codec.State.Trie
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
   alias Util.Logger, as: Log
@@ -79,14 +80,18 @@ defmodule Jamixir.RPC.Handler do
 
     {:ok,
      case blocks do
-       [] ->
-         nil
+       [_, %Block{header: h}] -> [h(e(h)) |> :binary.bin_to_list(), h.timeslot]
+       _ -> nil
+     end}
+  end
 
-       [_] ->
-         nil
+  defp handle_method("stateRoot", [header_hash], _websocket_pid) do
+    state = Node.inspect_state(header_hash |> :binary.list_to_bin())
 
-       [b1, b2] ->
-         [h(e(b2.header)) |> :binary.bin_to_list(), b2.header.timeslot]
+    {:ok,
+     case state do
+       {:error, :no_state} -> nil
+       {:ok, s} -> Trie.state_root(s) |> :binary.bin_to_list()
      end}
   end
 
