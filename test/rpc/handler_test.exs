@@ -9,7 +9,8 @@ defmodule Jamixir.RPC.HandlerTest do
   setup do
     services = %{1 => build(:service_account), 7 => build(:service_account)}
     s = %{build(:genesis_state) | services: services}
-    Storage.put(Genesis.genesis_block_header(), s)
+    s = %{s | recent_history: build(:recent_history)}
+    Storage.put(Genesis.genesis_header_hash(), s)
 
     header = build(:decodable_header, timeslot: 42)
     Storage.put(header)
@@ -109,6 +110,24 @@ defmodule Jamixir.RPC.HandlerTest do
       request = %{"method" => "serviceRequest", "params" => params}
 
       assert response(request).result == state.services[7].storage[{hash, length}]
+    end
+
+    test "handles serviceRequest method, invalid key" do
+      params = [gen_head(), 7, Util.Hash.one() |> :binary.bin_to_list(), 7]
+      request = %{"method" => "serviceRequest", "params" => params}
+
+      assert response(request).result == nil
+    end
+
+    test "handles beefyRoot method", %{state: state} do
+      # make genesis the last block
+      Storage.put(Genesis.genesis_block_header(), state)
+
+      %{recent_history: %{blocks: [_, b2]}} = state
+      hash = b2.header_hash |> :binary.bin_to_list()
+      request = %{"method" => "beefyRoot", "params" => [hash]}
+      response = response(request)
+      assert response.result |> :binary.list_to_bin() == b2.beefy_root
     end
 
     test "handles parent method with parent" do

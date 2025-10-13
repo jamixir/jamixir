@@ -141,6 +141,19 @@ defmodule Jamixir.RPC.Handler do
     end
   end
 
+  defp handle_method("beefyRoot", [header_hash], _websocket_pid) do
+    {_timeslot, header} = Storage.get_latest_header()
+    {:ok, state} = Node.inspect_state(h(e(header)))
+
+    hash = header_hash |> :binary.list_to_bin()
+
+    {:ok,
+     case Enum.find(state.recent_history.blocks, fn rb -> rb.header_hash == hash end) do
+       nil -> nil
+       b -> b.beefy_root |> :binary.bin_to_list()
+     end}
+  end
+
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
     {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
 
