@@ -74,6 +74,22 @@ defmodule Jamixir.RPC.Handler do
     {:subscription, subscription_id}
   end
 
+  defp handle_method("parent", [header_hash], _) do
+    {:ok, blocks} = Node.get_blocks(header_hash |> :binary.list_to_bin(), :descending, 2)
+
+    {:ok,
+     case blocks do
+       [] ->
+         nil
+
+       [_] ->
+         nil
+
+       [b1, b2] ->
+         [h(e(b2.header)) |> :binary.bin_to_list(), b2.header.timeslot]
+     end}
+  end
+
   defp handle_method("statistics", [header_hash], _websocket_pid) do
     {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
     {:ok, e(state.validator_statistics) |> :binary.bin_to_list()}
