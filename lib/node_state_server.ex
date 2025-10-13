@@ -136,10 +136,7 @@ defmodule Jamixir.NodeStateServer do
   end
 
   def handle_call(:neighbours, _from, %__MODULE__{jam_state: jam_state} = s) do
-    me =
-      Enum.find(jam_state.curr_validators, fn v ->
-        v.ed25519 == KeyManager.get_our_ed25519_key()
-      end)
+    me = KeyManager.our_validator()
 
     neighbours =
       Validator.neighbours(
