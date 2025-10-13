@@ -81,13 +81,20 @@ defmodule Jamixir.RPC.HandlerTest do
       assert response.result |> :binary.list_to_bin() == <<>>
     end
 
-    test "handles servicePreimage method", %{state: state} do
-      hash = state.services[7].code_hash
+    test "handles serviceValue method", %{state: state} do
+      [_, hash] = state.services[7].storage.original_map |> Map.keys()
+      params = [gen_head(), 7, hash |> :binary.bin_to_list()]
+      request = %{"method" => "serviceValue", "params" => params}
 
+      assert response(request).result |> :binary.list_to_bin() == state.services[7].storage[hash]
+    end
+
+    test "handles servicePreimage method", %{state: state} do
+      [{hash, value}] = Map.to_list(state.services[7].preimage_storage_p)
       params = [gen_head(), 7, hash |> :binary.bin_to_list()]
       request = %{"method" => "servicePreimage", "params" => params}
 
-      assert response(request).result |> :binary.list_to_bin() == state.services[7].storage[hash]
+      assert response(request).result |> :binary.list_to_bin() == value
     end
 
     test "handles servicePreimage method when preimage is null" do
