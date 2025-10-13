@@ -100,9 +100,10 @@ defmodule Jamixir.RPC.Handler do
     {:ok, e(state.validator_statistics) |> :binary.bin_to_list()}
   end
 
-  defp handle_method("listServices", [header_hash], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
-    {:ok, Map.keys(state.services)}
+  defp handle_method("subscribeStatistics", [_finalized], websocket_pid)
+       when websocket_pid != nil do
+    subscription_id = SubscriptionManager.create_subscription("statistics", [], websocket_pid)
+    {:subscription, subscription_id}
   end
 
   defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
@@ -131,6 +132,15 @@ defmodule Jamixir.RPC.Handler do
     end
   end
 
+  defp handle_method("serviceRequest", [header_hash, service_id, hash, length], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+
+    case get_in(state.services, [service_id, :storage, {hash |> :binary.list_to_bin(), length}]) do
+      nil -> {:ok, nil}
+      slots -> {:ok, slots}
+    end
+  end
+
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
     {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
 
@@ -138,12 +148,6 @@ defmodule Jamixir.RPC.Handler do
       nil -> {:ok, nil}
       preimage -> {:ok, preimage |> :binary.bin_to_list()}
     end
-  end
-
-  defp handle_method("subscribeStatistics", [_finalized], websocket_pid)
-       when websocket_pid != nil do
-    subscription_id = SubscriptionManager.create_subscription("statistics", [], websocket_pid)
-    {:subscription, subscription_id}
   end
 
   defp handle_method("finalizedBlock", [], _websocket_pid) do
@@ -156,6 +160,11 @@ defmodule Jamixir.RPC.Handler do
   defp handle_method("subscribeFinalizedBlock", [], websocket_pid) when websocket_pid != nil do
     subscription_id = SubscriptionManager.create_subscription("finalizedBlock", [], websocket_pid)
     {:subscription, subscription_id}
+  end
+
+  defp handle_method("listServices", [header_hash], _websocket_pid) do
+    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, Map.keys(state.services)}
   end
 
   # Handle subscription methods called via HTTP (should return error)

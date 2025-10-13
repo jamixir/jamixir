@@ -103,6 +103,14 @@ defmodule Jamixir.RPC.HandlerTest do
       assert response(request).result == nil
     end
 
+    test "handles serviceRequest method", %{state: state} do
+      [{hash, length}, _] = state.services[7].storage.original_map |> Map.keys()
+      params = [gen_head(), 7, hash |> :binary.bin_to_list(), length]
+      request = %{"method" => "serviceRequest", "params" => params}
+
+      assert response(request).result == state.services[7].storage[{hash, length}]
+    end
+
     test "handles parent method with parent" do
       block1 =
         build(:decodable_block,
