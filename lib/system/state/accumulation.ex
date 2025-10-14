@@ -237,7 +237,7 @@ defmodule System.State.Accumulation do
 
     Logger.debug("=== Sequential Accumulation ##{counter} START ===")
 
-    if total_work_reports > 0 do
+    if total_work_reports > 0 and Logger.level() == :debug do
       all_hashes =
         work_reports |> Enum.map(&b16(&1.specification.work_package_hash)) |> Enum.join(", ")
 
@@ -285,7 +285,9 @@ defmodule System.State.Accumulation do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
     total_count = length(work_reports)
 
-    if i == 0 do
+    n = i + length(deferred_transfers) + map_size(always_accumulated_services)
+
+    if n == 0 do
       # Log remaining work reports
       if total_count > 0 and Logger.level() == :debug do
         remaining_info =
@@ -386,23 +388,22 @@ defmodule System.State.Accumulation do
       ) do
     accumulation_module = Application.get_env(:jamixir, :accumulation_module, __MODULE__)
 
-    # s = {rs | w ∈ w, r ∈ wr} ∪ K(f)
-    services = collect_services(work_reports, always_accumulated_services)
+    # s = {d_s | r ∈ r, d ∈ r_d} ∪ K(f) ∪ {t_d ∣ t ∈ t}
+    services = collect_services(work_reports, always_accumulated_services, deferred_transfers)
 
     available_services =
-      MapSet.union(
-        services,
-        MapSet.new([acc_state.manager] ++ acc_state.assigners ++ [acc_state.delegator])
-      )
+      services ++
+        MapSet.new(
+          [acc_state.manager, acc_state.delegator, acc_state.registrar] ++ acc_state.assigners
+        )
 
     {:ok, cache_agent} =
-      Agent.start_link(fn ->
-        %{available: available_services, results: %{}}
-      end)
+      Agent.start_link(fn -> %{available: available_services, results: %{}} end)
 
     get_or_accumulate = fn service_id, state ->
       Agent.get_and_update(cache_agent, fn %{available: available, results: results} ->
         if service_id in available do
+          # ∆(s) ≡ ∆1(e, t, r, f, s)
           result =
             accumulation_module.single_accumulation(
               state,
@@ -424,37 +425,36 @@ defmodule System.State.Accumulation do
       end)
     end
 
-    # u = [(s, Δ₁(o, w, f, s)u) | s ∈ s]
+    # u = [(s, Δ(s)_u) | s ∈ s]
     gas_used = for s <- services, do: {s, get_or_accumulate.(s, acc_state).gas_used}
 
-    # b = {(s, b) | s ∈ s, b = Δ₁(o, w, f, s)b, b ≠ ∅}
+    # b = {(s, b) | s ∈ s, b = Δ(s)_y, b ≠ ∅}
     accumulation_outputs =
       for s <- services,
           accumulation_result = get_or_accumulate.(s, acc_state),
           is_binary(accumulation_result.output),
           do: %AccumulationOutput{service: s, accumulated_output: accumulation_result.output}
 
-    # t = [Δ₁(o, w, f, s)t | s ∈ s]  => concat all
-    transfers =
-      Enum.flat_map(services, &get_or_accumulate.(&1, acc_state).transfers)
+    # t' = [Δ(s)_t | s ∈ s] => concat all
+    transfers_ = Enum.flat_map(services, &get_or_accumulate.(&1, acc_state).transfers)
 
-    # d
-    original_services = acc_state.services
+    # (d,i,q,m,a,v,r,z) = e
+    %{services: original_services, assigners: a, delegator: v, registrar: r} = acc_state
 
-    # n = ⋃({(Δ₁(o, w, f, s)o)d \ K(d ∖ {s})})
+    # n = ⋃({(Δ(s)_e)_d \ K(d ∖ {s})})
     # - The post-accumulation state for service s (the accumulating service)
     # - but not in the original state (excluding the accumulating service itself)
     # aka newly created services + accumulating service
     newly_created_services =
       Enum.reduce(services, %{}, fn accumulating_service, acc_n ->
-        # ∆1(e, w, f , s)e)d
+        # ∆1(s)_e)_d
         post_accumulation_services =
           get_or_accumulate.(accumulating_service, acc_state).state.services
 
         # K(d ∖ { s })
         original_keys_excluding_s = Map.keys(Map.delete(original_services, accumulating_service))
 
-        # Δ₁(o, w, f, s)o)d \ K(d ∖ {s})
+        # Δ(s)_e)_d \ K(d ∖ {s})
         newly_created_services_by_accumulating_service =
           Map.drop(post_accumulation_services, original_keys_excluding_s)
 
@@ -462,31 +462,19 @@ defmodule System.State.Accumulation do
         Map.merge(acc_n, newly_created_services_by_accumulating_service)
       end)
 
-    # m = ⋃(K(d) ∖ K((Δ₁(o, w, f, s)o)d))
-    # m collects service keys that are:
-    # - Present in the original state
-    # - But absent from the post-accumulation state
-    # aka deleted services
+    # m = ⋃(K(d) ∖ K((Δ(s)_e)_d))
     deleted_services =
-      Enum.reduce(services, MapSet.new(), fn accumulating_service, acc_m ->
-        # K(Δ₁(o, w, f, s)o)d)
-        post_accumulation_keys =
-          keys_set(get_or_accumulate.(accumulating_service, acc_state).state.services)
-
-        # K(d)
-        original_keys = keys_set(original_services)
-
-        # keys that are present in the original state but not in the post-accumulation state => removed services
-        # K(d) ∖ K((Δ₁(o, w, f, s)o)d)
-        removed_keys_by_accumulating_service =
-          MapSet.difference(original_keys, post_accumulation_keys)
-
-        # Union with accumulator
-        MapSet.union(acc_m, removed_keys_by_accumulating_service)
+      Enum.reduce(services, MapSet.new(), fn s, acc_m ->
+        # keys that are present in the original state but not in the
+        # post-accumulation state => removed services
+        acc_m ++
+          MapSet.difference(
+            keys_set(original_services),
+            keys_set(get_or_accumulate.(s, acc_state).state.services)
+          )
       end)
 
-    # Calculate preimages for d'
-    #  ⋃ Δ₁(o, w, f, s)p)
+    # ⋃(Δ(s)_p) Calculate preimages for d'
     service_preimages =
       for s <- services,
           accumulation_result = get_or_accumulate.(s, acc_state),
@@ -494,7 +482,7 @@ defmodule System.State.Accumulation do
         acc -> MapSet.union(acc, accumulation_result.preimages)
       end
 
-    # d' = P((d ∪ n) ∖ m, ⋃ Δ₁(o, w, f, s)p)
+    # d' = I((d ∪ n) ∖ m, ⋃ Δ(s)_p)
     # original services + newly created services + accumulating service
     all_services = Map.merge(original_services, newly_created_services)
     # without deleted services
@@ -508,41 +496,42 @@ defmodule System.State.Accumulation do
         extra_args.timeslot_
       )
 
-    %AccumulationResult{state: state_star_manager} =
-      get_or_accumulate.(acc_state.manager, acc_state)
+    # e* = ∆(m)e
+    e_star = get_or_accumulate.(acc_state.manager, acc_state).state
 
-    %{
-      manager: manager_,
-      assigners: a_star,
-      delegator: v_star,
-      always_accumulated: always_accumulated_
-    } = state_star_manager
+    # (m', z') = e∗_(m,z)
+    %{manager: manager_, always_accumulated: always_accumulated_} = e_star
 
     Agent.update(cache_agent, fn %{available: available, results: results} ->
-      new_services = MapSet.new(a_star ++ [v_star])
+      new_services = MapSet.new([e_star.delegator] ++ e_star.assigners)
       # Only add services that don't already have cached results
       services_to_add = MapSet.difference(new_services, keys_set(results))
       new_available = MapSet.union(available, services_to_add)
       %{available: new_available, results: results}
     end)
 
-    # ∀c ∈ NC : a'c = ((Δ₁(o, w, f, a*c)o)a)c
+    # ∀c ∈ N_C : a'c = R(a_c, (e∗_a)_c, ((∆(a_c)_e)_a)_c)
     assigners_ =
-      for {a_c_star, core_index} <- Enum.with_index(a_star) do
-        a_c_accumulation = get_or_accumulate.(a_c_star, state_star_manager)
-        Enum.at(a_c_accumulation.state.assigners, core_index)
+      for {a_c, c} <- Enum.with_index(a) do
+        r(
+          a_c,
+          Enum.at(e_star.assigners, c),
+          Enum.at(get_or_accumulate.(a_c, acc_state).state.assigners, c)
+        )
       end
 
-    # v' = (Δ₁(o, w, f, v*)o)v
-    delegator_ =
-      get_or_accumulate.(v_star, state_star_manager).state.delegator
+    # v' = R(v, e∗_v ,(∆(v)_e)_v )
+    delegator_ = r(v, e_star.delegator, get_or_accumulate.(v, acc_state).state.delegator)
 
-    # i' = (Δ₁(o, w, f, v)o)i
-    next_validators_ = get_or_accumulate.(acc_state.delegator, acc_state).state.next_validators
+    # r' = R(r, e∗_r ,(∆(r)_e)_r )
+    registrar_ = r(r, e_star.registrar, get_or_accumulate.(r, acc_state).state.registrar)
 
-    # ∀c ∈ NC : q'c = (Δ₁(o, w, f, ac)o)_q_c
+    # i' = (Δ(v)_e)_i
+    next_validators_ = get_or_accumulate.(v, acc_state).state.next_validators
+
+    # ∀c ∈ NC : q'c = ((Δ(a_c)e)_q)_c
     authorizer_queue_ =
-      for {a_c, core_index} <- Enum.with_index(acc_state.assigners) do
+      for {a_c, core_index} <- Enum.with_index(a) do
         a_c_accumulation = get_or_accumulate.(a_c, acc_state)
         Enum.at(a_c_accumulation.state.authorizer_queue, core_index)
       end
@@ -554,13 +543,16 @@ defmodule System.State.Accumulation do
       manager: manager_,
       assigners: assigners_,
       delegator: delegator_,
+      registrar: registrar_,
       always_accumulated: always_accumulated_
     }
 
     Agent.stop(cache_agent)
 
-    {accumulation_state, transfers, accumulation_outputs, gas_used}
+    {accumulation_state, transfers_, accumulation_outputs, gas_used}
   end
+
+  def r(o, a, b), do: if(a == o, do: b, else: a)
 
   # Formula (12.21) v0.7.2 - I:
   @spec integrate_preimages(
@@ -591,12 +583,12 @@ defmodule System.State.Accumulation do
     end
   end
 
-  def collect_services(work_reports, always_accumulated) do
+  def collect_services(work_reports, always_accumulated, transfers) do
     for(
       d <- Enum.flat_map(work_reports, & &1.digests),
       do: d.service,
       into: MapSet.new()
-    ) ++ keys_set(always_accumulated)
+    ) ++ keys_set(always_accumulated) ++ MapSet.new(for(t <- transfers, do: t.receiver))
   end
 
   # Formula (12.24) v0.7.2
