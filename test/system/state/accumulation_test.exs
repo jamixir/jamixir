@@ -30,8 +30,8 @@ defmodule System.State.AccumulationTest do
   defp base_accumulation_state(overrides) do
     base = %Accumulation{
       manager: 1,
-      assigners: [3],
-      delegator: 2,
+      assigners: [99, 100],
+      delegator: 101,
       next_validators: [<<1>>, <<2>>],
       authorizer_queue: [[<<0, 0>>, <<0, 1>>], [<<1, 0>>, <<1, 1>>]],
       services: %{4 => :service4, 5 => :service5, 6 => :service6}
@@ -99,19 +99,20 @@ defmodule System.State.AccumulationTest do
       always_acc_services = %{4 => 100, 5 => 200}
 
       assert MapSet.new([1, 2, 3, 4, 5]) ==
-               Accumulation.collect_services(work_reports, always_acc_services)
+               Accumulation.collect_services(work_reports, always_acc_services, [])
     end
 
     test "handles one or both inputs being empty" do
-      assert MapSet.new([1, 2]) == Accumulation.collect_services([], %{1 => 100, 2 => 200})
+      assert MapSet.new([1, 2]) == Accumulation.collect_services([], %{1 => 100, 2 => 200}, [])
 
       assert MapSet.new([3, 4]) ==
                Accumulation.collect_services(
                  [%WorkReport{digests: [%{service: 3}, %{service: 4}]}],
-                 %{}
+                 %{},
+                 []
                )
 
-      assert MapSet.new() == Accumulation.collect_services([], %{})
+      assert MapSet.new() == Accumulation.collect_services([], %{}, [])
     end
 
     test "handles key collisions correctly" do
@@ -119,7 +120,20 @@ defmodule System.State.AccumulationTest do
       always_acc_services = %{2 => 100, 3 => 200}
 
       assert MapSet.new([1, 2, 3]) ==
-               Accumulation.collect_services(work_reports, always_acc_services)
+               Accumulation.collect_services(work_reports, always_acc_services, [])
+    end
+
+    test "handles deferred transfers correctly" do
+      work_reports = [%WorkReport{digests: [%{service: 1}, %{service: 2}]}]
+      always_acc_services = %{3 => 100}
+      deferred_transfers = [%DeferredTransfer{receiver: 4}, %DeferredTransfer{receiver: 5}]
+
+      assert MapSet.new([1, 2, 3, 4, 5]) ==
+               Accumulation.collect_services(
+                 work_reports,
+                 always_acc_services,
+                 deferred_transfers
+               )
     end
   end
 
@@ -323,19 +337,17 @@ defmodule System.State.AccumulationTest do
 
           # Privileged services update their respective fields
           s when s in [99, 100] ->
-            %AccumulationResult{state: %{initial_state | assigners: [10_001, 10_002]}}
-
-          101 ->
-            %AccumulationResult{state: %{initial_state | delegator: 2004}}
-
-          3 ->
             %AccumulationResult{
-              state: %{initial_state | authorizer_queue: [[<<0, 0, 100>>, <<0, 1, 100>>]]}
+              state: %{
+                initial_state
+                | assigners: [10_001, 10_002],
+                  authorizer_queue: [[<<0, 0, 100>>, <<0, 1, 100>>]]
+              }
             }
 
-          2 ->
+          101 ->
             %AccumulationResult{
-              state: %{initial_state | next_validators: :updated_next_validators}
+              state: %{initial_state | delegator: 2004, next_validators: :updated_next_validators}
             }
 
           _ ->
@@ -362,7 +374,7 @@ defmodule System.State.AccumulationTest do
       assert updated_state.delegator == 2004
       assert updated_state.always_accumulated == %{6 => 130}
       assert updated_state.next_validators == :updated_next_validators
-      assert updated_state.authorizer_queue == [[<<0, 0, 100>>, <<0, 1, 100>>]]
+      assert updated_state.authorizer_queue == [[<<0, 0, 100>>, <<0, 1, 100>>], nil]
 
       # Verify transfers and outputs
       assert transfers == [%{amount: 40}, %{amount: 50}]
@@ -539,7 +551,7 @@ defmodule System.State.AccumulationTest do
 
         %AccumulationResult{
           state: acc_state,
-          transfers: [%{amount: gas_used}],
+          transfers: [],
           output: "output#{service}",
           gas_used: gas_used
         }
