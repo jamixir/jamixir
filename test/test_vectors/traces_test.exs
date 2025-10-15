@@ -29,7 +29,7 @@ defmodule TracesTest do
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    modes: ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages"]
+    modes: ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages", "fuzzy"]
   }
 
   _jam_duna = %{
@@ -54,8 +54,9 @@ defmodule TracesTest do
         @tag config: config
         @tag :slow
         test "#{mode} mode block import", %{mode: mode, config: config} do
+          block_range = if mode == "fuzzy", do: 1..200, else: config[:block_range]
           {failed_blocks, _} =
-            for block_number <- config[:block_range], reduce: {[], nil} do
+            for block_number <- block_range, reduce: {[], nil} do
               {failed_blocks, pre_state} ->
                 if trace_enabled?() do
                   System.put_env("TRACE_NAME", "block-#{block_number}")
