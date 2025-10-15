@@ -150,15 +150,7 @@ defmodule Jamixir.FuzzerTest do
       end
     end
 
-    @modes [
-      "fallback",
-      "safrole",
-      "storage_light",
-      "preimages_light",
-      "storage",
-      "preimages",
-      "fuzzy"
-    ]
+    @modes TracesTest.modes()
     @tag :perf
     @tag :slow
     test "Block Import Performance Bench", %{client: client} do

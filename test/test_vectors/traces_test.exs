@@ -23,28 +23,31 @@ defmodule TracesTest do
   def traces_path(mode), do: "traces/#{mode}"
   def testnet_path(mode), do: "data/#{mode}/state_transitions"
 
-  oficial = %{
+  @modes [
+    "fallback",
+    "safrole",
+    "storage_light",
+    "preimages_light",
+    "storage",
+    "preimages",
+    "fuzzy"
+  ]
+
+  @oficial %{
     user: "davxy",
     repo: "jam-test-vectors",
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    modes: ["fallback", "safrole", "storage_light", "preimages_light", "storage", "preimages", "fuzzy"]
+    modes: @modes
   }
 
-  _jam_duna = %{
-    user: "jamixir",
-    repo: "jamtestnet",
-    branch: "master",
-    path: &__MODULE__.testnet_path/1,
-    block_range: 12..47,
-    modes: ["generic", "assurances", "orderedaccumulation"]
-  }
+  def modes, do: @oficial[:modes]
 
   def block_path(config, mode), do: "#{config[:path]}/#{mode}"
 
   # add jam_duna to the list of configs if you want to test it
-  configs = [oficial]
+  configs = [@oficial]
 
   for config <- configs do
     describe "blocks and states" do
@@ -55,6 +58,7 @@ defmodule TracesTest do
         @tag :slow
         test "#{mode} mode block import", %{mode: mode, config: config} do
           block_range = if mode == "fuzzy", do: 1..200, else: config[:block_range]
+
           {failed_blocks, _} =
             for block_number <- block_range, reduce: {[], nil} do
               {failed_blocks, pre_state} ->
