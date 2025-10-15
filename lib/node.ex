@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.WorkPackage
@@ -165,10 +166,18 @@ defmodule Jamixir.Node do
   # CE 131 - Safrole ticket distribution
   @impl true
   def process_ticket(:proxy, epoch, ticket) do
-    Storage.put(epoch, ticket)
+    state = get_latest_state()
 
-    for {_v, pid} <- NodeStateServer.instance().current_connections() do
-      Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+    case TicketProof.proof_output(ticket, state.entropy_pool.n2, state.safrole.epoch_root) do
+      {:error, _} ->
+        Logger.debug("Invalid ticket received at proxy for epoch #{epoch}. Ignoring.")
+
+      {:ok, _} ->
+        Storage.put(epoch, ticket)
+
+        for {_v, pid} <- NodeStateServer.instance().current_connections() do
+          Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+        end
     end
 
     :ok
@@ -252,11 +261,15 @@ defmodule Jamixir.Node do
     end
   end
 
+  def get_latest_state do
+    {_ts, header} = Storage.get_latest_header()
+    Storage.get_state(header)
+  end
+
   def process_work_package(wp, core, _extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    {_ts, header} = Storage.get_latest_header()
-    services = Storage.get_state(header).services
+    services = get_latest_state().services
 
     case WorkReport.execute_work_package(wp, core, services) do
       :error ->

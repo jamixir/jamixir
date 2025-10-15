@@ -33,8 +33,6 @@ defmodule TracesTest do
     modes: trace_modes()
   }
 
-  def modes, do: @modes
-
   def block_path(config, mode), do: "#{config[:path]}/#{mode}"
 
   # add jam_duna to the list of configs if you want to test it

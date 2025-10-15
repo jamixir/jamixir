@@ -90,14 +90,9 @@ defmodule Block.Extrinsic.TicketProof do
   @spec construct_n(list(t()), binary(), Types.bandersnatch_ring_root()) ::
           {:ok, list(SealKeyTicket.t())} | {:error, String.t()}
   mockable construct_n(ticket_proofs, eta2, epoch_root) do
-    Enum.reduce_while(ticket_proofs, {:ok, []}, fn %TicketProof{
-                                                     attempt: r,
-                                                     signature: proof
-                                                   },
+    Enum.reduce_while(ticket_proofs, {:ok, []}, fn %TicketProof{attempt: r} = ticket,
                                                    {:ok, acc} ->
-      context = SigningContexts.jam_ticket_seal() <> eta2 <> <<r>>
-
-      case RingVrf.ring_vrf_verify(epoch_root, context, <<>>, proof) do
+      case proof_output(ticket, eta2, epoch_root) do
         {:ok, output_hash} ->
           {:cont, {:ok, acc ++ [%SealKeyTicket{id: output_hash, attempt: r}]}}
 
@@ -105,6 +100,11 @@ defmodule Block.Extrinsic.TicketProof do
           {:halt, {:error, :bad_ticket_proof}}
       end
     end)
+  end
+
+  def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
+    context = SigningContexts.jam_ticket_seal() <> eta2 <> <<r>>
+    RingVrf.ring_vrf_verify(epoch_root, context, <<>>, proof)
   end
 
   def mock(:validate, _), do: :ok

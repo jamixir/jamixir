@@ -1,5 +1,6 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
+  alias Block.Extrinsic.TicketProofTestHelper
   alias Jamixir.Genesis
   alias Storage
   alias Util.Hash
@@ -193,25 +194,28 @@ defmodule Jamixir.NodeTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
-      {:ok, epochs: for(_ <- 1..2, do: :rand.uniform(100_000))}
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+      {:ok,
+       epochs: for(_ <- 1..2, do: :rand.uniform(100_000)), state: state, key_pairs: key_pairs}
     end
 
-    test "process_ticket with :proxy mode", %{epochs: [e1, e2]} do
-      [t1, t2] = build_list(2, :ticket_proof, attempt: 0)
+    test "forward valid tickets", %{state: state, key_pairs: key_pairs} do
+      Storage.put(Genesis.genesis_block_header(), state)
 
-      stub(NodeStateServerMock, :current_connections, fn ->
-        [{"validator1", 101}, {"validator2", 102}]
-      end)
+      {proof, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      t1 = build(:ticket_proof, signature: proof, attempt: 0)
 
-      expect(ClientMock, :distribute_ticket, fn 101, :validator, ^e1, ^t1 -> :ok end)
-      expect(ClientMock, :distribute_ticket, fn 102, :validator, ^e1, ^t1 -> :ok end)
-      expect(ClientMock, :distribute_ticket, fn 101, :validator, ^e2, ^t2 -> :ok end)
-      expect(ClientMock, :distribute_ticket, fn 102, :validator, ^e2, ^t2 -> :ok end)
+      invalid_t2 = build(:ticket_proof, attempt: 1)
 
-      process_ticket(:proxy, e1, t1)
-      process_ticket(:proxy, e2, t2)
-      assert Storage.get_tickets(e1) == [t1]
-      assert Storage.get_tickets(e2) == [t2]
+      stub(NodeStateServerMock, :current_connections, fn -> [{"v1", 101}, {"v2", 102}] end)
+
+      expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
+
+      process_ticket(:proxy, 123, t1)
+      process_ticket(:proxy, 123, invalid_t2)
+      assert Storage.get_tickets(123) == [t1]
       verify!()
     end
 
