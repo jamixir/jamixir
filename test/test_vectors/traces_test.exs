@@ -7,6 +7,7 @@ defmodule TracesTest do
   use ExUnit.Case
   alias Util.Logger
   import Util.Hex
+  import TestHelper
 
   setup_all do
     RingVrf.init_ring_context()
@@ -23,26 +24,16 @@ defmodule TracesTest do
   def traces_path(mode), do: "traces/#{mode}"
   def testnet_path(mode), do: "data/#{mode}/state_transitions"
 
-  @modes [
-    "fallback",
-    "safrole",
-    "storage_light",
-    "preimages_light",
-    "storage",
-    "preimages",
-    "fuzzy"
-  ]
-
   @oficial %{
     user: "davxy",
     repo: "jam-test-vectors",
     branch: "master",
     path: &__MODULE__.traces_path/1,
     block_range: 1..100,
-    modes: @modes
+    modes: trace_modes()
   }
 
-  def modes, do: @oficial[:modes]
+  def modes, do: @modes
 
   def block_path(config, mode), do: "#{config[:path]}/#{mode}"
 

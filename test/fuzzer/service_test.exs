@@ -13,6 +13,7 @@ defmodule Jamixir.FuzzerTest do
   import Jamixir.Factory
   import Codec.Encoder
   import TestVectorUtil
+  import TestHelper
   import Util.Hex
 
   @socket_path "/tmp/jam_conformance.sock"
@@ -150,12 +151,11 @@ defmodule Jamixir.FuzzerTest do
       end
     end
 
-    @modes TracesTest.modes()
     @tag :perf
     @tag :slow
     test "Block Import Performance Bench", %{client: client} do
       test_dict =
-        for mode <- @modes,
+        for mode <- trace_modes(),
             into: %{},
             do:
               {"fuzzer 100 blocks #{mode}",

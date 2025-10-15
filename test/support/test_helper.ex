@@ -4,6 +4,18 @@ defmodule TestHelper do
   alias Util.Time, as: Time
   import Mox
 
+  @trace_modes [
+    "fallback",
+    "safrole",
+    "storage_light",
+    "preimages_light",
+    "storage",
+    "preimages",
+    "fuzzy"
+  ]
+
+  def trace_modes, do: @trace_modes
+
   def past_timeslot do
     div(Time.current_time() - 10, Constants.slot_period())
   end
