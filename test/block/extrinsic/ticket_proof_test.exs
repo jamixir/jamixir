@@ -1,37 +1,8 @@
 defmodule Block.Extrinsic.TicketProofTest do
   use ExUnit.Case
   import Jamixir.Factory
+  import Block.Extrinsic.TicketProofTestHelper
   alias Block.Extrinsic.TicketProof
-
-  defp create_valid_tickets(count, state, key_pairs) do
-    ring = for v <- state.curr_validators, do: v.bandersnatch
-
-    for i <- 0..(count - 1) do
-      keypair = Enum.at(key_pairs, rem(i, length(key_pairs)))
-      attempt = rem(i, 2)
-
-      {proof, _} =
-        RingVrf.ring_vrf_sign(
-          ring,
-          keypair,
-          i,
-          SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
-          <<>>
-        )
-
-      %TicketProof{attempt: attempt, signature: proof}
-    end
-  end
-
-  defp create_valid_proof(state, keypair, prover_idx, attempt) do
-    RingVrf.ring_vrf_sign(
-      for(v <- state.curr_validators, do: v.bandersnatch),
-      keypair,
-      prover_idx,
-      SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
-      <<>>
-    )
-  end
 
   defp create_and_sort_tickets(count, state, key_pairs) do
     for ticket <- create_valid_tickets(count, state, key_pairs),
