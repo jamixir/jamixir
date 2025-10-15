@@ -285,7 +285,8 @@ defmodule System.State.Accumulation do
     i = number_of_work_reports_to_accumumulate(work_reports, gas_limit)
     total_count = length(work_reports)
 
-    n = i + length(deferred_transfers) + map_size(always_accumulated_services)
+    # n = |t| + i + |f|
+    n = length(deferred_transfers) + i + map_size(always_accumulated_services)
 
     if n == 0 do
       # Log remaining work reports
@@ -391,11 +392,16 @@ defmodule System.State.Accumulation do
     # s = {d_s | r ∈ r, d ∈ r_d} ∪ K(f) ∪ {t_d ∣ t ∈ t}
     services = collect_services(work_reports, always_accumulated_services, deferred_transfers)
 
-    available_services =
-      services ++
-        MapSet.new(
-          [acc_state.manager, acc_state.delegator, acc_state.registrar] ++ acc_state.assigners
-        )
+    # (d,m,a,v,r) = e
+    %{
+      services: original_services,
+      manager: manager,
+      assigners: assigners,
+      delegator: delegator,
+      registrar: registrar
+    } = acc_state
+
+    available_services = services ++ MapSet.new([manager, delegator, registrar] ++ assigners)
 
     {:ok, cache_agent} =
       Agent.start_link(fn -> %{available: available_services, results: %{}} end)
@@ -437,9 +443,6 @@ defmodule System.State.Accumulation do
 
     # t' = [Δ(s)_t | s ∈ s] => concat all
     transfers_ = Enum.flat_map(services, &get_or_accumulate.(&1, acc_state).transfers)
-
-    # (d,i,q,m,a,v,r,z) = e
-    %{services: original_services, assigners: a, delegator: v, registrar: r} = acc_state
 
     # n = ⋃({(Δ(s)_e)_d \ K(d ∖ {s})})
     # - The post-accumulation state for service s (the accumulating service)
@@ -497,7 +500,7 @@ defmodule System.State.Accumulation do
       )
 
     # e* = ∆(m)e
-    e_star = get_or_accumulate.(acc_state.manager, acc_state).state
+    e_star = get_or_accumulate.(manager, acc_state).state
 
     # (m', z') = e∗_(m,z)
     %{manager: manager_, always_accumulated: always_accumulated_} = e_star
@@ -512,7 +515,7 @@ defmodule System.State.Accumulation do
 
     # ∀c ∈ N_C : a'c = R(a_c, (e∗_a)_c, ((∆(a_c)_e)_a)_c)
     assigners_ =
-      for {a_c, c} <- Enum.with_index(a) do
+      for {a_c, c} <- Enum.with_index(assigners) do
         r(
           a_c,
           Enum.at(e_star.assigners, c),
@@ -521,19 +524,21 @@ defmodule System.State.Accumulation do
       end
 
     # v' = R(v, e∗_v ,(∆(v)_e)_v )
-    delegator_ = r(v, e_star.delegator, get_or_accumulate.(v, acc_state).state.delegator)
+    delegator_ =
+      r(delegator, e_star.delegator, get_or_accumulate.(delegator, acc_state).state.delegator)
 
     # r' = R(r, e∗_r ,(∆(r)_e)_r )
-    registrar_ = r(r, e_star.registrar, get_or_accumulate.(r, acc_state).state.registrar)
+    registrar_ =
+      r(registrar, e_star.registrar, get_or_accumulate.(registrar, acc_state).state.registrar)
 
     # i' = (Δ(v)_e)_i
-    next_validators_ = get_or_accumulate.(v, acc_state).state.next_validators
+    next_validators_ = get_or_accumulate.(delegator, acc_state).state.next_validators
 
     # ∀c ∈ NC : q'c = ((Δ(a_c)e)_q)_c
     authorizer_queue_ =
-      for {a_c, core_index} <- Enum.with_index(a) do
+      for {a_c, c} <- Enum.with_index(assigners) do
         a_c_accumulation = get_or_accumulate.(a_c, acc_state)
-        Enum.at(a_c_accumulation.state.authorizer_queue, core_index)
+        Enum.at(a_c_accumulation.state.authorizer_queue, c)
       end
 
     accumulation_state = %__MODULE__{
@@ -588,7 +593,7 @@ defmodule System.State.Accumulation do
       d <- Enum.flat_map(work_reports, & &1.digests),
       do: d.service,
       into: MapSet.new()
-    ) ++ keys_set(always_accumulated) ++ MapSet.new(for(t <- transfers, do: t.receiver))
+    ) ++ keys_set(always_accumulated) ++ MapSet.new(transfers, & &1.receiver)
   end
 
   # Formula (12.24) v0.7.2
