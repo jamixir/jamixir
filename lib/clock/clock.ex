@@ -3,8 +3,6 @@ defmodule Clock do
   require Logger
   alias Util.Time
 
-
-  @slot_phase_duration_ms 1_000
   @assurance_timeout_ms 30_000
   @compute_authoring_slots_phase 2
 
@@ -16,12 +14,7 @@ defmodule Clock do
   defp slot_duration_ms, do: Constants.slot_period() * 1000
   defp tranche_duration_ms, do: Constants.audit_trenches_period() * 1000
 
-  defstruct [
-    :timers,
-    :current_slot,
-    :current_slot_phase,
-    :authoring_slots
-  ]
+  defstruct [:timers, :current_slot, :authoring_slots, :reference_time]
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -33,20 +26,25 @@ defmodule Clock do
 
   def init(_opts) do
     current_slot = Time.current_timeslot()
+    now = System.monotonic_time(:millisecond)
+
+    # Calculate the next slot boundary as our reference time
+    slot_duration = slot_duration_ms()
+    time_since_slot_start = rem(now, slot_duration)
+    reference_time = now + (slot_duration - time_since_slot_start)
 
     timers = %{
-      slot: schedule_slot_timer(),
-      slot_phase: schedule_slot_phase_timer(),
-      audit: schedule_audit_timer(),
-      assurance: schedule_assurance_timer()
+      slot: schedule_timer(reference_time, 0, :slot_tick),
+      audit: schedule_timer(reference_time, 0, :audit_tranche),
+      assurance: schedule_timer(reference_time, 0, :assurance_timeout)
     }
 
     {:ok,
      %__MODULE__{
        timers: timers,
        current_slot: current_slot,
-       current_slot_phase: 0,
-       authoring_slots: MapSet.new()
+       authoring_slots: MapSet.new(),
+       reference_time: reference_time
      }}
   end
 
@@ -78,42 +76,27 @@ defmodule Clock do
       Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, epoch_event})
     end
 
-    new_state = %{
-      state
-      | current_slot: current_slot,
-        timers: Map.put(state.timers, :slot, schedule_slot_timer())
-    }
+    if epoch_phase == @compute_authoring_slots_phase do
+      # Compute authoring slots for next epoch (if needed)
+      if should_compute_authoring_slots?(current_slot) do
+        compute_event = Clock.Event.new(:compute_authoring_slots, current_slot, epoch_phase)
 
-    {:noreply, new_state}
-  end
-
-  # Slot phase tick - every second
-  def handle_info(:slot_phase_tick, state) do
-    current_slot = Time.current_timeslot()
-    new_phase = rem(state.current_slot_phase + 1, Constants.slot_period())
-
-    case new_phase do
-      @compute_authoring_slots_phase ->
-        # Compute authoring slots for next epoch (if needed)
-        if should_compute_authoring_slots?(current_slot) do
-          compute_event = Clock.Event.new(:compute_authoring_slots, current_slot, new_phase)
-
-          Phoenix.PubSub.broadcast(
-            Jamixir.PubSub,
-            @clock_phase_events_channel,
-            {:clock, compute_event}
-          )
-        end
-
-      _ ->
-        :ok
+        Phoenix.PubSub.broadcast(
+          Jamixir.PubSub,
+          @clock_phase_events_channel,
+          {:clock, compute_event}
+        )
+      end
     end
 
+    next_slot_offset = slot_duration_ms()
+    new_reference_time = state.reference_time + next_slot_offset
+
     new_state = %{
       state
       | current_slot: current_slot,
-        current_slot_phase: new_phase,
-        timers: Map.put(state.timers, :slot_phase, schedule_slot_phase_timer())
+        reference_time: new_reference_time,
+        timers: Map.put(state.timers, :slot, schedule_timer(new_reference_time, 0, :slot_tick))
     }
 
     {:noreply, new_state}
@@ -122,16 +105,24 @@ defmodule Clock do
   def handle_info(:audit_tranche, state) do
     event = Clock.Event.new(:audit_tranche)
     Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, event})
+    next_audit_time = state.reference_time + tranche_duration_ms()
+    new_timers = Map.put(state.timers, :audit, schedule_timer(next_audit_time, 0, :audit_tranche))
 
-    new_timers = Map.put(state.timers, :audit, schedule_audit_timer())
     {:noreply, %{state | timers: new_timers}}
   end
 
   def handle_info(:assurance_timeout, state) do
     event = Clock.Event.new(:assurance_timeout)
     Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, event})
+    next_assurance_time = state.reference_time + @assurance_timeout_ms
 
-    new_timers = Map.put(state.timers, :assurance, schedule_assurance_timer())
+    new_timers =
+      Map.put(
+        state.timers,
+        :assurance,
+        schedule_timer(next_assurance_time, 0, :assurance_timeout)
+      )
+
     {:noreply, %{state | timers: new_timers}}
   end
 
@@ -143,10 +134,10 @@ defmodule Clock do
   defp should_compute_authoring_slots?(slot),
     do: Time.epoch_phase(slot) == Constants.epoch_length() - 1
 
-  defp schedule_timer(duration_ms, message), do: Process.send_after(self(), message, duration_ms)
-
-  defp schedule_slot_timer(), do: schedule_timer(slot_duration_ms(), :slot_tick)
-  defp schedule_slot_phase_timer(), do: schedule_timer(@slot_phase_duration_ms, :slot_phase_tick)
-  defp schedule_audit_timer(), do: schedule_timer(tranche_duration_ms(), :audit_tranche)
-  defp schedule_assurance_timer(), do: schedule_timer(@assurance_timeout_ms, :assurance_timeout)
+  defp schedule_timer(reference_time, offset_ms, message) do
+    now = System.monotonic_time(:millisecond)
+    target_time = reference_time + offset_ms
+    delay = max(0, target_time - now)
+    Process.send_after(self(), message, delay)
+  end
 end
