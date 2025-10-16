@@ -512,7 +512,7 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      {[[b]], task} = WorkReport.execute_work_package(wp, 0, services)
+      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
       assert is_binary(b)
       {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
@@ -541,13 +541,13 @@ defmodule WorkReportTest do
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
       stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
-      task = WorkReport.execute_work_package(wp, 0, services)
+      task = WorkReport.execute_work_package(wp, [], 0, services)
       assert task == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      {[[b]], task} = WorkReport.execute_work_package(wp, 0, services)
+      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
       assert is_binary(b)
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests

@@ -5,7 +5,7 @@ defmodule PVM.Refine.RefineParams do
     :authorizer_trace,
     :import_segments,
     :export_segment_offset,
-    :preimages,
+    :extrinsics,
     :services,
     :service_id
   ]

@@ -24,7 +24,7 @@ defmodule PVM do
               list(list(binary())),
               non_neg_integer(),
               %{integer() => ServiceAccount.t()},
-              %{{Types.hash(), non_neg_integer()} => binary()}
+              list(list(binary()))
             ) ::
               {binary() | WorkExecutionError.t(), list(binary())}
 
@@ -43,7 +43,7 @@ defmodule PVM do
         import_segments,
         export_segment_offset,
         services,
-        preimages
+        extrinsics
       ) do
     module = Application.get_env(:jamixir, :pvm, __MODULE__)
 
@@ -54,7 +54,7 @@ defmodule PVM do
       import_segments,
       export_segment_offset,
       services,
-      preimages
+      extrinsics
     )
   end
 

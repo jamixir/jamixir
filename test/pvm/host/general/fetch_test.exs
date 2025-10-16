@@ -77,7 +77,7 @@ defmodule PVM.Host.General.FetchTest do
         authorizer_trace: "auth_output",
         index: 0,
         import_segments: [["seg1_1", "seg1_2"], ["seg2_1"]],
-        preimages: [["preimage1", "preimage2"], ["preimage3"]],
+        extrinsics: [["preimage1", "preimage2"], ["preimage3"]],
         accumulation_inputs: accumulation_inputs,
         transfers: [
           %DeferredTransfer{sender: 1, receiver: 2, amount: 100, memo: "memo1"},
@@ -190,7 +190,7 @@ defmodule PVM.Host.General.FetchTest do
           }
       }
 
-      expected_preimage = args.preimages |> Enum.at(0) |> Enum.at(1)
+      expected_preimage = args.extrinsics |> Enum.at(0) |> Enum.at(1)
       l = byte_size(expected_preimage)
       context = args.context
 
@@ -213,7 +213,7 @@ defmodule PVM.Host.General.FetchTest do
         | registers: %{args.registers | r: put_elem(args.registers.r, 10, 4) |> put_elem(11, 0)}
       }
 
-      expected_preimage = args.preimages |> Enum.at(args.index) |> Enum.at(0)
+      expected_preimage = args.extrinsics |> Enum.at(args.index) |> Enum.at(0)
       l = byte_size(expected_preimage)
       context = args.context
 

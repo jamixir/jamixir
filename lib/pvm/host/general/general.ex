@@ -39,7 +39,7 @@ defmodule PVM.Host.General do
         args.authorizer_trace,
         args.index,
         args.import_segments,
-        args.preimages,
+        args.extrinsics,
         args.accumulation_inputs
       ]
     )

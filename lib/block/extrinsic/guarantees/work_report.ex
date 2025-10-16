@@ -212,9 +212,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (14.12) v0.7.2
-  @spec execute_work_package(WorkPackage.t(), integer(), %{integer() => ServiceAccount.t()}) ::
+  @spec execute_work_package(WorkPackage.t(), list(list(binary())), integer(), %{
+          integer() => ServiceAccount.t()
+        }) ::
           :error | Task.t({WorkReport.t(), list(binary())})
-  def execute_work_package(%WorkPackage{} = wp, core, services) do
+  def execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
     # {t, g} = ΨI (p,c)
     w_r = Constants.max_work_report_size()
 
@@ -225,24 +227,27 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
       {t, _gas_used} ->
         segments_data = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         import_segments = for(w <- segments_data, do: for(s <- w, do: s.data))
-        {import_segments, Task.async(fn -> refine(wp, core, t, services, import_segments) end)}
+
+        {import_segments,
+         Task.async(fn -> refine(wp, extrinsics, core, t, services, import_segments) end)}
     end
   end
 
   @spec refine(
           WorkPackage.t(),
+          list(list(binary())),
           integer(),
           binary(),
           %{integer() => ServiceAccount.t()},
           list(list(binary()))
         ) ::
           {WorkReport.t(), list(binary())}
-  defp refine(wp, core, o, services, import_segments) do
+  defp refine(wp, extrinsics, core, o, services, import_segments) do
     # (d, ê) =T[(C(pw[j],r),e) ∣ (r,e) = I(p,j),j <− N∣pw∣]
     {d, e} =
       for j <- 0..(length(wp.work_items) - 1) do
-        # (r,e) = I(p,j)
-        {result, gas, exports} = process_item(wp, j, o, import_segments, services, %{})
+        # (r,u,e) = I(p,j)
+        {result, gas, exports} = process_item(wp, j, o, import_segments, services, extrinsics)
         # C(pw [j],r), e)
         {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
       end
@@ -269,12 +274,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
      }, exports}
   end
 
-  def process_item(%WorkPackage{} = p, j, o, import_segments, services, preimages) do
+  def process_item(%WorkPackage{} = p, j, o, import_segments, services, extrinsics) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
     l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
-    {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, preimages)
+    {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, extrinsics)
 
     case {r, e, u} do
       # First, check export count
@@ -295,7 +300,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             else
               Enum.sum(
                 for k <- 0..(j - 1) do
-                  {r_k, _, _} = process_item(p, k, o, import_segments, services, preimages)
+                  {r_k, _, _} = process_item(p, k, o, import_segments, services, extrinsics)
                   if is_binary(r_k), do: byte_size(r_k), else: 0
                 end
               )

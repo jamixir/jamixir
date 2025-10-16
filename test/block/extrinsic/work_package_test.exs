@@ -225,25 +225,35 @@ defmodule WorkPackageTest do
     end
   end
 
-  describe "valid_extrinsics?/2" do
+  describe "organize_extrinsics/2" do
     test "valid empty extrinsics" do
       wp = build(:work_package, work_items: [])
-      assert WorkPackage.valid_extrinsics?(wp, [])
+      {:ok, []} = WorkPackage.organize_extrinsics(wp, [])
     end
 
     test "valid items with no extrinsics" do
       wp = build(:work_package, work_items: [build(:work_item, extrinsic: [])])
-      assert WorkPackage.valid_extrinsics?(wp, [])
+      {:ok, [[]]} = WorkPackage.organize_extrinsics(wp, [])
     end
 
     test "valid extrinsics" do
       {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert WorkPackage.valid_extrinsics?(work_package, extrinsics)
+
+      {:ok, ^extrinsics} =
+        WorkPackage.organize_extrinsics(work_package, List.flatten(extrinsics))
     end
 
-    test "invalid extrinsics" do
+    test "invalid extrinsics content" do
+      {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
+      [_ | rest] = List.flatten(extrinsics)
+
+      {:error, :mismatched_extrinsics} =
+        WorkPackage.organize_extrinsics(work_package, [Hash.random() | rest])
+    end
+
+    test "invalid extrinsics count" do
       {work_package, _} = work_package_and_its_extrinsic_factory()
-      refute WorkPackage.valid_extrinsics?(work_package, [])
+      {:error, :mismatched_extrinsics} = WorkPackage.organize_extrinsics(work_package, [])
     end
   end
 
