@@ -10,11 +10,16 @@ defmodule Jamixir.Commands.Run do
     port: :integer,
     socket_path: :string,
     help: :boolean,
-    log: :string
+    log: :string,
+    size: :string
   ]
 
   @aliases [
-    h: :help
+    l: :log,
+    p: :port,
+    k: :keys,
+    h: :help,
+    s: :size
   ]
 
   def run(args) do
@@ -28,15 +33,16 @@ defmodule Jamixir.Commands.Run do
   end
 
   defp start_node(opts) do
+    set_mix_env_for_size(opts[:size])
+
     if log_level = opts[:log] || "info" do
       Log.info("Setting log level to #{log_level}")
 
+      Logger.configure(level: :"#{log_level}")
       Logger.configure_backend(:console,
         format: "$date $time [$level] $message $metadata\n",
         metadata: [:request_id]
       )
-
-      # Logger.configure(format: "%%%[$level] $message $metadata\n")
     end
 
     log_system_info()
@@ -54,6 +60,10 @@ defmodule Jamixir.Commands.Run do
         do: Application.put_env(:jamixir, :genesis_file, genesis_file)
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
+
+      # Find an available RPC port to avoid conflicts
+      rpc_port = find_available_port(19800)
+      Application.put_env(:jamixir, :rpc_port, rpc_port)
 
       generate_tls_certificates()
     end
@@ -89,6 +99,42 @@ defmodule Jamixir.Commands.Run do
     after
       :infinity ->
         :ok
+    end
+  end
+
+  defp set_mix_env_for_size(size) do
+    case size do
+      "tiny" ->
+        Log.info("📏 Setting environment to tiny ")
+        System.put_env("MIX_ENV", "tiny")
+        Application.put_env(:jamixir, :start_full_app, true)
+
+      "prod" ->
+        Log.info("📏 Setting environment to prod")
+        System.put_env("MIX_ENV", "prod")
+        Application.put_env(:jamixir, :start_full_app, true)
+
+      _ ->
+        Log.info("📏 Using (default) tiny environment")
+        System.put_env("MIX_ENV", "tiny")
+        Application.put_env(:jamixir, :start_full_app, true)
+    end
+  end
+
+
+
+  defp find_available_port(start_port) do
+    case :gen_tcp.listen(start_port, []) do
+      {:ok, socket} ->
+        :gen_tcp.close(socket)
+        start_port
+
+      {:error, :eaddrinuse} ->
+        find_available_port(start_port + 1)
+
+      {:error, reason} ->
+        Log.warning("⚠️  Could not test port #{start_port}: #{inspect(reason)}")
+        find_available_port(start_port + 1)
     end
   end
 
@@ -282,16 +328,21 @@ defmodule Jamixir.Commands.Run do
     Usage: jamixir run [OPTIONS]
 
     Options:
-          --keys <KEYS>              Keys file to load
+      -k, --keys <KEYS>              Keys file to load
           --genesis <GENESIS>        Genesis file to use
-          --port <PORT>              Port to listen on
+      -p, --port <PORT>              Network port to listen on
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
-          --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
+      -l, --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
+      -s, --size <SIZE>              Configuration size (tiny | dev | prod | test | full_test)
       -h, --help                     Print help
 
     Examples:
+      jamixir run --keys ./test/keys/0.json
+      jamixir run --size tiny --keys ./test/keys/0.json
       jamixir run --port 10001 --keys ./test/keys/0.json
-      MIX_ENV=test jamixir run --port 10002 --keys ./test/keys/1.json
+      jamixir run -s tiny -k ./test/keys/1.json -p 10002
+
+
     """)
   end
 end
