@@ -4,7 +4,6 @@ defmodule Clock do
   alias Util.Time
 
   @assurance_timeout_ms 30_000
-  @compute_authoring_slots_phase 2
 
   # PubSub channel names
   @node_events_channel "node_events"
@@ -39,6 +38,9 @@ defmodule Clock do
       assurance: schedule_timer(reference_time, 0, :assurance_timeout)
     }
 
+    # initially schedule compute_authoring_slots right away
+    schedule_timer(reference_time, 0, :compute_authoring_slots)
+
     {:ok,
      %__MODULE__{
        timers: timers,
@@ -72,21 +74,10 @@ defmodule Clock do
     end
 
     if Time.epoch_transition?(current_slot) do
+      schedule_timer(state.reference_time, div(slot_duration_ms(), 5), :compute_authoring_slots)
+
       epoch_event = Clock.Event.new(:epoch_transition, current_slot)
       Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, epoch_event})
-    end
-
-    if epoch_phase == @compute_authoring_slots_phase do
-      # Compute authoring slots for next epoch (if needed)
-      if should_compute_authoring_slots?(current_slot) do
-        compute_event = Clock.Event.new(:compute_authoring_slots, current_slot, epoch_phase)
-
-        Phoenix.PubSub.broadcast(
-          Jamixir.PubSub,
-          @clock_phase_events_channel,
-          {:clock, compute_event}
-        )
-      end
     end
 
     next_slot_offset = slot_duration_ms()
@@ -100,6 +91,18 @@ defmodule Clock do
     }
 
     {:noreply, new_state}
+  end
+
+  def handle_info(:compute_authoring_slots, state) do
+    compute_event = Clock.Event.new(:compute_authoring_slots, state.current_slot)
+
+    Phoenix.PubSub.broadcast(
+      Jamixir.PubSub,
+      @clock_phase_events_channel,
+      {:clock, compute_event}
+    )
+
+    {:noreply, state}
   end
 
   def handle_info(:audit_tranche, state) do
@@ -131,13 +134,11 @@ defmodule Clock do
     {:noreply, state}
   end
 
-  defp should_compute_authoring_slots?(slot),
-    do: Time.epoch_phase(slot) == Constants.epoch_length() - 1
-
   defp schedule_timer(reference_time, offset_ms, message) do
     now = System.monotonic_time(:millisecond)
     target_time = reference_time + offset_ms
     delay = max(0, target_time - now)
+    Logger.debug("Scheduling timer #{inspect(message)} to fire in #{delay} ms")
     Process.send_after(self(), message, delay)
   end
 end

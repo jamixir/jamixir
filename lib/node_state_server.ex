@@ -211,15 +211,13 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def handle_info(
-        {:clock, %{event: :compute_authoring_slots, slot: slot, slot_phase: slot_phase}},
+        {:clock, %{event: :compute_authoring_slots, slot: slot}},
         %__MODULE__{jam_state: jam_state, bandersnatch_keypair: bandersnatch_keypair} = state
       ) do
     current_epoch = Util.Time.epoch_index(slot)
     next_epoch = current_epoch + 1
 
-    Log.debug(
-      "⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}, phase #{slot_phase}"
-    )
+    Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}")
 
     authoring_slots =
       compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
