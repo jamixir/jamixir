@@ -383,8 +383,11 @@ defmodule Jamixir.Node do
 
   # CE 129 - State request
   @impl true
-  def get_state_trie(_header_hash) do
-    {:error, :not_implemented}
+  def get_state_trie(header_hash) do
+    case Storage.get_state_trie(header_hash) do
+      nil -> {:error, :no_state}
+      trie -> {:ok, trie}
+    end
   end
 
   @impl true
