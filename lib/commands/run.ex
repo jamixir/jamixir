@@ -11,15 +11,15 @@ defmodule Jamixir.Commands.Run do
     socket_path: :string,
     help: :boolean,
     log: :string,
-    size: :string
+    rpc: :boolean,
+    rpc_port: :integer
   ]
 
   @aliases [
     l: :log,
     p: :port,
     k: :keys,
-    h: :help,
-    s: :size
+    h: :help
   ]
 
   def run(args) do
@@ -33,7 +33,8 @@ defmodule Jamixir.Commands.Run do
   end
 
   defp start_node(opts) do
-    set_mix_env_for_size(opts[:size])
+    # Ensure we use production children
+    Application.put_env(:jamixir, :start_full_app, true)
 
     if log_level = opts[:log] || "info" do
       Log.info("Setting log level to #{log_level}")
@@ -61,9 +62,8 @@ defmodule Jamixir.Commands.Run do
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
-      # Find an available RPC port to avoid conflicts
-      rpc_port = find_available_port(19800)
-      Application.put_env(:jamixir, :rpc_port, rpc_port)
+      # Configure RPC based on flags
+      configure_rpc(opts)
 
       generate_tls_certificates()
     end
@@ -102,39 +102,19 @@ defmodule Jamixir.Commands.Run do
     end
   end
 
-  defp set_mix_env_for_size(size) do
-    case size do
-      "tiny" ->
-        Log.info("📏 Setting environment to tiny ")
-        System.put_env("MIX_ENV", "tiny")
-        Application.put_env(:jamixir, :start_full_app, true)
+  defp configure_rpc(opts) do
+    cond do
+      rpc_port = opts[:rpc_port] ->
+        Application.put_env(:jamixir, :rpc_enabled, true)
+        Application.put_env(:jamixir, :rpc_port, rpc_port)
 
-      "prod" ->
-        Log.info("📏 Setting environment to prod")
-        System.put_env("MIX_ENV", "prod")
-        Application.put_env(:jamixir, :start_full_app, true)
+      opts[:rpc] ->
+        Application.put_env(:jamixir, :rpc_enabled, true)
 
-      _ ->
-        Log.info("📏 Using (default) tiny environment")
-        System.put_env("MIX_ENV", "tiny")
-        Application.put_env(:jamixir, :start_full_app, true)
-    end
-  end
-
-
-
-  defp find_available_port(start_port) do
-    case :gen_tcp.listen(start_port, []) do
-      {:ok, socket} ->
-        :gen_tcp.close(socket)
-        start_port
-
-      {:error, :eaddrinuse} ->
-        find_available_port(start_port + 1)
-
-      {:error, reason} ->
-        Log.warning("⚠️  Could not test port #{start_port}: #{inspect(reason)}")
-        find_available_port(start_port + 1)
+      # Otherwise, disable RPC
+      true ->
+        Log.info("🔌 RPC disabled")
+        Application.put_env(:jamixir, :rpc_enabled, false)
     end
   end
 
@@ -326,6 +306,7 @@ defmodule Jamixir.Commands.Run do
     Run a Jamixir node
 
     Usage: jamixir run [OPTIONS]
+           MIX_ENV=<env> jamixir run [OPTIONS]
 
     Options:
       -k, --keys <KEYS>              Keys file to load
@@ -333,16 +314,21 @@ defmodule Jamixir.Commands.Run do
       -p, --port <PORT>              Network port to listen on
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
       -l, --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
-      -s, --size <SIZE>              Configuration size (tiny | dev | prod | test | full_test)
+          --rpc                      Enable RPC server on default port (19800)
+          --rpc-port <PORT>          Enable RPC server on specified port
       -h, --help                     Print help
 
     Examples:
       jamixir run --keys ./test/keys/0.json
-      jamixir run --size tiny --keys ./test/keys/0.json
-      jamixir run --port 10001 --keys ./test/keys/0.json
-      jamixir run -s tiny -k ./test/keys/1.json -p 10002
+      jamixir run --keys ./test/keys/0.json --rpc
+      jamixir run --keys ./test/keys/0.json --rpc-port 20000
+      MIX_ENV=tiny jamixir run --keys ./test/keys/0.json
+      MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc
+      MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801
 
-
+    Configuration Environments:
+      - tiny:      Small network (6 validators, short epochs) - good for testing
+      - prod:      Production settings (1023 validators, full parameters)
     """)
   end
 end
