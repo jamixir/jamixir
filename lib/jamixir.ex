@@ -62,14 +62,22 @@ defmodule Jamixir do
   end
 
   defp node_children() do
-    rpc_port = Application.get_env(:jamixir, :rpc_port, 19800)
-
-    [
+    base_children = [
       Network.ConnectionManager,
-      Clock,
-      {Jamixir.RPC.SubscriptionManager, []},
-      {Jamixir.RPC.Server, [port: rpc_port]}
+      Clock
     ]
+
+    # Only add RPC services if RPC is enabled
+    if Application.get_env(:jamixir, :rpc_enabled, false) do
+      rpc_port = Application.get_env(:jamixir, :rpc_port, 19800)
+
+      base_children ++ [
+        {Jamixir.RPC.SubscriptionManager, []},
+        {Jamixir.RPC.Server, [port: rpc_port]}
+      ]
+    else
+      base_children
+    end
   end
 
   def commom_children do
