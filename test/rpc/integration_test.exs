@@ -3,11 +3,12 @@ defmodule Jamixir.RPC.IntegrationTest do
   import Jamixir.Factory
   import Codec.Encoder
 
-  @rpc_port 19801
+  @rpc_port 19_801
 
   setup do
     header = build(:decodable_header, timeslot: 123)
     Storage.put(header)
+    Jamixir.RPC.Server.start_link(port: @rpc_port)
 
     {:ok, header: header}
   end
