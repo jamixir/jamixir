@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeAPI do
+  alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
   alias Block.Extrinsic.Guarantee
@@ -27,7 +28,9 @@ defmodule Jamixir.NodeAPI do
   @callback get_work_report(Types.hash()) :: {:ok, binary} | {:error, any}
   @callback save_work_package(WorkPackage.t(), non_neg_integer(), list(binary())) ::
               :ok | {:error, any}
-  @callback save_work_package_bundle(binary(), non_neg_integer(), %{Types.hash() => Types.hash()}) ::
+  @callback save_work_package_bundle(WorkPackageBundle.t(), non_neg_integer(), %{
+              Types.hash() => Types.hash()
+            }) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
   @callback get_work_report_shard(Types.hash(), non_neg_integer()) ::

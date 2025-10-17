@@ -1,6 +1,7 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
   alias Block.Extrinsic.TicketProof
+  alias Codec.State.Trie
   alias Jamixir.Genesis
   alias Storage
   alias System.State.SealKeyTicket
@@ -197,6 +198,23 @@ defmodule Jamixir.NodeTest do
 
   describe "save_work_package_bundle/3" do
     test "save bundle returning validator signature" do
+    end
+  end
+
+  describe "get_state_trie/1" do
+    setup do
+      %{state: state} = build(:genesis_state_with_safrole)
+      {:ok, state: state}
+    end
+
+    test "get_state_trie with existing state", %{state: state} do
+      Storage.put(Genesis.genesis_block_header(), state)
+      {:ok, trie} = get_state_trie(Genesis.genesis_header_hash())
+      assert trie == Trie.serialize(state)
+    end
+
+    test "get_state_trie with non-existing state" do
+      assert {:error, :no_state} = get_state_trie(Hash.random())
     end
   end
 
