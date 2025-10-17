@@ -2,6 +2,7 @@ defmodule Clock do
   use GenServer
   require Logger
   alias Util.Time
+  use MapUnion
 
   @assurance_timeout_ms 30_000
 
@@ -52,7 +53,16 @@ defmodule Clock do
 
   def handle_cast({:set_authoring_slots, authoring_slots}, state) do
     Logger.info("⏰ Clock received authoring slots: #{inspect(authoring_slots)}")
-    {:noreply, %{state | authoring_slots: authoring_slots}}
+    current_slot = Time.current_timeslot()
+
+    # keep only future authoring slots
+    new_assigned_slots =
+      for {epoch, phase} <- state.authoring_slots ++ authoring_slots,
+          epoch >= Time.epoch_index(current_slot),
+          into: MapSet.new(),
+          do: {epoch, phase}
+
+    {:noreply, %{state | authoring_slots: new_assigned_slots}}
   end
 
   def handle_info(:slot_tick, state) do
@@ -138,7 +148,6 @@ defmodule Clock do
     now = System.monotonic_time(:millisecond)
     target_time = reference_time + offset_ms
     delay = max(0, target_time - now)
-    Logger.debug("Scheduling timer #{inspect(message)} to fire in #{delay} ms")
     Process.send_after(self(), message, delay)
   end
 end
