@@ -1,6 +1,8 @@
 defmodule BlockTest do
   use ExUnit.Case, async: false
   import Jamixir.Factory
+  alias Block.Extrinsic.TicketProofTestHelper
+  alias Block.Extrinsic.TicketProof
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes}
   alias Codec.State.Trie
@@ -168,7 +170,6 @@ defmodule BlockTest do
       Application.delete_env(:jamixir, :original_modules)
     end
 
-    @tag :slow
     test "creates a valid fallback block no extrinsics" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
@@ -184,7 +185,6 @@ defmodule BlockTest do
       end
     end
 
-    @tag :slow
     test "create a valid block passing all key pairs" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, 100, key_pairs: key_pairs)
@@ -201,7 +201,6 @@ defmodule BlockTest do
       {:ok, _} = Block.new(%Extrinsic{}, nil, state, 101)
     end
 
-    @tag :slow
     test "create a valid block with ticket proofs same epoch" do
       %{state: state, key_pairs: key_pairs} =
         build(:genesis_state_with_safrole)
@@ -211,13 +210,18 @@ defmodule BlockTest do
           {priv, pub} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
 
           KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
-          {:ok, block} = Block.new(%Extrinsic{}, nil, state, state.timeslot + 1)
+
+          {proof, _} = TicketProofTestHelper.create_valid_proof(state, {priv, pub}, i, 2)
+          ticket = %TicketProof{signature: proof, attempt: 2}
+
+          {:ok, block} =
+            Block.new(%Extrinsic{tickets: [ticket]}, nil, state, state.timeslot + 1)
+
           {:ok, state} = State.add_block(state, block)
           state
       end
     end
 
-    @tag :slow
     test "can't create block ticket proofs from other validator" do
       %{state: state, key_pairs: [{priv0, pub0} | _]} = build(:genesis_state_with_safrole)
 

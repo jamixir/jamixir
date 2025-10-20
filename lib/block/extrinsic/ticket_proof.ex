@@ -103,8 +103,11 @@ defmodule Block.Extrinsic.TicketProof do
   end
 
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
-    context = SigningContexts.jam_ticket_seal() <> eta2 <> <<r>>
-    RingVrf.ring_vrf_verify(epoch_root, context, <<>>, proof)
+    RingVrf.ring_vrf_verify(epoch_root, ticket_context(eta2, r), <<>>, proof)
+  end
+
+  def ticket_context(eta2, attempt) do
+    SigningContexts.jam_ticket_seal() <> eta2 <> <<attempt::8>>
   end
 
   def mock(:validate, _), do: :ok
