@@ -181,7 +181,8 @@ defmodule Jamixir.Node do
              Enum.any?(state.safrole.ticket_accumulator, &(&1 == seal)) do
           Logger.debug("Duplicate ticket received at proxy for epoch #{epoch}. Ignoring.")
         else
-          for {_v, pid} <- NodeStateServer.instance().current_connections() do
+          for {_v, {:ok, pid}} <- NodeStateServer.instance().current_connections() do
+            Logger.info("🎟️ Forwarding ticket for validator #{inspect(pid)}")
             Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
           end
 
@@ -195,7 +196,9 @@ defmodule Jamixir.Node do
   # CE 132 - Safrole ticket distribution
   @impl true
   def process_ticket(:validator, epoch, ticket) do
+    Logger.info("🎟️ Received ticket #{inspect(ticket)} for epoch #{epoch}")
     Storage.put(epoch, ticket)
+    :ok
   end
 
   # CE 145 - Judgment publication

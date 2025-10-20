@@ -103,10 +103,7 @@ defmodule System.State.Safrole do
         header_timeslot,
         state_timeslot,
         tickets,
-        %Safrole{
-          epoch_root: cmtmnt,
-          ticket_accumulator: ta
-        },
+        %Safrole{epoch_root: cmtmnt, ticket_accumulator: ta},
         %EntropyPool{n2: n2}
       ) do
     {:ok, n} = TicketProof.construct_n(tickets, n2, cmtmnt)

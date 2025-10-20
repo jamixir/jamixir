@@ -6,14 +6,9 @@ defmodule Block.Extrinsic.TicketProofTest do
 
   defp create_and_sort_tickets(count, state, key_pairs) do
     for ticket <- create_valid_tickets(count, state, key_pairs),
-        {:ok, output_hash} =
-          RingVrf.ring_vrf_verify(
-            state.safrole.epoch_root,
-            SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<ticket.attempt>>,
-            <<>>,
-            ticket.signature
-          ) do
-      {output_hash, ticket}
+        {:ok, output} =
+          TicketProof.proof_output(ticket, state.entropy_pool.n2, state.safrole.epoch_root) do
+      {output, ticket}
     end
     |> Enum.sort_by(&elem(&1, 0))
     |> Enum.map(&elem(&1, 1))
@@ -28,7 +23,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       state: state,
       key_pairs: key_pairs
     } do
-      {proof, _} = create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
 
       assert :ok ==
                TicketProof.validate(
@@ -68,6 +63,18 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
   end
 
+  describe "create_new_epoch_tickets/3" do
+    test "creates the correct number of tickets", %{state: state, key_pairs: [_, keypair | _]} do
+      tickets = TicketProof.create_new_epoch_tickets(state, keypair, 1)
+
+      for t <- tickets do
+        {:ok, _} = TicketProof.proof_output(t, state.entropy_pool.n2, state.safrole.epoch_root)
+      end
+
+      assert length(tickets) == Constants.tickets_per_validator()
+    end
+  end
+
   describe "validate/5 - failing cases" do
     test "fails with too many tickets", %{state: state} do
       assert {:error, :unexpected_ticket} =
@@ -92,7 +99,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
 
     test "fails with invalid signature", %{state: state, key_pairs: key_pairs} do
-      {valid_proof, _} = create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {valid_proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
       <<first_byte, rest::binary>> = valid_proof
       invalid_proof = <<first_byte + 1>> <> rest
 

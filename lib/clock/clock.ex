@@ -9,7 +9,6 @@ defmodule Clock do
   # PubSub channel names
   @node_events_channel "node_events"
   @clock_events_channel "clock_events"
-  @clock_phase_events_channel "clock_phase_events"
 
   defp slot_duration_ms, do: Constants.slot_period() * 1000
   defp tranche_duration_ms, do: Constants.audit_trenches_period() * 1000
@@ -39,8 +38,8 @@ defmodule Clock do
       assurance: schedule_timer(reference_time, 0, :assurance_timeout)
     }
 
-    # initially schedule compute_authoring_slots right away
-    schedule_timer(reference_time, 0, :compute_authoring_slots)
+    # initially schedule compute_author_slots right away
+    schedule_timer(reference_time, 0, :compute_author_slots)
 
     {:ok,
      %__MODULE__{
@@ -84,7 +83,15 @@ defmodule Clock do
     end
 
     if Time.epoch_transition?(current_slot) do
-      schedule_timer(state.reference_time, div(slot_duration_ms(), 5), :compute_authoring_slots)
+      schedule_timer(state.reference_time, div(slot_duration_ms(), 5), :compute_author_slots)
+
+      # Ticket sent to proxy should be performed max(⌊E/60⌋, 1)
+      # slots after the connectivity changes for a new epoch are applied
+      schedule_timer(
+        state.reference_time,
+        max(div(Constants.epoch_length(), 60), 1) * slot_duration_ms(),
+        :produce_new_tickets
+      )
 
       epoch_event = Clock.Event.new(:epoch_transition, current_slot)
       Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, epoch_event})
@@ -103,17 +110,8 @@ defmodule Clock do
     {:noreply, new_state}
   end
 
-  def handle_info(:compute_authoring_slots, state) do
-    compute_event = Clock.Event.new(:compute_authoring_slots, state.current_slot)
-
-    Phoenix.PubSub.broadcast(
-      Jamixir.PubSub,
-      @clock_phase_events_channel,
-      {:clock, compute_event}
-    )
-
-    {:noreply, state}
-  end
+  def handle_info(:produce_new_tickets, state), do: node_info(:produce_new_tickets, state)
+  def handle_info(:compute_author_slots, state), do: node_info(:compute_author_slots, state)
 
   def handle_info(:audit_tranche, state) do
     event = Clock.Event.new(:audit_tranche)
@@ -141,6 +139,12 @@ defmodule Clock do
 
   def handle_info(msg, state) do
     Logger.warning("Clock received unexpected message: #{inspect(msg)}")
+    {:noreply, state}
+  end
+
+  defp node_info(type, state) do
+    compute_event = Clock.Event.new(type, state.current_slot)
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, @node_events_channel, {:clock, compute_event})
     {:noreply, state}
   end
 

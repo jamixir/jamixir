@@ -1,15 +1,22 @@
 defmodule Clock.Event do
   alias Util.Time
 
+  # every 6 seconds
   @type event_type ::
-          :slot_tick #every 6 seconds
-          | :slot_phase_tick #every 1 second
-          | :audit_tranche #every 8 seconds
-          | :rotate_core_assignments #every 10 slots
-          | :assurance_timeout #every 30 seconds
+          :slot_tick
+          # every 8 seconds
+          | :audit_tranche
+          # every 10 slots
+          | :rotate_core_assignments
+          # every 30 seconds
+          | :assurance_timeout
           | :epoch_transition
-          | :compute_authoring_slots # on the 2nd second of the slot before the epoch transition (impl detail, not a GP constat)
-          | :author_block # accoording to the sarfole.slot_sealer list
+          # 1/5 * slot time after epoch transition (impl detail, not a GP constat)
+          | :compute_author_slots
+          # acoording to the sarfole.slot_sealer list
+          | :author_block
+          # max(⌊E/60⌋,1) slots after the connectivity changes
+          | :produce_new_ticket
 
   @type t :: %__MODULE__{
           event: event_type(),

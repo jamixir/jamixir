@@ -102,6 +102,23 @@ defmodule Block.Extrinsic.TicketProof do
     end)
   end
 
+  def create_valid_proof(state, keypair, prover_idx, attempt) do
+    RingVrf.ring_vrf_sign(
+      for(v <- state.curr_validators, do: v.bandersnatch),
+      keypair,
+      prover_idx,
+      SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
+      <<>>
+    )
+  end
+
+  def create_new_epoch_tickets(state, keypair, prover_idx) do
+    for i <- 0..(Constants.tickets_per_validator() - 1) do
+      {proof, _} = TicketProof.create_valid_proof(state, keypair, prover_idx, i)
+      %TicketProof{signature: proof, attempt: i}
+    end
+  end
+
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
     RingVrf.ring_vrf_verify(epoch_root, ticket_context(eta2, r), <<>>, proof)
   end
