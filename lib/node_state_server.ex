@@ -8,6 +8,7 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias Block.Extrinsic.TicketProof
   alias System.State.Validator
   alias System.State.RotateKeys
   alias System.State.EntropyPool
@@ -48,11 +49,18 @@ defmodule Jamixir.NodeStateServer do
   @impl true
   def neighbours(), do: GenServer.call(__MODULE__, :neighbours)
 
-  def validator_index(ed25519_key) do
-    GenServer.call(__MODULE__, {:validator_index, ed25519_key})
+  def validator_index(ed25519_pubkey) when is_binary(ed25519_pubkey) do
+    GenServer.call(__MODULE__, {:validator_index, ed25519_pubkey})
+  end
+
+  def validator_index(validators) when is_list(validators) do
+    validator_index(KeyManager.get_our_ed25519_key(), validators)
   end
 
   def validator_index, do: validator_index(KeyManager.get_our_ed25519_key())
+
+  def validator_index(ed25519_pubkey, validators),
+    do: Enum.find_index(validators, &(&1.ed25519 == ed25519_pubkey))
 
   def current_timeslot do
     GenServer.call(__MODULE__, :current_timeslot)
@@ -123,6 +131,10 @@ defmodule Jamixir.NodeStateServer do
         {:error, reason} ->
           Log.block(:error, "Failed to add block: #{reason}")
           jam_state
+
+        other ->
+          Log.block(:error, "Failed to add block: #{inspect(other)}")
+          jam_state
       end
 
     genServerState = %__MODULE__{state | jam_state: new_jam_state}
@@ -151,9 +163,7 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def handle_call({:validator_index, ed25519_key}, _from, %__MODULE__{jam_state: jam_state} = s) do
-    {:reply,
-     jam_state.curr_validators
-     |> Enum.find_index(fn v -> v.ed25519 == ed25519_key end), s}
+    {:reply, validator_index(ed25519_key, jam_state.curr_validators), s}
   end
 
   @impl true
@@ -199,7 +209,6 @@ defmodule Jamixir.NodeStateServer do
       jam_state ->
         Log.info("📨 NodeStateServer received JAM state")
         Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
-        Phoenix.PubSub.subscribe(Jamixir.PubSub, "clock_phase_events")
 
         {:noreply, %__MODULE__{state | jam_state: jam_state}}
     end
@@ -211,7 +220,7 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def handle_info(
-        {:clock, %{event: :compute_authoring_slots, slot: slot}},
+        {:clock, %{event: :compute_author_slots, slot: slot}},
         %__MODULE__{jam_state: jam_state, bandersnatch_keypair: bandersnatch_keypair} = state
       ) do
     current_epoch = Util.Time.epoch_index(slot)
@@ -220,7 +229,7 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}")
 
     authoring_slots =
-      compute_authoring_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
+      compute_author_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
 
     Clock.set_authoring_slots(authoring_slots)
 
@@ -253,6 +262,42 @@ defmodule Jamixir.NodeStateServer do
     {:noreply, state}
   end
 
+  def handle_info(
+        {:clock, %{event: :produce_new_tickets, epoch: epoch}},
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    Log.info("🌕 Time to produce new tickets")
+
+    tickets =
+      TicketProof.create_new_epoch_tickets(
+        jam_state,
+        KeyManager.get_our_bandersnatch_keypair(),
+        validator_index(jam_state.curr_validators)
+      )
+
+    for ticket <- tickets do
+      {:ok, <<output::256>>} =
+        TicketProof.proof_output(ticket, jam_state.entropy_pool.n2, jam_state.safrole.epoch_root)
+
+      proxy_index = rem(output, Constants.validator_count())
+      key = Enum.at(jam_state.curr_validators, proxy_index).ed25519
+
+      if key == KeyManager.get_our_ed25519_key() do
+        Log.info("I am my own proxy, so sending ticket directly")
+
+        for {_v, pid} <- instance().current_connections() do
+          Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+        end
+      else
+        {:ok, pid} = ConnectionManager.get_connection(key)
+        Log.info("🎟️ forwaring ticket for proxy index #{proxy_index}")
+        Network.Connection.distribute_ticket(pid, :proxy, epoch, ticket)
+      end
+    end
+
+    {:noreply, state}
+  end
+
   def handle_info(_event, state), do: {:noreply, state}
 
   @impl true
@@ -276,7 +321,7 @@ defmodule Jamixir.NodeStateServer do
     end
   end
 
-  defp compute_authoring_slots_for_next_epoch(jam_state, current_slot, bandersnatch_keypair) do
+  defp compute_author_slots_for_next_epoch(jam_state, current_slot, bandersnatch_keypair) do
     current_epoch = Util.Time.epoch_index(current_slot)
     next_epoch = current_epoch + 1
     next_epoch_first_slot = next_epoch * Constants.epoch_length()

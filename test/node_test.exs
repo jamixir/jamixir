@@ -1,10 +1,9 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
-  alias System.State.SealKeyTicket
   alias Block.Extrinsic.TicketProof
-  alias Block.Extrinsic.TicketProofTestHelper
   alias Jamixir.Genesis
   alias Storage
+  alias System.State.SealKeyTicket
   alias Util.Hash
   import Jamixir.Factory
   import TestHelper
@@ -205,12 +204,14 @@ defmodule Jamixir.NodeTest do
     test "forward valid tickets", %{state: state, key_pairs: key_pairs} do
       Storage.put(Genesis.genesis_block_header(), state)
 
-      {proof, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
       t1 = build(:ticket_proof, signature: proof, attempt: 0)
 
       invalid_t2 = build(:ticket_proof, attempt: 1)
 
-      stub(NodeStateServerMock, :current_connections, fn -> [{"v1", 101}, {"v2", 102}] end)
+      stub(NodeStateServerMock, :current_connections, fn ->
+        [{"v1", {:ok, 101}}, {"v2", {:ok, 102}}]
+      end)
 
       expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
       expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
@@ -224,14 +225,16 @@ defmodule Jamixir.NodeTest do
     test "do not forward duplicated ticket", %{state: state, key_pairs: key_pairs} do
       Storage.put(Genesis.genesis_block_header(), state)
 
-      {proof1, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
-      {proof2, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 1)
+      {proof1, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof2, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 1)
       t1 = build(:ticket_proof, signature: proof1, attempt: 0)
       t2 = build(:ticket_proof, signature: proof2, attempt: 1)
       # duplicated ticket
       t3 = build(:ticket_proof, signature: proof2, attempt: 1)
 
-      stub(NodeStateServerMock, :current_connections, fn -> [{"v1", 101}, {"v2", 102}] end)
+      stub(NodeStateServerMock, :current_connections, fn ->
+        [{"v1", {:ok, 101}}, {"v2", {:ok, 102}}]
+      end)
 
       expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
       expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
@@ -246,7 +249,7 @@ defmodule Jamixir.NodeTest do
     end
 
     test "do not forward ticket already in safrole state", %{state: state, key_pairs: key_pairs} do
-      {proof1, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof1, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
       t1 = build(:ticket_proof, signature: proof1, attempt: 0)
 
       {:ok, output} =

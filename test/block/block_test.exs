@@ -1,7 +1,6 @@
 defmodule BlockTest do
   use ExUnit.Case, async: false
   import Jamixir.Factory
-  alias Block.Extrinsic.TicketProofTestHelper
   alias Block.Extrinsic.TicketProof
   alias Block
   alias Block.{Extrinsic, Extrinsic.Disputes}
@@ -202,8 +201,8 @@ defmodule BlockTest do
     end
 
     test "create a valid block with ticket proofs same epoch" do
-      %{state: state, key_pairs: key_pairs} =
-        build(:genesis_state_with_safrole)
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+      state = %{state | safrole: %{state.safrole | ticket_accumulator: []}}
 
       for i <- [1, 2], reduce: state do
         state ->
@@ -211,7 +210,7 @@ defmodule BlockTest do
 
           KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
 
-          {proof, _} = TicketProofTestHelper.create_valid_proof(state, {priv, pub}, i, 2)
+          {proof, _} = TicketProof.create_valid_proof(state, {priv, pub}, i, 2)
           ticket = %TicketProof{signature: proof, attempt: 2}
 
           {:ok, block} =
