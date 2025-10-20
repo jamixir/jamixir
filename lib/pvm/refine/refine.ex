@@ -38,10 +38,7 @@ defmodule PVM.Refine do
         import_segments,
         export_segment_offset,
         services,
-        # preimages needs to come from DA layer
-        # and satisy: x = [[x S (H(x), SxS) <− wx] S w <− pw
-        # https://graypaper.fluffylabs.dev/#/9a08063/2fd6002fd600?v=0.6.6
-        preimages
+        extrinsics
       ) do
     work_item = Enum.at(work_package.work_items, work_item_index)
     %WorkItem{service: service_id, code_hash: wc, payload: wy, refine_gas_limit: wg} = work_item
@@ -63,7 +60,7 @@ defmodule PVM.Refine do
           authorizer_trace: authorizer_trace,
           import_segments: import_segments,
           export_segment_offset: export_segment_offset,
-          preimages: preimages,
+          extrinsics: extrinsics,
           services: services,
           service_id: service_id
         }
@@ -84,7 +81,7 @@ defmodule PVM.Refine do
           work_item_index: work_item_index,
           authorizer_trace: authorizer_trace,
           import_segments: import_segments,
-          preimages: preimages,
+          extrinsics: extrinsics,
           export_segment_offset: export_segment_offset,
           services: services,
           service_id: service_id
@@ -105,7 +102,7 @@ defmodule PVM.Refine do
             authorizer_trace: authorizer_trace,
             index: work_item_index,
             import_segments: import_segments,
-            preimages: preimages,
+            extrinsics: extrinsics,
             accumulation_inputs: nil,
             transfers: nil,
             context: context

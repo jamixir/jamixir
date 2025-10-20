@@ -43,7 +43,7 @@ defmodule PVM.Authorize do
             authorizer_trace: nil,
             index: nil,
             import_segments: nil,
-            preimages: nil,
+            extrinsics: nil,
             accumulation_inputs: nil,
             transfers: nil,
             context: nil

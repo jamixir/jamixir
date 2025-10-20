@@ -229,6 +229,7 @@ defmodule CommsTest do
   describe "send_work_package/4" do
     test "sends work package", %{client: client} do
       {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
+      extrinsics = List.flatten(extrinsics)
 
       core = 3
 

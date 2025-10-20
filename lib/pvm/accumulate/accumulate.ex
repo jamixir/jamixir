@@ -112,7 +112,7 @@ defmodule PVM.Accumulate do
             authorizer_trace: nil,
             index: nil,
             import_segments: nil,
-            preimages: nil,
+            extrinsics: nil,
             accumulation_inputs: accumulation_inputs,
             transfers: nil,
             context: context

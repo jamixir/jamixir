@@ -13,7 +13,7 @@ defmodule PVM.Host.General.FetchArgs do
           authorizer_trace: binary() | nil,
           index: non_neg_integer() | nil,
           import_segments: list(list(binary())) | nil,
-          preimages: list(list(binary())) | nil,
+          extrinsics: list(list(binary())) | nil,
           accumulation_inputs: list(Operand.t()) | nil,
           transfers: list(DeferredTransfer.t()) | nil,
           context: any()
@@ -27,7 +27,7 @@ defmodule PVM.Host.General.FetchArgs do
     :authorizer_trace,
     :index,
     :import_segments,
-    :preimages,
+    :extrinsics,
     :accumulation_inputs,
     :transfers,
     :context

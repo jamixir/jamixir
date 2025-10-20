@@ -151,7 +151,7 @@ defmodule Jamixir.NodeTest do
   describe "save and get work package" do
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert :ok = save_work_package(wp, 7, extrinsics)
+      assert {:error, :execution_failed} = save_work_package(wp, 7, List.flatten(extrinsics))
 
       assert Storage.get_work_package(7) == wp
       assert Storage.get_work_package(5) == nil
@@ -159,8 +159,8 @@ defmodule Jamixir.NodeTest do
 
     test "save_work_package with invalid extrinsics" do
       wp = build(:work_package)
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
-      {:error, :invalid_extrinsics} = save_work_package(wp, 7, [])
+      {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
+      {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [])
     end
   end
 

@@ -40,7 +40,7 @@ defmodule PVM.Host.General.Internal do
         authorizer_trace,
         service_index,
         import_segments,
-        preimages,
+        extrinsics,
         accumulation_inputs
       ) do
     {w10, w11, w12} = Registers.get_3(registers, 10, 11, 12)
@@ -123,13 +123,13 @@ defmodule PVM.Host.General.Internal do
         authorizer_trace != nil and w10 == 2 ->
           authorizer_trace
 
-        preimages != nil and w10 == 3 and w11 < length(preimages) and
-            w12 < length(Enum.at(preimages, w11)) ->
-          preimages |> Enum.at(w11) |> Enum.at(w12)
+        extrinsics != nil and w10 == 3 and w11 < length(extrinsics) and
+            w12 < length(Enum.at(extrinsics, w11)) ->
+          extrinsics |> Enum.at(w11) |> Enum.at(w12)
 
-        preimages != nil and service_index != nil and w10 == 4 and
-            w11 < length(Enum.at(preimages, service_index)) ->
-          preimages |> Enum.at(service_index) |> Enum.at(w11)
+        extrinsics != nil and service_index != nil and w10 == 4 and
+            w11 < length(Enum.at(extrinsics, service_index)) ->
+          extrinsics |> Enum.at(service_index) |> Enum.at(w11)
 
         import_segments != nil and w10 == 5 and w11 < length(import_segments) and
             w12 < length(Enum.at(import_segments, w11)) ->

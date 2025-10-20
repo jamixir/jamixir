@@ -245,19 +245,17 @@ defmodule Jamixir.Node do
   # CE 133 - Work-package submission
   @impl true
   def save_work_package(wp, core, extrinsics) do
-    if WorkPackage.valid_extrinsics?(wp, extrinsics) do
-      Storage.put(wp, core)
+    # extrinsics are sent in a single list of binaries
+    # this function validates them against the work package and organizes them per work item
+    case WorkPackage.organize_extrinsics(wp, extrinsics) do
+      {:ok, org_extrinsics} ->
+        Storage.put(wp, core)
+        for e <- extrinsics, do: Storage.put(e)
+        process_work_package(wp, core, org_extrinsics)
 
-      for e <- extrinsics do
-        Storage.put(e)
-      end
-
-      process_work_package(wp, core, extrinsics)
-
-      :ok
-    else
-      Logger.error("Invalid extrinsics for work package service #{wp.service} core #{core}")
-      {:error, :invalid_extrinsics}
+      {:error, e} ->
+        Logger.error("Invalid extrinsics for work package service #{wp.service} core #{core}")
+        {:error, e}
     end
   end
 
@@ -266,12 +264,12 @@ defmodule Jamixir.Node do
     Storage.get_state(header)
   end
 
-  def process_work_package(wp, core, _extrinsics) do
+  def process_work_package(wp, core, extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
     services = get_latest_state().services
 
-    case WorkReport.execute_work_package(wp, core, services) do
+    case WorkReport.execute_work_package(wp, extrinsics, core, services) do
       :error ->
         Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
         {:error, :execution_failed}
@@ -280,7 +278,6 @@ defmodule Jamixir.Node do
       {_import_segments, refine_task} ->
         # send WP bundle to two other guarantors in same core through CE 134
         bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
-        {work_report, _exports} = Task.await(refine_task)
         Logger.info("Work package validated successfully. Sending to other guarantors")
 
         validators = NodeStateServer.same_core_guarantors()
@@ -292,6 +289,8 @@ defmodule Jamixir.Node do
             # TODO send correct segment lookup map
             {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, %{})}
           end
+
+        {work_report, _exports} = Task.await(refine_task)
 
         wr_hash = h(e(work_report))
 

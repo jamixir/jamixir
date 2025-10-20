@@ -153,21 +153,31 @@ defmodule Block.Extrinsic.WorkPackage do
     for(wi <- work_items, do: for(e <- wi.extrinsic, do: e)) |> List.flatten()
   end
 
-  @spec valid_extrinsics?(Block.Extrinsic.WorkPackage.t(), list(binary())) :: any()
-  def valid_extrinsics?(%__MODULE__{} = wp, extrinsics) do
-    work_item_extrinsics = extrinsic_defs(wp)
+  @spec organize_extrinsics(Block.Extrinsic.WorkPackage.t(), list(binary())) ::
+          {:ok, list(list(binary()))} | {:error, :mismatched_extrinsics}
+  def organize_extrinsics(%__MODULE__{} = wp, extrinsics) do
+    result =
+      Enum.reduce_while(wp.work_items, {{:ok, []}, extrinsics}, fn wi, {{_, acc}, exs} ->
+        {to_take, rest} = Enum.split(exs, length(wi.extrinsic))
 
-    if length(work_item_extrinsics) != length(extrinsics) do
-      false
-    else
-      Enum.zip(work_item_extrinsics, extrinsics)
-      |> Enum.reduce_while(true, fn {{expected_hash, expected_size}, actual_extrinsic}, _acc ->
-        if expected_hash == h(actual_extrinsic) and expected_size == byte_size(actual_extrinsic) do
-          {:cont, true}
+        if length(to_take) != length(wi.extrinsic) do
+          {:halt, {{:error, :mismatched_extrinsics}, rest}}
         else
-          {:halt, false}
+          valid =
+            Enum.zip(wi.extrinsic, to_take)
+            |> Enum.all?(fn {{hash, size}, ext} -> byte_size(ext) == size and hash == h(ext) end)
+
+          if valid do
+            {:cont, {{:ok, acc ++ [to_take]}, rest}}
+          else
+            {:halt, {{:error, :mismatched_extrinsics}, rest}}
+          end
         end
       end)
+
+    case result do
+      {{:ok, organized}, _} -> {:ok, organized}
+      _ -> {:error, :mismatched_extrinsics}
     end
   end
 

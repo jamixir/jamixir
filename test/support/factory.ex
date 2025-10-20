@@ -184,7 +184,7 @@ defmodule Jamixir.Factory do
 
     work_package = build(:work_package, work_items: work_items)
 
-    {work_package, extrinsics ++ extrinsics}
+    {work_package, [extrinsics, extrinsics]}
   end
 
   # Validator Factories

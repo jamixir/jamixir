@@ -142,6 +142,7 @@ defmodule Jamixir.RPC.HandlerTest do
     test "handles submitWorkPackage method" do
       {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
       core = 3
+      extrinsics = List.flatten(extrinsics)
 
       Jamixir.NodeAPI.Mock
       |> expect(:save_work_package, fn ^work_package, ^core, ^extrinsics -> :ok end)
