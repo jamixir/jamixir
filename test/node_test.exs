@@ -1,5 +1,7 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
+  alias System.State.SealKeyTicket
+  alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.TicketProofTestHelper
   alias Jamixir.Genesis
   alias Storage
@@ -216,6 +218,49 @@ defmodule Jamixir.NodeTest do
       process_ticket(:proxy, 123, t1)
       process_ticket(:proxy, 123, invalid_t2)
       assert Storage.get_tickets(123) == [t1]
+      verify!()
+    end
+
+    test "do not forward duplicated ticket", %{state: state, key_pairs: key_pairs} do
+      Storage.put(Genesis.genesis_block_header(), state)
+
+      {proof1, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof2, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 1)
+      t1 = build(:ticket_proof, signature: proof1, attempt: 0)
+      t2 = build(:ticket_proof, signature: proof2, attempt: 1)
+      # duplicated ticket
+      t3 = build(:ticket_proof, signature: proof2, attempt: 1)
+
+      stub(NodeStateServerMock, :current_connections, fn -> [{"v1", 101}, {"v2", 102}] end)
+
+      expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t2 -> :ok end)
+      expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t2 -> :ok end)
+
+      process_ticket(:proxy, 123, t1)
+      process_ticket(:proxy, 123, t2)
+      process_ticket(:proxy, 123, t3)
+      assert Storage.get_tickets(123) == [t1, t2]
+      verify!()
+    end
+
+    test "do not forward ticket already in safrole state", %{state: state, key_pairs: key_pairs} do
+      {proof1, _} = TicketProofTestHelper.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      t1 = build(:ticket_proof, signature: proof1, attempt: 0)
+
+      {:ok, output} =
+        TicketProof.proof_output(t1, state.entropy_pool.n2, state.safrole.epoch_root)
+
+      state = %{
+        state
+        | safrole: %{state.safrole | ticket_accumulator: [%SealKeyTicket{attempt: 0, id: output}]}
+      }
+
+      Storage.put(Genesis.genesis_block_header(), state)
+
+      process_ticket(:proxy, 123, t1)
+      assert Storage.get_tickets(123) == []
       verify!()
     end
 

@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias System.State.SealKeyTicket
   alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -172,11 +173,19 @@ defmodule Jamixir.Node do
       {:error, _} ->
         Logger.debug("Invalid ticket received at proxy for epoch #{epoch}. Ignoring.")
 
-      {:ok, _} ->
-        Storage.put(epoch, ticket)
+      {:ok, output} ->
+        existing_tickets = Storage.get_tickets(epoch)
+        seal = %SealKeyTicket{id: output, attempt: ticket.attempt}
 
-        for {_v, pid} <- NodeStateServer.instance().current_connections() do
-          Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+        if Enum.any?(existing_tickets, &(&1 == ticket)) or
+             Enum.any?(state.safrole.ticket_accumulator, &(&1 == seal)) do
+          Logger.debug("Duplicate ticket received at proxy for epoch #{epoch}. Ignoring.")
+        else
+          for {_v, pid} <- NodeStateServer.instance().current_connections() do
+            Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+          end
+
+          Storage.put(epoch, ticket)
         end
     end
 
