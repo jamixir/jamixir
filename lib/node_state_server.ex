@@ -8,6 +8,7 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias System.State.SealKeyTicket
   alias Block.Extrinsic.TicketProof
   alias System.State.Validator
   alias System.State.RotateKeys
@@ -236,14 +237,35 @@ defmodule Jamixir.NodeStateServer do
         {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},
         %__MODULE__{jam_state: jam_state} = state
       ) do
-    Log.debug(
-      "📨 Received author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})"
-    )
+    Log.info("📨 author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
 
     {_, parent_header} = Storage.get_latest_header()
     parent_hash = h(e(parent_header))
 
-    case Block.new(%Block.Extrinsic{}, parent_hash, jam_state, slot) do
+    existing_tickets = Storage.get_tickets(epoch)
+
+    Log.info("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
+
+    tickets_and_ids =
+      for ticket <- existing_tickets,
+          epoch_phase not in [0, 11],
+          {:ok, id} =
+            TicketProof.proof_output(
+              ticket,
+              jam_state.entropy_pool.n2,
+              jam_state.safrole.epoch_root
+            ),
+          seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
+          !Enum.any?(jam_state.safrole.ticket_accumulator, &(&1 == seal)) do
+        {ticket, id}
+      end
+      |> Enum.take(Constants.max_tickets_pre_extrinsic())
+      |> Enum.sort_by(fn {_ticket, id} -> id end)
+
+    tickets = for {ticket, _id} <- tickets_and_ids, do: ticket
+    Log.info("Creating block with #{length(tickets)} 🎟️ tickets")
+
+    case Block.new(%Block.Extrinsic{tickets: tickets}, parent_hash, jam_state, slot) do
       {:ok, block} ->
         header_hash = h(e(block.header))
         Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
@@ -276,7 +298,7 @@ defmodule Jamixir.NodeStateServer do
       output =
         case TicketProof.proof_output(
                ticket,
-               jam_state.entropy_pool.n2,
+               jam_state.entropy_pool.n1,
                jam_state.safrole.epoch_root
              ) do
           {:ok, <<output::256>>} ->
@@ -285,12 +307,6 @@ defmodule Jamixir.NodeStateServer do
           {:error, :verification_failed} ->
             Log.error("How did our own ticket proof verification fail?")
             Log.error("Ticket: #{inspect(ticket)}")
-            Log.error("epoch root: #{b16(jam_state.safrole.epoch_root)}")
-            Log.error("n2: #{b16(jam_state.entropy_pool.n2)}")
-
-            Log.error(
-              "curr validator ed25519: #{inspect(for v <- jam_state.curr_validators, do: b16(v.ed25519))}"
-            )
 
             0
         end

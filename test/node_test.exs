@@ -202,6 +202,7 @@ defmodule Jamixir.NodeTest do
     end
 
     test "forward valid tickets", %{state: state, key_pairs: key_pairs} do
+      state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
       Storage.put(Genesis.genesis_block_header(), state)
 
       {proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
@@ -221,6 +222,7 @@ defmodule Jamixir.NodeTest do
     end
 
     test "do not forward duplicated ticket", %{state: state, key_pairs: key_pairs} do
+      state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
       Storage.put(Genesis.genesis_block_header(), state)
 
       {proof1, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)

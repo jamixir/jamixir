@@ -1,18 +1,17 @@
 defmodule Jamixir.Node do
-  alias System.State.SealKeyTicket
-  alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.WorkPackage
+  alias Jamixir.Genesis
   alias Jamixir.NodeStateServer
   alias Network.ConnectionManager
   alias System.State
   alias Util.Hash
+  alias Util.Logger
   use StoragePrefix
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
-  alias Jamixir.Genesis
-  alias Util.Logger
 
   @behaviour Jamixir.NodeAPI
 
@@ -169,16 +168,12 @@ defmodule Jamixir.Node do
   def process_ticket(:proxy, epoch, ticket) do
     state = get_latest_state()
 
-    case TicketProof.proof_output(ticket, state.entropy_pool.n2, state.safrole.epoch_root) do
+    case TicketProof.proof_output(ticket, state.entropy_pool.n1, state.safrole.epoch_root) do
       {:error, _} ->
         Logger.debug("Invalid ticket received at proxy for epoch #{epoch}. Ignoring.")
 
-      {:ok, output} ->
-        existing_tickets = Storage.get_tickets(epoch)
-        seal = %SealKeyTicket{id: output, attempt: ticket.attempt}
-
-        if Enum.any?(existing_tickets, &(&1 == ticket)) or
-             Enum.any?(state.safrole.ticket_accumulator, &(&1 == seal)) do
+      {:ok, _} ->
+        if Enum.any?(Storage.get_tickets(epoch), &(&1 == ticket)) do
           Logger.debug("Duplicate ticket received at proxy for epoch #{epoch}. Ignoring.")
         else
           for {_, pid} <- ConnectionManager.instance().get_connections() do

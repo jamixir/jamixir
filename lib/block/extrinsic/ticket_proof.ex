@@ -113,6 +113,9 @@ defmodule Block.Extrinsic.TicketProof do
   end
 
   def create_new_epoch_tickets(state, keypair, prover_idx) do
+    state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
+    state = %{state | curr_validators: state.next_validators}
+
     for i <- 0..(Constants.tickets_per_validator() - 1) do
       {proof, _} = TicketProof.create_valid_proof(state, keypair, prover_idx, i)
       %TicketProof{signature: proof, attempt: i}
