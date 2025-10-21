@@ -181,9 +181,11 @@ defmodule Jamixir.Node do
              Enum.any?(state.safrole.ticket_accumulator, &(&1 == seal)) do
           Logger.debug("Duplicate ticket received at proxy for epoch #{epoch}. Ignoring.")
         else
-          for {_v, {:ok, pid}} <- NodeStateServer.instance().current_connections() do
-            Logger.info("🎟️ Forwarding ticket for validator #{inspect(pid)}")
-            Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+          for {_, pid} <- ConnectionManager.instance().get_connections() do
+            Task.start(fn ->
+              Logger.info("🎟️ Forwarding ticket for validator #{inspect(pid)}")
+              Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+            end)
           end
 
           Storage.put(epoch, ticket)
@@ -296,7 +298,7 @@ defmodule Jamixir.Node do
 
         responses =
           for v <- validators do
-            pid = ConnectionManager.get_connection(v.ed25519)
+            pid = ConnectionManager.instance().get_connection(v.ed25519)
 
             # TODO send correct segment lookup map
             {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, %{})}
@@ -324,7 +326,7 @@ defmodule Jamixir.Node do
             }
 
             # send guarantee to all validators
-            for pid <- ConnectionManager.get_connections() do
+            for {_, pid} <- ConnectionManager.instance().get_connections() do
               Network.Connection.distribute_guarantee(pid, guarantee)
             end
         end
