@@ -296,7 +296,7 @@ defmodule Network.ServerCalls do
        do: process_ticket(mode, epoch, attempt, vrf_proof)
 
   defp process_ticket(mode, epoch, attempt, vrf_proof) do
-    log("Processing #{mode} ticket")
+    log(:debug, "Processing #{mode} ticket")
     ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
     :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
     <<>>

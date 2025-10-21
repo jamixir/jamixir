@@ -121,8 +121,7 @@ defmodule Jamixir.NodeStateServer do
     new_jam_state =
       case Jamixir.Node.add_block(block, jam_state) do
         {:ok, %State{} = new_jam_state, state_root} ->
-          Log.info("🔄 State Updated successfully")
-          Log.debug("🔄 New State Root: #{b16(state_root)}")
+          Log.info("🔄 State Updated successfully: #{b16(state_root)}")
           #  Notify Subscription Manager, which will notify "bestBlock" subscribers
           Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
           if announce, do: announce_block_to_peers(block)
@@ -259,12 +258,11 @@ defmodule Jamixir.NodeStateServer do
   end
 
   def handle_info(
-        {:clock, %{event: :produce_new_tickets, epoch: epoch}},
+        {:clock, %{event: {:produce_new_tickets, target_epoch}}},
         %__MODULE__{jam_state: jam_state} = state
       ) do
-    Log.info("🌕 Time to produce new tickets")
+    Log.info("🌕 Time to produce new tickets for epoch #{target_epoch}")
     my_index = validator_index(jam_state.curr_validators)
-    Log.debug("My validator index: #{my_index}")
 
     tickets =
       TicketProof.create_new_epoch_tickets(
@@ -273,9 +271,29 @@ defmodule Jamixir.NodeStateServer do
         my_index
       )
 
-    for ticket <- tickets do
-      {:ok, <<output::256>>} =
-        TicketProof.proof_output(ticket, jam_state.entropy_pool.n2, jam_state.safrole.epoch_root)
+    # Now we are distributing only the first attempt to facilitate debugging
+    for ticket <- tickets |> Enum.take(1) do
+      output =
+        case TicketProof.proof_output(
+               ticket,
+               jam_state.entropy_pool.n2,
+               jam_state.safrole.epoch_root
+             ) do
+          {:ok, <<output::256>>} ->
+            output
+
+          {:error, :verification_failed} ->
+            Log.error("How did our own ticket proof verification fail?")
+            Log.error("Ticket: #{inspect(ticket)}")
+            Log.error("epoch root: #{b16(jam_state.safrole.epoch_root)}")
+            Log.error("n2: #{b16(jam_state.entropy_pool.n2)}")
+
+            Log.error(
+              "curr validator ed25519: #{inspect(for v <- jam_state.curr_validators, do: b16(v.ed25519))}"
+            )
+
+            0
+        end
 
       proxy_index = rem(output, Constants.validator_count())
       key = Enum.at(jam_state.curr_validators, proxy_index).ed25519
@@ -287,13 +305,13 @@ defmodule Jamixir.NodeStateServer do
         for {_, pid} <- ConnectionManager.instance().get_connections() do
           Task.start(fn ->
             IO.puts("🎟️ Sending ticket to validator")
-            Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+            Network.Connection.distribute_ticket(pid, :validator, target_epoch, ticket)
           end)
         end
       else
         {:ok, pid} = proxy_connection
         Log.info("🎟️ Sending ticket to proxy #{proxy_index}")
-        Network.Connection.distribute_ticket(pid, :proxy, epoch, ticket)
+        Network.Connection.distribute_ticket(pid, :proxy, target_epoch, ticket)
       end
     end
 

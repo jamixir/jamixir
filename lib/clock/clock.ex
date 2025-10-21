@@ -69,7 +69,7 @@ defmodule Clock do
     epoch = Time.epoch_index(current_slot)
     epoch_phase = Time.epoch_phase(current_slot)
 
-    Logger.debug("⏰ Slot tick: slot=#{current_slot}, epoch=#{epoch}, phase=#{epoch_phase}")
+    Logger.info("⏰ Slot tick: slot=#{current_slot}, epoch=#{epoch}, phase=#{epoch_phase}")
 
     # Check if this is an authoring slot and send author_block event
     if MapSet.member?(state.authoring_slots, {epoch, epoch_phase}) do
@@ -90,7 +90,7 @@ defmodule Clock do
       schedule_timer(
         state.reference_time,
         max(div(Constants.epoch_length(), 60), 1) * slot_duration_ms(),
-        :produce_new_tickets
+        {:produce_new_tickets, epoch + 1}
       )
 
       epoch_event = Clock.Event.new(:epoch_transition, current_slot)
@@ -110,7 +110,9 @@ defmodule Clock do
     {:noreply, new_state}
   end
 
-  def handle_info(:produce_new_tickets, state), do: node_info(:produce_new_tickets, state)
+  def handle_info({:produce_new_tickets, target_epoch}, state),
+    do: node_info({:produce_new_tickets, target_epoch}, state)
+
   def handle_info(:compute_author_slots, state), do: node_info(:compute_author_slots, state)
 
   def handle_info(:audit_tranche, state) do
