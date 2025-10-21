@@ -68,7 +68,7 @@ defmodule Block.Extrinsic.TicketProofTest do
       tickets = TicketProof.create_new_epoch_tickets(state, keypair, 1)
 
       for t <- tickets do
-        {:ok, _} = TicketProof.proof_output(t, state.entropy_pool.n2, state.safrole.epoch_root)
+        {:ok, _} = TicketProof.proof_output(t, state.entropy_pool.n1, state.safrole.epoch_root)
       end
 
       assert length(tickets) == Constants.tickets_per_validator()
