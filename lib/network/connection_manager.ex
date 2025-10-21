@@ -46,6 +46,9 @@ defmodule Network.ConnectionManager do
   ]
 
   ## Public API
+  def instance do
+    Application.get_env(:jamixir, :connection_manager, Network.ConnectionManager)
+  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -57,6 +60,7 @@ defmodule Network.ConnectionManager do
   end
 
   # Used by Node CLI server to get all connected client pids in order to announce blocks to them
+  @callback get_connections() :: map()
   def get_connections do
     GenServer.call(__MODULE__, :get_connections)
   end

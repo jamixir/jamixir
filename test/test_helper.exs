@@ -17,6 +17,7 @@ Mox.defmock(ServerCallsMock, for: Network.ServerCallsBehaviour)
 Mox.defmock(DAMock, for: System.DataAvailability)
 Mox.defmock(NodeStateServerMock, for: Jamixir.NodeStateServerBehaviour)
 Mox.defmock(ClientMock, for: Network.ClientAPI)
+Mox.defmock(ConnectionManagerMock, for: Network.ConnectionManager)
 
 # Optional: remove or move to test setup unless needed globally
 Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)

@@ -128,12 +128,8 @@ defmodule Jamixir.NodeStateServer do
           if announce, do: announce_block_to_peers(block)
           new_jam_state
 
-        {:error, reason} ->
+        {:error, _, reason} ->
           Log.block(:error, "Failed to add block: #{reason}")
-          jam_state
-
-        other ->
-          Log.block(:error, "Failed to add block: #{inspect(other)}")
           jam_state
       end
 
@@ -267,12 +263,14 @@ defmodule Jamixir.NodeStateServer do
         %__MODULE__{jam_state: jam_state} = state
       ) do
     Log.info("🌕 Time to produce new tickets")
+    my_index = validator_index(jam_state.curr_validators)
+    Log.debug("My validator index: #{my_index}")
 
     tickets =
       TicketProof.create_new_epoch_tickets(
         jam_state,
         KeyManager.get_our_bandersnatch_keypair(),
-        validator_index(jam_state.curr_validators)
+        my_index
       )
 
     for ticket <- tickets do
@@ -281,16 +279,20 @@ defmodule Jamixir.NodeStateServer do
 
       proxy_index = rem(output, Constants.validator_count())
       key = Enum.at(jam_state.curr_validators, proxy_index).ed25519
+      proxy_connection = ConnectionManager.instance().get_connection(key)
 
-      if key == KeyManager.get_our_ed25519_key() do
-        Log.info("I am my own proxy, so sending ticket directly")
+      if key == KeyManager.get_our_ed25519_key() or elem(proxy_connection, 0) == :error do
+        Log.info("No proxy found, so sending ticket directly")
 
-        for {_v, pid} <- instance().current_connections() do
-          Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+        for {_, pid} <- ConnectionManager.instance().get_connections() do
+          Task.start(fn ->
+            IO.puts("🎟️ Sending ticket to validator")
+            Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
+          end)
         end
       else
-        {:ok, pid} = ConnectionManager.get_connection(key)
-        Log.info("🎟️ forwaring ticket for proxy index #{proxy_index}")
+        {:ok, pid} = proxy_connection
+        Log.info("🎟️ Sending ticket to proxy #{proxy_index}")
         Network.Connection.distribute_ticket(pid, :proxy, epoch, ticket)
       end
     end
@@ -325,10 +327,6 @@ defmodule Jamixir.NodeStateServer do
     current_epoch = Util.Time.epoch_index(current_slot)
     next_epoch = current_epoch + 1
     next_epoch_first_slot = next_epoch * Constants.epoch_length()
-
-    Log.debug(
-      "⚙️ Computing authoring slots for epoch #{next_epoch} (starting from slot #{next_epoch_first_slot}) - current epoch: #{current_epoch}"
-    )
 
     header = %Header{timeslot: next_epoch_first_slot}
 

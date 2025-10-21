@@ -187,11 +187,11 @@ defmodule Jamixir.NodeTest do
 
   describe "process_ticket/3" do
     setup do
-      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
       Application.put_env(:jamixir, :network_client, ClientMock)
 
       on_exit(fn ->
-        Application.delete_env(:jamixir, :node_state_server)
+        Application.delete_env(:jamixir, :connection_manager)
         Application.delete_env(:jamixir, :network_client)
       end)
 
@@ -209,9 +209,7 @@ defmodule Jamixir.NodeTest do
 
       invalid_t2 = build(:ticket_proof, attempt: 1)
 
-      stub(NodeStateServerMock, :current_connections, fn ->
-        [{"v1", {:ok, 101}}, {"v2", {:ok, 102}}]
-      end)
+      stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => 101, "k2" => 102} end)
 
       expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
       expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
@@ -232,9 +230,7 @@ defmodule Jamixir.NodeTest do
       # duplicated ticket
       t3 = build(:ticket_proof, signature: proof2, attempt: 1)
 
-      stub(NodeStateServerMock, :current_connections, fn ->
-        [{"v1", {:ok, 101}}, {"v2", {:ok, 102}}]
-      end)
+      stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => 101, "k2" => 102} end)
 
       expect(ClientMock, :distribute_ticket, fn 101, :validator, 123, ^t1 -> :ok end)
       expect(ClientMock, :distribute_ticket, fn 102, :validator, 123, ^t1 -> :ok end)
