@@ -246,17 +246,15 @@ defmodule Jamixir.NodeStateServer do
 
     Log.info("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
 
+    entropy = jam_state.entropy_pool.n2
+
     tickets_and_ids =
       for ticket <- existing_tickets,
-          epoch_phase not in [0, 11],
-          {:ok, id} =
-            TicketProof.proof_output(
-              ticket,
-              jam_state.entropy_pool.n2,
-              jam_state.safrole.epoch_root
-            ),
+          epoch_phase != 0,
+          proof = TicketProof.proof_output(ticket, entropy, jam_state.safrole.epoch_root),
+          {:ok, id} = proof,
           seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
-          !Enum.any?(jam_state.safrole.ticket_accumulator, &(&1 == seal)) do
+          not Enum.member?(jam_state.safrole.ticket_accumulator, seal) do
         {ticket, id}
       end
       |> Enum.take(Constants.max_tickets_pre_extrinsic())
