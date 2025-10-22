@@ -176,9 +176,12 @@ defmodule Jamixir.Node do
         if Enum.any?(Storage.get_tickets(epoch), &(&1 == ticket)) do
           Logger.debug("Duplicate ticket received at proxy for epoch #{epoch}. Ignoring.")
         else
-          for {_, pid} <- ConnectionManager.instance().get_connections() do
+          connections = ConnectionManager.instance().get_connections()
+          Logger.debug("🎟️ Forwarding ticket to #{map_size(connections)} validators.")
+
+          for {_, pid} <- connections do
             Task.start(fn ->
-              Logger.info("🎟️ Forwarding ticket for validator #{inspect(pid)}")
+              Logger.debug("🎟️ Forwarding ticket to validator #{inspect(pid)}")
               Network.Connection.distribute_ticket(pid, :validator, epoch, ticket)
             end)
           end

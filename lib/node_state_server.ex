@@ -252,6 +252,7 @@ defmodule Jamixir.NodeStateServer do
       for ticket <- existing_tickets,
           epoch_phase != 0,
           proof = TicketProof.proof_output(ticket, entropy, jam_state.safrole.epoch_root),
+          elem(proof, 0) == :ok,
           {:ok, id} = proof,
           seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
           not Enum.member?(jam_state.safrole.ticket_accumulator, seal) do
@@ -291,8 +292,7 @@ defmodule Jamixir.NodeStateServer do
         my_index
       )
 
-    # Now we are distributing only the first attempt to facilitate debugging
-    for ticket <- tickets |> Enum.take(1) do
+    for ticket <- tickets do
       output =
         case TicketProof.proof_output(
                ticket,
@@ -318,7 +318,7 @@ defmodule Jamixir.NodeStateServer do
 
         for {_, pid} <- ConnectionManager.instance().get_connections() do
           Task.start(fn ->
-            IO.puts("🎟️ Sending ticket to validator")
+            Log.info("🎟️ Sending ticket to validator")
             Network.Connection.distribute_ticket(pid, :validator, target_epoch, ticket)
           end)
         end
