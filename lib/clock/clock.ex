@@ -24,13 +24,16 @@ defmodule Clock do
   end
 
   def init(_opts) do
-    current_slot = Time.current_timeslot()
-    now = System.monotonic_time(:millisecond)
+    initial_slot = Time.current_timeslot()
+    current_slot = Stream.repeatedly(&Time.current_timeslot/0) |> Enum.find(&(&1 != initial_slot))
 
-    # Calculate the next slot boundary as our reference time
-    slot_duration = slot_duration_ms()
-    time_since_slot_start = rem(now, slot_duration)
-    reference_time = now + (slot_duration - time_since_slot_start)
+    # sleeps 3 ms to ensure we're well within the new slot
+    Process.sleep(3)
+
+    # We're at the beginning of current_slot, so use current time as reference
+    reference_time = System.monotonic_time(:millisecond)
+
+    Logger.info("Clock initialized at slot #{current_slot} with reference time #{reference_time}")
 
     timers = %{
       slot: schedule_timer(reference_time, 0, :slot_tick),
