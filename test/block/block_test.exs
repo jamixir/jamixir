@@ -210,7 +210,15 @@ defmodule BlockTest do
 
           KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
 
-          {proof, _} = TicketProof.create_valid_proof(state, {priv, pub}, i, 2)
+          {proof, _} =
+            TicketProof.create_proof(
+              state.curr_validators,
+              state.entropy_pool.n2,
+              {priv, pub},
+              i,
+              2
+            )
+
           ticket = %TicketProof{signature: proof, attempt: 2}
 
           {:ok, block} =
