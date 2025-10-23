@@ -3,17 +3,10 @@
     "lib/codec/scale_native.ex",
     "lib/commands/",
     "lib/cli.ex",
-    "lib/mix/tasks/mix.jam.ex",
-    "lib/mix/tasks/mix.cli.ex",
-    "lib/mix/tasks/mix.generate_keypair.ex",
-    "lib/mix/tasks/run_fuzzer.ex",
+    "lib/mix/tasks/",
     "lib/mock_macros/mockable.ex",
     "lib/tcp_server.ex",
     "lib/util/ring_vrf.ex",
-    "test/support/github_repo_reader.ex",
-    "test/support/mockable.ex",
-    "test/test_vectors/test_vector_util.ex",
-    "test/support_original_modules.ex",
     "lib/macros/",
     "lib/network/flags.ex",
     "lib/network/config.ex",
@@ -21,7 +14,7 @@
     "lib/pvm/constants/inner_pvm_result.ex",
     "lib/pvm/host/refine/context.ex",
     "lib/pvm/integrated.ex",
-    "test/support/original_modules.ex",
-    "lib/types.ex"
+    "lib/types.ex",
+    "test/"
   ]
 }
