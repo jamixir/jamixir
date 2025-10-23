@@ -66,7 +66,6 @@ defmodule ListenerTest do
           end
         end)
 
-      # Process.sleep(100)
       Enum.each(clients, fn pid -> wait(fn -> Process.alive?(pid) end) end)
 
       # Assert all client PIDs are unique

@@ -163,12 +163,12 @@ defmodule BlockTest do
     end
   end
 
-  describe "new/4" do
-    setup do
-      Storage.put(Hash.zero(), build(:header, timeslot: 0))
-      Application.delete_env(:jamixir, :original_modules)
-    end
+  setup_all do
+    Storage.put(Hash.zero(), build(:header, timeslot: 0))
+    :ok
+  end
 
+  describe "new/4" do
     test "creates a valid fallback block no extrinsics" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
 
@@ -238,8 +238,6 @@ defmodule BlockTest do
   describe "generate state and block dumps" do
     @describetag :generate_blocks
     setup do
-      Storage.put(Hash.zero(), build(:header, timeslot: 0))
-
       tmp_dir = System.tmp_dir!() |> Path.join("jamixir_test_#{:erlang.unique_integer()}")
       IO.puts("Writing test data to #{tmp_dir}")
       File.mkdir_p!("#{tmp_dir}/blocks")
