@@ -19,23 +19,18 @@ defmodule Jamixir.FuzzerTest do
   @socket_path "/tmp/jam_conformance.sock"
   @conformance_path "../jam-conformance"
 
-  setup do
-    # if File.exists?(@socket_path), do: File.rm!(@socket_path)
-
+  setup_all do
+    if File.exists?(@socket_path), do: File.rm!(@socket_path)
     Task.start_link(fn -> Service.accept(@socket_path) end)
+    Process.sleep(50)
+  end
 
-    # Give it a moment to start
-    Process.sleep(100)
-
+  setup do
     {:ok, client} = Client.connect(@socket_path)
     Client.send_peer_info(client, Meta.name(), {0, 1, 0}, {1, 0, 0})
     Client.receive_message(client)
 
-    on_exit(fn ->
-      # Client.disconnect(client)
-      # if File.exists?(@socket_path), do: File.rm!(@socket_path)
-      Storage.remove_all()
-    end)
+    on_exit(fn -> Storage.remove_all() end)
 
     {:ok, client: client}
   end
