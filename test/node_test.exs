@@ -202,10 +202,17 @@ defmodule Jamixir.NodeTest do
     end
 
     test "forward valid tickets", %{state: state, key_pairs: key_pairs} do
-      state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
       Storage.put(Genesis.genesis_block_header(), state)
 
-      {proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {proof, _} =
+        TicketProof.create_proof(
+          state.curr_validators,
+          state.entropy_pool.n1,
+          List.first(key_pairs),
+          0,
+          0
+        )
+
       t1 = build(:ticket_proof, signature: proof, attempt: 0)
 
       invalid_t2 = build(:ticket_proof, attempt: 1)
@@ -221,16 +228,16 @@ defmodule Jamixir.NodeTest do
       verify!()
     end
 
-    test "do not forward duplicated ticket", %{state: state, key_pairs: key_pairs} do
-      state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
+    test "do not forward duplicated ticket", %{state: state, key_pairs: [key | _]} do
       Storage.put(Genesis.genesis_block_header(), state)
 
-      {proof1, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
-      {proof2, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 1)
-      t1 = build(:ticket_proof, signature: proof1, attempt: 0)
-      t2 = build(:ticket_proof, signature: proof2, attempt: 1)
+      {p1, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 0)
+      {p2, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 1)
+
+      t1 = build(:ticket_proof, signature: p1, attempt: 0)
+      t2 = build(:ticket_proof, signature: p2, attempt: 1)
       # duplicated ticket
-      t3 = build(:ticket_proof, signature: proof2, attempt: 1)
+      t3 = build(:ticket_proof, signature: p2, attempt: 1)
 
       stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => 101, "k2" => 102} end)
 
@@ -246,9 +253,9 @@ defmodule Jamixir.NodeTest do
       verify!()
     end
 
-    test "do not forward ticket already in safrole state", %{state: state, key_pairs: key_pairs} do
-      {proof1, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
-      t1 = build(:ticket_proof, signature: proof1, attempt: 0)
+    test "do not forward ticket already in safrole state", %{state: state, key_pairs: [key | _]} do
+      {p1, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n2, key, 0, 0)
+      t1 = build(:ticket_proof, signature: p1, attempt: 0)
 
       {:ok, output} =
         TicketProof.proof_output(t1, state.entropy_pool.n2, state.safrole.epoch_root)

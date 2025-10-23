@@ -102,23 +102,16 @@ defmodule Block.Extrinsic.TicketProof do
     end)
   end
 
-  def create_valid_proof(state, keypair, prover_idx, attempt) do
-    RingVrf.ring_vrf_sign(
-      for(v <- state.curr_validators, do: v.bandersnatch),
-      keypair,
-      prover_idx,
-      SigningContexts.jam_ticket_seal() <> state.entropy_pool.n2 <> <<attempt>>,
-      <<>>
-    )
+  def create_proof(validators, entropy, keypair, prover_idx, attempt) do
+    context = SigningContexts.jam_ticket_seal() <> entropy <> <<attempt>>
+    pub_keys = Enum.map(validators, & &1.bandersnatch)
+    RingVrf.ring_vrf_sign(pub_keys, keypair, prover_idx, context, <<>>)
   end
 
   def create_new_epoch_tickets(state, keypair, prover_idx) do
-    state = %{state | entropy_pool: %{state.entropy_pool | n2: state.entropy_pool.n1}}
-    state = %{state | curr_validators: state.next_validators}
-
     for i <- 0..(Constants.tickets_per_validator() - 1) do
-      {proof, _} = TicketProof.create_valid_proof(state, keypair, prover_idx, i)
-      %TicketProof{signature: proof, attempt: i}
+      {p, _} = create_proof(state.next_validators, state.entropy_pool.n1, keypair, prover_idx, i)
+      %TicketProof{signature: p, attempt: i}
     end
   end
 

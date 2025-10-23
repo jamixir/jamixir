@@ -71,10 +71,11 @@ defmodule Jamixir do
     if Application.get_env(:jamixir, :rpc_enabled, false) do
       rpc_port = Application.get_env(:jamixir, :rpc_port, 19800)
 
-      base_children ++ [
-        {Jamixir.RPC.SubscriptionManager, []},
-        {Jamixir.RPC.Server, [port: rpc_port]}
-      ]
+      base_children ++
+        [
+          {Jamixir.RPC.SubscriptionManager, []},
+          {Jamixir.RPC.Server, [port: rpc_port]}
+        ]
     else
       base_children
     end

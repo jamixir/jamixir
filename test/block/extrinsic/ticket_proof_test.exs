@@ -1,13 +1,13 @@
 defmodule Block.Extrinsic.TicketProofTest do
   use ExUnit.Case
+  alias Block.Extrinsic.TicketProof
   import Jamixir.Factory
   import Block.Extrinsic.TicketProofTestHelper
-  alias Block.Extrinsic.TicketProof
+  import Block.Extrinsic.TicketProof
 
   defp create_and_sort_tickets(count, state, key_pairs) do
     for ticket <- create_valid_tickets(count, state, key_pairs),
-        {:ok, output} =
-          TicketProof.proof_output(ticket, state.entropy_pool.n2, state.safrole.epoch_root) do
+        {:ok, output} = proof_output(ticket, state.entropy_pool.n2, state.safrole.epoch_root) do
       {output, ticket}
     end
     |> Enum.sort_by(&elem(&1, 0))
@@ -15,60 +15,41 @@ defmodule Block.Extrinsic.TicketProofTest do
   end
 
   setup_all do
-    build(:genesis_state_with_safrole)
+    context = build(:genesis_state_with_safrole)
+    {:ok, put_in(context, [:h_t], Constants.ticket_submission_end() - 1)}
   end
 
   describe "validate/5 - passing cases" do
     test "succeeds with single ticket before submission end", %{
-      state: state,
-      key_pairs: key_pairs
+      state: %{entropy_pool: entropy_pool, safrole: safrole, curr_validators: validators},
+      key_pairs: [key | _],
+      h_t: h_t
     } do
-      {proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
-
-      assert :ok ==
-               TicketProof.validate(
-                 [%TicketProof{attempt: 0, signature: proof}],
-                 Constants.ticket_submission_end() - 1,
-                 Constants.ticket_submission_end() - 2,
-                 state.entropy_pool,
-                 state.safrole
-               )
+      {proof, _} = create_proof(validators, entropy_pool.n2, key, 0, 0)
+      tickets = [%TicketProof{attempt: 0, signature: proof}]
+      :ok = validate(tickets, h_t, h_t - 1, entropy_pool, safrole)
     end
 
     test "succeeds with multiple tickets before submission end", %{
-      state: state,
-      key_pairs: key_pairs
+      state: %{entropy_pool: entropy_pool, safrole: safrole} = state,
+      key_pairs: key_pairs,
+      h_t: h_t
     } do
       tickets = create_and_sort_tickets(2, state, key_pairs)
-
-      assert :ok ==
-               TicketProof.validate(
-                 tickets,
-                 Constants.ticket_submission_end() - 1,
-                 Constants.ticket_submission_end() - 2,
-                 state.entropy_pool,
-                 state.safrole
-               )
+      :ok = validate(tickets, h_t, h_t - 1, entropy_pool, safrole)
     end
 
-    test "succeeds with empty tickets after submission end", %{state: state} do
-      assert :ok ==
-               TicketProof.validate(
-                 [],
-                 Constants.ticket_submission_end(),
-                 Constants.ticket_submission_end() - 1,
-                 state.entropy_pool,
-                 state.safrole
-               )
+    test "succeeds with empty tickets after submission end", %{state: state, h_t: h_t} do
+      :ok = validate([], h_t, h_t - 1, state.entropy_pool, state.safrole)
     end
   end
 
   describe "create_new_epoch_tickets/3" do
     test "creates the correct number of tickets", %{state: state, key_pairs: [_, keypair | _]} do
-      tickets = TicketProof.create_new_epoch_tickets(state, keypair, 1)
+      tickets = create_new_epoch_tickets(state, keypair, 1)
 
       for t <- tickets do
-        {:ok, _} = TicketProof.proof_output(t, state.entropy_pool.n1, state.safrole.epoch_root)
+        {:ok, _} = proof_output(t, state.entropy_pool.n1, state.safrole.epoch_root)
       end
 
       assert length(tickets) == Constants.tickets_per_validator()
@@ -78,7 +59,7 @@ defmodule Block.Extrinsic.TicketProofTest do
   describe "validate/5 - failing cases" do
     test "fails with too many tickets", %{state: state} do
       assert {:error, :unexpected_ticket} =
-               TicketProof.validate(
+               validate(
                  List.duplicate(%TicketProof{}, Constants.max_tickets_pre_extrinsic() + 1),
                  Constants.ticket_submission_end() - 1,
                  Constants.ticket_submission_end() - 2,
@@ -99,7 +80,15 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
 
     test "fails with invalid signature", %{state: state, key_pairs: key_pairs} do
-      {valid_proof, _} = TicketProof.create_valid_proof(state, List.first(key_pairs), 0, 0)
+      {valid_proof, _} =
+        TicketProof.create_proof(
+          state.curr_validators,
+          state.entropy_pool.n2,
+          List.first(key_pairs),
+          0,
+          0
+        )
+
       <<first_byte, rest::binary>> = valid_proof
       invalid_proof = <<first_byte + 1>> <> rest
 
