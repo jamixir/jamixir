@@ -244,7 +244,7 @@ defmodule Jamixir.NodeStateServer do
 
     existing_tickets = Storage.get_tickets(epoch)
 
-    Log.info("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
+    Log.debug("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
 
     entropy = jam_state.entropy_pool.n2
 
@@ -303,9 +303,7 @@ defmodule Jamixir.NodeStateServer do
             output
 
           {:error, :verification_failed} ->
-            Log.error("How did our own ticket proof verification fail?")
-            Log.error("Ticket: #{inspect(ticket)}")
-
+            Log.warning("Ticket proof verification fail. Probably invalid state commitment.")
             0
         end
 

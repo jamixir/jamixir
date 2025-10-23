@@ -33,7 +33,9 @@ defmodule Clock do
     # We're at the beginning of current_slot, so use current time as reference
     reference_time = System.monotonic_time(:millisecond)
 
-    Logger.info("Clock initialized at slot #{current_slot} with reference time #{reference_time}")
+    Logger.debug(
+      "Clock initialized at slot #{current_slot} with reference time #{reference_time}"
+    )
 
     timers = %{
       slot: schedule_timer(reference_time, 0, :slot_tick),
