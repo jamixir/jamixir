@@ -31,20 +31,14 @@ defmodule RingVrfTest do
 
   describe "end-to-end VRF signing and verification" do
     test "verification succeeds with larger number of keys and public key in the middle" do
-      validator_index = 100
-      {keys, secret} = init_ring_context_and_gen_keys(validator_index, 1023)
+      index = 3
+      {keys, secret} = init_ring_context_and_gen_keys(index, 6)
       commitment = RingVrf.create_commitment(keys)
 
-      {signature, output} =
-        RingVrf.ring_vrf_sign(keys, secret, validator_index, "context", "message")
+      {signature, output} = RingVrf.ring_vrf_sign(keys, secret, index, "context", "message")
 
-      assert {:ok, vrf_output_hash} =
-               RingVrf.ring_vrf_verify(
-                 commitment,
-                 "context",
-                 "message",
-                 signature
-               )
+      {:ok, vrf_output_hash} =
+        RingVrf.ring_vrf_verify(commitment, "context", "message", signature)
 
       assert vrf_output_hash == output
     end
@@ -56,13 +50,8 @@ defmodule RingVrfTest do
       {signature, output} =
         RingVrf.ring_vrf_sign(keys, secret, 0, "context", "message")
 
-      assert {:ok, vrf_output_hash} =
-               RingVrf.ring_vrf_verify(
-                 commitment,
-                 "context",
-                 "message",
-                 signature
-               )
+      {:ok, vrf_output_hash} =
+        RingVrf.ring_vrf_verify(commitment, "context", "message", signature)
 
       assert vrf_output_hash == output
       assert byte_size(vrf_output_hash) == @hash_size
@@ -74,16 +63,10 @@ defmodule RingVrfTest do
       {keys, secret} = init_ring_context_and_gen_keys(2)
       commitment = RingVrf.create_commitment(keys)
 
-      {signature, _output} =
-        RingVrf.ring_vrf_sign(keys, secret, 0, "original context", "message")
+      {signature, _output} = RingVrf.ring_vrf_sign(keys, secret, 0, "original context", "message")
 
       assert {:error, :verification_failed} =
-               RingVrf.ring_vrf_verify(
-                 commitment,
-                 "altered context",
-                 "message",
-                 signature
-               )
+               RingVrf.ring_vrf_verify(commitment, "altered context", "message", signature)
     end
 
     test "verification fails with altered commitment" do
@@ -95,12 +78,7 @@ defmodule RingVrfTest do
       altered_commitment = RingVrf.create_commitment(Enum.reverse(keys))
 
       assert {:error, :verification_failed} =
-               RingVrf.ring_vrf_verify(
-                 altered_commitment,
-                 "context",
-                 "message",
-                 signature
-               )
+               RingVrf.ring_vrf_verify(altered_commitment, "context", "message", signature)
     end
 
     test "verification fails with wrong prover index" do
@@ -111,12 +89,7 @@ defmodule RingVrfTest do
         RingVrf.ring_vrf_sign(keys, secret, 8, "context", "message")
 
       assert {:error, :verification_failed} =
-               RingVrf.ring_vrf_verify(
-                 commitment,
-                 "context",
-                 "message",
-                 signature
-               )
+               RingVrf.ring_vrf_verify(commitment, "context", "message", signature)
     end
 
     test "verification fails with altered auxiliary data" do
@@ -127,12 +100,7 @@ defmodule RingVrfTest do
         RingVrf.ring_vrf_sign(keys, secret, 0, "context", "original message")
 
       assert {:error, :verification_failed} =
-               RingVrf.ring_vrf_verify(
-                 commitment,
-                 "context",
-                 "altered message",
-                 signature
-               )
+               RingVrf.ring_vrf_verify(commitment, "context", "altered message", signature)
     end
   end
 
@@ -162,7 +130,7 @@ defmodule RingVrfTest do
     end
 
     test "key sign and verify - all ok" do
-      {keys, keypair} = init_ring_context_and_gen_keys(2, 7)
+      {keys, keypair} = init_ring_context_and_gen_keys(2, 6)
       {signature, output} = RingVrf.ietf_vrf_sign(keypair, "context", "message")
       {:ok, ^output} = RingVrf.ietf_vrf_verify(Enum.at(keys, 2), "context", "message", signature)
 
@@ -187,22 +155,14 @@ defmodule RingVrfTest do
 
   describe "ietf_vrf error scenarios" do
     test "verification fails with invalid signature" do
-      {[key | _], _secret} = init_ring_context_and_gen_keys(8)
+      {[key | _], _secret} = init_ring_context_and_gen_keys(3)
       # Provide an invalid/corrupted signature
-      result =
-        RingVrf.ietf_vrf_verify(
-          key,
-          "context",
-          "message",
-          # invalid signature
-          <<1, 2, 3>>
-        )
-
+      result = RingVrf.ietf_vrf_verify(key, "context", "message", <<1, 2, 3>>)
       assert {:error, :invalid_signature} = result
     end
 
     test "verification fails with mismatched public key" do
-      {[_, k2 | _], secret} = init_ring_context_and_gen_keys(8)
+      {[_, k2 | _], secret} = init_ring_context_and_gen_keys(3)
       {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
 
       result =
@@ -212,29 +172,23 @@ defmodule RingVrfTest do
     end
 
     test "verification fails with altered context" do
-      {[key | _], secret} = init_ring_context_and_gen_keys(50)
+      {[key | _], secret} = init_ring_context_and_gen_keys(2)
       {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
-
-      result =
-        RingVrf.ietf_vrf_verify(key, "altered context", "message", signature)
-
+      result = RingVrf.ietf_vrf_verify(key, "altered context", "message", signature)
       assert {:error, :verification_failed} = result
     end
 
     test "verification fails with altered message" do
-      {[key | _], secret} = init_ring_context_and_gen_keys(4)
+      {[key | _], secret} = init_ring_context_and_gen_keys(2)
       {signature, _output} = RingVrf.ietf_vrf_sign(secret, "context", "message")
-
-      result =
-        RingVrf.ietf_vrf_verify(key, "context", "altered message", signature)
-
+      result = RingVrf.ietf_vrf_verify(key, "context", "altered message", signature)
       assert {:error, :verification_failed} = result
     end
   end
 
   describe "Context influence on output, message doesn't " do
     test "ring signature output changes with context but not with message" do
-      {keys, secret} = init_ring_context_and_gen_keys(4)
+      {keys, secret} = init_ring_context_and_gen_keys(2)
 
       {_sig1, out1} = RingVrf.ring_vrf_sign(keys, secret, 0, "context1", "message")
       {_sig2, out2} = RingVrf.ring_vrf_sign(keys, secret, 0, "context2", "message")

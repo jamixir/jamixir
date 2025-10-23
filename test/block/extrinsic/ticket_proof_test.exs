@@ -4,6 +4,7 @@ defmodule Block.Extrinsic.TicketProofTest do
   import Jamixir.Factory
   import Block.Extrinsic.TicketProofTestHelper
   import Block.Extrinsic.TicketProof
+  import TestHelper
 
   defp create_and_sort_tickets(count, state, key_pairs) do
     for ticket <- create_valid_tickets(count, state, key_pairs),
@@ -42,6 +43,11 @@ defmodule Block.Extrinsic.TicketProofTest do
     test "succeeds with empty tickets after submission end", %{state: state, h_t: h_t} do
       :ok = validate([], h_t, h_t - 1, state.entropy_pool, state.safrole)
     end
+  end
+
+  # tickets_per_validator
+  setup_constants do
+    def tickets_per_validator, do: 2
   end
 
   describe "create_new_epoch_tickets/3" do

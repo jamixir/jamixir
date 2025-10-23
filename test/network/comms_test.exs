@@ -1,5 +1,5 @@
 defmodule CommsTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.WorkPackageBundle
@@ -36,10 +36,20 @@ defmodule CommsTest do
        port: @port, test_server_alias: @test_server_alias, tls_identity: pkcs12_binary}
     )
 
-    %{test_server_alias: @test_server_alias, tls_identity: pkcs12_binary}
+    %{state: state} = build(:genesis_state_with_safrole)
+    {b, _} = Block.decode(File.read!("test/block_mock.bin"))
+    # File.write!("test/new_block_mock.bin", Encodable.encode(b))
+    blocks = for _ <- 1..300, do: b
+
+    %{
+      blocks: blocks,
+      test_server_alias: @test_server_alias,
+      tls_identity: pkcs12_binary,
+      state_trie: Trie.serialize(state).data
+    }
   end
 
-  setup do
+  setup_all do
     {_, {:ok, pkcs12_binary}} = Network.CertUtils.create_pkcs12_bundle()
 
     {:ok, client_pid} =
@@ -113,13 +123,6 @@ defmodule CommsTest do
 
   # # CE 128
   describe "request_blocks/4" do
-    setup do
-      {b, _} = Block.decode(File.read!("test/block_mock.bin"))
-      # File.write!("test/new_block_mock.bin", Encodable.encode(b))
-      blocks = for _ <- 1..300, do: b
-      {:ok, blocks: blocks}
-    end
-
     test "requests 9 blocks", %{client: client, blocks: blocks} do
       Jamixir.NodeAPI.Mock
       |> expect(:get_blocks, fn <<0::hash()>>, :ascending, 9 -> {:ok, blocks} end)
@@ -141,11 +144,6 @@ defmodule CommsTest do
 
   # # CE 129
   describe "request_state/5" do
-    setup do
-      %{state: state} = build(:genesis_state_with_safrole)
-      {:ok, state_trie: Trie.serialize(state).data}
-    end
-
     test "requests state smoke test", %{client: client, state_trie: state_trie} do
       block_hash = <<1::hash()>>
       start_key = Map.keys(state_trie) |> Enum.at(2)

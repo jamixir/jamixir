@@ -15,6 +15,21 @@ defmodule Jamixir.NodeTest do
   @genesis_file Genesis.default_file()
   @genesis_hash Genesis.genesis_header_hash()
   @genesis_state_key @p_state <> @genesis_hash
+
+  setup_all do
+    %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+    [key | _] = key_pairs
+
+    {proof0, _} =
+      TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 0)
+
+    {:ok,
+     epochs: for(_ <- 1..2, do: :rand.uniform(100_000)),
+     state: state,
+     key_pairs: key_pairs,
+     proof0: proof0}
+  end
+
   setup do
     Application.put_env(:jamixir, :original_modules, [Jamixir.Node])
     Application.put_env(:jamixir, :header_seal, HeaderSealMock)
@@ -186,7 +201,7 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "process_ticket/3" do
-    setup do
+    setup(context) do
       Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
       Application.put_env(:jamixir, :network_client, ClientMock)
 
@@ -195,23 +210,11 @@ defmodule Jamixir.NodeTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
-      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
-
-      {:ok,
-       epochs: for(_ <- 1..2, do: :rand.uniform(100_000)), state: state, key_pairs: key_pairs}
+      {:ok, context}
     end
 
-    test "forward valid tickets", %{state: state, key_pairs: key_pairs} do
+    test "forward valid tickets", %{state: state, proof0: proof} do
       Storage.put(Genesis.genesis_block_header(), state)
-
-      {proof, _} =
-        TicketProof.create_proof(
-          state.curr_validators,
-          state.entropy_pool.n1,
-          List.first(key_pairs),
-          0,
-          0
-        )
 
       t1 = build(:ticket_proof, signature: proof, attempt: 0)
 
@@ -225,19 +228,19 @@ defmodule Jamixir.NodeTest do
       process_ticket(:proxy, 123, t1)
       process_ticket(:proxy, 123, invalid_t2)
       assert Storage.get_tickets(123) == [t1]
+      Process.sleep(20)
       verify!()
     end
 
-    test "do not forward duplicated ticket", %{state: state, key_pairs: [key | _]} do
+    test "do not forward duplicated ticket", %{state: state, key_pairs: [key | _], proof0: p0} do
       Storage.put(Genesis.genesis_block_header(), state)
 
-      {p1, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 0)
-      {p2, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 1)
+      {p1, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 1)
 
-      t1 = build(:ticket_proof, signature: p1, attempt: 0)
-      t2 = build(:ticket_proof, signature: p2, attempt: 1)
+      t1 = build(:ticket_proof, signature: p0, attempt: 0)
+      t2 = build(:ticket_proof, signature: p1, attempt: 1)
       # duplicated ticket
-      t3 = build(:ticket_proof, signature: p2, attempt: 1)
+      t3 = build(:ticket_proof, signature: p1, attempt: 1)
 
       stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => 101, "k2" => 102} end)
 

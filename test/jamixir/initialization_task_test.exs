@@ -1,5 +1,5 @@
 defmodule Jamixir.InitializationTaskTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   alias Jamixir.Genesis
   alias Jamixir.InitializationTask
 
