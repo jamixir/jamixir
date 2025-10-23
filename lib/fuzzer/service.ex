@@ -128,7 +128,7 @@ defmodule Jamixir.Fuzzer.Service do
   defp handle_message(:import_block, block, sock) do
     Log.info("Importing block: #{b16(h(e(block.header)))}")
 
-    case Jamixir.Node.add_block(block) do
+    case Jamixir.NodeAPI.add_block(block) do
       {:ok, _new_app_state, state_root} ->
         :socket.send(sock, encode_message(:state_root, state_root))
 

@@ -19,6 +19,14 @@ defmodule Jamixir.RPC.HandlerTest do
   end
 
   describe "handle_request/2" do
+    setup do
+      Application.put_env(:jamixir, NodeAPI, Jamixir.Node)
+
+      on_exit(fn ->
+        Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+      end)
+    end
+
     test "handles parameters method" do
       request = %{"method" => "parameters", "id" => 1}
 
@@ -132,6 +140,8 @@ defmodule Jamixir.RPC.HandlerTest do
     end
 
     test "handles submitPreimage method" do
+      Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+
       request = %{"method" => "submitPreimage", "params" => [7, [1, 2, 3, 4], gen_head()]}
       Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3, 4>> -> :ok end)
       response = response(request)
@@ -140,6 +150,7 @@ defmodule Jamixir.RPC.HandlerTest do
     end
 
     test "handles submitWorkPackage method" do
+      Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
       {work_package, extrinsics} = work_package_and_its_extrinsic_factory()
       core = 3
       extrinsics = List.flatten(extrinsics)

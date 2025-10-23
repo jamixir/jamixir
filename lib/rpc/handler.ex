@@ -87,7 +87,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("stateRoot", [header_hash], _websocket_pid) do
-    state = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    state = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
 
     {:ok,
      case state do
@@ -97,7 +97,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("statistics", [header_hash], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
     {:ok, e(state.validator_statistics) |> :binary.bin_to_list()}
   end
 
@@ -108,7 +108,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
     {:ok, e(state.services[service_id]) |> :binary.bin_to_list()}
   end
 
@@ -125,7 +125,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
 
     case get_in(state.services, [service_id, :preimage_storage_p, hash |> :binary.list_to_bin()]) do
       nil -> {:ok, nil}
@@ -134,7 +134,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("serviceRequest", [header_hash, service_id, hash, length], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
 
     case get_in(state.services, [service_id, :storage, {hash |> :binary.list_to_bin(), length}]) do
       nil -> {:ok, nil}
@@ -144,7 +144,7 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("beefyRoot", [header_hash], _websocket_pid) do
     {_timeslot, header} = Storage.get_latest_header()
-    {:ok, state} = Node.inspect_state(h(e(header)))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(h(e(header)))
 
     hash = header_hash |> :binary.list_to_bin()
 
@@ -171,7 +171,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
 
     case get_in(state.services, [service_id, :storage, hash |> :binary.list_to_bin()]) do
       nil -> {:ok, nil}
@@ -192,7 +192,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("listServices", [header_hash], _websocket_pid) do
-    {:ok, state} = Node.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
     {:ok, Map.keys(state.services)}
   end
 
