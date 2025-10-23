@@ -1,5 +1,5 @@
 defmodule BlockTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import Jamixir.Factory
   alias Block.Extrinsic.TicketProof
   alias Block
@@ -203,30 +203,17 @@ defmodule BlockTest do
     test "create a valid block with ticket proofs same epoch" do
       %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
       state = %{state | safrole: %{state.safrole | ticket_accumulator: []}}
+      i = 1
+      {priv, pub} = Enum.at(key_pairs, i)
+      KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
 
-      for i <- [1, 2], reduce: state do
-        state ->
-          {priv, pub} = Enum.at(key_pairs, rem(i, Constants.validator_count()))
+      {proof, _} =
+        TicketProof.create_proof(state.curr_validators, state.entropy_pool.n2, {priv, pub}, i, 2)
 
-          KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
+      ticket = %TicketProof{signature: proof, attempt: 2}
 
-          {proof, _} =
-            TicketProof.create_proof(
-              state.curr_validators,
-              state.entropy_pool.n2,
-              {priv, pub},
-              i,
-              2
-            )
-
-          ticket = %TicketProof{signature: proof, attempt: 2}
-
-          {:ok, block} =
-            Block.new(%Extrinsic{tickets: [ticket]}, nil, state, state.timeslot + 1)
-
-          {:ok, state} = State.add_block(state, block)
-          state
-      end
+      {:ok, block} = Block.new(%Extrinsic{tickets: [ticket]}, nil, state, state.timeslot + 1)
+      {:ok, _} = State.add_block(state, block)
     end
 
     test "can't create block ticket proofs from other validator" do

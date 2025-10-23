@@ -2,7 +2,7 @@ defmodule Jamixir.RPC.HandlerTest do
   alias Codec.State.Trie
   alias Block.Extrinsic
   alias Jamixir.Genesis
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import Jamixir.Factory
   import Codec.Encoder
   import Mox

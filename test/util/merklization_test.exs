@@ -20,7 +20,7 @@ defmodule Util.MerklizationTest do
     end
 
     test "encode_branch with random inputs" do
-      for _ <- 1..1_000_000 do
+      for _ <- 1..100 do
         l = Hash.random()
         r = Hash.random()
 

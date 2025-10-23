@@ -110,10 +110,11 @@ defmodule Block.Extrinsic.TicketProof do
   end
 
   def create_new_epoch_tickets(state, keypair, prover_idx) do
-    for i <- from_0_to(Constants.tickets_per_validator()) do
+    Task.async_stream(from_0_to(Constants.tickets_per_validator()), fn i ->
       {p, _} = create_proof(state.next_validators, state.entropy_pool.n1, keypair, prover_idx, i)
       %TicketProof{signature: p, attempt: i}
-    end
+    end)
+    |> Enum.map(fn {:ok, ticket} -> ticket end)
   end
 
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do

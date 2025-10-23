@@ -23,9 +23,15 @@ defmodule Clock do
     GenServer.cast(__MODULE__, {:set_authoring_slots, authoring_slots})
   end
 
-  def init(_opts) do
+  def init(opts) do
     initial_slot = Time.current_timeslot()
-    current_slot = Stream.repeatedly(&Time.current_timeslot/0) |> Enum.find(&(&1 != initial_slot))
+
+    current_slot =
+      if opts[:no_wait] do
+        initial_slot
+      else
+        Stream.repeatedly(&Time.current_timeslot/0) |> Enum.find(&(&1 != initial_slot))
+      end
 
     # sleeps 3 ms to ensure we're well within the new slot
     Process.sleep(3)

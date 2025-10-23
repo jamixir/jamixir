@@ -1,5 +1,5 @@
 defmodule Jamixir.RPC.IntegrationTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import Jamixir.Factory
   import Codec.Encoder
 

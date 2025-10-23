@@ -5,7 +5,7 @@ defmodule System.DataAvailabilityTest do
   import System.DataAvailability
   import Jamixir.Factory
   import Mox
-  use ExUnit.Case, async: false
+  use ExUnit.Case
 
   setup :verify_on_exit!
 

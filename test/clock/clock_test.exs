@@ -1,12 +1,12 @@
 defmodule ClockTest do
   alias Util.Time
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   @node_events "node_events"
   @clock_events "clock_events"
 
   setup_all do
-    {:ok, state} = Clock.init([])
+    {:ok, state} = Clock.init(no_wait: true)
     {:ok, state: state}
   end
 

@@ -1,5 +1,5 @@
 defmodule ListenerTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import TestHelper
 
   alias Network.Connection
@@ -66,7 +66,7 @@ defmodule ListenerTest do
           end
         end)
 
-      Process.sleep(100)
+      # Process.sleep(100)
       Enum.each(clients, fn pid -> wait(fn -> Process.alive?(pid) end) end)
 
       # Assert all client PIDs are unique
@@ -104,9 +104,7 @@ defmodule ListenerTest do
       # 3 clients  + 3 servers
       assert length(all_conncetions_pids) == 6
 
-      Enum.each(server_pids, fn pid ->
-        assert pid in all_conncetions_pids
-      end)
+      Enum.each(server_pids, &assert(&1 in all_conncetions_pids))
     end
   end
 end
