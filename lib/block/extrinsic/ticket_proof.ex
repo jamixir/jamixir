@@ -11,6 +11,7 @@ defmodule Block.Extrinsic.TicketProof do
   alias Block.Extrinsic.TicketProof
   alias System.State.{EntropyPool, Safrole, SealKeyTicket}
   alias Util.{Collections, Time}
+  alias System.State.Validator
   use SelectiveMock
   import RangeMacros
 
@@ -103,15 +104,22 @@ defmodule Block.Extrinsic.TicketProof do
     end)
   end
 
-  def create_proof(validators, entropy, keypair, prover_idx, attempt) do
-    context = SigningContexts.jam_ticket_seal() <> entropy <> <<attempt>>
+  def create_proof([%Validator{} | _] = validators, entropy, keypair, prover_idx, attempt) do
     pub_keys = Enum.map(validators, & &1.bandersnatch)
+    create_proof(pub_keys, entropy, keypair, prover_idx, attempt)
+  end
+
+  def create_proof([k1 | _] = pub_keys, entropy, keypair, prover_idx, attempt)
+      when is_binary(k1) do
+    context = SigningContexts.jam_ticket_seal() <> entropy <> <<attempt>>
     RingVrf.ring_vrf_sign(pub_keys, keypair, prover_idx, context, <<>>)
   end
 
   def create_new_epoch_tickets(state, keypair, prover_idx) do
+    keys = Enum.map(state.next_validators, & &1.bandersnatch)
+
     Task.async_stream(from_0_to(Constants.tickets_per_validator()), fn i ->
-      {p, _} = create_proof(state.next_validators, state.entropy_pool.n1, keypair, prover_idx, i)
+      {p, _} = create_proof(keys, state.entropy_pool.n1, keypair, prover_idx, i)
       %TicketProof{signature: p, attempt: i}
     end)
     |> Enum.map(fn {:ok, ticket} -> ticket end)
