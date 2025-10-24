@@ -17,7 +17,12 @@ defmodule Block.Extrinsic.TicketProofTest do
 
   setup_all do
     context = build(:genesis_state_with_safrole)
-    {:ok, put_in(context, [:h_t], Constants.ticket_submission_end() - 1)}
+    context = put_in(context, [:h_t], Constants.ticket_submission_end() - 1)
+
+    context =
+      put_in(context, [:tickets], create_and_sort_tickets(5, context.state, context.key_pairs))
+
+    {:ok, context}
   end
 
   describe "validate/5 - passing cases" do
@@ -32,12 +37,11 @@ defmodule Block.Extrinsic.TicketProofTest do
     end
 
     test "succeeds with multiple tickets before submission end", %{
-      state: %{entropy_pool: entropy_pool, safrole: safrole} = state,
-      key_pairs: key_pairs,
-      h_t: h_t
+      state: state,
+      h_t: h_t,
+      tickets: [t1, t2 | _]
     } do
-      tickets = create_and_sort_tickets(2, state, key_pairs)
-      :ok = validate(tickets, h_t, h_t - 1, entropy_pool, safrole)
+      :ok = validate([t1, t2], h_t, h_t - 1, state.entropy_pool, state.safrole)
     end
 
     test "succeeds with empty tickets after submission end", %{state: state, h_t: h_t} do
@@ -151,6 +155,54 @@ defmodule Block.Extrinsic.TicketProofTest do
                  state.entropy_pool,
                  safrole_with_overlap
                )
+    end
+  end
+
+  describe "tickets_for_new_block/3" do
+    @max_tickets Constants.max_tickets_pre_extrinsic()
+    test "no tickets on epoch phase 0", %{state: state, tickets: tickets} do
+      assert tickets_for_new_block(tickets, state, 0) == []
+    end
+
+    test "sorts tickets correctly", %{state: state, tickets: tickets} do
+      assert length(tickets) > @max_tickets
+      tickets = tickets_for_new_block(tickets, state, 1)
+      assert length(tickets) == @max_tickets
+
+      assert tickets ==
+               Enum.sort_by(
+                 tickets,
+                 &(proof_output(&1, state.entropy_pool.n2, state.safrole.epoch_root) |> elem(1))
+               )
+    end
+
+    test "don't add tickets already in state", %{state: state, tickets: [t1, t2 | _]} do
+      safrole_with_existing_ticket = %{
+        state.safrole
+        | ticket_accumulator: [
+            %System.State.SealKeyTicket{
+              id: proof_output(t1, state.entropy_pool.n2, state.safrole.epoch_root) |> elem(1),
+              attempt: t1.attempt
+            }
+          ]
+      }
+
+      tickets =
+        tickets_for_new_block([t1, t2], %{state | safrole: safrole_with_existing_ticket}, 1)
+
+      assert tickets == [t2]
+    end
+
+    test "don't add tickets with invalid proof", %{state: state, tickets: [t1, t2 | _]} do
+      invalid_ticket = %TicketProof{attempt: t1.attempt, signature: <<0, 1, 2>>}
+      tickets = tickets_for_new_block([invalid_ticket, t2], state, 1)
+      assert tickets == [t2]
+    end
+
+    test "don't add tickets with state invalid root", %{state: state, tickets: tickets} do
+      state = %{state | safrole: %{state.safrole | epoch_root: <<0, 0, 0>>}}
+      tickets = tickets_for_new_block(tickets, state, 1)
+      assert tickets == []
     end
   end
 

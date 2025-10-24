@@ -4,7 +4,7 @@ defmodule Block.Extrinsic.TicketProofTestHelper do
   def create_valid_tickets(count, state, key_pairs) do
     for i <- 0..(count - 1) do
       keypair = Enum.at(key_pairs, rem(i, length(key_pairs)))
-      attempt = rem(i, 2)
+      attempt = rem(i, Constants.tickets_per_validator() - 1)
 
       {proof, _} =
         TicketProof.create_proof(

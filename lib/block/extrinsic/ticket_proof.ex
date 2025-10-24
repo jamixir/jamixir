@@ -125,8 +125,28 @@ defmodule Block.Extrinsic.TicketProof do
     |> Enum.map(fn {:ok, ticket} -> ticket end)
   end
 
+  def tickets_for_new_block(existing_tickets, state, epoch_phase) do
+    entropy = state.entropy_pool.n2
+
+    for ticket <- existing_tickets,
+        epoch_phase != 0,
+        {result, id} = TicketProof.proof_output(ticket, entropy, state.safrole.epoch_root),
+        result == :ok,
+        seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
+        not Enum.member?(state.safrole.ticket_accumulator, seal) do
+      {ticket, id}
+    end
+    |> Enum.take(Constants.max_tickets_pre_extrinsic())
+    |> Enum.sort_by(fn {_ticket, id} -> id end)
+    |> Enum.map(&elem(&1, 0))
+  end
+
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
-    RingVrf.ring_vrf_verify(epoch_root, ticket_context(eta2, r), <<>>, proof)
+    case RingVrf.ring_vrf_verify(epoch_root, ticket_context(eta2, r), <<>>, proof) do
+      {:ok, output_hash} -> {:ok, output_hash}
+      {:error, e} -> {:error, e}
+      e -> {:error, e}
+    end
   end
 
   def ticket_context(eta2, attempt) do

@@ -8,7 +8,6 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
-  alias System.State.SealKeyTicket
   alias Block.Extrinsic.TicketProof
   alias System.State.Validator
   alias System.State.RotateKeys
@@ -245,23 +244,7 @@ defmodule Jamixir.NodeStateServer do
     existing_tickets = Storage.get_tickets(epoch)
 
     Log.debug("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
-
-    entropy = jam_state.entropy_pool.n2
-
-    tickets_and_ids =
-      for ticket <- existing_tickets,
-          epoch_phase != 0,
-          proof = TicketProof.proof_output(ticket, entropy, jam_state.safrole.epoch_root),
-          elem(proof, 0) == :ok,
-          {:ok, id} = proof,
-          seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
-          not Enum.member?(jam_state.safrole.ticket_accumulator, seal) do
-        {ticket, id}
-      end
-      |> Enum.take(Constants.max_tickets_pre_extrinsic())
-      |> Enum.sort_by(fn {_ticket, id} -> id end)
-
-    tickets = for {ticket, _id} <- tickets_and_ids, do: ticket
+    tickets = TicketProof.tickets_for_new_block(existing_tickets, jam_state, epoch_phase)
     Log.info("Creating block with #{length(tickets)} 🎟️ tickets")
 
     case Block.new(%Block.Extrinsic{tickets: tickets}, parent_hash, jam_state, slot) do
