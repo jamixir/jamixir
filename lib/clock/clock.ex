@@ -122,9 +122,10 @@ defmodule Clock do
   end
 
   def handle_info({:produce_new_tickets, target_epoch}, state),
-    do: node_info({:produce_new_tickets, target_epoch}, state)
+    do: default_handle_info({:produce_new_tickets, target_epoch}, state)
 
-  def handle_info(:compute_author_slots, state), do: node_info(:compute_author_slots, state)
+  def handle_info(:compute_author_slots, state),
+    do: default_handle_info(:compute_author_slots, state)
 
   def handle_info(:audit_tranche, state) do
     event = Clock.Event.new(:audit_tranche)
@@ -155,7 +156,7 @@ defmodule Clock do
     {:noreply, state}
   end
 
-  defp node_info(type, state) do
+  defp default_handle_info(type, state) do
     compute_event = Clock.Event.new(type, state.current_slot)
     Phoenix.PubSub.broadcast(Jamixir.PubSub, @node_events_channel, {:clock, compute_event})
     {:noreply, state}
