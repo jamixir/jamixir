@@ -305,30 +305,35 @@ defmodule PVM.Host.General.Internal do
           non_neg_integer()
         ) ::
           Result.Internal.t()
-  def write_internal(registers, memory_ref, service_account, _service_index) do
+  def write_internal(registers, memory_ref, service_account, service_id) do
     {w7, kz, vo, vz} = Registers.get_4(registers, 7, 8, 9, 10)
     ko = w7
 
     k = read_storage_key(memory_ref, ko, kz)
 
     a =
-      cond do
-        k != :error and vz == 0 ->
-          {_, new_s} = pop_in(service_account, [:storage, k])
-          new_s
+      case k do
+        :error ->
+          :error
 
-        k != :error ->
+        _ when vz == 0 ->
+          {_, sa} = pop_in(service_account, [:storage, k])
+          log(:debug, "Deleted storage key: #{b16(k)} [id: #{service_id}]")
+          log(:debug, "Now storage has #{inspect(sa.storage.items_in_storage)} items")
+          sa
+
+        _ ->
           case memory_read(memory_ref, vo, vz) do
             {:ok, value} ->
-              log(:debug, "Write to storage key #{b16(k)} => #{b16(value)}")
-              put_in(service_account, [:storage, k], value)
+              log(:debug, "Write to storage key #{b16(k)} => #{b16(value)} [id: #{service_id}]")
+
+              sa = put_in(service_account, [:storage, k], value)
+              log(:debug, "Now storage has #{inspect(sa.storage.items_in_storage)} items")
+              sa
 
             {:error, _} ->
               :error
           end
-
-        true ->
-          :error
       end
 
     l = current_value_length(k, service_account)

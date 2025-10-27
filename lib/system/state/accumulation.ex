@@ -617,6 +617,7 @@ defmodule System.State.Accumulation do
       "Accumulating service #{service} with #{length(accumulation_inputs)} accumulation_inputs (gas: #{gas})"
     )
 
+    # (e,t,r,f,s) ↦ ΨA(e,τ′,s,g,iT ⌢ iU)
     PVM.accumulate(acc_state, timeslot_, service, gas, accumulation_inputs, %{n0_: n0_})
   end
 
@@ -626,19 +627,25 @@ defmodule System.State.Accumulation do
         always_accumulating_services,
         service
       ) do
-    initial_g = Map.get(always_accumulating_services, service, 0)
-
     service_results =
       for %WorkReport{digests: wd, output: wt, specification: ws, authorizer_hash: wa} <-
             work_reports,
           %WorkDigest{service: ^service, gas_ratio: rg, result: rl, payload_hash: ry} <- wd,
           do: {rg, rl, ry, wt, ws, wa}
 
-    total_gas =
-      initial_g + Collections.sum_by(service_results, &elem(&1, 0))
+    # iT = [t ∣ t<−t, t_d = s]
+    transfers = for t <- deferred_transfers, t.receiver == service, do: t
+    transfer_amount = Enum.sum(for t <- transfers, do: t.amount)
 
+    # g = U(f_s,0) + ∑t∈t,t_d=s(t_g) + ∑(dg)
+    initial_g = Map.get(always_accumulating_services, service, 0)
+
+    total_gas =
+      initial_g + transfer_amount + Collections.sum_by(service_results, &elem(&1, 0))
+
+    # iU = ...
     operands_services =
-      for {rg, rl, ry, wt, ws, wa} <- service_results do
+      for {rg, rl, ry, rt, rs, ra} <- service_results do
         %Accumulate.Operand{
           # l
           data: rl,
@@ -647,18 +654,15 @@ defmodule System.State.Accumulation do
           # y
           payload_hash: ry,
           # t
-          output: wt,
+          output: rt,
           # e
-          segment_root: ws.exports_root,
+          segment_root: rs.exports_root,
           # p
-          package_hash: ws.work_package_hash,
+          package_hash: rs.work_package_hash,
           # a
-          authorizer: wa
+          authorizer: ra
         }
       end
-
-    # iT = [t ∣ t<−t, t_d = s]
-    transfers = for t <- deferred_transfers, t.receiver == service, do: t
 
     {total_gas, operands_services ++ transfers}
   end
