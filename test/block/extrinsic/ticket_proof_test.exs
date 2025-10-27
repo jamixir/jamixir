@@ -164,9 +164,17 @@ defmodule Block.Extrinsic.TicketProofTest do
       assert tickets_for_new_block(tickets, state, 0) == []
     end
 
+    # |E_T| = m′ >= Y
+    test "no tickets after contest ends", %{state: state, tickets: tickets} do
+      assert tickets_for_new_block(tickets, state, Constants.ticket_submission_end()) == []
+    end
+
     test "sorts tickets correctly", %{state: state, tickets: tickets} do
       assert length(tickets) > @max_tickets
-      tickets = tickets_for_new_block(tickets, state, 1)
+      # make sure existing accumulator is empty to take all new tickets
+      state = %{state | safrole: %{state.safrole | ticket_accumulator: []}}
+
+      tickets = tickets_for_new_block(tickets, state, Constants.ticket_submission_end() - 1)
       assert length(tickets) == @max_tickets
 
       assert tickets ==
@@ -174,6 +182,20 @@ defmodule Block.Extrinsic.TicketProofTest do
                  tickets,
                  &(proof_output(&1, state.entropy_pool.n2, state.safrole.epoch_root) |> elem(1))
                )
+    end
+
+    test "when existing tickets don't fit the pool because high ids", %{
+      state: state,
+      tickets: tickets
+    } do
+      full_accumulator =
+        for low_id <- 0..(Constants.epoch_length() - 1) do
+          %System.State.SealKeyTicket{id: <<low_id::256>>}
+        end
+
+      safrole = %{state.safrole | ticket_accumulator: full_accumulator}
+      state = %{state | safrole: safrole}
+      assert tickets_for_new_block(tickets, state, 1) == []
     end
 
     test "don't add tickets already in state", %{state: state, tickets: [t1, t2 | _]} do

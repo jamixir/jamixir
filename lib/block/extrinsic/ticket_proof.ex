@@ -128,17 +128,35 @@ defmodule Block.Extrinsic.TicketProof do
   def tickets_for_new_block(existing_tickets, state, epoch_phase) do
     entropy = state.entropy_pool.n2
 
-    for ticket <- existing_tickets,
-        epoch_phase != 0,
-        {result, id} = TicketProof.proof_output(ticket, entropy, state.safrole.epoch_root),
-        result == :ok,
-        seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
-        not Enum.member?(state.safrole.ticket_accumulator, seal) do
-      {ticket, id}
-    end
-    |> Enum.take(Constants.max_tickets_pre_extrinsic())
-    |> Enum.sort_by(fn {_ticket, id} -> id end)
-    |> Enum.map(&elem(&1, 0))
+    tickets_and_ids =
+      for ticket <- existing_tickets,
+          # TODO remove this constraint (needs re-calculate entropy and epoch_root)
+          epoch_phase != 0,
+          # Formula (6.30) v0.7.2
+          epoch_phase < Constants.ticket_submission_end(),
+          {result, id} = TicketProof.proof_output(ticket, entropy, state.safrole.epoch_root),
+          result == :ok,
+          seal = %SealKeyTicket{id: id, attempt: ticket.attempt},
+          # Formula (6.33) v0.7.2
+          not Enum.member?(state.safrole.ticket_accumulator, seal) do
+        {ticket, id}
+      end
+      |> Enum.sort_by(fn {_ticket, id} -> id end)
+      |> Enum.take(Constants.max_tickets_pre_extrinsic())
+
+    existing_ids = Enum.map(state.safrole.ticket_accumulator, & &1.id)
+    new_ids = Enum.map(tickets_and_ids, &elem(&1, 1))
+
+    # Formula (6.35) v0.7.2
+    all_ids =
+      (existing_ids ++ new_ids)
+      |> Enum.sort()
+      |> Enum.take(Constants.epoch_length())
+      |> MapSet.new()
+
+    for {t, id} <- tickets_and_ids,
+        MapSet.member?(all_ids, id),
+        do: t
   end
 
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
