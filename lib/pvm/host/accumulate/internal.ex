@@ -301,6 +301,7 @@ defmodule PVM.Host.Accumulate.Internal do
     {w7, a, l, o} = Registers.get_4(registers, 7, 8, 9, 10)
     d = w7
 
+    # let d=(x_e)_d
     services = x.accumulation.services
 
     t =

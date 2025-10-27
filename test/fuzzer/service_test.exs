@@ -125,7 +125,7 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @fuzz_path "#{@conformance_path}/fuzz-reports"
-    @base_path "#{@fuzz_path}/0.7.0/traces/_new2/"
+    @base_path "#{@fuzz_path}/0.7.1/traces/"
     @all_traces (case File.ls(@base_path) do
                    {:ok, files} ->
                      files |> Enum.filter(fn file -> String.match?(file, ~r/^\d+/) end)
@@ -138,12 +138,16 @@ defmodule Jamixir.FuzzerTest do
 
       @tag dir: dir
       @tag :fuzzer
-      @tag :slow
-      # TODO re-enable when fuzzer updates to 0.7.2
-      @tag :skip
+      # @tag :slow
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
+    end
+
+    @tag :fuzzer2
+    test "single test", %{client: client} do
+      # 1761552708
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761552851/")
     end
 
     @tag :perf
@@ -156,15 +160,12 @@ defmodule Jamixir.FuzzerTest do
               {"fuzzer 100 blocks #{mode}",
                fn -> test_case(client, "../jam-test-vectors/traces/#{mode}") end}
 
-      # Map.values(test_dict) |> Enum.each(& &1.())
-      Benchee.run(test_dict)
+      Map.values(test_dict) |> Enum.each(& &1.())
+      # Benchee.run(test_dict)
     end
   end
 
   describe "import_block handler" do
-    # TODO re-enable when fuzzer updates to 0.7.2
-    @describetag :skip
-
     setup %{client: client} do
       {:ok, block_json} = block_json("00000001.json")
 
@@ -214,7 +215,6 @@ defmodule Jamixir.FuzzerTest do
       assert String.contains?(error, "parent_state_not_found")
     end
 
-    @tag :slow
     test "handles sequential import of 10 blocks", %{client: client} do
       block_range = 1..10
 
