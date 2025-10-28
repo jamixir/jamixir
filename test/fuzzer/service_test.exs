@@ -31,6 +31,11 @@ defmodule Jamixir.FuzzerTest do
     Client.receive_message(client)
 
     on_exit(fn -> Storage.remove_all() end)
+    Application.put_env(:jamixir, NodeAPI, Jamixir.Node)
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+    end)
 
     {:ok, client: client}
   end
