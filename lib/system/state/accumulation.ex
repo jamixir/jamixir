@@ -146,6 +146,7 @@ defmodule System.State.Accumulation do
 
     # Formula (12.28) v0.7.2
     # Formula (12.29) v0.7.2
+
     accumulation_stats = accumulate_statistics(accumulated_reports, used_gas)
 
     # Formula (12.30) v0.7.2
@@ -194,8 +195,8 @@ defmodule System.State.Accumulation do
   # Formula (12.28) v0.7.2
   # Formula (12.29) v0.7.2
   def accumulate_statistics(work_reports, service_gas_used) do
-    gas_per_service =
-      for {s, u} <- service_gas_used, reduce: %{} do
+    service_gas =
+      for {s, u} <- service_gas_used, u > 0, reduce: %{} do
         stat ->
           case Map.get(stat, s) do
             nil -> Map.put(stat, s, u)
@@ -203,12 +204,20 @@ defmodule System.State.Accumulation do
           end
       end
 
-    for r <- work_reports, d <- r.digests, reduce: %{} do
-      stat ->
-        case Map.get(stat, d.service) do
-          nil -> Map.put(stat, d.service, {1, Map.get(gas_per_service, d.service, 0)})
-          {count, total_gas} -> Map.put(stat, d.service, {count + 1, total_gas})
-        end
+    service_count =
+      for r <- work_reports, d <- r.digests, reduce: %{} do
+        stat ->
+          case Map.get(stat, d.service) do
+            nil -> Map.put(stat, d.service, 1)
+            count -> Map.put(stat, d.service, count + 1)
+          end
+      end
+
+    keys = MapSet.new(Map.keys(service_gas) ++ Map.keys(service_count))
+
+    for s <- keys, reduce: %{} do
+      acc ->
+        Map.put(acc, s, {Map.get(service_count, s, 0), Map.get(service_gas, s, 0)})
     end
   end
 
@@ -401,34 +410,38 @@ defmodule System.State.Accumulation do
       registrar: registrar
     } = acc_state
 
-    available_services = services ++ MapSet.new([manager, delegator, registrar] ++ assigners)
+    available_services = services ++ MapSet.new([manager, delegator, registrar | assigners])
 
     {:ok, cache_agent} =
       Agent.start_link(fn -> %{available: available_services, results: %{}} end)
 
     get_or_accumulate = fn service_id, state ->
-      Agent.get_and_update(cache_agent, fn %{available: available, results: results} ->
-        if service_id in available do
-          # ∆(s) ≡ ∆1(e, t, r, f, s)
-          result =
-            accumulation_module.single_accumulation(
-              state,
-              deferred_transfers,
-              work_reports,
-              always_accumulated_services,
-              service_id,
-              extra_args
-            )
+      Agent.get_and_update(
+        cache_agent,
+        fn %{available: available, results: results} ->
+          if service_id in available do
+            # ∆(s) ≡ ∆1(e, t, r, f, s)
+            result =
+              accumulation_module.single_accumulation(
+                state,
+                deferred_transfers,
+                work_reports,
+                always_accumulated_services,
+                service_id,
+                extra_args
+              )
 
-          {result,
-           %{
-             available: MapSet.delete(available, service_id),
-             results: Map.put(results, service_id, result)
-           }}
-        else
-          {Map.get(results, service_id), %{available: available, results: results}}
-        end
-      end)
+            {result,
+             %{
+               available: MapSet.delete(available, service_id),
+               results: Map.put(results, service_id, result)
+             }}
+          else
+            {Map.get(results, service_id), %{available: available, results: results}}
+          end
+        end,
+        1_000_000_000
+      )
     end
 
     # u = [(s, Δ(s)_u) | s ∈ s]
@@ -506,7 +519,7 @@ defmodule System.State.Accumulation do
     %{manager: manager_, always_accumulated: always_accumulated_} = e_star
 
     Agent.update(cache_agent, fn %{available: available, results: results} ->
-      new_services = MapSet.new([e_star.delegator] ++ e_star.assigners)
+      new_services = MapSet.new([e_star.delegator | e_star.assigners])
       # Only add services that don't already have cached results
       services_to_add = MapSet.difference(new_services, keys_set(results))
       new_available = MapSet.union(available, services_to_add)

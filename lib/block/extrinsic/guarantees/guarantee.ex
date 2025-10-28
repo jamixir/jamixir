@@ -407,8 +407,10 @@ defmodule Block.Extrinsic.Guarantee do
       Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->
         <<v::m(validator_index), s::binary-size(@signature_size), b2::binary>> = b
 
-        {acc ++ [{v, s}], b2}
+        {[{v, s} | acc], b2}
       end)
+
+    credentials = Enum.reverse(credentials)
 
     {%__MODULE__{work_report: work_report, timeslot: timeslot, credentials: credentials}, rest}
   end

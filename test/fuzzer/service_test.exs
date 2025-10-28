@@ -138,16 +138,20 @@ defmodule Jamixir.FuzzerTest do
 
       @tag dir: dir
       @tag :fuzzer
-      # @tag :slow
+      @tag :slow
       test "archive fuzz blocks #{dir}", %{client: client, dir: dir} do
         test_case(client, dir)
       end
     end
 
     @tag :fuzzer2
+    @tag :slow
     test "single test", %{client: client} do
+      # failing cases:
       # 1761552708
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761552851/")
+      # 1761554906
+      # 1761552851
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761554906/")
     end
 
     @tag :perf

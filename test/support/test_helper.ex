@@ -11,9 +11,8 @@ defmodule TestHelper do
     "preimages_light",
     "storage",
     "preimages",
-    "fuzzy_light"
-    # TODO still failing
-    # "fuzzy"
+    "fuzzy_light",
+    "fuzzy"
   ]
 
   def trace_modes, do: @trace_modes

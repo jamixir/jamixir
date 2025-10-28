@@ -158,7 +158,7 @@ defmodule System.State.AccumulationTest do
       service_dict = %{2 => 100}
       [t1, t2] = [%DeferredTransfer{amount: 10, receiver: service}, %DeferredTransfer{amount: 20}]
 
-      assert {0, [t1]} ==
+      assert {10, [t1]} ==
                Accumulation.pre_single_accumulation([], [t1, t2], service_dict, service)
     end
 
@@ -820,11 +820,7 @@ defmodule System.State.AccumulationTest do
 
     test "aggregates single service with single result" do
       work_reports = [
-        %WorkReport{
-          digests: [
-            %WorkDigest{service: 1, gas_used: 100}
-          ]
-        }
+        %WorkReport{digests: [%WorkDigest{service: 1, gas_used: 100}]}
       ]
 
       u = [{1, 100}]
@@ -833,19 +829,31 @@ defmodule System.State.AccumulationTest do
       assert result == %{1 => {1, 100}}
     end
 
+    test "service without work report but with gas" do
+      work_reports = []
+
+      u = [{1, 250}]
+
+      result = Accumulation.accumulate_statistics(work_reports, u)
+      assert result == %{1 => {0, 250}}
+    end
+
+    test "do not include services with zero stats" do
+      work_reports = []
+
+      u = [{1, 0}]
+
+      result = Accumulation.accumulate_statistics(work_reports, u)
+      assert result == %{}
+    end
+
     test "aggregates multiple services across multiple work reports" do
       work_reports = [
         %WorkReport{
-          digests: [
-            %WorkDigest{service: 1},
-            %WorkDigest{service: 2}
-          ]
+          digests: [%WorkDigest{service: 1}, %WorkDigest{service: 2}]
         },
         %WorkReport{
-          digests: [
-            %WorkDigest{service: 1},
-            %WorkDigest{service: 3}
-          ]
+          digests: [%WorkDigest{service: 1}, %WorkDigest{service: 3}]
         }
       ]
 
