@@ -151,7 +151,7 @@ defmodule Jamixir.FuzzerTest do
       # 1761552708
       # 1761554906
       # 1761552851
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761554906/")
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761552708/")
     end
 
     @tag :perf
@@ -164,8 +164,8 @@ defmodule Jamixir.FuzzerTest do
               {"fuzzer 100 blocks #{mode}",
                fn -> test_case(client, "../jam-test-vectors/traces/#{mode}") end}
 
-      Map.values(test_dict) |> Enum.each(& &1.())
-      # Benchee.run(test_dict)
+      # Map.values(test_dict) |> Enum.each(& &1.())
+      Benchee.run(test_dict)
     end
   end
 
