@@ -439,8 +439,7 @@ defmodule System.State.Accumulation do
           else
             {Map.get(results, service_id), %{available: available, results: results}}
           end
-        end,
-        1_000_000_000
+        end
       )
     end
 
@@ -648,7 +647,7 @@ defmodule System.State.Accumulation do
 
     # iT = [t ∣ t<−t, t_d = s]
     transfers = for t <- deferred_transfers, t.receiver == service, do: t
-    transfer_amount = Enum.sum(for t <- transfers, do: t.amount)
+    transfer_amount = Collections.sum_field(transfers, :amount)
 
     # g = U(f_s,0) + ∑t∈t,t_d=s(t_g) + ∑(dg)
     initial_g = Map.get(always_accumulating_services, service, 0)
