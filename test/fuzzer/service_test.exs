@@ -260,9 +260,6 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "protocol v1 examples" do
-    # TODO re-enable when fuzzer updates to 0.7.2
-    @describetag :skip
-
     @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
     test "PeerInfo", %{client: client} do
       <<_::8, bin::binary>> = File.read!("#{@examples_path}/faulty/00000000_fuzzer_peer_info.bin")
@@ -275,6 +272,7 @@ defmodule Jamixir.FuzzerTest do
       assert jam_version == Meta.jam_version()
     end
 
+    @tag :skip
     test "Initialize", %{client: client} do
       <<_::8, bin::binary>> =
         File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
@@ -288,6 +286,7 @@ defmodule Jamixir.FuzzerTest do
       assert b16(root) == b16(exp_root)
     end
 
+    @tag :skip
     test "Error on import", %{client: client} do
       <<_::8, bin::binary>> =
         File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
@@ -303,7 +302,7 @@ defmodule Jamixir.FuzzerTest do
       assert error == "Chain error: block execution failure: preimage_unneeded"
     end
 
-    @tag :slow
+    @tag :skip
     @tag :fuzzerv1
     test "Import all blocks", %{client: client} do
       for type <- ["faulty", "forks", "no_forks"] do
