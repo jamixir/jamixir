@@ -324,13 +324,13 @@ defmodule PVM.Host.Accumulate.Internal do
 
     {c, t_gas} =
       cond do
-        t == :error -> {:panic, 0}
+        t == :error -> {:panic, l}
         # otherwise if d ∉ K(d)
-        not Map.has_key?(services, d) -> {who(), 0}
+        not Map.has_key?(services, d) -> {who(), l}
         # otherwise if l < d[d]_m
-        l < get_in(services, [d, :gas_limit_m]) -> {low(), 0}
+        l < get_in(services, [d, :gas_limit_m]) -> {low(), l}
         # otherwise if b < (x_s)_t
-        b < ServiceAccount.threshold_balance(xs) -> {cash(), 0}
+        b < ServiceAccount.threshold_balance(xs) -> {cash(), l}
         true -> {ok(), l}
       end
 
