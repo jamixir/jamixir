@@ -647,8 +647,7 @@ defmodule System.State.Accumulation do
 
     # iT = [t ∣ t<−t, t_d = s]
     transfers = for t <- deferred_transfers, t.receiver == service, do: t
-    transfer_amount = Collections.sum_field(transfers, :amount)
-
+    transfer_amount = Collections.sum_field(transfers, :gas_limit)
     # g = U(f_s,0) + ∑t∈t,t_d=s(t_g) + ∑(dg)
     initial_g = Map.get(always_accumulating_services, service, 0)
 

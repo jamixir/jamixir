@@ -158,7 +158,7 @@ defmodule System.State.AccumulationTest do
       service_dict = %{2 => 100}
       [t1, t2] = [%DeferredTransfer{amount: 10, receiver: service}, %DeferredTransfer{amount: 20}]
 
-      assert {10, [t1]} ==
+      assert {0, [t1]} ==
                Accumulation.pre_single_accumulation([], [t1, t2], service_dict, service)
     end
 
