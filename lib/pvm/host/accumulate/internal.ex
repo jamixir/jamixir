@@ -633,7 +633,7 @@ defmodule PVM.Host.Accumulate.Internal do
         service == nil ->
           {:continue, who(), x}
 
-        get_in(service, [:storage, {h(i), z}]) != nil ->
+        get_in(service, [:storage, {h(i), z}]) != [] ->
           {:continue, huh(), x}
 
         MapSet.member?(x.preimages, {s, i}) ->

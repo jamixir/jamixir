@@ -1510,7 +1510,9 @@ defmodule PVM.Host.AccumulateTest do
       }
 
       # Service without the preimage
-      clean_service = %ServiceAccount{balance: 1000}
+      c = h(preimage_data)
+      l = byte_size(preimage_data)
+      clean_service = %ServiceAccount{balance: 1000, storage: HashedKeysMap.new(%{{c, l} => []})}
 
       context = %Context{
         service: 123,
