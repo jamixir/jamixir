@@ -13,9 +13,85 @@ defmodule PVM.Host.General.Internal do
 
   @log_context "[PVM]"
   use Util.Logger
+  use Sizes
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
   @max_64_bit_value 0xFFFF_FFFF_FFFF_FFFF
+
+  @doc """
+  Encode JAM chain parameters as returned by the fetch host call (w10 = 0).
+  This is also used by telemetry for the node information message.
+  """
+  def encode_jam_parameters do
+    <<
+      # E8(B_I)
+      additional_minimum_balance_per_item()::m(balance),
+      # E8(B_L)
+      additional_minimum_balance_per_octet()::m(balance),
+      # E8(B_S)
+      service_minimum_balance()::m(balance),
+      # E2(C)
+      core_count()::m(core_index),
+      # E4(D)
+      forget_delay()::m(timeslot),
+      # E4(E)
+      epoch_length()::m(epoch),
+      # E8(G_A)
+      gas_accumulation()::m(gas),
+      # E8(G_I)
+      gas_is_authorized()::m(gas),
+      # E8(G_R)
+      gas_refine()::m(gas),
+      # E8(G_T)
+      gas_total_accumulation()::m(gas),
+      # E2(H)
+      recent_history_size()::16-little,
+      # E2(I)
+      max_work_items()::16-little,
+      # E2(J)
+      max_work_report_dep_sum()::16-little,
+      # E2(K)
+      max_tickets_pre_extrinsic()::16-little,
+      # E4(L)
+      max_age_lookup_anchor()::m(timeslot),
+      # E2(N)
+      tickets_per_validator()::16-little,
+      # E2(O)
+      max_authorizations_items()::16-little,
+      # E2(P)
+      slot_period()::16-little,
+      # E2(Q)
+      max_authorization_queue_items()::16-little,
+      # E2(R)
+      rotation_period()::16-little,
+      # E2(T)
+      max_extrinsics()::16-little,
+      # E2(U)
+      unavailability_period()::16-little,
+      # E2(V)
+      validator_count()::16-little,
+      # E4(W_A)
+      max_authorizer_code_size()::32-little,
+      # E4(W_B)
+      max_work_package_size()::32-little,
+      # E4(W_C)
+      max_service_code_size()::32-little,
+      # E4(W_E)
+      erasure_coded_piece_size()::32-little,
+      # E4(W_M)
+      max_imports()::32-little,
+      # E4(W_P)
+      erasure_coded_pieces_per_segment()::32-little,
+      # E4(W_R)
+      max_work_report_size()::32-little,
+      # E4(W_T)
+      memo_size()::32-little,
+      # E4(W_X)
+      max_exports()::32-little,
+      # E4(Y)
+      ticket_submission_end()::32-little
+    >>
+  end
 
   # Formula (B.16) v0.7.2
   @spec fetch_internal(
@@ -48,74 +124,7 @@ defmodule PVM.Host.General.Internal do
     v =
       cond do
         w10 == 0 ->
-          <<
-            # E8(B_I)
-            additional_minimum_balance_per_item()::m(balance),
-            # E8(B_L)
-            additional_minimum_balance_per_octet()::m(balance),
-            # E8(B_S)
-            service_minimum_balance()::m(balance),
-            # E2(C)
-            core_count()::m(core_index),
-            # E4(D)
-            forget_delay()::m(timeslot),
-            # E4(E)
-            epoch_length()::m(epoch),
-            # E8(G_A)
-            gas_accumulation()::m(gas),
-            # E8(G_I)
-            gas_is_authorized()::m(gas),
-            # E8(G_R)
-            gas_refine()::m(gas),
-            # E8(G_T)
-            gas_total_accumulation()::m(gas),
-            # E2(H)
-            recent_history_size()::16-little,
-            # E2(I)
-            max_work_items()::16-little,
-            # E2(J)
-            max_work_report_dep_sum()::16-little,
-            # E2(K)
-            max_tickets_pre_extrinsic()::16-little,
-            # E4(L)
-            max_age_lookup_anchor()::m(timeslot),
-            # E2(N)
-            tickets_per_validator()::16-little,
-            # E2(O)
-            max_authorizations_items()::16-little,
-            # E2(P)
-            slot_period()::16-little,
-            # E2(Q)
-            max_authorization_queue_items()::16-little,
-            # E2(R)
-            rotation_period()::16-little,
-            # E2(T)
-            max_extrinsics()::16-little,
-            # E2(U)
-            unavailability_period()::16-little,
-            # E2(V)
-            validator_count()::16-little,
-            # E4(W_A)
-            max_authorizer_code_size()::32-little,
-            # E4(W_B)
-            max_work_package_size()::32-little,
-            # E4(W_C)
-            max_service_code_size()::32-little,
-            # E4(W_E)
-            erasure_coded_piece_size()::32-little,
-            # E4(W_M)
-            max_imports()::32-little,
-            # E4(W_P)
-            erasure_coded_pieces_per_segment()::32-little,
-            # E4(W_R)
-            max_work_report_size()::32-little,
-            # E4(W_T)
-            memo_size()::32-little,
-            # E4(W_X)
-            max_exports()::32-little,
-            # E4(Y)
-            ticket_submission_end()::32-little
-          >>
+          encode_jam_parameters()
 
         n != nil and w10 == 1 ->
           n

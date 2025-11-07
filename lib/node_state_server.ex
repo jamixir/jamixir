@@ -127,6 +127,10 @@ defmodule Jamixir.NodeStateServer do
 
           #  Notify Subscription Manager, which will notify "bestBlock" subscribers
           Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
+
+          # Telemetry: best block changed
+          Jamixir.Telemetry.best_block_changed(block.header.timeslot, h(e(block.header)))
+
           if announce, do: announce_block_to_peers(block)
           new_jam_state
 
@@ -244,6 +248,9 @@ defmodule Jamixir.NodeStateServer do
     {_, parent_header} = Storage.get_latest_header()
     parent_hash = h(e(parent_header))
 
+    # Telemetry: authoring event
+    authoring_event_id = Jamixir.Telemetry.authoring(slot, parent_hash)
+
     existing_tickets = Storage.get_tickets(epoch)
 
     Log.debug("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
@@ -255,11 +262,32 @@ defmodule Jamixir.NodeStateServer do
         header_hash = h(e(block.header))
         Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")
         Log.block(:debug, "⛓️ Block created successfully. #{inspect(block)}")
+
+        # Telemetry: authored event
+        Jamixir.Telemetry.authored(authoring_event_id, block)
+
         Task.start(fn -> add_block(block) end)
 
       {:error, reason} ->
         Log.consensus(:debug, "Failed to create block: #{reason}")
+        # Telemetry: authoring failed
+        Jamixir.Telemetry.authoring_failed(authoring_event_id, to_string(reason))
     end
+
+    {:noreply, state}
+  end
+
+  def handle_info({:clock, :telemetry_status}, state) do
+    Jamixir.Telemetry.status(%{
+      peer_count: map_size(ConnectionManager.get_connections()),
+      validator_count: Constants.validator_count(),
+      announcement_streams_count: 0,
+      guarantees_in_pool: [0, 0],
+      shards_count: 0,
+      shards_total_size: 0,
+      preimages_count: 0,
+      preimages_total_size: 0
+    })
 
     {:noreply, state}
   end
@@ -269,6 +297,10 @@ defmodule Jamixir.NodeStateServer do
         %__MODULE__{jam_state: jam_state} = state
       ) do
     Log.info("🌕 Time to produce new tickets for epoch #{target_epoch}")
+
+    # Telemetry: generating tickets event
+    generating_event_id = Jamixir.Telemetry.generating_tickets(target_epoch)
+
     my_index = validator_index(jam_state.curr_validators)
 
     tickets =
@@ -278,40 +310,45 @@ defmodule Jamixir.NodeStateServer do
         my_index
       )
 
-    for ticket <- tickets do
-      output =
-        case TicketProof.proof_output(
-               ticket,
-               jam_state.entropy_pool.n1,
-               jam_state.safrole.epoch_root
-             ) do
-          {:ok, <<output::256>>} ->
-            output
+    ticket_outputs =
+      for ticket <- tickets do
+        output =
+          case TicketProof.proof_output(
+                 ticket,
+                 jam_state.entropy_pool.n1,
+                 jam_state.safrole.epoch_root
+               ) do
+            {:ok, <<output::256>>} ->
+              output
 
-          {:error, :verification_failed} ->
-            Log.warning("Ticket proof verification fail. Probably invalid state commitment.")
-            0
+            {:error, :verification_failed} ->
+              Log.warning("Ticket proof verification fail. Probably invalid state commitment.")
+              0
+          end
+
+        proxy_index = rem(output, Constants.validator_count())
+        key = Enum.at(jam_state.curr_validators, proxy_index).ed25519
+        proxy_connection = ConnectionManager.instance().get_connection(key)
+
+        if key == KeyManager.get_our_ed25519_key() or elem(proxy_connection, 0) == :error do
+          Log.info("No proxy found, so sending ticket directly")
+
+          for {_, pid} <- ConnectionManager.instance().get_connections() do
+            Task.start(fn ->
+              Log.info("🎟️ Sending ticket to validator")
+              Network.Connection.distribute_ticket(pid, :validator, target_epoch, ticket)
+            end)
+          end
+        else
+          {:ok, pid} = proxy_connection
+          Log.info("🎟️ Sending ticket to proxy #{proxy_index}")
+          Network.Connection.distribute_ticket(pid, :proxy, target_epoch, ticket)
         end
 
-      proxy_index = rem(output, Constants.validator_count())
-      key = Enum.at(jam_state.curr_validators, proxy_index).ed25519
-      proxy_connection = ConnectionManager.instance().get_connection(key)
-
-      if key == KeyManager.get_our_ed25519_key() or elem(proxy_connection, 0) == :error do
-        Log.info("No proxy found, so sending ticket directly")
-
-        for {_, pid} <- ConnectionManager.instance().get_connections() do
-          Task.start(fn ->
-            Log.info("🎟️ Sending ticket to validator")
-            Network.Connection.distribute_ticket(pid, :validator, target_epoch, ticket)
-          end)
-        end
-      else
-        {:ok, pid} = proxy_connection
-        Log.info("🎟️ Sending ticket to proxy #{proxy_index}")
-        Network.Connection.distribute_ticket(pid, :proxy, target_epoch, ticket)
+        <<output::binary-size(32)>>
       end
-    end
+
+    Jamixir.Telemetry.tickets_generated(generating_event_id, ticket_outputs)
 
     {:noreply, state}
   end
@@ -334,8 +371,12 @@ defmodule Jamixir.NodeStateServer do
     client_pids = ConnectionManager.get_connections()
     Log.debug("📢 Announcing block to #{map_size(client_pids)} peers")
 
-    for {_address, pid} <- client_pids do
+    header_hash = h(e(block.header))
+
+    for {ed25519_key, pid} <- client_pids do
       Connection.announce_block(pid, block.header, block.header.timeslot)
+      # Telemetry: block announced (we are the announcer)
+      Jamixir.Telemetry.block_announced(ed25519_key, :local, block.header.timeslot, header_hash)
     end
   end
 

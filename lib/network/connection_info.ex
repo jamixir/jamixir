@@ -13,7 +13,8 @@ defmodule Network.ConnectionInfo do
           retry_count: non_neg_integer(),
           start_time: integer(),
           remote_ed25519_key: Types.ed25519_key(),
-          pid: pid() | nil
+          pid: pid() | nil,
+          telemetry_event_id: non_neg_integer() | nil
         }
 
   defstruct status: :connecting,
@@ -21,5 +22,6 @@ defmodule Network.ConnectionInfo do
             retry_count: 0,
             start_time: System.monotonic_time(:millisecond),
             remote_ed25519_key: nil,
-            pid: nil
+            pid: nil,
+            telemetry_event_id: nil
 end
