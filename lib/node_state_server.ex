@@ -345,7 +345,7 @@ defmodule Jamixir.NodeStateServer do
           Network.Connection.distribute_ticket(pid, :proxy, target_epoch, ticket)
         end
 
-        <<output::binary-size(32)>>
+        <<output::256>>
       end
 
     Jamixir.Telemetry.tickets_generated(generating_event_id, ticket_outputs)
