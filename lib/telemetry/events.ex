@@ -181,14 +181,17 @@ defmodule Jamixir.Telemetry.Events do
   Event 41: Authoring failed
   """
   def authoring_failed(event_id, reason) do
-    e({Encoder.timestamp(), @event_authoring_failed, event_id, Encoder.encode_string(reason)})
+    e(
+      {Encoder.timestamp(), @event_authoring_failed, <<event_id::64-little>>,
+       Encoder.encode_string(reason)}
+    )
   end
 
   @doc """
   Event 42: Authored (block authored successfully)
   """
   def authored(event_id, block_outline) do
-    e({Encoder.timestamp(), @event_authored, event_id, block_outline})
+    e({Encoder.timestamp(), @event_authored, <<event_id::64-little>>, block_outline})
   end
 
   @doc """
@@ -204,7 +207,7 @@ defmodule Jamixir.Telemetry.Events do
   def block_executed(event_id, accumulated_services) do
     services_encoded = e(Codec.VariableSize.new(accumulated_services))
 
-    e({Encoder.timestamp(), @event_block_executed, event_id, services_encoded})
+    e({Encoder.timestamp(), @event_block_executed, <<event_id::64-little>>, services_encoded})
   end
 
   ## Block Distribution Events
@@ -242,7 +245,7 @@ defmodule Jamixir.Telemetry.Events do
   def tickets_generated(event_id, ticket_outputs) do
     outputs_encoded = e(vs(ticket_outputs))
 
-    e({Encoder.timestamp(), @event_tickets_generated, event_id, outputs_encoded})
+    e({Encoder.timestamp(), @event_tickets_generated, <<event_id::64-little>>, outputs_encoded})
   end
 
   @doc """
@@ -285,7 +288,7 @@ defmodule Jamixir.Telemetry.Events do
   """
   def guarantee_receive_failed(event_id, reason) do
     e(
-      {Encoder.timestamp(), @event_guarantee_receive_failed, event_id,
+      {Encoder.timestamp(), @event_guarantee_receive_failed, <<event_id::64-little>>,
        Encoder.encode_string(reason)}
     )
   end
@@ -294,7 +297,9 @@ defmodule Jamixir.Telemetry.Events do
   Event 112: Guarantee received
   """
   def guarantee_received(event_id, guarantee_outline) do
-    e({Encoder.timestamp(), @event_guarantee_received, event_id, guarantee_outline})
+    e(
+      {Encoder.timestamp(), @event_guarantee_received, <<event_id::64-little>>, guarantee_outline}
+    )
   end
 
   ## Helper Functions
@@ -329,16 +334,16 @@ defmodule Jamixir.Telemetry.Events do
     header_hash = h(e(block.header))
 
     # Return a tuple that can be encoded
-    {
-      byte_size(e(block)),
-      header_hash,
-      length(block.extrinsic.tickets),
-      length(block.extrinsic.preimages),
-      total_preimage_size(block.extrinsic.preimages),
-      length(block.extrinsic.guarantees),
-      length(block.extrinsic.assurances),
-      length(block.extrinsic.disputes.verdicts)
-    }
+    <<
+      byte_size(e(block))::32-little,
+      header_hash::binary,
+      length(block.extrinsic.tickets)::32-little,
+      length(block.extrinsic.preimages)::32-little,
+      total_preimage_size(block.extrinsic.preimages)::32-little,
+      length(block.extrinsic.guarantees)::32-little,
+      length(block.extrinsic.assurances)::32-little,
+      length(block.extrinsic.disputes.verdicts)::32-little
+    >>
   end
 
   defp total_preimage_size(preimages) do
