@@ -233,14 +233,14 @@ defmodule Jamixir.Telemetry.Events do
   Event 80: Generating tickets
   """
   def generating_tickets(epoch_index) do
-    e({Encoder.timestamp(), @event_generating_tickets, epoch_index})
+    e({Encoder.timestamp(), @event_generating_tickets, <<epoch_index::32-little>>})
   end
 
   @doc """
   Event 82: Tickets generated
   """
   def tickets_generated(event_id, ticket_outputs) do
-    outputs_encoded = e(Codec.VariableSize.new(ticket_outputs))
+    outputs_encoded = e(vs(ticket_outputs))
 
     e({Encoder.timestamp(), @event_tickets_generated, event_id, outputs_encoded})
   end
