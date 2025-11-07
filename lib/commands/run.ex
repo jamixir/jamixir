@@ -13,7 +13,9 @@ defmodule Jamixir.Commands.Run do
     help: :boolean,
     log: :string,
     rpc: :boolean,
-    rpc_port: :integer
+    rpc_port: :integer,
+    telemetry: :string,
+    telemetry_port: :integer
   ]
 
   @aliases [
@@ -71,6 +73,9 @@ defmodule Jamixir.Commands.Run do
       # Configure RPC based on flags
       configure_rpc(opts)
 
+      # Configure telemetry based on flags
+      configure_telemetry(opts)
+
       generate_tls_certificates()
     end
 
@@ -121,6 +126,42 @@ defmodule Jamixir.Commands.Run do
       true ->
         Log.info("🔌 RPC disabled")
         Application.put_env(:jamixir, :rpc_enabled, false)
+    end
+  end
+
+  defp configure_telemetry(opts) do
+    cond do
+      # Format: --telemetry HOST:PORT
+      telemetry_arg = opts[:telemetry] ->
+        case String.split(telemetry_arg, ":") do
+          [host, port_str] ->
+            case Integer.parse(port_str) do
+              {port, ""} ->
+                Log.info("📊 Telemetry enabled: #{host}:#{port}")
+                Application.put_env(:jamixir, :telemetry_enabled, true)
+                Application.put_env(:jamixir, :telemetry_host, host)
+                Application.put_env(:jamixir, :telemetry_port, port)
+
+              _ ->
+                Log.error("❌ Invalid telemetry port: #{port_str}")
+                System.halt(1)
+            end
+
+          _ ->
+            Log.error("❌ Invalid telemetry format. Use: --telemetry HOST:PORT")
+            System.halt(1)
+        end
+
+      # Separate host and port arguments (legacy support)
+      opts[:telemetry_port] ->
+        Log.info("📊 Telemetry enabled on port #{opts[:telemetry_port]}")
+        Application.put_env(:jamixir, :telemetry_enabled, true)
+        Application.put_env(:jamixir, :telemetry_host, "localhost")
+        Application.put_env(:jamixir, :telemetry_port, opts[:telemetry_port])
+
+      # Otherwise, disable telemetry
+      true ->
+        Application.put_env(:jamixir, :telemetry_enabled, false)
     end
   end
 
@@ -323,6 +364,8 @@ defmodule Jamixir.Commands.Run do
       -l, --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
           --rpc                      Enable RPC server on default port (19800)
           --rpc-port <PORT>          Enable RPC server on specified port
+          --telemetry <HOST:PORT>    Enable telemetry reporting (e.g. --telemetry localhost:9090)
+          --telemetry-port <PORT>    Enable telemetry on localhost with specified port
       -h, --help                     Print help
 
     Examples:
@@ -330,9 +373,11 @@ defmodule Jamixir.Commands.Run do
       jamixir run --chainspec ./chainspec.json --keys ./test/keys/0.json
       jamixir run --keys ./test/keys/0.json --rpc
       jamixir run --keys ./test/keys/0.json --rpc-port 20000
+      jamixir run --keys ./test/keys/0.json --telemetry localhost:9090
       MIX_ENV=tiny jamixir run --keys ./test/keys/0.json
-      MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc
       MIX_ENV=tiny jamixir run -c ./chainspec.json -k ./test/keys/1.json -p 10002
+      MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc --telemetry telemetry.jam:9615
+      MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801
 
     Configuration Environments:
       - tiny:      Small network (6 validators, short epochs) - good for testing

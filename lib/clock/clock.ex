@@ -81,6 +81,7 @@ defmodule Clock do
     epoch_phase = Time.epoch_phase(current_slot)
 
     Logger.info("⏰ Slot tick: slot=#{current_slot}, epoch=#{epoch}, phase=#{epoch_phase}")
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, @node_events_channel, {:clock, :telemetry_status})
 
     # Check if this is an authoring slot and send author_block event
     if MapSet.member?(state.authoring_slots, {epoch, epoch_phase}) do

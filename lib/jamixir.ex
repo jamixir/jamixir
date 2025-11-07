@@ -67,18 +67,32 @@ defmodule Jamixir do
       Clock
     ]
 
-    # Only add RPC services if RPC is enabled
-    if Application.get_env(:jamixir, :rpc_enabled, false) do
-      rpc_port = Application.get_env(:jamixir, :rpc_port, 19800)
+    # Add telemetry client
+    telemetry_enabled = Application.get_env(:jamixir, :telemetry_enabled, false)
+    telemetry_host = Application.get_env(:jamixir, :telemetry_host)
+    telemetry_port = Application.get_env(:jamixir, :telemetry_port)
 
-      base_children ++
+    telemetry_children =
+      if telemetry_enabled do
+        [{Jamixir.Telemetry.Client, [enabled: true, host: telemetry_host, port: telemetry_port]}]
+      else
+        [{Jamixir.Telemetry.Client, [enabled: false]}]
+      end
+
+    # Only add RPC services if RPC is enabled
+    rpc_children =
+      if Application.get_env(:jamixir, :rpc_enabled, false) do
+        rpc_port = Application.get_env(:jamixir, :rpc_port, 19_800)
+
         [
           {Jamixir.RPC.SubscriptionManager, []},
           {Jamixir.RPC.Server, [port: rpc_port]}
         ]
-    else
-      base_children
-    end
+      else
+        []
+      end
+
+    base_children ++ telemetry_children ++ rpc_children
   end
 
   def commom_children do
