@@ -5,7 +5,7 @@ defmodule Jamixir.Telemetry.Events do
   Uses existing Codec.Encoder for JAM-compliant encoding.
   """
 
-  alias Jamixir.Telemetry.Encoder
+  alias Codec.NilDiscriminator
   import Codec.Encoder
 
   # Event discriminators
@@ -70,21 +70,21 @@ defmodule Jamixir.Telemetry.Events do
       status.preimages_total_size::32-little
     >>
 
-    e({Encoder.timestamp(), @event_status, status_bin})
+    e({timestamp(), @event_status, status_bin})
   end
 
   @doc """
   Event 11: Best block changed
   """
   def best_block_changed(slot, header_hash) do
-    e({Encoder.timestamp(), @event_best_block_changed, slot, header_hash})
+    e({timestamp(), @event_best_block_changed, slot, header_hash})
   end
 
   @doc """
   Event 12: Finalized block changed
   """
   def finalized_block_changed(slot, header_hash) do
-    e({Encoder.timestamp(), @event_finalized_block_changed, slot, header_hash})
+    e({timestamp(), @event_finalized_block_changed, slot, header_hash})
   end
 
   @doc """
@@ -92,7 +92,7 @@ defmodule Jamixir.Telemetry.Events do
   """
   def sync_status_changed(in_sync) do
     sync_byte = if in_sync, do: 1, else: 0
-    e({Encoder.timestamp(), @event_sync_status_changed, sync_byte})
+    e({timestamp(), @event_sync_status_changed, sync_byte})
   end
 
   ## Networking Events
@@ -101,77 +101,65 @@ defmodule Jamixir.Telemetry.Events do
   Event 20: Connection refused
   """
   def connection_refused(peer_address) do
-    e({Encoder.timestamp(), @event_connection_refused, encode_peer_address(peer_address)})
+    e({timestamp(), @event_connection_refused, encode_peer_address(peer_address)})
   end
 
   @doc """
   Event 21: Connecting in (inbound connection accepted)
   """
   def connecting_in(peer_address) do
-    e({Encoder.timestamp(), @event_connecting_in, encode_peer_address(peer_address)})
+    e({timestamp(), @event_connecting_in, encode_peer_address(peer_address)})
   end
 
   @doc """
   Event 22: Connect in failed
   """
   def connect_in_failed(event_id, reason) do
-    e(
-      {Encoder.timestamp(), @event_connect_in_failed, <<event_id::64-little>>,
-       Encoder.encode_string(reason)}
-    )
+    e({timestamp(), @event_connect_in_failed, <<event_id::64-little>>, vs(reason)})
   end
 
   @doc """
   Event 23: Connected in
   """
   def connected_in(event_id, peer_id) do
-    e({Encoder.timestamp(), @event_connected_in, <<event_id::64-little>>, peer_id})
+    e({timestamp(), @event_connected_in, <<event_id::64-little>>, peer_id})
   end
 
   @doc """
   Event 24: Connecting out (outbound connection initiated)
   """
   def connecting_out(peer_id, peer_address) do
-    e({Encoder.timestamp(), @event_connecting_out, peer_id, encode_peer_address(peer_address)})
+    e({timestamp(), @event_connecting_out, peer_id, encode_peer_address(peer_address)})
   end
 
   @doc """
   Event 25: Connect out failed
   """
   def connect_out_failed(event_id, reason) do
-    e(
-      {Encoder.timestamp(), @event_connect_out_failed, <<event_id::64-little>>,
-       Encoder.encode_string(reason)}
-    )
+    e({timestamp(), @event_connect_out_failed, <<event_id::64-little>>, vs(reason)})
   end
 
   @doc """
   Event 26: Connected out
   """
   def connected_out(event_id) do
-    e({Encoder.timestamp(), @event_connected_out, <<event_id::64-little>>})
+    e({timestamp(), @event_connected_out, <<event_id::64-little>>})
   end
 
   @doc """
   Event 27: Disconnected
   """
   def disconnected(peer_id, terminator, reason) do
-    terminator_encoded =
-      if terminator,
-        do: Encoder.encode_option(encode_connection_side_value(terminator)),
-        else: <<0>>
+    terminator = NilDiscriminator.new(encode_connection_side_value(terminator))
 
-    e(
-      {Encoder.timestamp(), @event_disconnected, peer_id, terminator_encoded,
-       Encoder.encode_string(reason)}
-    )
+    e({timestamp(), @event_disconnected, peer_id, terminator, vs(reason)})
   end
 
   @doc """
   Event 28: Peer misbehaved
   """
   def peer_misbehaved(peer_id, reason) do
-    e({Encoder.timestamp(), @event_peer_misbehaved, peer_id, Encoder.encode_string(reason)})
+    e({timestamp(), @event_peer_misbehaved, peer_id, vs(reason)})
   end
 
   ## Block Authoring/Importing Events
@@ -180,31 +168,28 @@ defmodule Jamixir.Telemetry.Events do
   Event 40: Authoring (block authoring begins)
   """
   def authoring(slot, parent_hash) do
-    e({Encoder.timestamp(), @event_authoring, slot, parent_hash})
+    e({timestamp(), @event_authoring, slot, parent_hash})
   end
 
   @doc """
   Event 41: Authoring failed
   """
   def authoring_failed(event_id, reason) do
-    e(
-      {Encoder.timestamp(), @event_authoring_failed, <<event_id::64-little>>,
-       Encoder.encode_string(reason)}
-    )
+    e({timestamp(), @event_authoring_failed, <<event_id::64-little>>, vs(reason)})
   end
 
   @doc """
   Event 42: Authored (block authored successfully)
   """
   def authored(event_id, block_outline) do
-    e({Encoder.timestamp(), @event_authored, <<event_id::64-little>>, block_outline})
+    e({timestamp(), @event_authored, <<event_id::64-little>>, block_outline})
   end
 
   @doc """
   Event 43: Importing (block import begins)
   """
   def importing(slot, block_outline) do
-    e({Encoder.timestamp(), @event_importing, slot, block_outline})
+    e({timestamp(), @event_importing, slot, block_outline})
   end
 
   @doc """
@@ -213,7 +198,7 @@ defmodule Jamixir.Telemetry.Events do
   def block_executed(event_id, accumulated_services) do
     services_encoded = e(Codec.VariableSize.new(accumulated_services))
 
-    e({Encoder.timestamp(), @event_block_executed, <<event_id::64-little>>, services_encoded})
+    e({timestamp(), @event_block_executed, <<event_id::64-little>>, services_encoded})
   end
 
   ## Block Distribution Events
@@ -224,7 +209,7 @@ defmodule Jamixir.Telemetry.Events do
   def block_announcement_stream_opened(peer_id, side) do
     side_byte = encode_connection_side_value(side)
 
-    e({Encoder.timestamp(), @event_block_announcement_stream_opened, peer_id, side_byte})
+    e({timestamp(), @event_block_announcement_stream_opened, peer_id, side_byte})
   end
 
   @doc """
@@ -233,7 +218,7 @@ defmodule Jamixir.Telemetry.Events do
   def block_announced(peer_id, side, slot, header_hash) do
     side_byte = encode_connection_side_value(side)
 
-    e({Encoder.timestamp(), @event_block_announced, peer_id, side_byte, slot, header_hash})
+    e({timestamp(), @event_block_announced, peer_id, side_byte, slot, header_hash})
   end
 
   ## Safrole Ticket Events
@@ -242,7 +227,7 @@ defmodule Jamixir.Telemetry.Events do
   Event 80: Generating tickets
   """
   def generating_tickets(epoch_index) do
-    e({Encoder.timestamp(), @event_generating_tickets, <<epoch_index::32-little>>})
+    e({timestamp(), @event_generating_tickets, <<epoch_index::32-little>>})
   end
 
   @doc """
@@ -251,7 +236,7 @@ defmodule Jamixir.Telemetry.Events do
   def tickets_generated(event_id, ticket_outputs) do
     outputs_encoded = e(vs(ticket_outputs))
 
-    e({Encoder.timestamp(), @event_tickets_generated, <<event_id::64-little>>, outputs_encoded})
+    e({timestamp(), @event_tickets_generated, <<event_id::64-little>>, outputs_encoded})
   end
 
   @doc """
@@ -262,8 +247,8 @@ defmodule Jamixir.Telemetry.Events do
     is_validator_byte = if is_validator, do: 1, else: 0
 
     e(
-      {Encoder.timestamp(), @event_ticket_transfer_failed, peer_id, side_byte, is_validator_byte,
-       Encoder.encode_string(reason)}
+      {timestamp(), @event_ticket_transfer_failed, peer_id, side_byte, is_validator_byte,
+       vs(reason)}
     )
   end
 
@@ -275,8 +260,8 @@ defmodule Jamixir.Telemetry.Events do
     is_validator_byte = if is_validator, do: 1, else: 0
 
     e(
-      {Encoder.timestamp(), @event_ticket_transferred, peer_id, side_byte, is_validator_byte,
-       epoch_index, attempt, vrf_output}
+      {timestamp(), @event_ticket_transferred, peer_id, side_byte, is_validator_byte, epoch_index,
+       attempt, vrf_output}
     )
   end
 
@@ -286,26 +271,21 @@ defmodule Jamixir.Telemetry.Events do
   Event 110: Receiving guarantee
   """
   def receiving_guarantee(peer_id) do
-    e({Encoder.timestamp(), @event_receiving_guarantee, peer_id})
+    e({timestamp(), @event_receiving_guarantee, peer_id})
   end
 
   @doc """
   Event 111: Guarantee receive failed
   """
   def guarantee_receive_failed(event_id, reason) do
-    e(
-      {Encoder.timestamp(), @event_guarantee_receive_failed, <<event_id::64-little>>,
-       Encoder.encode_string(reason)}
-    )
+    e({timestamp(), @event_guarantee_receive_failed, <<event_id::64-little>>, vs(reason)})
   end
 
   @doc """
   Event 112: Guarantee received
   """
   def guarantee_received(event_id, guarantee_outline) do
-    e(
-      {Encoder.timestamp(), @event_guarantee_received, <<event_id::64-little>>, guarantee_outline}
-    )
+    e({timestamp(), @event_guarantee_received, <<event_id::64-little>>, guarantee_outline})
   end
 
   ## Helper Functions
@@ -332,6 +312,7 @@ defmodule Jamixir.Telemetry.Events do
 
   defp encode_connection_side_value(:local), do: 0
   defp encode_connection_side_value(:remote), do: 1
+  defp encode_connection_side_value(_), do: nil
 
   @doc """
   Encode a block outline for telemetry
@@ -356,5 +337,10 @@ defmodule Jamixir.Telemetry.Events do
     for p <- preimages, reduce: 0 do
       acc -> acc + byte_size(p.blob)
     end
+  end
+
+  defp timestamp do
+    time = Util.Time.current_time() * 1_000_000
+    <<time::64-little>>
   end
 end
