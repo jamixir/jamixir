@@ -7,6 +7,7 @@ defmodule Jamixir.Commands.Run do
   @switches [
     keys: :string,
     genesis: :string,
+    chainspec: :string,
     port: :integer,
     socket_path: :string,
     help: :boolean,
@@ -19,7 +20,8 @@ defmodule Jamixir.Commands.Run do
     l: :log,
     p: :port,
     k: :keys,
-    h: :help
+    h: :help,
+    c: :chainspec
   ]
 
   def run(args) do
@@ -40,6 +42,7 @@ defmodule Jamixir.Commands.Run do
       Log.info("Setting log level to #{log_level}")
 
       Logger.configure(level: :"#{log_level}")
+
       Logger.configure_backend(:console,
         format: "$date $time [$level] $message $metadata\n",
         metadata: [:request_id]
@@ -59,6 +62,9 @@ defmodule Jamixir.Commands.Run do
 
       if genesis_file = opts[:genesis],
         do: Application.put_env(:jamixir, :genesis_file, genesis_file)
+
+      if chainspec_file = opts[:chainspec],
+        do: Application.put_env(:jamixir, :chainspec_file, chainspec_file)
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
@@ -310,7 +316,8 @@ defmodule Jamixir.Commands.Run do
 
     Options:
       -k, --keys <KEYS>              Keys file to load
-          --genesis <GENESIS>        Genesis file to use
+          --genesis <GENESIS>        Genesis file to use (legacy format)
+      -c, --chainspec <CHAINSPEC>    JIP-4 chain specification file to use
       -p, --port <PORT>              Network port to listen on
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
       -l, --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
@@ -320,15 +327,19 @@ defmodule Jamixir.Commands.Run do
 
     Examples:
       jamixir run --keys ./test/keys/0.json
+      jamixir run --chainspec ./chainspec.json --keys ./test/keys/0.json
       jamixir run --keys ./test/keys/0.json --rpc
       jamixir run --keys ./test/keys/0.json --rpc-port 20000
       MIX_ENV=tiny jamixir run --keys ./test/keys/0.json
       MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc
-      MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801
+      MIX_ENV=tiny jamixir run -c ./chainspec.json -k ./test/keys/1.json -p 10002
 
     Configuration Environments:
       - tiny:      Small network (6 validators, short epochs) - good for testing
       - prod:      Production settings (1023 validators, full parameters)
+
+    Note: --chainspec takes precedence over --genesis if both are specified.
+          The system will auto-detect JIP-4 format if using --genesis with a chainspec file.
     """)
   end
 end

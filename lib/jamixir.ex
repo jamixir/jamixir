@@ -133,6 +133,9 @@ defmodule Jamixir do
       ["gen-keys" | rest] ->
         Jamixir.Commands.GenKeys.run(rest)
 
+      ["gen-chainspec" | rest] ->
+        Jamixir.Commands.GenChainspec.run(rest)
+
       ["list-keys" | rest] ->
         Jamixir.Commands.ListKeys.run(rest)
 
@@ -158,11 +161,12 @@ defmodule Jamixir do
     Usage: jamixir [OPTIONS] <COMMAND>
 
     Commands:
-      fuzzer     Run the fuzzer listener on unix domain socket
-      gen-keys   Generate a new secret key seed and print the derived session keys
-      list-keys  List all session keys we have the secret key for
-      run        Run a Jamixir node
-      help       Print this message or the help of the given subcommand(s)
+      fuzzer         Run the fuzzer listener on unix domain socket
+      gen-keys       Generate a new secret key seed and print the derived session keys
+      gen-chainspec  Generate a JIP-4 chain specification file from genesis.json
+      list-keys      List all session keys we have the secret key for
+      run            Run a Jamixir node
+      help           Print this message or the help of the given subcommand(s)
 
     Options:
       -h, --help     Print help
