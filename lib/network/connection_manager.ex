@@ -376,6 +376,8 @@ defmodule Network.ConnectionManager do
           ed25519_key
         )
 
+        Telemetry.disconnected(ed25519_key, :remote, "Remote host disconnected")
+
         {:noreply, %{state | connections: new_connections}}
 
       nil ->
@@ -457,10 +459,13 @@ defmodule Network.ConnectionManager do
   @impl GenServer
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     # Find and update the connection info that had this PID
+
     new_connections =
       state.connections
       |> Enum.map(fn {key, conn_info} ->
         if conn_info.pid == pid do
+          Log.connection(:info, "Peer disconnected", conn_info.remote_ed25519_key)
+
           {key, %{conn_info | pid: nil, status: :disconnected}}
         else
           {key, conn_info}
