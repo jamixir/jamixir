@@ -5,6 +5,7 @@ defmodule Network.Listener do
 
   use GenServer
   import Network.Config
+  alias Jamixir.Telemetry
   alias Network.ConnectionManager
   alias Network.CertUtils
   alias Util.Logger, as: Log
@@ -38,6 +39,7 @@ defmodule Network.Listener do
     case :quicer.accept(socket, [], :infinity) do
       {:ok, conn} ->
         Log.debug("📞 Accepted new QUIC connection")
+        event_id = Telemetry.connecting_in(conn)
 
         case :quicer.handshake(conn) do
           {:ok, conn} ->
@@ -56,6 +58,7 @@ defmodule Network.Listener do
                     do: [test_server_alias: Map.get(state, :test_server_alias)],
                     else: []
 
+                opts = opts ++ [event_id: event_id]
                 ConnectionManager.handle_inbound_connection(conn, ed25519_key, opts)
 
               {:error, reason} ->

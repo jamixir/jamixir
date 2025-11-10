@@ -5,6 +5,7 @@ defmodule Network.Connection do
   """
 
   use GenServer
+  alias Jamixir.Telemetry
   alias Network.{Client, ConnectionManager, ConnectionState, Server}
   import Network.Config
   alias Util.Logger, as: Log
@@ -91,7 +92,13 @@ defmodule Network.Connection do
 
   # For outbound connections (initiated by ConnectionManager)
   @impl GenServer
-  def init(%{init_mode: :initiator, remote_ed25519_key: remote_ed25519_key, ip: ip, port: port, tls_identity: pkcs12_bundle}) do
+  def init(%{
+        init_mode: :initiator,
+        remote_ed25519_key: remote_ed25519_key,
+        ip: ip,
+        port: port,
+        tls_identity: pkcs12_bundle
+      }) do
     connection_info = %{ip: ip, port: port}
 
     Log.connection(
@@ -101,9 +108,12 @@ defmodule Network.Connection do
       connection_info
     )
 
+    event_id = Telemetry.connecting_out(remote_ed25519_key, {ip, port})
+
     case :quicer.connect(ip, port, quicer_connect_opts(pkcs12_bundle), 10_000) do
       {:ok, conn} ->
         Log.connection(:info, "Connected to validator", remote_ed25519_key, connection_info)
+        Telemetry.connected_out(event_id)
 
         # Notify ConnectionManager of successful connection
         ConnectionManager.connection_established(remote_ed25519_key, self())
@@ -117,6 +127,8 @@ defmodule Network.Connection do
          }}
 
       error ->
+        Telemetry.connect_out_failed(event_id, inspect(error))
+
         Log.connection(
           :error,
           "Connection failed: #{inspect(error)}",
@@ -137,6 +149,7 @@ defmodule Network.Connection do
         } = args
       ) do
     Log.connection(:info, "Handling incoming connection from validator", remote_ed25519_key)
+
     # Test-only: register process under an alias if provided
     if pid_alias = args[:test_server_alias] do
       try do

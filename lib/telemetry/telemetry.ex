@@ -5,7 +5,6 @@ defmodule Jamixir.Telemetry do
   """
 
   alias Jamixir.Telemetry.{Client, Events}
-  import Codec.Encoder
 
   @doc """
   Send a telemetry event. Non-blocking.
