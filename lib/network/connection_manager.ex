@@ -16,6 +16,7 @@ defmodule Network.ConnectionManager do
   """
 
   use GenServer
+  alias Jamixir.Telemetry
   alias Jamixir.NodeStateServer
   alias Network.{ConnectionInfo}
   alias Util.Logger, as: Log
@@ -208,9 +209,6 @@ defmodule Network.ConnectionManager do
         {:reply, {:ok, pid}, state}
 
       _no_active_connection ->
-        # Telemetry: connecting out event
-        connecting_event_id = Jamixir.Telemetry.connecting_out(remote_ed25519_key, {ip, port})
-
         # Create DynamicSupervisor spec for outbound connection
         spec = %{
           id: {:outbound_connection, remote_ed25519_key, System.unique_integer()},
@@ -222,8 +220,7 @@ defmodule Network.ConnectionManager do
                  remote_ed25519_key: remote_ed25519_key,
                  ip: ip,
                  port: port,
-                 tls_identity: pkcs12_bundle,
-                 telemetry_event_id: connecting_event_id
+                 tls_identity: pkcs12_bundle
                }
              ]},
           restart: :temporary,
@@ -239,8 +236,7 @@ defmodule Network.ConnectionManager do
               status: :connecting,
               direction: :outbound,
               remote_ed25519_key: remote_ed25519_key,
-              pid: pid,
-              telemetry_event_id: connecting_event_id
+              pid: pid
             }
 
             new_connections = Map.put(state.connections, remote_ed25519_key, connection_info)
@@ -252,9 +248,6 @@ defmodule Network.ConnectionManager do
               "❌ Failed to start outbound connection: #{inspect(error)}",
               remote_ed25519_key
             )
-
-            # Telemetry: connect out failed
-            Jamixir.Telemetry.connect_out_failed(connecting_event_id, inspect(error))
 
             {:reply, error, state}
         end
@@ -304,6 +297,7 @@ defmodule Network.ConnectionManager do
 
             Process.monitor(pid)
             Log.connection(:info, "✅ Inbound connection started successfully", ed25519_key)
+            Telemetry.connected_in(opts[:event_id], ed25519_key)
 
             connection_info = %ConnectionInfo{
               status: :connected,
@@ -335,9 +329,6 @@ defmodule Network.ConnectionManager do
 
     case Map.get(state.connections, ed25519_key) do
       %ConnectionInfo{direction: :outbound, pid: pid} = connection_info ->
-        # Telemetry: disconnected
-        Jamixir.Telemetry.disconnected(ed25519_key, nil, "Connection lost")
-
         # Kill the connection process if it exists
         if is_pid(pid) do
           Log.connection(:debug, "🔪 Killing dead connection process", ed25519_key)
@@ -366,9 +357,6 @@ defmodule Network.ConnectionManager do
          }}
 
       %ConnectionInfo{direction: :inbound, pid: pid} = connection_info ->
-        # Telemetry: disconnected
-        Jamixir.Telemetry.disconnected(ed25519_key, nil, "Connection lost")
-
         # Kill the connection process if it exists
         if is_pid(pid) do
           Log.connection(:debug, "🔪 Killing dead connection process", ed25519_key)
@@ -409,20 +397,6 @@ defmodule Network.ConnectionManager do
     existing_conn = Map.get(state.connections, ed25519_key)
 
     case existing_conn do
-      %ConnectionInfo{telemetry_event_id: event_id} = conn_info when not is_nil(event_id) ->
-        Log.connection(:debug, "🔄 Updating existing connection to connected", ed25519_key)
-
-        # Telemetry: connected out (for outbound) or connected in (for inbound)
-        case conn_info.direction do
-          :outbound -> Jamixir.Telemetry.connected_out(event_id)
-          :inbound -> Jamixir.Telemetry.connected_in(event_id, ed25519_key)
-          _ -> :ok
-        end
-
-        updated_conn = %ConnectionInfo{conn_info | status: :connected, pid: pid}
-        updated_connections = Map.put(state.connections, ed25519_key, updated_conn)
-        {:noreply, %{state | connections: updated_connections}}
-
       %ConnectionInfo{} = conn_info ->
         Log.connection(:debug, "🔄 Updating existing connection to connected", ed25519_key)
         updated_conn = %ConnectionInfo{conn_info | status: :connected, pid: pid}

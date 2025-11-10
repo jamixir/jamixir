@@ -115,14 +115,17 @@ defmodule Jamixir.Telemetry.Events do
   Event 22: Connect in failed
   """
   def connect_in_failed(event_id, reason) do
-    e({Encoder.timestamp(), @event_connect_in_failed, event_id, Encoder.encode_string(reason)})
+    e(
+      {Encoder.timestamp(), @event_connect_in_failed, <<event_id::64-little>>,
+       Encoder.encode_string(reason)}
+    )
   end
 
   @doc """
   Event 23: Connected in
   """
   def connected_in(event_id, peer_id) do
-    e({Encoder.timestamp(), @event_connected_in, event_id, peer_id})
+    e({Encoder.timestamp(), @event_connected_in, <<event_id::64-little>>, peer_id})
   end
 
   @doc """
@@ -136,14 +139,17 @@ defmodule Jamixir.Telemetry.Events do
   Event 25: Connect out failed
   """
   def connect_out_failed(event_id, reason) do
-    e({Encoder.timestamp(), @event_connect_out_failed, event_id, Encoder.encode_string(reason)})
+    e(
+      {Encoder.timestamp(), @event_connect_out_failed, <<event_id::64-little>>,
+       Encoder.encode_string(reason)}
+    )
   end
 
   @doc """
   Event 26: Connected out
   """
   def connected_out(event_id) do
-    e({Encoder.timestamp(), @event_connected_out, event_id})
+    e({Encoder.timestamp(), @event_connected_out, <<event_id::64-little>>})
   end
 
   @doc """
