@@ -1,0 +1,13 @@
+[package]
+name = "ed25519_zip215"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ed25519_zip215"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.34.0"
+ed25519-zebra = "4.0" # ZIP215 compliant implementation
+rand = "0.8"          # Required for batch verification RNG

@@ -1,8 +1,9 @@
 defmodule Util.Crypto do
+  alias Util.Crypto.Ed25519Zip215
   alias Util.Hash
 
   def valid_signature?(signature, payload, public_key) do
-    :crypto.verify(:eddsa, :none, payload, signature, [public_key, :ed25519])
+    Ed25519Zip215.valid_signature?(signature, payload, public_key)
   end
 
   def sign(payload, private_key) do
