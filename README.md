@@ -20,10 +20,11 @@ If it doesn’t (i.e. you don't see your keys), add them using:
 ```
 ssh-add /path/to/your/private/key
 ```
-Then run this command to enable Docker's buildkit in your terminal session:
+Then run this command to build the container
 
 ```
-export DOCKER_BUILDKIT=1
+# replace $HOME/.ssh/id_rsa for your ssh key PATH
+docker build --secret id=ssh_key,src=$HOME/.ssh/id_rsa -t jamixir .
 ```
 
 ## Using docker compose
