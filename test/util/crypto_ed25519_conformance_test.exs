@@ -1,5 +1,6 @@
 defmodule Util.Crypto.Ed25519ConformanceTest do
   use ExUnit.Case
+  alias Util.Crypto.Ed25519Zip215
   alias Util.Crypto
   import Util.Hex
 
@@ -61,6 +62,33 @@ defmodule Util.Crypto.Ed25519ConformanceTest do
       signature = r <> s
 
       assert Crypto.valid_signature?(signature, msg, pk)
+    end
+  end
+
+  describe "batch signature validation" do
+    setup do
+      message = "test message"
+
+      signatures =
+        for _ <- 1..5 do
+          {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+          signature = Crypto.sign(message, priv)
+          {signature, message, pub}
+        end
+
+      {:ok, %{signatures: signatures, message: message}}
+    end
+
+    test "batch_verify/1", %{signatures: signatures} do
+      assert Ed25519Zip215.batch_verify(signatures) == :ok
+    end
+
+    test "batch verify fails when one signature fails", %{signatures: signatures} do
+      {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+      signature = Crypto.sign("message", priv)
+
+      signatures = [{signature, "different message", pub} | signatures]
+      assert Ed25519Zip215.batch_verify(signatures) == :error
     end
   end
 

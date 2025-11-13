@@ -151,9 +151,8 @@ defmodule Block.Extrinsic.Disputes do
         {:error, Error.offender_already_reported()}
 
       # Formula (10.5) and 10.6 - Check signatures
-      !Enum.all?(
-        offenses,
-        fn offense ->
+      Crypto.batch_verify(
+        for offense <- offenses do
           msg_base =
               case offense_type do
                 :culprits ->
@@ -165,13 +164,9 @@ defmodule Block.Extrinsic.Disputes do
                     else: SigningContexts.jam_invalid()
               end
 
-          Crypto.valid_signature?(
-            offense.signature,
-            msg_base <> offense.work_report_hash,
-            offense.key
-          )
+          {offense.signature, msg_base <> offense.work_report_hash, offense.key}
         end
-      ) ->
+      ) == :error ->
         {:error, Error.invalid_signature()}
 
       true ->
@@ -220,13 +215,15 @@ defmodule Block.Extrinsic.Disputes do
       do: prev_validators
 
   defp valid_signatures?(validator_set, %Verdict{judgements: judgements, work_report_hash: wrh}) do
-    Enum.all?(judgements, fn judgement ->
-      Crypto.valid_signature?(
-        judgement.signature,
-        Judgement.signature_base(judgement) <> wrh,
-        Enum.at(validator_set, judgement.validator_index).ed25519
-      )
-    end)
+    Crypto.batch_verify(
+      for judgement <- judgements do
+        {
+          judgement.signature,
+          Judgement.signature_base(judgement) <> wrh,
+          Enum.at(validator_set, judgement.validator_index).ed25519
+        }
+      end
+    ) == :ok
   end
 
   defimpl Encodable do

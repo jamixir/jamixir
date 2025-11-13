@@ -6,6 +6,13 @@ defmodule Util.Crypto do
     Ed25519Zip215.valid_signature?(signature, payload, public_key)
   end
 
+  @spec batch_verify([
+          {Ed25519Zip215.signature(), Ed25519Zip215.message(), Ed25519Zip215.public_key()}
+        ]) :: Ed25519Zip215.verify_result()
+  def batch_verify(items) do
+    Ed25519Zip215.batch_verify(items)
+  end
+
   def sign(payload, private_key) do
     :crypto.sign(:eddsa, :none, payload, [private_key, :ed25519])
   end
