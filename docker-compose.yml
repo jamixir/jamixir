@@ -6,9 +6,6 @@ x-node-common: &node-common
     RELEASE_DAEMON: "false"
   restart: unless-stopped
   network_mode: "host"
-  volumes:
-    - ./test/keys:/node/keys
-    - ./priv/genesis.json:/node/genesis.json
 
 services:
   node1:
