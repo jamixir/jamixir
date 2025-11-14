@@ -6,7 +6,6 @@ defmodule Block.Extrinsic.Assurance do
   Each assurance is a sequence of binary values (i.e., a bitstring), one per core,
   together with a signature and the index of the validator who is assuring.
   """
-  alias System.State.Validator
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
   use Sizes
@@ -75,29 +74,20 @@ defmodule Block.Extrinsic.Assurance do
   end
 
   defp validate_signatures(assurances, parent_hash, curr_validators_) do
-    Enum.reduce_while(assurances, :ok, fn a, _ ->
-      case Enum.at(curr_validators_, a.validator_index) do
-        nil ->
-          {:halt, {:error, :bad_validator_index}}
-
-        v ->
-          case valid_signature?(a, parent_hash, v) do
-            true -> {:cont, :ok}
-            false -> {:halt, {:error, :bad_signature}}
-          end
+    if Enum.any?(assurances, &(Enum.at(curr_validators_, &1.validator_index) == nil)) do
+      {:error, :bad_validator_index}
+    else
+      case Crypto.batch_verify(
+             for a <- assurances do
+               v = Enum.at(curr_validators_, a.validator_index)
+               message = SigningContexts.jam_available() <> h(parent_hash <> a.bitfield)
+               {a.signature, message, v.ed25519}
+             end
+           ) do
+        :ok -> :ok
+        _ -> {:error, :bad_signature}
       end
-    end)
-  end
-
-  defp valid_signature?(_, _, nil), do: false
-
-  defp valid_signature?(
-         %__MODULE__{signature: s, bitfield: f},
-         parent_hash,
-         %Validator{ed25519: e}
-       ) do
-    message = SigningContexts.jam_available() <> Hash.default(parent_hash <> f)
-    Crypto.valid_signature?(s, message, e)
+    end
   end
 
   defimpl Encodable do
