@@ -589,7 +589,7 @@ defmodule System.State.Accumulation do
           %ServiceAccount{} = sa ->
             hash = h(blob)
 
-            if get_in(sa, [:storage, {hash, byte_size(blob)}]) in [nil, []] do
+            if get_in(sa, [:storage, {hash, byte_size(blob)}]) == [] do
               sa = put_in(sa, [:storage, {hash, byte_size(blob)}], [timeslot_])
               sa = put_in(sa, [:preimage_storage_p, hash], blob)
               Map.put(acc, s, sa)
