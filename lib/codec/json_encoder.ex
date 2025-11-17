@@ -75,6 +75,7 @@ defmodule Codec.JsonEncoder do
   def encode(value) when is_list(value), do: Enum.map(value, &encode/1)
   def encode(value) when is_map(value), do: for({k, v} <- value, into: %{}, do: {k, encode(v)})
   def encode(value) when is_binary(value), do: encode16(value, prefix: true)
+  def encode(value) when is_tuple(value), do: Tuple.to_list(value) |> encode() |> List.to_tuple()
   def encode(value), do: value
 
   defmacro __using__(_) do

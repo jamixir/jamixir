@@ -899,6 +899,9 @@ defmodule System.State.AccumulationTest do
     test "add preimage hash to service account", %{services: services} do
       preimages = [%Preimage{service: 1, blob: "hash1"}, %Preimage{service: 2, blob: "hash2"}]
 
+      services = put_in(services, [1, :storage, {h("hash1"), 5}], [])
+      services = put_in(services, [2, :storage, {h("hash2"), 5}], [])
+
       updated_services = Accumulation.integrate_preimages(services, preimages, 9)
 
       expected_services = put_in(services, [1, :storage, {h("hash1"), 5}], [9])

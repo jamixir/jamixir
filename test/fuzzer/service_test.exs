@@ -1,6 +1,8 @@
 defmodule Jamixir.FuzzerTest do
   use ExUnit.Case
   require Logger
+  alias Block.Extrinsic
+  alias Block.Header
   alias Codec.State.Trie
   alias Codec.State.Trie.SerializedState
   alias Jamixir.Fuzzer.{Client, Service}
@@ -152,11 +154,16 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzer2
     @tag :slow
     test "single test", %{client: client} do
-      # failing cases:
-      # 1761552708
-      # 1761554906
-      # 1761552851
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761552708/")
+      # failing cases - extrinsic hash
+      # 1761653121
+      # 1761654464
+      # 1761664166
+
+      # 1763371403 - probably wrong on their side
+
+      # gas
+      # 1763371998
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761664166/")
     end
 
     @tag :perf
@@ -366,7 +373,7 @@ defmodule Jamixir.FuzzerTest do
   defp test_block(client, file, root, dir) do
     Logger.info("Processing block #{file} with root #{b16(root)}")
 
-    <<_::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
+    <<pre_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{file}")
 
     {:ok, _pre_state, rest} = Trie.from_binary(rest)
     before_size = byte_size(rest)
@@ -381,6 +388,7 @@ defmodule Jamixir.FuzzerTest do
 
     if type == :error do
       Util.Logger.info("Block transition failed because of #{resp}")
+      assert b16(exp_post_state_root) == b16(pre_state_root)
     else
       assert :ok = Client.send_message(client, :get_state, h(e(block.header)))
       assert {:ok, :state, post_state} = Client.receive_message(client)
@@ -388,6 +396,7 @@ defmodule Jamixir.FuzzerTest do
       post_state_trie = Trie.serialize(post_state)
       compare_tries(exp_post_state_trie, post_state_trie)
       assert b16(exp_post_state_root) == b16(resp)
+      Util.Logger.info("new state root #{b16(exp_post_state_root)}")
     end
 
     resp
@@ -416,15 +425,34 @@ defmodule Jamixir.FuzzerTest do
   defp test_case(client, dir) do
     Util.Logger.info("Testing case #{dir}")
     files = files_in_dir(dir)
+
+    files =
+      if List.last(files) == "genesis.bin" do
+        Enum.take(files, -1) ++ Enum.drop(files, -1)
+      else
+        files
+      end
+
     [f1 | all_but_first] = files
-    <<_state_root::b(hash), rest::binary>> = File.read!("#{dir}/#{f1}")
-    {:ok, _pre_state, rest} = Trie.from_binary(rest)
-    {block, rest} = Block.decode(rest)
+    bin = File.read!("#{dir}/#{f1}")
+
+    {header, rest} =
+      if f1 == "genesis.bin" do
+        Header.decode(bin)
+      else
+        <<_state_root::b(hash), rest::binary>> = bin
+        {:ok, _pre_state, rest} = Trie.from_binary(rest)
+        {block, rest} = Block.decode(rest)
+        Extrinsic.calculate_hash(block.extrinsic)
+        {block.header, rest}
+      end
+
     <<_state_root::b(hash), rest::binary>> = rest
 
     {:ok, b1_post_state, _rest} = Trie.from_binary(rest)
 
-    message = e(block.header) <> Trie.to_binary(b1_post_state)
+    message = e(header) <> Trie.to_binary(b1_post_state)
+
     assert :ok = Client.send_message(client, :initialize, message)
     assert {:ok, :state_root, root} = Client.receive_message(client)
 
@@ -441,9 +469,9 @@ defmodule Jamixir.FuzzerTest do
     Logger.warning("Passing test case #{dir} with root #{b16(root)}")
   end
 
-  defp files_in_dir(dir, filter \\ ~r/\d+\.bin/) do
+  defp files_in_dir(dir, filter \\ ~r/json/) do
     File.ls!(dir)
-    |> Enum.filter(fn file -> String.match?(file, filter) end)
+    |> Enum.filter(fn file -> !String.match?(file, filter) end)
     |> Enum.sort()
   end
 
