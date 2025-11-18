@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic.Guarantee do
+  alias Codec.VariableSize
   alias Block.Extrinsic.{Guarantee.WorkReport, GuarantorAssignments}
   alias Block.Header
   alias System.{State, State.EntropyPool, State.RecentHistory, State.ServiceAccount}
@@ -286,11 +287,11 @@ defmodule Block.Extrinsic.Guarantee do
       )
     }
 
-    # ∀(w, t, a) ∈ EG,
+    # ∀(r, t, a) ∈ EG,
     guarantees
     |> Enum.reduce_while(
       {:ok, MapSet.new()},
-      fn %__MODULE__{credentials: a, work_report: w = %WorkReport{core_index: wc}, timeslot: t},
+      fn %__MODULE__{credentials: a, work_report: r = %WorkReport{core_index: rc}, timeslot: t},
          reporters_set ->
         %GuarantorAssignments{assigned_cores: c, validators: validators} =
           choose_g(t, t_, g, prev_g)
@@ -305,8 +306,8 @@ defmodule Block.Extrinsic.Guarantee do
               validator ->
                 # (kv)e
                 validator_key = validator.ed25519
-                # XG ⌢ H(E(w))
-                payload = SigningContexts.jam_guarantee() <> h(e(w))
+                # XG ⌢ H(r)
+                payload = SigningContexts.jam_guarantee() <> h(e(r))
 
                 cond do
                   # ∧ R(⌊τ′/R⌋−1) ≤ t ≤ τ'
@@ -316,12 +317,12 @@ defmodule Block.Extrinsic.Guarantee do
                           (div(t_, Constants.rotation_period()) - 1) ->
                     {:halt, {:error, :future_report_slot}}
 
-                  # s ∈ E(k ) ⟨XG ⌢ H(E(w))⟩
+                  # s ∈ V(kv)e ⟨X_G ⌢ H(r)⟩
                   !Crypto.valid_signature?(s, payload, validator_key) ->
                     {:halt, {:error, :bad_signature}}
 
-                  # cv = wc
-                  Enum.at(c, v) != wc ->
+                  # c_v = r_c
+                  Enum.at(c, v) != rc ->
                     {:halt, {:error, :wrong_assignment}}
 
                   true ->
@@ -401,16 +402,13 @@ defmodule Block.Extrinsic.Guarantee do
 
   def decode(bin) do
     {work_report, bin} = WorkReport.decode(bin)
-    <<timeslot::m(timeslot), credentials_count::8, bin::binary>> = bin
+    <<timeslot::m(timeslot), bin::binary>> = bin
 
     {credentials, rest} =
-      Enum.reduce(1..credentials_count, {[], bin}, fn _i, {acc, b} ->
-        <<v::m(validator_index), s::binary-size(@signature_size), b2::binary>> = b
-
-        {[{v, s} | acc], b2}
+      VariableSize.decode(bin, fn b ->
+        <<v::m(validator_index), s::binary-size(@signature_size), rest::binary>> = b
+        {{v, s}, rest}
       end)
-
-    credentials = Enum.reverse(credentials)
 
     {%__MODULE__{work_report: work_report, timeslot: timeslot, credentials: credentials}, rest}
   end

@@ -2,6 +2,7 @@ defmodule Codec.Decoder do
   alias Codec.NilDiscriminator
   alias Codec.VariableSize
   use Sizes
+  import Bitwise
 
   defp decode_little_endian(binary, l) do
     case binary do
@@ -26,9 +27,9 @@ defmodule Codec.Decoder do
     {l, a_l} = determine_l_and_a_l(byte0)
     h = byte0 - a_l
     x_rest = decode_le(rest, l)
-    x = h * :math.pow(256, l) + x_rest
+    x = h * (1 <<< (8 * l)) + x_rest
     <<_::size(l)-unit(8), rest::binary>> = rest
-    {trunc(x), rest}
+    {x, rest}
   end
 
   defp determine_l_and_a_l(byte0) do
@@ -76,9 +77,11 @@ defmodule Codec.Decoder do
 
   @spec decode_mmr(binary()) :: list(Types.hash() | nil)
   def decode_mmr(bin) do
-    {mmr, rest} = VariableSize.decode(bin, fn b ->
-      NilDiscriminator.decode(b, :hash)
-    end)
+    {mmr, rest} =
+      VariableSize.decode(bin, fn b ->
+        NilDiscriminator.decode(b, :hash)
+      end)
+
     {mmr, rest}
   end
 
