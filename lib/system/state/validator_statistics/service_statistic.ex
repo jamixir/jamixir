@@ -131,9 +131,9 @@ defmodule System.State.ServiceStatistic do
         c.preimage,
         c.refine,
         c.imports,
-        c.exports,
-        c.extrinsic_size,
         c.extrinsic_count,
+        c.extrinsic_size,
+        c.exports,
         c.accumulation
       })
     end
@@ -147,9 +147,9 @@ defmodule System.State.ServiceStatistic do
     {refine, rest} = de_i(rest)
     {refine_g, rest} = de_i(rest)
     {imports, rest} = de_i(rest)
-    {exports, rest} = de_i(rest)
-    {extrinsic_size, rest} = de_i(rest)
     {extrinsic_count, rest} = de_i(rest)
+    {extrinsic_size, rest} = de_i(rest)
+    {exports, rest} = de_i(rest)
     {accumulation, rest} = de_i(rest)
     {accumulation_g, rest} = de_i(rest)
 

@@ -109,7 +109,7 @@ defmodule System.State.CoreStatistic do
 
     def encode(%CoreStatistic{} = c) do
       e(
-        {c.da_load, c.popularity, c.imports, c.exports, c.extrinsic_size, c.extrinsic_count,
+        {c.da_load, c.popularity, c.imports, c.extrinsic_count, c.extrinsic_size, c.exports,
          c.bundle_size, c.gas_used}
       )
     end
@@ -121,9 +121,9 @@ defmodule System.State.CoreStatistic do
     {da_load, rest} = de_i(bin)
     {popularity, rest} = de_i(rest)
     {imports, rest} = de_i(rest)
-    {exports, rest} = de_i(rest)
-    {extrinsic_size, rest} = de_i(rest)
     {extrinsic_count, rest} = de_i(rest)
+    {extrinsic_size, rest} = de_i(rest)
+    {exports, rest} = de_i(rest)
     {bundle_size, rest} = de_i(rest)
     {gas_used, rest} = de_i(rest)
 
