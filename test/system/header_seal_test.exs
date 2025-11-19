@@ -124,6 +124,17 @@ defmodule System.HeaderSealTest do
                HeaderSeal.validate_header_seals(sealed_header, validators, epoch_slot_sealers, ep)
     end
 
+    test "error when vrf fails", %{
+      entropy_pool: ep,
+      epoch_slot_sealers: epoch_slot_sealers,
+      header: h
+    } do
+      assert {:error, e} =
+               HeaderSeal.validate_header_seals(h, [], epoch_slot_sealers, ep)
+
+      assert e =~ "VRF Signature Validation Failed"
+    end
+
     test "fails validation with an invalid block seal", %{
       key_pairs: kp,
       entropy_pool: ep,

@@ -66,12 +66,16 @@ defmodule System.HeaderSeal do
 
     # verify that the block seal is a valid signature
     with {:ok, block_seal_output} <-
-           RingVrf.ietf_vrf_verify(
-             Enum.at(bandersnatch_public_keys, header.block_author_key_index),
-             construct_seal_context(expected_slot_sealer, entropy_pool),
-             Header.unsigned_encode(header),
-             header.block_seal
-           ),
+           (try do
+              RingVrf.ietf_vrf_verify(
+                Enum.at(bandersnatch_public_keys, header.block_author_key_index),
+                construct_seal_context(expected_slot_sealer, entropy_pool),
+                Header.unsigned_encode(header),
+                header.block_seal
+              )
+            rescue
+              e -> {:error, "VRF Signature Validation Failed: #{inspect(e)}"}
+            end),
          # calulate the output ourselves and compare it to the block seal's output
          :ok <-
            verify_sealer_match(
@@ -92,6 +96,7 @@ defmodule System.HeaderSeal do
       {:ok, %{block_seal_output: block_seal_output, vrf_signature_output: vrf_signature_output}}
     else
       {:error, reason} -> {:error, reason}
+      e -> {:error, e}
     end
   end
 
