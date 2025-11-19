@@ -127,7 +127,8 @@ defmodule System.State.Accumulation do
       )
 
     # Formula (12.26) v0.7.3
-    accumulation_outputs_ = Enum.sort_by(accumulation_outputs_, & &1.service) |> Enum.uniq()
+    accumulation_outputs_ =
+      Enum.sort_by(accumulation_outputs_, &{&1.service, &1.accumulated_output}) |> Enum.uniq()
 
     # Formula (12.27) v0.7.2
     %__MODULE__{
