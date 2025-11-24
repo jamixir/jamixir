@@ -154,16 +154,13 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzer2
     @tag :slow
     test "single test", %{client: client} do
-      # failing cases - extrinsic hash
-      # 1761653121
-      # 1761654464
-      # 1761664166
+      # storage diff
+      # 1763489659
+      # 1763488212
 
-      # 1763371403 - probably wrong on their side
-
-      # gas
+      # acc final gas
       # 1763371998
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1761664166/")
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1763489659/")
     end
 
     @tag :perf

@@ -37,7 +37,7 @@ defmodule PVM.Accumulate.Executor do
     receive do
       {used_gas, output, final_ctx} ->
         Logger.debug(
-          "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)}"
+          "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}]"
         )
 
         Utils.collapse({used_gas, output, final_ctx})

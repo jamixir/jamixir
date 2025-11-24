@@ -636,7 +636,7 @@ defmodule PVM.Host.Accumulate.Internal do
         get_in(service, [:storage, {h(i), z}]) != [] ->
           {:continue, huh(), x}
 
-        MapSet.member?(x.preimages, {s, i}) ->
+        MapSet.member?(x.preimages, %Preimage{service: s, blob: i}) ->
           {:continue, huh(), x}
 
         true ->

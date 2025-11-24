@@ -1601,7 +1601,7 @@ defmodule PVM.Host.AccumulateTest do
       preimage_data: preimage_data
     } do
       # Add preimage to context preimages set
-      x = %{x | preimages: MapSet.put(x.preimages, {456, preimage_data})}
+      x = %{x | preimages: MapSet.put(x.preimages, %Preimage{service: 456, blob: preimage_data})}
 
       # Use r7 that points to service 456 (clean service)
       registers = %{registers | r: put_elem(registers.r, 7, 456)}
