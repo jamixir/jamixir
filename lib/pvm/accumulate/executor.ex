@@ -2,7 +2,8 @@ defmodule PVM.Accumulate.Executor do
   alias PVM.Accumulate.{Utils, Runner}
   require Logger
 
-  @timeout 500
+  # high timeout to support PVM_TRACE
+  @timeout 5000
   def run(
         service_code,
         initial_context,
