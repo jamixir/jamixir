@@ -9,7 +9,7 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-pvm-rust = { git = "ssh://git@github.com/jamixir/pvm-rust.git", branch = "traces" }
+pvm-rust = { git = "ssh://git@github.com/jamixir/pvm-rust.git", rev = "b69772fc96c7f992e05f43feffe80e339d895200" }
 rustler = "0.36.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
