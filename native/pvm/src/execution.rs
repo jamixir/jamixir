@@ -4,6 +4,7 @@ use crate::{
     atoms,
     nif_types::{ExecuteResult, HostOutput, VmState},
 };
+use pvm_core::vm::tracer::Tracer;
 use pvm_core::{deblob, ExecutionResult, Vm, VmContext, VmState as CoreVmState};
 use rustler::{Binary, Decoder, Encoder, Env, NifResult, Term};
 use std::sync::Arc;
@@ -17,13 +18,13 @@ fn execute<'a>(env: Env<'a>, mut vm: Vm, context_token: u64) -> NifResult<Execut
             let state = vm.get_state();
             let start = state.registers.data[7] as usize;
             let len = state.registers.data[8] as usize;
-            
+
             if let Some(memory) = vm.get_memory() {
                 memory.read(start, len).ok().map(|slice| slice.to_vec())
             } else {
                 None
             }
-        },
+        }
         _ => None,
     };
 
@@ -147,11 +148,13 @@ fn initialize_vm_context(
 
     let deblob_result = deblob(&code);
     let start_set = pvm_core::StartSet::build(&deblob_result.program, &deblob_result.bitmask);
+    let tracer = Tracer::new();
 
     let context = Arc::new(VmContext {
         program: deblob_result.program,
         bitmask: deblob_result.bitmask,
         jump_table: deblob_result.jump_table,
+        tracer: tracer,
         start_set,
     });
 
