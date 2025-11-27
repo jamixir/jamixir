@@ -90,7 +90,7 @@ defmodule Constants do
 
   # Formula (14.7) v0.7.2
   # W_B = W_M * W_F + 4096 + 64 + 64
-  def max_work_package_size, do: max_imports() * audit_footprint() + 4096 + 64 + 64
+  def max_work_package_size, do: 13_794_305
 
   def max_service_code_size, do: 4_000_000
 
