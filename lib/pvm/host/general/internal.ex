@@ -143,7 +143,7 @@ defmodule PVM.Host.General.Internal do
           e(work_package)
 
         work_package != nil and w10 == 8 ->
-          work_package.parameterization_blob
+          e({work_package.authorization_code_hash, vs(work_package.parameterization_blob)})
 
         work_package != nil and w10 == 9 ->
           work_package.authorization_token
