@@ -45,6 +45,8 @@ defmodule PreimagesTestVectors do
       %{accumulate_mock_return() | services: pre_services}
     end)
 
+    json_data = AccumulateTestVectors.fix_accounts(json_data, :pre_state)
+
     json_data = put_in(json_data[:pre_state][:tau], json_data[:input][:slot])
 
     json_data = put_vector_services_stats_on_state(json_data)
