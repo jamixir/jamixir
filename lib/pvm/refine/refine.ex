@@ -144,10 +144,8 @@ defmodule PVM.Refine do
           General.log(gas, registers, memory_ref, context, work_item_index, service_id)
 
         _ ->
-          g_ = gas - default_gas()
-
           %Refine.Result{
-            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
+            exit_reason: :continue,
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())},
             context: context

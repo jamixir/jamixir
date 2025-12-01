@@ -53,10 +53,8 @@ defmodule PVM.Authorize do
           Host.General.log(gas, registers, memory_ref, nil)
 
         _ ->
-          g_ = gas - default_gas()
-
           %General.Result{
-            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
+            exit_reason: :continue,
             gas: gas - default_gas(),
             registers: %{registers | r: put_elem(registers.r, 7, what())}
           }
