@@ -95,13 +95,13 @@ defmodule AccumulateTestVectors do
   def fix_accounts(json_data, type) do
     fixed_accounts =
       for a <- json_data[type][:accounts] do
-        a = put_in(a, [:data, :preimages], a[:data][:preimages_blob])
+        a = put_in(a, [:data, :preimages], a[:data][:preimage_blobs])
 
         fixed_status =
-          for s <- a[:data][:preimages_status],
+          for s <- a[:data][:preimage_requests],
               do: %{
-                key: %{hash: s[:hash], length: 0},
-                value: s[:status]
+                key: %{hash: s[:key][:hash], length: s[:key][:length]},
+                value: s[:value]
               }
 
         put_in(a, [:data, :lookup_meta], fixed_status)
