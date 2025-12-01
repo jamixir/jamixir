@@ -86,8 +86,7 @@ defmodule PVM.Host.General do
       General.Result,
       {gas, registers, memory_ref, context},
       &log_internal/5,
-      [core_index, service_index],
-      0
+      [core_index, service_index]
     )
   end
 end
