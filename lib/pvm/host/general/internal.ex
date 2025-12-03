@@ -454,7 +454,7 @@ defmodule PVM.Host.General.Internal do
     # Return original registers unchanged
     %Result.Internal{
       exit_reason: :continue,
-      registers: registers,
+      registers: %{registers | r: put_elem(registers.r, 7, what())},
       context: context
     }
   end
