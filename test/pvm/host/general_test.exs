@@ -646,7 +646,9 @@ defmodule PVM.Host.GeneralTest do
           11 => byte_size(message)
         })
 
-      assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
+      r_ = %{r | r: put_elem(r.r, 7, what())}
+
+      assert %{exit_reason: :continue, gas: 90, registers: ^r_, context: nil} =
                General.log(g, r, memory_ref, nil, core_index, service_index)
     end
 
@@ -667,7 +669,9 @@ defmodule PVM.Host.GeneralTest do
           11 => byte_size(message)
         })
 
-      assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
+      r_ = %{r | r: put_elem(r.r, 7, what())}
+
+      assert %{exit_reason: :continue, gas: 90, registers: ^r_, context: nil} =
                General.log(g, r, memory_ref, nil, nil, nil)
     end
 
@@ -676,9 +680,10 @@ defmodule PVM.Host.GeneralTest do
       mem = build_memory()
       g = 100
       r = Registers.new(%{7 => 4, 8 => a_0() + 0x1000, 9 => 10, 10 => a_0() + 0x2000, 11 => 15})
+      r_ = %{r | r: put_elem(r.r, 7, what())}
 
       # Function should continue even with memory read errors
-      assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
+      assert %{exit_reason: :continue, gas: 90, registers: ^r_, context: nil} =
                General.log(g, r, mem, nil, 5, 99)
     end
 
@@ -686,9 +691,10 @@ defmodule PVM.Host.GeneralTest do
     test "logs with zero target address and length", %{memory_ref: memory_ref, message: message} do
       g = 100
       r = Registers.new(%{7 => 2, 8 => 0, 9 => 0, 10 => a_0() + 0x2000, 11 => byte_size(message)})
+      r_ = %{r | r: put_elem(r.r, 7, what())}
 
       # Test that the function executes successfully with zero target address
-      assert %{exit_reason: :continue, gas: 100, registers: ^r, context: nil} =
+      assert %{exit_reason: :continue, gas: 90, registers: ^r_, context: nil} =
                General.log(g, r, memory_ref, nil, 1, 42)
     end
   end
