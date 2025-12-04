@@ -7,8 +7,8 @@ defmodule Network.ConnectionManager do
   - All connection creation, lookup, and shutdown is handled via this module
 
   Entry points:
-  - connect_to_validators/1: Initiate connections to all validators
-  - start_outbound_connection/3: Start a single outbound connection
+  - connect_to_validators/1: Initiate connections to all validators, production entry point, called by the InitializationTask, emittes telemetry events for successful and failed connections
+  - start_outbound_connection/3: Start a single outbound connection, used only in tests, does not emit telemetry events
   - handle_inbound_connection/2: Handle a new inbound connection
   - get_connection/1, get_connections/0: Lookup connection PIDs
   - shutdown_all_connections/0: Graceful shutdown of all connections
@@ -27,7 +27,8 @@ defmodule Network.ConnectionManager do
           supervisor_pid: pid(),
           connections: %{Types.ed25519_key() => ConnectionInfo.t()},
           retry_timers: %{Types.ed25519_key() => reference()},
-          validators: list(System.State.Validator.t())
+          validators: list(System.State.Validator.t()),
+          telemetry_event_ids: %{Types.ed25519_key() => integer()}
         }
 
   @type connection_attempt_result :: {connection_outcome(), Types.ed25519_key()}
@@ -43,7 +44,8 @@ defmodule Network.ConnectionManager do
     :supervisor_pid,
     :connections,
     :retry_timers,
-    :validators
+    :validators,
+    :telemetry_event_ids
   ]
 
   ## Public API
@@ -109,7 +111,8 @@ defmodule Network.ConnectionManager do
        supervisor_pid: supervisor_pid,
        connections: %{},
        retry_timers: %{},
-       validators: []
+       validators: [],
+       telemetry_event_ids: %{}
      }}
   end
 
@@ -401,6 +404,13 @@ defmodule Network.ConnectionManager do
     case existing_conn do
       %ConnectionInfo{} = conn_info ->
         Log.connection(:debug, "🔄 Updating existing connection to connected", ed25519_key)
+        telemetry_event_id = Map.get(state.telemetry_event_ids, ed25519_key)
+
+        # Send telemetry event for successful outbound connection
+        if conn_info.direction == :outbound && telemetry_event_id do
+          Telemetry.connected_out(telemetry_event_id)
+        end
+
         updated_conn = %ConnectionInfo{conn_info | status: :connected, pid: pid}
         updated_connections = Map.put(state.connections, ed25519_key, updated_conn)
         {:noreply, %{state | connections: updated_connections}}
@@ -457,7 +467,7 @@ defmodule Network.ConnectionManager do
 
   # Handle process termination - clean up our connections map
   @impl GenServer
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+  def handle_info({:DOWN, _ref, :process, pid, reason}, state) do
     # Find and update the connection info that had this PID
 
     new_connections =
@@ -465,6 +475,13 @@ defmodule Network.ConnectionManager do
       |> Enum.map(fn {key, conn_info} ->
         if conn_info.pid == pid do
           Log.connection(:info, "Peer disconnected", conn_info.remote_ed25519_key)
+
+          # Send telemetry event for failed outbound connection if it was connecting
+          if conn_info.direction == :outbound &&
+               conn_info.status == :connecting &&
+               conn_info.telemetry_event_id do
+            Telemetry.connect_out_failed(conn_info.telemetry_event_id, inspect(reason))
+          end
 
           {key, %{conn_info | pid: nil, status: :disconnected}}
         else
@@ -566,6 +583,8 @@ defmodule Network.ConnectionManager do
           type: :worker
         }
 
+        event_id = Telemetry.connecting_out(ed25519_key, {ip, port})
+        new_telemetry_event_ids = Map.put(state.telemetry_event_ids, ed25519_key, event_id)
         case DynamicSupervisor.start_child(state.supervisor_pid, spec) do
           {:ok, pid} ->
             Process.monitor(pid)
@@ -588,12 +607,14 @@ defmodule Network.ConnectionManager do
               ed25519_key
             )
 
+            Telemetry.connect_out_failed(event_id, inspect(error))
+
             connection_info = %ConnectionInfo{
               status: :retrying,
               retry_count: 1,
               direction: :outbound,
               remote_ed25519_key: ed25519_key,
-              start_time: System.monotonic_time(:millisecond)
+              start_time: System.monotonic_time(:millisecond),
             }
 
             new_connections = Map.put(state.connections, ed25519_key, connection_info)
