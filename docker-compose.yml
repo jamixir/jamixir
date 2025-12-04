@@ -16,6 +16,7 @@ services:
       - --port=10001
       - --keys=/node/keys/0.json
       - --genesis=/node/genesis.json
+      - --telemetry=localhost:9000
 
   node2:
     <<: *node-common
@@ -24,6 +25,7 @@ services:
       - run
       - --port=10002
       - --keys=/node/keys/1.json
+      - --telemetry=localhost:9000
 
   node3:
     <<: *node-common
@@ -32,6 +34,7 @@ services:
       - run
       - --port=10003
       - --keys=/node/keys/2.json
+      - --telemetry=localhost:9000
 
   node4:
     <<: *node-common
@@ -40,6 +43,7 @@ services:
       - run
       - --port=10004
       - --keys=/node/keys/3.json
+      - --telemetry=localhost:9000
 
   node5:
     <<: *node-common
@@ -48,6 +52,7 @@ services:
       - run
       - --port=10005
       - --keys=/node/keys/4.json
+      - --telemetry=localhost:9000
 
   node6:
     <<: *node-common
@@ -56,3 +61,4 @@ services:
       - run
       - --port=10006
       - --keys=/node/keys/5.json
+      - --telemetry=localhost:9000
