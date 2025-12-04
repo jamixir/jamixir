@@ -5,7 +5,6 @@ defmodule Network.Connection do
   """
 
   use GenServer
-  alias Jamixir.Telemetry
   alias Network.{Client, ConnectionManager, ConnectionState, Server}
   import Network.Config
   alias Util.Logger, as: Log
@@ -108,12 +107,9 @@ defmodule Network.Connection do
       connection_info
     )
 
-    event_id = Telemetry.connecting_out(remote_ed25519_key, {ip, port})
-
     case :quicer.connect(ip, port, quicer_connect_opts(pkcs12_bundle), 10_000) do
       {:ok, conn} ->
         Log.connection(:info, "Connected to validator", remote_ed25519_key, connection_info)
-        Telemetry.connected_out(event_id)
 
         # Notify ConnectionManager of successful connection
         ConnectionManager.connection_established(remote_ed25519_key, self())
@@ -127,8 +123,6 @@ defmodule Network.Connection do
          }}
 
       error ->
-        Telemetry.connect_out_failed(event_id, inspect(error))
-
         Log.connection(
           :error,
           "Connection failed: #{inspect(error)}",
