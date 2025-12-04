@@ -373,10 +373,10 @@ defmodule Jamixir.Commands.Run do
       jamixir run --chainspec ./chainspec.json --keys ./test/keys/0.json
       jamixir run --keys ./test/keys/0.json --rpc
       jamixir run --keys ./test/keys/0.json --rpc-port 20000
-      jamixir run --keys ./test/keys/0.json --telemetry localhost:9090
+      jamixir run --keys ./test/keys/0.json --telemetry localhost:9000
       MIX_ENV=tiny jamixir run --keys ./test/keys/0.json
       MIX_ENV=tiny jamixir run -c ./chainspec.json -k ./test/keys/1.json -p 10002
-      MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc --telemetry telemetry.jam:9615
+      MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc --telemetry localhost:9000
       MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801
 
     Configuration Environments:
