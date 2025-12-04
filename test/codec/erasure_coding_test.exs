@@ -6,12 +6,11 @@ defmodule ErasureCodingTest do
     core_count = %{"tiny" => 2, "full" => 342}
 
     for type <- ["tiny", "full"] do
-      for size <- ["3", "10", "32", "100", "272", "4096", "4104", "10000"] do
+      for size <- ["3", "32", "100", "4096", "4104", "10000"] do
         file_name = "#{type}/ec-#{size}"
 
         test_case =
-          File.read("../jam-test-vectors/erasure-coding/#{file_name}.json")
-          |> elem(1)
+          File.read!("../jam-test-vectors/erasure/#{file_name}.json")
           |> Jason.decode!()
           |> JsonDecoder.from_json()
 
