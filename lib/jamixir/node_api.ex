@@ -62,16 +62,16 @@ defmodule Jamixir.NodeAPI do
   def get_work_report_shard(erasure_root, segment_index),
     do: impl().get_work_report_shard(erasure_root, segment_index)
 
-  def get_segment_shards(erasure_root, segment_index, share_index),
-    do: impl().get_segment_shards(erasure_root, segment_index, share_index)
+  def get_segment_shards(erasure_root, shard_index, segment_indexes),
+    do: impl().get_segment_shards(erasure_root, shard_index, segment_indexes)
 
   def save_work_package_bundle(bundle, core, segment_lookup_dict),
     do: impl().save_work_package_bundle(bundle, core, segment_lookup_dict)
 
   def get_state_trie(header_hash), do: impl().get_state_trie(header_hash)
 
-  def get_justification(erasure_root, segment_index, shard_index),
-    do: impl().get_justification(erasure_root, segment_index, shard_index)
+  def get_justification(erasure_root, shard_index, segment_indexes),
+    do: impl().get_justification(erasure_root, shard_index, segment_indexes)
 
   defp impl, do: Application.get_env(:jamixir, NodeAPI, Jamixir.Node)
 end

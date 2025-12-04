@@ -146,7 +146,7 @@ defmodule Network.ServerCalls do
       log("Requesting segment shards for erasure root #{inspect(r.erasure_root)}")
 
       {:ok, shards} =
-        Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.segment_index, r.shard_indexes)
+        Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.shard_index, r.segment_indexes)
 
       shards
     end
@@ -163,12 +163,12 @@ defmodule Network.ServerCalls do
           log("Requesting segment shards for erasure root #{inspect(r.erasure_root)}")
 
           {:ok, shards} =
-            Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.segment_index, r.shard_indexes)
+            Jamixir.NodeAPI.get_segment_shards(r.erasure_root, r.shard_index, r.segment_indexes)
 
           justifications =
-            for shard_index <- r.shard_indexes do
+            for segment_index <- r.segment_indexes do
               {:ok, justification} =
-                Jamixir.NodeAPI.get_justification(r.erasure_root, r.segment_index, shard_index)
+                Jamixir.NodeAPI.get_justification(r.erasure_root, r.shard_index, segment_index)
 
               justification
             end
@@ -270,10 +270,10 @@ defmodule Network.ServerCalls do
 
   defp decode_requests(bin, acc) do
     <<erasure_root::binary-size(@hash_size), rest::binary>> = bin
-    <<segment_index::16-little, rest::binary>> = rest
+    <<shard_index::16-little, rest::binary>> = rest
     {indexes_count, rest} = de_i(rest)
 
-    {shard_indexes, rest} =
+    {segment_indexes, rest} =
       Enum.reduce(from_0_to(indexes_count), {[], rest}, fn _, {acc, rest} ->
         <<value::16-little, r::binary>> = rest
         {acc ++ [value], r}
@@ -281,8 +281,8 @@ defmodule Network.ServerCalls do
 
     request = %SegmentShardsRequest{
       erasure_root: erasure_root,
-      segment_index: segment_index,
-      shard_indexes: shard_indexes
+      shard_index: shard_index,
+      segment_indexes: segment_indexes
     }
 
     # Continue decoding the rest

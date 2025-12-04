@@ -3,6 +3,7 @@ defmodule Jamixir.NodeStateServerBehaviour do
   @callback assigned_shard_index(non_neg_integer(), binary()) :: non_neg_integer() | nil
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
   @callback neighbours() :: list(Validator.t())
+  @callback validator_index() :: non_neg_integer()
 end
 
 defmodule Jamixir.NodeStateServer do
@@ -57,6 +58,7 @@ defmodule Jamixir.NodeStateServer do
     validator_index(KeyManager.get_our_ed25519_key(), validators)
   end
 
+  @impl true
   def validator_index, do: validator_index(KeyManager.get_our_ed25519_key())
 
   def validator_index(ed25519_pubkey, validators),

@@ -7,6 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
   import Codec.{Decoder, Encoder}
+  import RangeMacros
   use MapUnion
   use SelectiveMock
 
@@ -200,7 +201,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   def paged_proofs(exports) do
     segments_count = ceil(length(exports) / 64)
 
-    for i <- for(s <- 0..segments_count, do: 64 * s) do
+    for i <- from_0_to(segments_count) do
       Utils.pad_binary_right(
         e({
           vs(MerkleTree.justification(exports, i, 6)),

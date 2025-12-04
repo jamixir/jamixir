@@ -13,6 +13,7 @@ defmodule StoragePrefix do
       @p_segment "s"
       @p_segment_core "k"
       @p_ticket "T"
+      @p_segment_shard "S"
     end
   end
 end

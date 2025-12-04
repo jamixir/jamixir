@@ -169,6 +169,20 @@ defmodule Util.MerkleTreeTest do
     end
   end
 
+  describe "trace/3" do
+    test "trace for power of two list" do
+      list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+      result = MerkleTree.trace(list, 3, &mock_hash/1)
+      assert result == ["hash(nodehash(nodeef)hash(nodegh))", "hash(nodeab)", "c"]
+    end
+
+    test "trace for non power of two list" do
+      list = ["a", "b", "c", "d", "e", "f", "g"]
+      result = MerkleTree.trace(list, 3, &mock_hash/1)
+      assert result == ["hash(nodehash(nodede)hash(nodefg))", "hash(nodeab)", "c"]
+    end
+  end
+
   describe "justification_l/4" do
     test "returns correct leaf hashes for given range" do
       list = ["a", "b", "c", "d", "e", "f", "g", "h"]

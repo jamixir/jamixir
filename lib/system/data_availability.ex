@@ -40,8 +40,8 @@ defmodule System.DataAvailability do
 
             req = %SegmentShardsRequest{
               erasure_root: erasure_root,
-              segment_index: segment_index,
-              shard_indexes: [shard_index]
+              shard_index: shard_index,
+              segment_indexes: [segment_index]
             }
 
             {:ok, shards} = Connection.request_segment_shards(pid, [req], false)

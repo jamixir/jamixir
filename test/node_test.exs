@@ -17,7 +17,17 @@ defmodule Jamixir.NodeTest do
   @genesis_hash Genesis.genesis_header_hash()
   @genesis_state_key @p_state <> @genesis_hash
 
+  defp wait_all_tasks do
+    # Wait for all tasks under Jamixir.TaskSupervisor to complete
+    pids = Task.Supervisor.children(Jamixir.TaskSupervisor)
+    for pid <- pids, do: Process.monitor(pid)
+    for _ <- pids, do: receive(do: ({:DOWN, _, :process, _, _} -> :ok))
+  end
+
   setup_all do
+    # Start TaskSupervisor for tests that use async tasks
+    start_supervised!({Task.Supervisor, name: Jamixir.TaskSupervisor})
+
     %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
     [key | _] = key_pairs
 
@@ -182,12 +192,32 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "distribute and get work report" do
-    test "distribute_work_report guarantee with valid parameters" do
+    setup do
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :node_state_server)
+        Application.delete_env(:jamixir, :network_client)
+      end)
+    end
+
+    test "distribute_work_report guarantee requests shards and saves them" do
       guarantee = build(:guarantee)
       spec = guarantee.work_report.specification
+      root = spec.erasure_root
+      stub(NodeStateServerMock, :validator_index, fn -> 1 end)
+
+      stub(ClientMock, :request_work_report_shard, fn _, ^root, 1 ->
+        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
+      end)
+
       :ok = save_guarantee(guarantee)
+      wait_all_tasks()
 
       {:ok, r} = get_work_report(spec.work_package_hash)
+      assert Storage.get_segment_shard(root, 1, 0) == <<2>>
+      assert Storage.get_segment_shard(root, 1, 1) == <<3>>
       assert r == guarantee.work_report
     end
 

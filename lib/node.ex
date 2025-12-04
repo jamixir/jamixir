@@ -222,25 +222,35 @@ defmodule Jamixir.Node do
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
-    _server_pid = self()
-    header_hash = <<>>
+    server_pid = self()
 
-    case Storage.get_state(header_hash) do
-      nil ->
-        Logger.error("No state found to request erasure code for work report")
-        {:error, :no_state}
+    Logger.info("Request EC for work report: #{b16(spec.work_package_hash)}")
+    shard_index = NodeStateServer.instance().validator_index()
 
-      _state ->
-        Task.start(fn ->
-          Logger.info("Request EC  for work report: #{b16(spec.work_package_hash)}")
+    Task.Supervisor.start_child(Jamixir.TaskSupervisor, fn ->
+      case Network.Connection.request_work_report_shard(
+             server_pid,
+             spec.erasure_root,
+             shard_index
+           ) do
+        {:ok, {_bundle_shard, segments_shards, _justifications}} ->
+          Logger.debug("Received EC shard for work package: #{b16(spec.work_package_hash)}")
 
-          # Network.Connection.request_audit_shard(
-          #   server_pid,
-          #   spec.erasure_root,
-          #   NodeStateServer.assigned_shard_index(guarantee.work_report.core_index)
-          # )
-        end)
-    end
+          for {segment_shard, segment_index} <- Enum.with_index(segments_shards) do
+            Storage.put_segment_shard(
+              spec.erasure_root,
+              shard_index,
+              segment_index,
+              segment_shard
+            )
+          end
+
+        {:error, reason} ->
+          Logger.error(
+            "Failed to retrieve EC for work report #{b16(spec.work_package_hash)}: #{inspect(reason)}"
+          )
+      end
+    end)
 
     :ok
   end
@@ -377,7 +387,7 @@ defmodule Jamixir.Node do
 
   # CE 139/140: Segment shard request
   @impl true
-  def get_segment_shards(_erasure_root, _segment_index, _shard_index) do
+  def get_segment_shards(_erasure_root, _shard_index, _segment_indexes) do
     {:error, :not_implemented}
   end
 
