@@ -39,7 +39,7 @@ defmodule Network.Listener do
     case :quicer.accept(socket, [], :infinity) do
       {:ok, conn} ->
         Log.debug("📞 Accepted new QUIC connection")
-        event_id = Telemetry.connecting_in(conn)
+        event_id = Telemetry.connecting_in(peer_address_from_connection(conn))
 
         case :quicer.handshake(conn) do
           {:ok, conn} ->
@@ -62,11 +62,13 @@ defmodule Network.Listener do
                 ConnectionManager.handle_inbound_connection(conn, ed25519_key, opts)
 
               {:error, reason} ->
+                Telemetry.connect_in_failed(event_id, "Failed to identify validator: #{inspect(reason)}"  )
                 Log.warning("❌ Failed to identify validator: #{inspect(reason)}")
                 :quicer.close_connection(conn)
             end
 
           {:error, reason} ->
+            Telemetry.connect_in_failed(event_id, "Handshake failed: #{inspect(reason)}")
             Log.warning("❌ Handshake failed: #{inspect(reason)}")
             :quicer.close_connection(conn)
         end
@@ -116,5 +118,12 @@ defmodule Network.Listener do
   def terminate(_reason, %{socket: socket}) do
     :ok = :quicer.close_listener(socket)
     :ok
+  end
+
+  defp peer_address_from_connection(conn) do
+    case :quicer.peername(conn) do
+      {:ok, {ip, port}} -> {ip, port}
+      _ -> nil
+    end
   end
 end
