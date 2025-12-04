@@ -346,13 +346,13 @@ defmodule CommsTest do
       requests = [
         %SegmentShardsRequest{
           erasure_root: <<1::hash()>>,
-          segment_index: 8,
-          shard_indexes: ids
+          shard_index: 8,
+          segment_indexes: ids
         },
         %SegmentShardsRequest{
           erasure_root: <<2::hash()>>,
-          segment_index: 9,
-          shard_indexes: [1, 2]
+          shard_index: 9,
+          segment_indexes: [1, 2]
         }
       ]
 
@@ -361,8 +361,8 @@ defmodule CommsTest do
 
     # CE 139
     test "request segment shard", %{client: client, requests: [request1, request2]} do
-      ids = request1.shard_indexes
-      shards = for(i <- request1.shard_indexes, do: <<i::m(segment_shard)>>)
+      ids = request1.segment_indexes
+      shards = for(i <- request1.segment_indexes, do: <<i::m(segment_shard)>>)
 
       call1 = fn <<1::hash()>>, 8, ^ids -> {:ok, shards} end
       call2 = fn <<2::hash()>>, 9, [1, 2] -> {:ok, shards |> Enum.take(2)} end
@@ -380,8 +380,8 @@ defmodule CommsTest do
       client: client,
       requests: [request1, request2]
     } do
-      ids = request1.shard_indexes
-      shards = for(i <- request1.shard_indexes, do: <<i::m(segment_shard)>>)
+      ids = request1.segment_indexes
+      shards = for(i <- request1.segment_indexes, do: <<i::m(segment_shard)>>)
 
       call1 = fn <<1::hash()>>, 8, ^ids -> {:ok, shards} end
       call2 = fn <<2::hash()>>, 9, [1, 2] -> {:ok, shards |> Enum.take(2)} end

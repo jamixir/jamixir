@@ -147,4 +147,16 @@ defmodule StorageTest do
       assert Storage.get_tickets(e2) == [t2]
     end
   end
+
+  describe "put and get segment shard" do
+    test "put and get segment shard" do
+      erasure_root = Hash.random()
+      shard_index = 1
+      segment_index = 2
+      shard_data = <<1, 2, 3, 4, 5>>
+
+      {:ok, _} = Storage.put_segment_shard(erasure_root, shard_index, segment_index, shard_data)
+      assert Storage.get_segment_shard(erasure_root, shard_index, segment_index) == shard_data
+    end
+  end
 end

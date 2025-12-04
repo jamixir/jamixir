@@ -27,6 +27,9 @@ defmodule Util.MerkleTree do
   end
 
   # Formula (E.2) v0.7.2
+  @spec trace(list(binary()), non_neg_integer(), (binary() -> Types.hash())) :: [
+          binary() | Types.hash()
+        ]
   def trace(v, i, hash_func) when length(v) > 1 do
     [node(p(false, v, i), hash_func) | trace(p(true, v, i), i - pi(v, i), hash_func)]
   end

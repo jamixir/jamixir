@@ -5,7 +5,7 @@ defmodule System.DataAvailabilityTest do
   import System.DataAvailability
   import Jamixir.Factory
   import Mox
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   setup :verify_on_exit!
 
@@ -58,8 +58,8 @@ defmodule System.DataAvailabilityTest do
         req = [
           %SegmentShardsRequest{
             erasure_root: root,
-            segment_index: segment_index,
-            shard_indexes: [i]
+            shard_index: i,
+            segment_indexes: [segment_index]
           }
         ]
 

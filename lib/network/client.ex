@@ -139,14 +139,14 @@ defmodule Network.Client do
       for r <- requests, reduce: <<>> do
         acc ->
           indexes =
-            for index <- r.shard_indexes, reduce: <<>> do
+            for index <- r.segment_indexes, reduce: <<>> do
               acc -> acc <> <<index::16-little>>
             end
 
           req_bin =
             <<r.erasure_root::b(hash)>> <>
-              <<r.segment_index::16-little>> <>
-              e(length(r.shard_indexes)) <>
+              <<r.shard_index::16-little>> <>
+              e(length(r.segment_indexes)) <>
               indexes
 
           acc <> req_bin

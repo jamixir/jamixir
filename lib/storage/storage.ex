@@ -218,6 +218,25 @@ defmodule Storage do
     KVStorage.put(@p_segment <> merkle_root <> <<segment_index::little-32>>, segment)
   end
 
+  def put_segment_shard(erasure_root, shard_index, segment_index, segment_shard) do
+    KVStorage.put(
+      @p_segment_shard <>
+        erasure_root <>
+        <<shard_index::m(validator_index)>> <>
+        <<segment_index::little-32>>,
+      segment_shard
+    )
+  end
+
+  def get_segment_shard(erasure_root, shard_index, segment_index) do
+    KVStorage.get(
+      @p_segment_shard <>
+        erasure_root <>
+        <<shard_index::m(validator_index)>> <>
+        <<segment_index::little-32>>
+    )
+  end
+
   def get_segment_core(merkle_root) do
     KVStorage.get(@p_segment_core <> merkle_root)
   end

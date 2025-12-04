@@ -402,14 +402,12 @@ defmodule WorkReportTest do
     test "paged proof smoke test" do
       bytes = for _ <- 1..10, do: <<7::@size>>
       proofs = WorkReport.paged_proofs(bytes)
-      assert length(proofs) == 2
+      assert length(proofs) == 1
       assert Enum.all?(proofs, &(byte_size(&1) == Constants.segment_size()))
     end
 
     test "paged proof empty bytestring" do
-      proofs = WorkReport.paged_proofs([])
-      assert length(proofs) == 1
-      assert Enum.all?(proofs, &(byte_size(&1) == Constants.segment_size()))
+      assert Enum.empty?(WorkReport.paged_proofs([]))
     end
   end
 

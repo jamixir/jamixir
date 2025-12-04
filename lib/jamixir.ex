@@ -64,7 +64,7 @@ defmodule Jamixir do
   defp node_children() do
     base_children = [
       Network.ConnectionManager,
-      Clock
+      {Clock, [no_wait: Jamixir.config()[:test_env] || false]}
     ]
 
     # Add telemetry client
