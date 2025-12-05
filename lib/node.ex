@@ -225,33 +225,8 @@ defmodule Jamixir.Node do
     server_pid = self()
 
     Logger.info("Request EC for work report: #{b16(spec.work_package_hash)}")
-    shard_index = NodeStateServer.instance().validator_index()
 
-    Task.Supervisor.start_child(Jamixir.TaskSupervisor, fn ->
-      case Network.Connection.request_work_report_shard(
-             server_pid,
-             spec.erasure_root,
-             shard_index
-           ) do
-        {:ok, {_bundle_shard, segments_shards, _justifications}} ->
-          Logger.debug("Received EC shard for work package: #{b16(spec.work_package_hash)}")
-
-          for {segment_shard, segment_index} <- Enum.with_index(segments_shards) do
-            Storage.put_segment_shard(
-              spec.erasure_root,
-              shard_index,
-              segment_index,
-              segment_shard
-            )
-          end
-
-        {:error, reason} ->
-          Logger.error(
-            "Failed to retrieve EC for work report #{b16(spec.work_package_hash)}: #{inspect(reason)}"
-          )
-      end
-    end)
-
+    NodeStateServer.instance().fetch_work_report_shards(server_pid, spec)
     :ok
   end
 
