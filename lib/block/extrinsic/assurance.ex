@@ -54,6 +54,12 @@ defmodule Block.Extrinsic.Assurance do
     end
   end
 
+  def signed(%__MODULE__{hash: h, bitfield: b} = a, private_key) do
+    payload = SigningContexts.jam_available() <> h(h <> b)
+    signature = Crypto.sign(payload, private_key)
+    %__MODULE__{a | signature: signature}
+  end
+
   def mock(:validate_assurances, _), do: :ok
 
   # Formula (11.15) v0.7.2

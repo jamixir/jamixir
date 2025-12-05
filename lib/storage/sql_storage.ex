@@ -3,11 +3,11 @@ defmodule Jamixir.SqlStorage do
   SQL-based storage for block extrinsics that require querying capabilities.
   """
 
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Disputes.Judgement
   alias Jamixir.Repo
   alias Storage.AssuranceRecord
   alias Storage.JudgementRecord
-  alias Block.Extrinsic.Assurance
   import Ecto.Query
 
   def save(%Assurance{} = assurance) do
@@ -39,6 +39,13 @@ defmodule Jamixir.SqlStorage do
   end
 
   def clean(Assurance), do: Repo.delete_all(AssuranceRecord)
+
+  def get(Assurance, [hash, validator_index]) do
+    case Repo.get_by(AssuranceRecord, hash: hash, validator_index: validator_index) do
+      nil -> nil
+      record -> AssuranceRecord.to_assurance(record)
+    end
+  end
 
   def get_all(Assurance) do
     Repo.all(AssuranceRecord) |> Enum.map(&AssuranceRecord.to_assurance/1)

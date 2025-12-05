@@ -21,6 +21,18 @@ defmodule Jamixir.SqlStorageTest do
       assert record1 == assurance1
       assert record2 == assurance2
     end
+
+    test "get assurance for specific hash and validator" do
+      assurance = build(:assurance, validator_index: 2)
+      assert {:ok, _record} = SqlStorage.save(assurance)
+      record = SqlStorage.get(Assurance, [assurance.hash, 2])
+      assert record == assurance
+    end
+
+    test "get assurance returns nil when not found" do
+      record = SqlStorage.get(Assurance, [Hash.random(), 99])
+      assert record == nil
+    end
   end
 
   describe "judgement operations" do

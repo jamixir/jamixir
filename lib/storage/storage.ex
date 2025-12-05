@@ -256,6 +256,10 @@ defmodule Storage do
     SqlStorage.get_all(Assurance)
   end
 
+  def get_assurance(hash, validator_index) do
+    SqlStorage.get(Assurance, [hash, validator_index])
+  end
+
   def get_judgements(epoch) do
     SqlStorage.get_all(Judgement, epoch)
   end
