@@ -222,11 +222,8 @@ defmodule Jamixir.Node do
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
-    server_pid = self()
-
-    Logger.info("Request EC for work report: #{b16(spec.work_package_hash)}")
-
-    NodeStateServer.instance().fetch_work_report_shards(server_pid, spec)
+    Logger.debug("Request EC for work report: #{b16(spec.work_package_hash)}")
+    NodeStateServer.instance().fetch_work_report_shards(self(), spec)
     :ok
   end
 
