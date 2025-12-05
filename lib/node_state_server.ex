@@ -4,6 +4,7 @@ defmodule Jamixir.NodeStateServerBehaviour do
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
   @callback neighbours() :: list(Validator.t())
   @callback validator_index() :: non_neg_integer()
+  @callback fetch_work_report_shards(pid(), AvailabilitySpecification.t()) :: :ok
 end
 
 defmodule Jamixir.NodeStateServer do
@@ -42,6 +43,10 @@ defmodule Jamixir.NodeStateServer do
 
   def inspect_state(header_hash, key),
     do: GenServer.call(__MODULE__, {:inspect_state, header_hash, key})
+
+  @impl true
+  def fetch_work_report_shards(guarantor_pid, spec),
+    do: GenServer.cast(__MODULE__, {:fetch_work_report_shards, guarantor_pid, spec})
 
   def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
   @impl true
@@ -197,6 +202,33 @@ defmodule Jamixir.NodeStateServer do
   def handle_cast({:set_jam_state, jam_state}, state) do
     Log.info("Setting JAM state in NodeStateServer")
     {:noreply, %{state | jam_state: jam_state}}
+  end
+
+  def handle_cast(
+        {:fetch_work_report_shards, guarantor_pid, spec},
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    shard_index = validator_index(jam_state.curr_validators)
+
+    case Network.Connection.request_work_report_shard(
+           guarantor_pid,
+           spec.erasure_root,
+           shard_index
+         ) do
+      {:ok, {_bundle_shard, segments_shards, _justifications}} ->
+        Log.debug("Received EC shard for work package: #{b16(spec.work_package_hash)}")
+
+        for {segment_shard, segment_index} <- Enum.with_index(segments_shards) do
+          Storage.put_segment_shard(spec.erasure_root, shard_index, segment_index, segment_shard)
+        end
+
+      {:error, reason} ->
+        Log.error(
+          "Failed to retrieve EC for work report #{b16(spec.work_package_hash)}: #{inspect(reason)}"
+        )
+    end
+
+    {:noreply, state}
   end
 
   @impl true

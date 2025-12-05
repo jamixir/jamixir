@@ -585,6 +585,7 @@ defmodule Network.ConnectionManager do
 
         event_id = Telemetry.connecting_out(ed25519_key, {ip, port})
         new_telemetry_event_ids = Map.put(state.telemetry_event_ids, ed25519_key, event_id)
+
         case DynamicSupervisor.start_child(state.supervisor_pid, spec) do
           {:ok, pid} ->
             Process.monitor(pid)
@@ -614,12 +615,13 @@ defmodule Network.ConnectionManager do
               retry_count: 1,
               direction: :outbound,
               remote_ed25519_key: ed25519_key,
-              start_time: System.monotonic_time(:millisecond),
+              start_time: System.monotonic_time(:millisecond)
             }
 
             new_connections = Map.put(state.connections, ed25519_key, connection_info)
 
-            {:error, %{state | connections: new_connections}}
+            {:error,
+             %{state | connections: new_connections, telemetry_event_ids: new_telemetry_event_ids}}
         end
     end
   end

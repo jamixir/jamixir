@@ -3,6 +3,7 @@ defmodule NodeStateServerTest do
   use ExUnit.Case, async: true
   import Jamixir.Factory
   import Jamixir.NodeStateServer
+  import Mox
 
   setup do
     KeyManager.load_keys("test/keys/4.json")
@@ -92,6 +93,34 @@ defmodule NodeStateServerTest do
       # I am not in my neightbours list
       assert Enum.find(neighbours, fn v -> v.ed25519 == KeyManager.get_our_ed25519_key() end) ==
                nil
+    end
+  end
+
+  describe "fetch_work_report_shards/2" do
+    setup do
+      Application.put_env(:jamixir, :network_client, ClientMock)
+      set_mox_global()
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :network_client)
+      end)
+    end
+
+    test "sends message to pid with fetched shards", %{state: state} do
+      assign_me_to_index(state, 3)
+      guarantee = build(:guarantee)
+      spec = guarantee.work_report.specification
+      root = spec.erasure_root
+      pid = self()
+
+      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 3 ->
+        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
+      end)
+
+      :ok = fetch_work_report_shards(pid, spec)
+      Process.sleep(40)
+      assert Storage.get_segment_shard(root, 3, 0) == <<2>>
+      assert Storage.get_segment_shard(root, 3, 1) == <<3>>
     end
   end
 
