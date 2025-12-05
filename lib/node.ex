@@ -218,12 +218,13 @@ defmodule Jamixir.Node do
   # CE 135 - Work-report Guarantee distribution
   @impl true
   def save_guarantee(guarantee) do
-    spec = guarantee.work_report.specification
+    wr = guarantee.work_report
+    spec = wr.specification
     Logger.info("Saving guarantee for work report: #{b16(spec.work_package_hash)}")
     Storage.put("#{@p_guarantee}#{spec.work_package_hash}", guarantee)
 
     Logger.debug("Request EC for work report: #{b16(spec.work_package_hash)}")
-    NodeStateServer.instance().fetch_work_report_shards(self(), spec)
+    NodeStateServer.instance().fetch_work_report_shards(self(), wr)
     :ok
   end
 

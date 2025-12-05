@@ -99,28 +99,46 @@ defmodule NodeStateServerTest do
   describe "fetch_work_report_shards/2" do
     setup do
       Application.put_env(:jamixir, :network_client, ClientMock)
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
       set_mox_global()
+      guarantee = build(:guarantee)
+      wr = guarantee.work_report
 
       on_exit(fn ->
         Application.delete_env(:jamixir, :network_client)
       end)
+
+      {:ok, work_report: wr}
     end
 
-    test "sends message to pid with fetched shards", %{state: state} do
+    test "sends message to pid with fetched shards", %{state: state, work_report: wr} do
       assign_me_to_index(state, 3)
-      guarantee = build(:guarantee)
-      spec = guarantee.work_report.specification
-      root = spec.erasure_root
+      root = wr.specification.erasure_root
       pid = self()
 
       stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 3 ->
         {:ok, {<<1>>, [<<2>>, <<3>>], []}}
       end)
 
-      :ok = fetch_work_report_shards(pid, spec)
+      :ok = fetch_work_report_shards(pid, wr)
       Process.sleep(40)
       assert Storage.get_segment_shard(root, 3, 0) == <<2>>
       assert Storage.get_segment_shard(root, 3, 1) == <<3>>
+    end
+
+    test "updates local assurance when fetching shards", %{state: state, work_report: wr} do
+      assign_me_to_index(state, 2)
+      root = wr.specification.erasure_root
+      pid = self()
+
+      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 2 ->
+        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
+      end)
+
+      :ok = fetch_work_report_shards(pid, wr)
+      Process.sleep(40)
+
+      [a] = Storage.get_assurances()
     end
   end
 

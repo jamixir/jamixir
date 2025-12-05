@@ -15,23 +15,21 @@ defmodule Block.Extrinsic.AssuranceTest do
         %Validator{v | ed25519: elem(Enum.at(keys, i), 0)}
       end
 
-    [_, {_, s2}, _] = keys
-    payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::344>>)
-    signature = Crypto.sign(payload, s2)
-
     Application.put_env(:jamixir, Constants, AssuranceConstantsMock)
 
     on_exit(fn ->
       Application.delete_env(:jamixir, Constants)
     end)
 
+    [_, {_, s2}, _] = keys
+
     assurance =
       build(:assurance,
         hash: hp,
         validator_index: 1,
-        bitfield: <<0::344>>,
-        signature: signature
+        bitfield: <<0::344>>
       )
+      |> Assurance.signed(s2)
 
     %{hp: hp, ht: 1, assurance: assurance, validators: validators, core_reports: [], s2: s2}
   end
@@ -178,29 +176,23 @@ defmodule Block.Extrinsic.AssuranceTest do
     # Formula (11.15) v0.7.2
     test "returns :error when assurance bit is set but core report is null", %{
       hp: hp,
-      assurance: assurance,
       validators: validators,
       s2: s2,
       ht: h_t
     } do
-      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<0::7, 1::1>>)
-      signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, bitfield: <<0::7, 1::1>>}
+      invalid_assurance =
+        build(:assurance, hash: hp, validator_index: 1, bitfield: <<0::7, 1::1>>)
+        |> Assurance.signed(s2)
 
       assert {:error, :core_not_engaged} ==
                Assurance.validate_assurances([invalid_assurance], hp, h_t, validators, [nil])
     end
 
     test "returns :ok when assurance bit is set but core report is not null,and timeslot is not old",
-         %{
-           hp: hp,
-           assurance: assurance,
-           validators: validators,
-           s2: s2
-         } do
-      payload = SigningContexts.jam_available() <> Hash.default(hp <> <<1::1, 0::7>>)
-      signature = Crypto.sign(payload, s2)
-      invalid_assurance = %{assurance | signature: signature, bitfield: <<1::1, 0::7>>}
+         %{hp: hp, validators: validators, s2: s2} do
+      invalid_assurance =
+        build(:assurance, hash: hp, validator_index: 1, bitfield: <<1::1, 0::7>>)
+        |> Assurance.signed(s2)
 
       cr = [%{timeslot: 2, core_report: nil}]
       h_t = 2 + Constants.unavailability_period() - 1

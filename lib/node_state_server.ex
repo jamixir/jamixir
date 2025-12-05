@@ -4,21 +4,18 @@ defmodule Jamixir.NodeStateServerBehaviour do
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
   @callback neighbours() :: list(Validator.t())
   @callback validator_index() :: non_neg_integer()
-  @callback fetch_work_report_shards(pid(), AvailabilitySpecification.t()) :: :ok
+  @callback fetch_work_report_shards(pid(), WorkReport.t()) :: :ok
 end
 
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
-  alias Block.Extrinsic.TicketProof
-  alias System.State.Validator
-  alias System.State.RotateKeys
-  alias System.State.EntropyPool
+  alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
-  alias Block.Extrinsic.GuarantorAssignments
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
   alias System.State
+  alias System.State.{EntropyPool, RotateKeys, Validator}
   alias Util.Logger, as: Log
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
@@ -205,9 +202,10 @@ defmodule Jamixir.NodeStateServer do
   end
 
   def handle_cast(
-        {:fetch_work_report_shards, guarantor_pid, spec},
+        {:fetch_work_report_shards, guarantor_pid, work_report},
         %__MODULE__{jam_state: jam_state} = state
       ) do
+    spec = work_report.specification
     shard_index = validator_index(jam_state.curr_validators)
 
     case Network.Connection.request_work_report_shard(
