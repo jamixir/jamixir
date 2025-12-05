@@ -196,8 +196,8 @@ defmodule Jamixir.NodeTest do
       guarantee = build(:guarantee)
       spec = guarantee.work_report.specification
       pid = self()
-      stub(NodeStateServerMock, :validator_index, fn -> 1 end)
-      stub(NodeStateServerMock, :fetch_work_report_shards, fn ^pid, ^spec -> :ok end)
+
+      expect(NodeStateServerMock, :fetch_work_report_shards, fn ^pid, ^spec -> :ok end)
 
       :ok = save_guarantee(guarantee)
 
