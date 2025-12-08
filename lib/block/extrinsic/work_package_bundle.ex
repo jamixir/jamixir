@@ -39,7 +39,7 @@ defmodule Block.Extrinsic.WorkPackageBundle do
               {wi_segments, bin} ->
                 <<data::b(export_segment), rest::binary>> = bin
 
-                {wi_segments ++ [%SegmentData{erasure_root: root, segment_index: n, data: data}],
+                {wi_segments ++ [%SegmentData{merkle_root: root, segment_index: n, data: data}],
                  rest}
             end
 

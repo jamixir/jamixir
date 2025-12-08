@@ -10,6 +10,7 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
   alias Jamixir.Genesis
@@ -72,9 +73,9 @@ defmodule Jamixir.NodeStateServer do
 
   def guarantors, do: GenServer.call(__MODULE__, :guarantors)
 
-  def assigned_core do
-    guarantors = guarantors()
+  def assigned_core, do: assigned_core(guarantors())
 
+  def assigned_core(%GuarantorAssignments{} = guarantors) do
     index =
       Enum.find_index(guarantors.validators, fn v ->
         v.ed25519 == KeyManager.get_our_ed25519_key()
@@ -82,6 +83,8 @@ defmodule Jamixir.NodeStateServer do
 
     if index, do: guarantors.assigned_cores |> Enum.at(index), else: nil
   end
+
+  def assigned_core(%State{} = jam_state), do: assigned_core(guarantors(jam_state))
 
   def same_core_guarantors do
     case assigned_core() do
@@ -179,15 +182,7 @@ defmodule Jamixir.NodeStateServer do
 
   @impl true
   def handle_call(:guarantors, _from, %__MODULE__{jam_state: jam_state} = state) do
-    guarantors =
-      GuarantorAssignments.guarantors(
-        jam_state.entropy_pool.n2,
-        jam_state.timeslot,
-        jam_state.curr_validators,
-        MapSet.new()
-      )
-
-    {:reply, guarantors, state}
+    {:reply, guarantors(jam_state), state}
   end
 
   @impl true
@@ -219,6 +214,29 @@ defmodule Jamixir.NodeStateServer do
         for {segment_shard, segment_index} <- Enum.with_index(segments_shards) do
           Storage.put_segment_shard(spec.erasure_root, shard_index, segment_index, segment_shard)
         end
+
+        {_, header} = Storage.get_latest_header()
+        hash = h(e(header))
+
+        updated_assurance =
+          case Storage.get_assurance(hash, shard_index) do
+            nil ->
+              bitfield = Utils.set_bit(<<0::m(bitfield)>>, assigned_core(jam_state), 1)
+
+              %Assurance{
+                hash: hash,
+                validator_index: shard_index,
+                bitfield: bitfield
+              }
+
+            assurance ->
+              %Assurance{
+                assurance
+                | bitfield: Utils.set_bit(assurance.bitfield, assigned_core(jam_state), 1)
+              }
+          end
+
+        Storage.put(updated_assurance)
 
       {:error, reason} ->
         Log.error(
@@ -448,5 +466,14 @@ defmodule Jamixir.NodeStateServer do
     )
 
     authoring_slots
+  end
+
+  defp guarantors(%State{} = jam_state) do
+    GuarantorAssignments.guarantors(
+      jam_state.entropy_pool.n2,
+      jam_state.timeslot,
+      jam_state.curr_validators,
+      MapSet.new()
+    )
   end
 end

@@ -166,7 +166,7 @@ defmodule Block.Extrinsic.WorkItem do
     for {r, n} <- w.import_segments,
         root = WorkReport.segment_root(r),
         data = DataAvailability.get_segment(root, n),
-        do: %SegmentData{erasure_root: root, segment_index: n, data: data}
+        do: %SegmentData{merkle_root: root, segment_index: n, data: data}
   end
 
   # Formula (14.15) v0.7.2
