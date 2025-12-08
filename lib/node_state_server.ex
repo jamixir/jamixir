@@ -236,7 +236,8 @@ defmodule Jamixir.NodeStateServer do
               }
           end
 
-        Storage.put(updated_assurance)
+        {priv, _} = KeyManager.get_our_ed25519_keypair()
+        Storage.put(Assurance.signed(updated_assurance, priv))
 
       {:error, reason} ->
         Log.error(

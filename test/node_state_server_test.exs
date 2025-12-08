@@ -170,6 +170,14 @@ defmodule NodeStateServerTest do
       <<b0::1, b1::1, _::6>> = a.bitfield
       assert b0 + b1 == 2
     end
+
+    test "created assurance has valid signature", %{work_report: wr} do
+      :ok = fetch_work_report_shards(self(), wr)
+      Process.sleep(40)
+      pub = KeyManager.get_our_ed25519_key()
+      [a] = Storage.get_assurances()
+      assert Assurance.verify_signature(a, pub)
+    end
   end
 
   defp assign_me_to_index(state, index) do
