@@ -102,7 +102,7 @@ defmodule NodeStateServerTest do
   end
 
   describe "fetch_work_report_shards/2" do
-    setup do
+    setup %{state: state} do
       Application.put_env(:jamixir, :network_client, ClientMock)
       allow_db_access(Jamixir.NodeStateServer)
       set_mox_global()
@@ -113,39 +113,33 @@ defmodule NodeStateServerTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
-      {:ok, work_report: wr}
-    end
-
-    test "sends message to pid with fetched shards", %{state: state, work_report: wr} do
       assign_me_to_index(state, 3)
+
       root = wr.specification.erasure_root
+
       pid = self()
 
       stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 3 ->
         {:ok, {<<1>>, [<<2>>, <<3>>], []}}
       end)
 
-      :ok = fetch_work_report_shards(pid, wr)
+      {:ok, work_report: wr, root: root}
+    end
+
+    test "sends message to pid with fetched shards", %{work_report: wr, root: root} do
+      :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
       assert Storage.get_segment_shard(root, 3, 0) == <<2>>
       assert Storage.get_segment_shard(root, 3, 1) == <<3>>
     end
 
-    test "create new local assurance when fetching shards", %{state: state, work_report: wr} do
-      assign_me_to_index(state, 2)
-      root = wr.specification.erasure_root
-      pid = self()
-
-      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 2 ->
-        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
-      end)
-
-      :ok = fetch_work_report_shards(pid, wr)
+    test "create new local assurance when fetching shards", %{work_report: wr} do
+      :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
 
       [a] = Storage.get_assurances()
       assert a.hash == h(e(Genesis.genesis_block_header()))
-      assert a.validator_index == 2
+      assert a.validator_index == 3
       <<b0::1, b1::1, _::6>> = a.bitfield
       assert b0 + b1 == 1
 
@@ -156,35 +150,23 @@ defmodule NodeStateServerTest do
       end
     end
 
-    test "updates existing assurance when fetching shards", %{state: state, work_report: wr} do
-      assign_me_to_index(state, 1)
-      root = wr.specification.erasure_root
-      pid = self()
-
+    test "updates existing assurance when fetching shards", %{work_report: wr} do
       # assigns the other core to 1 and ours to 0
       bitfield =
-        if assigned_core() == 0 do
-          <<0::1, 1::1, 0::6>>
-        else
-          <<1::1, 0::1, 0::6>>
-        end
+        if assigned_core() == 0, do: <<0::1, 1::1, 0::6>>, else: <<1::1, 0::1, 0::6>>
 
       Storage.put(%Assurance{
         hash: h(e(Genesis.genesis_block_header())),
-        validator_index: 1,
+        validator_index: 3,
         bitfield: <<bitfield::b(bitfield)>>
       })
 
-      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 1 ->
-        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
-      end)
-
-      :ok = fetch_work_report_shards(pid, wr)
+      :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
 
       [a] = Storage.get_assurances()
       assert a.hash == h(e(Genesis.genesis_block_header()))
-      assert a.validator_index == 1
+      assert a.validator_index == 3
       <<b0::1, b1::1, _::6>> = a.bitfield
       assert b0 + b1 == 2
     end
