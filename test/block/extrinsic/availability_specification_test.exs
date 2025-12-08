@@ -1,19 +1,12 @@
 defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   alias Block.Extrinsic.AvailabilitySpecification, as: AS
-  alias Util.{MerkleTree, Hash}
   use ExUnit.Case
   import Jamixir.Factory
+  import Codec.Encoder
+  alias Util.{Hash, MerkleTree}
   import Util.Hex, only: [b16: 1]
-  import Mox
 
   setup do
-    Application.put_env(:jamixir, :erasure_coding, ErasureCodingMock)
-    stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, :erasure_coding)
-    end)
-
     {:ok, availability: build(:availability_specification, work_package_hash: Hash.one())}
   end
 
@@ -60,5 +53,47 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
       assert spec.segment_count == 2
       assert spec.length == 10
     end
+  end
+
+  describe "b_clubs/1" do
+    test "calculates b_clubs correctly for small bundle size" do
+      bundle_binary = <<0x1421199ADDAC7C87873A::80>>
+      result = AS.b_clubs(bundle_binary)
+      assert length(result) == Constants.validator_count()
+      assert Enum.all?(result, fn h -> byte_size(h) == 32 end)
+    end
+
+    test "calculates b_clubs correctly for large bundle size" do
+      bundle_binary = <<1::size(64 * Constants.erasure_coded_piece_size() + 8)>>
+      result = AS.b_clubs(bundle_binary)
+      assert length(result) == Constants.validator_count()
+      assert Enum.all?(result, fn h -> byte_size(h) == 32 end)
+    end
+  end
+
+  describe "s_clubs/1" do
+    test "calculates s_clubs correctly for small number of segments" do
+      segments = generate_hash_chain_segments(3)
+
+      result = AS.s_clubs(segments)
+      assert length(result) == Constants.validator_count()
+      assert Enum.all?(result, fn h -> byte_size(h) == 32 end)
+    end
+
+    test "calculates s_clubs correctly for large number of segments" do
+      segments = generate_hash_chain_segments(100)
+      result = AS.s_clubs(segments)
+      assert length(result) == Constants.validator_count()
+      assert Enum.all?(result, fn h -> byte_size(h) == 32 end)
+    end
+  end
+
+  def generate_hash_chain_segments(n) do
+    Stream.iterate(Hash.blake2b_256(""), &Hash.blake2b_256/1)
+    |> Stream.flat_map(&:binary.bin_to_list/1)
+    |> Stream.chunk_every(Constants.segment_size())
+    |> Stream.map(&IO.iodata_to_binary/1)
+    |> Stream.take(n)
+    |> Enum.to_list()
   end
 end

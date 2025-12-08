@@ -42,7 +42,7 @@ defmodule System.DataAvailabilityTest do
       segment = <<123_456_789_123_123_123::m(export_segment)>>
       segment_index = 3
       shards = ErasureCoding.erasure_code(segment)
-      validators = build_list(6, :validator)
+      validators = build_list(1023, :validator)
       fake_pid = 99
 
       # mock validators

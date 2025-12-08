@@ -58,6 +58,14 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   # Formula (14.17) v0.7.2 - u
   @spec calculate_erasure_root(binary(), list(Types.export_segment())) :: Types.hash()
   def calculate_erasure_root(bundle_binary, exports) do
+    # u = MB ([x ∣ x <− T[b♣,s♣]])
+    MerkleTree.well_balanced_merkle_root(
+      for x <- Utils.transpose([b_clubs(bundle_binary), s_clubs(exports)]),
+          do: Collections.union_bin(x)
+    )
+  end
+
+  def s_clubs(exports) do
     # C6# (s⌢P(s))
     coded_chunks =
       for s <- exports ++ WorkReport.paged_proofs(exports) do
@@ -65,24 +73,19 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
       end
 
     # s♣ = MB#(T(...))
-    s_clubs =
-      for c <- Utils.transpose(coded_chunks), do: MerkleTree.well_balanced_merkle_root(c)
+    for c <- Utils.transpose(coded_chunks), do: MerkleTree.well_balanced_merkle_root(c)
+  end
 
+  def b_clubs(bundle_binary) do
     chunk_size = ceil(byte_size(bundle_binary) / Constants.erasure_coded_piece_size())
 
     # b♣ = H#(C ⌈ ∣b∣/WE ⌉(PWE (b)))
-    b_clubs =
-      Enum.map(
-        erasure_code_chunk(
-          Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size()),
-          chunk_size
-        ),
-        &Hash.default/1
-      )
-
-    # u = MB ([x ∣ x <− T[b♣,s♣]])
-    MerkleTree.well_balanced_merkle_root(
-      for x <- Utils.transpose([b_clubs, s_clubs]), do: Collections.union_bin(x)
+    Enum.map(
+      erasure_code_chunk(
+        Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size()),
+        chunk_size
+      ),
+      &Hash.default/1
     )
   end
 
