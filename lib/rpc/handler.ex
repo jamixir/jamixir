@@ -7,6 +7,7 @@ defmodule Jamixir.RPC.Handler do
   alias Codec.State.Trie
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
+  alias Network.ConnectionManager
   alias Util.Logger, as: Log
   import Codec.Encoder
   import Util.Hex
@@ -195,6 +196,25 @@ defmodule Jamixir.RPC.Handler do
   defp handle_method("listServices", [header_hash], _websocket_pid) do
     {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
     {:ok, Map.keys(state.services)}
+  end
+
+  defp handle_method("subscribeSyncStatus", [], websocket_pid) when websocket_pid != nil do
+    subscription_id = SubscriptionManager.create_subscription("syncStatus", [], websocket_pid)
+    {:subscription, subscription_id}
+  end
+
+  defp handle_method("unsubscribeSyncStatus", [subscription_id], _) do
+    case SubscriptionManager.unsubscribe(subscription_id) do
+      :ok -> {:ok, true}
+      :error -> {:ok, false}
+    end
+  end
+
+  defp handle_method("syncStatus", params, pid), do: handle_method("syncState", params, pid)
+
+  defp handle_method("syncState", [], nil) do
+    {:ok,
+     %{"num_peers" => map_size(ConnectionManager.get_connections()), "status" => "Completed"}}
   end
 
   # Handle subscription methods called via HTTP (should return error)

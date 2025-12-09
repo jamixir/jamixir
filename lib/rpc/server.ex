@@ -6,7 +6,8 @@ defmodule Jamixir.RPC.Server do
   """
 
   use GenServer
-  alias Util.Logger, as: Log
+  @log_context "[RPC]"
+  use Util.Logger
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -24,9 +25,9 @@ defmodule Jamixir.RPC.Server do
         thousand_island_options: [num_acceptors: 10]
       )
 
-    Log.info("🚀 RPC server started on port #{port}")
-    Log.info("📡 HTTP endpoint: http://localhost:#{port}/rpc")
-    Log.info("🔌 WebSocket endpoint: ws://localhost:#{port}/ws")
+    log("🚀 RPC server started on port #{port}")
+    log("📡 HTTP endpoint: http://localhost:#{port}/rpc")
+    log("🔌 WebSocket endpoint: ws://localhost:#{port}/ws")
 
     {:ok, %{port: port}}
   end

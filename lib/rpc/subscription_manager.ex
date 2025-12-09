@@ -4,8 +4,11 @@ defmodule Jamixir.RPC.SubscriptionManager do
   """
 
   use GenServer
-  alias Util.Logger, as: Log
   import Codec.Encoder
+  import Util.Hex
+
+  @log_context "[RPC]"
+  use Util.Logger
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -25,7 +28,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   @impl true
   def init(_opts) do
-    Log.info("📡 Starting RPC Subscription Manager")
+    log("📡 Starting RPC Subscription Manager")
     Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
 
     {:ok, %{subscriptions: %{}, next_id: 1}}
@@ -42,7 +45,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
       websocket_pid: websocket_pid
     }
 
-    Log.debug("📡 Created subscription #{subscription_id} for method #{method}")
+    debug("📡 Created subscription #{subscription_id} for method #{method}")
 
     new_subscriptions = Map.put(state.subscriptions, subscription_id, subscription)
     new_state = %{state | subscriptions: new_subscriptions, next_id: state.next_id + 1}
@@ -52,7 +55,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   @impl true
   def handle_cast({:unsubscribe, subscription_id}, state) do
-    Log.debug("📡 Unsubscribed #{subscription_id}")
+    debug("📡 Unsubscribed #{subscription_id}")
     new_subscriptions = Map.delete(state.subscriptions, subscription_id)
     {:noreply, %{state | subscriptions: new_subscriptions}}
   end
@@ -72,11 +75,22 @@ defmodule Jamixir.RPC.SubscriptionManager do
   # Handle PubSub messages and convert them to subscription notifications
   @impl true
   def handle_info({:new_block, header}, state) do
-    Log.info("RPC Notify new block")
+    debug("RPC Notify new block")
     # When we get new_block event, we can notify bestBlock subscribers
     Task.start(fn ->
-      hash = h(e(header))
-      notify_subscribers("bestBlock", [hash |> :binary.bin_to_list(), header.timeslot])
+      message = [e64(h(e(header))), header.timeslot]
+      notify_subscribers("bestBlock", message)
+      notify_subscribers("finalizedBlock", message)
+    end)
+
+    {:noreply, state}
+  end
+
+  def handle_info({:clock, :sync_status}, state) do
+    debug("Notify sync status")
+
+    Task.start(fn ->
+      notify_subscribers("syncStatus", "Completed")
     end)
 
     {:noreply, state}
