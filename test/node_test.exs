@@ -1,5 +1,6 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
+  use Jamixir.DBCase
   alias Block.Extrinsic.TicketProof
   alias Codec.State.Trie
   alias Jamixir.Genesis
@@ -154,10 +155,6 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "save and get assurance" do
-    setup do
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
-    end
-
     test "save_assurance with valid assurance" do
       assurance = build(:assurance)
       assert {:ok, _} = save_assurance(assurance)
@@ -325,8 +322,6 @@ defmodule Jamixir.NodeTest do
         Application.delete_env(:jamixir, :node_state_server)
         Application.delete_env(:jamixir, :network_client)
       end)
-
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
 
       {:ok, epochs: for(_ <- 1..2, do: :rand.uniform(100_000))}
     end

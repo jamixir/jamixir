@@ -48,6 +48,11 @@ defmodule Utils do
     end
   end
 
+  def set_bit(bin, n, v) do
+    <<head::size(n), _::1, rest::bitstring>> = bin
+    <<head::size(n), v::1, rest::bitstring>>
+  end
+
   def pad_binary(value, size) when byte_size(value) < size do
     padding = size - byte_size(value)
     <<0::size(padding * 8)>> <> value

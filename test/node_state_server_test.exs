@@ -1,6 +1,10 @@
 defmodule NodeStateServerTest do
+  alias Block.Extrinsic.Assurance
+  alias Jamixir.Genesis
   alias System.State.Validator
   use ExUnit.Case, async: true
+  use Jamixir.DBCase
+  import Codec.Encoder
   import Jamixir.Factory
   import Jamixir.NodeStateServer
   import Mox
@@ -8,6 +12,7 @@ defmodule NodeStateServerTest do
   setup do
     KeyManager.load_keys("test/keys/4.json")
     s = build(:genesis_state)
+    Storage.put(Genesis.genesis_block_header(), s)
     start_link(jam_state: s)
 
     {:ok, state: s}
@@ -97,9 +102,9 @@ defmodule NodeStateServerTest do
   end
 
   describe "fetch_work_report_shards/2" do
-    setup do
+    setup %{state: state} do
       Application.put_env(:jamixir, :network_client, ClientMock)
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Jamixir.Repo)
+      allow_db_access(Jamixir.NodeStateServer)
       set_mox_global()
       guarantee = build(:guarantee)
       wr = guarantee.work_report
@@ -108,37 +113,70 @@ defmodule NodeStateServerTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
-      {:ok, work_report: wr}
-    end
-
-    test "sends message to pid with fetched shards", %{state: state, work_report: wr} do
       assign_me_to_index(state, 3)
+
       root = wr.specification.erasure_root
+
       pid = self()
 
       stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 3 ->
         {:ok, {<<1>>, [<<2>>, <<3>>], []}}
       end)
 
-      :ok = fetch_work_report_shards(pid, wr)
+      {:ok, work_report: wr, root: root}
+    end
+
+    test "sends message to pid with fetched shards", %{work_report: wr, root: root} do
+      :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
       assert Storage.get_segment_shard(root, 3, 0) == <<2>>
       assert Storage.get_segment_shard(root, 3, 1) == <<3>>
     end
 
-    test "updates local assurance when fetching shards", %{state: state, work_report: wr} do
-      assign_me_to_index(state, 2)
-      root = wr.specification.erasure_root
-      pid = self()
-
-      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 2 ->
-        {:ok, {<<1>>, [<<2>>, <<3>>], []}}
-      end)
-
-      :ok = fetch_work_report_shards(pid, wr)
+    test "create new local assurance when fetching shards", %{work_report: wr} do
+      :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
 
       [a] = Storage.get_assurances()
+      assert a.hash == h(e(Genesis.genesis_block_header()))
+      assert a.validator_index == 3
+      <<b0::1, b1::1, _::6>> = a.bitfield
+      assert b0 + b1 == 1
+
+      if assigned_core() == 0 do
+        assert b0 == 1
+      else
+        assert b1 == 1
+      end
+    end
+
+    test "updates existing assurance when fetching shards", %{work_report: wr} do
+      # assigns the other core to 1 and ours to 0
+      bitfield =
+        if assigned_core() == 0, do: <<0::1, 1::1, 0::6>>, else: <<1::1, 0::1, 0::6>>
+
+      Storage.put(%Assurance{
+        hash: h(e(Genesis.genesis_block_header())),
+        validator_index: 3,
+        bitfield: <<bitfield::b(bitfield)>>
+      })
+
+      :ok = fetch_work_report_shards(self(), wr)
+      Process.sleep(40)
+
+      [a] = Storage.get_assurances()
+      assert a.hash == h(e(Genesis.genesis_block_header()))
+      assert a.validator_index == 3
+      <<b0::1, b1::1, _::6>> = a.bitfield
+      assert b0 + b1 == 2
+    end
+
+    test "created assurance has valid signature", %{work_report: wr} do
+      :ok = fetch_work_report_shards(self(), wr)
+      Process.sleep(40)
+      pub = KeyManager.get_our_ed25519_key()
+      [a] = Storage.get_assurances()
+      assert Assurance.verify_signature(a, pub)
     end
   end
 

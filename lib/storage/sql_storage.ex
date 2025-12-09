@@ -20,7 +20,10 @@ defmodule Jamixir.SqlStorage do
 
     %AssuranceRecord{}
     |> AssuranceRecord.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(
+      on_conflict: {:replace, [:bitfield, :signature, :updated_at]},
+      conflict_target: [:hash, :validator_index]
+    )
   end
 
   def save(%Judgement{} = judgement, hash, epoch) do
