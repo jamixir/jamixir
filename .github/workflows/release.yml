@@ -20,14 +20,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Git for private deps
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
-          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "git@github.com/"
+      - name: Setup SSH for private deps
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
