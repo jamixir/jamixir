@@ -2,6 +2,7 @@ defmodule Jamixir.RPC.IntegrationTest do
   use ExUnit.Case
   import Jamixir.Factory
   import Codec.Encoder
+  import Util.Hex
 
   @rpc_port 19_801
 
@@ -31,9 +32,9 @@ defmodule Jamixir.RPC.IntegrationTest do
 
       assert response["jsonrpc"] == "2.0"
 
-      [hash_array, timeslot] = response["result"]
-      assert is_list(hash_array)
-      assert hash_array |> :binary.list_to_bin() == h(e(header))
+      [hash, timeslot] = response["result"]
+      assert is_binary(hash)
+      assert hash == e64(h(e(header)))
       assert timeslot == 123
     end
 
@@ -44,9 +45,9 @@ defmodule Jamixir.RPC.IntegrationTest do
 
       assert response["jsonrpc"] == "2.0"
 
-      [hash_array, timeslot] = response["result"]
-      assert is_list(hash_array)
-      assert hash_array |> :binary.list_to_bin() == h(e(header))
+      [hash, timeslot] = response["result"]
+      assert is_binary(hash)
+      assert hash == e64(h(e(header)))
       assert timeslot == 123
     end
 

@@ -9,6 +9,7 @@ defmodule Jamixir.RPC.Handler do
   alias Jamixir.RPC.SubscriptionManager
   alias Util.Logger, as: Log
   import Codec.Encoder
+  import Util.Hex
 
   @spec handle_request(map(), pid() | nil) :: map() | {:subscription, binary()}
   def handle_request(request, websocket_pid \\ nil)
@@ -77,28 +78,28 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("parent", [header_hash], _) do
-    {:ok, blocks} = Node.get_blocks(header_hash |> :binary.list_to_bin(), :descending, 2)
+    {:ok, blocks} = Node.get_blocks(d64(header_hash), :descending, 2)
 
     {:ok,
      case blocks do
-       [_, %Block{header: h}] -> [h(e(h)) |> :binary.bin_to_list(), h.timeslot]
+       [_, %Block{header: h}] -> [e64(h(e(h))), h.timeslot]
        _ -> nil
      end}
   end
 
   defp handle_method("stateRoot", [header_hash], _websocket_pid) do
-    state = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
+    state = Jamixir.NodeAPI.inspect_state(d64(header_hash))
 
     {:ok,
      case state do
        {:error, :no_state} -> nil
-       {:ok, s} -> Trie.state_root(s) |> :binary.bin_to_list()
+       {:ok, s} -> e64(Trie.state_root(s))
      end}
   end
 
   defp handle_method("statistics", [header_hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
-    {:ok, e(state.validator_statistics) |> :binary.bin_to_list()}
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, e64(e(state.validator_statistics))}
   end
 
   defp handle_method("subscribeStatistics", [_finalized], websocket_pid)
@@ -108,8 +109,8 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
-    {:ok, e(state.services[service_id]) |> :binary.bin_to_list()}
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, e64(e(state.services[service_id]))}
   end
 
   defp handle_method("subscribeServiceData", [service_id, finalized], websocket_pid)
@@ -125,18 +126,18 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
 
-    case get_in(state.services, [service_id, :preimage_storage_p, hash |> :binary.list_to_bin()]) do
+    case get_in(state.services, [service_id, :preimage_storage_p, d64(hash)]) do
       nil -> {:ok, nil}
-      preimage -> {:ok, preimage |> :binary.bin_to_list()}
+      preimage -> {:ok, e64(preimage)}
     end
   end
 
   defp handle_method("serviceRequest", [header_hash, service_id, hash, length], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
 
-    case get_in(state.services, [service_id, :storage, {hash |> :binary.list_to_bin(), length}]) do
+    case get_in(state.services, [service_id, :storage, {d64(hash), length}]) do
       nil -> {:ok, nil}
       slots -> {:ok, slots}
     end
@@ -146,36 +147,36 @@ defmodule Jamixir.RPC.Handler do
     {_timeslot, header} = Storage.get_latest_header()
     {:ok, state} = Jamixir.NodeAPI.inspect_state(h(e(header)))
 
-    hash = header_hash |> :binary.list_to_bin()
+    hash = d64(header_hash)
 
     {:ok,
      case Enum.find(state.recent_history.blocks, fn rb -> rb.header_hash == hash end) do
        nil -> nil
-       b -> b.beefy_root |> :binary.bin_to_list()
+       b -> e64(b.beefy_root)
      end}
   end
 
   defp handle_method("submitPreimage", [_service_id, blob, _hash], _websocket_pid) do
     # TODO we need to fix the preimage flow.
     # https://github.com/jamixir/jamixir/issues/561
-    :ok = Jamixir.NodeAPI.save_preimage(blob |> :binary.list_to_bin())
+    :ok = Jamixir.NodeAPI.save_preimage(d64(blob))
     {:ok, []}
   end
 
   defp handle_method("submitWorkPackage", [core, blob, extrinsics], _websocket_pid) do
-    {wp, _} = WorkPackage.decode(blob |> :binary.list_to_bin())
-    ext_bins = for e <- extrinsics, do: :binary.list_to_bin(e)
+    {wp, _} = WorkPackage.decode(d64(blob))
+    ext_bins = for e <- extrinsics, do: d64(e)
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
     {:ok, []}
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
 
-    case get_in(state.services, [service_id, :storage, hash |> :binary.list_to_bin()]) do
+    case get_in(state.services, [service_id, :storage, d64(hash)]) do
       nil -> {:ok, nil}
-      preimage -> {:ok, preimage |> :binary.bin_to_list()}
+      preimage -> {:ok, e64(preimage)}
     end
   end
 
@@ -192,7 +193,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("listServices", [header_hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash |> :binary.list_to_bin())
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
     {:ok, Map.keys(state.services)}
   end
 
@@ -290,16 +291,16 @@ defmodule Jamixir.RPC.Handler do
     try do
       case Storage.get_latest_header() do
         {_timeslot, header} ->
-          hash = h(e(header))
+          hash = e64(h(e(header)))
 
-          {:ok, [hash |> :binary.bin_to_list(), header.timeslot]}
+          {:ok, [hash, header.timeslot]}
 
         nil ->
           # Return genesis block if no blocks are available
           genesis_header = Jamixir.Genesis.genesis_block_header()
-          hash = Jamixir.Genesis.genesis_header_hash()
+          hash = e64(Jamixir.Genesis.genesis_header_hash())
 
-          {:ok, [hash |> :binary.bin_to_list(), genesis_header.timeslot]}
+          {:ok, [hash, genesis_header.timeslot]}
       end
     catch
       error -> {:error, "Failed to get best block: #{inspect(error)}"}

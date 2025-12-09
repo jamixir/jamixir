@@ -1,0 +1,42 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+  curl \
+  wget \
+  jq \
+  ca-certificates \
+  openssh-server \
+  && rm -rf /var/lib/apt/lists/*
+
+# Setup SSH
+RUN mkdir /var/run/sshd
+RUN echo 'root:polkajam' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+WORKDIR /polkajam
+
+# Download and extract the latest polkajam release
+# Detect architecture and download the appropriate binary
+RUN LATEST_RELEASE=$(curl -s https://api.github.com/repos/paritytech/polkajam-releases/releases/latest | jq -r '.tag_name') && \
+  echo "Downloading polkajam version: ${LATEST_RELEASE}" && \
+  ARCH=$(dpkg --print-architecture) && \
+  if [ "$ARCH" = "arm64" ]; then \
+  ARCH_SUFFIX="linux-aarch64"; \
+  else \
+  ARCH_SUFFIX="linux-x86_64"; \
+  fi && \
+  echo "Detected architecture: ${ARCH}, using ${ARCH_SUFFIX}" && \
+  wget -q "https://github.com/paritytech/polkajam-releases/releases/download/${LATEST_RELEASE}/polkajam-${LATEST_RELEASE}-${ARCH_SUFFIX}.tgz" -O polkajam.tgz && \
+  tar -xzf polkajam.tgz && \
+  rm polkajam.tgz && \
+  chmod +x polkajam* 2>/dev/null || true && \
+  find . -type f -executable -exec chmod +x {} \; 2>/dev/null || true
+
+# Add polkajam to PATH
+ENV PATH="/polkajam:${PATH}"
+
+EXPOSE 22
+
+# Start SSH daemon
+CMD ["/usr/sbin/sshd", "-D"]
