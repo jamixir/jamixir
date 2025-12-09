@@ -88,6 +88,7 @@ defmodule Util.Logger do
 
       def log(level, message), do: apply(Logger, level, [message, @log_context])
       def log(message), do: log(:info, message)
+      def debug(message), do: log(:debug, message)
 
       def log_stream(level, message, stream_ref, protocol_id \\ nil),
         do: Logger.stream(level, message, stream_ref, protocol_id)

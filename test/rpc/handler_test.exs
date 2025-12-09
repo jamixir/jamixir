@@ -205,6 +205,11 @@ defmodule Jamixir.RPC.HandlerTest do
       assert response(request).result == nil
     end
 
+    test "handles syncState method" do
+      request = %{"method" => "syncState", "params" => []}
+      %{"num_peers" => _, "status" => "Completed"} = response(request).result
+    end
+
     test "handles unknown method" do
       response = response(%{"method" => "unknownMethod", "id" => 4})
       assert response.jsonrpc == "2.0"
