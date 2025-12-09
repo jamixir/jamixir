@@ -1,4 +1,6 @@
 defmodule Jamixir.NodeStateServerBehaviour do
+  alias Block.Extrinsic.Guarantee.WorkReport
+  alias System.State.Validator
   @callback current_connections() :: list()
   @callback assigned_shard_index(non_neg_integer(), binary()) :: non_neg_integer() | nil
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
@@ -35,78 +37,6 @@ defmodule Jamixir.NodeStateServer do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false})
-  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
-  def inspect_state(header_hash), do: GenServer.call(__MODULE__, {:inspect_state, header_hash})
-
-  def inspect_state(header_hash, key),
-    do: GenServer.call(__MODULE__, {:inspect_state, header_hash, key})
-
-  @impl true
-  def fetch_work_report_shards(guarantor_pid, spec),
-    do: GenServer.cast(__MODULE__, {:fetch_work_report_shards, guarantor_pid, spec})
-
-  def load_state(path), do: GenServer.call(__MODULE__, {:load_state, path})
-  @impl true
-  def current_connections, do: GenServer.call(__MODULE__, :current_connections)
-
-  @impl true
-  def neighbours(), do: GenServer.call(__MODULE__, :neighbours)
-
-  def validator_index(ed25519_pubkey) when is_binary(ed25519_pubkey) do
-    GenServer.call(__MODULE__, {:validator_index, ed25519_pubkey})
-  end
-
-  def validator_index(validators) when is_list(validators) do
-    validator_index(KeyManager.get_our_ed25519_key(), validators)
-  end
-
-  @impl true
-  def validator_index, do: validator_index(KeyManager.get_our_ed25519_key())
-
-  def validator_index(ed25519_pubkey, validators),
-    do: Enum.find_index(validators, &(&1.ed25519 == ed25519_pubkey))
-
-  def current_timeslot do
-    GenServer.call(__MODULE__, :current_timeslot)
-  end
-
-  def guarantors, do: GenServer.call(__MODULE__, :guarantors)
-
-  def assigned_core, do: assigned_core(guarantors())
-
-  def assigned_core(%GuarantorAssignments{} = guarantors) do
-    index =
-      Enum.find_index(guarantors.validators, fn v ->
-        v.ed25519 == KeyManager.get_our_ed25519_key()
-      end)
-
-    if index, do: guarantors.assigned_cores |> Enum.at(index), else: nil
-  end
-
-  def assigned_core(%State{} = jam_state), do: assigned_core(guarantors(jam_state))
-
-  def same_core_guarantors do
-    case assigned_core() do
-      nil ->
-        []
-
-      core ->
-        # we know this is calling twice the guarantors function
-        # This can be improved later
-        guarantors = guarantors()
-
-        Enum.zip(guarantors.validators, guarantors.assigned_cores)
-        |> Enum.filter(fn {v, c} ->
-          v.ed25519 != KeyManager.get_our_ed25519_key() and c == core
-        end)
-        |> Enum.map(fn {v, _c} -> v end)
-    end
-  end
-
-  def set_jam_state(state), do: GenServer.cast(__MODULE__, {:set_jam_state, state})
-  def get_jam_state, do: GenServer.call(__MODULE__, :get_jam_state)
-
   @impl true
   def init(opts) do
     bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
@@ -114,11 +44,71 @@ defmodule Jamixir.NodeStateServer do
     {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
   end
 
-  def connections(validators) do
-    for v <- validators, do: {v, ConnectionManager.get_connection(v.ed25519)}
+  # ============================================================================
+  # SYNCHRONOUS API - State Query Functions
+  # ============================================================================
+
+  # Core state access
+  def get_jam_state, do: GenServer.call(__MODULE__, :get_jam_state)
+  def current_timeslot, do: GenServer.call(__MODULE__, :current_timeslot)
+
+  # Block operations
+  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false})
+  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
+
+  # Validator and network information
+  def validator_index(ed25519_pubkey) when is_binary(ed25519_pubkey) do
+    GenServer.call(__MODULE__, {:validator_index, ed25519_pubkey})
   end
 
-  # Wait for initialization to complete and get jam_state
+  @impl true
+  def validator_index,
+    do: GenServer.call(__MODULE__, {:validator_index, KeyManager.get_our_ed25519_key()})
+
+  @impl true
+  def current_connections, do: GenServer.call(__MODULE__, :current_connections)
+
+  @impl true
+  def neighbours(), do: GenServer.call(__MODULE__, :neighbours)
+
+  # Guarantor and core assignment functions
+  def guarantors, do: GenServer.call(__MODULE__, :guarantors)
+
+  def same_core_guarantors, do: GenServer.call(__MODULE__, :same_core_guarantors)
+
+  @impl true
+  def assigned_shard_index(core, key \\ KeyManager.get_our_ed25519_key()) do
+    GenServer.call(__MODULE__, {:assigned_shard_index, core, key})
+  end
+
+  def assigned_core, do: GenServer.call(__MODULE__, :assigned_core)
+
+  # ============================================================================
+  # ASYNCHRONOUS API
+  # ============================================================================
+
+  def set_jam_state(state), do: GenServer.cast(__MODULE__, {:set_jam_state, state})
+
+  @impl true
+  def fetch_work_report_shards(guarantor_pid, spec),
+    do: GenServer.cast(__MODULE__, {:fetch_work_report_shards, guarantor_pid, spec})
+
+  # ============================================================================
+  # GENSERVER HANDLERS - Synchronous Calls
+  # ============================================================================
+
+  # Core state access handlers
+  @impl true
+  def handle_call(:get_jam_state, _from, %__MODULE__{jam_state: jam_state} = state) do
+    {:reply, jam_state, state}
+  end
+
+  @impl true
+  def handle_call(:current_timeslot, _from, %__MODULE__{jam_state: jam_state} = state) do
+    {:reply, jam_state.timeslot, state}
+  end
+
+  # Block operation handlers
   @impl true
   def handle_call(
         {:add_block, block, announce},
@@ -151,6 +141,12 @@ defmodule Jamixir.NodeStateServer do
     {:reply, {:ok, new_jam_state}, genServerState}
   end
 
+  # Validator and network information handlers
+  @impl true
+  def handle_call({:validator_index, ed25519_key}, _from, %__MODULE__{jam_state: jam_state} = s) do
+    {:reply, find_validator_index(ed25519_key, jam_state.curr_validators), s}
+  end
+
   @impl true
   def handle_call(:current_connections, _from, %__MODULE__{jam_state: jam_state} = s) do
     {:reply, connections(jam_state.curr_validators), s}
@@ -170,25 +166,34 @@ defmodule Jamixir.NodeStateServer do
     {:reply, neighbours, s}
   end
 
-  @impl true
-  def handle_call({:validator_index, ed25519_key}, _from, %__MODULE__{jam_state: jam_state} = s) do
-    {:reply, validator_index(ed25519_key, jam_state.curr_validators), s}
-  end
-
-  @impl true
-  def handle_call(:current_timeslot, _from, %__MODULE__{jam_state: jam_state} = state) do
-    {:reply, jam_state.timeslot, state}
-  end
-
+  # Guarantor and core assignment handlers
   @impl true
   def handle_call(:guarantors, _from, %__MODULE__{jam_state: jam_state} = state) do
     {:reply, guarantors(jam_state), state}
   end
 
   @impl true
-  def handle_call(:get_jam_state, _from, %__MODULE__{jam_state: jam_state} = state) do
-    {:reply, jam_state, state}
+  def handle_call(:same_core_guarantors, _from, %__MODULE__{jam_state: jam_state} = state) do
+    {:reply, same_core_guarantors(jam_state), state}
   end
+
+  @impl true
+  def handle_call(
+        {:assigned_shard_index, core, key},
+        _from,
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    {:reply, calculate_assigned_shard_index(core, key, jam_state.curr_validators), state}
+  end
+
+  @impl true
+  def handle_call(:assigned_core, _from, %__MODULE__{jam_state: jam_state} = state) do
+    {:reply, assigned_core(jam_state), state}
+  end
+
+  # ============================================================================
+  # GENSERVER HANDLERS - Asynchronous Casts
+  # ============================================================================
 
   @impl true
   def handle_cast({:set_jam_state, jam_state}, state) do
@@ -201,7 +206,9 @@ defmodule Jamixir.NodeStateServer do
         %__MODULE__{jam_state: jam_state} = state
       ) do
     spec = work_report.specification
-    shard_index = validator_index(jam_state.curr_validators)
+
+    shard_index =
+      find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
 
     case Network.Connection.request_work_report_shard(
            guarantor_pid,
@@ -247,6 +254,10 @@ defmodule Jamixir.NodeStateServer do
 
     {:noreply, state}
   end
+
+  # ============================================================================
+  # GENSERVER HANDLERS - Info Messages (Clock Events & Initialization)
+  # ============================================================================
 
   @impl true
   def handle_info(
@@ -352,7 +363,7 @@ defmodule Jamixir.NodeStateServer do
     # Telemetry: generating tickets event
     generating_event_id = Jamixir.Telemetry.generating_tickets(target_epoch)
 
-    my_index = validator_index(jam_state.curr_validators)
+    my_index = find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
 
     tickets =
       TicketProof.create_new_epoch_tickets(
@@ -406,16 +417,65 @@ defmodule Jamixir.NodeStateServer do
 
   def handle_info(_event, state), do: {:noreply, state}
 
-  @impl true
-  # i = (cR + v) mod V
-  def assigned_shard_index(core, key \\ KeyManager.get_our_ed25519_key()) do
-    case validator_index(key) do
+  # ============================================================================
+  # PRIVATE HELPER FUNCTIONS
+  # ============================================================================
+
+  # Validator and index utilities
+  defp find_validator_index(ed25519_pubkey, validators),
+    do: Enum.find_index(validators, &(&1.ed25519 == ed25519_pubkey))
+
+  # Assigned shard index calculation: i = (cR + v) mod V
+  defp calculate_assigned_shard_index(core, key, validators) do
+    case find_validator_index(key, validators) do
       nil ->
         nil
 
       v ->
         rem(core * Constants.erasure_code_recovery_threshold() + v, Constants.validator_count())
     end
+  end
+
+  # Core assignment helpers
+  defp assigned_core(%GuarantorAssignments{} = guarantors) do
+    index =
+      Enum.find_index(guarantors.validators, fn v ->
+        v.ed25519 == KeyManager.get_our_ed25519_key()
+      end)
+
+    if index, do: guarantors.assigned_cores |> Enum.at(index), else: nil
+  end
+
+  defp assigned_core(%State{} = jam_state), do: assigned_core(guarantors(jam_state))
+
+  defp same_core_guarantors(%State{} = jam_state) do
+    guarantors_data = guarantors(jam_state)
+
+    case assigned_core(guarantors_data) do
+      nil ->
+        []
+
+      core ->
+        Enum.zip(guarantors_data.validators, guarantors_data.assigned_cores)
+        |> Enum.filter(fn {v, c} ->
+          v.ed25519 != KeyManager.get_our_ed25519_key() and c == core
+        end)
+        |> Enum.map(fn {v, _c} -> v end)
+    end
+  end
+
+  defp guarantors(%State{} = jam_state) do
+    GuarantorAssignments.guarantors(
+      jam_state.entropy_pool.n2,
+      jam_state.timeslot,
+      jam_state.curr_validators,
+      MapSet.new()
+    )
+  end
+
+  # Network and connection helpers
+  defp connections(validators) do
+    for v <- validators, do: {v, ConnectionManager.get_connection(v.ed25519)}
   end
 
   defp announce_block_to_peers(block) do
@@ -431,6 +491,7 @@ defmodule Jamixir.NodeStateServer do
     end
   end
 
+  # Authoring and slot computation
   defp compute_author_slots_for_next_epoch(jam_state, current_slot, bandersnatch_keypair) do
     current_epoch = Util.Time.epoch_index(current_slot)
     next_epoch = current_epoch + 1
@@ -467,14 +528,5 @@ defmodule Jamixir.NodeStateServer do
     )
 
     authoring_slots
-  end
-
-  defp guarantors(%State{} = jam_state) do
-    GuarantorAssignments.guarantors(
-      jam_state.entropy_pool.n2,
-      jam_state.timeslot,
-      jam_state.curr_validators,
-      MapSet.new()
-    )
   end
 end
