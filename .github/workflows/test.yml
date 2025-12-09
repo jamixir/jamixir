@@ -26,6 +26,7 @@ jobs:
           git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "git@github.com:"
           git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "ssh://git@github.com/"
+          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "git@github.com/"
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
