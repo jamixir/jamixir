@@ -17,6 +17,8 @@ services:
       - --keys=/node/keys/0.json
       - --genesis=/node/genesis.json
       - --telemetry=localhost:9000
+      - --rpc
+      - --log=debug
 
   node2:
     <<: *node-common
@@ -62,3 +64,12 @@ services:
       - --port=10006
       - --keys=/node/keys/5.json
       - --telemetry=localhost:9000
+
+  polkajam:
+    build:
+      context: .
+      dockerfile: Dockerfile.polkajam
+    network_mode: "host"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true

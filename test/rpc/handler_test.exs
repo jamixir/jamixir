@@ -5,6 +5,7 @@ defmodule Jamixir.RPC.HandlerTest do
   use ExUnit.Case
   import Jamixir.Factory
   import Codec.Encoder
+  import Util.Hex
   import Mox
 
   setup do
@@ -48,10 +49,9 @@ defmodule Jamixir.RPC.HandlerTest do
       assert is_list(response.result)
       assert length(response.result) == 2
 
-      [hash_array, timeslot] = response.result
-      assert is_list(hash_array)
+      [hash, timeslot] = response.result
       # Hash should be 32 bytes
-      assert length(hash_array) == 32
+      assert byte_size(d64(hash)) == 32
       assert timeslot == 42
     end
 
@@ -70,7 +70,7 @@ defmodule Jamixir.RPC.HandlerTest do
       response = response(request)
 
       assert response.jsonrpc == "2.0"
-      blob = response.result |> :binary.list_to_bin()
+      blob = d64(response.result)
       assert e(state.validator_statistics) == blob
     end
 
@@ -82,47 +82,47 @@ defmodule Jamixir.RPC.HandlerTest do
     test "handles serviceData method", %{state: state} do
       request = %{"method" => "serviceData", "params" => [gen_head(), 7]}
       response = response(request)
-      assert response.result |> :binary.list_to_bin() == e(state.services[7])
+      assert d64(response.result) == e(state.services[7])
     end
 
     test "handles serviceData method when service doesn't exist" do
       request = %{"method" => "serviceData", "params" => [gen_head(), 8]}
       response = response(request)
-      assert response.result |> :binary.list_to_bin() == <<>>
+      assert d64(response.result) == <<>>
     end
 
     test "handles serviceValue method", %{state: state} do
       [_, hash] = state.services[7].storage.original_map |> Map.keys()
-      params = [gen_head(), 7, hash |> :binary.bin_to_list()]
+      params = [gen_head(), 7, e64(hash)]
       request = %{"method" => "serviceValue", "params" => params}
 
-      assert response(request).result |> :binary.list_to_bin() == state.services[7].storage[hash]
+      assert d64(response(request).result) == state.services[7].storage[hash]
     end
 
     test "handles servicePreimage method", %{state: state} do
       [{hash, value}] = Map.to_list(state.services[7].preimage_storage_p)
-      params = [gen_head(), 7, hash |> :binary.bin_to_list()]
+      params = [gen_head(), 7, e64(hash)]
       request = %{"method" => "servicePreimage", "params" => params}
 
-      assert response(request).result |> :binary.list_to_bin() == value
+      assert d64(response(request).result) == value
     end
 
     test "handles servicePreimage method when preimage is null" do
-      hash = Util.Hash.one() |> :binary.bin_to_list()
+      hash = e64(Util.Hash.one())
       request = %{"method" => "servicePreimage", "params" => [gen_head(), 7, hash]}
       assert response(request).result == nil
     end
 
     test "handles serviceRequest method", %{state: state} do
       [{hash, length}, _] = state.services[7].storage.original_map |> Map.keys()
-      params = [gen_head(), 7, hash |> :binary.bin_to_list(), length]
+      params = [gen_head(), 7, e64(hash), length]
       request = %{"method" => "serviceRequest", "params" => params}
 
       assert response(request).result == state.services[7].storage[{hash, length}]
     end
 
     test "handles serviceRequest method, invalid key" do
-      params = [gen_head(), 7, Util.Hash.one() |> :binary.bin_to_list(), 7]
+      params = [gen_head(), 7, e64(Util.Hash.one()), 7]
       request = %{"method" => "serviceRequest", "params" => params}
 
       assert response(request).result == nil
@@ -133,16 +133,16 @@ defmodule Jamixir.RPC.HandlerTest do
       Storage.put(Genesis.genesis_block_header(), state)
 
       %{recent_history: %{blocks: [_, b2]}} = state
-      hash = b2.header_hash |> :binary.bin_to_list()
+      hash = e64(b2.header_hash)
       request = %{"method" => "beefyRoot", "params" => [hash]}
       response = response(request)
-      assert response.result |> :binary.list_to_bin() == b2.beefy_root
+      assert response.result == e64(b2.beefy_root)
     end
 
     test "handles submitPreimage method" do
       Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
 
-      request = %{"method" => "submitPreimage", "params" => [7, [1, 2, 3, 4], gen_head()]}
+      request = %{"method" => "submitPreimage", "params" => [7, e64(<<1, 2, 3, 4>>), gen_head()]}
       Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3, 4>> -> :ok end)
       response = response(request)
       assert response.result == []
@@ -158,8 +158,8 @@ defmodule Jamixir.RPC.HandlerTest do
       Jamixir.NodeAPI.Mock
       |> expect(:save_work_package, fn ^work_package, ^core, ^extrinsics -> :ok end)
 
-      wp_bin = e(work_package) |> :binary.bin_to_list()
-      ex_bins = for e <- extrinsics, do: :binary.bin_to_list(e)
+      wp_bin = e64(e(work_package))
+      ex_bins = for e <- extrinsics, do: e64(e)
       request = %{"method" => "submitWorkPackage", "params" => [core, wp_bin, ex_bins]}
       response = response(request)
       assert response.result == []
@@ -180,12 +180,12 @@ defmodule Jamixir.RPC.HandlerTest do
       Storage.put(block1)
       Storage.put(block2)
 
-      hash2 = h(e(block2.header)) |> :binary.bin_to_list()
+      hash2 = e64(h(e(block2.header)))
 
       response = response(%{"method" => "parent", "params" => [hash2]})
 
       [hash, timeslot] = response.result
-      assert hash |> :binary.list_to_bin() == hash1
+      assert hash == e64(hash1)
       assert timeslot == block1.header.timeslot
     end
 
@@ -196,11 +196,11 @@ defmodule Jamixir.RPC.HandlerTest do
 
     test "handles stateRoot method", %{state: state} do
       request = %{"method" => "stateRoot", "params" => [gen_head()]}
-      assert response(request).result |> :binary.list_to_bin() == Trie.state_root(state)
+      assert response(request).result == e64(Trie.state_root(state))
     end
 
     test "handles stateRoot method invalid header hash" do
-      hash = Util.Hash.one() |> :binary.bin_to_list()
+      hash = e64(Util.Hash.one())
       request = %{"method" => "stateRoot", "params" => [hash]}
       assert response(request).result == nil
     end
@@ -241,7 +241,7 @@ defmodule Jamixir.RPC.HandlerTest do
     end
   end
 
-  def gen_head, do: Genesis.genesis_header_hash() |> :binary.bin_to_list()
+  def gen_head, do: e64(Genesis.genesis_header_hash())
 
   def response(request) do
     Jamixir.RPC.Handler.handle_request(put_in(request, ["jsonrpc"], "2.0"))

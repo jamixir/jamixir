@@ -23,4 +23,8 @@ defmodule Util.Hex do
   end
 
   def b16(binary), do: encode16(binary, prefix: true)
+  def b16n(binary), do: encode16(binary, prefix: false)
+
+  def e64(binary), do: Base.encode64(binary)
+  def d64(string), do: Base.decode64!(string)
 end
