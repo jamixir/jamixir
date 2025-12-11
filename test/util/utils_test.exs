@@ -95,6 +95,12 @@ defmodule UtilsTest do
     test "pads binary with zeros" do
       assert Utils.pad_binary_right(<<1, 2, 3>>, 8) == <<1, 2, 3, 0, 0, 0, 0, 0>>
       assert Utils.pad_binary_right(<<>>, 8) == <<>>
+
+      # test case to match P_W_E(b) (https://github.com/jam-duna/jamtestnet/issues/139
+      assert Utils.pad_binary_right(
+               <<0x1421199ADDAC7C87873A::80>>,
+               Constants.erasure_coded_piece_size()
+             ) == <<0x1421199ADDAC7C87873A0000::96>>
     end
   end
 

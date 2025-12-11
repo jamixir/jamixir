@@ -69,7 +69,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     # C6# (s⌢P(s))
     coded_chunks =
       for s <- exports ++ WorkReport.paged_proofs(exports) do
-        erasure_code_chunk(s, 6)
+        ErasureCoding.erasure_code(s)
       end
 
     # s♣ = MB#(T(...))
@@ -77,19 +77,14 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   end
 
   def b_clubs(bundle_binary) do
-    chunk_size = ceil(byte_size(bundle_binary) / Constants.erasure_coded_piece_size())
-
     # b♣ = H#(C ⌈ ∣b∣/WE ⌉(PWE (b)))
     Enum.map(
-      erasure_code_chunk(
-        Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size()),
-        chunk_size
+      ErasureCoding.erasure_code(
+        Utils.pad_binary_right(bundle_binary, Constants.erasure_coded_piece_size())
       ),
       &Hash.default/1
     )
   end
-
-  defp erasure_code_chunk(bin, _n), do: ErasureCoding.erasure_code(bin)
 
   def decode(bin) do
     <<work_package_hash::b(hash), length::32-little, erasure_root::b(hash), exports_root::b(hash),
