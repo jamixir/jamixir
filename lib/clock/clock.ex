@@ -4,7 +4,7 @@ defmodule Clock do
   alias Util.Time
   use MapUnion
 
-  @assurance_timeout_ms 30_000
+  # assurances distribution happen 2 seconds before the end of the slot
 
   # PubSub channel names
   @node_events_channel "node_events"
@@ -12,6 +12,7 @@ defmodule Clock do
 
   defp slot_duration_ms, do: Constants.slot_period() * 1000
   defp tranche_duration_ms, do: Constants.audit_trenches_period() * 1000
+  defp assurance_timeout_ms, do: slot_duration_ms() - 2_000
 
   defstruct [:timers, :current_slot, :authoring_slots, :reference_time]
 
@@ -140,8 +141,9 @@ defmodule Clock do
 
   def handle_info(:assurance_timeout, state) do
     event = Clock.Event.new(:assurance_timeout)
-    Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, event})
-    next_assurance_time = state.reference_time + @assurance_timeout_ms
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, @node_events_channel, {:clock, event})
+
+    next_assurance_time = state.reference_time + assurance_timeout_ms()
 
     new_timers =
       Map.put(

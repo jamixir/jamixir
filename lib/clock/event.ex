@@ -8,7 +8,7 @@ defmodule Clock.Event do
           | :audit_tranche
           # every 10 slots
           | :rotate_core_assignments
-          # every 30 seconds
+          # 2 seconds before end of slot
           | :assurance_timeout
           | :epoch_transition
           # 1/5 * slot time after epoch transition (impl detail, not a GP constat)

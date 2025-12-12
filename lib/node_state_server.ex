@@ -300,6 +300,32 @@ defmodule Jamixir.NodeStateServer do
     {:noreply, state}
   end
 
+  def handle_info(
+        {:clock, %{event: :assurance_timeout, slot: slot}},
+        %{jam_state: jam_state} = state
+      ) do
+    Log.info("⏰ Assurance timeout event for slot #{slot}")
+    {_, header} = Storage.get_latest_header()
+    hash = h(e(header))
+    my_index = find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
+
+    case Storage.get_assurance(hash, my_index) do
+      nil ->
+        Log.info("No assurance found for latest block #{b16(hash)} at assurance timeout")
+
+      assurance ->
+        Log.info("Distributing assurance for latest block #{b16(hash)}")
+
+        for {_, pid} <- ConnectionManager.instance().get_connections() do
+          Task.start(fn ->
+            Connection.distribute_assurance(pid, assurance)
+          end)
+        end
+    end
+
+    {:noreply, state}
+  end
+
   @impl true
   def handle_info(
         {:clock, %{event: :author_block, slot: slot, epoch: epoch, epoch_phase: epoch_phase}},

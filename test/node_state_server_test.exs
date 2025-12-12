@@ -180,6 +180,49 @@ defmodule NodeStateServerTest do
     end
   end
 
+  describe "handle_info assurance_timeout" do
+    setup %{state: state} do
+      Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
+      allow_db_access(Jamixir.NodeStateServer)
+      set_mox_global()
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :connection_manager)
+        Application.delete_env(:jamixir, :network_client)
+      end)
+
+      assign_me_to_index(state, 3)
+      {:ok, state: state}
+    end
+
+    test "distributes assurance to all connections when assurance exists", %{state: _state} do
+      assurance =
+        build(:assurance, hash: h(e(Genesis.genesis_block_header())), validator_index: 3)
+
+      Storage.put(assurance)
+
+      expect(ConnectionManagerMock, :get_connections, fn -> %{"k1" => "p1", "k2" => "p2"} end)
+      expect(ClientMock, :distribute_assurance, fn "p1", ^assurance -> :ok end)
+      expect(ClientMock, :distribute_assurance, fn "p2", ^assurance -> :ok end)
+
+      send(Jamixir.NodeStateServer, {:clock, %{event: :assurance_timeout, slot: 1}})
+
+      Process.sleep(50)
+      verify!()
+    end
+
+    test "does not distribute when no assurance exists" do
+      hash = h(e(Genesis.genesis_block_header()))
+      assert Storage.get_assurance(hash, 3) == nil
+
+      send(Jamixir.NodeStateServer, {:clock, %{event: :assurance_timeout, slot: 1}})
+
+      Process.sleep(50)
+      verify!()
+    end
+  end
+
   defp assign_me_to_index(state, index) do
     v = state.curr_validators |> Enum.at(index)
     v = put_in(v.ed25519, KeyManager.get_our_ed25519_key())
