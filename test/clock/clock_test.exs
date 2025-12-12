@@ -18,7 +18,7 @@ defmodule ClockTest do
   end
 
   test "assurance timeout broadcasts timeout events", %{state: state} do
-    Phoenix.PubSub.subscribe(Jamixir.PubSub, @clock_events)
+    Phoenix.PubSub.subscribe(Jamixir.PubSub, @node_events)
     {:noreply, new_state} = Clock.handle_info(:assurance_timeout, state)
     assert new_state.timers[:assurance] != state.timers[:assurance]
     assert_receive {:clock, %Clock.Event{event: :assurance_timeout}}, 100
