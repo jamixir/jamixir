@@ -140,7 +140,7 @@ defmodule NodeStateServerTest do
       [a] = Storage.get_assurances()
       assert a.hash == h(e(Genesis.genesis_block_header()))
       assert a.validator_index == 3
-      <<b0::1, b1::1, _::6>> = a.bitfield
+      <<_::6, b1::1, b0::1>> = a.bitfield
       assert b0 + b1 == 1
 
       if assigned_core() == 0 do
@@ -153,7 +153,7 @@ defmodule NodeStateServerTest do
     test "updates existing assurance when fetching shards", %{work_report: wr} do
       # assigns the other core to 1 and ours to 0
       bitfield =
-        if assigned_core() == 0, do: <<0::1, 1::1, 0::6>>, else: <<1::1, 0::1, 0::6>>
+        if assigned_core() == 0, do: <<0::6, 1::1, 0::1>>, else: <<0::6, 0::1, 1::1>>
 
       Storage.put(%Assurance{
         hash: h(e(Genesis.genesis_block_header())),
@@ -167,7 +167,7 @@ defmodule NodeStateServerTest do
       [a] = Storage.get_assurances()
       assert a.hash == h(e(Genesis.genesis_block_header()))
       assert a.validator_index == 3
-      <<b0::1, b1::1, _::6>> = a.bitfield
+      <<_::6, b1::1, b0::1>> = a.bitfield
       assert b0 + b1 == 2
     end
 
