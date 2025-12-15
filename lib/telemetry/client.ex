@@ -10,7 +10,7 @@ defmodule Jamixir.Telemetry.Client do
   import Network.Codec
   import Codec.Encoder
 
-  @reconnect_delay 5_000
+  @reconnect_delay 60_000
   @buffer_max_size 1000
 
   defstruct [
