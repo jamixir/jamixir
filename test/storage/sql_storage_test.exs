@@ -35,6 +35,19 @@ defmodule Jamixir.SqlStorageTest do
       assert record == assurance
     end
 
+    test "get all assurance for specific hash" do
+      SqlStorage.save(build(:assurance, validator_index: 2, hash: <<1::256>>))
+      SqlStorage.save(build(:assurance, validator_index: 3, hash: <<1::256>>))
+      SqlStorage.save(build(:assurance, validator_index: 4, hash: <<1::256>>))
+
+      records = SqlStorage.get_all(Assurance, <<1::256>>)
+      assert length(records) == 3
+
+      SqlStorage.clean(Assurance)
+      records = SqlStorage.get_all(Assurance, <<1::256>>)
+      assert Enum.empty?(records)
+    end
+
     test "get assurance returns nil when not found" do
       record = SqlStorage.get(Assurance, [Hash.random(), 99])
       assert record == nil
