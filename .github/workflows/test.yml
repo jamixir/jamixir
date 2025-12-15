@@ -15,6 +15,9 @@ jobs:
       VECTORS_OWNER: davxy
       VECTORS_REPO: jam-test-vectors
       VECTORS_BRANCH: master
+      CONFORMANCE_OWNER: davxy
+      CONFORMANCE_REPO: jam-conformance
+      CONFORMANCE_BRANCH: master
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,6 +93,36 @@ jobs:
 
       - name: Move cached test vectors to expected location
         run: mv jam-test-vectors-cache ../jam-test-vectors
+
+      - name: Get latest jam-conformance commit hash
+        id: get-conformance-hash
+        run: |
+          CONFORMANCE_HASH=$(git ls-remote https://github.com/${{ env.CONFORMANCE_OWNER }}/${{ env.CONFORMANCE_REPO }}.git refs/heads/${{ env.CONFORMANCE_BRANCH }} | awk '{ print $1 }')
+          echo "CONFORMANCE_HASH=$CONFORMANCE_HASH" >> $GITHUB_ENV
+
+      - name: Restore jam-conformance cache
+        id: cache-conformance-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: jam-conformance-cache
+          key: jam-conformance-${{ env.CONFORMANCE_HASH }}
+
+      - name: Clone jam-conformance if repo is updated
+        if: steps.cache-conformance-restore.outputs.cache-hit != 'true'
+        run: |
+          rm -rf jam-conformance-cache
+          git clone -b ${{ env.CONFORMANCE_BRANCH }} https://github.com/${{ env.CONFORMANCE_OWNER }}/${{ env.CONFORMANCE_REPO }}.git jam-conformance-cache
+          git -C jam-conformance-cache rev-parse HEAD > jam-conformance-cache/latest_commit.txt
+
+      - name: Cache jam-conformance repo if it's updated
+        if: steps.cache-conformance-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: jam-conformance-cache
+          key: jam-conformance-${{ env.CONFORMANCE_HASH }}
+
+      - name: Move cached jam-conformance to expected location
+        run: mv jam-conformance-cache ../jam-conformance
 
       - name: Run tiny vector tests
         run: mix test --only tiny_vectors
