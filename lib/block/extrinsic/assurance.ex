@@ -31,7 +31,6 @@ defmodule Block.Extrinsic.Assurance do
   mockable validate_assurances(
              assurances,
              parent_hash,
-             header_timeslot,
              curr_validators,
              core_reports_intermediate_1
            ) do
@@ -99,6 +98,21 @@ defmodule Block.Extrinsic.Assurance do
         _ -> {:error, :bad_signature}
       end
     end
+  end
+
+  # assumes all assurances have the same parent hash (filtered earlier)
+  def assurances_for_new_block(existing_assurances, state) do
+    # Select assurances from existing assurances that match current validators
+    # current_validators = state.curr_validators
+    # existing_assurances
+    # |> Enum.filter(fn a -> Enum.at(current_validators, a.validator_index) != nil end)
+    # Formula (11.12) v0.7.2
+    existing_assurances
+    |> Enum.sort_by(& &1.validator_index)
+    # Formula (11.13) v0.7.2
+    |> Enum.filter(fn a ->
+      verify_signature(a, Enum.at(state.curr_validators, a.validator_index).ed25519)
+    end)
   end
 
   defimpl Encodable do

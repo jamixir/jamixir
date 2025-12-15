@@ -339,13 +339,21 @@ defmodule Jamixir.NodeStateServer do
     # Telemetry: authoring event
     authoring_event_id = Jamixir.Telemetry.authoring(slot, parent_hash)
 
+    # Tickets selection
     existing_tickets = Storage.get_tickets(epoch)
-
     Log.debug("Existing tickets for epoch #{epoch}: #{length(existing_tickets)}")
     tickets = TicketProof.tickets_for_new_block(existing_tickets, jam_state, epoch_phase)
-    Log.info("Creating block with #{length(tickets)} 🎟️ tickets")
 
-    case Block.new(%Block.Extrinsic{tickets: tickets}, parent_hash, jam_state, slot) do
+    # Assurances selection
+    # Formula (11.11) v0.7.2
+    existing_assurances = Storage.get_assurances(parent_hash)
+    Log.debug("Assurances for parent block #{b16(parent_hash)}: #{length(existing_assurances)}")
+    assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
+
+    Log.info("New block with #{length(tickets)} 🎟️ tickets, #{length(assurances)} 🛡️ assurances")
+    extrinsics = %Block.Extrinsic{tickets: tickets, assurances: assurances}
+
+    case Block.new(extrinsics, parent_hash, jam_state, slot) do
       {:ok, block} ->
         header_hash = h(e(block.header))
         Log.block(:info, "⛓️ Block created successfully. Header Hash #{b16(header_hash)}")

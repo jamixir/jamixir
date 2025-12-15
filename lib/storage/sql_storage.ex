@@ -50,6 +50,11 @@ defmodule Jamixir.SqlStorage do
     end
   end
 
+  def get_all(Assurance, hash) do
+    Repo.all(from(a in AssuranceRecord, where: a.hash == ^hash))
+    |> Enum.map(&AssuranceRecord.to_assurance/1)
+  end
+
   def get_all(Assurance) do
     Repo.all(AssuranceRecord) |> Enum.map(&AssuranceRecord.to_assurance/1)
   end
