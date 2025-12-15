@@ -7,7 +7,7 @@ license = "Apache-2.0"
 [lib]
 name = "erasure_coding"
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["nif"]
