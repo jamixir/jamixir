@@ -17,7 +17,7 @@ jobs:
       VECTORS_BRANCH: master
       CONFORMANCE_OWNER: davxy
       CONFORMANCE_REPO: jam-conformance
-      CONFORMANCE_BRANCH: master
+      CONFORMANCE_BRANCH: main
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
