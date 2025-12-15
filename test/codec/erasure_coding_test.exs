@@ -23,19 +23,19 @@ defmodule ErasureCodingTest do
           assert encoded == test_case["shards"]
         end
 
-        # @tag test_case: test_case
-        # @tag cores: core_count[type]
-        # test "test decode #{file_name}", %{test_case: test_case, cores: cores} do
-        #   bin = test_case["data"]
-        #   shards = test_case["shards"]
+        @tag test_case: test_case
+        @tag cores: core_count[type]
+        test "test decode #{file_name}", %{test_case: test_case, cores: cores} do
+          bin = test_case["data"]
+          shards = test_case["shards"]
 
-        #   # take random indices from shards
-        #   indices = Enum.take_random(0..(length(shards) - 1), cores)
-        #   shards = Enum.map(indices, &Enum.at(shards, &1))
+          # take random C indices from the V available shards
+          indices = Enum.take_random(0..(length(shards) - 1), cores)
+          selected_shards = Enum.map(indices, &Enum.at(shards, &1))
 
-        #   decoded = ErasureCoding.decode(shards, indices, byte_size(bin), cores)
-        #   assert decoded == bin
-        # end
+          decoded = ErasureCoding.decode(selected_shards, indices, byte_size(bin), cores)
+          assert decoded == bin
+        end
       end
     end
 
@@ -72,17 +72,18 @@ defmodule ErasureCodingTest do
     end
   end
 
-  # describe "decode/2" do
-  #   test "smoke decode" do
-  #     string = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
-  #     [s0, s1, s2, s3, s4, s5] = ErasureCoding.encode(string, 2)
+  describe "decode/2" do
+    test "smoke decode" do
+      string = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10>>
+      [s0, s1, s2, s3, s4, s5] = ErasureCoding.encode(string, 2)
 
-  #     assert ErasureCoding.decode([s0, s3], [0, 3], 10, 2) == string
-  #     assert ErasureCoding.decode([s1, s2], [1, 2], 10, 2) == string
-  #     assert ErasureCoding.decode([s4, s5], [4, 5], 10, 2) == string
-  #     assert ErasureCoding.decode([s4, s5], [1, 2], 10, 2) != string
-  #     # not enough shards
-  #     assert ErasureCoding.decode([s1], [1], 10, 2) == :error
-  #   end
-  # end
+      assert ErasureCoding.decode([s0, s3], [0, 3], 10, 2) == string
+      assert ErasureCoding.decode([s1, s2], [1, 2], 10, 2) == string
+      assert ErasureCoding.decode([s4, s5], [4, 5], 10, 2) == string
+      # wrong indices should not match
+      assert ErasureCoding.decode([s4, s5], [1, 2], 10, 2) != string
+      # not enough shards
+      assert ErasureCoding.decode([s1], [1], 10, 2) == :error
+    end
+  end
 end

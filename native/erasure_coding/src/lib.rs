@@ -1,14 +1,8 @@
-#![allow(non_snake_case)]
-
-mod erasure_codec;
+pub mod erasure_codec;
 
 // Re-export the core functions for use by other Rust code
-pub use erasure_codec::{do_encode, do_decode};
-
-#[cfg(feature = "nif")]
-use rustler::NifResult;
-#[cfg(feature = "nif")]
-use rustler::Binary;
+pub use erasure_codec::{do_decode, do_encode};
+use rustler::{Binary, NifResult};
 
 #[cfg(feature = "nif")]
 #[rustler::nif]
