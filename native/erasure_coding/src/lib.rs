@@ -2,6 +2,8 @@ pub mod erasure_codec;
 
 // Re-export the core functions for use by other Rust code
 pub use erasure_codec::{do_decode, do_encode};
+
+#[cfg(feature = "nif")]
 use rustler::{Binary, NifResult};
 
 #[cfg(feature = "nif")]
