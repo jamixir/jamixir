@@ -3,24 +3,19 @@
 //! # Data Layout
 //!
 //! The JAM test vectors uses **column-major** input: data is divided into C contiguous regions.
-//!  each region is a shard
+//! each region is a shard.
 //!
 //! ```text
-//! Input (column-major):  [─── Col 0 ───][─── Col 1 ───] ... [─── Col C-1 ───]
-//! ```
+//! Input:  [─── Col 0 ───][─── Col 1 ───] ... [─── Col C-1 ───]
 //!
-//! Internally we work with a **row-major** matrix
-//! aka if the Matrix is represented as Vec<Vec<u8>> aliased as Vec<Shard>, then the rows are the outer vector and the columns are the inner vector
+//! As a matrix (we iterate row-by-row for encoding/decoding):
 //!
-//! ```text
 //!                   Col 0     Col 1    ...   Col C-1
 //! Row 0:           [Symbol]  [Symbol]  ...  [Symbol]
 //! Row 1:           [Symbol]  [Symbol]  ...  [Symbol]
 //!   ...
 //! Row N-1:         [Symbol]  [Symbol]  ...  [Symbol]
 //! ```
-//!
-//! We convert between layouts at the boundaries.
 
 use reed_solomon_simd::{ReedSolomonDecoder, ReedSolomonEncoder};
 use std::error::Error;
@@ -34,51 +29,34 @@ fn to_symbol(slice: &[u8]) -> Symbol {
     [slice[0], slice[1]]
 }
 
-
-
-
-/// Column-major: [col0][col1][...][colC-1] into 
-/// Row-major:    [row0][row1][...][rowN-1] in internal representation
-fn transpose(data: &[u8], num_cols: usize, num_rows: usize) -> Vec<u8> {
-    let col_size = num_rows * SYMBOL_SIZE;
-    let mut row_major = Vec::with_capacity(data.len());
-
-    for row in 0..num_rows {
-        for col in 0..num_cols {
-            let offset = col * col_size + row * SYMBOL_SIZE;
-            row_major.extend_from_slice(&data[offset..offset + SYMBOL_SIZE]);
-        }
-    }
-
-    row_major
-}
-
 struct Config {
     num_cols: usize,       // C = core count
     num_rows: usize,       // N = symbols per column
     recovery_count: usize, // V - C
+    col_bytes: usize,      // bytes per column (shard)
 }
 
 impl Config {
     fn new(data_len: usize, num_cols: usize) -> Self {
-        let col_bytes = data_len.div_ceil(num_cols);
-        let col_bytes_padded = round_up(col_bytes, SYMBOL_SIZE);
-        let num_rows = col_bytes_padded / SYMBOL_SIZE;
+        let col_bytes = round_up(data_len.div_ceil(num_cols), SYMBOL_SIZE);
+        let num_rows = col_bytes / SYMBOL_SIZE;
         let total_shards = if num_cols == 2 { 6 } else { 1023 };
 
         Self {
             num_cols,
             num_rows,
             recovery_count: total_shards - num_cols,
+            col_bytes,
         }
-    }
-
-    fn row_bytes(&self) -> usize {
-        self.num_cols * SYMBOL_SIZE
     }
 
     fn padded_len(&self) -> usize {
         self.num_rows * self.num_cols * SYMBOL_SIZE
+    }
+
+    /// Get symbol at (row, col) from column-major data
+    fn symbol_offset(&self, row: usize, col: usize) -> usize {
+        col * self.col_bytes + row * SYMBOL_SIZE
     }
 }
 
@@ -94,24 +72,25 @@ fn round_up(value: usize, multiple: usize) -> usize {
 pub fn do_encode(data: Vec<u8>, core_count: usize) -> Result<Vec<Shard>, Box<dyn Error>> {
     let config = Config::new(data.len(), core_count);
 
-    // Pad and convert to row-major layout (transpose the matrix)
+    // Pad to align with symbol boundaries
     let mut padded = data;
     padded.resize(config.padded_len(), 0);
-    let row_major = transpose(&padded, config.num_cols, config.num_rows);
 
     // pre-allocate place for all the columns
     let mut original_shards: Vec<Shard> =
-        vec![Vec::with_capacity(config.row_bytes()); config.num_cols];
+        vec![Vec::with_capacity(config.col_bytes); config.num_cols];
     let mut recovery_shards: Vec<Shard> =
-        vec![Vec::with_capacity(config.row_bytes()); config.recovery_count];
+        vec![Vec::with_capacity(config.col_bytes); config.recovery_count];
 
     // encode row by row
-    for row_data in row_major.chunks_exact(config.row_bytes()) {
+    for row in 0..config.num_rows {
         let mut encoder =
             ReedSolomonEncoder::new(config.num_cols, config.recovery_count, SYMBOL_SIZE)?;
 
         // Each symbol in the row goes to its column
-        for (col, symbol) in row_data.chunks_exact(SYMBOL_SIZE).enumerate() {
+        for col in 0..config.num_cols {
+            let offset = config.symbol_offset(row, col);
+            let symbol = &padded[offset..offset + SYMBOL_SIZE];
             encoder.add_original_shard(symbol)?;
             original_shards[col].extend_from_slice(symbol);
         }
@@ -135,8 +114,8 @@ pub fn do_decode(
     let config = Config::new(original_len, core_count);
 
     // Track which original columns we have
-    // this is used in decode_row to in order to tell if a sympbol in the Nth column
-    // is coming from the niput data or from recovered data
+    // this is used in decode_row to in order to tell if a symbol in the Nth column
+    // is coming from the input data or from recovered data
     let mut have_col: Vec<Option<usize>> = vec![None; core_count];
     for (pos, &idx) in shard_indices.iter().enumerate() {
         if idx < core_count {
@@ -146,7 +125,7 @@ pub fn do_decode(
 
     //  pre-allocate place for all the columns
     let mut original_shards: Vec<Shard> =
-        vec![Vec::with_capacity(config.row_bytes()); config.num_cols];
+        vec![Vec::with_capacity(config.col_bytes); config.num_cols];
 
     // decode row by row
     for row in 0..config.num_rows {
