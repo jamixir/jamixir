@@ -34,6 +34,27 @@ defmodule Block.Extrinsic.AssuranceTest do
     %{hp: hp, ht: 1, assurance: assurance, validators: validators, core_reports: [], s2: s2}
   end
 
+  describe "corebits/1" do
+    test "extracts core bits from assurance bitfield" do
+      bits = Assurance.core_bits(build(:assurance, bitfield: <<0b10::8>>))
+      assert elem(bits, 0) == 0
+      assert elem(bits, 1) == 1
+    end
+
+    @tag :full_vectors
+    test "extracts core bits from assurance bitfield with multiple bytes" do
+      bits =
+        Assurance.core_bits(
+          build(:assurance, bitfield: <<0b11111111::8, 0b00000000::8, 0b00000001::8>>)
+        )
+
+      assert elem(bits, 0) == 1
+      assert elem(bits, 8) == 0
+      assert elem(bits, 16) == 1
+      assert elem(bits, 23) == 0
+    end
+  end
+
   describe "Assurance encoding" do
     test "encodes an Assurance struct correctly" do
       assurance = build(:assurance)
@@ -177,16 +198,6 @@ defmodule Block.Extrinsic.AssuranceTest do
       assert {:error, :core_not_engaged} ==
                Assurance.validate_assurances([invalid_assurance], hp, validators, [nil])
     end
-
-    test "returns :ok when assurance bit is set but core report is not null,and timeslot is not old",
-         %{hp: hp, validators: validators, s2: s2} do
-      invalid_assurance =
-        build(:assurance, hash: hp, validator_index: 1, bitfield: <<1::1, 0::7>>)
-        |> Assurance.signed(s2)
-
-      cr = [%{timeslot: 2, core_report: nil}]
-      assert :ok == Assurance.validate_assurances([invalid_assurance], hp, validators, cr)
-    end
   end
 
   describe "assurances_for_new_block/2" do
@@ -219,6 +230,10 @@ defmodule Block.Extrinsic.AssuranceTest do
 
       assert [assurance] ==
                Assurance.assurances_for_new_block([assurance, invalid_assurance], state)
+    end
+
+    test "filter out assurances with wrong bitfield" do
+      # only bits with pending reports can be set
     end
   end
 end

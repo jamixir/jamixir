@@ -48,10 +48,23 @@ defmodule Utils do
     end
   end
 
-  def set_bit(bin, n, v) do
-    <<head::size(n), _::1, rest::bitstring>> = bin
-    <<head::size(n), v::1, rest::bitstring>>
+  def set_bit(bin, n, v) when is_binary(bin) and is_integer(n) and n >= 0 and v in [0, 1] do
+    byte_index = div(n, 8)
+    bit_in_byte = rem(n, 8)
+
+    if byte_index >= byte_size(bin) do
+      bin
+    else
+      <<before::binary-size(byte_index), target_byte, after_bytes::binary>> = bin
+      new_byte = set_bit_in_byte(target_byte, bit_in_byte, v)
+      <<before::binary, new_byte, after_bytes::binary>>
+    end
   end
+
+  defp set_bit_in_byte(byte, bit_pos, 1), do: Bitwise.bor(byte, Bitwise.bsl(1, bit_pos))
+
+  defp set_bit_in_byte(byte, bit_pos, 0),
+    do: Bitwise.band(byte, Bitwise.bnot(Bitwise.bsl(1, bit_pos)))
 
   def pad_binary(value, size) when byte_size(value) < size do
     padding = size - byte_size(value)

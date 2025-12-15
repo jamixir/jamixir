@@ -116,7 +116,6 @@ defmodule System.State do
            Assurance.validate_assurances(
              e.assurances,
              h.parent_hash,
-             h.timeslot,
              state.curr_validators,
              core_reports_1
            ),

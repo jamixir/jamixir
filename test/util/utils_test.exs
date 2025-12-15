@@ -138,4 +138,47 @@ defmodule UtilsTest do
              ]
     end
   end
+
+  describe "set_bit/3" do
+    test "sets bits correctly" do
+      original = <<0::16>>
+      modified = Utils.set_bit(original, 3, 1)
+      assert modified == <<0b00001000, 0b00000000>>
+
+      modified2 = Utils.set_bit(modified, 3, 0)
+      assert modified2 == <<0b00000000, 0b00000000>>
+
+      modified3 = Utils.set_bit(original, 7, 1)
+      assert modified3 == <<0b10000000, 0b00000000>>
+
+      # Test setting bit in second byte
+      modified4 = Utils.set_bit(original, 8, 1)
+      assert modified4 == <<0b00000000, 0b00000001>>
+
+      modified5 = Utils.set_bit(original, 11, 1)
+      assert modified5 == <<0b00000000, 0b00001000>>
+    end
+
+    test "set_bit is consistent with Merklization.bits" do
+      # Verify that set_bit at index n produces a 1 at position n when read via bits()
+      original = <<0, 0, 0, 0>>
+
+      for i <- 0..31 do
+        modified = Utils.set_bit(original, i, 1)
+
+        bits =
+          Util.Merklization.bits(modified)
+          |> Enum.chunk_every(8)
+          |> Enum.map(&Enum.reverse/1)
+          |> List.flatten()
+
+        assert Enum.at(bits, i) == 1, "Expected bit #{i} to be 1, got #{Enum.at(bits, i)}"
+
+        # All other bits should be 0
+        for j <- 0..31, j != i do
+          assert Enum.at(bits, j) == 0, "Expected bit #{j} to be 0"
+        end
+      end
+    end
+  end
 end
