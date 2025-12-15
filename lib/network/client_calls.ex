@@ -11,7 +11,7 @@ defmodule Network.ClientCalls do
   end
 
   def call(128, message) do
-    log(:debug, "Received block response")
+    debug("Received block response")
     {:ok, Block.decode_list(message)}
   rescue
     e ->
@@ -85,7 +85,7 @@ defmodule Network.ClientCalls do
   end
 
   def call(protocol_id, message) do
-    log(:debug, "Received protocol #{protocol_id} message")
+    debug("Received protocol #{protocol_id} message")
     {:ok, message}
   end
 

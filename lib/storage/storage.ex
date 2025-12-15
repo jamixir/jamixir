@@ -104,7 +104,7 @@ defmodule Storage do
   end
 
   def put(header_hash, %State{} = state) do
-    log(:debug, "Storing state for header #{b16(header_hash)}")
+    debug("Storing state for header #{b16(header_hash)}")
     serial_state = Trie.serialize(state)
     state_root = Trie.state_root(serial_state)
 

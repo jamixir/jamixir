@@ -327,17 +327,17 @@ defmodule PVM.Host.General.Internal do
 
         _ when vz == 0 ->
           {_, sa} = pop_in(service_account, [:storage, k])
-          log(:debug, "Deleted storage key: #{b16(k)} [id: #{service_id}]")
-          log(:debug, "Now storage has #{inspect(sa.storage.items_in_storage)} items")
+          debug("Deleted storage key: #{b16(k)} [id: #{service_id}]")
+          debug("Now storage has #{inspect(sa.storage.items_in_storage)} items")
           sa
 
         _ ->
           case memory_read(memory_ref, vo, vz) do
             {:ok, value} ->
-              log(:debug, "Write to storage key #{b16(k)} => #{b16(value)} [id: #{service_id}]")
+              debug("Write to storage key #{b16(k)} => #{b16(value)} [id: #{service_id}]")
 
               sa = put_in(service_account, [:storage, k], value)
-              log(:debug, "Now storage has #{inspect(sa.storage.items_in_storage)} items")
+              debug("Now storage has #{inspect(sa.storage.items_in_storage)} items")
               sa
 
             {:error, _} ->
@@ -477,7 +477,7 @@ defmodule PVM.Host.General.Internal do
     message = "#{prefixed(core_index, "@")}#{prefixed(service_index, "#")}#{target} #{message}"
 
     # PVM log will always be DEBUG
-    log(:debug, message)
+    debug(message)
   end
 
   defp prefixed(s, prefix), do: if(s != nil, do: "#{prefix}#{s}", else: "")

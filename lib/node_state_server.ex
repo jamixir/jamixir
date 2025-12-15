@@ -311,10 +311,10 @@ defmodule Jamixir.NodeStateServer do
 
     case Storage.get_assurance(hash, my_index) do
       nil ->
-        Log.info("No assurance found for latest block #{b16(hash)} at assurance timeout")
+        Log.debug("No assurance found for parent block #{b16(hash)}")
 
       assurance ->
-        Log.info("Distributing assurance for latest block #{b16(hash)}")
+        Log.info("🛡️ Distributing assurance for parent block #{b16(hash)}")
 
         for {_, pid} <- ConnectionManager.instance().get_connections() do
           Task.start(fn ->

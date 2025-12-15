@@ -9,7 +9,7 @@ defmodule Network.MessageParsers do
   end
 
   defp parse_ce_messages(<<>>, acc) do
-    log(:debug, "Empty binary, returning accumulated messages: #{length(acc)}")
+    debug("Empty binary, returning accumulated messages: #{length(acc)}")
     Enum.reverse(acc)
   end
 
@@ -36,7 +36,7 @@ defmodule Network.MessageParsers do
             message_preview =
               if byte_size(message) > 0, do: inspect(binary_slice(message, 0, 16)), else: "empty"
 
-            log(:debug, "Message preview: #{message_preview}")
+            debug("Message preview: #{message_preview}")
 
             parse_ce_messages(remaining, [message | acc])
 
@@ -47,7 +47,7 @@ defmodule Network.MessageParsers do
             )
 
             # Not enough data for a complete message - shouldn't happen with FIN flag
-            log(:debug, "Returning accumulated messages: #{length(acc)}")
+            debug("Returning accumulated messages: #{length(acc)}")
             Enum.reverse(acc)
         end
 
@@ -100,11 +100,11 @@ defmodule Network.MessageParsers do
     log_tag = "PARSE_UP_PROTOCOL_ID"
 
     if byte_size(buffer) < 1 do
-      log(:debug, "#{log_tag}: Buffer too small for protocol ID")
+      debug("#{log_tag}: Buffer too small for protocol ID")
       {:need_more, buffer}
     else
       <<protocol_id::8, rest::binary>> = buffer
-      log(:debug, "#{log_tag}: Protocol ID #{protocol_id} extracted")
+      debug("#{log_tag}: Protocol ID #{protocol_id} extracted")
       {:protocol, protocol_id, rest}
     end
   end
@@ -113,14 +113,14 @@ defmodule Network.MessageParsers do
     log_tag = "PARSE_UP_MESSAGE"
 
     if byte_size(buffer) < 4 do
-      log(:debug, "#{log_tag}: Buffer too small for message length")
+      debug("#{log_tag}: Buffer too small for message length")
       {:need_more, buffer}
     else
       <<length::32-little, rest::binary>> = buffer
 
       if byte_size(rest) >= length do
         <<message::binary-size(length), remaining::binary>> = rest
-        log(:debug, "#{log_tag}: Parsed complete message of size #{length}")
+        debug("#{log_tag}: Parsed complete message of size #{length}")
         {:complete, message, remaining}
       else
         log(

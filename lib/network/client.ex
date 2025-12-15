@@ -92,7 +92,7 @@ defmodule Network.Client do
 
   @impl true
   def announce_block(pid, header, timeslot) do
-    log(:debug, "Announcing block at slot #{timeslot}")
+    debug("Announcing block at slot #{timeslot}")
     encoded_header = e(header)
     hash = h(encoded_header)
     message = encoded_header <> hash <> t(timeslot)
@@ -198,8 +198,8 @@ defmodule Network.Client do
     case Map.get(up_streams, protocol_id) do
       # Existing stream - reuse it and send only the message
       %{stream: stream} ->
-        log(:debug, "Reusing existing UP stream for block announcement")
-        log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+        debug("Reusing existing UP stream for block announcement")
+        debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
 
         case :quicer.send(stream, encode_message(message), send_flag(:none)) do
           {:ok, _} ->
@@ -220,7 +220,7 @@ defmodule Network.Client do
         state = put_in(state.up_streams[protocol_id], %{stream: stream})
         state = put_in(state.up_stream_data[stream], %{protocol_id: protocol_id, buffer: <<>>})
 
-        log(:debug, "Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+        debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
         {:ok, _} = :quicer.send(stream, <<protocol_id::8>>, send_flag(:none))
         {:ok, _} = :quicer.send(stream, encode_message(message), send_flag(:none))
 

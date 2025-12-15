@@ -1,15 +1,14 @@
 defmodule Network.ServerCalls do
+  alias Block.Extrinsic.{Assurance, Disputes.Judgement, Guarantee, TicketProof}
+  alias Block.Extrinsic.{WorkPackage, WorkPackageBundle}
   alias Block.Header
-  alias Block.Extrinsic.WorkPackageBundle
+  alias Codec.VariableSize
   alias Network.Types.SegmentShardsRequest
   alias System.Audit.AuditAnnouncement
-  alias Block.Extrinsic.WorkPackage
-  alias Block.Extrinsic.Guarantee
-  alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   import Codec.Encoder
-  alias Codec.VariableSize
   use Sizes
   import RangeMacros
+  import Util.Hex, only: [b16: 1]
 
   @behaviour Network.ServerCallsBehaviour
   @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
@@ -22,7 +21,7 @@ defmodule Network.ServerCalls do
   end
 
   def call(128, <<hash::b(hash), direction::8, max_blocks::32-little>> = _message) do
-    log(:debug, "Sending #{max_blocks} blocks in direction #{direction}")
+    debug("Sending #{max_blocks} blocks in direction #{direction}")
     dir = if direction == 0, do: :ascending, else: :descending
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, dir, max_blocks)
     blocks_bin = for b <- blocks, do: Encodable.encode(b)
@@ -180,7 +179,7 @@ defmodule Network.ServerCalls do
   end
 
   def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
-    log("Received assurance")
+    log("🛡️ Received assurance for parent block #{b16(hash)}")
 
     assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
 
@@ -243,7 +242,7 @@ defmodule Network.ServerCalls do
   end
 
   def call(0, message) do
-    log(:debug, "Processing block announcement")
+    debug("Processing block announcement")
     {header, rest} = Header.decode(message)
     <<hash::b(hash), timeslot::m(timeslot)>> = rest
     :ok = Jamixir.NodeAPI.announce_block(header, hash, timeslot)
@@ -296,7 +295,7 @@ defmodule Network.ServerCalls do
        do: process_ticket(mode, epoch, attempt, vrf_proof)
 
   defp process_ticket(mode, epoch, attempt, vrf_proof) do
-    log(:debug, "Processing #{mode} ticket")
+    debug("Processing #{mode} ticket")
     ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
     :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
     <<>>
