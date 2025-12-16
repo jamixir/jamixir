@@ -201,39 +201,49 @@ defmodule Block.Extrinsic.AssuranceTest do
   end
 
   describe "assurances_for_new_block/2" do
-    setup do
+    setup %{validators: [_, v | _]} do
       state = build(:genesis_state)
+      # use signer as validator in all indexes
+      state = %{state | curr_validators: List.duplicate(v, 6)}
       {:ok, state: state}
     end
 
-    test "order assurances by validator_index", %{
-      state: state,
-      assurance: assurance,
-      validators: [_, v | _]
-    } do
+    test "smoke test", %{state: state, assurance: assurance} do
+      assert [assurance] == Assurance.assurances_for_new_block([assurance], state)
+    end
+
+    test "order assurances by validator_index", %{state: state, assurance: assurance} do
       a1 = %{assurance | validator_index: 2}
       a2 = %{assurance | validator_index: 1}
       a3 = %{assurance | validator_index: 3}
-      # use signer as validator in all indexes
-      state = %{state | curr_validators: List.duplicate(v, 6)}
 
       assert [a2, a1, a3] == Assurance.assurances_for_new_block([a1, a2, a3], state)
     end
 
-    test "filter out assurances with invalid signatures", %{
-      state: state,
-      assurance: assurance,
-      validators: validators
-    } do
-      state = %{state | curr_validators: validators}
-      invalid_assurance = build(:assurance, validator_index: 0)
-
-      assert [assurance] ==
-               Assurance.assurances_for_new_block([assurance, invalid_assurance], state)
+    test "filter out assurances with invalid signatures", %{state: state, assurance: a} do
+      invalid = build(:assurance, validator_index: 0)
+      assert [a] == Assurance.assurances_for_new_block([a, invalid], state)
     end
 
-    test "filter out assurances with wrong bitfield" do
+    test "filter out assurances with bitfield set but no core report", %{
+      state: state,
+      assurance: assurance,
+      s2: s2
+    } do
       # only bits with pending reports can be set
+      assurance = %{assurance | bitfield: <<0::6, 1::1, 1::1>>} |> Assurance.signed(s2)
+      assert [] == Assurance.assurances_for_new_block([assurance], state)
+    end
+
+    test "include assurances with bitfield set but and core report exists", %{
+      state: state,
+      assurance: assurance,
+      s2: s2
+    } do
+      state = %{state | core_reports: [build(:work_report), build(:work_report)]}
+      # only bits with pending reports can be set
+      assurance = %{assurance | bitfield: <<0::6, 1::1, 1::1>>} |> Assurance.signed(s2)
+      assert [assurance] == Assurance.assurances_for_new_block([assurance], state)
     end
   end
 end
