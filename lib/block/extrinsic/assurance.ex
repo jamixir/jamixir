@@ -6,6 +6,7 @@ defmodule Block.Extrinsic.Assurance do
   Each assurance is a sequence of binary values (i.e., a bitstring), one per core,
   together with a signature and the index of the validator who is assuring.
   """
+  alias System.State.CoreReport
   alias Util.{Collections, Crypto, Hash}
   use SelectiveMock
   use Sizes
@@ -68,19 +69,20 @@ defmodule Block.Extrinsic.Assurance do
 
   # Formula (11.15) v0.7.2
   defp validate_core_reports_bits(assurances, core_reports_intermediate) do
-    all_ok =
-      Enum.all?(assurances, fn assurance ->
-        bits = core_bits(assurance)
+    if Enum.all?(assurances, &valid_bits?(&1, core_reports_intermediate)),
+      do: :ok,
+      else: {:error, :core_not_engaged}
+  end
 
-        Enum.all?(0..(Constants.core_count() - 1), fn c ->
-          case elem(bits, c) do
-            0 -> true
-            _ -> Enum.at(core_reports_intermediate, c) != nil
-          end
-        end)
-      end)
+  defp valid_bits?(assurance, core_reports_intermediate) do
+    bits = core_bits(assurance)
 
-    if all_ok, do: :ok, else: {:error, :core_not_engaged}
+    Enum.all?(0..(Constants.core_count() - 1), fn c ->
+      case elem(bits, c) do
+        0 -> true
+        _ -> Enum.at(core_reports_intermediate, c) != nil
+      end
+    end)
   end
 
   defp validate_signatures(assurances, parent_hash, curr_validators_) do
@@ -102,17 +104,19 @@ defmodule Block.Extrinsic.Assurance do
 
   # assumes all assurances have the same parent hash (filtered earlier)
   def assurances_for_new_block(existing_assurances, state) do
-    # Select assurances from existing assurances that match current validators
-    # current_validators = state.curr_validators
-    # existing_assurances
-    # |> Enum.filter(fn a -> Enum.at(current_validators, a.validator_index) != nil end)
+    # TODO now passing []. Need to pass correct wonky verdicts judgements
+    core_reports_1 = CoreReport.process_disputes(state.core_reports, [])
+
+    filtered =
+      for a <- existing_assurances,
+          # Formula (11.13) v0.7.2
+          verify_signature(a, Enum.at(state.curr_validators, a.validator_index).ed25519),
+          # Formula (11.15) v0.7.2
+          valid_bits?(a, core_reports_1),
+          do: a
+
     # Formula (11.12) v0.7.2
-    existing_assurances
-    |> Enum.sort_by(& &1.validator_index)
-    # Formula (11.13) v0.7.2
-    |> Enum.filter(fn a ->
-      verify_signature(a, Enum.at(state.curr_validators, a.validator_index).ed25519)
-    end)
+    Enum.sort_by(filtered, & &1.validator_index)
   end
 
   defimpl Encodable do
