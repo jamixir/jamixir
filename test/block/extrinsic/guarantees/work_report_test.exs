@@ -510,8 +510,9 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
-      assert is_binary(b)
+      {[[sd]], task} = WorkReport.execute_work_package(wp, [], 0, services)
+      assert is_binary(sd.data)
+      assert sd.merkle_root == <<4::hash()>>
       {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
@@ -545,8 +546,9 @@ defmodule WorkReportTest do
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
-      assert is_binary(b)
+      {[[sd]], task} = WorkReport.execute_work_package(wp, [], 0, services)
+      assert is_binary(sd.data)
+      assert sd.merkle_root == <<4::hash()>>
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
       assert work_digest.result == :bad

@@ -1,5 +1,6 @@
 defmodule Jamixir.Node do
   alias Block.Extrinsic.Preimage
+  alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.TicketProof
@@ -272,7 +273,7 @@ defmodule Jamixir.Node do
         {:error, :execution_failed}
 
       # Auth logic and import segments ok. share with other guarantors
-      {_import_segments, refine_task} ->
+      {import_segments, refine_task} ->
         # send WP bundle to two other guarantors in same core through CE 134
         bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
         Logger.info("Work package validated successfully. Sending to other guarantors")
@@ -282,12 +283,11 @@ defmodule Jamixir.Node do
         responses =
           for v <- validators do
             pid = ConnectionManager.instance().get_connection(v.ed25519)
-
-            # TODO send correct segment lookup map
-            {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, %{})}
+            dict = WorkReport.get_segment_lookup_dict(wp)
+            {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
           end
 
-        {work_report, _exports} = Task.await(refine_task)
+        {work_report, exports} = Task.await(refine_task)
 
         wr_hash = h(e(work_report))
 
@@ -314,6 +314,12 @@ defmodule Jamixir.Node do
             end
         end
 
+        # stores segment root for later retrieval
+        root = MerkleTree.merkle_root(exports)
+
+        Storage.put_segments_root(work_report.specification.work_package_hash, root)
+
+        {:ok, import_segments, work_report}
         # TODO
         # erasure code exports and save for upcoming calls
         :ok

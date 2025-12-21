@@ -229,7 +229,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         segments_data = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         import_segments = for(w <- segments_data, do: for(s <- w, do: s.data))
 
-        {import_segments,
+        {segments_data,
          Task.async(fn -> refine(wp, extrinsics, core, t, services, import_segments) end)}
     end
   end

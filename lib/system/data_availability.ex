@@ -23,10 +23,13 @@ defmodule System.DataAvailability do
     <<>>
   end
 
-  def do_get_segment(erasure_root, segment_index) do
+  def do_get_segment(merkle_root, segment_index) do
     # first try local storage for segment
-    case Storage.get_segment(erasure_root, segment_index) do
+    case Storage.get_segment(merkle_root, segment_index) do
       nil ->
+        # TODO this is wrong. Merkle Root != Erasure root
+        # the erasure root is stored with work report guarantees
+        erasure_root = merkle_root
         core = Storage.get_segment_core(erasure_root)
 
         {shards, indexes} =
