@@ -170,7 +170,8 @@ defmodule Jamixir.Fuzzer.Util do
     {:ok, :state_root, bin}
   end
 
-  defp parse(:error, <<_::8, bin::binary>>) do
+  defp parse(:error, bin) do
+    {size, bin} = Codec.Decoder.decode_integer(bin)
     {:ok, :error, bin}
   end
 

@@ -132,10 +132,10 @@ defmodule Jamixir.FuzzerTest do
     end
 
     @fuzz_path "#{@conformance_path}/fuzz-reports"
-    @base_path "#{@fuzz_path}/0.7.1/traces/"
+    @base_path "#{@fuzz_path}/0.7.2/traces/"
     @all_traces (case File.ls(@base_path) do
                    {:ok, files} ->
-                     files |> Enum.filter(fn file -> String.match?(file, ~r/^\d+/) end)
+                     files |> Enum.filter(fn file -> String.match?(file, ~r/^[0-9_]+/) end)
 
                    {:error, _} ->
                      []
@@ -160,7 +160,7 @@ defmodule Jamixir.FuzzerTest do
 
       # acc final gas
       # 1763371998
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.1/traces/1763489659/")
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1766255635_3689/")
     end
 
     @tag :perf
@@ -214,7 +214,9 @@ defmodule Jamixir.FuzzerTest do
       block = Block.from_json(block_json[:block])
       block = put_in(block.header.prior_state_root, Hash.random())
       assert :ok = Client.send_import_block(client, block)
-      assert {:ok, :error, _} = Client.receive_message(client)
+      assert {:ok, :error, e} = Client.receive_message(client)
+
+      assert String.starts_with?(e, "Chain error: block execution failure: Invalid state root.")
     end
 
     test "return response when block parent state is invalid", %{
