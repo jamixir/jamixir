@@ -12,7 +12,8 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
-  alias Block.Extrinsic.Assurance
+  alias Block.Extrinsic.{Assurance, Guarantee}
+  alias Storage.GuaranteeRecord
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
   alias Jamixir.Genesis
@@ -118,15 +119,17 @@ defmodule Jamixir.NodeStateServer do
     new_jam_state =
       case Jamixir.Node.add_block(block, jam_state) do
         {:ok, %State{} = new_jam_state, state_root} ->
+          header_hash = h(e(block.header))
+
           Log.info(
-            "🔄 State Updated successfully. H: #{b16(h(e(block.header)))} root: #{b16(state_root)}"
+            "🔄 State Updated successfully. H: #{b16(header_hash)} root: #{b16(state_root)}"
           )
 
           #  Notify Subscription Manager, which will notify "bestBlock" subscribers
           Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
 
           # Telemetry: best block changed
-          Jamixir.Telemetry.best_block_changed(block.header.timeslot, h(e(block.header)))
+          Jamixir.Telemetry.best_block_changed(block.header.timeslot, header_hash)
 
           if announce, do: announce_block_to_peers(block)
           new_jam_state
@@ -351,7 +354,63 @@ defmodule Jamixir.NodeStateServer do
     assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
 
     Log.info("New block with #{length(tickets)} 🎟️ tickets, #{length(assurances)} 🛡️ assurances")
-    extrinsics = %Block.Extrinsic{tickets: tickets, assurances: assurances}
+    # =======================================================
+    # Build Guarantees extrinsic
+    # =======================================================
+
+    guarantee_candidates_for_block_inclusion = Storage.list_guarantee_candidates()
+
+    guarantee_candidates_hashes =
+      Enum.map(guarantee_candidates_for_block_inclusion, & &1.work_report_hash)
+
+    guarantee_candidates_for_block_inclusion =
+      guarantee_candidates_for_block_inclusion
+      |> Enum.map(&attach_work_report/1)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.group_by(& &1.work_report.core_index)
+      |> Enum.map(fn {_core_index, guarantees} ->
+        # for now we just take the first guarantee for each core
+        #  we may want to use different strategy in the future, for example, take the guarantee with the latest timeslot
+        hd(guarantees)
+      end)
+
+    Log.debug(
+      "Guarantee candidates for block inclusion: #{length(guarantee_candidates_for_block_inclusion)}"
+    )
+
+    latest_state_root = Storage.get_latest_state_root()
+
+    # Note: this may filter some guarantees out, in that case the core_index will have no guarantee assigned.
+    # There is no attempt to "re-fetch" new candidates from storage for such core indices.
+    # This is inline with Formula 11.24, but in case a node gets compensation for inclusion of more guarantees, we may want to be more aggressive
+    # and try to fully populate the extrinsic.
+    guarantees_to_include =
+      Guarantee.guarantees_for_new_block(
+        guarantee_candidates_for_block_inclusion,
+        jam_state,
+        slot,
+        latest_state_root
+      )
+
+    included_work_report_hashes = Enum.map(guarantees_to_include, &h(e(&1.work_report)))
+    rejected_work_report_hashes = guarantee_candidates_hashes -- included_work_report_hashes
+
+    Storage.mark_guarantee_included(included_work_report_hashes, parent_hash)
+    Storage.mark_guarantee_rejected(rejected_work_report_hashes)
+
+    # =======================================================
+    # Create block
+    # =======================================================
+
+    Log.info(
+      "New block with #{length(tickets)} 🎟️ tickets,  #{length(guarantees_to_include)} 🧩 guarantees"
+    )
+
+    extrinsics = %Block.Extrinsic{
+      tickets: tickets,
+      assurances: assurances,
+      guarantees: guarantees_to_include
+    }
 
     case Block.new(extrinsics, parent_hash, jam_state, slot) do
       {:ok, block} ->
@@ -562,5 +621,21 @@ defmodule Jamixir.NodeStateServer do
     )
 
     authoring_slots
+  end
+
+  defp attach_work_report(%GuaranteeRecord{} = rec) do
+    case Storage.get_work_report(rec.work_report_hash) do
+      nil ->
+        # should never happen as we save guarantee recordes and their work report atomically (CE-135)
+        # the split (between guarantee and it's work report) is just a DB design choise, in order to allow SQL querying over guarantees
+        nil
+
+      work_report ->
+        %Guarantee{
+          work_report: work_report,
+          timeslot: rec.timeslot,
+          credentials: Guarantee.decode_credentials(rec.credentials)
+        }
+    end
   end
 end

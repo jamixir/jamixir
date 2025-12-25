@@ -5,6 +5,7 @@ defmodule StoragePrefix do
       @p_block "b"
       @p_preimage "p"
       @p_wp "w"
+      @p_work_report "W"
       @p_guarantee "g"
       @p_segments_root "r"
       @p_state "s"

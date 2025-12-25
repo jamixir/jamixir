@@ -192,14 +192,15 @@ defmodule Jamixir.NodeTest do
     test "distribute_work_report guarantee requests shards and saves them" do
       guarantee = build(:guarantee)
       wr = guarantee.work_report
+      wr_hash = h(e(wr))
       pid = self()
 
       expect(NodeStateServerMock, :fetch_work_report_shards, fn ^pid, ^wr -> :ok end)
 
       :ok = save_guarantee(guarantee)
 
-      {:ok, r} = get_work_report(wr.specification.work_package_hash)
-      assert r == guarantee.work_report
+      {:ok, r} = get_work_report(wr_hash)
+      assert r == wr
     end
 
     test "request an unexisting work report" do

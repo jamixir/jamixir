@@ -397,7 +397,17 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   def encode_credentials(creds) do
-    vs(for {validator_index, s} <- creds, do: {t(validator_index), s})
+    e(vs(for {validator_index, s} <- creds, do: {t(validator_index), s}))
+  end
+
+  def decode_credentials(bin) do
+    {credentials, _rest} =
+      VariableSize.decode(bin, fn b ->
+        <<v::m(validator_index), s::binary-size(@signature_size), rest::binary>> = b
+        {{v, s}, rest}
+      end)
+
+    credentials
   end
 
   def decode(bin) do
@@ -453,5 +463,53 @@ defmodule Block.Extrinsic.Guarantee do
 
   def map_subset?(map1, map2) do
     Enum.all?(map1, fn {k, v} -> Map.get(map2, k) == v end)
+  end
+
+  defp normalize_credentials(credentials) do
+    case credentials do
+      [_, _] ->
+        Enum.sort_by(credentials, &elem(&1, 0)) |> uniq_by_index()
+
+      [_, _, _] ->
+        Enum.sort_by(credentials, &elem(&1, 0)) |> uniq_by_index()
+
+      _ ->
+        nil
+    end
+  end
+
+  defp uniq_by_index(creds) do
+    if length(creds) == length(Enum.uniq_by(creds, &elem(&1, 0))) do
+      creds
+    else
+      nil
+    end
+  end
+
+  def guarantees_for_new_block(guarantees, state, next_block_timeslot, latest_state_root) do
+    guarantees
+    |> Enum.map(fn g -> %{g | credentials: normalize_credentials(g.credentials)} end)
+    |> Enum.reject(&is_nil(&1.credentials))
+    |> Enum.filter(fn g ->
+      with :ok <- validate_work_report_sizes([g.work_report]),
+           :ok <- validate_gas_accumulation([g.work_report], state.services),
+           :ok <- validate_refine_context_timeslot([g], next_block_timeslot),
+           :ok <- validate_work_digest_cores([g.work_report], state.services),
+           :ok <-
+             validate_new_work_packages(
+               [g.work_report],
+               state.recent_history,
+               state.accumulation_history,
+               state.ready_to_accumulate,
+               state.core_reports
+             ),
+           :ok <- validate_segment_root_lookups([g.work_report], state.recent_history),
+           :ok <- validate_prerequisites([g.work_report], state.recent_history),
+           :ok <- validate_anchor_block([g], state.recent_history, latest_state_root) do
+        true
+      else
+        _ -> false
+      end
+    end)
   end
 end
