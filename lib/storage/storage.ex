@@ -1,4 +1,6 @@
 defmodule Storage do
+  alias Block.Extrinsic.Guarantee
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.Assurance
   alias Jamixir.SqlStorage
@@ -63,6 +65,15 @@ defmodule Storage do
     })
 
     {:ok, hash}
+  end
+
+  def put(%Guarantee{} = guarantee) do
+    wr = guarantee.work_report
+    encoded_wr = e(wr)
+    wr_hash = h(encoded_wr)
+
+    put(@p_work_report <> wr_hash, encoded_wr)
+    SqlStorage.save(guarantee, wr_hash)
   end
 
   def put(headers) when is_list(headers), do: put_headers(headers)
@@ -165,6 +176,16 @@ defmodule Storage do
     end
   end
 
+  def get_latest_state_root do
+    case get_latest_header() do
+      nil ->
+        nil
+
+      {_timeslot, header} ->
+        Storage.get_state_root(h(e(header)))
+    end
+  end
+
   def get_block(header_hash) do
     case KVStorage.get(@p_block <> header_hash) do
       nil ->
@@ -262,6 +283,29 @@ defmodule Storage do
 
   def get_assurance(hash, validator_index) do
     SqlStorage.get(Assurance, [hash, validator_index])
+  end
+
+  def get_work_report(hash) do
+    case KVStorage.get(@p_work_report <> hash) do
+      nil ->
+        nil
+
+      work_report_bin ->
+        {work_report, _} = WorkReport.decode(work_report_bin)
+        work_report
+    end
+  end
+
+  def list_guarantee_candidates() do
+    SqlStorage.list_guarantee_candidates()
+  end
+
+  def mark_guarantee_included(guarantee_work_report_hashes, block_hash) do
+    SqlStorage.mark_included(guarantee_work_report_hashes, block_hash)
+  end
+
+  def mark_guarantee_rejected(guarantee_work_report_hashes) do
+    SqlStorage.mark_rejected(guarantee_work_report_hashes)
   end
 
   def get_judgements(epoch) do

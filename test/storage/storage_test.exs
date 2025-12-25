@@ -1,5 +1,6 @@
 defmodule StorageTest do
   use ExUnit.Case, async: false
+  use Jamixir.DBCase
   alias Codec.State.Trie
   alias System.State
   alias Util.Hash
@@ -157,6 +158,82 @@ defmodule StorageTest do
 
       {:ok, _} = Storage.put_segment_shard(erasure_root, shard_index, segment_index, shard_data)
       assert Storage.get_segment_shard(erasure_root, shard_index, segment_index) == shard_data
+    end
+  end
+
+  describe "guarantee storage operations" do
+    test "put guarantee and fetch list_guarantee_candidates" do
+      guarantee =
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 0),
+          timeslot: 100,
+          credentials: [{0, <<1::512>>}, {1, <<2::512>>}]
+        )
+
+      Storage.put(guarantee)
+
+      candidates = Storage.list_guarantee_candidates()
+      assert length(candidates) == 1
+
+      candidate = Enum.find(candidates, &(&1.core_index == 0))
+      assert candidate.core_index == 0
+      assert candidate.timeslot == 100
+      assert candidate.work_report_hash == h(e(guarantee.work_report))
+    end
+
+    test "put guarantee and fetch work report" do
+      guarantee =
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 1),
+          timeslot: 200
+        )
+
+      Storage.put(guarantee)
+
+      wr = guarantee.work_report
+      encoded_wr = e(wr)
+      wr_hash = h(encoded_wr)
+
+      fetched_wr = Storage.get_work_report(wr_hash)
+      assert fetched_wr == wr
+    end
+
+    test "mark guarantees as included and verify they dont appear in candidates" do
+      guarantee1 =
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 0),
+          timeslot: 100
+        )
+
+      guarantee2 =
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 1),
+          timeslot: 100
+        )
+
+      guarantee3 =
+        build(:guarantee,
+          work_report: build(:work_report, core_index: 2),
+          timeslot: 100
+        )
+
+      Storage.put(guarantee1)
+      Storage.put(guarantee2)
+      Storage.put(guarantee3)
+
+      candidates_before = Storage.list_guarantee_candidates()
+      assert length(candidates_before) == 3
+
+      wr1_hash = h(e(guarantee1.work_report))
+      wr2_hash = h(e(guarantee2.work_report))
+      block_hash = Hash.random()
+
+      Storage.mark_guarantee_included([wr1_hash], block_hash)
+      Storage.mark_guarantee_rejected([wr2_hash])
+
+      candidates_after = Storage.list_guarantee_candidates()
+      assert length(candidates_after) == 1
+      assert hd(candidates_after).core_index == 2
     end
   end
 end

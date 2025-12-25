@@ -702,6 +702,46 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
   end
 
+  describe "decode_credentials/1" do
+    test "encode -> decode -> original" do
+      original_credentials = [{0, <<1::512>>}, {1, <<2::512>>}, {2, <<3::512>>}]
+      encoded = Guarantee.encode_credentials(original_credentials)
+      decoded = Guarantee.decode_credentials(encoded)
+      assert decoded == original_credentials
+    end
+  end
+
+  describe "guarantees_for_new_block/4" do
+    test "filters out guarantees with invalid credentials" do
+      # Guarantee with only 1 credential
+      invalid_g1 = build(:guarantee, credentials: [{0, <<1::512>>}])
+
+      # Guarantee with 4 credentials
+      invalid_g2 =
+        build(:guarantee,
+          credentials: [{0, <<1::512>>}, {1, <<2::512>>}, {2, <<3::512>>}, {3, <<4::512>>}]
+        )
+
+      # Guarantee with duplicate validator indices
+      invalid_g3 = build(:guarantee, credentials: [{0, <<1::512>>}, {0, <<2::512>>}])
+
+      guarantees = [invalid_g1, invalid_g2, invalid_g3]
+      state = build(:genesis_state)
+      next_block_timeslot = 101
+      latest_state_root = Hash.random()
+
+      result =
+        Guarantee.guarantees_for_new_block(
+          guarantees,
+          state,
+          next_block_timeslot,
+          latest_state_root
+        )
+
+      assert result == []
+    end
+  end
+
   describe "validate_prerequisites/2" do
     setup do
       work_report =
