@@ -165,7 +165,6 @@ defmodule Jamixir.FuzzerTest do
 
     @tag :perf
     @tag :slow
-    @tag :skip
     test "Block Import Performance Bench", %{client: client} do
       test_dict =
         for mode <- trace_modes(),
