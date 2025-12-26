@@ -30,7 +30,9 @@ config :logger, level: :info
 
 config :jamixir, :server_calls, Network.ServerCalls
 
+# Database path will be resolved at runtime to support releases
+# Default to data directory next to the release, or use JAMIXIR_DB_PATH env var
 config :jamixir, Jamixir.Repo,
   adapter: Ecto.Adapters.SQLite3,
-  database: "db/jamixir.db",
+  database: {:system, "JAMIXIR_DB_PATH", "data/jamixir.db"},
   pool_size: 5

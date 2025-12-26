@@ -4,9 +4,22 @@ defmodule Jamixir do
 
   @impl true
   def start(_type, _args) do
+    # Run migrations before starting supervision tree (only in non-test envs)
+    unless Jamixir.config()[:test_env] do
+      migrate_database()
+    end
+
     children = get_children()
     opts = [strategy: :one_for_one, name: Jamixir.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp migrate_database do
+    # Ensure database exists and migrations are run
+    Jamixir.Release.migrate()
+  rescue
+    e ->
+      Util.Logger.warning("Database migration failed: #{inspect(e)}")
   end
 
   defp get_children do
@@ -161,6 +174,11 @@ defmodule Jamixir do
         Application.put_env(:jamixir, :fuzzer_mode, true)
         Jamixir.Commands.Fuzzer.run(rest)
 
+      ["migrate"] ->
+        IO.puts("Running database migrations...")
+        Jamixir.Release.migrate()
+        IO.puts("Migrations complete.")
+
       [cmd | _] ->
         IO.puts("Unknown command: #{cmd}")
         print_help()
@@ -179,6 +197,7 @@ defmodule Jamixir do
       gen-keys       Generate a new secret key seed and print the derived session keys
       gen-chainspec  Generate a JIP-4 chain specification file from genesis.json
       list-keys      List all session keys we have the secret key for
+      migrate        Run database migrations (also runs automatically on startup)
       run            Run a Jamixir node
       help           Print this message or the help of the given subcommand(s)
 
