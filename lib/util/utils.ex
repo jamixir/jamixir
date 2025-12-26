@@ -61,7 +61,7 @@ defmodule Utils do
     end
   end
 
-  defp set_bit_in_byte(byte, bit_pos, 1), do: Bitwise.bor(byte, Bitwise.bsl(1, bit_pos))
+  defp set_bit_in_byte(byte, bit_pos, 1), do: byte ||| (1 <<< bit_pos)
 
   defp set_bit_in_byte(byte, bit_pos, 0),
     do: Bitwise.band(byte, Bitwise.bnot(Bitwise.bsl(1, bit_pos)))
