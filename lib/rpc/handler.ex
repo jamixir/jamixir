@@ -8,9 +8,11 @@ defmodule Jamixir.RPC.Handler do
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
   alias Network.ConnectionManager
-  alias Util.Logger, as: Log
   import Codec.Encoder
   import Util.Hex
+
+  @log_context "[RPC]"
+  use Util.Logger
 
   @spec handle_request(map(), pid() | nil) :: map() | {:subscription, binary()}
   def handle_request(request, websocket_pid \\ nil)
@@ -26,7 +28,7 @@ defmodule Jamixir.RPC.Handler do
     params = Map.get(request, "params", [])
     id = Map.get(request, "id")
 
-    Log.debug("🔧 Processing RPC method: #{method}")
+    debug("🔧 Processing method: #{method}")
 
     case handle_method(method, params, websocket_pid) do
       {:ok, result} ->
@@ -52,16 +54,14 @@ defmodule Jamixir.RPC.Handler do
     end
   end
 
-  # Handle invalid JSON-RPC requests
   def handle_request(_, _) do
     %{
       jsonrpc: "2.0",
-      error: %{code: -32600, message: "Invalid Request"},
+      error: %{code: -32_600, message: "Invalid Request"},
       id: nil
     }
   end
 
-  # Handle specific RPC methods
   defp handle_method("parameters", [], _websocket_pid) do
     {:ok, get_parameters()}
   end
@@ -79,7 +79,10 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("parent", [header_hash], _) do
+    debug("call: parent #{b16(header_hash)}")
     {:ok, blocks} = Node.get_blocks(d64(header_hash), :descending, 2)
+
+    debug("Found #{length(blocks)} blocks")
 
     {:ok,
      case blocks do
@@ -224,7 +227,7 @@ defmodule Jamixir.RPC.Handler do
 
   # Method not found
   defp handle_method(method, params, _websocket_pid) do
-    Log.debug("Invalid RPC call: #{method} #{inspect(params)}")
+    debug("Invalid call: #{method} #{inspect(params)}")
     {:error, -32601, "Method not found: #{method}"}
   end
 
