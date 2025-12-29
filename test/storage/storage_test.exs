@@ -162,7 +162,7 @@ defmodule StorageTest do
   end
 
   describe "guarantee storage operations" do
-    test "put guarantee and fetch list_guarantee_candidates" do
+    test "put guarantee and fetch get_all" do
       guarantee =
         build(:guarantee,
           work_report: build(:work_report, core_index: 0),
@@ -172,7 +172,7 @@ defmodule StorageTest do
 
       Storage.put(guarantee)
 
-      candidates = Storage.list_guarantee_candidates()
+      candidates = Storage.get_guarantees(:pending)
       assert length(candidates) == 1
 
       candidate = Enum.find(candidates, &(&1.core_index == 0))
@@ -221,7 +221,7 @@ defmodule StorageTest do
       Storage.put(guarantee2)
       Storage.put(guarantee3)
 
-      candidates_before = Storage.list_guarantee_candidates()
+      candidates_before = Storage.get_guarantees(:pending)
       assert length(candidates_before) == 3
 
       wr1_hash = h(e(guarantee1.work_report))
@@ -231,7 +231,7 @@ defmodule StorageTest do
       Storage.mark_guarantee_included([wr1_hash], block_hash)
       Storage.mark_guarantee_rejected([wr2_hash])
 
-      candidates_after = Storage.list_guarantee_candidates()
+      candidates_after = Storage.get_guarantees(:pending)
       assert length(candidates_after) == 1
       assert hd(candidates_after).core_index == 2
     end

@@ -358,13 +358,13 @@ defmodule Jamixir.NodeStateServer do
     # Build Guarantees extrinsic
     # =======================================================
 
-    guarantee_candidates_for_block_inclusion = Storage.list_guarantee_candidates()
+    guarantee_candidates = Storage.get_guarantees(:pending)
 
     guarantee_candidates_hashes =
-      Enum.map(guarantee_candidates_for_block_inclusion, & &1.work_report_hash)
+      Enum.map(guarantee_candidates, & &1.work_report_hash)
 
-    guarantee_candidates_for_block_inclusion =
-      guarantee_candidates_for_block_inclusion
+    guarantee_candidates =
+      guarantee_candidates
       |> Enum.map(&attach_work_report/1)
       |> Enum.reject(&is_nil/1)
       |> Enum.group_by(& &1.work_report.core_index)
@@ -374,9 +374,7 @@ defmodule Jamixir.NodeStateServer do
         hd(guarantees)
       end)
 
-    Log.debug(
-      "Guarantee candidates for block inclusion: #{length(guarantee_candidates_for_block_inclusion)}"
-    )
+    Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
     latest_state_root = Storage.get_latest_state_root()
 
@@ -386,7 +384,7 @@ defmodule Jamixir.NodeStateServer do
     # and try to fully populate the extrinsic.
     guarantees_to_include =
       Guarantee.guarantees_for_new_block(
-        guarantee_candidates_for_block_inclusion,
+        guarantee_candidates,
         jam_state,
         slot,
         latest_state_root

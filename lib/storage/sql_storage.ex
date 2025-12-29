@@ -80,8 +80,8 @@ defmodule Jamixir.SqlStorage do
     |> Enum.map(&JudgementRecord.to_judgement/1)
   end
 
-  def list_guarantee_candidates() do
-    Repo.all(from(g in GuaranteeRecord, where: g.status == :pending, order_by: g.core_index))
+  def get_all(Guarantee, status) do
+    Repo.all(from(g in GuaranteeRecord, where: g.status == ^status, order_by: g.core_index))
   end
 
   def mark_included(guarantee_work_report_hashes, block_hash) do
