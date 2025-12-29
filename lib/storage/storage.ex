@@ -296,8 +296,8 @@ defmodule Storage do
     end
   end
 
-  def list_guarantee_candidates() do
-    SqlStorage.list_guarantee_candidates()
+  def get_guarantees(status) do
+    SqlStorage.get_all(Guarantee, status)
   end
 
   def mark_guarantee_included(guarantee_work_report_hashes, block_hash) do
