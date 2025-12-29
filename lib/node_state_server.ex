@@ -228,7 +228,7 @@ defmodule Jamixir.NodeStateServer do
         updated_assurance =
           case Storage.get_assurance(hash, shard_index) do
             nil ->
-              bitfield = Utils.set_bit(<<0::m(bitfield)>>, assigned_core(jam_state), 1)
+              bitfield = Utils.set_bit(<<0::m(bitfield)>>, assigned_core(jam_state))
 
               %Assurance{
                 hash: hash,
@@ -239,7 +239,7 @@ defmodule Jamixir.NodeStateServer do
             assurance ->
               %Assurance{
                 assurance
-                | bitfield: Utils.set_bit(assurance.bitfield, assigned_core(jam_state), 1)
+                | bitfield: Utils.set_bit(assurance.bitfield, assigned_core(jam_state))
               }
           end
 
