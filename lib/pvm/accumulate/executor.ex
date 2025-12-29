@@ -37,9 +37,6 @@ defmodule PVM.Accumulate.Executor do
 
     receive do
       {used_gas, output, final_ctx} ->
-        # Double check VM gas usage, make sure we don't use more than available
-        used_gas = min(gas, used_gas)
-
         Logger.debug(
           "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}]"
         )

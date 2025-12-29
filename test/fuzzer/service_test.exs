@@ -160,7 +160,7 @@ defmodule Jamixir.FuzzerTest do
 
       # acc final gas
       # 1763371998
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1766479507_6078/")
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1766255635_3689/")
     end
 
     @tag :perf
