@@ -282,36 +282,47 @@ defmodule Jamixir.Node do
 
         responses =
           for v <- validators do
-            pid = ConnectionManager.instance().get_connection(v.ed25519)
-            dict = WorkReport.get_segment_lookup_dict(wp)
-            {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
+            case ConnectionManager.instance().get_connection(v.ed25519) do
+              {:ok, pid} ->
+                dict = WorkReport.get_segment_lookup_dict(wp)
+
+                {v.ed25519,
+                 Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
+
+              {:error, e} ->
+                Logger.warning(
+                  "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
+                )
+
+                {v.ed25519, {:error, e}}
+            end
           end
 
         {work_report, exports} = Task.await(refine_task)
 
         wr_hash = h(e(work_report))
 
-        case Enum.filter(responses, fn {_, {:ok, {hash, _}}} -> hash == wr_hash end) do
-          [] ->
-            Logger.warning("No other guarator confirmed work report")
+        credentials =
+          for {pub_key, {:ok, {hash, signature}}} <- responses,
+              hash == wr_hash do
+            {NodeStateServer.validator_index(pub_key), signature}
+          end
 
-          list ->
-            credentials =
-              for {pub_key, {:ok, {_, signature}}} <- list do
-                {NodeStateServer.validator_index(pub_key), signature}
-              end
+        if Enum.empty?(credentials) do
+          Logger.warning("No other guarator confirmed work report")
+        else
+          guarantee = %Guarantee{
+            work_report: work_report,
+            timeslot: NodeStateServer.current_timeslot(),
+            credentials: credentials
+          }
 
-            guarantee = %Guarantee{
-              work_report: work_report,
-              # TODO review what timeslot to use
-              timeslot: NodeStateServer.current_timeslot(),
-              credentials: credentials
-            }
+          # Storage.put(guarantee)
 
-            # send guarantee to all validators
-            for {_, pid} <- ConnectionManager.instance().get_connections() do
-              Network.Connection.distribute_guarantee(pid, guarantee)
-            end
+          # send guarantee to all validators
+          for {_, pid} <- ConnectionManager.instance().get_connections() do
+            Network.Connection.distribute_guarantee(pid, guarantee)
+          end
         end
 
         # stores segment root for later retrieval
