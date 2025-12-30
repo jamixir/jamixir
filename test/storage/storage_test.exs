@@ -163,9 +163,11 @@ defmodule StorageTest do
 
   describe "guarantee storage operations" do
     test "put guarantee and fetch get_all" do
+      wr = build(:work_report, core_index: 0)
+
       guarantee =
         build(:guarantee,
-          work_report: build(:work_report, core_index: 0),
+          work_report: wr,
           timeslot: 100,
           credentials: [{0, <<1::512>>}, {1, <<2::512>>}]
         )
@@ -175,24 +177,18 @@ defmodule StorageTest do
       candidates = Storage.get_guarantees(:pending)
       assert length(candidates) == 1
 
-      candidate = Enum.find(candidates, &(&1.core_index == 0))
-      assert candidate.core_index == 0
+      candidate = Enum.find(candidates, &(&1.work_report.core_index == 0))
+      assert candidate.work_report == wr
       assert candidate.timeslot == 100
-      assert candidate.work_report_hash == h(e(guarantee.work_report))
     end
 
     test "put guarantee and fetch work report" do
-      guarantee =
-        build(:guarantee,
-          work_report: build(:work_report, core_index: 1),
-          timeslot: 200
-        )
+      wr = build(:work_report, core_index: 1)
+      guarantee = build(:guarantee, work_report: wr, timeslot: 200)
 
       Storage.put(guarantee)
 
-      wr = guarantee.work_report
-      encoded_wr = e(wr)
-      wr_hash = h(encoded_wr)
+      wr_hash = h(e(wr))
 
       fetched_wr = Storage.get_work_report(wr_hash)
       assert fetched_wr == wr
@@ -233,7 +229,7 @@ defmodule StorageTest do
 
       candidates_after = Storage.get_guarantees(:pending)
       assert length(candidates_after) == 1
-      assert hd(candidates_after).core_index == 2
+      assert hd(candidates_after).work_report.core_index == 2
     end
   end
 end
