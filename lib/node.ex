@@ -1,5 +1,9 @@
 defmodule Jamixir.Node do
+<<<<<<< HEAD
   alias Block.Extrinsic.Preimage
+=======
+  alias Util.Crypto
+>>>>>>> 92e3efd1 (executes work package bundle and build all credentials in guarantees)
   alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -301,15 +305,21 @@ defmodule Jamixir.Node do
         {work_report, exports} = Task.await(refine_task)
 
         wr_hash = h(e(work_report))
+        {priv, _} = KeyManager.get_our_ed25519_keypair()
+        my_credential = {wr_hash, Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
 
-        credentials =
-          for {pub_key, {:ok, {hash, signature}}} <- responses,
-              hash == wr_hash do
-            {NodeStateServer.validator_index(pub_key), signature}
-          end
+        credentials = [
+          my_credential
+          | for {pub_key, {:ok, {hash, signature}}} <- responses,
+                hash == wr_hash,
+                payload = SigningContexts.jam_guarantee() <> hash,
+                Crypto.valid_signature?(signature, payload, pub_key) do
+              {NodeStateServer.validator_index(pub_key), signature}
+            end
+        ]
 
-        if Enum.empty?(credentials) do
-          Logger.warning("No other guarator confirmed work report")
+        if length(credentials) == 1 do
+          Logger.warning("No other guarantor confirmed work report")
         else
           guarantee = %Guarantee{
             work_report: work_report,
@@ -317,7 +327,7 @@ defmodule Jamixir.Node do
             credentials: credentials
           }
 
-          # Storage.put(guarantee)
+          Storage.put(guarantee)
 
           # send guarantee to all validators
           for {_, pid} <- ConnectionManager.instance().get_connections() do
@@ -340,7 +350,7 @@ defmodule Jamixir.Node do
   # CE 134 - Work-package sharing
   @impl true
   def save_work_package_bundle(bundle, core, _segment_lookup_dict) do
-    Logger.info("Saving work package bundle for core #{core}")
+    Logger.info("Saving and executing work package bundle for core #{core}")
 
     # Save all import segments locally
     for wi <- bundle.work_package.work_items do
@@ -357,12 +367,27 @@ defmodule Jamixir.Node do
       # Save all extrinsics locally
       for e <- wi.extrinsics, do: Storage.put(e)
 
-      # Verify and save all justifications
-      # TODO
+      # TODO Verify and save all justifications
     end
 
-    process_work_package(bundle.work_package, core, bundle.extrinsics)
-    # Execute refine, calculate wp hash and returns signature if sucessful
+    services = get_latest_state().services
+
+    case WorkReport.execute_work_package(bundle.work_package, bundle.extrinsics, core, services) do
+      :error ->
+        Logger.error(
+          "Failed to execute work package for service #{bundle.work_package.service} core #{core}"
+        )
+
+        {:error, :execution_failed}
+
+      {_, refine_task} ->
+        # Execute refine, calculate wp hash and returns signature if sucessful
+        {work_report, _exports} = Task.await(refine_task)
+        hash = h(e(work_report))
+        {priv, _} = KeyManager.get_our_ed25519_keypair()
+        signature = Crypto.sign(SigningContexts.jam_guarantee() <> hash, priv)
+        {:ok, {hash, signature}}
+    end
   end
 
   # CE 144 - Audit announcement
