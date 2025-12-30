@@ -306,7 +306,10 @@ defmodule Jamixir.Node do
 
         wr_hash = h(e(work_report))
         {priv, _} = KeyManager.get_our_ed25519_keypair()
-        my_credential = {wr_hash, Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
+
+        my_credential =
+          {NodeStateServer.validator_index(),
+           Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
 
         credentials = [
           my_credential
@@ -365,7 +368,7 @@ defmodule Jamixir.Node do
       end
 
       # Save all extrinsics locally
-      for e <- wi.extrinsics, do: Storage.put(e)
+      for e <- wi.extrinsic, do: Storage.put(e)
 
       # TODO Verify and save all justifications
     end

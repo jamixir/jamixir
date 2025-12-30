@@ -65,6 +65,8 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
     )
   end
 
+  def s_clubs([]), do: s_clubs([<<0::@export_segment_size*8>>])
+
   def s_clubs(exports) do
     # C6# (s⌢P(s))
     coded_chunks =

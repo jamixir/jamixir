@@ -531,7 +531,7 @@ defmodule WorkReportTest do
         extrinsic_size: 7,
         gas_used: 555,
         imports: 1,
-        result: <<1, 2, 3>>
+        result: {:ok, <<1, 2, 3>>}
       }
 
       assert wr.digests == [expected_work_digest]
@@ -551,7 +551,7 @@ defmodule WorkReportTest do
       assert sd.merkle_root == <<4::hash()>>
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
-      assert work_digest.result == :bad
+      assert work_digest.result == {:error, :bad}
     end
   end
 
