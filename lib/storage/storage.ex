@@ -297,8 +297,8 @@ defmodule Storage do
     end
   end
 
-  def mark_guarantee_included(guarantee_work_report_hashes, block_hash) do
-    SqlStorage.mark_included(guarantee_work_report_hashes, block_hash)
+  def mark_guarantee_included(guarantee_work_report_hashes, header_hash) do
+    SqlStorage.mark_included(guarantee_work_report_hashes, header_hash)
   end
 
   def mark_guarantee_rejected(guarantee_work_report_hashes) do

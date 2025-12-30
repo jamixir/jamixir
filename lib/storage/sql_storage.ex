@@ -84,11 +84,11 @@ defmodule Jamixir.SqlStorage do
     Repo.all(from(g in GuaranteeRecord, where: g.status == ^status, order_by: g.core_index))
   end
 
-  def mark_included(guarantee_work_report_hashes, block_hash) do
+  def mark_included(guarantee_work_report_hashes, header_hash) do
     from(g in GuaranteeRecord,
       where: g.work_report_hash in ^guarantee_work_report_hashes
     )
-    |> Repo.update_all(set: [status: :included, included_in_block: block_hash])
+    |> Repo.update_all(set: [status: :included, included_in_block: header_hash])
   end
 
   def mark_rejected(guarantee_work_report_hashes) do
