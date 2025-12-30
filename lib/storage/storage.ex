@@ -10,6 +10,7 @@ defmodule Storage do
   alias Block.Header
   alias Codec.State.Trie
   alias System.State
+  alias Storage.GuaranteeRecord
   alias Util.Hash
   import Codec.Encoder
   import Util.Hex, only: [b16: 1]
@@ -296,10 +297,6 @@ defmodule Storage do
     end
   end
 
-  def get_guarantees(status) do
-    SqlStorage.get_all(Guarantee, status)
-  end
-
   def mark_guarantee_included(guarantee_work_report_hashes, block_hash) do
     SqlStorage.mark_included(guarantee_work_report_hashes, block_hash)
   end
@@ -312,9 +309,37 @@ defmodule Storage do
     SqlStorage.get_all(Judgement, epoch)
   end
 
+  def get_guarantees(status) do
+    SqlStorage.get_all(Guarantee, status)
+    |> Enum.map(&attach_work_report/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.group_by(& &1.work_report.core_index)
+    |> Enum.map(fn {_core_index, guarantees} ->
+      # for now we just take the first guarantee for each core
+      #  we may want to use different strategy in the future, for example, take the guarantee with the latest timeslot
+      hd(guarantees)
+    end)
+  end
+
   # Private Functions
 
   defp encodable?(data), do: not is_nil(Encodable.impl_for(data))
+
+  defp attach_work_report(%GuaranteeRecord{} = rec) do
+    case get_work_report(rec.work_report_hash) do
+      nil ->
+        # should never happen as we save guarantee recordes and their work report atomically (CE-135)
+        # the split (between guarantee and it's work report) is just a DB design choise, in order to allow SQL querying over guarantees
+        nil
+
+      work_report ->
+        %Guarantee{
+          work_report: work_report,
+          timeslot: rec.timeslot,
+          credentials: Guarantee.decode_credentials(rec.credentials)
+        }
+    end
+  end
 
   @spec put_headers(list(Header.t())) :: {:ok, list(String.t())}
   defp put_headers(headers) do
