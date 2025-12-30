@@ -226,9 +226,9 @@ defmodule StorageTest do
 
       wr1_hash = h(e(guarantee1.work_report))
       wr2_hash = h(e(guarantee2.work_report))
-      block_hash = Hash.random()
+      header_hash = Hash.random()
 
-      Storage.mark_guarantee_included([wr1_hash], block_hash)
+      Storage.mark_guarantee_included([wr1_hash], header_hash)
       Storage.mark_guarantee_rejected([wr2_hash])
 
       candidates_after = Storage.get_guarantees(:pending)
