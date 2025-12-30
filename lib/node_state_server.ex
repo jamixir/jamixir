@@ -13,7 +13,6 @@ defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
   alias Block.Extrinsic.{Assurance, Guarantee}
-  alias Storage.GuaranteeRecord
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
   alias Jamixir.Genesis
@@ -363,17 +362,6 @@ defmodule Jamixir.NodeStateServer do
     guarantee_candidates_hashes =
       Enum.map(guarantee_candidates, & &1.work_report_hash)
 
-    guarantee_candidates =
-      guarantee_candidates
-      |> Enum.map(&attach_work_report/1)
-      |> Enum.reject(&is_nil/1)
-      |> Enum.group_by(& &1.work_report.core_index)
-      |> Enum.map(fn {_core_index, guarantees} ->
-        # for now we just take the first guarantee for each core
-        #  we may want to use different strategy in the future, for example, take the guarantee with the latest timeslot
-        hd(guarantees)
-      end)
-
     Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
     latest_state_root = Storage.get_latest_state_root()
@@ -619,21 +607,5 @@ defmodule Jamixir.NodeStateServer do
     )
 
     authoring_slots
-  end
-
-  defp attach_work_report(%GuaranteeRecord{} = rec) do
-    case Storage.get_work_report(rec.work_report_hash) do
-      nil ->
-        # should never happen as we save guarantee recordes and their work report atomically (CE-135)
-        # the split (between guarantee and it's work report) is just a DB design choise, in order to allow SQL querying over guarantees
-        nil
-
-      work_report ->
-        %Guarantee{
-          work_report: work_report,
-          timeslot: rec.timeslot,
-          credentials: Guarantee.decode_credentials(rec.credentials)
-        }
-    end
   end
 end
