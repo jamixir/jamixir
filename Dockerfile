@@ -101,6 +101,7 @@ COPY --from=builder --chown=nobody:root /node/_build/${MIX_ENV}/rel/jamixir /nod
 # Copy default keys into the image
 COPY --chown=nobody:root test/keys /node/keys
 COPY --chown=nobody:root priv/genesis.json /node/
+COPY --chown=nobody:root priv/polkajam_chainspec.json /node/
 
 USER nobody
 
