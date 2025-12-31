@@ -67,8 +67,8 @@ defmodule Network.Connection do
     client_module().announce_audit(pid, audit_announcement)
   end
 
-  def request_work_report_shard(pid, erasure_root, segment_index) do
-    client_module().request_work_report_shard(pid, erasure_root, segment_index)
+  def request_work_package_shard(pid, erasure_root, segment_index) do
+    client_module().request_work_package_shard(pid, erasure_root, segment_index)
   end
 
   def request_audit_shard(pid, erasure_root, segment_index) do

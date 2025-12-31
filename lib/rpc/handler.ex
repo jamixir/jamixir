@@ -172,7 +172,7 @@ defmodule Jamixir.RPC.Handler do
     ext_bins = for e <- extrinsics, do: d64(e)
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
-    {:ok, []}
+    {:ok, nil}
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do

@@ -214,7 +214,7 @@ defmodule Jamixir.NodeStateServer do
     shard_index =
       find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
 
-    case Network.Connection.request_work_report_shard(
+    case Network.Connection.request_work_package_shard(
            guarantor_pid,
            spec.erasure_root,
            shard_index

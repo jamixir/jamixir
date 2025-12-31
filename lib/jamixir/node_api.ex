@@ -33,7 +33,7 @@ defmodule Jamixir.NodeAPI do
             }) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
-  @callback get_work_report_shard(Types.hash(), non_neg_integer()) ::
+  @callback get_work_package_shard(Types.hash(), non_neg_integer()) ::
               {:ok, {binary(), list(binary()), binary()}} | {:error, any}
   @callback get_segment_shards(Types.hash(), non_neg_integer(), list(non_neg_integer())) ::
               {:ok, list(binary())} | {:error, any}
@@ -59,8 +59,8 @@ defmodule Jamixir.NodeAPI do
   def save_work_package(wp, core, extrinsic), do: impl().save_work_package(wp, core, extrinsic)
   def save_audit(audit), do: impl().save_audit(audit)
 
-  def get_work_report_shard(erasure_root, segment_index),
-    do: impl().get_work_report_shard(erasure_root, segment_index)
+  def get_work_package_shard(erasure_root, segment_index),
+    do: impl().get_work_package_shard(erasure_root, segment_index)
 
   def get_segment_shards(erasure_root, shard_index, segment_indexes),
     do: impl().get_segment_shards(erasure_root, shard_index, segment_indexes)

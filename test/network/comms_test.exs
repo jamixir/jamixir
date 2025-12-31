@@ -297,7 +297,7 @@ defmodule CommsTest do
   end
 
   # CE 137
-  describe "request_work_report_shard/3" do
+  describe "request_work_package_shard/3" do
     test "request segment based on erasure_root and index", %{client: client} do
       erasure_root = <<1::hash()>>
       index = 8
@@ -306,11 +306,11 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_package_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, segments, justification}}
       end)
 
-      {:ok, {b, s, j}} = Connection.request_work_report_shard(client, erasure_root, index)
+      {:ok, {b, s, j}} = Connection.request_work_package_shard(client, erasure_root, index)
       verify!()
 
       assert b == bundle_shard
@@ -328,7 +328,7 @@ defmodule CommsTest do
       justification = [<<0, 3::hash()>>, <<1, 4::hash(), 5::hash()>>]
 
       Jamixir.NodeAPI.Mock
-      |> expect(:get_work_report_shard, 1, fn ^erasure_root, ^index ->
+      |> expect(:get_work_package_shard, 1, fn ^erasure_root, ^index ->
         {:ok, {bundle_shard, [], justification}}
       end)
 
@@ -410,7 +410,7 @@ defmodule CommsTest do
         signature: <<123::m(signature)>>
       }
 
-      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> :ok end)
+      Jamixir.NodeAPI.Mock |> expect(:save_assurance, 1, fn ^assurance -> {:ok, ""} end)
 
       {:ok, ""} = Connection.distribute_assurance(client, assurance)
 

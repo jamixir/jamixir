@@ -115,20 +115,19 @@ defmodule Network.ServerCalls do
   def call(137, <<erasure_root::binary-size(@hash_size), shard_index::16-little>>) do
     log("Requesting Work Report Shard")
 
-    case Jamixir.NodeAPI.get_work_report_shard(erasure_root, shard_index) do
+    case Jamixir.NodeAPI.get_work_package_shard(erasure_root, shard_index) do
       {:ok, {bundle_shard, segments, justification}} ->
         [bundle_shard, segments, justification]
 
       _ ->
-        IO.puts("Received segment 2")
-        <<>>
+        [<<>>, [], []]
     end
   end
 
   def call(138, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
     log("Requesting segment")
 
-    case Jamixir.NodeAPI.get_work_report_shard(erasure_root, segment_index) do
+    case Jamixir.NodeAPI.get_work_package_shard(erasure_root, segment_index) do
       {:ok, {bundle_shard, _, justification}} ->
         [bundle_shard, justification]
 
@@ -183,7 +182,7 @@ defmodule Network.ServerCalls do
 
     assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
 
-    :ok = Jamixir.NodeAPI.save_assurance(assurance)
+    {:ok, _} = Jamixir.NodeAPI.save_assurance(assurance)
     <<>>
   end
 

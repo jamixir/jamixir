@@ -399,9 +399,9 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
-  # CE 137 - Work Report Shard Request
+  # CE 137 - Work Package Shard Request
   @impl true
-  def get_work_report_shard(_erasure_root, _segment_index) do
+  def get_work_package_shard(_erasure_root, _shard_index) do
     {:error, :not_implemented}
   end
 

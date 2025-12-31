@@ -121,7 +121,7 @@ defmodule Network.Client do
   end
 
   @impl true
-  def request_work_report_shard(pid, erasure_root, shard_index),
+  def request_work_package_shard(pid, erasure_root, shard_index),
     do: send_wp_shard_request(pid, 137, erasure_root, shard_index)
 
   @impl true

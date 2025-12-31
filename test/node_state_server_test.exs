@@ -119,7 +119,7 @@ defmodule NodeStateServerTest do
 
       pid = self()
 
-      stub(ClientMock, :request_work_report_shard, fn ^pid, ^root, 3 ->
+      stub(ClientMock, :request_work_package_shard, fn ^pid, ^root, 3 ->
         {:ok, {<<1>>, [<<2>>, <<3>>], []}}
       end)
 

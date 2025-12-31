@@ -1,4 +1,5 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
+  alias Util.Logger
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification}
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
@@ -6,6 +7,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Codec.{JsonEncoder, VariableSize}
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
+  import Util.Hex
   import Codec.{Decoder, Encoder}
   import RangeMacros
   use MapUnion
@@ -219,6 +221,17 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
           :error | Task.t({WorkReport.t(), list(binary())})
   def execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
     # {t, g} = ΨI (p,c)
+    # IO.inspect(extrinsics, label: "Extrinsics")
+
+    # str =
+    #   for list <- extrinsics, reduce: "WP: #{b16(e(wp))}\n" do
+    #     str -> str <> "item: " <> Enum.map_join(list, ", ", &b16(&1)) <> "\n"
+    #   end
+
+    # IO.inspect(services, label: "Services in execute_work_package")
+
+    # Logger.info(str)
+
     w_r = Constants.max_work_report_size()
 
     case PVM.authorized(wp, core, services) do
