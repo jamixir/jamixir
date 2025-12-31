@@ -367,8 +367,6 @@ defmodule Jamixir.NodeStateServer do
     # Assurances selection
     # Formula (11.11) v0.7.2
     existing_assurances = Storage.get_assurances(parent_hash)
-    Log.debug("Assurances for parent block #{b16(parent_hash)}: #{length(existing_assurances)}")
-    assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
 
     #  Simulate ρ‡ (partial state transform)
 
@@ -392,6 +390,7 @@ defmodule Jamixir.NodeStateServer do
     guarantee_candidates = Storage.get_guarantees(:pending)
     Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
+    Log.info("🧩 Guarantee candidates: #{length(guarantee_candidates)}")
     latest_state_root = Storage.get_latest_state_root()
 
     # Create state with simulated ρ‡ for guarantee validation
@@ -421,8 +420,8 @@ defmodule Jamixir.NodeStateServer do
     # =======================================================
 
     Log.info(
-      "New block with #{length(tickets)} 🎟️ tickets,  " <>
-        "#{length(assurances)} 🛡️ assurances," <>
+      "New block with #{length(tickets)} 🎟️ tickets, " <>
+        "#{length(assurances)} 🛡️ assurances, " <>
         "#{length(guarantees_to_include)} 🧩 guarantees, " <>
         "#{length(preimages_to_include)} 🖼️ preimages"
     )
@@ -430,7 +429,8 @@ defmodule Jamixir.NodeStateServer do
     extrinsics = %Block.Extrinsic{
       tickets: tickets,
       assurances: assurances,
-      guarantees: guarantees_to_include
+      guarantees: guarantees_to_include,
+      preimages: preimages_to_include
     }
 
     case Block.new(extrinsics, parent_hash, jam_state, slot) do

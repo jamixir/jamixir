@@ -525,7 +525,7 @@ defmodule WorkReportTest do
         service: 1,
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
-        gas_ratio: wi.refine_gas_limit,
+        gas_ratio: wi.accumulate_gas_limit,
         exports: 1,
         extrinsic_count: 1,
         extrinsic_size: 7,

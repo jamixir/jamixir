@@ -1,9 +1,6 @@
 defmodule Jamixir.Node do
-<<<<<<< HEAD
   alias Block.Extrinsic.Preimage
-=======
   alias Util.Crypto
->>>>>>> 92e3efd1 (executes work package bundle and build all credentials in guarantees)
   alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -206,7 +203,10 @@ defmodule Jamixir.Node do
   # CE 132 - Safrole ticket distribution
   @impl true
   def process_ticket(:validator, epoch, ticket) do
-    Logger.info("🎟️ Received ticket #{inspect(ticket)} for epoch #{epoch}")
+    Logger.info(
+      "🎟️ Received ticket [#{ticket.attempt}, #{b16(ticket.signature)}]} for epoch #{epoch}"
+    )
+
     Storage.put(epoch, ticket)
     :ok
   end

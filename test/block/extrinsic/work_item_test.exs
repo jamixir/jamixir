@@ -29,7 +29,7 @@ defmodule WorkItemTest do
           service: 1,
           code_hash: <<1, 2, 3>>,
           payload: <<4, 5>>,
-          refine_gas_limit: 6,
+          accumulate_gas_limit: 6,
           import_segments: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}],
           export_count: 9,
           extrinsic: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}]
