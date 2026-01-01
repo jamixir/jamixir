@@ -215,11 +215,11 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (14.12) v0.7.2
-  @spec execute_work_package(WorkPackage.t(), list(list(binary())), integer(), %{
+  @spec pre_execute_work_package(WorkPackage.t(), list(list(binary())), integer(), %{
           integer() => ServiceAccount.t()
         }) ::
           :error | Task.t({WorkReport.t(), list(binary())})
-  def execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
+  def pre_execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
     # {t, g} = ΨI (p,c)
     # IO.inspect(extrinsics, label: "Extrinsics")
 
@@ -228,7 +228,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     #     str -> str <> "item: " <> Enum.map_join(list, ", ", &b16(&1)) <> "\n"
     #   end
 
-    # IO.inspect(services, label: "Services in execute_work_package")
+    # IO.inspect(services, label: "Services in pre_execute_work_package")
 
     # Logger.info(str)
 

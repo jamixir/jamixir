@@ -245,7 +245,9 @@ defmodule System.State.Accumulation do
 
     counter = next_counter()
 
-    Logger.debug("=== Sequential Accumulation ##{counter} START ===")
+    Logger.debug(
+      "=== Sequential Accumulation ##{counter} (#{total_work_reports} work reports) START ==="
+    )
 
     if total_work_reports > 0 and Logger.level() == :debug do
       all_hashes =

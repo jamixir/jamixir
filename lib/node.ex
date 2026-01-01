@@ -271,7 +271,7 @@ defmodule Jamixir.Node do
 
     services = get_latest_state().services
 
-    case WorkReport.execute_work_package(wp, extrinsics, core, services) do
+    case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
       :error ->
         Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
         {:error, :execution_failed}
@@ -375,7 +375,12 @@ defmodule Jamixir.Node do
 
     services = get_latest_state().services
 
-    case WorkReport.execute_work_package(bundle.work_package, bundle.extrinsics, core, services) do
+    case WorkReport.pre_execute_work_package(
+           bundle.work_package,
+           bundle.extrinsics,
+           core,
+           services
+         ) do
       :error ->
         Logger.error(
           "Failed to execute work package for service #{bundle.work_package.service} core #{core}"

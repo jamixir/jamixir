@@ -471,7 +471,7 @@ defmodule WorkReportTest do
 
   use Sizes
 
-  describe "execute_work_package/3" do
+  describe "pre_execute_work_package/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
       stub(MockPVM, :do_authorized, fn _, _, _ -> {<<1>>, 0} end)
@@ -510,7 +510,7 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      {[[sd]], task} = WorkReport.execute_work_package(wp, [], 0, services)
+      {[[sd]], task} = WorkReport.pre_execute_work_package(wp, [], 0, services)
       assert is_binary(sd.data)
       assert sd.merkle_root == <<4::hash()>>
       {wr, e} = Task.await(task)
@@ -540,13 +540,13 @@ defmodule WorkReportTest do
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
       stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
-      task = WorkReport.execute_work_package(wp, [], 0, services)
+      task = WorkReport.pre_execute_work_package(wp, [], 0, services)
       assert task == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      {[[sd]], task} = WorkReport.execute_work_package(wp, [], 0, services)
+      {[[sd]], task} = WorkReport.pre_execute_work_package(wp, [], 0, services)
       assert is_binary(sd.data)
       assert sd.merkle_root == <<4::hash()>>
       {wr, _e} = Task.await(task)
