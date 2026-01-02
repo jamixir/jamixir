@@ -1,5 +1,4 @@
 defmodule Block.Extrinsic.Guarantee.WorkReport do
-  alias Util.Logger
   alias System.State.ServiceAccount
   alias Block.Extrinsic.{Assurance, AvailabilitySpecification}
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
@@ -7,7 +6,6 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   alias Codec.{JsonEncoder, VariableSize}
   alias System.State.{CoreReport, Ready}
   alias Util.{Collections, Hash, MerkleTree, Time}
-  import Util.Hex
   import Codec.{Decoder, Encoder}
   import RangeMacros
   use MapUnion
