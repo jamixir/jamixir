@@ -74,8 +74,11 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   # Handle PubSub messages and convert them to subscription notifications
   @impl true
-  def handle_info({:new_block, header}, state) do
+  def handle_info({:new_block, block}, state) do
     debug("RPC Notify new block")
+    # Extract header from the block
+    header = block.header
+
     # When we get new_block event, we can notify bestBlock subscribers
     Task.start(fn ->
       message = [e64(h(e(header))), header.timeslot]

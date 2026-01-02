@@ -730,7 +730,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       next_block_timeslot = 101
       latest_state_root = Hash.random()
 
-      result =
+      {valid, rejected} =
         Guarantee.guarantees_for_new_block(
           guarantees,
           state,
@@ -738,7 +738,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
           latest_state_root
         )
 
-      assert result == []
+      # All guarantees should be rejected due to invalid credentials
+      assert valid == []
+      assert length(rejected) == 3
     end
 
     test "rejects guarantee when core is occupied (ρ has pending work-report)" do
@@ -780,15 +782,17 @@ defmodule Block.Extrinsic.GuaranteeTest do
       next_block_timeslot = 95  # Core report is still within unavailability period
       latest_state_root = refinement_context.state_root
 
-      result = Guarantee.guarantees_for_new_block(
+      {valid, rejected} = Guarantee.guarantees_for_new_block(
         [guarantee],
         state,
         next_block_timeslot,
         latest_state_root
       )
 
-      # Should be rejected because core 0 is engaged
-      assert result == []
+      # Should be filtered out (not included) because core 0 is engaged
+      # But not rejected permanently
+      assert valid == []
+      assert rejected == []
     end
 
     test "accepts guarantee when core becomes available after assurances clear it (ρ‡)" do
@@ -830,7 +834,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       latest_state_root = refinement_context.state_root
 
-      result = Guarantee.guarantees_for_new_block(
+      {valid, rejected} = Guarantee.guarantees_for_new_block(
         [guarantee],
         state,
         next_block_timeslot,
@@ -838,8 +842,9 @@ defmodule Block.Extrinsic.GuaranteeTest do
       )
 
       # Should be accepted because core 0 is now available in ρ‡
-      assert length(result) == 1
-      assert hd(result).work_report.core_index == 0
+      assert length(valid) == 1
+      assert hd(valid).work_report.core_index == 0
+      assert rejected == []
     end
   end
 

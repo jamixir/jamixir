@@ -487,37 +487,49 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   def guarantees_for_new_block(guarantees, state, next_block_timeslot, latest_state_root) do
-    guarantees
-    |> Enum.map(fn g -> %{g | credentials: normalize_credentials(g.credentials)} end)
-    |> Enum.reject(&is_nil(&1.credentials))
-    |> Enum.filter(fn g ->
-      with :ok <- validate_work_report_sizes([g.work_report]),
-           :ok <- validate_gas_accumulation([g.work_report], state.services),
-           :ok <- validate_refine_context_timeslot([g], next_block_timeslot),
-           :ok <- validate_work_digest_cores([g.work_report], state.services),
-           :ok <-
-             validate_new_work_packages(
-               [g.work_report],
-               state.recent_history,
-               state.accumulation_history,
-               state.ready_to_accumulate,
-               state.core_reports
-             ),
-           :ok <- validate_segment_root_lookups([g.work_report], state.recent_history),
-           :ok <- validate_prerequisites([g.work_report], state.recent_history),
-           :ok <- validate_anchor_block([g], state.recent_history, latest_state_root),
-           # Formula (11.29) - validate core is available
-           :ok <-
-             validate_availability(
-               [g],
-               state.core_reports,
-               next_block_timeslot,
-               state.authorizer_pool
-             ) do
-        true
-      else
-        _ -> false
-      end
-    end)
+
+    normalized_guarantees =
+      guarantees
+      |> Enum.map(fn g -> %{g | credentials: normalize_credentials(g.credentials)} end)
+
+    # Apply permanent rejections - these guarantees will be marked as rejected
+    {valid_guarantees, rejected_guarantees} =
+      Enum.split_with(normalized_guarantees, fn g ->
+        not is_nil(g.credentials) and
+          validate_work_report_sizes([g.work_report]) == :ok and
+          validate_gas_accumulation([g.work_report], state.services) == :ok and
+          validate_work_digest_cores([g.work_report], state.services) == :ok
+      end)
+
+    # Apply temporary filters - these guarantees are just filtered out but not rejected
+    filtered_guarantees =
+      Enum.filter(valid_guarantees, fn g ->
+        with :ok <- validate_refine_context_timeslot([g], next_block_timeslot),
+             :ok <-
+               validate_new_work_packages(
+                 [g.work_report],
+                 state.recent_history,
+                 state.accumulation_history,
+                 state.ready_to_accumulate,
+                 state.core_reports
+               ),
+             :ok <- validate_segment_root_lookups([g.work_report], state.recent_history),
+             :ok <- validate_prerequisites([g.work_report], state.recent_history),
+             :ok <- validate_anchor_block([g], state.recent_history, latest_state_root),
+             # Formula (11.29) - validate core is available
+             :ok <-
+               validate_availability(
+                 [g],
+                 state.core_reports,
+                 next_block_timeslot,
+                 state.authorizer_pool
+               ) do
+          true
+        else
+          _ -> false
+        end
+      end)
+
+    {filtered_guarantees, rejected_guarantees}
   end
 end
