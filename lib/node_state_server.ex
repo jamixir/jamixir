@@ -12,13 +12,13 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
-  alias Block.Extrinsic.{Assurance, Guarantee}
+  alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
   alias System.State
-  alias System.State.{EntropyPool, RotateKeys, Validator}
+  alias System.State.{CoreReport, EntropyPool, RotateKeys, Validator}
   alias Util.Logger, as: Log
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
@@ -353,18 +353,34 @@ defmodule Jamixir.NodeStateServer do
     assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
 
     Log.info("New block with #{length(tickets)} 🎟️ tickets, #{length(assurances)} 🛡️ assurances")
-    # =======================================================
-    # Build Guarantees extrinsic
-    # =======================================================
+
+    #  Simulate ρ‡ (partial state transform)
+
+    # ρ† Formula (4.12) - process disputes
+    # TODO:  pass actual bad_wonky_verdicts here
+    bad_wonky_verdicts = []
+    core_reports_1 = CoreReport.process_disputes(jam_state.core_reports, bad_wonky_verdicts)
+
+    # R Formula (11.16) - compute which work-reports become available
+    available_work_reports = WorkReport.available_work_reports(assurances, core_reports_1)
+
+    # ρ‡ Formula (4.13) - clear available and timed-out reports
+    core_reports_2 =
+      CoreReport.process_availability(
+        jam_state.core_reports,
+        core_reports_1,
+        available_work_reports,
+        slot
+      )
 
     guarantee_candidates = Storage.get_guarantees(:pending)
-
-    guarantee_candidates_hashes =
-      Enum.map(guarantee_candidates, & &1.work_report_hash)
-
     Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
     latest_state_root = Storage.get_latest_state_root()
+
+    # Create state with simulated ρ‡ for guarantee validation
+    # This ensures validate_availability (Formula 11.29) checks against ρ‡
+    state_with_simulated_rho = %{jam_state | core_reports: core_reports_2}
 
     # Note: this may filter some guarantees out, in that case the core_index will have no guarantee assigned.
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
@@ -373,16 +389,10 @@ defmodule Jamixir.NodeStateServer do
     guarantees_to_include =
       Guarantee.guarantees_for_new_block(
         guarantee_candidates,
-        jam_state,
+        state_with_simulated_rho,
         slot,
         latest_state_root
       )
-
-    included_work_report_hashes = Enum.map(guarantees_to_include, &h(e(&1.work_report)))
-    rejected_work_report_hashes = guarantee_candidates_hashes -- included_work_report_hashes
-
-    Storage.mark_guarantee_included(included_work_report_hashes, parent_hash)
-    Storage.mark_guarantee_rejected(rejected_work_report_hashes)
 
     # =======================================================
     # Create block
