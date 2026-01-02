@@ -740,6 +740,107 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       assert result == []
     end
+
+    test "rejects guarantee when core is occupied (ρ has pending work-report)" do
+      # Create a minimal valid guarantee targeting core 0
+      refinement_context = build(:refinement_context)
+
+      guarantee = build(:guarantee,
+        work_report: build(:work_report,
+          core_index: 0,
+          refinement_context: refinement_context
+        ),
+        timeslot: 6
+      )
+
+      # Create state where core 0 is occupied with a pending work-report
+      occupied_core_report = %CoreReport{
+        work_report: build(:work_report, core_index: 0),
+        timeslot: 90  # Recent enough to not be timed out
+      }
+
+      state = %System.State{
+        services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
+        core_reports: [occupied_core_report | List.duplicate(nil, Constants.core_count() - 1)],
+        authorizer_pool: [MapSet.new([<<1>>]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)],
+        recent_history: %RecentHistory{
+          blocks: [
+            %RecentHistory.RecentBlock{
+              header_hash: refinement_context.anchor,
+              state_root: refinement_context.state_root,
+              beefy_root: refinement_context.beefy_root,
+              work_report_hashes: %{}
+            }
+          ]
+        },
+        accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length()),
+        ready_to_accumulate: Ready.initial_state()
+      }
+
+      next_block_timeslot = 95  # Core report is still within unavailability period
+      latest_state_root = refinement_context.state_root
+
+      result = Guarantee.guarantees_for_new_block(
+        [guarantee],
+        state,
+        next_block_timeslot,
+        latest_state_root
+      )
+
+      # Should be rejected because core 0 is engaged
+      assert result == []
+    end
+
+    test "accepts guarantee when core becomes available after assurances clear it (ρ‡)" do
+      # Create a minimal valid guarantee targeting core 0 - same setup as first test but with free core
+      next_block_timeslot = 95
+
+      # Make refinement context recent enough to pass timeslot validation
+      refinement_context = build(:refinement_context,
+        timeslot: next_block_timeslot - 10  # Recent enough to pass validation
+      )
+
+      guarantee = build(:guarantee,
+        work_report: build(:work_report,
+          core_index: 0,
+          authorizer_hash: Hash.two(),  # Match the authorizer_pool
+          refinement_context: refinement_context
+        ),
+        timeslot: 6
+      )
+
+      # Create state with ρ‡ (after assurances processed) where core 0 is now FREE
+      state = %System.State{
+        services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
+        core_reports: [nil | List.duplicate(nil, Constants.core_count() - 1)],  # Core 0 is FREE (ρ‡)
+        authorizer_pool: [MapSet.new([Hash.two()]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)],
+        recent_history: %RecentHistory{
+          blocks: [
+            %RecentHistory.RecentBlock{
+              header_hash: refinement_context.anchor,
+              state_root: refinement_context.state_root,
+              beefy_root: refinement_context.beefy_root,
+              work_report_hashes: %{}
+            }
+          ]
+        },
+        accumulation_history: List.duplicate(MapSet.new(), Constants.epoch_length()),
+        ready_to_accumulate: Ready.initial_state()
+      }
+
+      latest_state_root = refinement_context.state_root
+
+      result = Guarantee.guarantees_for_new_block(
+        [guarantee],
+        state,
+        next_block_timeslot,
+        latest_state_root
+      )
+
+      # Should be accepted because core 0 is now available in ρ‡
+      assert length(result) == 1
+      assert hd(result).work_report.core_index == 0
+    end
   end
 
   describe "validate_prerequisites/2" do

@@ -505,7 +505,15 @@ defmodule Block.Extrinsic.Guarantee do
              ),
            :ok <- validate_segment_root_lookups([g.work_report], state.recent_history),
            :ok <- validate_prerequisites([g.work_report], state.recent_history),
-           :ok <- validate_anchor_block([g], state.recent_history, latest_state_root) do
+           :ok <- validate_anchor_block([g], state.recent_history, latest_state_root),
+           # Formula (11.29) - validate core is available
+           :ok <-
+             validate_availability(
+               [g],
+               state.core_reports,
+               next_block_timeslot,
+               state.authorizer_pool
+             ) do
         true
       else
         _ -> false
