@@ -15,6 +15,7 @@ defmodule Jamixir.NodeStateServer do
   alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
+  alias Block
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
   alias System.State
@@ -41,6 +42,8 @@ defmodule Jamixir.NodeStateServer do
   def init(opts) do
     bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
     Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
+    # Subscribe to new block events to mark guarantees as included
+    Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
     {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
   end
 
@@ -125,7 +128,7 @@ defmodule Jamixir.NodeStateServer do
           )
 
           #  Notify Subscription Manager, which will notify "bestBlock" subscribers
-          Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block.header})
+          Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block})
 
           # Telemetry: best block changed
           Jamixir.Telemetry.best_block_changed(block.header.timeslot, header_hash)
@@ -386,13 +389,21 @@ defmodule Jamixir.NodeStateServer do
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
     # This is inline with Formula 11.24, but in case a node gets compensation for inclusion of more guarantees, we may want to be more aggressive
     # and try to fully populate the extrinsic.
-    guarantees_to_include =
+    {guarantees_to_include, rejected_guarantees} =
       Guarantee.guarantees_for_new_block(
         guarantee_candidates,
         state_with_simulated_rho,
         slot,
         latest_state_root
       )
+
+    # Mark rejected guarantees in storage
+    if length(rejected_guarantees) > 0 do
+      rejected_work_report_hashes =
+        Enum.map(rejected_guarantees, &h(e(&1.work_report)))
+
+      Storage.mark_guarantee_rejected(rejected_work_report_hashes)
+    end
 
     # =======================================================
     # Create block
@@ -500,6 +511,19 @@ defmodule Jamixir.NodeStateServer do
       end
 
     Jamixir.Telemetry.tickets_generated(generating_event_id, ticket_outputs)
+
+    {:noreply, state}
+  end
+
+  def handle_info({:new_block, %Block{} = block}, state) do
+    # When a new block is added, mark its guarantees as included
+    if length(block.extrinsic.guarantees) > 0 do
+      guarantee_work_report_hashes =
+        Enum.map(block.extrinsic.guarantees, &h(e(&1.work_report)))
+
+      header_hash = h(e(block.header))
+      Storage.mark_guarantee_included(guarantee_work_report_hashes, header_hash)
+    end
 
     {:noreply, state}
   end
