@@ -87,7 +87,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error for duplicate core_index in guarantees", %{state: state, g1: g1} do
-      assert Guarantee.validate([g1, g1], state, %Header{timeslot: 1}) == {:error, :duplicate_guarantees}
+      assert Guarantee.validate([g1, g1], state, %Header{timeslot: 1}) ==
+               {:error, :duplicate_guarantees}
     end
 
     test "returns error for invalid credential length", %{g1: g1, state: state} do
@@ -735,7 +736,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
           guarantees,
           state,
           next_block_timeslot,
-          latest_state_root
+          latest_state_root,
+          state.core_reports
         )
 
       # All guarantees should be rejected due to invalid credentials
@@ -763,9 +765,10 @@ defmodule Block.Extrinsic.GuaranteeTest do
         timeslot: 90
       }
 
+      core_reports_2 = [occupied_core_report | List.duplicate(nil, Constants.core_count() - 1)]
+
       state = %System.State{
         services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
-        core_reports: [occupied_core_report | List.duplicate(nil, Constants.core_count() - 1)],
         authorizer_pool: [
           MapSet.new([<<1>>]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)
         ],
@@ -792,7 +795,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
           [guarantee],
           state,
           next_block_timeslot,
-          latest_state_root
+          latest_state_root,
+          core_reports_2
         )
 
       # Should be filtered out (not included) because core 0 is engaged
@@ -825,8 +829,6 @@ defmodule Block.Extrinsic.GuaranteeTest do
       # Create state with ρ‡ (after assurances processed) where core 0 is now FREE
       state = %System.State{
         services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
-        # Core 0 is FREE (ρ‡)
-        core_reports: [nil | List.duplicate(nil, Constants.core_count() - 1)],
         authorizer_pool: [
           MapSet.new([Hash.two()]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)
         ],
@@ -851,7 +853,8 @@ defmodule Block.Extrinsic.GuaranteeTest do
           [guarantee],
           state,
           next_block_timeslot,
-          latest_state_root
+          latest_state_root,
+          state.core_reports
         )
 
       # Should be accepted because core 0 is now available in ρ‡

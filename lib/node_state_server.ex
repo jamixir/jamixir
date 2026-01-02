@@ -393,10 +393,6 @@ defmodule Jamixir.NodeStateServer do
     Log.info("🧩 Guarantee candidates: #{length(guarantee_candidates)}")
     latest_state_root = Storage.get_latest_state_root()
 
-    # Create state with simulated ρ‡ for guarantee validation
-    # This ensures validate_availability (Formula 11.29) checks against ρ‡
-    state_with_simulated_rho = %{jam_state | core_reports: core_reports_2}
-
     # Note: this may filter some guarantees out, in that case the core_index will have no guarantee assigned.
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
     # This is inline with Formula 11.24, but in case a node gets compensation for inclusion of more guarantees, we may want to be more aggressive
@@ -404,9 +400,10 @@ defmodule Jamixir.NodeStateServer do
     guarantees_to_include =
       Guarantee.guarantees_for_new_block(
         guarantee_candidates,
-        state_with_simulated_rho,
+        jam_state,
         slot,
-        latest_state_root
+        latest_state_root,
+        core_reports_2
       )
 
     preimage_candidates = Storage.get_preimages(:pending)
