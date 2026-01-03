@@ -11,8 +11,9 @@ defmodule Clock.Event do
           # 2 seconds before end of slot
           | :assurance_timeout
           | :epoch_transition
-          # 1/5 * slot time after epoch transition (impl detail, not a GP constat)
+          # 1/3 * slot time after last epoch slot (2/3 slot duration before the next epoch starts) (impl detail, not a GP constat)
           | :compute_author_slots
+          | :compute_current_epoch_author_slots
           # acoording to the sarfole.slot_sealer list
           | :author_block
           # max(⌊E/60⌋,1) slots after the connectivity changes
