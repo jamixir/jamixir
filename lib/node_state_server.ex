@@ -296,7 +296,22 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("⚙️ Computing authoring slots for next epoch #{next_epoch} at slot #{slot}")
 
     authoring_slots =
-      compute_author_slots_for_next_epoch(jam_state, slot, bandersnatch_keypair)
+      compute_author_slots_for_epoch(jam_state, next_epoch, bandersnatch_keypair)
+
+    Clock.set_authoring_slots(authoring_slots)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(
+        {:clock, %{event: :compute_current_epoch_author_slots, slot: slot}},
+        %__MODULE__{jam_state: jam_state, bandersnatch_keypair: bandersnatch_keypair} = state
+      ) do
+    Log.debug("⚙️ Computing authoring slots for current epoch at slot #{slot}")
+    current_epoch = Util.Time.epoch_index(slot)
+    authoring_slots =
+      compute_author_slots_for_epoch(jam_state, current_epoch, bandersnatch_keypair)
 
     Clock.set_authoring_slots(authoring_slots)
 
@@ -595,15 +610,13 @@ defmodule Jamixir.NodeStateServer do
   end
 
   # Authoring and slot computation
-  defp compute_author_slots_for_next_epoch(jam_state, current_slot, bandersnatch_keypair) do
-    current_epoch = Util.Time.epoch_index(current_slot)
-    next_epoch = current_epoch + 1
-    next_epoch_first_slot = next_epoch * Constants.epoch_length()
+  defp compute_author_slots_for_epoch(jam_state, epoch, bandersnatch_keypair) do
+    epoch_first_slot = epoch * Constants.epoch_length()
 
-    header = %Header{timeslot: next_epoch_first_slot}
+    header = %Header{timeslot: epoch_first_slot}
 
     entropy_pool_ =
-      EntropyPool.rotate(next_epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
+      EntropyPool.rotate(epoch_first_slot, jam_state.timeslot, jam_state.entropy_pool)
 
     {_pending_, curr_validators_, _prev_validators_, _epoch_root_} =
       RotateKeys.rotate_keys(header, jam_state, %System.State.Judgements{})
@@ -623,11 +636,11 @@ defmodule Jamixir.NodeStateServer do
         slot_sealer = Enum.at(next_epoch_slot_sealers, phase)
         Block.key_matches?(bandersnatch_keypair, slot_sealer, entropy_pool_)
       end)
-      |> Enum.map(fn phase -> {next_epoch, phase} end)
+      |> Enum.map(fn phase -> {epoch, phase} end)
       |> MapSet.new()
 
     Log.info(
-      "✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{next_epoch}"
+      "✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{epoch}"
     )
 
     authoring_slots

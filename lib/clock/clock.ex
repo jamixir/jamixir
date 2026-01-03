@@ -50,8 +50,12 @@ defmodule Clock do
       assurance: schedule_timer(reference_time, 0, :assurance_timeout)
     }
 
-    # initially schedule compute_author_slots right away
-    schedule_timer(reference_time, 0, :compute_author_slots)
+    # Schedule compute_author_slots for current epoch 2 seconds after the next tick
+    # Only if we have at least 2 slots remaining in the epoch
+    epoch_phase = Time.epoch_phase(current_slot)
+    if epoch_phase <= Constants.epoch_length() - 3 do
+      schedule_timer(reference_time, slot_duration_ms() + div(slot_duration_ms(), 3), :compute_current_epoch_author_slots)
+    end
 
     {:ok,
      %__MODULE__{
@@ -97,8 +101,6 @@ defmodule Clock do
     end
 
     if Time.epoch_transition?(current_slot) do
-      schedule_timer(state.reference_time, div(slot_duration_ms(), 5), :compute_author_slots)
-
       # Ticket sent to proxy should be performed max(⌊E/60⌋, 1)
       # slots after the connectivity changes for a new epoch are applied
       schedule_timer(
@@ -109,6 +111,10 @@ defmodule Clock do
 
       epoch_event = Clock.Event.new(:epoch_transition, current_slot)
       Phoenix.PubSub.broadcast(Jamixir.PubSub, @clock_events_channel, {:clock, epoch_event})
+    end
+
+    if epoch_phase == Constants.epoch_length() - 1 do
+      schedule_timer(state.reference_time, div(slot_duration_ms(), 3), :compute_author_slots)
     end
 
     next_slot_offset = slot_duration_ms()
@@ -129,6 +135,13 @@ defmodule Clock do
 
   def handle_info(:compute_author_slots, state),
     do: default_handle_info(:compute_author_slots, state)
+
+  def handle_info(:compute_current_epoch_author_slots, state) do
+    current_slot = Time.current_timeslot()
+    compute_event = Clock.Event.new(:compute_current_epoch_author_slots, current_slot)
+    Phoenix.PubSub.broadcast(Jamixir.PubSub, @node_events_channel, {:clock, compute_event})
+    {:noreply, state}
+  end
 
   def handle_info(:audit_tranche, state) do
     event = Clock.Event.new(:audit_tranche)
