@@ -91,10 +91,4 @@ defmodule Jamixir.SqlStorage do
     |> Repo.update_all(set: [status: :included, included_in_block: header_hash])
   end
 
-  def mark_rejected(guarantee_work_report_hashes) do
-    from(g in GuaranteeRecord,
-      where: g.work_report_hash in ^guarantee_work_report_hashes
-    )
-    |> Repo.update_all(set: [status: :rejected])
-  end
 end
