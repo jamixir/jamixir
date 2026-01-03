@@ -730,7 +730,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       next_block_timeslot = 101
       latest_state_root = Hash.random()
 
-      {valid, rejected} =
+      valid =
         Guarantee.guarantees_for_new_block(
           guarantees,
           state,
@@ -740,31 +740,35 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       # All guarantees should be rejected due to invalid credentials
       assert valid == []
-      assert length(rejected) == 3
     end
 
     test "rejects guarantee when core is occupied (ρ has pending work-report)" do
       # Create a minimal valid guarantee targeting core 0
       refinement_context = build(:refinement_context)
 
-      guarantee = build(:guarantee,
-        work_report: build(:work_report,
-          core_index: 0,
-          refinement_context: refinement_context
-        ),
-        timeslot: 6
-      )
+      guarantee =
+        build(:guarantee,
+          work_report:
+            build(:work_report,
+              core_index: 0,
+              refinement_context: refinement_context
+            ),
+          timeslot: 6
+        )
 
       # Create state where core 0 is occupied with a pending work-report
       occupied_core_report = %CoreReport{
         work_report: build(:work_report, core_index: 0),
-        timeslot: 90  # Recent enough to not be timed out
+        # Recent enough to not be timed out
+        timeslot: 90
       }
 
       state = %System.State{
         services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
         core_reports: [occupied_core_report | List.duplicate(nil, Constants.core_count() - 1)],
-        authorizer_pool: [MapSet.new([<<1>>]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)],
+        authorizer_pool: [
+          MapSet.new([<<1>>]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)
+        ],
         recent_history: %RecentHistory{
           blocks: [
             %RecentHistory.RecentBlock{
@@ -779,20 +783,20 @@ defmodule Block.Extrinsic.GuaranteeTest do
         ready_to_accumulate: Ready.initial_state()
       }
 
-      next_block_timeslot = 95  # Core report is still within unavailability period
+      # Core report is still within unavailability period
+      next_block_timeslot = 95
       latest_state_root = refinement_context.state_root
 
-      {valid, rejected} = Guarantee.guarantees_for_new_block(
-        [guarantee],
-        state,
-        next_block_timeslot,
-        latest_state_root
-      )
+      valid =
+        Guarantee.guarantees_for_new_block(
+          [guarantee],
+          state,
+          next_block_timeslot,
+          latest_state_root
+        )
 
       # Should be filtered out (not included) because core 0 is engaged
-      # But not rejected permanently
       assert valid == []
-      assert rejected == []
     end
 
     test "accepts guarantee when core becomes available after assurances clear it (ρ‡)" do
@@ -800,24 +804,32 @@ defmodule Block.Extrinsic.GuaranteeTest do
       next_block_timeslot = 95
 
       # Make refinement context recent enough to pass timeslot validation
-      refinement_context = build(:refinement_context,
-        timeslot: next_block_timeslot - 10  # Recent enough to pass validation
-      )
+      refinement_context =
+        build(:refinement_context,
+          # Recent enough to pass validation
+          timeslot: next_block_timeslot - 10
+        )
 
-      guarantee = build(:guarantee,
-        work_report: build(:work_report,
-          core_index: 0,
-          authorizer_hash: Hash.two(),  # Match the authorizer_pool
-          refinement_context: refinement_context
-        ),
-        timeslot: 6
-      )
+      guarantee =
+        build(:guarantee,
+          work_report:
+            build(:work_report,
+              core_index: 0,
+              # Match the authorizer_pool
+              authorizer_hash: Hash.two(),
+              refinement_context: refinement_context
+            ),
+          timeslot: 6
+        )
 
       # Create state with ρ‡ (after assurances processed) where core 0 is now FREE
       state = %System.State{
         services: %{0 => %ServiceAccount{code_hash: Hash.one()}},
-        core_reports: [nil | List.duplicate(nil, Constants.core_count() - 1)],  # Core 0 is FREE (ρ‡)
-        authorizer_pool: [MapSet.new([Hash.two()]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)],
+        # Core 0 is FREE (ρ‡)
+        core_reports: [nil | List.duplicate(nil, Constants.core_count() - 1)],
+        authorizer_pool: [
+          MapSet.new([Hash.two()]) | List.duplicate(MapSet.new(), Constants.core_count() - 1)
+        ],
         recent_history: %RecentHistory{
           blocks: [
             %RecentHistory.RecentBlock{
@@ -834,17 +846,17 @@ defmodule Block.Extrinsic.GuaranteeTest do
 
       latest_state_root = refinement_context.state_root
 
-      {valid, rejected} = Guarantee.guarantees_for_new_block(
-        [guarantee],
-        state,
-        next_block_timeslot,
-        latest_state_root
-      )
+      valid =
+        Guarantee.guarantees_for_new_block(
+          [guarantee],
+          state,
+          next_block_timeslot,
+          latest_state_root
+        )
 
       # Should be accepted because core 0 is now available in ρ‡
       assert length(valid) == 1
       assert hd(valid).work_report.core_index == 0
-      assert rejected == []
     end
   end
 

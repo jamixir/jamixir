@@ -221,15 +221,16 @@ defmodule StorageTest do
       assert length(candidates_before) == 3
 
       wr1_hash = h(e(guarantee1.work_report))
-      wr2_hash = h(e(guarantee2.work_report))
       header_hash = Hash.random()
 
       Storage.mark_guarantee_included([wr1_hash], header_hash)
-      Storage.mark_guarantee_rejected([wr2_hash])
 
       candidates_after = Storage.get_guarantees(:pending)
-      assert length(candidates_after) == 1
-      assert hd(candidates_after).work_report.core_index == 2
+      assert length(candidates_after) == 2
+
+      assert candidates_after
+             |> Enum.sort_by(& &1.work_report.core_index)
+             |> Enum.map(& &1.work_report.core_index) == [1, 2]
     end
   end
 end

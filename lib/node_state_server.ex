@@ -387,21 +387,13 @@ defmodule Jamixir.NodeStateServer do
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
     # This is inline with Formula 11.24, but in case a node gets compensation for inclusion of more guarantees, we may want to be more aggressive
     # and try to fully populate the extrinsic.
-    {guarantees_to_include, rejected_guarantees} =
+    guarantees_to_include =
       Guarantee.guarantees_for_new_block(
         guarantee_candidates,
         state_with_simulated_rho,
         slot,
         latest_state_root
       )
-
-    # Mark rejected guarantees in storage
-    if length(rejected_guarantees) > 0 do
-      rejected_work_report_hashes =
-        Enum.map(rejected_guarantees, &h(e(&1.work_report)))
-
-      Storage.mark_guarantee_rejected(rejected_work_report_hashes)
-    end
 
     # =======================================================
     # Create block

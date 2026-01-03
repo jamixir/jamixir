@@ -301,10 +301,6 @@ defmodule Storage do
     SqlStorage.mark_included(guarantee_work_report_hashes, header_hash)
   end
 
-  def mark_guarantee_rejected(guarantee_work_report_hashes) do
-    SqlStorage.mark_rejected(guarantee_work_report_hashes)
-  end
-
   def get_judgements(epoch) do
     SqlStorage.get_all(Judgement, epoch)
   end

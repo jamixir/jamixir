@@ -25,7 +25,7 @@ defmodule Storage.GuaranteeRecord do
     timestamps(type: :utc_datetime)
 
     field(:status, Ecto.Enum,
-      values: [:pending, :included, :rejected],
+      values: [:pending, :included],
       default: :pending
     )
 
