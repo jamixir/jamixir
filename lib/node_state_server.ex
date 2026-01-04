@@ -42,8 +42,6 @@ defmodule Jamixir.NodeStateServer do
   def init(opts) do
     bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
     Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
-    # Subscribe to new block events to mark guarantees as included
-    Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
     {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
   end
 
