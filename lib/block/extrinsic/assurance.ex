@@ -42,7 +42,12 @@ defmodule Block.Extrinsic.Assurance do
              else: {:error, :bad_attestation_parent}
            ),
          # Formula (11.12) v0.7.2
-         :ok <- Collections.validate_unique_and_ordered(assurances, & &1.validator_index),
+         :ok <-
+           (case Collections.validate_unique_and_ordered(assurances, & &1.validator_index) do
+              {:error, :duplicates} -> {:error, :duplicate_assurances}
+              {:error, :not_in_order} -> {:error, :assurances_not_in_order}
+              result -> result
+            end),
          # Formula (11.13) v0.7.2
          :ok <- validate_signatures(assurances, parent_hash, curr_validators),
          # Formula (11.15) v0.7.2

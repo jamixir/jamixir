@@ -47,6 +47,7 @@ defmodule Block.Extrinsic.TicketProof do
          # Formula (6.32) v0.7.2
          :ok <-
            (case Collections.validate_unique_and_ordered(n, & &1.id) do
+              {:error, :duplicates} -> {:error, :duplicate_tickets}
               {:error, :not_in_order} -> {:error, :bad_ticket_order}
               r -> r
             end) do
@@ -154,9 +155,11 @@ defmodule Block.Extrinsic.TicketProof do
       |> Enum.take(Constants.epoch_length())
       |> MapSet.new()
 
-    for {t, id} <- tickets_and_ids,
-        MapSet.member?(all_ids, id),
-        do: t
+    # Deduplicate tickets
+    tickets_and_ids
+    |> Enum.filter(fn {_t, id} -> MapSet.member?(all_ids, id) end)
+    |> Enum.uniq_by(fn {t, _id} -> t end)
+    |> Enum.map(fn {t, _id} -> t end)
   end
 
   def proof_output(%TicketProof{attempt: r, signature: proof}, eta2, epoch_root) do
