@@ -115,7 +115,7 @@ defmodule Block.Extrinsic.TicketProofTest do
     test "fails with non-unique tickets", %{state: state, key_pairs: key_pairs} do
       ticket = create_valid_tickets(1, state, key_pairs) |> List.first()
 
-      assert {:error, :duplicates} ==
+      assert {:error, :duplicate_tickets} ==
                TicketProof.validate(
                  [ticket, ticket],
                  Constants.ticket_submission_end() - 1,

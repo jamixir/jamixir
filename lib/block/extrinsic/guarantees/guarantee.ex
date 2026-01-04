@@ -33,6 +33,7 @@ defmodule Block.Extrinsic.Guarantee do
     # Formula (11.24) v0.7.2
     with :ok <-
            (case Collections.validate_unique_and_ordered(guarantees, & &1.work_report.core_index) do
+              {:error, :duplicates} -> {:error, :duplicate_guarantees}
               {:error, :not_in_order} -> {:error, :out_of_order_guarantee}
               result -> result
             end),

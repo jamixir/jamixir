@@ -87,7 +87,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "returns error for duplicate core_index in guarantees", %{state: state, g1: g1} do
-      assert Guarantee.validate([g1, g1], state, %Header{timeslot: 1}) == {:error, :duplicates}
+      assert Guarantee.validate([g1, g1], state, %Header{timeslot: 1}) == {:error, :duplicate_guarantees}
     end
 
     test "returns error for invalid credential length", %{g1: g1, state: state} do

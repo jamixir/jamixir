@@ -133,7 +133,7 @@ defmodule Block.Extrinsic.AssuranceTest do
       duplicate_assurance = %{assurance | validator_index: assurance.validator_index}
       assurances = [assurance, duplicate_assurance]
 
-      assert {:error, :duplicates} =
+      assert {:error, :duplicate_assurances} =
                Assurance.validate_assurances(assurances, hp, validators, cr)
     end
 
@@ -145,7 +145,7 @@ defmodule Block.Extrinsic.AssuranceTest do
     } do
       higher_index = %{assurance | validator_index: assurance.validator_index + 1}
 
-      assert {:error, :not_in_order} ==
+      assert {:error, :assurances_not_in_order} ==
                Assurance.validate_assurances([higher_index, assurance], hp, validators, cr)
     end
 
