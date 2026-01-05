@@ -1,6 +1,5 @@
 defmodule PersistStorage do
   use GenServer
-  @db_path "db"
   @compact_interval :timer.minutes(5)
 
   def start_link(opts) do
@@ -49,10 +48,11 @@ defmodule PersistStorage do
   def init(opts) do
     case Keyword.get(opts, :persist) do
       true ->
-        File.mkdir_p!(@db_path)
+        db_path = get_db_path()
+        File.mkdir_p!(db_path)
 
         case CubDB.start_link(
-               data_dir: @db_path,
+               data_dir: db_path,
                name: :cubdb,
                auto_compact: false
              ) do
@@ -66,6 +66,14 @@ defmodule PersistStorage do
 
       false ->
         {:ok, %{db: nil, persist: false, ops_count: 0}}
+    end
+  end
+
+  defp get_db_path do
+    # Use configured database path, with cubdb subdirectory
+    case Application.get_env(:jamixir, :database_path) do
+      nil -> "db/cubdb"
+      path -> Path.join(Path.dirname(path), "cubdb")
     end
   end
 

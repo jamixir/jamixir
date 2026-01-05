@@ -10,18 +10,27 @@ defmodule Jamixir.Repo do
   end
 
   defp resolve_database_path(config) do
-    case Keyword.get(config, :database) do
-      {:system, env_var, default} ->
-        db_path = System.get_env(env_var) || default_db_path(default)
-        ensure_db_directory(db_path)
-        Keyword.put(config, :database, db_path)
-
+    # Check for command-line override first
+    case Application.get_env(:jamixir, :database_path) do
       path when is_binary(path) ->
         ensure_db_directory(path)
-        config
+        Keyword.put(config, :database, path)
 
-      _ ->
-        config
+      nil ->
+        # Fall back to environment config
+        case Keyword.get(config, :database) do
+          {:system, env_var, default} ->
+            db_path = System.get_env(env_var) || default_db_path(default)
+            ensure_db_directory(db_path)
+            Keyword.put(config, :database, db_path)
+
+          path when is_binary(path) ->
+            ensure_db_directory(path)
+            config
+
+          _ ->
+            config
+        end
     end
   end
 
