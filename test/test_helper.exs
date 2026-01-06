@@ -5,8 +5,6 @@ ExUnit.start()
 ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks, :slow])
 RingVrf.init_ring_context()
 
-# Storage.start_link([persist: false])
-
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)
 Mox.defmock(MockAccumulation, for: System.State.Accumulation)

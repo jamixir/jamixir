@@ -12,28 +12,55 @@ defmodule Jamixir.Repo do
   defp resolve_database_path(config) do
     case Keyword.get(config, :database) do
       {:system, env_var, default} ->
-        db_path = System.get_env(env_var) || default_db_path(default)
+        db_path =
+          System.get_env(env_var) ||
+          node_specific_db_path(default)
         ensure_db_directory(db_path)
         Keyword.put(config, :database, db_path)
 
       path when is_binary(path) ->
-        ensure_db_directory(path)
-        config
+        # Absolute paths break storage isolation guarantees
+        # Reject them unless explicitly allowed via config
+        if Path.type(path) == :absolute do
+          raise """
+          Absolute database paths are not allowed; they break storage isolation.
+          Path attempted: #{path}
+          Instead, use relative paths which will be automatically isolated per node.
+          """
+        else
+          # Relative paths are converted to node-specific paths
+          db_path = node_specific_db_path(path)
+          ensure_db_directory(db_path)
+          Keyword.put(config, :database, db_path)
+        end
 
       _ ->
         config
     end
   end
 
-  defp default_db_path(default) do
-    # In release mode, use a path inside priv directory
-    # Otherwise use the provided default
-    case :code.priv_dir(:jamixir) do
-      {:error, _} ->
-        default
+  defp node_specific_db_path(default) do
+    # Only use node-specific paths in prod/tiny runtime environments
+    case Mix.env() do
+      env when env in [:prod, :tiny] ->
+        # Enforce that node_id is initialized
+        Jamixir.NodeIdentity.assert_node_id_locked!()
 
-      priv_dir ->
-        Path.join([priv_dir, "data", "jamixir.db"])
+        node_dir = Jamixir.NodeIdentity.node_dir()
+        db_dir = Path.join(node_dir, "data")
+
+        # Extract filename from default path or use "jamixir.db"
+        filename =
+          case Path.basename(default) do
+            "" -> "jamixir.db"
+            name -> name
+          end
+
+        Path.join(db_dir, filename)
+
+      _ ->
+        # In test/dev environments, use the default path as-is
+        default
     end
   end
 

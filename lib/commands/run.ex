@@ -62,6 +62,41 @@ defmodule Jamixir.Commands.Run do
         {:error, e} -> raise e
       end
 
+      # Compute and lock node_id early for storage isolation
+      # This must happen before any storage access
+      computed_node_id = Jamixir.NodeIdentity.node_id()
+
+      # Lock node_id to prevent mutation
+      case Application.get_env(:jamixir, :node_id) do
+        nil ->
+          Application.put_env(:jamixir, :node_id, computed_node_id)
+
+        ^computed_node_id ->
+          :ok
+
+        other ->
+          raise "node_id mismatch: already set to #{inspect(other)}, cannot change to #{inspect(computed_node_id)}"
+      end
+
+      node_id = computed_node_id
+      Log.info("🆔 Node ID: #{node_id}")
+
+      # Configure Mnesia directory BEFORE any application supervision starts
+      if :mnesia.system_info(:is_running) == :yes do
+        raise "Mnesia started before storage isolation was configured. This breaks storage isolation guarantees."
+      end
+
+      node_dir = Jamixir.NodeIdentity.node_dir()
+      mnesia_dir = Path.join(node_dir, "mnesia")
+      File.mkdir_p!(mnesia_dir)
+      Application.put_env(:mnesia, :dir, mnesia_dir)
+
+      # Log storage configuration
+      Log.info("""
+       Storage Configuration:
+       Base dir: #{Jamixir.NodeIdentity.base_dir()}/#{node_id}
+      """)
+
       if genesis_file = opts[:genesis],
         do: Application.put_env(:jamixir, :genesis_file, genesis_file)
 
@@ -77,6 +112,40 @@ defmodule Jamixir.Commands.Run do
       configure_telemetry(opts)
 
       generate_tls_certificates()
+    else
+      # Fuzzer mode: use process ID for node identity
+      computed_node_id = Jamixir.NodeIdentity.node_id_fuzzer()
+
+      # Lock node_id to prevent mutation
+      case Application.get_env(:jamixir, :node_id) do
+        nil ->
+          Application.put_env(:jamixir, :node_id, computed_node_id)
+
+        ^computed_node_id ->
+          :ok
+
+        other ->
+          raise "node_id mismatch: already set to #{inspect(other)}, cannot change to #{inspect(computed_node_id)}"
+      end
+
+      node_id = computed_node_id
+      Log.info("🆔 Node ID (fuzzer): #{node_id}")
+
+      # Configure Mnesia directory BEFORE any application supervision starts
+      if :mnesia.system_info(:is_running) == :yes do
+        raise "Mnesia started before storage isolation was configured. This breaks storage isolation guarantees."
+      end
+
+      node_dir = Jamixir.NodeIdentity.node_dir()
+      mnesia_dir = Path.join(node_dir, "mnesia")
+      File.mkdir_p!(mnesia_dir)
+      Application.put_env(:mnesia, :dir, mnesia_dir)
+
+      # Log storage configuration for debugging
+      Log.info("""
+       Storage Configuration (fuzzer):
+       Base dir: #{Jamixir.NodeIdentity.base_dir()}/#{node_id}
+      """)
     end
 
     # Set socket path for fuzzer mode

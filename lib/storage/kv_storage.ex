@@ -68,7 +68,39 @@ defmodule KVStorage do
   end
 
   defp init_mnesia do
-    :mnesia.create_schema([node()])
+    # Only enforce strict Mnesia directory requirements in prod/tiny runtime environments
+    mnesia_dir = Application.get_env(:mnesia, :dir)
+
+    mnesia_dir =
+      case Mix.env() do
+        env when env in [:prod, :tiny] ->
+          if is_nil(mnesia_dir) do
+            raise """
+            Mnesia directory not configured. This indicates a startup order problem.
+
+            Storage isolation requires Mnesia :dir to be set in Commands.Run
+            before Application.ensure_all_started(:jamixir) is called.
+            """
+          end
+          mnesia_dir
+
+        _ ->
+          # In test/dev environments, use a default directory if not set
+          mnesia_dir || Path.join(System.tmp_dir!(), "jamixir_mnesia_#{Mix.env()}")
+      end
+
+    # Ensure directory exists
+    File.mkdir_p!(mnesia_dir)
+
+    # Stop Mnesia if it's already running (shouldn't happen, but safety check)
+    :mnesia.stop()
+
+    # create schema if it doesn't exist
+    schema_file = Path.join(mnesia_dir, "schema.DAT")
+    unless File.exists?(schema_file) do
+      :mnesia.create_schema([node()])
+    end
+
     :mnesia.start()
 
     case :mnesia.create_table(@table_name,
