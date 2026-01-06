@@ -1,5 +1,6 @@
 defmodule Jamixir.Node do
   alias Block.Extrinsic.Preimage
+  alias Hex.Crypto.ContentEncryptor
   alias Util.Crypto
   alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
@@ -231,7 +232,22 @@ defmodule Jamixir.Node do
     wr = guarantee.work_report
     Storage.put(guarantee)
 
-    NodeStateServer.instance().fetch_work_report_shards(self(), wr)
+    # TODO
+    # this is not the final solution. Just a workaround to force
+    # assurances fetch after guarantee is on state
+    pid = self()
+
+    Task.start(fn ->
+      Logger.info("sleeping to fetch shards in two slots")
+      Process.sleep(Constants.slot_period() * 2 * 1000)
+
+      Logger.info(
+        "Requesting work report shards for work report #{b16(h(e(wr)))} from guarantors"
+      )
+
+      NodeStateServer.instance().fetch_work_report_shards(pid, wr)
+    end)
+
     :ok
   end
 
@@ -269,84 +285,88 @@ defmodule Jamixir.Node do
   def process_work_package(wp, core, extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    services = get_latest_state().services
+    if NodeStateServer.instance().assigned_core() == core do
+      services = get_latest_state().services
 
-    case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
-      :error ->
-        Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
-        {:error, :execution_failed}
+      case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
+        :error ->
+          Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
+          {:error, :execution_failed}
 
-      # Auth logic and import segments ok. share with other guarantors
-      {import_segments, refine_task} ->
-        # send WP bundle to two other guarantors in same core through CE 134
-        bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
-        Logger.info("Work package validated successfully. Sending to other guarantors")
+        # Auth logic and import segments ok. share with other guarantors
+        {import_segments, refine_task} ->
+          # send WP bundle to two other guarantors in same core through CE 134
+          bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
+          Logger.info("Work package validated successfully. Sending to other guarantors")
 
-        validators = NodeStateServer.same_core_guarantors()
+          validators = NodeStateServer.same_core_guarantors()
 
-        responses =
-          for v <- validators do
-            case ConnectionManager.instance().get_connection(v.ed25519) do
-              {:ok, pid} ->
-                dict = WorkReport.get_segment_lookup_dict(wp)
+          responses =
+            for v <- validators do
+              case ConnectionManager.instance().get_connection(v.ed25519) do
+                {:ok, pid} ->
+                  dict = WorkReport.get_segment_lookup_dict(wp)
 
-                {v.ed25519,
-                 Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
+                  {v.ed25519,
+                   Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
 
-              {:error, e} ->
-                Logger.warning(
-                  "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
-                )
+                {:error, e} ->
+                  Logger.warning(
+                    "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
+                  )
 
-                {v.ed25519, {:error, e}}
+                  {v.ed25519, {:error, e}}
+              end
+            end
+
+          {work_report, exports} = Task.await(refine_task)
+
+          wr_hash = h(e(work_report))
+          {priv, _} = KeyManager.get_our_ed25519_keypair()
+
+          my_credential =
+            {NodeStateServer.validator_index(),
+             Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
+
+          credentials = [
+            my_credential
+            | for {pub_key, {:ok, {hash, signature}}} <- responses,
+                  hash == wr_hash,
+                  payload = SigningContexts.jam_guarantee() <> hash,
+                  Crypto.valid_signature?(signature, payload, pub_key) do
+                {NodeStateServer.validator_index(pub_key), signature}
+              end
+          ]
+
+          if length(credentials) == 1 do
+            Logger.warning("No other guarantor confirmed work report")
+          else
+            guarantee = %Guarantee{
+              work_report: work_report,
+              timeslot: NodeStateServer.current_timeslot(),
+              credentials: credentials
+            }
+
+            Storage.put(guarantee)
+
+            # send guarantee to all validators
+            for {_, pid} <- ConnectionManager.instance().get_connections() do
+              Network.Connection.distribute_guarantee(pid, guarantee)
             end
           end
 
-        {work_report, exports} = Task.await(refine_task)
+          # stores segment root for later retrieval
+          root = MerkleTree.merkle_root(exports)
 
-        wr_hash = h(e(work_report))
-        {priv, _} = KeyManager.get_our_ed25519_keypair()
+          Storage.put_segments_root(work_report.specification.work_package_hash, root)
 
-        my_credential =
-          {NodeStateServer.validator_index(),
-           Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
-
-        credentials = [
-          my_credential
-          | for {pub_key, {:ok, {hash, signature}}} <- responses,
-                hash == wr_hash,
-                payload = SigningContexts.jam_guarantee() <> hash,
-                Crypto.valid_signature?(signature, payload, pub_key) do
-              {NodeStateServer.validator_index(pub_key), signature}
-            end
-        ]
-
-        if length(credentials) == 1 do
-          Logger.warning("No other guarantor confirmed work report")
-        else
-          guarantee = %Guarantee{
-            work_report: work_report,
-            timeslot: NodeStateServer.current_timeslot(),
-            credentials: credentials
-          }
-
-          Storage.put(guarantee)
-
-          # send guarantee to all validators
-          for {_, pid} <- ConnectionManager.instance().get_connections() do
-            Network.Connection.distribute_guarantee(pid, guarantee)
-          end
-        end
-
-        # stores segment root for later retrieval
-        root = MerkleTree.merkle_root(exports)
-
-        Storage.put_segments_root(work_report.specification.work_package_hash, root)
-
-        {:ok, import_segments, work_report}
-        # TODO
-        # erasure code exports and save for upcoming calls
-        :ok
+          {:ok, import_segments, work_report}
+          # TODO
+          # erasure code exports and save for upcoming calls
+          :ok
+      end
+    else
+      {:error, :not_assigned_to_core}
     end
   end
 

@@ -368,6 +368,9 @@ defmodule Jamixir.NodeStateServer do
     # Formula (11.11) v0.7.2
     existing_assurances = Storage.get_assurances(parent_hash)
 
+    Log.info("🛡️ Assurances candidates: #{length(existing_assurances)}")
+    assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
+
     #  Simulate ρ‡ (partial state transform)
 
     # ρ† Formula (4.12) - process disputes
