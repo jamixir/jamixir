@@ -69,7 +69,7 @@ defmodule KeyManagerTest do
     end
 
     test "handles invalid JSON" do
-      invalid_file = "test/keys/invalid.json"
+      invalid_file = "priv/keys/invalid.json"
       File.write!(invalid_file, "invalid json")
       assert {:error, %Jason.DecodeError{}} = KeyManager.load_keys(invalid_file)
       File.rm!(invalid_file)
