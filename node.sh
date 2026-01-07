@@ -4,25 +4,34 @@ set -e
 NODE=$1
 shift
 
-LOCK_FILE=".build.lock"
+LOCK_DIR=".buildir.lock"
+DONE_FILE=".build.lock.done"
 
-# Open lock file on fd 9
-exec 9>"$LOCK_FILE"
-
-# Try to acquire EXCLUSIVE lock (builder election)
-if flock --nonblock --exclusive 9; then
+# Use mkdir for atomic lock acquisition (works on macOS and Linux)
+if mkdir "$LOCK_DIR" 2>/dev/null; then
     # We are the builder
+    rm -f "$DONE_FILE"
     echo "Building release..."
     MIX_ENV=tiny mix release --overwrite
     echo "Build complete"
-
-    # Release the lock
-    flock --unlock 9
+    
+    # Signal completion
+    touch "$DONE_FILE"
+    
+    # Remove the lock directory
+    rmdir "$LOCK_DIR"
 else
-    # Not the builder — block and wait until the builder releases the lock
+    # Not the builder — wait until build is complete
     echo "Waiting for build to complete..."
-    flock --shared 9
+    
+    # Wait for the done file to appear
+    while [ ! -f "$DONE_FILE" ]; do
+        sleep 0.5
+    done
+    
+    # Small delay to ensure file is fully written
+    sleep 0.2
+    echo "Build detected as complete"
 fi
-
 
 ./run_node.sh "$NODE" "$@"
