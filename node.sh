@@ -1,9 +1,28 @@
 #!/bin/bash
+set -e
+
 NODE=$1
-PORT=$(($NODE+10001))
-echo Y | MIX_ENV=tiny mix release
-VERSION=$(grep -o 'version: "[^"]*"' mix.exs | sed 's/version: "//;s/"//')
-PRIV_DIR=./rel/jamixir/lib/jamixir-${VERSION}/priv/
-cd _build/tiny/
-tar -xzvf jamixir-{$VERSION}.tar.gz
-./jamixir run -k ${PRIV_DIR}/keys/$NODE.json --port $PORT --db db/db${NODE} $2
+shift
+
+LOCK_FILE=".build.lock"
+
+# Open lock file on fd 9
+exec 9>"$LOCK_FILE"
+
+# Try to acquire EXCLUSIVE lock (builder election)
+if flock --nonblock --exclusive 9; then
+    # We are the builder
+    echo "Building release..."
+    MIX_ENV=tiny mix release --overwrite
+    echo "Build complete"
+
+    # Release the lock
+    flock --unlock 9
+else
+    # Not the builder — block and wait until the builder releases the lock
+    echo "Waiting for build to complete..."
+    flock --shared 9
+fi
+
+
+./run_node.sh "$NODE" "$@"
