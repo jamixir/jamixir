@@ -14,7 +14,8 @@ defmodule Jamixir.Repo do
       {:system, env_var, default} ->
         db_path =
           System.get_env(env_var) ||
-          node_specific_db_path(default)
+            node_specific_db_path(default)
+
         ensure_db_directory(db_path)
         Keyword.put(config, :database, db_path)
 
@@ -40,27 +41,22 @@ defmodule Jamixir.Repo do
   end
 
   defp node_specific_db_path(default) do
-    # Only use node-specific paths in prod/tiny runtime environments
-    case Mix.env() do
-      env when env in [:prod, :tiny] ->
-        # Enforce that node_id is initialized
-        Jamixir.NodeIdentity.assert_node_id_locked!()
+    # In test environments, use the default path as-is
+    # In production/release, use node-specific paths for storage isolation
+    if Jamixir.config()[:test_env] do
+      default
+    else
+      node_dir = Jamixir.NodeIdentity.node_dir()
+      db_dir = Path.join(node_dir, "data")
 
-        node_dir = Jamixir.NodeIdentity.node_dir()
-        db_dir = Path.join(node_dir, "data")
+      # Extract filename from default path or use "jamixir.db"
+      filename =
+        case Path.basename(default) do
+          "" -> "jamixir.db"
+          name -> name
+        end
 
-        # Extract filename from default path or use "jamixir.db"
-        filename =
-          case Path.basename(default) do
-            "" -> "jamixir.db"
-            name -> name
-          end
-
-        Path.join(db_dir, filename)
-
-      _ ->
-        # In test/dev environments, use the default path as-is
-        default
+      Path.join(db_dir, filename)
     end
   end
 

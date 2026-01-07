@@ -40,33 +40,6 @@ defmodule Jamixir.NodeIdentity do
     "fuzzer_" <> hex
   end
 
-  @spec assert_node_id_locked!() :: :ok
-  def assert_node_id_locked! do
-    # Only enforce strict node_id requirements in prod/tiny runtime environments
-
-    case Mix.env() do
-      env when env in [:prod, :tiny] ->
-        case Application.get_env(:jamixir, :node_id) do
-          nil ->
-            raise """
-            node_id not initialized. This indicates a startup order problem.
-
-            Storage isolation requires node_id to be set in Commands.Run
-            before any storage access (Mnesia, CubDB, SQLite).
-
-            Ensure keys are loaded and node_id is computed before Application.ensure_all_started(:jamixir).
-            """
-
-          _ ->
-            :ok
-        end
-
-      _ ->
-        # In test/dev environments, be more lenient
-        :ok
-    end
-  end
-
   @spec base_dir() :: String.t()
   def base_dir do
     Application.get_env(:jamixir, :storage_root) ||
@@ -75,7 +48,19 @@ defmodule Jamixir.NodeIdentity do
 
   @spec node_dir() :: String.t()
   def node_dir do
-    assert_node_id_locked!()
     Path.join(base_dir(), node_id())
+  end
+
+  @spec initialize!() :: String.t()
+  def initialize! do
+    node_id =
+      if Application.get_env(:jamixir, :fuzzer_mode, false) do
+        node_id_fuzzer()
+      else
+        node_id()
+      end
+
+    Application.put_env(:jamixir, :node_id, node_id)
+    node_id
   end
 end

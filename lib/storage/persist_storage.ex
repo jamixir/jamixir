@@ -46,18 +46,12 @@ defmodule PersistStorage do
 
   @impl true
   def init(opts) do
-    # Only enforce strict node_id requirements in prod/tiny runtime environments
-    case Mix.env() do
-      env when env in [:prod, :tiny] ->
-        # Enforce that node_id is initialized
-        Jamixir.NodeIdentity.assert_node_id_locked!()
-        node_id = Jamixir.NodeIdentity.node_id()
-        init_with_node_isolation(opts, node_id)
-
-      _ ->
-        # In test/dev environments, use simpler paths
-        node_id = "test_#{Mix.env()}_#{System.pid()}"
-        init_with_simple_paths(opts, node_id)
+    if Jamixir.config()[:test_env] do
+      node_id = "test_#{System.pid()}"
+      init_with_simple_paths(opts, node_id)
+    else
+      node_id = Jamixir.NodeIdentity.node_id()
+      init_with_node_isolation(opts, node_id)
     end
   end
 
@@ -105,7 +99,7 @@ defmodule PersistStorage do
     case Keyword.get(opts, :persist) do
       true ->
         # Use simple persistent directory for tests
-        db_path = Path.join(System.tmp_dir!(), "jamixir_persist_#{Mix.env()}")
+        db_path = Path.join(System.tmp_dir!(), "jamixir_persist_test")
         File.mkdir_p!(db_path)
 
         case CubDB.start_link(
@@ -123,7 +117,7 @@ defmodule PersistStorage do
 
       false ->
         # Use simple temporary directory for tests
-        tmp_dir = Path.join(System.tmp_dir!(), "jamixir_temp_#{Mix.env()}")
+        tmp_dir = Path.join(System.tmp_dir!(), "jamixir_temp_test")
         File.mkdir_p!(tmp_dir)
 
         case CubDB.start_link(
