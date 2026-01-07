@@ -101,6 +101,12 @@ defmodule Jamixir.Commands.Run do
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
+      # Configure database path - use CLI arg or fall back to environment config
+      db_dir = opts[:db] || get_default_db_dir()
+      db_path = Path.join(db_dir, "jamixir.db")
+      Log.info("📁 Using database path: #{db_path}")
+      Application.put_env(:jamixir, :database_path, db_path)
+
       # Configure RPC based on flags
       configure_rpc(opts)
 
@@ -141,6 +147,17 @@ defmodule Jamixir.Commands.Run do
     after
       :infinity ->
         :ok
+    end
+  end
+
+  defp get_default_db_dir do
+    # Get database directory from Repo config to respect env-specific defaults
+    config = Application.get_env(:jamixir, Jamixir.Repo, [])
+
+    case Keyword.get(config, :database) do
+      {:system, _env_var, default_path} -> Path.dirname(default_path)
+      path when is_binary(path) -> Path.dirname(path)
+      _ -> "data"
     end
   end
 
