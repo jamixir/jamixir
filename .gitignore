@@ -38,3 +38,4 @@ Mnesia.nonode@nohost/
 .DS_Store
 MnesiaCore.nonode*
 db/
+.build.lock
