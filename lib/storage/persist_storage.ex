@@ -58,9 +58,7 @@ defmodule PersistStorage do
   defp init_with_node_isolation(opts, node_id) do
     case Keyword.get(opts, :persist) do
       true ->
-        # Use node-specific persistent directory
-        node_dir = Jamixir.NodeIdentity.node_dir()
-        db_path = Path.join(node_dir, "persistent")
+        db_path = get_db_path()
         File.mkdir_p!(db_path)
 
         case CubDB.start_link(
@@ -131,6 +129,20 @@ defmodule PersistStorage do
           error ->
             {:stop, error}
         end
+    end
+  end
+
+  defp get_db_path do
+    case Application.get_env(:jamixir, :database_path) do
+      # No CLI  override → node-isolated storage
+      nil ->
+        Jamixir.NodeIdentity.node_dir()
+        |> Path.join("persistent")
+
+      # User explicitly set --database-path
+      path ->
+        path
+        |> Path.expand()
     end
   end
 

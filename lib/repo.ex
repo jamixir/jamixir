@@ -3,6 +3,8 @@ defmodule Jamixir.Repo do
     otp_app: :jamixir,
     adapter: Ecto.Adapters.SQLite3
 
+  alias Util.Logger, as: Log
+
   def init(_type, config) do
     # Handle runtime database path configuration
     config = resolve_database_path(config)
@@ -10,33 +12,39 @@ defmodule Jamixir.Repo do
   end
 
   defp resolve_database_path(config) do
-    case Keyword.get(config, :database) do
-      {:system, env_var, default} ->
-        db_path =
-          System.get_env(env_var) ||
-            node_specific_db_path(default)
-
-        ensure_db_directory(db_path)
-        Keyword.put(config, :database, db_path)
-
+    # Check for command-line override first
+    case Application.get_env(:jamixir, :database_path) do
       path when is_binary(path) ->
-        # Absolute paths break storage isolation guarantees
-        # Reject them unless explicitly allowed via config
-        if Path.type(path) == :absolute do
-          raise """
-          Absolute database paths are not allowed; they break storage isolation.
-          Path attempted: #{path}
-          Instead, use relative paths which will be automatically isolated per node.
-          """
-        else
-          # Relative paths are converted to node-specific paths
-          db_path = node_specific_db_path(path)
-          ensure_db_directory(db_path)
-          Keyword.put(config, :database, db_path)
-        end
+        ensure_db_directory(path)
+        Keyword.put(config, :database, path)
 
-      _ ->
-        config
+      nil ->
+        # Fall back to environment config
+        case Keyword.get(config, :database) do
+          {:system, env_var, default} ->
+            db_path =
+              System.get_env(env_var) ||
+                node_specific_db_path(default)
+
+            ensure_db_directory(db_path)
+            Keyword.put(config, :database, db_path)
+
+          path when is_binary(path) ->
+            # Absolute paths break storage isolation guarantees
+            # Reject them unless explicitly allowed via config
+            if Path.type(path) == :absolute do
+              raise """
+              Absolute database paths are not allowed; they break storage isolation.
+              Path attempted: #{path}
+              Instead, use relative paths which will be automatically isolated per node.
+              """
+            else
+              # Relative paths are converted to node-specific paths
+              db_path = node_specific_db_path(path)
+              ensure_db_directory(db_path)
+              Keyword.put(config, :database, db_path)
+            end
+        end
     end
   end
 

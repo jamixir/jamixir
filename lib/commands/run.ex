@@ -15,7 +15,8 @@ defmodule Jamixir.Commands.Run do
     rpc: :boolean,
     rpc_port: :integer,
     telemetry: :string,
-    telemetry_port: :integer
+    telemetry_port: :integer,
+    db: :string
   ]
 
   @aliases [
@@ -23,7 +24,8 @@ defmodule Jamixir.Commands.Run do
     p: :port,
     k: :keys,
     h: :help,
-    c: :chainspec
+    c: :chainspec,
+    d: :db
   ]
 
   def run(args) do
@@ -64,14 +66,30 @@ defmodule Jamixir.Commands.Run do
     end
 
     node_id = Jamixir.NodeIdentity.initialize!()
-    Log.info("🆔 Node ID: #{node_id}")
+    Log.info("🆔 Alternative name: #{node_id}")
 
-    # Configure Mnesia directory BEFORE any application supervision starts
-    configure_mnesia_directory!()
+    # Determine base directory for storage
+    base_dir =
+      if db_dir = opts[:db] do
+        # Configure database path
+        db_path = Path.join(db_dir, "jamixir.db")
+        Application.put_env(:jamixir, :database_path, db_path)
+
+        # Configure Mnesia directory relative to db_dir
+        mnesia_dir = Path.join(db_dir, "mnesia")
+        File.mkdir_p!(mnesia_dir)
+        Application.put_env(:mnesia, :dir, mnesia_dir)
+
+        db_dir
+      else
+        # Use default isolated paths
+        configure_mnesia_directory!()
+        Jamixir.NodeIdentity.node_dir()
+      end
 
     Log.info("""
      Storage Configuration:
-     Base dir: #{Jamixir.NodeIdentity.base_dir()}/#{node_id}
+     Base dir: #{base_dir}
     """)
 
     unless Application.get_env(:jamixir, :fuzzer_mode, false) do
@@ -380,6 +398,7 @@ defmodule Jamixir.Commands.Run do
           --genesis <GENESIS>        Genesis file to use (legacy format)
       -c, --chainspec <CHAINSPEC>    JIP-4 chain specification file to use
       -p, --port <PORT>              Network port to listen on
+      -d, --db <DIR>                 Database directory (file: jamixir.db)
           --socket-path <PATH>       Unix domain socket path for fuzzer mode
       -l, --log <LEVEL>              Log level (none | info | warning | error | debug) default: info
           --rpc                      Enable RPC server on default port (19800)
@@ -394,10 +413,11 @@ defmodule Jamixir.Commands.Run do
       jamixir run --keys ./test/keys/0.json --rpc
       jamixir run --keys ./test/keys/0.json --rpc-port 20000
       jamixir run --keys ./test/keys/0.json --telemetry localhost:9000
+      jamixir run --keys ./test/keys/0.json --db ./data
       MIX_ENV=tiny jamixir run --keys ./test/keys/0.json
       MIX_ENV=tiny jamixir run -c ./chainspec.json -k ./test/keys/1.json -p 10002
       MIX_ENV=prod jamixir run --port 10001 --keys ./test/keys/0.json --rpc --telemetry localhost:9000
-      MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801
+      MIX_ENV=tiny jamixir run -k ./test/keys/1.json -p 10002 --rpc-port 19801 -d ./data/node1
 
     Configuration Environments:
       - tiny:      Small network (6 validators, short epochs) - good for testing
