@@ -46,6 +46,16 @@ defmodule PersistStorage do
 
   @impl true
   def init(opts) do
+    if Jamixir.config()[:test_env] do
+      node_id = "test_#{System.pid()}"
+      init_with_simple_paths(opts, node_id)
+    else
+      node_id = Jamixir.NodeIdentity.node_id()
+      init_with_node_isolation(opts, node_id)
+    end
+  end
+
+  defp init_with_node_isolation(opts, node_id) do
     case Keyword.get(opts, :persist) do
       true ->
         db_path = get_db_path()
@@ -53,27 +63,86 @@ defmodule PersistStorage do
 
         case CubDB.start_link(
                data_dir: db_path,
-               name: :cubdb,
+               name: nil,
                auto_compact: false
              ) do
           {:ok, db} ->
             schedule_compaction()
-            {:ok, %{db: db, persist: true, ops_count: 0}}
+            {:ok, %{db: db, persist: true, ops_count: 0, node_id: node_id}}
 
           error ->
             {:stop, error}
         end
 
       false ->
-        {:ok, %{db: nil, persist: false, ops_count: 0}}
+        # Use node-specific temporary directory
+        tmp_dir = System.tmp_dir!() |> Path.join("jamixir") |> Path.join(node_id)
+        File.mkdir_p!(tmp_dir)
+
+        case CubDB.start_link(
+               data_dir: tmp_dir,
+               name: nil,
+               auto_compact: false
+             ) do
+          {:ok, db} ->
+            {:ok, %{db: db, persist: false, ops_count: 0, node_id: node_id}}
+
+          error ->
+            {:stop, error}
+        end
+    end
+  end
+
+  defp init_with_simple_paths(opts, node_id) do
+    case Keyword.get(opts, :persist) do
+      true ->
+        # Use simple persistent directory for tests
+        db_path = Path.join(System.tmp_dir!(), "jamixir_persist_test")
+        File.mkdir_p!(db_path)
+
+        case CubDB.start_link(
+               data_dir: db_path,
+               name: nil,
+               auto_compact: false
+             ) do
+          {:ok, db} ->
+            schedule_compaction()
+            {:ok, %{db: db, persist: true, ops_count: 0, node_id: node_id}}
+
+          error ->
+            {:stop, error}
+        end
+
+      false ->
+        # Use simple temporary directory for tests
+        tmp_dir = Path.join(System.tmp_dir!(), "jamixir_temp_test")
+        File.mkdir_p!(tmp_dir)
+
+        case CubDB.start_link(
+               data_dir: tmp_dir,
+               name: nil,
+               auto_compact: false
+             ) do
+          {:ok, db} ->
+            {:ok, %{db: db, persist: false, ops_count: 0, node_id: node_id}}
+
+          error ->
+            {:stop, error}
+        end
     end
   end
 
   defp get_db_path do
-    # Use configured database path, with cubdb subdirectory
     case Application.get_env(:jamixir, :database_path) do
-      nil -> "db/cubdb"
-      path -> Path.join(Path.dirname(path), "cubdb")
+      # No CLI  override → node-isolated storage
+      nil ->
+        Jamixir.NodeIdentity.node_dir()
+        |> Path.join("persistent")
+
+      # User explicitly set --database-path
+      path ->
+        path
+        |> Path.expand()
     end
   end
 
@@ -122,9 +191,20 @@ defmodule PersistStorage do
     Process.send_after(self(), :compact, @compact_interval)
   end
 
+  @impl true
+  def terminate(_reason, %{db: db}) when not is_nil(db) do
+    try do
+      GenServer.stop(db, :normal, 5000)
+    rescue
+      _ -> :ok
+    end
+  end
+
+  def terminate(_reason, _state), do: :ok
+
   def stop do
     if pid = Process.whereis(__MODULE__) do
-      GenServer.stop(pid)
+      GenServer.stop(pid, :normal, 5000)
     end
   end
 end

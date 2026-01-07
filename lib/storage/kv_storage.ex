@@ -68,9 +68,6 @@ defmodule KVStorage do
   end
 
   defp init_mnesia do
-    :mnesia.create_schema([node()])
-    :mnesia.start()
-
     case :mnesia.create_table(@table_name,
            attributes: [:key, :value],
            record_name: @table_name
