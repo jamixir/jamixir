@@ -68,29 +68,10 @@ defmodule Jamixir.Commands.Run do
     node_id = Jamixir.NodeIdentity.initialize!()
     Log.info("🆔 Alternative name: #{node_id}")
 
-    # Determine base directory for storage
-    base_dir =
-      if db_dir = opts[:db] do
-        # Configure database path
-        db_path = Path.join(db_dir, "jamixir.db")
-        Application.put_env(:jamixir, :database_path, db_path)
+    # Configure database path and storage directories
+    base_dir = configure_storage_paths(opts)
 
-        # Configure Mnesia directory relative to db_dir
-        mnesia_dir = Path.join(db_dir, "mnesia")
-        File.mkdir_p!(mnesia_dir)
-        Application.put_env(:mnesia, :dir, mnesia_dir)
-
-        db_dir
-      else
-        # Use default isolated paths
-        configure_mnesia_directory!()
-        Jamixir.NodeIdentity.node_dir()
-      end
-
-    Log.info("""
-     Storage Configuration:
-     Base dir: #{base_dir}
-    """)
+    Log.info("📁 Storage base dir: #{base_dir}")
 
     unless Application.get_env(:jamixir, :fuzzer_mode, false) do
       if genesis_file = opts[:genesis],
@@ -100,12 +81,6 @@ defmodule Jamixir.Commands.Run do
         do: Application.put_env(:jamixir, :chainspec_file, chainspec_file)
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
-
-      # Configure database path - use CLI arg or fall back to environment config
-      db_dir = opts[:db] || get_default_db_dir()
-      db_path = Path.join(db_dir, "jamixir.db")
-      Log.info("📁 Using database path: #{db_path}")
-      Application.put_env(:jamixir, :database_path, db_path)
 
       # Configure RPC based on flags
       configure_rpc(opts)
@@ -150,14 +125,24 @@ defmodule Jamixir.Commands.Run do
     end
   end
 
-  defp get_default_db_dir do
-    # Get database directory from Repo config to respect env-specific defaults
-    config = Application.get_env(:jamixir, Jamixir.Repo, [])
+  defp configure_storage_paths(opts) do
+    if db_dir = opts[:db] do
+      # CLI override: use provided directory
+      db_path = Path.join(db_dir, "jamixir.db")
+      Application.put_env(:jamixir, :database_path, db_path)
 
-    case Keyword.get(config, :database) do
-      {:system, _env_var, default_path} -> Path.dirname(default_path)
-      path when is_binary(path) -> Path.dirname(path)
-      _ -> "data"
+      # Configure Mnesia directory relative to db_dir
+      mnesia_dir = Path.join(db_dir, "mnesia")
+      File.mkdir_p!(mnesia_dir)
+      Application.put_env(:mnesia, :dir, mnesia_dir)
+
+      db_dir
+    else
+      # use default isolated paths
+      configure_mnesia_directory!()
+      node_dir = Jamixir.NodeIdentity.node_dir()
+
+      node_dir
     end
   end
 
