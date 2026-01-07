@@ -25,3 +25,8 @@ Application.put_env(:jamixir, :data_availability, DAMock)
 
 # Set sandbox mode
 Ecto.Adapters.SQL.Sandbox.mode(Jamixir.Repo, :manual)
+
+# Profiling
+if after_suite_fn = Test.Profiling.setup() do
+  ExUnit.after_suite(after_suite_fn)
+end
