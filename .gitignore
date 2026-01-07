@@ -39,3 +39,4 @@ Mnesia.nonode@nohost/
 MnesiaCore.nonode*
 db/
 .build.lock
+.build.lock.done
