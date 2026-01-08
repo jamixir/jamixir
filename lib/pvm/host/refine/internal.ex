@@ -65,14 +65,15 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec export_internal(Registers.t(), Memory.t(), Context.t(), non_neg_integer()) :: Internal.t()
-  def export_internal(registers, memory, %Context{e: e} = context, export_offset) do
+  @spec export_internal(Registers.t(), reference(), Context.t(), non_neg_integer()) ::
+          Internal.t()
+  def export_internal(registers, memory_ref, %Context{e: e} = context, export_offset) do
     {w7, w8} = Registers.get_2(registers, 7, 8)
     p = w7
     z = min(w8, Constants.segment_size())
 
     x =
-      case PVM.Memory.read(memory, p, z) do
+      case memory_read(memory_ref, p, z) do
         {:ok, data} -> Utils.pad_binary_right(data, Constants.segment_size())
         _ -> :error
       end
@@ -92,7 +93,6 @@ defmodule PVM.Host.Refine.Internal do
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: %{context | e: export_segments_}
     }
   end
