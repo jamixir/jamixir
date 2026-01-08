@@ -2,9 +2,10 @@ defmodule PVM.AuthorizedTest do
   use ExUnit.Case
   alias Block.Extrinsic.WorkPackage
   alias System.State.ServiceAccount
-  alias Util.Hash
   use PVM.Instructions
   import PVM.Constants.HostCallId
+  import Jamixir.Factory
+  import Codec.Encoder
 
   describe "authorized/3" do
     setup do
@@ -12,6 +13,44 @@ defmodule PVM.AuthorizedTest do
       service_account = %ServiceAccount{preimage_storage_p: %{}}
 
       {:ok, service_account: service_account}
+    end
+
+    test "null authorizer returns ok" do
+      # 2 bytes of metadata
+      meta = <<2, 3, 4>>
+
+      null_auth_code =
+        meta <> <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 6, 51, 7, 51, 8, 50, 0, 21>>
+
+      hash = h(null_auth_code)
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{hash => null_auth_code},
+          storage: HashedKeysMap.new(%{{hash, byte_size(null_auth_code)} => [0]})
+        )
+
+      wp = build(:work_package, service: 1, authorization_code_hash: hash)
+      {<<>>, 3} = PVM.authorized(wp, 0, %{1 => service_account})
+    end
+
+    test "wrong auth code hash" do
+      wp = build(:work_package, service: 1, authorization_code_hash: <<0>>)
+      {:bad, 0} = PVM.authorized(wp, 0, %{1 => build(:service_account)})
+    end
+
+    test "code too big" do
+      code = <<0>> <> <<0::(Constants.max_authorizer_code_size() + 1)*8>>
+      hash = h(code)
+
+      service_account =
+        build(:service_account,
+          preimage_storage_p: %{hash => code},
+          storage: HashedKeysMap.new(%{{hash, byte_size(code)} => [0]})
+        )
+
+      wp = build(:work_package, service: 1, authorization_code_hash: hash)
+      {:big, 0} = PVM.authorized(wp, 0, %{1 => service_account})
     end
 
     test "returns binary data when program calls gas host function", %{
@@ -34,7 +73,7 @@ defmodule PVM.AuthorizedTest do
       bitmask = <<128, 44, 1>>
 
       binary = <<0>> <> PVM.Helper.init(program, bitmask, message)
-      hash = Hash.default(binary)
+      hash = h(binary)
 
       # Store program in service account
       service_account = %{
@@ -70,7 +109,7 @@ defmodule PVM.AuthorizedTest do
 
       bitmask = <<191>>
       binary = PVM.Helper.init(program, bitmask, nil, false)
-      hash = Hash.default(binary)
+      hash = h(binary)
 
       # Store program in service account
       service_account = %{
