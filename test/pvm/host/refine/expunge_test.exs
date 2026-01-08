@@ -7,14 +7,9 @@ defmodule PVM.Host.Refine.ExpungeTest do
 
   describe "expunge/4" do
     setup do
-      machine = %Integrated{
-        program: "program",
-        counter: 42
-      }
-
+      machine = %Integrated{program: "program", counter: 42}
       context = %Context{m: %{1 => machine}}
       gas = 100
-
       {:ok, context: context, machine: machine, gas: gas}
     end
 

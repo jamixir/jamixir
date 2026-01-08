@@ -14,7 +14,14 @@ defmodule PVM.Host.Refine.Internal do
           services(),
           non_neg_integer()
         ) :: Internal.t()
-  def historical_lookup_internal(registers, memory, context, index, service_accounts, timeslot) do
+  def historical_lookup_internal(
+        registers,
+        memory_ref,
+        context,
+        index,
+        service_accounts,
+        timeslot
+      ) do
     {w7, h, o, w10, w11} = Registers.get_5(registers, 7, 8, 9, 10, 11)
 
     a =
@@ -30,37 +37,38 @@ defmodule PVM.Host.Refine.Internal do
       end
 
     v =
-      try do
-        hash = PVM.Memory.read!(memory, h, 32)
+      case memory_read(memory_ref, h, 32) do
+        {:ok, hash} ->
+          case a do
+            nil -> nil
+            _ -> ServiceAccount.historical_lookup(a, timeslot, hash)
+          end
 
-        case a do
-          nil -> nil
-          _ -> ServiceAccount.historical_lookup(a, timeslot, hash)
-        end
-      rescue
-        _ -> :error
+        _ ->
+          :error
       end
 
     f = min(w10, safe_byte_size(v))
     l = min(w11, safe_byte_size(v) - f)
-    is_writable = Memory.check_range_access?(memory, o, l, :write)
 
-    {exit_reason, w7_, memory_} =
+    {exit_reason, w7_} =
       cond do
-        v == :error or not is_writable ->
-          {:panic, w7, memory}
+        v == :error ->
+          {:panic, w7}
 
         v == nil ->
-          {:continue, none(), memory}
+          {:continue, none()}
 
         true ->
-          {:continue, byte_size(v), Memory.write!(memory, o, binary_part(v, f, l))}
+          case memory_write(memory_ref, o, binary_part(v, f, l)) do
+            {:ok, _} -> {:continue, byte_size(v)}
+            _ -> {:panic, w7}
+          end
       end
 
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory_,
       context: context
     }
   end
