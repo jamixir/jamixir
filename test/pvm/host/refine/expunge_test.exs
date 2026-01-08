@@ -1,13 +1,13 @@
 defmodule PVM.Host.Refine.ExpungeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Host.Refine.Result}
+  alias PVM.{Host.Refine.Context, Host.Refine.Result, Integrated, Registers}
   import PVM.Constants.HostCallResult
+  import Pvm.Native
 
   describe "expunge/4" do
     setup do
       machine = %Integrated{
-        memory: %Memory{},
         program: "program",
         counter: 42
       }
@@ -21,11 +21,10 @@ defmodule PVM.Host.Refine.ExpungeTest do
     test "returns WHO when machine doesn't exist", %{context: context, gas: gas} do
       registers = Registers.new(%{7 => 999})
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.expunge(gas, registers, %Memory{}, context)
+      %Result{registers: registers_, context: context_} =
+        Refine.expunge(gas, registers, build_memory(), context)
 
       assert registers_ == Registers.new(%{7 => who()})
-      assert memory_ == %Memory{}
       assert context_ == context
     end
 
@@ -39,12 +38,11 @@ defmodule PVM.Host.Refine.ExpungeTest do
       machine2 = %Integrated{program: "program2"}
       context = %{context | m: Map.put(context.m, 2, machine2)}
 
-      %Result{registers: registers_, memory: memory_, context: context_} =
-        Refine.expunge(gas, registers, %Memory{}, context)
+      %Result{registers: registers_, context: context_} =
+        Refine.expunge(gas, registers, build_memory(), context)
 
       # Should return the machine's counter value
       assert registers_ == Registers.new(%{7 => machine.counter})
-      assert memory_ == %Memory{}
 
       # Machine should be removed from context
       assert context_ == %{context | m: %{2 => machine2}}

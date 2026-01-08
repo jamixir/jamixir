@@ -373,8 +373,8 @@ defmodule PVM.Host.Refine.Internal do
     end
   end
 
-  @spec expunge_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def expunge_internal(registers, memory, %Context{m: m} = context) do
+  @spec expunge_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
+  def expunge_internal(registers, _memory_ref, %Context{m: m} = context) do
     n = registers[7]
 
     {w7_, m_} =
@@ -388,7 +388,6 @@ defmodule PVM.Host.Refine.Internal do
 
     %Internal{
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: %{context | m: m_}
     }
   end
