@@ -8,7 +8,7 @@ defmodule PVM.Host.Refine.Internal do
 
   @spec historical_lookup_internal(
           Registers.t(),
-          Memory.t(),
+          reference(),
           Context.t(),
           non_neg_integer(),
           services(),
@@ -155,31 +155,38 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec peek_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def peek_internal(registers, memory, %Context{m: m} = context) do
+  @spec peek_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
+  def peek_internal(registers, memory_ref, %Context{m: m} = context) do
     {n, o, s, z} = Registers.get_4(registers, 7, 8, 9, 10)
 
-    {exit_reason, w7_, memory_} =
-      cond do
-        !PVM.Memory.check_range_access?(memory, o, z, :write) ->
-          {:panic, n, memory}
+    {exit_reason, w7_} =
+      case memory_read(memory_ref, o, z) do
+        {:error, _} ->
+          {:panic, n}
 
-        !Map.has_key?(m, n) ->
-          {:continue, who(), memory}
+        {:ok, _} ->
+          if Map.has_key?(m, n) do
+            case memory_read(Map.get(m, n).memory, s, z) do
+              {:error, _} ->
+                {:continue, oob()}
 
-        !PVM.Memory.check_range_access?(Map.get(m, n).memory, s, z, :read) ->
-          {:continue, oob(), memory}
+              {:ok, data} ->
+                case memory_write(memory_ref, o, data) do
+                  {:ok, _} ->
+                    {:continue, ok()}
 
-        true ->
-          data = Memory.read!(Map.get(m, n).memory, s, z)
-          memory_ = Memory.write!(memory, o, data)
-          {:continue, ok(), memory_}
+                  {:error, _} ->
+                    {:panic, n}
+                end
+            end
+          else
+            {:continue, who()}
+          end
       end
 
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory_,
       context: context
     }
   end
