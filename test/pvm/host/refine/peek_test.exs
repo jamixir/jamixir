@@ -1,34 +1,28 @@
 defmodule PVM.Host.Refine.PeekTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, PreMemory}
+  alias PVM.{Host.Refine.Context, Integrated, Registers}
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants
+  import Pvm.Native
 
   defp a_0, do: min_allowed_address()
 
   describe "peek/4" do
     setup do
-      memory =
-        PreMemory.init_nil_memory()
-        |> PreMemory.set_access(a_0(), 1, :write)
-        |> PreMemory.finalize()
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, a_0(), 1, 3)
 
       context = %Context{}
       gas = 100
 
       test_data = String.duplicate("A", 32)
 
-      source_memory =
-        PreMemory.init_nil_memory()
-        |> PreMemory.set_access(a_0(), 1, :read)
-        |> PreMemory.write(a_0(), test_data)
-        |> PreMemory.finalize()
+      source_memory_ref = build_memory()
+      set_memory_access(source_memory_ref, a_0(), byte_size(test_data), 3)
+      memory_write(source_memory_ref, a_0(), test_data)
 
-      machine = %Integrated{
-        memory: source_memory,
-        program: "program"
-      }
+      machine = %Integrated{memory: source_memory_ref, program: "program"}
 
       context = %{context | m: %{1 => machine}}
 
@@ -42,7 +36,7 @@ defmodule PVM.Host.Refine.PeekTest do
         })
 
       {:ok,
-       memory: memory,
+       memory_ref: memory_ref,
        context: context,
        machine: machine,
        gas: gas,
@@ -51,7 +45,7 @@ defmodule PVM.Host.Refine.PeekTest do
     end
 
     test "returns WHO when machine doesn't exist", %{
-      memory: memory,
+      memory_ref: memory_ref,
       context: context,
       gas: gas,
       registers: registers
@@ -64,23 +58,20 @@ defmodule PVM.Host.Refine.PeekTest do
                exit_reason: :continue,
                registers: registers_,
                context: ^context
-             } = Refine.peek(gas, registers, memory, context)
+             } = Refine.peek(gas, registers, memory_ref, context)
 
       assert registers_[7] == who
     end
 
     test "returns OOB when source (aka machine) memory not readable", %{
-      memory: memory,
+      memory_ref: memory_ref,
       context: context,
       machine: machine,
       gas: gas,
       registers: registers
     } do
       # Make source memory unreadable at read location
-      machine = %{
-        machine
-        | memory: Memory.set_access(machine.memory, registers[9], registers[10], nil)
-      }
+      set_memory_access(machine.memory, registers[9], registers[10], 0)
 
       context = %{context | m: %{1 => machine}}
       oob = oob()
@@ -89,7 +80,7 @@ defmodule PVM.Host.Refine.PeekTest do
                exit_reason: :continue,
                registers: registers_,
                context: ^context
-             } = Refine.peek(gas, registers, memory, context)
+             } = Refine.peek(gas, registers, memory_ref, context)
 
       assert registers_[7] == oob
     end
@@ -100,17 +91,15 @@ defmodule PVM.Host.Refine.PeekTest do
       registers: registers
     } do
       # Make destination memory unwritable
-      memory = Memory.set_access(%Memory{}, registers[8], registers[10], :read)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, registers[8], registers[10], 1)
 
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               context: ^context
-             } = Refine.peek(gas, registers, memory, context)
+      assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
+               Refine.peek(gas, registers, memory_ref, context)
     end
 
     test "successful peek with valid parameters", %{
-      memory: memory,
+      memory_ref: memory_ref,
       context: context,
       gas: gas,
       registers: registers,
@@ -118,19 +107,15 @@ defmodule PVM.Host.Refine.PeekTest do
     } do
       ok = ok()
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               memory: memory_,
-               context: ^context
-             } = Refine.peek(gas, registers, memory, context)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Refine.peek(gas, registers, memory_ref, context)
 
-      assert Memory.read!(memory_, registers[8], registers[10]) == test_data
+      {:ok, ^test_data} = memory_read(memory_ref, registers[8], registers[10])
       assert registers_[7] == ok
     end
 
     test "out of gas", %{
-      memory: memory,
+      memory_ref: memory_ref,
       context: context,
       registers: registers
     } do
@@ -139,7 +124,7 @@ defmodule PVM.Host.Refine.PeekTest do
                registers: ^registers,
                context: ^context,
                gas: 0
-             } = Refine.peek(8, registers, memory, context)
+             } = Refine.peek(8, registers, memory_ref, context)
     end
   end
 end
