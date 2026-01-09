@@ -1,7 +1,7 @@
 # Formula (B.18) v0.7.2
 defmodule PVM.Host.Refine.Internal do
   alias System.State.ServiceAccount
-  alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Memory, Registers}
+  alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Registers}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult, Host.Util}
   import Pvm.Native
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
@@ -105,7 +105,7 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
+  @spec machine_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
   def machine_internal(registers, memory_ref, %Context{m: m} = context) do
     {p0, pz, i} = Registers.get_3(registers, 7, 8, 9)
 
@@ -220,72 +220,90 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec pages_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def pages_internal(registers, %Memory{page_size: zp} = memory, %Context{m: m} = context) do
+  @page_size 4096
+
+  @spec pages_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
+  def pages_internal(registers, _memory_ref, context) do
     {n, p, c, r} = Registers.get_4(registers, 7, 8, 9, 10)
 
     u =
-      Map.get(m, n, :error)
-      |> case do
-        :error -> :error
+      case Map.get(context.m, n) do
+        nil -> :error
         machine -> machine.memory
       end
 
-    # set_access_by_page could fail if the p < 16 or p + c > 0x1_0000
-    # the next "cond" block takes care of that
-    u_ =
-      try do
-        cond do
-          u == :error ->
-            :error
-
-          r < 3 ->
-            m =
-              Memory.set_access_by_page(u, p, c, :write)
-              |> Memory.write!(p * zp, <<0::size(c * zp)>>)
-
-            cond do
-              r == 0 -> Memory.set_access_by_page(m, p, c, nil)
-              r == 1 -> Memory.set_access_by_page(m, p, c, :read)
-              r == 2 -> Memory.set_access_by_page(m, p, c, :write)
-            end
-
-          r == 3 ->
-            Memory.set_access_by_page(u, p, c, :read)
-
-          r == 4 ->
-            Memory.set_access_by_page(u, p, c, :write)
-
-          true ->
-            u
-        end
-      rescue
-        _ -> :error
-      end
-
-    {w7_, m_} =
+    # Early validation checks
+    w7_ =
       cond do
         u == :error ->
-          {who(), m}
+          who()
 
         r > 4 or p < 16 or p + c > 0x1_0000 ->
-          {huh(), m}
+          huh()
 
-        r > 2 and not Memory.check_pages_access?(u, p, c, :read) ->
-          {huh(), m}
+        # For r > 2 (modes 3 and 4), check that pages already have read access
+        r > 2 and not pages_have_read_access?(u, p, c) ->
+          huh()
 
         true ->
-          machine = Map.get(m, n)
-          machine_ = %{machine | memory: u_}
-          m_ = Map.put(m, n, machine_)
-          {ok(), m_}
+          # Apply the page operation
+          start_addr = p * @page_size
+          length = c * @page_size
+
+          result =
+            cond do
+              r < 3 ->
+                # Modes 0, 1, 2: zero the memory and set access
+                # First set write access to allow zeroing
+                set_memory_access(u, start_addr, length, 3)
+                # Zero the memory
+                zeros = <<0::size(length * 8)>>
+                memory_write(u, start_addr, zeros)
+
+                # Then set final access mode
+                # 0 = no access, 1 = read only, 3 = read/write
+                access_mode =
+                  case r do
+                    0 -> 0
+                    1 -> 1
+                    2 -> 3
+                  end
+
+                set_memory_access(u, start_addr, length, access_mode)
+                :ok
+
+              r == 3 ->
+                # Mode 3: just set read access (don't zero)
+                set_memory_access(u, start_addr, length, 1)
+                :ok
+
+              r == 4 ->
+                # Mode 4: just set write access (don't zero)
+                set_memory_access(u, start_addr, length, 3)
+                :ok
+            end
+
+          case result do
+            :ok -> ok()
+            _ -> huh()
+          end
       end
 
     %Internal{
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
-      context: %{context | m: m_}
+      context: context
     }
+  end
+
+  # Check if all pages in range have at least read access by attempting to read
+  defp pages_have_read_access?(memory_ref, start_page, page_count) do
+    start_addr = start_page * @page_size
+    length = page_count * @page_size
+
+    case memory_read(memory_ref, start_addr, length) do
+      {:ok, _} -> true
+      {:error, _} -> false
+    end
   end
 
   @spec invoke_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
