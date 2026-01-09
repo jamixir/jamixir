@@ -41,7 +41,7 @@ defmodule KeyManagerTest do
     end
   end
 
-  @keys_file "test/keys/0.json"
+  @keys_file "priv/keys/0.json"
 
   describe "load_keys/1" do
     setup do
