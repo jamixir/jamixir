@@ -106,16 +106,14 @@ defmodule PVM.Host.Refine.Internal do
   end
 
   @spec machine_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def machine_internal(registers, memory, %Context{m: m} = context) do
+  def machine_internal(registers, memory_ref, %Context{m: m} = context) do
     {p0, pz, i} = Registers.get_3(registers, 7, 8, 9)
 
     p =
-      case memory_read(memory, p0, pz) do
+      case memory_read(memory_ref, p0, pz) do
         {:ok, data} -> data
         {:error, _} -> :error
       end
-
-    u = %Memory{}
 
     # Find first available machine ID
     n =
@@ -139,7 +137,7 @@ defmodule PVM.Host.Refine.Internal do
       else
         case PVM.Decoder.deblob(p) do
           {:ok, _} ->
-            machine = %Integrated{program: p, memory: u, counter: i}
+            machine = %Integrated{program: p, memory: memory_ref, counter: i}
             {:continue, n, %{context | m: Map.put(m, n, machine)}}
 
           {:error, _} ->
@@ -150,7 +148,6 @@ defmodule PVM.Host.Refine.Internal do
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
       context: context_
     }
   end
@@ -191,38 +188,35 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec poke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def poke_internal(registers, memory, %Context{m: m} = context) do
+  @spec poke_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
+  def poke_internal(registers, memory_ref, context) do
     {n, s, o, z} = Registers.get_4(registers, 7, 8, 9, 10)
 
-    {exit_reason, w7_, m_} =
-      cond do
-        !PVM.Memory.check_range_access?(memory, s, z, :read) ->
-          {:panic, n, m}
+    {exit_reason, w7_} =
+      case memory_read(memory_ref, s, z) do
+        {:error, _} ->
+          {:panic, n}
 
-        !Map.has_key?(m, n) ->
-          {:continue, who(), m}
+        {:ok, data} ->
+          if Map.has_key?(context.m, n) do
+            machine = Map.get(context.m, n)
 
-        !PVM.Memory.check_range_access?(Map.get(m, n).memory, o, z, :write) ->
-          {:continue, oob(), m}
+            case memory_write(machine.memory, o, data) do
+              {:ok, _} ->
+                {:continue, ok()}
 
-        true ->
-          data = Memory.read!(memory, s, z)
-          machine = Map.get(m, n)
-
-          machine_ = %{
-            machine
-            | memory: Memory.write!(machine.memory, o, data)
-          }
-
-          {:continue, ok(), %{m | n => machine_}}
+              {:error, _} ->
+                {:continue, oob()}
+            end
+          else
+            {:continue, who()}
+          end
       end
 
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_)},
-      memory: memory,
-      context: %{context | m: m_}
+      context: context
     }
   end
 
