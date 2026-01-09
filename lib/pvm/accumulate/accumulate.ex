@@ -190,6 +190,9 @@ defmodule PVM.Accumulate do
 
     %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
 
+    # Ensure gas does not go negative
+    g = max(g, 0)
+
     if e == :panic or e == :out_of_gas do
       Logger.warning("Host call #{host_call} ended with exit reason: #{e}, remaining gas: #{g}")
     end

@@ -154,13 +154,10 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzer2
     @tag :slow
     test "single test", %{client: client} do
-      # storage diff
-      # 1763489659
-      # 1763488212
-
-      # acc final gas
-      # 1763371998
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1766255635_3689/")
+      # 1767896003_1257 - 10637 vs 10639 gas on acc
+      # 1767871405_5318 -
+      # 1767889897_2969
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1767896003_1257/")
     end
 
     @tag :perf
