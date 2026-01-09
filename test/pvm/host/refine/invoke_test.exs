@@ -1,10 +1,11 @@
 defmodule PVM.Host.Refine.InvokeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Memory, Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils, PreMemory}
+  alias PVM.{Host.Refine.Context, Integrated, Registers, Utils.ProgramUtils}
   import PVM.Constants.{HostCallResult, InnerPVMResult}
   import Util.Hex
   import PVM.Memory.Constants
+  import Pvm.Native
 
   describe "invoke/4" do
     setup do
@@ -20,21 +21,15 @@ defmodule PVM.Host.Refine.InvokeTest do
 
       context = %Context{
         m: %{
-          1 => %Integrated{
-            program: program
-          },
-          2 => %Integrated{
-            program: encoded_halt_program
-          }
+          1 => %Integrated{program: program},
+          2 => %Integrated{program: encoded_halt_program}
         }
       }
 
       # gas
-      memory =
-        PreMemory.init_nil_memory()
-        |> PreMemory.set_access(min_allowed_address(), page_size() + 1, :write)
-        |> PreMemory.finalize()
-        |> Memory.write!(0x1_1000, <<100::64-little>>)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, min_allowed_address(), page_size() + 1, 3)
+      memory_write(memory_ref, 0x1_1000, <<100::64-little>>)
 
       gas = 100
 
@@ -47,39 +42,33 @@ defmodule PVM.Host.Refine.InvokeTest do
           8 => 0x1_1000
         })
 
-      {:ok, memory: memory, context: context, gas: gas, registers: registers}
+      {:ok, memory_ref: memory_ref, context: context, gas: gas, registers: registers}
     end
 
     test "returns panic when memory not readable at input", %{
       context: context,
       gas: gas,
-      registers: registers,
-      memory: memory
+      registers: registers
     } do
-      memory = Memory.set_access(memory, registers[8], 1, nil)
+      memory_ref = build_memory()
+      set_memory_access(memory_ref, registers[8], 112, 0)
 
-      assert %{
-               exit_reason: :panic,
-               registers: ^registers,
-               context: ^context
-             } = Refine.invoke(gas, registers, memory, context)
+      assert %{exit_reason: :panic, registers: ^registers, context: ^context} =
+               Refine.invoke(gas, registers, memory_ref, context)
     end
 
     test "returns WHO when machine doesn't exist", %{
       context: context,
       gas: gas,
       registers: registers,
-      memory: memory
+      memory_ref: memory_ref
     } do
       registers = %{registers | r: put_elem(registers.r, 7, 999)}
       who = who()
       w8 = registers[8]
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               context: ^context
-             } = Refine.invoke(gas, registers, memory, context)
+      assert %{exit_reason: :continue, registers: registers_, context: ^context} =
+               Refine.invoke(gas, registers, memory_ref, context)
 
       assert registers_[7] == who
       assert registers_[8] == w8
@@ -87,7 +76,7 @@ defmodule PVM.Host.Refine.InvokeTest do
 
     test "executes program successfully", %{
       context: context,
-      memory: memory,
+      memory_ref: memory_ref,
       gas: gas,
       registers: registers
     } do
@@ -99,17 +88,13 @@ defmodule PVM.Host.Refine.InvokeTest do
             into: <<>>,
             do: <<x::64-little>>
 
-      memory = Memory.write!(memory, registers[8] + 8, registers_for_inner_execution)
+      memory_write(memory_ref, registers[8] + 8, registers_for_inner_execution)
 
-      assert %{
-               exit_reason: :continue,
-               registers: registers_,
-               memory: memory_,
-               context: context_
-             } = Refine.invoke(gas, registers, memory, context)
+      assert %{exit_reason: :continue, registers: registers_, context: context_} =
+               Refine.invoke(gas, registers, memory_ref, context)
 
       # Read the execution results from memory
-      {:ok, _gas_bytes} = Memory.read(memory_, registers[8], 8)
+      {:ok, _gas_bytes} = memory_read(memory_ref, registers[8], 8)
 
       # Verify machine state in context
       machine = Map.get(context_.m, 2)
@@ -118,7 +103,7 @@ defmodule PVM.Host.Refine.InvokeTest do
       assert registers_[7] == halt
 
       assert {:ok, ^registers_for_inner_execution} =
-               Memory.read(memory_, registers[8] + 8, 12 * 8)
+               memory_read(memory_ref, registers[8] + 8, 12 * 8)
     end
   end
 end
