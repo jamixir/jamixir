@@ -288,34 +288,29 @@ defmodule PVM.Host.Refine.Internal do
     }
   end
 
-  @spec invoke_internal(Registers.t(), Memory.t(), Context.t()) :: Internal.t()
-  def invoke_internal(registers, memory, %Context{m: m} = context) do
+  @spec invoke_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
+  def invoke_internal(registers, memory_ref, %Context{m: m} = context) do
     {w7, w8} = Registers.get_2(registers, 7, 8)
     n = w7
     o = w8
-    {g, w} = read_invoke_params(memory, o)
+    {g, w} = read_invoke_params(memory_ref, o)
 
-    {exit_reason, w7_, w8_, memory_, m_} =
+    {exit_reason, w7_, w8_, m_} =
       case g do
         :error ->
-          {:panic, w7, w8, memory, m}
+          {:panic, w7, w8, m}
 
         gas ->
           case Map.get(m, n) do
             nil ->
-              {:continue, who(), w8, memory, m}
+              {:continue, who(), w8, m}
 
             machine ->
               %{program: p, memory: u, counter: i} = machine
 
               {internal_exit_reason,
                %PVM.State{counter: i_, gas: gas_, registers: w_, memory: u_}} =
-                PVM.VM.execute(p, %PVM.State{
-                  counter: i,
-                  gas: gas,
-                  registers: w,
-                  memory: u
-                })
+                PVM.VM.execute(p, %PVM.State{counter: i, gas: gas, registers: w, memory: u})
 
               write_value =
                 <<gas_::64-little>> <>
@@ -323,35 +318,39 @@ defmodule PVM.Host.Refine.Internal do
                       into: <<>>,
                       do: <<w::64-little>>
 
-              memory_ = Memory.write!(memory, o, write_value)
+              case memory_write(memory_ref, o, write_value) do
+                {:error, _} ->
+                  {:panic, w7, w8, m}
 
-              machine_ = %{
-                machine
-                | memory: u_,
-                  counter:
-                    case internal_exit_reason do
-                      {:ecall, _} -> i_ + 1
-                      _ -> i_
-                    end
-              }
+                {:ok, _} ->
+                  machine_ = %{
+                    machine
+                    | memory: u_,
+                      counter:
+                        case internal_exit_reason do
+                          {:ecall, _} -> i_ + 1
+                          _ -> i_
+                        end
+                  }
 
-              m_ = Map.put(m, n, machine_)
+                  m_ = Map.put(m, n, machine_)
 
-              case internal_exit_reason do
-                {:ecall, host_call_id} ->
-                  {:continue, host(), host_call_id, memory_, m_}
+                  case internal_exit_reason do
+                    {:ecall, host_call_id} ->
+                      {:continue, host(), host_call_id, m_}
 
-                {:fault, fault_address} ->
-                  {:continue, fault(), fault_address, memory_, m_}
+                    {:fault, fault_address} ->
+                      {:continue, fault(), fault_address, m_}
 
-                :out_of_gas ->
-                  {:continue, oog(), w8, memory_, m_}
+                    :out_of_gas ->
+                      {:continue, oog(), w8, m_}
 
-                :panic ->
-                  {:continue, panic(), w8, memory_, m_}
+                    :panic ->
+                      {:continue, panic(), w8, m_}
 
-                :halt ->
-                  {:continue, halt(), w8, memory_, m_}
+                    :halt ->
+                      {:continue, halt(), w8, m_}
+                  end
               end
           end
       end
@@ -359,26 +358,27 @@ defmodule PVM.Host.Refine.Internal do
     %Internal{
       exit_reason: exit_reason,
       registers: %{registers | r: put_elem(registers.r, 7, w7_) |> put_elem(8, w8_)},
-      memory: memory_,
       context: %{context | m: m_}
     }
   end
 
-  @spec read_invoke_params(Memory.t(), non_neg_integer()) ::
+  @spec read_invoke_params(reference(), non_neg_integer()) ::
           {non_neg_integer(), Registers.t()} | {:error, :error}
-  defp read_invoke_params(memory, o) do
-    if Memory.check_range_access?(memory, o, 112, :write) do
-      <<g::64-little, rest::binary>> = Memory.read!(memory, o, 112)
+  defp read_invoke_params(memory_ref, o) do
+    case memory_read(memory_ref, o, 112) do
+      {:ok, data} ->
+        <<g::64-little, rest::binary>> = data
 
-      values =
-        for {chunk, index} <- Enum.with_index(for <<chunk::64-little <- rest>>, do: chunk),
-            into: %{},
-            do: {index, chunk}
+        values =
+          for {chunk, index} <- Enum.with_index(for <<chunk::64-little <- rest>>, do: chunk),
+              into: %{},
+              do: {index, chunk}
 
-      w = PVM.Registers.new(values)
-      {g, w}
-    else
-      {:error, :error}
+        w = PVM.Registers.new(values)
+        {g, w}
+
+      {:error, _} ->
+        {:error, :error}
     end
   end
 
