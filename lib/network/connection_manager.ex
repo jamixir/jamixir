@@ -17,7 +17,6 @@ defmodule Network.ConnectionManager do
 
   use GenServer
   alias Jamixir.Telemetry
-  alias Jamixir.NodeStateServer
   alias Network.{ConnectionInfo}
   alias Util.Logger, as: Log
   alias System.State.Validator
@@ -152,18 +151,27 @@ defmodule Network.ConnectionManager do
             end
 
           true ->
-            Log.connection(:debug, "👂 Waiting for inbound connection", ed25519_key)
+            case Map.get(acc_state.connections, ed25519_key) do
+              %ConnectionInfo{pid: pid} when is_pid(pid) ->
+                # Connection already established, don't overwrite it
+                Log.connection(:debug, "👂 Inbound connection already established", ed25519_key)
+                acc_state
 
-            connection_info = %ConnectionInfo{
-              status: :waiting_inbound,
-              direction: :inbound,
-              remote_ed25519_key: ed25519_key
-            }
+              _no_active_connection ->
+                # No connection yet, create placeholder entry
+                Log.connection(:debug, "👂 Waiting for inbound connection", ed25519_key)
 
-            %{
-              acc_state
-              | connections: Map.put(acc_state.connections, ed25519_key, connection_info)
-            }
+                connection_info = %ConnectionInfo{
+                  status: :waiting_inbound,
+                  direction: :inbound,
+                  remote_ed25519_key: ed25519_key
+                }
+
+                %{
+                  acc_state
+                  | connections: Map.put(acc_state.connections, ed25519_key, connection_info)
+                }
+            end
         end
       end)
 
@@ -512,7 +520,7 @@ defmodule Network.ConnectionManager do
   defp handle_retry_attempt(ed25519_key, connection_info, state) do
     Log.connection(:debug, "🔄 Attempting retry connection", ed25519_key)
 
-    case find_validator_by_ed25519_key(ed25519_key) do
+    case find_validator_in_list(ed25519_key, state.validators) do
       nil ->
         Log.connection(:warning, "❌ Validator not found for retry", ed25519_key)
         {:noreply, state}
@@ -626,16 +634,10 @@ defmodule Network.ConnectionManager do
     end
   end
 
-  defp find_validator_by_ed25519_key(ed25519_key) do
-    case NodeStateServer.get_jam_state() do
-      nil ->
-        nil
-
-      jam_state ->
-        Enum.find(jam_state.curr_validators, fn validator ->
-          validator.ed25519 == ed25519_key
-        end)
-    end
+  defp find_validator_in_list(ed25519_key, validators) do
+    Enum.find(validators, fn validator ->
+      validator.ed25519 == ed25519_key
+    end)
   end
 
   def calculate_retry_delay(retry_count) do
