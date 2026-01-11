@@ -6,7 +6,30 @@ defmodule Jamixir.Repo do
   def init(_type, config) do
     # Handle runtime database path configuration
     config = resolve_database_path(config)
+
+    # Without this we sometimes get "database is locked" errors on startup.
+    # https://github.com/oatpp/oatpp/issues/995#issuecomment-2533270939
+    config = Keyword.put(config, :pool_size, 1)
+
+    # Fix startup "database is locked" errors.
+    # WAL allows write without locking the db file.
+    config =
+      config
+      |> Keyword.put(:journal_mode, :wal)
+      |> Keyword.put(:busy_timeout, 60_000)
+      |> Keyword.put(:after_connect, {__MODULE__, :sqlite_init, []})
+
     {:ok, config}
+  end
+
+  def sqlite_init(conn) do
+    # Without WAL, SQLite can lock itself during Ecto startup.
+    Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode=WAL;")
+    # Normal setting for WAL, not tuning.
+    Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous=NORMAL;")
+    # Wait instead of crashing if a lock is momentarily held.
+    Exqlite.Sqlite3.execute(conn, "PRAGMA busy_timeout=60000;")
+    :ok
   end
 
   defp resolve_database_path(config) do
