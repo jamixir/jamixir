@@ -1,21 +1,66 @@
 defmodule RingVrf do
   use Rustler, otp_app: :jamixir, crate: :bandersnatch_ring_vrf
-  use Memoize
   alias Util.Logger
+
+  @initialized_key {__MODULE__, :initialized}
+  @ring_size_key {__MODULE__, :ring_size}
+
   # load static ring context data from a file
   # following the example https://github.com/davxy/bandersnatch-vrfs-spec/blob/main/example/src/main.rs
   def create_ring_context(_ring_size), do: :erlang.nif_error(:nif_not_loaded)
 
   def init_ring_context, do: init_ring_context(Constants.validator_count())
 
-  defmemo init_ring_context(ring_size) do
-    Logger.info("💍 Initializing ring context with size #{ring_size}")
-    create_ring_context(ring_size)
+  def init_ring_context(ring_size) do
+    case :persistent_term.get(@initialized_key, false) do
+      true ->
+        stored_size = :persistent_term.get(@ring_size_key)
+
+        # If already initialized with same size
+        if stored_size == ring_size do
+          :ok
+        else
+          # Different ring size
+          raise """
+          RingVrf already initialized with ring_size=#{stored_size}.
+          Cannot reinitialize with ring_size=#{ring_size}.
+          """
+        end
+
+      false ->
+        Logger.info("💍 Initializing ring context with size #{ring_size}")
+
+        case create_ring_context(ring_size) do
+          {} ->
+            :ok
+
+          result ->
+            raise "Failed to initialize ring context: got unexpected result #{inspect(result)}"
+        end
+
+        # Store initialization state explicitly
+        :persistent_term.put(@initialized_key, true)
+        :persistent_term.put(@ring_size_key, ring_size)
+
+        :ok
+    end
+  end
+
+  def ring_size! do
+    case :persistent_term.get(@initialized_key, false) do
+      true ->
+        :persistent_term.get(@ring_size_key)
+
+      false ->
+        raise """
+        RingVrf not initialized — must be initialized during node startup.
+        """
+    end
   end
 
   # Formula (G.3) v0.7.2
   @spec cached_commitment(any()) :: any()
-  defmemo cached_commitment(keys) do
+  def cached_commitment(keys) do
     create_commitment(keys)
   end
 
@@ -24,7 +69,7 @@ defmodule RingVrf do
 
   # Formula (G.4) v0.7.2
   # Formula (G.5) v0.7.2
-  defmemo ring_vrf_verify(commitment, context, message, signature) do
+  def ring_vrf_verify(commitment, context, message, signature) do
     ring_vrf_verify_impl(commitment, context, message, signature)
   end
 
