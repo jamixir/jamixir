@@ -146,7 +146,8 @@ fn initialize_vm_context(
 ) -> Option<(Arc<VmContext>, pvm_core::Registers, pvm_core::Memory)> {
     let (code, registers, memory) = pvm_core::initialize_program(linked_program, args)?;
 
-    let deblob_result = deblob(&code);
+    let deblob_result = deblob(&code).ok()?;
+
     let start_set = pvm_core::StartSet::build(&deblob_result.program, &deblob_result.bitmask);
     let tracer = Tracer::new();
 
