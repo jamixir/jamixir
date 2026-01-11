@@ -16,8 +16,15 @@ defmodule Jamixir.InitializationTask do
   def run do
     Log.info("🚀 Starting initialization task...")
 
-    RingVrf.init_ring_context()
-    Log.info("✅ RingVrf context initialized")
+    case :persistent_term.get({RingVrf, :initialized}, false) do
+      true ->
+        Log.info("✅ RingVrf context already initialized")
+
+      false ->
+        # Initialize if not already done (shouldn't happen in normal flow)
+        RingVrf.init_ring_context()
+        Log.info("✅ RingVrf context initialized")
+    end
 
     jam_state = init_jam_state()
     Log.info("✅ JAM state initialized")
