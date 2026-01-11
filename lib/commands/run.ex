@@ -102,6 +102,8 @@ defmodule Jamixir.Commands.Run do
     end
 
     Application.ensure_all_started(:jamixir)
+    # Ensure memoize is ready before calling memoized functions
+    Application.ensure_all_started(:memoize)
 
     RingVrf.init_ring_context()
 
