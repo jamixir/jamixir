@@ -58,20 +58,14 @@ defmodule PVM.Accumulate.Runner do
 
   @impl true
   def handle_cast(:execute, %{service_code: sc, gas: g, encoded_args: a} = st) do
-    # immediately handle out-of-gas case
-    if g == 0 do
-      send(st.parent, {0, :out_of_gas, st.ctx_pair})
-      {:stop, :normal, st}
-    else
-      case execute(sc, 5, g, a) do
-        %ExecuteResult{output: :waiting, context_token: token} ->
-          # VM paused on host call; wait for :ecall message
-          {:noreply, %{st | context_token: token}}
+    case execute(sc, 5, g, a) do
+      %ExecuteResult{output: :waiting, context_token: token} ->
+        # VM paused on host call; wait for :ecall message
+        {:noreply, %{st | context_token: token}}
 
-        %ExecuteResult{output: output, used_gas: used_gas} ->
-          send(st.parent, {used_gas, output, st.ctx_pair})
-          {:stop, :normal, st}
-      end
+      %ExecuteResult{output: output, used_gas: used_gas} ->
+        send(st.parent, {used_gas, output, st.ctx_pair})
+        {:stop, :normal, st}
     end
   end
 
