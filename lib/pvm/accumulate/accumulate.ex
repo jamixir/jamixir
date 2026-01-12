@@ -177,21 +177,14 @@ defmodule PVM.Accumulate do
           General.log(gas, registers, memory_ref, s, nil, x.service)
           |> Utils.replace_service(context)
 
-        _ ->
-          g_ = gas - default_gas()
-
-          %Accumulate.Result{
-            exit_reason: if(g_ < 0, do: :out_of_gas, else: :continue),
-            gas: g_,
-            registers: %{registers | r: put_elem(registers.r, 7, what())},
-            context: context
-          }
+        call ->
+          Accumulate.invalid(call, gas, registers, context)
       end
 
     %{exit_reason: e, gas: g, registers: r, context: c} = host_call_result
 
     # Ensure gas does not go negative
-    g = max(g, 0)
+    # g = max(g, 0)
 
     if e == :panic or e == :out_of_gas do
       Logger.warning("Host call #{host_call} ended with exit reason: #{e}, remaining gas: #{g}")

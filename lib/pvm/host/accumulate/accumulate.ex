@@ -3,6 +3,9 @@ defmodule PVM.Host.Accumulate do
   alias PVM.Host.Accumulate.Result
   alias System.State.ServiceAccount
   import PVM.Host.{GasHandler, Accumulate.Internal}
+  import PVM.Host.Gas
+  import PVM.Constants.HostCallResult
+  require Logger
 
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
@@ -122,5 +125,17 @@ defmodule PVM.Host.Accumulate do
       {gas, registers, memory_ref, context_pair},
       &provide_internal/3
     )
+  end
+
+  def invalid(call, gas, registers, context) do
+    Logger.debug("Invalid accumulation host call: #{call}")
+    {exit_reason, g_} = check_gas(gas, default_gas())
+
+    %Result{
+      exit_reason: exit_reason,
+      gas: g_,
+      registers: %{registers | r: put_elem(registers.r, 7, what())},
+      context: context
+    }
   end
 end
