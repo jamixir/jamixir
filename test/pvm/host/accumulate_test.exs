@@ -5,14 +5,7 @@ defmodule PVM.Host.AccumulateTest do
   alias System.DeferredTransfer
   alias System.State.{Accumulation, ServiceAccount}
   alias Util.Hash
-
-  alias PVM.{
-    Host.Accumulate.Context,
-    Registers,
-    Host.Accumulate.Result,
-    Accumulate.Utils
-  }
-
+  alias PVM.{Host.Accumulate.Context, Registers, Host.Accumulate.Result, Accumulate.Utils}
   import PVM.Constants.HostCallResult
   import Codec.Encoder
   import PVM.Memory.Constants
@@ -22,7 +15,7 @@ defmodule PVM.Host.AccumulateTest do
 
   setup_all do
     x = %Context{service: 321, accumulation: %Accumulation{manager: 321}}
-    {:ok, context: {x, x}}
+    {:ok, context: {x, x}, registers: %Registers{}}
   end
 
   describe "bless/4" do
@@ -585,9 +578,7 @@ defmodule PVM.Host.AccumulateTest do
 
       x = %Context{
         service: 123,
-        accumulation: %Accumulation{
-          services: %{123 => service_account}
-        }
+        accumulation: %Accumulation{services: %{123 => service_account}}
       }
 
       {:ok, memory_ref: memory_ref, context: {x, %Context{}}, gas: 100, registers: registers}
@@ -1678,6 +1669,22 @@ defmodule PVM.Host.AccumulateTest do
              } = Accumulate.provide(gas, registers, memory_ref, {x, y})
 
       assert registers_[7] == who()
+    end
+  end
+
+  describe "invalid/4" do
+    test "invalid host call", %{registers: registers, context: context} do
+      assert %{exit_reason: :continue, registers: registers_, context: ^context, gas: 2} =
+               Accumulate.invalid(:invalid, 12, registers, context)
+
+      assert registers_[7] == what()
+    end
+
+    test "invalid host call with negative gas", %{registers: registers, context: context} do
+      assert %{exit_reason: :out_of_gas, registers: registers_, context: ^context} =
+               Accumulate.invalid(:invalid, 7, registers, context)
+
+      assert registers_[7] == what()
     end
   end
 end
