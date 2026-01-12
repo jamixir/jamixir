@@ -10,8 +10,6 @@ defmodule System.State.RotateKeysTest do
   setup do
     [validator1, validator2, validator3] = build_list(3, :validator)
 
-    RingVrf.init_ring_context(3)
-
     state = %State{
       timeslot: 0,
       prev_validators: [],

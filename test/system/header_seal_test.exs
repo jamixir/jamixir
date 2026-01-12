@@ -7,7 +7,6 @@ defmodule System.HeaderSealTest do
   alias Util.Hash
 
   setup do
-    RingVrf.init_ring_context()
     %{validators: validators, key_pairs: key_pairs} = validators_and_bandersnatch_keys()
     entropy_pool = build(:entropy_pool)
     epoch_slot_sealers = seal_key_ticket_factory(key_pairs, entropy_pool)
