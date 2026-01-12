@@ -25,7 +25,6 @@ defmodule RingVrfTest do
   defp init_ring_context_and_gen_keys(count), do: init_ring_context_and_gen_keys(0, count)
 
   defp init_ring_context_and_gen_keys(public_key_index, count) do
-    RingVrf.init_ring_context(count)
     gen_keys(public_key_index, count)
   end
 

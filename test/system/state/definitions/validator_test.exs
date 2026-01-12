@@ -8,7 +8,6 @@ defmodule System.State.ValidatorTest do
 
   setup_all do
     next_validators = for v <- 1..3, do: TH.create_validator(v)
-    RingVrf.init_ring_context(length(next_validators))
     offenders = MapSet.new([Hash.one(), Hash.three()])
     {:ok, next_validators: next_validators, offenders: offenders}
   end

@@ -3,7 +3,8 @@
 ExUnit.configure(timeout: 180_000)
 ExUnit.start()
 ExUnit.configure(exclude: [:full_vectors, :check_vectors_count, :generate_blocks, :slow])
-RingVrf.init_ring_context()
+# Initialize ring context once globally
+RingVrf.init_ring_context(20)
 
 Mox.defmock(ValidatorStatisticsMock, for: System.State.ValidatorStatistics)
 Mox.defmock(HeaderSealMock, for: System.HeaderSeal)

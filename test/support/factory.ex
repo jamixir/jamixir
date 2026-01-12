@@ -75,7 +75,6 @@ defmodule Jamixir.Factory do
       validators_and_bandersnatch_keys(validator_count)
 
     public_keys = for {_, p} <- key_pairs, do: p
-    RingVrf.init_ring_context(length(validators))
 
     entropy_pool = build(:entropy_pool)
     tickets = seal_key_ticket_factory(key_pairs, entropy_pool)
