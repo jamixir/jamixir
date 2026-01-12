@@ -1,5 +1,4 @@
 defmodule Jamixir.NodeIdentity do
-  alias Util.Hash
   alias Util.Hex
 
   @spec node_id() :: String.t()
@@ -24,16 +23,18 @@ defmodule Jamixir.NodeIdentity do
   end
 
   @doc """
-  Returns a node identifier for fuzzer mode
+  Returns a node identifier for fuzzer mode.
+  Uses Blake2.Blake2b directly to avoid Memoize dependency since
+  this may be called before the application fully starts.
   """
   @spec node_id_fuzzer() :: String.t()
   def node_id_fuzzer do
     pid = System.pid()
     ts = System.monotonic_time()
-    # Salt with monotonic time
+    # Salt with monotonic time - use Blake2 directly to avoid Memoize dependency
     hex =
       "#{pid}:#{ts}"
-      |> Hash.default()
+      |> Blake2.Blake2b.hash(<<>>, 32)
       |> Hex.b16n()
       |> String.slice(0, 16)
 
