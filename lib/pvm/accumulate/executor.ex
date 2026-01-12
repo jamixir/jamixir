@@ -19,33 +19,38 @@ defmodule PVM.Accumulate.Executor do
       "Executor.run: Starting with gas=#{gas}, service_index=#{service_index}, timeslot=#{timeslot}"
     )
 
-    {:ok, pid} =
-      Runner.start(
-        service_code,
-        initial_context,
-        encoded_args,
-        gas,
-        accumulation_inputs,
-        n0_,
-        timeslot,
-        opts
-      )
-
-    Logger.debug(
-      "Executor.run: Started Runner with pid=#{inspect(pid)}, waiting for result with timeout=#{@timeout}ms"
-    )
-
-    receive do
-      {used_gas, output, final_ctx} ->
-        Logger.debug(
-          "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}]"
+    # immediately handle out-of-gas case
+    if gas == 0 do
+      Utils.collapse({0, :out_of_gas, {initial_context, initial_context}})
+    else
+      {:ok, pid} =
+        Runner.start(
+          service_code,
+          initial_context,
+          encoded_args,
+          gas,
+          accumulation_inputs,
+          n0_,
+          timeslot,
+          opts
         )
 
-        Utils.collapse({used_gas, output, final_ctx})
-    after
-      @timeout ->
-        Logger.error("Executor.run: Timeout after #{@timeout}ms waiting for Runner result")
-        {:error, :timeout}
+      Logger.debug(
+        "Executor.run: Started Runner with pid=#{inspect(pid)}, waiting for result with timeout=#{@timeout}ms"
+      )
+
+      receive do
+        {used_gas, output, final_ctx} ->
+          Logger.debug(
+            "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}]"
+          )
+
+          Utils.collapse({used_gas, output, final_ctx})
+      after
+        @timeout ->
+          Logger.error("Executor.run: Timeout after #{@timeout}ms waiting for Runner result")
+          {:error, :timeout}
+      end
     end
   end
 end
