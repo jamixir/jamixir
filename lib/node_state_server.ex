@@ -530,14 +530,20 @@ defmodule Jamixir.NodeStateServer do
     {:noreply, state}
   end
 
-  def handle_info({:new_block, %Block{} = block}, state) do
-    # When a new block is added, mark its guarantees as included
-    if length(block.extrinsic.guarantees) > 0 do
+  def handle_info({:new_block, %Block{extrinsic: extrinsic} = block}, state) do
+    # mark its guarantees as included
+    if length(extrinsic.guarantees) > 0 do
       guarantee_work_report_hashes =
-        Enum.map(block.extrinsic.guarantees, &h(e(&1.work_report)))
+        Enum.map(extrinsic.guarantees, &h(e(&1.work_report)))
 
       header_hash = h(e(block.header))
       Storage.mark_guarantee_included(guarantee_work_report_hashes, header_hash)
+    end
+
+    # Mark included preimages
+    for preimage <- extrinsic.preimages do
+      preimage_hash = h(e(preimage))
+      Storage.mark_preimage_included(preimage_hash, preimage.service)
     end
 
     {:noreply, state}

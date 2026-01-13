@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.TicketProof
@@ -143,7 +144,7 @@ defmodule Jamixir.Node do
 
       blob = Network.Connection.get_preimage(server_pid, hash)
 
-      Storage.put("#{@p_preimage}#{hash}", blob)
+      Storage.put(%Preimage{service: service_id, blob: blob})
     end)
 
     :ok
@@ -152,13 +153,7 @@ defmodule Jamixir.Node do
   # CE 143 - Preimage Request
   @impl true
   def get_preimage(hash) do
-    case Storage.get("#{@p_preimage}#{hash}") do
-      nil ->
-        {:error, :not_found}
-
-      preimage ->
-        {:ok, preimage}
-    end
+    Storage.get_preimage(hash)
   end
 
   @impl true

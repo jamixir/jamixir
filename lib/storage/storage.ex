@@ -1,5 +1,4 @@
 defmodule Storage do
-  alias Storage.PreimageMetadataRecord
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -13,6 +12,7 @@ defmodule Storage do
   alias Codec.State.Trie
   alias System.State
   alias Storage.GuaranteeRecord
+  alias Storage.PreimageMetadataRecord
   alias Util.Hash
   import Codec.Encoder
   import Util.Hex, only: [b16: 1]
@@ -81,11 +81,23 @@ defmodule Storage do
 
   def put(headers) when is_list(headers), do: put_headers(headers)
 
-  def put(assurance = %Assurance{}) do
+  def put(%Assurance{} = assurance) do
     SqlStorage.save(assurance)
   end
 
-  def put(preimage_metadata = %PreimageMetadataRecord{}) do
+  def put(%Preimage{} = preimage) do
+    hash = h(preimage.blob)
+
+    SqlStorage.save(%PreimageMetadataRecord{
+      service_id: preimage.service,
+      hash: hash,
+      length: byte_size(preimage.blob)
+    })
+
+    put(@p_preimage <> hash, preimage.blob)
+  end
+
+  def put(%PreimageMetadataRecord{} = preimage_metadata) do
     SqlStorage.save(preimage_metadata)
   end
 
@@ -147,7 +159,7 @@ defmodule Storage do
 
   def put(key, value), do: KVStorage.put(key, value)
 
-  def put(judgement = %Judgement{}, work_report_hash, epoch) do
+  def put(%Judgement{} = judgement, work_report_hash, epoch) do
     SqlStorage.save(judgement, work_report_hash, epoch)
   end
 
@@ -201,6 +213,16 @@ defmodule Storage do
       bin ->
         {block, _} = Block.decode(bin)
         block
+    end
+  end
+
+  def get_preimage(hash) do
+    case get("#{@p_preimage}#{hash}") do
+      nil ->
+        {:error, :not_found}
+
+      blob ->
+        {:ok, blob}
     end
   end
 
@@ -307,6 +329,10 @@ defmodule Storage do
     SqlStorage.mark_included(guarantee_work_report_hashes, header_hash)
   end
 
+  def mark_preimage_included(hash, service_id) do
+    SqlStorage.mark_preimage_included(hash, service_id)
+  end
+
   def get_judgements(epoch) do
     SqlStorage.get_all(Judgement, epoch)
   end
@@ -328,7 +354,7 @@ defmodule Storage do
         blob = Storage.get(@p_preimage <> r.hash),
         r.length == byte_size(blob),
         h(blob) == r.hash do
-      %Preimage{service: r.service, blob: blob}
+      %Preimage{service: r.service_id, blob: blob}
     end
   end
 
@@ -340,7 +366,8 @@ defmodule Storage do
     case get_work_report(rec.work_report_hash) do
       nil ->
         # should never happen as we save guarantee recordes and their work report atomically (CE-135)
-        # the split (between guarantee and it's work report) is just a DB design choise, in order to allow SQL querying over guarantees
+        # the split (between guarantee and it's work report) is
+        # just a DB design choise, in order to allow SQL querying over guarantees
         nil
 
       work_report ->

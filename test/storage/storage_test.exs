@@ -1,6 +1,7 @@
 defmodule StorageTest do
   use ExUnit.Case, async: false
   use Jamixir.DBCase
+  alias Jamixir.SqlStorage
   alias Codec.State.Trie
   alias Storage.PreimageMetadataRecord
   alias System.State
@@ -239,6 +240,36 @@ defmodule StorageTest do
     test "saves preimage metadata" do
       data = %PreimageMetadataRecord{service_id: 1, hash: <<1::256>>, length: 123}
       assert {:ok, <<1::256>>} = Storage.put(data)
+    end
+  end
+
+  describe "get_preimages/1" do
+    test "retrieves empty list of preimages" do
+      [] = Storage.get_preimages(:pending)
+    end
+
+    test "retrives only preimages existing in both kvs and sql database" do
+      preimage1 = build(:preimage, service: 1, blob: <<1, 2, 3, 4>>)
+      Storage.put(preimage1)
+      [^preimage1] = Storage.get_preimages(:pending)
+    end
+
+    test "ignore preimages with wrong length" do
+      blob = <<1, 2, 3, 4, 5>>
+      hash = h(blob)
+      record = %PreimageMetadataRecord{service_id: 1, hash: hash, length: 4}
+      Storage.put(@p_preimage <> hash, blob)
+      SqlStorage.save(record)
+      [] = Storage.get_preimages(:pending)
+    end
+
+    test "ignore preimages with wrong hash" do
+      blob = <<1, 2, 3, 4, 5>>
+      wrong_hash = <<1::256>>
+      record = %PreimageMetadataRecord{service_id: 1, hash: wrong_hash, length: byte_size(blob)}
+      Storage.put(@p_preimage <> wrong_hash, blob)
+      SqlStorage.save(record)
+      [] = Storage.get_preimages(:pending)
     end
   end
 end
