@@ -12,6 +12,7 @@ end
 defmodule Jamixir.NodeStateServer do
   @behaviour Jamixir.NodeStateServerBehaviour
 
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
@@ -310,6 +311,7 @@ defmodule Jamixir.NodeStateServer do
       ) do
     Log.debug("⚙️ Computing authoring slots for current epoch at slot #{slot}")
     current_epoch = Util.Time.epoch_index(slot)
+
     authoring_slots =
       compute_author_slots_for_epoch(jam_state, current_epoch, bandersnatch_keypair)
 
@@ -410,12 +412,20 @@ defmodule Jamixir.NodeStateServer do
         latest_state_root
       )
 
+    preimage_candidates = Storage.get_preimages(:pending)
+    Log.debug("Preimage candidates for block inclusion: #{length(preimage_candidates)}")
+
+    preimages_to_include =
+      Preimage.preimages_for_new_block(preimage_candidates, jam_state.services)
+
     # =======================================================
     # Create block
     # =======================================================
 
     Log.info(
-      "New block with #{length(tickets)} 🎟️ tickets,  #{length(guarantees_to_include)} 🧩 guarantees"
+      "New block with #{length(tickets)} 🎟️ tickets,  " <>
+        "#{length(guarantees_to_include)} 🧩 guarantees, " <>
+        "#{length(preimages_to_include)} 🖼️ preimages"
     )
 
     extrinsics = %Block.Extrinsic{
@@ -639,9 +649,7 @@ defmodule Jamixir.NodeStateServer do
       |> Enum.map(fn phase -> {epoch, phase} end)
       |> MapSet.new()
 
-    Log.info(
-      "✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{epoch}"
-    )
+    Log.info("✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{epoch}")
 
     authoring_slots
   end

@@ -1,6 +1,8 @@
 defmodule Block.Extrinsic.PreimageTest do
   use ExUnit.Case
+  import Codec.Encoder
   import Jamixir.Factory
+
   alias Block.Extrinsic.Preimage
   alias Util.Hash
 
@@ -75,6 +77,43 @@ defmodule Block.Extrinsic.PreimageTest do
       encoded = Encodable.encode(preimage)
       {decoded, _} = Preimage.decode(encoded)
       assert preimage == decoded
+    end
+  end
+
+  describe "preimages_for_new_block/2" do
+    setup do
+      [p20, p10] = [
+        build(:preimage, service: 20, blob: <<1, 2, 3, 4>>),
+        build(:preimage, service: 10, blob: <<5, 6, 7, 8>>)
+      ]
+
+      service20 =
+        build(:service_account,
+          storage: HashedKeysMap.new(%{{h(p20.blob), byte_size(p20.blob)} => []})
+        )
+
+      service10 =
+        build(:service_account,
+          storage: HashedKeysMap.new(%{{h(p10.blob), byte_size(p10.blob)} => []})
+        )
+
+      services = %{10 => service10, 20 => service20, 3 => build(:service_account)}
+
+      {:ok, preimages: [p10, p20], services: services}
+    end
+
+    test "selects preimages for new block", %{preimages: [p10, p20], services: services} do
+      preimage_candidates = [p20, p10, build(:preimage, service: 3, blob: <<7, 8, 9>>)]
+
+      [^p10, ^p20] = Preimage.preimages_for_new_block(preimage_candidates, services)
+    end
+
+    test "preimages are sorted by service and blob", %{preimages: [p10 | _], services: services} do
+      p10b = %Preimage{service: 10, blob: <<0, 1, 2>>}
+      preimage_candidates = [p10, p10b]
+      # set other preimage to be in requested state
+      services = put_in(services, [10, :storage, {h(p10b.blob), byte_size(p10b.blob)}], [])
+      [^p10b, ^p10] = Preimage.preimages_for_new_block(preimage_candidates, services)
     end
   end
 end
