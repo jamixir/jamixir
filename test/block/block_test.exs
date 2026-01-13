@@ -1,11 +1,11 @@
 defmodule BlockTest do
   use ExUnit.Case
   import Jamixir.Factory
-  alias Block.Extrinsic.TicketProof
   alias Block
-  alias Block.{Extrinsic, Extrinsic.Disputes}
+  alias Block.{Extrinsic, Extrinsic.Disputes, Extrinsic.TicketProof}
   alias Codec.State.Trie
   alias System.State
+  alias System.Validators.Safrole
   alias Util.{Export, Hash, Time}
   import Mox
   import OriginalModules
@@ -182,6 +182,27 @@ defmodule BlockTest do
           {:ok, state} = State.add_block(state, b)
           {state, h}
       end
+    end
+
+    test "valid block with correct winning tickets marker" do
+      # conviniently get the 6th key pair for timeslot 11 (10 + 1)
+      %{state: state, key_pairs: [_, _, _, _, _, {priv, pub} | _]} =
+        build(:genesis_state_with_safrole)
+
+      # %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+      state = %{state | timeslot: Constants.ticket_submission_end() - 1}
+      timeslot = Constants.ticket_submission_end() + 1
+      KeyManager.load_keys(%{bandersnatch: pub, bandersnatch_priv: priv})
+
+      {:ok, block} = Block.new(%Extrinsic{}, nil, state, timeslot)
+
+      assert block.header.winning_tickets_marker ==
+               Safrole.winning_tickets_marker(
+                 state.timeslot,
+                 timeslot,
+                 state.safrole.ticket_accumulator
+               )
     end
 
     test "create a valid block passing all key pairs" do

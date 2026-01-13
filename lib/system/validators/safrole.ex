@@ -34,24 +34,28 @@ defmodule System.Validators.Safrole do
 
   # Formula (6.28) v0.7.2
   mockable valid_winning_tickets_marker(
-             %Header{timeslot: timeslot, winning_tickets_marker: winning_tickets_marker},
-             state_timeslot,
+             %Header{timeslot: timeslot_, winning_tickets_marker: winning_tickets_marker},
+             timeslot,
              %Safrole{ticket_accumulator: gamma_a}
            ) do
-    {new_epoch_index, new_epoch_phase} = Time.epoch_index_and_phase(timeslot)
-    {prev_epoch_index, prev_epoch_phase} = Time.epoch_index_and_phase(state_timeslot)
+    if winning_tickets_marker == winning_tickets_marker(timeslot, timeslot_, gamma_a) do
+      :ok
+    else
+      {:error, "Invalid winning tickets marker"}
+    end
+  end
+
+  def winning_tickets_marker(timeslot, timeslot_, gamma_a) do
+    {new_epoch_index, new_epoch_phase} = Time.epoch_index_and_phase(timeslot_)
+    {prev_epoch_index, prev_epoch_phase} = Time.epoch_index_and_phase(timeslot)
 
     if new_epoch_index == prev_epoch_index and
          prev_epoch_phase < Constants.ticket_submission_end() and
          new_epoch_phase >= Constants.ticket_submission_end() and
          length(gamma_a) == Constants.epoch_length() do
-      if winning_tickets_marker == Safrole.outside_in_sequencer(gamma_a),
-        do: :ok,
-        else: {:error, "Invalid winning tickets marker"}
+      Safrole.outside_in_sequencer(gamma_a)
     else
-      if winning_tickets_marker == nil,
-        do: :ok,
-        else: {:error, "Invalid winning tickets marker"}
+      nil
     end
   end
 end
