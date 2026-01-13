@@ -36,11 +36,15 @@ defmodule Block do
   end
 
   def new(extrinsic, parent_hash, state, timeslot, opts) do
+    winning_tickets_marker =
+      Safrole.winning_tickets_marker(state.timeslot, timeslot, state.safrole.ticket_accumulator)
+
     header = %Header{
       timeslot: timeslot,
       prior_state_root: Trie.state_root(state),
       extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
-      parent_hash: parent_hash || Hash.zero()
+      parent_hash: parent_hash || Hash.zero(),
+      winning_tickets_marker: winning_tickets_marker
     }
 
     {pending_, _, _, _} = RotateKeys.rotate_keys(header, state, state.judgements)
