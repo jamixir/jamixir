@@ -1,5 +1,6 @@
 defmodule CommsTest do
   use ExUnit.Case
+  use Jamixir.DBCase
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.WorkPackageBundle

@@ -2,6 +2,7 @@ defmodule StorageTest do
   use ExUnit.Case, async: false
   use Jamixir.DBCase
   alias Codec.State.Trie
+  alias Storage.PreimageMetadataRecord
   alias System.State
   alias Util.Hash
   use StoragePrefix
@@ -231,6 +232,13 @@ defmodule StorageTest do
       assert candidates_after
              |> Enum.sort_by(& &1.work_report.core_index)
              |> Enum.map(& &1.work_report.core_index) == [1, 2]
+    end
+  end
+
+  describe "save_preimage_metadata/1" do
+    test "saves preimage metadata" do
+      data = %PreimageMetadataRecord{service_id: 1, hash: <<1::256>>, length: 123}
+      assert {:ok, <<1::256>>} = Storage.put(data)
     end
   end
 end
