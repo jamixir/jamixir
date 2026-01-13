@@ -63,10 +63,7 @@ defmodule Block.Extrinsic.Preimage do
     end
   end
 
-  def preimages_for_new_block(
-        preimages,
-        services
-      ) do
+  def preimages_for_new_block(preimages, services) do
     for(p <- preimages, not_provided?(p, services), do: p)
     |> Enum.sort_by(&{&1.service, &1.blob})
   end
