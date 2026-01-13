@@ -6,6 +6,7 @@ defmodule Jamixir.Node do
   alias Jamixir.Genesis
   alias Jamixir.NodeStateServer
   alias Network.ConnectionManager
+  alias Storage.PreimageMetadataRecord
   alias System.State
   alias Util.Hash
   alias Util.Logger
@@ -125,15 +126,24 @@ defmodule Jamixir.Node do
 
   # CE 142 - Preimage Announcement
   @impl true
-  def receive_preimage(_service_id, hash, _length) do
+  def receive_preimage(service_id, hash, length) do
     server_pid = self()
+
+    Storage.put(%PreimageMetadataRecord{
+      service_id: service_id,
+      hash: hash,
+      length: length,
+      status: :pending
+    })
 
     Task.start(fn ->
       Logger.info(
         "Requesting preimage #{b16(hash)} back from client via server #{inspect(server_pid)}"
       )
 
-      Network.Connection.get_preimage(server_pid, hash)
+      blob = Network.Connection.get_preimage(server_pid, hash)
+
+      Storage.put("#{@p_preimage}#{hash}", blob)
     end)
 
     :ok

@@ -1,4 +1,6 @@
 defmodule Storage do
+  alias Storage.PreimageMetadataRecord
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.Disputes.Judgement
@@ -81,6 +83,10 @@ defmodule Storage do
 
   def put(assurance = %Assurance{}) do
     SqlStorage.save(assurance)
+  end
+
+  def put(preimage_metadata = %PreimageMetadataRecord{}) do
+    SqlStorage.save(preimage_metadata)
   end
 
   def put(object) when is_struct(object) do
@@ -315,6 +321,15 @@ defmodule Storage do
       #  we may want to use different strategy in the future, for example, take the guarantee with the latest timeslot
       hd(guarantees)
     end)
+  end
+
+  def get_preimages(status) do
+    for r <- SqlStorage.get_all(Preimage, status),
+        blob = Storage.get(@p_preimage <> r.hash),
+        r.length == byte_size(blob),
+        h(blob) == r.hash do
+      %Preimage{service: r.service, blob: blob}
+    end
   end
 
   # Private Functions

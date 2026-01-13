@@ -197,7 +197,7 @@ defmodule Network.ServerCalls do
     log("Received preimage request")
 
     case Jamixir.NodeAPI.get_preimage(hash) do
-      {:ok, preimage} -> preimage
+      {:ok, blob} -> blob
       _ -> <<>>
     end
   end

@@ -3,20 +3,24 @@ defmodule Jamixir.SqlStorage do
   SQL-based storage for block extrinsics that require querying capabilities.
   """
 
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Disputes.Judgement
   alias Jamixir.Repo
-  alias Storage.{AssuranceRecord, GuaranteeRecord, JudgementRecord}
+
+  alias Storage.{
+    AssuranceRecord,
+    GuaranteeRecord,
+    JudgementRecord,
+    PreimageMetadataRecord
+  }
+
   import Ecto.Query
+  import Codec.Encoder
 
   def save(%Assurance{} = assurance) do
-    attrs =
-      Map.from_struct(assurance)
-      |> Map.merge(%{
-        inserted_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
-      })
+    attrs = Map.from_struct(assurance)
 
     %AssuranceRecord{}
     |> AssuranceRecord.changeset(attrs)
@@ -26,14 +30,23 @@ defmodule Jamixir.SqlStorage do
     )
   end
 
+  def save(%PreimageMetadataRecord{} = p) do
+    changeset =
+      %PreimageMetadataRecord{}
+      |> PreimageMetadataRecord.changeset(Map.from_struct(p))
+
+    case Repo.insert(changeset) do
+      {:ok, _record} -> {:ok, p.hash}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
   def save(%Judgement{} = judgement, hash, epoch) do
     attrs =
       Map.from_struct(judgement)
       |> Map.merge(%{
         work_report_hash: hash,
-        epoch: epoch,
-        inserted_at: DateTime.utc_now(),
-        updated_at: DateTime.utc_now()
+        epoch: epoch
       })
 
     %JudgementRecord{}
@@ -47,9 +60,7 @@ defmodule Jamixir.SqlStorage do
       work_report_hash: wr_hash,
       core_index: guarantee.work_report.core_index,
       timeslot: guarantee.timeslot,
-      credentials: Guarantee.encode_credentials(guarantee.credentials),
-      inserted_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now()
+      credentials: Guarantee.encode_credentials(guarantee.credentials)
     })
     |> Repo.insert!(
       on_conflict: :replace_all,
@@ -75,6 +86,10 @@ defmodule Jamixir.SqlStorage do
     Repo.all(AssuranceRecord) |> Enum.map(&AssuranceRecord.to_assurance/1)
   end
 
+  def get_all(Preimage) do
+    Repo.all(PreimageMetadataRecord)
+  end
+
   def get_all(Judgement, epoch) do
     Repo.all(from(j in JudgementRecord, where: j.epoch == ^epoch))
     |> Enum.map(&JudgementRecord.to_judgement/1)
@@ -84,11 +99,21 @@ defmodule Jamixir.SqlStorage do
     Repo.all(from(g in GuaranteeRecord, where: g.status == ^status, order_by: g.core_index))
   end
 
+  def get_all(Preimage, status) do
+    Repo.all(from(p in PreimageMetadataRecord, where: p.status == ^status))
+  end
+
+  def mark_preimage_included(hash, service_id) do
+    from(p in PreimageMetadataRecord,
+      where: p.hash == ^hash and p.service_id == ^service_id
+    )
+    |> Repo.update_all(set: [status: :included])
+  end
+
   def mark_included(guarantee_work_report_hashes, header_hash) do
     from(g in GuaranteeRecord,
       where: g.work_report_hash in ^guarantee_work_report_hashes
     )
     |> Repo.update_all(set: [status: :included, included_in_block: header_hash])
   end
-
 end
