@@ -4,15 +4,14 @@ defmodule Clock do
   alias Util.Time
   use MapUnion
 
-  # assurances distribution happen 2 seconds before the end of the slot
-
   # PubSub channel names
   @node_events_channel "node_events"
   @clock_events_channel "clock_events"
 
   defp slot_duration_ms, do: Constants.slot_period() * 1000
   defp tranche_duration_ms, do: Constants.audit_trenches_period() * 1000
-  defp assurance_timeout_ms, do: slot_duration_ms() - 2_000
+  # assurances distribution happen after 2/3 of slot passed (4s for 6s slot period)
+  defp assurance_timeout_ms, do: div(4 * slot_duration_ms(), 6)
 
   defstruct [:timers, :current_slot, :authoring_slots, :reference_time]
 
@@ -53,8 +52,13 @@ defmodule Clock do
     # Schedule compute_author_slots for current epoch 2 seconds after the next tick
     # Only if we have at least 2 slots remaining in the epoch
     epoch_phase = Time.epoch_phase(current_slot)
+
     if epoch_phase <= Constants.epoch_length() - 3 do
-      schedule_timer(reference_time, slot_duration_ms() + div(slot_duration_ms(), 3), :compute_current_epoch_author_slots)
+      schedule_timer(
+        reference_time,
+        slot_duration_ms() + div(slot_duration_ms(), 3),
+        :compute_current_epoch_author_slots
+      )
     end
 
     {:ok,
