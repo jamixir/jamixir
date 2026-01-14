@@ -4,6 +4,9 @@ defmodule PVM.Host.Refine.Internal do
   alias PVM.{Host.Refine.Context, Host.Refine.Result.Internal, Integrated, Registers}
   import PVM.{Constants.HostCallResult, Constants.InnerPVMResult, Host.Util}
   import Pvm.Native
+
+  @page_size PVM.Memory.Constants.page_size()
+
   @type services() :: %{non_neg_integer() => ServiceAccount.t()}
 
   @spec historical_lookup_internal(
@@ -137,7 +140,7 @@ defmodule PVM.Host.Refine.Internal do
       else
         case PVM.Decoder.deblob(p) do
           {:ok, _} ->
-            machine = %Integrated{program: p, memory: memory_ref, counter: i}
+            machine = %Integrated{program: p, memory: build_memory(), counter: i}
             {:continue, n, %{context | m: Map.put(m, n, machine)}}
 
           {:error, _} ->
@@ -219,8 +222,6 @@ defmodule PVM.Host.Refine.Internal do
       context: context
     }
   end
-
-  @page_size 4096
 
   @spec pages_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
   def pages_internal(registers, _memory_ref, context) do

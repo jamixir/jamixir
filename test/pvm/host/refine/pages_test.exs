@@ -6,7 +6,7 @@ defmodule PVM.Host.Refine.PagesTest do
   import PVM.Memory.Constants
   import Pvm.Native
 
-  @page_size 4096
+  @page_size PVM.Memory.Constants.page_size()
 
   defp a_0, do: min_allowed_address()
 
