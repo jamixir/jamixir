@@ -1,6 +1,5 @@
 defmodule Jamixir.Node do
   alias Block.Extrinsic.Preimage
-  alias Hex.Crypto.ContentEncryptor
   alias Util.Crypto
   alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
