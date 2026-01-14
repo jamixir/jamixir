@@ -1,15 +1,13 @@
 defmodule PVM.Accumulate do
+  alias PVM.Accumulate.Executor
+  alias PVM.Accumulate.Utils
+  alias PVM.Host.{Accumulate, Accumulate.Context, General, General.FetchArgs}
+  alias System.AccumulationResult
   alias System.DeferredTransfer
   alias System.State.Accumulation
   alias System.State.ServiceAccount
-  alias PVM.Accumulate.Executor
-  alias System.AccumulationResult
-  alias PVM.Host.{Accumulate, Accumulate.Context, General}
 
-  alias PVM.Host.General.FetchArgs
-  import PVM.Host.Gas
-  alias PVM.Accumulate.Utils
-  import PVM.Constants.{HostCallId, HostCallResult}
+  import PVM.Constants.HostCallId
   require Logger
 
   @doc """

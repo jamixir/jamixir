@@ -263,9 +263,11 @@ defmodule Jamixir.FuzzerTest do
   end
 
   describe "protocol v1 examples" do
-    @examples_path "#{@conformance_path}/fuzz-proto/examples/v1/"
+    @examples_path "#{@conformance_path}/fuzz-proto/examples/0.7.2/"
     test "PeerInfo", %{client: client} do
-      <<_::8, bin::binary>> = File.read!("#{@examples_path}/faulty/00000000_fuzzer_peer_info.bin")
+      <<_::8, bin::binary>> =
+        File.read!("#{@examples_path}/no_forks/00000000_fuzzer_peer_info.bin")
+
       assert :ok = Client.send_message(client, :peer_info, bin)
 
       assert {:ok, :peer_info, data} = Client.receive_message(client)
@@ -275,34 +277,17 @@ defmodule Jamixir.FuzzerTest do
       assert jam_version == Meta.jam_version()
     end
 
-    @tag :skip
     test "Initialize", %{client: client} do
       <<_::8, bin::binary>> =
-        File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
+        File.read!("#{@examples_path}/no_forks/00000001_fuzzer_initialize.bin")
 
       <<_::8, exp_root::binary>> =
-        File.read!("#{@examples_path}/faulty/00000001_target_state_root.bin")
+        File.read!("#{@examples_path}/no_forks/00000001_target_state_root.bin")
 
       assert :ok = Client.send_message(client, :initialize, bin)
       assert {:ok, :state_root, root} = Client.receive_message(client)
 
       assert b16(root) == b16(exp_root)
-    end
-
-    @tag :skip
-    test "Error on import", %{client: client} do
-      <<_::8, bin::binary>> =
-        File.read!("#{@examples_path}/faulty/00000001_fuzzer_initialize.bin")
-
-      assert :ok = Client.send_message(client, :initialize, bin)
-      assert {:ok, :state_root, _} = Client.receive_message(client)
-
-      <<_::8, bin::binary>> =
-        File.read!("#{@examples_path}/faulty/00000002_fuzzer_import_block.bin")
-
-      assert :ok = Client.send_message(client, :import_block, bin)
-      assert {:ok, :error, error} = Client.receive_message(client)
-      assert error == "Chain error: block execution failure: preimage_unneeded"
     end
 
     @tag :skip

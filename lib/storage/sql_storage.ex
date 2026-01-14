@@ -3,21 +3,12 @@ defmodule Jamixir.SqlStorage do
   SQL-based storage for block extrinsics that require querying capabilities.
   """
 
-  alias Block.Extrinsic.Preimage
-  alias Block.Extrinsic.Guarantee
-  alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Disputes.Judgement
+  alias Block.Extrinsic.{Assurance, Disputes.Judgement, Guarantee, Preimage}
   alias Jamixir.Repo
 
-  alias Storage.{
-    AssuranceRecord,
-    GuaranteeRecord,
-    JudgementRecord,
-    PreimageMetadataRecord
-  }
+  alias Storage.{AssuranceRecord, GuaranteeRecord, JudgementRecord, PreimageMetadataRecord}
 
   import Ecto.Query
-  import Codec.Encoder
 
   def save(%Assurance{} = assurance) do
     attrs = Map.from_struct(assurance)
@@ -77,17 +68,17 @@ defmodule Jamixir.SqlStorage do
     end
   end
 
-  def get_all(Assurance, hash) do
-    Repo.all(from(a in AssuranceRecord, where: a.hash == ^hash))
-    |> Enum.map(&AssuranceRecord.to_assurance/1)
-  end
-
   def get_all(Assurance) do
     Repo.all(AssuranceRecord) |> Enum.map(&AssuranceRecord.to_assurance/1)
   end
 
   def get_all(Preimage) do
     Repo.all(PreimageMetadataRecord)
+  end
+
+  def get_all(Assurance, hash) do
+    Repo.all(from(a in AssuranceRecord, where: a.hash == ^hash))
+    |> Enum.map(&AssuranceRecord.to_assurance/1)
   end
 
   def get_all(Judgement, epoch) do

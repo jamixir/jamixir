@@ -171,7 +171,7 @@ defmodule Jamixir.Fuzzer.Util do
   end
 
   defp parse(:error, bin) do
-    {size, bin} = Codec.Decoder.decode_integer(bin)
+    {_, bin} = Codec.Decoder.decode_integer(bin)
     {:ok, :error, bin}
   end
 
