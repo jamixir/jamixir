@@ -370,8 +370,6 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("Assurances for parent block #{b16(parent_hash)}: #{length(existing_assurances)}")
     assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
 
-    Log.info("New block with #{length(tickets)} 🎟️ tickets, #{length(assurances)} 🛡️ assurances")
-
     #  Simulate ρ‡ (partial state transform)
 
     # ρ† Formula (4.12) - process disputes
@@ -424,6 +422,7 @@ defmodule Jamixir.NodeStateServer do
 
     Log.info(
       "New block with #{length(tickets)} 🎟️ tickets,  " <>
+        "#{length(assurances)} 🛡️ assurances," <>
         "#{length(guarantees_to_include)} 🧩 guarantees, " <>
         "#{length(preimages_to_include)} 🖼️ preimages"
     )
