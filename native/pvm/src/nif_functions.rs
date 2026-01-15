@@ -83,6 +83,24 @@ pub fn memory_write<'a>(
 }
 
 #[nif]
+pub fn check_memory_access(
+    mem_ref: MemoryRef,
+    addr: usize,
+    len: usize,
+    permission: u8,
+) -> NifResult<bool> {
+    let memory_guard = mem_ref
+        .memory
+        .lock()
+        .map_err(|_| Error::Term(Box::new(atoms::mutex_poisoned())))?;
+
+    match memory_guard.as_ref() {
+        Some(memory) => Ok(memory.check_access(addr, len, permission.into())),
+        None => Err(Error::Term(Box::new(atoms::memory_not_available()))),
+    }
+}
+
+#[nif]
 pub fn set_memory_access<'a>(
     mem_ref: MemoryRef,
     addr: usize,
