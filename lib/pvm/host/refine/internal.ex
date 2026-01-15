@@ -297,15 +297,8 @@ defmodule PVM.Host.Refine.Internal do
   end
 
   # Check if all pages in range have at least read access by attempting to read
-  defp pages_have_read_access?(memory_ref, start_page, page_count) do
-    start_addr = start_page * @page_size
-    length = page_count * @page_size
-
-    case memory_read(memory_ref, start_addr, length) do
-      {:ok, _} -> true
-      {:error, _} -> false
-    end
-  end
+  defp pages_have_read_access?(memory_ref, start_page, page_count),
+    do: memory_access?(memory_ref, start_page * @page_size, page_count * @page_size, 1)
 
   @spec invoke_internal(Registers.t(), reference(), Context.t()) :: Internal.t()
   def invoke_internal(registers, memory_ref, %Context{m: m} = context) do
