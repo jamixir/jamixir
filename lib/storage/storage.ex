@@ -11,6 +11,7 @@ defmodule Storage do
   alias Block.Header
   alias Codec.State.Trie
   alias System.State
+  alias Storage.AvailabilityRecord
   alias Storage.GuaranteeRecord
   alias Storage.PreimageMetadataRecord
   alias Util.Hash
@@ -101,6 +102,10 @@ defmodule Storage do
     SqlStorage.save(preimage_metadata)
   end
 
+  def put(%AvailabilityRecord{} = availability_record) do
+    SqlStorage.save(availability_record)
+  end
+
   def put(object) when is_struct(object) do
     case encodable?(object) do
       true -> KVStorage.put(h(e(object)), object)
@@ -181,6 +186,10 @@ defmodule Storage do
 
   def remove(key), do: KVStorage.remove(key)
   def remove_all, do: KVStorage.remove_all()
+
+  def get_availability(%WorkReport{} = work_report) do
+    SqlStorage.get(AvailabilityRecord, work_report)
+  end
 
   def get_latest_header do
     case KVStorage.get(@latest_timeslot) do
@@ -278,6 +287,15 @@ defmodule Storage do
     )
   end
 
+  @spec put_bundle_shard(Hash.t(), non_neg_integer(), binary()) ::
+          {:ok, binary()} | {:error, term()}
+  def put_bundle_shard(wp_hash, shard_index, bundle_shard) do
+    KVStorage.put(
+      @p_bundle_shard <> wp_hash <> <<shard_index::m(validator_index)>>,
+      bundle_shard
+    )
+  end
+
   def get_segment_shard(erasure_root, shard_index, segment_index) do
     KVStorage.get(
       @p_segment_shard <>
@@ -285,6 +303,10 @@ defmodule Storage do
         <<shard_index::m(validator_index)>> <>
         <<segment_index::little-32>>
     )
+  end
+
+  def get_bundle_shard(wp_hash, shard_index) do
+    KVStorage.get(@p_bundle_shard <> wp_hash <> <<shard_index::m(validator_index)>>)
   end
 
   def get_segment_core(merkle_root) do

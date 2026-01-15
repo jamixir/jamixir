@@ -170,4 +170,22 @@ defmodule Block.Extrinsic.Assurance do
     |> Enum.take(Constants.core_count())
     |> List.to_tuple()
   end
+
+  def bits_to_bitfield(bits_tuple) when is_tuple(bits_tuple) do
+    bits_tuple
+    |> List.to_tuple()
+    |> bits_to_bitfield()
+  end
+
+  def bits_to_bitfield(bits_list) when is_list(bits_list) do
+    bits_list
+    |> Kernel.++(List.duplicate(0, @bitfield_size * 8 - length(bits_list)))
+    |> Enum.chunk_every(8)
+    |> Enum.map(fn byte_bits ->
+      byte_bits
+      |> Enum.reverse()
+      |> Integer.undigits(2)
+    end)
+    |> :binary.list_to_bin()
+  end
 end

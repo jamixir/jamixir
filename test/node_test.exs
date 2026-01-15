@@ -163,11 +163,21 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "save and get work package" do
+    setup do
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+
+      stub(NodeStateServerMock, :assigned_core, fn -> 0 end)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :node_state_server)
+      end)
+    end
+
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert {:error, :execution_failed} = save_work_package(wp, 7, List.flatten(extrinsics))
+      assert {:error, :execution_failed} = save_work_package(wp, 0, List.flatten(extrinsics))
 
-      assert Storage.get_work_package(7) == wp
+      assert Storage.get_work_package(0) == wp
       assert Storage.get_work_package(5) == nil
     end
 
@@ -175,6 +185,11 @@ defmodule Jamixir.NodeTest do
       wp = build(:work_package)
       {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
       {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [])
+    end
+
+    test "should return error when processing package for other core" do
+      {wp, extrinsics} = work_package_and_its_extrinsic_factory()
+      {:error, :not_assigned_to_core} = save_work_package(wp, 1, List.flatten(extrinsics))
     end
   end
 

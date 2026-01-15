@@ -1,6 +1,8 @@
 defmodule NodeStateServerTest do
   alias Block.Extrinsic.Assurance
   alias Jamixir.Genesis
+  alias Jamixir.NodeStateServer
+  alias Storage.AvailabilityRecord
   alias System.State.Validator
   use ExUnit.Case, async: true
   use Jamixir.DBCase
@@ -131,52 +133,21 @@ defmodule NodeStateServerTest do
       Process.sleep(40)
       assert Storage.get_segment_shard(root, 3, 0) == <<2>>
       assert Storage.get_segment_shard(root, 3, 1) == <<3>>
+      assert Storage.get_bundle_shard(wr.specification.work_package_hash, 3) == <<1>>
     end
 
-    test "create new local assurance when fetching shards", %{work_report: wr} do
+    test "creates availability record when fetching shards", %{work_report: wr} do
+      spec = wr.specification
       :ok = fetch_work_report_shards(self(), wr)
       Process.sleep(40)
 
-      [a] = Storage.get_assurances()
-      assert a.hash == h(e(Genesis.genesis_block_header()))
-      assert a.validator_index == 3
-      <<_::6, b1::1, b0::1>> = a.bitfield
-      assert b0 + b1 == 1
-
-      if assigned_core() == 0 do
-        assert b0 == 1
-      else
-        assert b1 == 1
-      end
-    end
-
-    test "updates existing assurance when fetching shards", %{work_report: wr} do
-      # assigns the other core to 1 and ours to 0
-      bitfield =
-        if assigned_core() == 0, do: <<0::6, 1::1, 0::1>>, else: <<0::6, 0::1, 1::1>>
-
-      Storage.put(%Assurance{
-        hash: h(e(Genesis.genesis_block_header())),
-        validator_index: 3,
-        bitfield: <<bitfield::b(bitfield)>>
-      })
-
-      :ok = fetch_work_report_shards(self(), wr)
-      Process.sleep(40)
-
-      [a] = Storage.get_assurances()
-      assert a.hash == h(e(Genesis.genesis_block_header()))
-      assert a.validator_index == 3
-      <<_::6, b1::1, b0::1>> = a.bitfield
-      assert b0 + b1 == 2
-    end
-
-    test "created assurance has valid signature", %{work_report: wr} do
-      :ok = fetch_work_report_shards(self(), wr)
-      Process.sleep(40)
-      pub = KeyManager.get_our_ed25519_key()
-      [a] = Storage.get_assurances()
-      assert Assurance.verify_signature(a, pub)
+      [ar] = Jamixir.Repo.all(AvailabilityRecord)
+      assert ar.work_package_hash == spec.work_package_hash
+      assert ar.bundle_length == spec.length
+      assert ar.erasure_root == spec.erasure_root
+      assert ar.exports_root == spec.exports_root
+      assert ar.segment_count == spec.segment_count
+      assert ar.shard_index == 3
     end
   end
 
@@ -192,33 +163,59 @@ defmodule NodeStateServerTest do
         Application.delete_env(:jamixir, :network_client)
       end)
 
-      assign_me_to_index(state, 3)
-      {:ok, state: state}
+      # base assurance for all tests
+      assurance = %Assurance{
+        hash: h(e(Genesis.genesis_block_header())),
+        validator_index: 3,
+        bitfield: <<0::8>>
+      }
+
+      {priv, _} = KeyManager.get_our_ed25519_keypair()
+
+      state = assign_me_to_index(state, 3)
+      {:ok, state: state, assurance: assurance, priv: priv}
     end
 
-    test "distributes assurance to all connections when assurance exists", %{state: _state} do
-      assurance =
-        build(:assurance, hash: h(e(Genesis.genesis_block_header())), validator_index: 3)
+    test "doesnt distribute assurance when all bits are 0", %{state: state} do
+      NodeStateServer.handle_info(
+        {:clock, %{event: :assurance_timeout, slot: 1}},
+        %{jam_state: state}
+      )
 
-      Storage.put(assurance)
-
-      expect(ConnectionManagerMock, :get_connections, fn -> %{"k1" => "p1", "k2" => "p2"} end)
-      expect(ClientMock, :distribute_assurance, fn "p1", ^assurance -> :ok end)
-      expect(ClientMock, :distribute_assurance, fn "p2", ^assurance -> :ok end)
-
-      send(Jamixir.NodeStateServer, {:clock, %{event: :assurance_timeout, slot: 1}})
-
-      Process.sleep(50)
       verify!()
     end
 
-    test "does not distribute when no assurance exists" do
-      hash = h(e(Genesis.genesis_block_header()))
-      assert Storage.get_assurance(hash, 3) == nil
+    test "assurance bit is set to 1 when is avaiable", %{
+      state: state,
+      assurance: assurance,
+      priv: priv
+    } do
+      pid = self()
 
-      send(Jamixir.NodeStateServer, {:clock, %{event: :assurance_timeout, slot: 1}})
+      cr = build(:core_report)
+      state = %{state | core_reports: [nil, cr]}
+      spec = cr.work_report.specification
 
-      Process.sleep(50)
+      Storage.put(AvailabilityRecord.from_spec(spec, 3))
+
+      assert Storage.get_availability(cr.work_report) != nil
+
+      expected_assurance =
+        %Assurance{assurance | bitfield: <<0b00000010>>}
+        |> Assurance.signed(priv)
+
+      expect(ConnectionManagerMock, :get_connections, fn -> %{"k1" => "p1", "k2" => "p2"} end)
+      expect(ClientMock, :distribute_assurance, 2, fn p, a -> send(pid, {:distributed, p, a}) end)
+
+      NodeStateServer.handle_info(
+        {:clock, %{event: :assurance_timeout, slot: 1}},
+        %{jam_state: state}
+      )
+
+      assert_receive {:distributed, pid1, ^expected_assurance}, 500
+      assert_receive {:distributed, pid2, ^expected_assurance}, 500
+      assert MapSet.new([pid1, pid2]) == MapSet.new(["p1", "p2"])
+
       verify!()
     end
   end
@@ -229,5 +226,6 @@ defmodule NodeStateServerTest do
     new_curr = List.replace_at(state.curr_validators, index, v)
     s = put_in(state.curr_validators, new_curr)
     set_jam_state(s)
+    s
   end
 end

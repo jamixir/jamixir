@@ -237,9 +237,6 @@ defmodule Jamixir.Node do
     pid = self()
 
     Task.start(fn ->
-      Logger.info("sleeping to fetch shards in two slots")
-      Process.sleep(Constants.slot_period() * 2 * 1000)
-
       Logger.info(
         "Requesting work report shards for work report #{b16(h(e(wr)))} from guarantors"
       )

@@ -2,6 +2,7 @@ defmodule Jamixir.SqlStorageTest do
   alias Block.Extrinsic.Preimage
   alias Jamixir.DBCase
   alias Block.Extrinsic.Disputes.Judgement
+  alias Storage.AvailabilityRecord
   alias Util.Hash
   alias Jamixir.SqlStorage
   alias Block.Extrinsic.Assurance
@@ -110,6 +111,82 @@ defmodule Jamixir.SqlStorageTest do
 
       included = SqlStorage.get_all(Preimage)
       assert length(included) == 2
+    end
+  end
+
+  describe "availability record operations" do
+    test "save and retrieve availability record" do
+      ar = %AvailabilityRecord{
+        work_package_hash: <<1::256>>,
+        bundle_length: 100,
+        erasure_root: <<2::256>>,
+        exports_root: <<3::256>>,
+        segment_count: 5,
+        shard_index: 3
+      }
+
+      SqlStorage.save(ar)
+
+      # Verify the record was actually inserted
+      [saved] = Jamixir.Repo.all(AvailabilityRecord)
+      assert saved.work_package_hash == <<1::256>>
+      assert saved.bundle_length == 100
+      assert saved.erasure_root == <<2::256>>
+      assert saved.exports_root == <<3::256>>
+      assert saved.segment_count == 5
+      assert saved.shard_index == 3
+    end
+
+    test "save fails when shard_index is missing" do
+      ar = %AvailabilityRecord{
+        work_package_hash: <<1::256>>,
+        bundle_length: 100,
+        erasure_root: <<2::256>>,
+        exports_root: <<3::256>>,
+        segment_count: 5
+      }
+
+      assert {:error, _} = SqlStorage.save(ar)
+
+      # Verify nothing was inserted
+      assert Jamixir.Repo.all(AvailabilityRecord) == []
+    end
+
+    test "save updates existing availability record on conflict" do
+      work_package_hash = Hash.random()
+
+      ar1 = %AvailabilityRecord{
+        work_package_hash: work_package_hash,
+        bundle_length: 100,
+        erasure_root: <<2::256>>,
+        exports_root: <<3::256>>,
+        segment_count: 5,
+        shard_index: 3
+      }
+
+      ar2 = %AvailabilityRecord{
+        work_package_hash: work_package_hash,
+        bundle_length: 200,
+        erasure_root: <<4::256>>,
+        exports_root: <<5::256>>,
+        segment_count: 10,
+        shard_index: 7
+      }
+
+      assert {:ok, _record} = SqlStorage.save(ar1)
+      assert {:ok, _record} = SqlStorage.save(ar2)
+
+      # Should have updated the existing record, not created a new one
+      records = Jamixir.Repo.all(AvailabilityRecord)
+      assert length(records) == 1
+
+      [saved] = records
+      assert saved.work_package_hash == work_package_hash
+      assert saved.bundle_length == 200
+      assert saved.erasure_root == <<4::256>>
+      assert saved.exports_root == <<5::256>>
+      assert saved.segment_count == 10
+      assert saved.shard_index == 7
     end
   end
 end
