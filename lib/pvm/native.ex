@@ -30,6 +30,13 @@ defmodule Pvm.Native do
   def set_memory_access(_memory_ref, _addr, _len, _mode) do
     :erlang.nif_error(:nif_not_loaded)
   end
+
+  def memory_access?(memory_ref, addr, len, mode),
+    do: check_memory_access(memory_ref, addr, len, mode)
+
+  def check_memory_access(_memory_ref, _addr, _len, _mode) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 end
 
 defmodule Pvm.Native.ExecuteResult do
