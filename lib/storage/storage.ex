@@ -188,7 +188,8 @@ defmodule Storage do
   def remove_all, do: KVStorage.remove_all()
 
   def get_availability(%WorkReport{} = work_report) do
-    SqlStorage.get(AvailabilityRecord, work_report)
+    hash = work_report.specification.work_package_hash
+    SqlStorage.get(AvailabilityRecord, hash)
   end
 
   def get_latest_header do

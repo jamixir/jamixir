@@ -3,7 +3,6 @@ defmodule Jamixir.SqlStorage do
   SQL-based storage for block extrinsics that require querying capabilities.
   """
 
-  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, Guarantee, Preimage}
   alias Jamixir.Repo
 
@@ -86,8 +85,7 @@ defmodule Jamixir.SqlStorage do
     end
   end
 
-  def get(AvailabilityRecord, %WorkReport{} = work_report) do
-    hash = work_report.specification.work_package_hash
+  def get(AvailabilityRecord, hash) do
     Repo.get_by(AvailabilityRecord, work_package_hash: hash)
   end
 

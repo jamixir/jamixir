@@ -313,7 +313,9 @@ defmodule Jamixir.NodeStateServer do
     Log.info("⏰ Assurance timeout event for slot #{slot}")
     {_, header} = Storage.get_latest_header()
     hash = h(e(header))
-    my_index = find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
+    {priv, pub} = KeyManager.get_our_ed25519_keypair()
+
+    my_index = find_validator_index(pub, jam_state.curr_validators)
 
     bits =
       for cr <- jam_state.core_reports do
@@ -324,20 +326,18 @@ defmodule Jamixir.NodeStateServer do
         end
       end
 
-    if Enum.any?(bits, &(&1 == 1)) do
+    bitfield = Assurance.bits_to_bitfield(bits)
+
+    if bitfield > <<0>> do
       Log.info("🛡️ Sending assurance with available cores: #{inspect(bits)}")
-      {priv, _} = KeyManager.get_our_ed25519_keypair()
 
       assurance =
-        %Assurance{
-          hash: hash,
-          validator_index: my_index,
-          bitfield: Assurance.bits_to_bitfield(bits)
-        }
+        %Assurance{hash: hash, validator_index: my_index, bitfield: bitfield}
         |> Assurance.signed(priv)
 
       Storage.put(assurance)
 
+      # TODO send only to next block author
       for {_, pid} <- ConnectionManager.instance().get_connections() do
         Task.start(fn -> Connection.distribute_assurance(pid, assurance) end)
       end

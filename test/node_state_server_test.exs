@@ -12,7 +12,7 @@ defmodule NodeStateServerTest do
   import Mox
 
   setup do
-    KeyManager.load_keys("test/keys/4.json")
+    KeyManager.load_keys("priv/keys/4.json")
     s = build(:genesis_state)
     Storage.put(Genesis.genesis_block_header(), s)
     start_link(jam_state: s)
