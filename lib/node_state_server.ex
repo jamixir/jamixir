@@ -6,6 +6,7 @@ defmodule Jamixir.NodeStateServerBehaviour do
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
   @callback neighbours() :: list(Validator.t())
   @callback validator_index() :: non_neg_integer()
+  @callback validator_index(binary()) :: non_neg_integer()
   @callback fetch_work_report_shards(pid(), WorkReport.t()) :: :ok
   @callback assigned_core() :: non_neg_integer() | nil
 end
@@ -61,6 +62,7 @@ defmodule Jamixir.NodeStateServer do
   def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
 
   # Validator and network information
+  @impl true
   def validator_index(ed25519_pubkey) when is_binary(ed25519_pubkey) do
     GenServer.call(__MODULE__, {:validator_index, ed25519_pubkey})
   end
@@ -333,6 +335,8 @@ defmodule Jamixir.NodeStateServer do
           bitfield: Assurance.bits_to_bitfield(bits)
         }
         |> Assurance.signed(priv)
+
+      Storage.put(assurance)
 
       for {_, pid} <- ConnectionManager.instance().get_connections() do
         Task.start(fn -> Connection.distribute_assurance(pid, assurance) end)

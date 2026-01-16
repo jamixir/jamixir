@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Preimage
   alias Util.Crypto
   alias Util.MerkleTree
@@ -167,7 +168,23 @@ defmodule Jamixir.Node do
   # CE 141 - Assurance distribution
   @impl true
   def save_assurance(assurance) do
-    Storage.put(assurance)
+    connections = ConnectionManager.instance().get_connections()
+
+    case Enum.find(connections, fn {_, pid} -> pid == self() end) do
+      nil ->
+        Logger.warning("connection not found, can't figure out validator index")
+        {:error, :validator_connection_not_found}
+
+      {k, _} ->
+        case NodeStateServer.instance().validator_index(k) do
+          nil ->
+            {:error, :validator_key_not_found}
+
+          validator_index ->
+            # TODO should also verify assurance signature here
+            {:ok, Storage.put(%Assurance{assurance | validator_index: validator_index})}
+        end
+    end
   end
 
   # CE 131 - Safrole ticket distribution

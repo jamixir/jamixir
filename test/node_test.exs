@@ -155,10 +155,36 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "save and get assurance" do
+    setup do
+      pid = self()
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
+
+      stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => pid} end)
+      stub(NodeStateServerMock, :validator_index, fn "k1" -> 1 end)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :connection_manager)
+        Application.delete_env(:jamixir, :node_state_server)
+      end)
+    end
+
     test "save_assurance with valid assurance" do
-      assurance = build(:assurance)
+      assurance = build(:assurance, validator_index: 1)
       assert {:ok, _} = save_assurance(assurance)
       assert [assurance] == Storage.get_assurances()
+    end
+
+    test "doesnt save assurance when validator not found" do
+      assurance = build(:assurance)
+      stub(ConnectionManagerMock, :get_connections, fn -> %{} end)
+      assert {:error, :validator_connection_not_found} = save_assurance(assurance)
+    end
+
+    test "doesnt save assurance when validator not in state" do
+      assurance = build(:assurance)
+      stub(NodeStateServerMock, :validator_index, fn "k1" -> nil end)
+      assert {:error, :validator_key_not_found} = save_assurance(assurance)
     end
   end
 

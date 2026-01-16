@@ -182,6 +182,8 @@ defmodule NodeStateServerTest do
         %{jam_state: state}
       )
 
+      assert Storage.get_assurances() == []
+
       verify!()
     end
 
@@ -215,6 +217,9 @@ defmodule NodeStateServerTest do
       assert_receive {:distributed, pid1, ^expected_assurance}, 500
       assert_receive {:distributed, pid2, ^expected_assurance}, 500
       assert MapSet.new([pid1, pid2]) == MapSet.new(["p1", "p2"])
+
+      # also checks that node store its own assurance
+      [^expected_assurance] = Storage.get_assurances()
 
       verify!()
     end
