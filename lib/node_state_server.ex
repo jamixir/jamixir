@@ -6,7 +6,9 @@ defmodule Jamixir.NodeStateServerBehaviour do
   @callback assigned_shard_index(binary()) :: non_neg_integer() | nil
   @callback neighbours() :: list(Validator.t())
   @callback validator_index() :: non_neg_integer()
+  @callback validator_index(binary()) :: non_neg_integer()
   @callback fetch_work_report_shards(pid(), WorkReport.t()) :: :ok
+  @callback assigned_core() :: non_neg_integer() | nil
 end
 
 defmodule Jamixir.NodeStateServer do
@@ -19,6 +21,7 @@ defmodule Jamixir.NodeStateServer do
   alias Block
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
+  alias Storage.AvailabilityRecord
   alias System.State
   alias System.State.{CoreReport, EntropyPool, RotateKeys, Validator}
   alias Util.Logger, as: Log
@@ -59,6 +62,7 @@ defmodule Jamixir.NodeStateServer do
   def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
 
   # Validator and network information
+  @impl true
   def validator_index(ed25519_pubkey) when is_binary(ed25519_pubkey) do
     GenServer.call(__MODULE__, {:validator_index, ed25519_pubkey})
   end
@@ -83,6 +87,7 @@ defmodule Jamixir.NodeStateServer do
     GenServer.call(__MODULE__, {:assigned_shard_index, core, key})
   end
 
+  @impl true
   def assigned_core, do: GenServer.call(__MODULE__, :assigned_core)
 
   # ============================================================================
@@ -214,41 +219,22 @@ defmodule Jamixir.NodeStateServer do
     shard_index =
       find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
 
-    case Network.Connection.request_work_report_shard(
+    case Network.Connection.request_work_package_shard(
            guarantor_pid,
            spec.erasure_root,
            shard_index
          ) do
-      {:ok, {_bundle_shard, segments_shards, _justifications}} ->
+      {:ok, {bundle_shard, segments_shards, _justifications}} ->
         Log.debug("Received EC shard for work package: #{b16(spec.work_package_hash)}")
 
         for {segment_shard, segment_index} <- Enum.with_index(segments_shards) do
           Storage.put_segment_shard(spec.erasure_root, shard_index, segment_index, segment_shard)
         end
 
-        {_, header} = Storage.get_latest_header()
-        hash = h(e(header))
+        Storage.put_bundle_shard(spec.work_package_hash, shard_index, bundle_shard)
 
-        updated_assurance =
-          case Storage.get_assurance(hash, shard_index) do
-            nil ->
-              bitfield = Utils.set_bit(<<0::m(bitfield)>>, assigned_core(jam_state))
-
-              %Assurance{
-                hash: hash,
-                validator_index: shard_index,
-                bitfield: bitfield
-              }
-
-            assurance ->
-              %Assurance{
-                assurance
-                | bitfield: Utils.set_bit(assurance.bitfield, assigned_core(jam_state))
-              }
-          end
-
-        {priv, _} = KeyManager.get_our_ed25519_keypair()
-        Storage.put(Assurance.signed(updated_assurance, priv))
+        # Record availability in database
+        Storage.put(AvailabilityRecord.from_spec(spec, shard_index))
 
       {:error, reason} ->
         Log.error(
@@ -329,18 +315,34 @@ defmodule Jamixir.NodeStateServer do
     hash = h(e(header))
     my_index = find_validator_index(KeyManager.get_our_ed25519_key(), jam_state.curr_validators)
 
-    case Storage.get_assurance(hash, my_index) do
-      nil ->
-        Log.debug("No assurance found for parent block #{b16(hash)}")
-
-      assurance ->
-        Log.info("🛡️ Distributing assurance for parent block #{b16(hash)}")
-
-        for {_, pid} <- ConnectionManager.instance().get_connections() do
-          Task.start(fn ->
-            Connection.distribute_assurance(pid, assurance)
-          end)
+    bits =
+      for cr <- jam_state.core_reports do
+        if cr != nil and Storage.get_availability(cr.work_report) != nil do
+          1
+        else
+          0
         end
+      end
+
+    if Enum.any?(bits, &(&1 == 1)) do
+      Log.info("🛡️ Sending assurance with available cores: #{inspect(bits)}")
+      {priv, _} = KeyManager.get_our_ed25519_keypair()
+
+      assurance =
+        %Assurance{
+          hash: hash,
+          validator_index: my_index,
+          bitfield: Assurance.bits_to_bitfield(bits)
+        }
+        |> Assurance.signed(priv)
+
+      Storage.put(assurance)
+
+      for {_, pid} <- ConnectionManager.instance().get_connections() do
+        Task.start(fn -> Connection.distribute_assurance(pid, assurance) end)
+      end
+    else
+      Log.debug("🛡️ Not sending assurance, no available cores")
     end
 
     {:noreply, state}
@@ -367,7 +369,8 @@ defmodule Jamixir.NodeStateServer do
     # Assurances selection
     # Formula (11.11) v0.7.2
     existing_assurances = Storage.get_assurances(parent_hash)
-    Log.debug("Assurances for parent block #{b16(parent_hash)}: #{length(existing_assurances)}")
+
+    Log.info("🛡️ Assurances candidates: #{length(existing_assurances)}")
     assurances = Assurance.assurances_for_new_block(existing_assurances, jam_state)
 
     #  Simulate ρ‡ (partial state transform)
@@ -392,11 +395,8 @@ defmodule Jamixir.NodeStateServer do
     guarantee_candidates = Storage.get_guarantees(:pending)
     Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
+    Log.info("🧩 Guarantee candidates: #{length(guarantee_candidates)}")
     latest_state_root = Storage.get_latest_state_root()
-
-    # Create state with simulated ρ‡ for guarantee validation
-    # This ensures validate_availability (Formula 11.29) checks against ρ‡
-    state_with_simulated_rho = %{jam_state | core_reports: core_reports_2}
 
     # Note: this may filter some guarantees out, in that case the core_index will have no guarantee assigned.
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
@@ -405,9 +405,10 @@ defmodule Jamixir.NodeStateServer do
     guarantees_to_include =
       Guarantee.guarantees_for_new_block(
         guarantee_candidates,
-        state_with_simulated_rho,
+        jam_state,
         slot,
-        latest_state_root
+        latest_state_root,
+        core_reports_2
       )
 
     preimage_candidates = Storage.get_preimages(:pending)
@@ -421,8 +422,8 @@ defmodule Jamixir.NodeStateServer do
     # =======================================================
 
     Log.info(
-      "New block with #{length(tickets)} 🎟️ tickets,  " <>
-        "#{length(assurances)} 🛡️ assurances," <>
+      "New block with #{length(tickets)} 🎟️ tickets, " <>
+        "#{length(assurances)} 🛡️ assurances, " <>
         "#{length(guarantees_to_include)} 🧩 guarantees, " <>
         "#{length(preimages_to_include)} 🖼️ preimages"
     )
@@ -430,7 +431,8 @@ defmodule Jamixir.NodeStateServer do
     extrinsics = %Block.Extrinsic{
       tickets: tickets,
       assurances: assurances,
-      guarantees: guarantees_to_include
+      guarantees: guarantees_to_include,
+      preimages: preimages_to_include
     }
 
     case Block.new(extrinsics, parent_hash, jam_state, slot) do
@@ -555,7 +557,7 @@ defmodule Jamixir.NodeStateServer do
   # ============================================================================
 
   # Validator and index utilities
-  defp find_validator_index(ed25519_pubkey, validators),
+  def find_validator_index(ed25519_pubkey, validators),
     do: Enum.find_index(validators, &(&1.ed25519 == ed25519_pubkey))
 
   # Assigned shard index calculation: i = (cR + v) mod V

@@ -471,7 +471,7 @@ defmodule WorkReportTest do
 
   use Sizes
 
-  describe "execute_work_package/3" do
+  describe "pre_execute_work_package/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
       stub(MockPVM, :do_authorized, fn _, _, _ -> {<<1>>, 0} end)
@@ -510,8 +510,9 @@ defmodule WorkReportTest do
     end
 
     test "smoke test", %{wp: wp, services: services} do
-      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
-      assert is_binary(b)
+      {[[sd]], task} = WorkReport.pre_execute_work_package(wp, [], 0, services)
+      assert is_binary(sd.data)
+      assert sd.merkle_root == <<4::hash()>>
       {wr, e} = Task.await(task)
       [wi | _] = wp.work_items
       assert wr.refinement_context == wp.context
@@ -524,13 +525,13 @@ defmodule WorkReportTest do
         service: 1,
         code_hash: wi.code_hash,
         payload_hash: h(wi.payload),
-        gas_ratio: wi.refine_gas_limit,
+        gas_ratio: wi.accumulate_gas_limit,
         exports: 1,
         extrinsic_count: 1,
         extrinsic_size: 7,
         gas_used: 555,
         imports: 1,
-        result: <<1, 2, 3>>
+        result: {:ok, <<1, 2, 3>>}
       }
 
       assert wr.digests == [expected_work_digest]
@@ -539,17 +540,18 @@ defmodule WorkReportTest do
 
     test "PVM return error on authorized", %{wp: wp, services: services} do
       stub(MockPVM, :do_authorized, fn _, _, _ -> {:bad, 0} end)
-      task = WorkReport.execute_work_package(wp, [], 0, services)
+      task = WorkReport.pre_execute_work_package(wp, [], 0, services)
       assert task == :error
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
       stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
-      {[[b]], task} = WorkReport.execute_work_package(wp, [], 0, services)
-      assert is_binary(b)
+      {[[sd]], task} = WorkReport.pre_execute_work_package(wp, [], 0, services)
+      assert is_binary(sd.data)
+      assert sd.merkle_root == <<4::hash()>>
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
-      assert work_digest.result == :bad
+      assert work_digest.result == {:error, :bad}
     end
   end
 

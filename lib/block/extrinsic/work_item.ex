@@ -140,11 +140,13 @@ defmodule Block.Extrinsic.WorkItem do
         ) ::
           Block.Extrinsic.Guarantee.WorkDigest.t()
   def to_work_digest(%__MODULE__{} = wi, result, gas) do
+    result = if is_binary(result), do: {:ok, result}, else: {:error, result}
+
     %WorkDigest{
       service: wi.service,
       code_hash: wi.code_hash,
       payload_hash: h(wi.payload),
-      gas_ratio: wi.refine_gas_limit,
+      gas_ratio: wi.accumulate_gas_limit,
       result: result,
       gas_used: gas,
       imports: length(wi.import_segments),

@@ -129,6 +129,18 @@ defmodule Jamixir.RPC.Handler do
     {:subscription, subscription_id}
   end
 
+  defp handle_method("subscribeServiceRequest", [service_id, hash, len, finalized], websocket_pid)
+       when websocket_pid != nil do
+    subscription_id =
+      SubscriptionManager.create_subscription(
+        "serviceRequest",
+        [service_id, d64(hash), len, finalized],
+        websocket_pid
+      )
+
+    {:subscription, subscription_id}
+  end
+
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
     {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
 
@@ -172,7 +184,7 @@ defmodule Jamixir.RPC.Handler do
     ext_bins = for e <- extrinsics, do: d64(e)
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
-    {:ok, []}
+    {:ok, nil}
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do

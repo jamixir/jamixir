@@ -213,12 +213,23 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
   end
 
   # Formula (14.12) v0.7.2
-  @spec execute_work_package(WorkPackage.t(), list(list(binary())), integer(), %{
+  @spec pre_execute_work_package(WorkPackage.t(), list(list(binary())), integer(), %{
           integer() => ServiceAccount.t()
         }) ::
           :error | Task.t({WorkReport.t(), list(binary())})
-  def execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
+  def pre_execute_work_package(%WorkPackage{} = wp, extrinsics, core, services) do
     # {t, g} = ΨI (p,c)
+    # IO.inspect(extrinsics, label: "Extrinsics")
+
+    # str =
+    #   for list <- extrinsics, reduce: "WP: #{b16(e(wp))}\n" do
+    #     str -> str <> "item: " <> Enum.map_join(list, ", ", &b16(&1)) <> "\n"
+    #   end
+
+    # IO.inspect(services, label: "Services in pre_execute_work_package")
+
+    # Logger.info(str)
+
     w_r = Constants.max_work_report_size()
 
     case PVM.authorized(wp, core, services) do
@@ -229,7 +240,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
         segments_data = for(w <- wp.work_items, do: WorkItem.import_segment_data(w))
         import_segments = for(w <- segments_data, do: for(s <- w, do: s.data))
 
-        {import_segments,
+        {segments_data,
          Task.async(fn -> refine(wp, extrinsics, core, t, services, import_segments) end)}
     end
   end

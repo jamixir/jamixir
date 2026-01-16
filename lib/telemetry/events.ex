@@ -9,7 +9,7 @@ defmodule Jamixir.Telemetry.Events do
   import Codec.Encoder
 
   # Event discriminators
-  @event_dropped 0
+  # @event_dropped 0
   @event_status 10
   @event_best_block_changed 11
   @event_finalized_block_changed 12
@@ -31,19 +31,19 @@ defmodule Jamixir.Telemetry.Events do
   @event_authoring_failed 41
   @event_authored 42
   @event_importing 43
-  @event_block_verification_failed 44
-  @event_block_verified 45
-  @event_block_execution_failed 46
+  # @event_block_verification_failed 44
+  # @event_block_verified 45
+  # @event_block_execution_failed 46
   @event_block_executed 47
 
   # Block distribution events
   @event_block_announcement_stream_opened 60
-  @event_block_announcement_stream_closed 61
+  # @event_block_announcement_stream_closed 61
   @event_block_announced 62
 
   # Safrole ticket events
   @event_generating_tickets 80
-  @event_ticket_generation_failed 81
+  # @event_ticket_generation_failed 81
   @event_tickets_generated 82
   @event_ticket_transfer_failed 83
   @event_ticket_transferred 84

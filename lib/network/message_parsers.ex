@@ -33,11 +33,6 @@ defmodule Network.MessageParsers do
               "Extracted message of size #{byte_size(message)}, remaining buffer size: #{byte_size(remaining)}"
             )
 
-            message_preview =
-              if byte_size(message) > 0, do: inspect(binary_slice(message, 0, 16)), else: "empty"
-
-            debug("Message preview: #{message_preview}")
-
             parse_ce_messages(remaining, [message | acc])
 
           _ ->

@@ -487,7 +487,13 @@ defmodule Block.Extrinsic.Guarantee do
     end
   end
 
-  def guarantees_for_new_block(guarantees, state, next_block_timeslot, latest_state_root) do
+  def guarantees_for_new_block(
+        guarantees,
+        state,
+        next_block_timeslot,
+        latest_state_root,
+        core_reports_2
+      ) do
     guarantees
     |> Enum.map(fn g -> %{g | credentials: normalize_credentials(g.credentials)} end)
     |> Enum.reject(&is_nil(&1.credentials))
@@ -511,7 +517,7 @@ defmodule Block.Extrinsic.Guarantee do
            :ok <-
              validate_availability(
                [g],
-               state.core_reports,
+               core_reports_2,
                next_block_timeslot,
                state.authorizer_pool
              ) do

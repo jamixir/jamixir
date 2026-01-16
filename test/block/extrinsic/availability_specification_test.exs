@@ -53,6 +53,21 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
       assert spec.segment_count == 2
       assert spec.length == 10
     end
+
+    test "erasure root with empty segments" do
+      bundle_binary = <<1, 2, 3, 4, 5>>
+      segments = []
+
+      exp_erasure_root = AS.calculate_erasure_root(bundle_binary, segments)
+
+      spec = AS.from_execution(Hash.one(), bundle_binary, segments)
+
+      assert spec.work_package_hash == Hash.one()
+      assert spec.erasure_root == exp_erasure_root
+      assert spec.exports_root == MerkleTree.merkle_root(segments)
+      assert spec.segment_count == 0
+      assert spec.length == 5
+    end
   end
 
   describe "b_clubs/1" do
@@ -72,6 +87,12 @@ defmodule Block.Extrinsic.AvailabilitySpecificationTest do
   end
 
   describe "s_clubs/1" do
+    test "calculates s_clubs correctly for no segments" do
+      result = AS.s_clubs([])
+      assert length(result) == Constants.validator_count()
+      assert Enum.all?(result, fn h -> byte_size(h) == 32 end)
+    end
+
     test "calculates s_clubs correctly for small number of segments" do
       segments = generate_hash_chain_segments(3)
 

@@ -3,10 +3,17 @@ defmodule Jamixir.SqlStorage do
   SQL-based storage for block extrinsics that require querying capabilities.
   """
 
+  alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.{Assurance, Disputes.Judgement, Guarantee, Preimage}
   alias Jamixir.Repo
 
-  alias Storage.{AssuranceRecord, GuaranteeRecord, JudgementRecord, PreimageMetadataRecord}
+  alias Storage.{
+    AssuranceRecord,
+    AvailabilityRecord,
+    GuaranteeRecord,
+    JudgementRecord,
+    PreimageMetadataRecord
+  }
 
   import Ecto.Query
 
@@ -30,6 +37,17 @@ defmodule Jamixir.SqlStorage do
       {:ok, _record} -> {:ok, p.hash}
       {:error, changeset} -> {:error, changeset}
     end
+  end
+
+  def save(%AvailabilityRecord{} = availability) do
+    %AvailabilityRecord{}
+    |> AvailabilityRecord.changeset(Map.from_struct(availability))
+    |> Repo.insert(
+      on_conflict:
+        {:replace,
+         [:shard_index, :bundle_length, :erasure_root, :exports_root, :segment_count, :updated_at]},
+      conflict_target: [:work_package_hash]
+    )
   end
 
   def save(%Judgement{} = judgement, hash, epoch) do
@@ -66,6 +84,11 @@ defmodule Jamixir.SqlStorage do
       nil -> nil
       record -> AssuranceRecord.to_assurance(record)
     end
+  end
+
+  def get(AvailabilityRecord, %WorkReport{} = work_report) do
+    hash = work_report.specification.work_package_hash
+    Repo.get_by(AvailabilityRecord, work_package_hash: hash)
   end
 
   def get_all(Assurance) do

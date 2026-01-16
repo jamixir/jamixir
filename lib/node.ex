@@ -1,5 +1,8 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Preimage
+  alias Util.Crypto
+  alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
   alias Block.Extrinsic.TicketProof
@@ -165,7 +168,23 @@ defmodule Jamixir.Node do
   # CE 141 - Assurance distribution
   @impl true
   def save_assurance(assurance) do
-    Storage.put(assurance)
+    connections = ConnectionManager.instance().get_connections()
+
+    case Enum.find(connections, fn {_, pid} -> pid == self() end) do
+      nil ->
+        Logger.warning("connection not found, can't figure out validator index")
+        {:error, :validator_connection_not_found}
+
+      {k, _} ->
+        case NodeStateServer.instance().validator_index(k) do
+          nil ->
+            {:error, :validator_key_not_found}
+
+          validator_index ->
+            # TODO should also verify assurance signature here
+            {:ok, Storage.put(%Assurance{assurance | validator_index: validator_index})}
+        end
+    end
   end
 
   # CE 131 - Safrole ticket distribution
@@ -201,7 +220,10 @@ defmodule Jamixir.Node do
   # CE 132 - Safrole ticket distribution
   @impl true
   def process_ticket(:validator, epoch, ticket) do
-    Logger.info("🎟️ Received ticket #{inspect(ticket)} for epoch #{epoch}")
+    Logger.info(
+      "🎟️ Received ticket [#{ticket.attempt}, #{b16(ticket.signature)}]} for epoch #{epoch}"
+    )
+
     Storage.put(epoch, ticket)
     :ok
   end
@@ -226,7 +248,19 @@ defmodule Jamixir.Node do
     wr = guarantee.work_report
     Storage.put(guarantee)
 
-    NodeStateServer.instance().fetch_work_report_shards(self(), wr)
+    # TODO
+    # this is not the final solution. Just a workaround to force
+    # assurances fetch after guarantee is on state
+    pid = self()
+
+    Task.start(fn ->
+      Logger.info(
+        "Requesting work report shards for work report #{b16(h(e(wr)))} from guarantors"
+      )
+
+      NodeStateServer.instance().fetch_work_report_shards(pid, wr)
+    end)
+
     :ok
   end
 
@@ -264,66 +298,95 @@ defmodule Jamixir.Node do
   def process_work_package(wp, core, extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
-    services = get_latest_state().services
+    if NodeStateServer.instance().assigned_core() == core do
+      services = get_latest_state().services
 
-    case WorkReport.execute_work_package(wp, extrinsics, core, services) do
-      :error ->
-        Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
-        {:error, :execution_failed}
+      case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
+        :error ->
+          Logger.error("Failed to execute work package for service #{wp.service} core #{core}")
+          {:error, :execution_failed}
 
-      # Auth logic and import segments ok. share with other guarantors
-      {_import_segments, refine_task} ->
-        # send WP bundle to two other guarantors in same core through CE 134
-        bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
-        Logger.info("Work package validated successfully. Sending to other guarantors")
+        # Auth logic and import segments ok. share with other guarantors
+        {import_segments, refine_task} ->
+          # send WP bundle to two other guarantors in same core through CE 134
+          bundle_bin = Encodable.encode(WorkPackage.bundle(wp))
+          Logger.info("Work package validated successfully. Sending to other guarantors")
 
-        validators = NodeStateServer.same_core_guarantors()
+          validators = NodeStateServer.same_core_guarantors()
 
-        responses =
-          for v <- validators do
-            pid = ConnectionManager.instance().get_connection(v.ed25519)
+          responses =
+            for v <- validators do
+              case ConnectionManager.instance().get_connection(v.ed25519) do
+                {:ok, pid} ->
+                  dict = WorkReport.get_segment_lookup_dict(wp)
 
-            # TODO send correct segment lookup map
-            {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, %{})}
-          end
+                  {v.ed25519,
+                   Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
 
-        {work_report, _exports} = Task.await(refine_task)
+                {:error, e} ->
+                  Logger.warning(
+                    "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
+                  )
 
-        wr_hash = h(e(work_report))
+                  {v.ed25519, {:error, e}}
+              end
+            end
 
-        case Enum.filter(responses, fn {_, {:ok, {hash, _}}} -> hash == wr_hash end) do
-          [] ->
-            Logger.warning("No other guarator confirmed work report")
+          {work_report, exports} = Task.await(refine_task)
 
-          list ->
-            credentials =
-              for {pub_key, {:ok, {_, signature}}} <- list do
+          wr_hash = h(e(work_report))
+          {priv, _} = KeyManager.get_our_ed25519_keypair()
+
+          my_credential =
+            {NodeStateServer.validator_index(),
+             Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)}
+
+          credentials = [
+            my_credential
+            | for {pub_key, {:ok, {hash, signature}}} <- responses,
+                  hash == wr_hash,
+                  payload = SigningContexts.jam_guarantee() <> hash,
+                  Crypto.valid_signature?(signature, payload, pub_key) do
                 {NodeStateServer.validator_index(pub_key), signature}
               end
+          ]
 
+          if length(credentials) == 1 do
+            Logger.warning("No other guarantor confirmed work report")
+          else
             guarantee = %Guarantee{
               work_report: work_report,
-              # TODO review what timeslot to use
               timeslot: NodeStateServer.current_timeslot(),
               credentials: credentials
             }
+
+            Storage.put(guarantee)
 
             # send guarantee to all validators
             for {_, pid} <- ConnectionManager.instance().get_connections() do
               Network.Connection.distribute_guarantee(pid, guarantee)
             end
-        end
+          end
 
-        # TODO
-        # erasure code exports and save for upcoming calls
-        :ok
+          # stores segment root for later retrieval
+          root = MerkleTree.merkle_root(exports)
+
+          Storage.put_segments_root(work_report.specification.work_package_hash, root)
+
+          {:ok, import_segments, work_report}
+          # TODO
+          # erasure code exports and save for upcoming calls
+          :ok
+      end
+    else
+      {:error, :not_assigned_to_core}
     end
   end
 
   # CE 134 - Work-package sharing
   @impl true
   def save_work_package_bundle(bundle, core, _segment_lookup_dict) do
-    Logger.info("Saving work package bundle for core #{core}")
+    Logger.info("Saving and executing work package bundle for core #{core}")
 
     # Save all import segments locally
     for wi <- bundle.work_package.work_items do
@@ -338,14 +401,34 @@ defmodule Jamixir.Node do
       end
 
       # Save all extrinsics locally
-      for e <- wi.extrinsics, do: Storage.put(e)
+      for e <- wi.extrinsic, do: Storage.put(e)
 
-      # Verify and save all justifications
-      # TODO
+      # TODO Verify and save all justifications
     end
 
-    process_work_package(bundle.work_package, core, bundle.extrinsics)
-    # Execute refine, calculate wp hash and returns signature if sucessful
+    services = get_latest_state().services
+
+    case WorkReport.pre_execute_work_package(
+           bundle.work_package,
+           bundle.extrinsics,
+           core,
+           services
+         ) do
+      :error ->
+        Logger.error(
+          "Failed to execute work package for service #{bundle.work_package.service} core #{core}"
+        )
+
+        {:error, :execution_failed}
+
+      {_, refine_task} ->
+        # Execute refine, calculate wp hash and returns signature if sucessful
+        {work_report, _exports} = Task.await(refine_task)
+        hash = h(e(work_report))
+        {priv, _} = KeyManager.get_our_ed25519_keypair()
+        signature = Crypto.sign(SigningContexts.jam_guarantee() <> hash, priv)
+        {:ok, {hash, signature}}
+    end
   end
 
   # CE 144 - Audit announcement
@@ -354,9 +437,9 @@ defmodule Jamixir.Node do
     {:error, :not_implemented}
   end
 
-  # CE 137 - Work Report Shard Request
+  # CE 137 - Work Package Shard Request
   @impl true
-  def get_work_report_shard(_erasure_root, _segment_index) do
+  def get_work_package_shard(_erasure_root, _shard_index) do
     {:error, :not_implemented}
   end
 

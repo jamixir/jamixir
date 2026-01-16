@@ -155,19 +155,55 @@ defmodule Jamixir.NodeTest do
   end
 
   describe "save and get assurance" do
+    setup do
+      pid = self()
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+      Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
+
+      stub(ConnectionManagerMock, :get_connections, fn -> %{"k1" => pid} end)
+      stub(NodeStateServerMock, :validator_index, fn "k1" -> 1 end)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :connection_manager)
+        Application.delete_env(:jamixir, :node_state_server)
+      end)
+    end
+
     test "save_assurance with valid assurance" do
-      assurance = build(:assurance)
+      assurance = build(:assurance, validator_index: 1)
       assert {:ok, _} = save_assurance(assurance)
       assert [assurance] == Storage.get_assurances()
+    end
+
+    test "doesnt save assurance when validator not found" do
+      assurance = build(:assurance)
+      stub(ConnectionManagerMock, :get_connections, fn -> %{} end)
+      assert {:error, :validator_connection_not_found} = save_assurance(assurance)
+    end
+
+    test "doesnt save assurance when validator not in state" do
+      assurance = build(:assurance)
+      stub(NodeStateServerMock, :validator_index, fn "k1" -> nil end)
+      assert {:error, :validator_key_not_found} = save_assurance(assurance)
     end
   end
 
   describe "save and get work package" do
+    setup do
+      Application.put_env(:jamixir, :node_state_server, NodeStateServerMock)
+
+      stub(NodeStateServerMock, :assigned_core, fn -> 0 end)
+
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :node_state_server)
+      end)
+    end
+
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
-      assert {:error, :execution_failed} = save_work_package(wp, 7, List.flatten(extrinsics))
+      assert {:error, :execution_failed} = save_work_package(wp, 0, List.flatten(extrinsics))
 
-      assert Storage.get_work_package(7) == wp
+      assert Storage.get_work_package(0) == wp
       assert Storage.get_work_package(5) == nil
     end
 
@@ -175,6 +211,11 @@ defmodule Jamixir.NodeTest do
       wp = build(:work_package)
       {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [<<1, 2, 3>>])
       {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [])
+    end
+
+    test "should return error when processing package for other core" do
+      {wp, extrinsics} = work_package_and_its_extrinsic_factory()
+      {:error, :not_assigned_to_core} = save_work_package(wp, 1, List.flatten(extrinsics))
     end
   end
 

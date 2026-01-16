@@ -13,9 +13,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10001
+      - --port=40000
       - --keys=/node/keys/0.json
-      - --genesis=/node/genesis.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
       - --rpc
       - --log=debug
@@ -25,8 +25,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10002
+      - --port=40001
       - --keys=/node/keys/1.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
 
   node3:
@@ -34,8 +35,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10003
+      - --port=40002
       - --keys=/node/keys/2.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
 
   node4:
@@ -43,8 +45,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10004
+      - --port=40003
       - --keys=/node/keys/3.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
 
   node5:
@@ -52,8 +55,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10005
+      - --port=40004
       - --keys=/node/keys/4.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
 
   node6:
@@ -61,8 +65,9 @@ services:
     command:
       - /node/jamixir/jamixir
       - run
-      - --port=10006
+      - --port=40005
       - --keys=/node/keys/5.json
+      - --chainspec=/node/polkajam_chainspec.json
       - --telemetry=localhost:9000
 
   polkajam:

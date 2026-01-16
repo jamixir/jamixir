@@ -162,7 +162,7 @@ defmodule Jamixir.RPC.HandlerTest do
       ex_bins = for e <- extrinsics, do: e64(e)
       request = %{"method" => "submitWorkPackage", "params" => [core, wp_bin, ex_bins]}
       response = response(request)
-      assert response.result == []
+      assert response.result == nil
 
       verify!()
     end

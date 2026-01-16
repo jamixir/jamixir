@@ -24,27 +24,25 @@ defmodule WorkItemTest do
 
   describe "to_work_digest/2" do
     test "transform work report in work digest" do
-      output = {:ok, "output"}
-
       work_report =
         build(:work_item,
           service: 1,
           code_hash: <<1, 2, 3>>,
           payload: <<4, 5>>,
-          refine_gas_limit: 6,
+          accumulate_gas_limit: 6,
           import_segments: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}],
           export_count: 9,
           extrinsic: [{<<1, 2, 3>>, 4}, {<<1, 2, 3>>, 4}]
         )
 
-      result = WorkItem.to_work_digest(work_report, output, 77)
+      result = WorkItem.to_work_digest(work_report, "output", 77)
 
       assert result == %WorkDigest{
                service: 1,
                code_hash: <<1, 2, 3>>,
                payload_hash: Hash.default(<<4, 5>>),
                gas_ratio: 6,
-               result: output,
+               result: {:ok, "output"},
                gas_used: 77,
                imports: 2,
                exports: 9,

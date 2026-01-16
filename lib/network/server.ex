@@ -67,7 +67,6 @@ defmodule Network.Server do
         server_state,
         %{protocol_id: protocol_id, buffer: buffer} = stream_data
       ) do
-    debug("CE STREAM: #{inspect(new_data)}")
     updated_buffer = buffer <> new_data
 
     state_ =
