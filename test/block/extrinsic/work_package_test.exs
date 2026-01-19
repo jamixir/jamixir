@@ -1,4 +1,5 @@
 defmodule WorkPackageTest do
+  alias Jamixir.ChainSpec
   alias Block.Extrinsic.WorkPackage
   alias Block.Extrinsic.WorkPackageBundle
   alias System.State
@@ -145,9 +146,6 @@ defmodule WorkPackageTest do
       state = %State{state | services: %{wp.service => service_account}}
 
       assert WorkPackage.authorization_code(wp, state.services) == <<7, 7, 7>>
-
-      assert WorkPackage.implied_authorizer(wp, state.services) ==
-               Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
     end
 
     test "returns authorization_code when it is available in history - 2", %{state: state} do
@@ -171,12 +169,27 @@ defmodule WorkPackageTest do
 
       assert WorkPackage.authorization_code(wp, state.services) == <<7, 7, 7>>
 
-      assert WorkPackage.implied_authorizer(wp, state.services) ==
-               Hash.default(<<7, 7, 7>> <> wp.parameterization_blob)
+      assert WorkPackage.implied_authorizer(wp) ==
+               Hash.default(wp.authorization_code_hash <> wp.parameterization_blob)
     end
 
     test "return nil authorization code when it is not available", %{state: state} do
       assert WorkPackage.authorization_code(build(:work_package), state.services) == nil
+    end
+
+    test "wp test" do
+      # work package from jamt new service creation for DOOM
+      wp_bin =
+        "0x00000000f8d86b97d65319a078e5840f1614c296a5254217794dcc910e72ca174e3c2e86167371e8d14a44a8523840a4ebb375a65eee12daa5ac13344e9c6456b35dc57721854cfc1e8b5e3329252889c771a6f1dc467a13e7ee16e69138931aa674f7150000000000000000000000000000000000000000000000000000000000000000668d35423a4dba70062f0a7df498e25e2c168ba2dbecbb91be109bc05720f6fd2f2d54000000000100000000590a2a74e31991304fc628e97219b73410125b2f523218e067340e5064c8cbef00ca9a3b000000008096980000000000000080a4060806a2111844d41615be6eb7760647537b8e3f5a42f96921930913255ab4d1bdc32a040000000000069d1cb38904c66766f636961ca1a04676118e5173353d3867d10198d67c90b4c7bb0411000000000006ca1d4ed6f0f66af8d600db89372d31d703b9a718a2e353ddbf9284680eb2d5e3f8ff3f0000000000061458b94637d0b71df0d2c83d9b7b8de847fcd15e5fffce35c8da311d53885cd851000000000000000000"
+        |> Util.Hex.decode16!()
+
+      {work_package, _} = WorkPackage.decode(wp_bin)
+      {:ok, chainspec} = ChainSpec.from_file("priv/polkajam_chainspec.json")
+      # Load the genesis state
+      {:ok, jam_state} = ChainSpec.get_state(chainspec)
+
+      assert WorkPackage.implied_authorizer(work_package) ==
+               Enum.at(jam_state.authorizer_pool, 0) |> Enum.at(0)
     end
   end
 

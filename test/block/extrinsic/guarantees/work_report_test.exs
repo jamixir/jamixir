@@ -518,7 +518,7 @@ defmodule WorkReportTest do
       assert wr.refinement_context == wp.context
       assert wr.core_index == 0
       assert wr.output == <<1>>
-      assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp, services)
+      assert wr.authorizer_hash == WorkPackage.implied_authorizer(wp)
       assert wr.specification.exports_root == MerkleTree.merkle_root(e)
 
       expected_work_digest = %WorkDigest{

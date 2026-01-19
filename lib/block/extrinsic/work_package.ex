@@ -2,10 +2,9 @@ defmodule Block.Extrinsic.WorkPackage do
   @moduledoc """
   Defines a WorkPackage struct and its types.
   """
-  alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.WorkItem
+  alias Block.Extrinsic.WorkPackageBundle
   alias System.State.ServiceAccount
-  alias Util.Hash
   use AccessStruct
   import Codec.Encoder
   alias Codec.VariableSize
@@ -77,8 +76,8 @@ defmodule Block.Extrinsic.WorkPackage do
 
   # Formula (14.10) v0.7.2
   # pa
-  def implied_authorizer(%__MODULE__{} = wp, services) do
-    Hash.default(authorization_code(wp, services) <> wp.parameterization_blob)
+  def implied_authorizer(%__MODULE__{} = wp) do
+    h(wp.authorization_code_hash <> wp.parameterization_blob)
   end
 
   # Formula (14.5) v0.7.2

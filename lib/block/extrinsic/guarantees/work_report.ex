@@ -279,7 +279,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
        specification: s,
        refinement_context: wp.context,
        core_index: core,
-       authorizer_hash: WorkPackage.implied_authorizer(wp, services),
+       authorizer_hash: WorkPackage.implied_authorizer(wp),
        output: o,
        segment_root_lookup: get_segment_lookup_dict(wp),
        digests: d
