@@ -335,6 +335,13 @@ defmodule Jamixir.Node do
           {work_report, exports} = Task.await(refine_task)
 
           wr_hash = h(e(work_report))
+
+          Logger.info(
+            "📦 Executed work_package=#{b16(work_report.specification.work_package_hash)}" <>
+              " service=#{wp.service} core=#{core} exports_root=#{b16(work_report.specification.exports_root)}" <>
+              " work_report=#{b16(wr_hash)}"
+          )
+
           {priv, _} = KeyManager.get_our_ed25519_keypair()
 
           my_credential =
@@ -424,10 +431,17 @@ defmodule Jamixir.Node do
       {_, refine_task} ->
         # Execute refine, calculate wp hash and returns signature if sucessful
         {work_report, _exports} = Task.await(refine_task)
-        hash = h(e(work_report))
+        wr_hash = h(e(work_report))
+
+        Logger.info(
+          "📦 Other guarantor work_package=#{b16(work_report.specification.work_package_hash)}" <>
+            " service=#{bundle.work_package.service} core=#{core} exports_root=#{b16(work_report.specification.exports_root)}" <>
+            " work_report=#{b16(wr_hash)}"
+        )
+
         {priv, _} = KeyManager.get_our_ed25519_keypair()
-        signature = Crypto.sign(SigningContexts.jam_guarantee() <> hash, priv)
-        {:ok, {hash, signature}}
+        signature = Crypto.sign(SigningContexts.jam_guarantee() <> wr_hash, priv)
+        {:ok, {wr_hash, signature}}
     end
   end
 
