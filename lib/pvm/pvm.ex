@@ -19,6 +19,7 @@ defmodule PVM do
 
   @callback do_refine(
               non_neg_integer(),
+              non_neg_integer(),
               WorkPackage.t(),
               binary(),
               list(list(binary())),
@@ -37,6 +38,7 @@ defmodule PVM do
     do: PVM.Authorize.execute(p, core_index, services)
 
   def refine(
+        core,
         work_item_index,
         work_package,
         authorizer_output,
@@ -48,6 +50,7 @@ defmodule PVM do
     module = Application.get_env(:jamixir, :pvm, __MODULE__)
 
     module.do_refine(
+      core,
       work_item_index,
       work_package,
       authorizer_output,
@@ -59,6 +62,7 @@ defmodule PVM do
   end
 
   def do_refine(
+        core,
         work_item_index,
         work_package,
         authorizer_output,
@@ -69,6 +73,7 @@ defmodule PVM do
       ),
       do:
         PVM.Refine.execute(
+          core,
           work_item_index,
           work_package,
           authorizer_output,

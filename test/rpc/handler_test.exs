@@ -1,4 +1,5 @@
 defmodule Jamixir.RPC.HandlerTest do
+  alias Block.Extrinsic.Preimage
   alias Codec.State.Trie
   alias Block.Extrinsic
   alias Jamixir.Genesis
@@ -143,9 +144,12 @@ defmodule Jamixir.RPC.HandlerTest do
       Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
 
       request = %{"method" => "submitPreimage", "params" => [7, e64(<<1, 2, 3, 4>>), gen_head()]}
-      Jamixir.NodeAPI.Mock |> expect(:save_preimage, 1, fn <<1, 2, 3, 4>> -> :ok end)
+
+      Jamixir.NodeAPI.Mock
+      |> expect(:save_preimage, 1, fn %Preimage{blob: <<1, 2, 3, 4>>, service: 7} -> :ok end)
+
       response = response(request)
-      assert response.result == []
+      assert response.result == nil
       verify!()
     end
 

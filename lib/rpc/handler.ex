@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
   alias Jamixir.Node
@@ -73,11 +74,6 @@ defmodule Jamixir.RPC.Handler do
     end
   end
 
-  defp handle_method("subscribeBestBlock", [], websocket_pid) when websocket_pid != nil do
-    subscription_id = SubscriptionManager.create_subscription("bestBlock", [], websocket_pid)
-    {:subscription, subscription_id}
-  end
-
   defp handle_method("parent", [header_hash], _) do
     debug("call: parent #{b16(header_hash)}")
     {:ok, blocks} = Node.get_blocks(d64(header_hash), :descending, 2)
@@ -106,35 +102,23 @@ defmodule Jamixir.RPC.Handler do
     {:ok, e64(e(state.validator_statistics))}
   end
 
-  defp handle_method("subscribeStatistics", [_finalized], websocket_pid)
-       when websocket_pid != nil do
-    subscription_id = SubscriptionManager.create_subscription("statistics", [], websocket_pid)
-    {:subscription, subscription_id}
-  end
-
   defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
     {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
     {:ok, e64(e(state.services[service_id]))}
   end
 
-  defp handle_method("subscribeServiceData", [service_id, finalized], websocket_pid)
-       when websocket_pid != nil do
-    subscription_id =
-      SubscriptionManager.create_subscription(
-        "serviceData",
-        [service_id, finalized],
-        websocket_pid
-      )
-
-    {:subscription, subscription_id}
-  end
-
   defp handle_method("subscribeServiceRequest", [service_id, hash, len, finalized], websocket_pid)
        when websocket_pid != nil do
+    debug(
+      "Creating serviceRequest subscription for service #{service_id}, hash #{b16(hash)}, len #{len}, finalized #{finalized}"
+    )
+
+    params = [service_id, d64(hash), len, finalized]
+
     subscription_id =
       SubscriptionManager.create_subscription(
         "serviceRequest",
-        [service_id, d64(hash), len, finalized],
+        params,
         websocket_pid
       )
 
@@ -172,11 +156,12 @@ defmodule Jamixir.RPC.Handler do
      end}
   end
 
-  defp handle_method("submitPreimage", [_service_id, blob, _hash], _websocket_pid) do
-    # TODO we need to fix the preimage flow.
-    # https://github.com/jamixir/jamixir/issues/561
-    :ok = Jamixir.NodeAPI.save_preimage(d64(blob))
-    {:ok, []}
+  defp handle_method("submitPreimage", [service_id, blob, hash], _websocket_pid) do
+    bin = d64(blob)
+    log("Submitting preimage service #{service_id} hash #{b16(hash)} of size #{byte_size(bin)}")
+    preimage = %Preimage{blob: bin, service: service_id}
+    :ok = Jamixir.NodeAPI.save_preimage(preimage)
+    {:ok, nil}
   end
 
   defp handle_method("submitWorkPackage", [core, blob, extrinsics], _websocket_pid) do
@@ -203,23 +188,13 @@ defmodule Jamixir.RPC.Handler do
     end
   end
 
-  defp handle_method("subscribeFinalizedBlock", [], websocket_pid) when websocket_pid != nil do
-    subscription_id = SubscriptionManager.create_subscription("finalizedBlock", [], websocket_pid)
-    {:subscription, subscription_id}
-  end
-
   defp handle_method("listServices", [header_hash], _websocket_pid) do
     {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
     {:ok, Map.keys(state.services)}
   end
 
-  defp handle_method("subscribeSyncStatus", [], websocket_pid) when websocket_pid != nil do
-    subscription_id = SubscriptionManager.create_subscription("syncStatus", [], websocket_pid)
-    {:subscription, subscription_id}
-  end
-
-  defp handle_method("unsubscribeSyncStatus", [subscription_id], _) do
-    case SubscriptionManager.unsubscribe(subscription_id) do
+  defp handle_method("unsubscribe" <> _rest, [id], _) do
+    case SubscriptionManager.unsubscribe(id) do
       :ok -> {:ok, true}
       :error -> {:ok, false}
     end
@@ -233,8 +208,18 @@ defmodule Jamixir.RPC.Handler do
   end
 
   # Handle subscription methods called via HTTP (should return error)
-  defp handle_method("subscribe" <> _rest, _params, nil) do
-    {:error, -32601, "Subscriptions are only available via WebSocket"}
+  defp handle_method("subscribe" <> method, params, websocket_pid)
+       when method != "" and websocket_pid != nil do
+    first = String.first(method)
+    method = String.replace_prefix(method, first, String.downcase(first))
+
+    params =
+      for p <- params do
+        if is_binary(p), do: d64(p), else: p
+      end
+
+    subscription_id = SubscriptionManager.create_subscription(method, params, websocket_pid)
+    {:subscription, subscription_id}
   end
 
   # Method not found
@@ -242,8 +227,6 @@ defmodule Jamixir.RPC.Handler do
     debug("Invalid call: #{method} #{inspect(params)}")
     {:error, -32601, "Method not found: #{method}"}
   end
-
-  # Implementation functions
 
   defp get_parameters do
     # Return JAM chain parameters according to JIP-2 spec

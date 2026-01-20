@@ -7,7 +7,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
   import Codec.Encoder
   import Util.Hex
 
-  @log_context "[RPC]"
+  @log_context "[RPC][SUBSCRIPTIONS]"
   use Util.Logger
 
   def start_link(opts \\ []) do
@@ -22,8 +22,8 @@ defmodule Jamixir.RPC.SubscriptionManager do
     GenServer.cast(__MODULE__, {:unsubscribe, subscription_id})
   end
 
-  def notify_subscribers(method, data) do
-    GenServer.cast(__MODULE__, {:notify, method, data})
+  def notify_subscribers(method, params, data) do
+    GenServer.cast(__MODULE__, {:notify, method, params, data})
   end
 
   @impl true
@@ -61,10 +61,10 @@ defmodule Jamixir.RPC.SubscriptionManager do
   end
 
   @impl true
-  def handle_cast({:notify, method, data}, state) do
+  def handle_cast({:notify, method, params, data}, state) do
     # Notify all subscriptions matching the method
     for {_id, subscription} <- state.subscriptions do
-      if subscription.method == method do
+      if subscription.method == method and subscription.params == params do
         send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
       end
     end
@@ -82,8 +82,8 @@ defmodule Jamixir.RPC.SubscriptionManager do
     # When we get new_block event, we can notify bestBlock subscribers
     Task.start(fn ->
       message = [e64(h(e(header))), header.timeslot]
-      notify_subscribers("bestBlock", message)
-      notify_subscribers("finalizedBlock", message)
+      notify_subscribers("bestBlock", [], message)
+      notify_subscribers("finalizedBlock", [], message)
     end)
 
     {:noreply, state}
@@ -93,7 +93,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
     debug("Notify sync status")
 
     Task.start(fn ->
-      notify_subscribers("syncStatus", "Completed")
+      notify_subscribers("syncStatus", [], "Completed")
     end)
 
     {:noreply, state}
