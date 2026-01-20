@@ -1,6 +1,7 @@
 defmodule Jamixir.NodeTest do
   use ExUnit.Case
   use Jamixir.DBCase
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.TicketProof
   alias Codec.State.Trie
   alias Jamixir.Genesis
@@ -144,9 +145,11 @@ defmodule Jamixir.NodeTest do
     end
 
     test "save and get preimage" do
-      preimage = <<1, 2, 3, 4, 5>>
+      bin = <<1, 2, 3, 4, 5>>
+      preimage = %Preimage{blob: bin}
+
       assert :ok = save_preimage(preimage)
-      assert {:ok, ^preimage} = get_preimage(Hash.default(preimage))
+      assert {:ok, ^bin} = get_preimage(Hash.default(bin))
     end
 
     test "get_preimage with non-existing hash" do

@@ -60,18 +60,11 @@ defmodule Block.Extrinsic.WorkPackage do
   # Formula (14.10) v0.7.2
   # p_u
   def authorization_code(%__MODULE__{} = wp, services) do
-    case ServiceAccount.historical_lookup(
-           services[wp.service],
-           wp.context.timeslot,
-           wp.authorization_code_hash
-         ) do
-      nil ->
-        nil
-
-      bin ->
-        {_, code} = VariableSize.decode(bin, :binary)
-        code
-    end
+    ServiceAccount.code_lookup(
+      services[wp.service],
+      wp.context.timeslot,
+      wp.authorization_code_hash
+    )
   end
 
   # Formula (14.10) v0.7.2

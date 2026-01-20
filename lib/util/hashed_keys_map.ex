@@ -1,4 +1,5 @@
 defmodule HashedKeysMap do
+  alias Util.Logger
   alias Codec.VariableSize
   import Codec.Encoder
   import Bitwise
@@ -132,7 +133,11 @@ defmodule HashedKeysMap do
     {updated_items_count, updated_octets_size} =
       case key do
         # Preimage storage key: {hash, length}
-        {_, preimage_length} ->
+        {hash, preimage_length} ->
+          Logger.debug(
+            "Updating preimage storage for hash=#{Util.Hex.b16(hash)} length=#{preimage_length} with #{inspect(new_val)}"
+          )
+
           case old do
             # New preimage entry
             nil ->

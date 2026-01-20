@@ -2,6 +2,7 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
+  alias Jamixir.ChainSpec
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.WorkPackage
@@ -16,12 +17,6 @@ defmodule WorkReportTest do
   setup_all do
     preimage = Hash.random()
     sa = ServiceAccount.store_preimage(build(:service_account), preimage, 0)
-
-    Application.put_env(:jamixir, :erasure_coding, ErasureCodingMock)
-
-    on_exit(fn ->
-      Application.delete_env(:jamixir, :erasure_coding)
-    end)
 
     {:ok,
      wp:
@@ -414,7 +409,7 @@ defmodule WorkReportTest do
   describe "process_item/3" do
     setup do
       Application.put_env(:jamixir, :pvm, MockPVM)
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
 
       on_exit(fn ->
         Application.put_env(:jamixir, :pvm, PVM)
@@ -425,21 +420,21 @@ defmodule WorkReportTest do
 
     # case |e| != we
     test "bad exports", %{wp: wp, state: state} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {<<1>>, [<<1>>], 555} end)
 
       wi = build(:work_item, export_count: 4)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, _e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, _e} = WorkReport.process_item(wp, 0, 0, <<>>, [], state.services, %{})
       assert r == :bad_exports
     end
 
     # case r not binary
     test "processes a work item error in PVM", %{wp: wp, state: state} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
 
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, e} = WorkReport.process_item(wp, 0, <<>>, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, 0, <<>>, [], state.services, %{})
       assert r == :bad
       assert length(e) == 1
     end
@@ -447,10 +442,10 @@ defmodule WorkReportTest do
     # case r binary too large
     test "oversize", %{wp: wp, state: state} do
       o = String.duplicate(<<1>>, Constants.max_work_report_size() + 1)
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {o, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {o, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi]}
-      {r, _u, e} = WorkReport.process_item(wp, 0, o, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, 0, o, [], state.services, %{})
       assert r == :oversize
       assert length(e) == 1
     end
@@ -459,11 +454,11 @@ defmodule WorkReportTest do
     test "all good", %{wp: wp, state: state} do
       # Use smaller sizes that won't exceed the limit
       o = <<1>>
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {<<2>>, [<<1>>], 555} end)
       wi = build(:work_item, export_count: 1)
       wp = %WorkPackage{wp | work_items: [wi, wi]}
 
-      {r, _u, e} = WorkReport.process_item(wp, 1, o, [], state.services, %{})
+      {r, _u, e} = WorkReport.process_item(wp, 0, 1, o, [], state.services, %{})
       assert r == <<2>>
       assert length(e) == 1
     end
@@ -478,7 +473,7 @@ defmodule WorkReportTest do
       stub(ErasureCodingMock, :do_erasure_code, fn _ -> [<<>>] end)
       segment = <<7::m(export_segment)>>
 
-      stub(MockPVM, :do_refine, fn j, p, <<1>>, [[^segment]], _, _, _ ->
+      stub(MockPVM, :do_refine, fn j, _, p, <<1>>, [[^segment]], _, _, _ ->
         w = Enum.at(p.work_items, j)
 
         {<<1, 2, 3>>, List.duplicate(<<3::@export_segment_size*8>>, w.export_count), 555}
@@ -545,13 +540,33 @@ defmodule WorkReportTest do
     end
 
     test "bad exports when processing items", %{wp: wp, services: services} do
-      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
+      stub(MockPVM, :do_refine, fn _, _, _, _, _, _, _, _ -> {:bad, [<<1>>], 555} end)
       {[[sd]], task} = WorkReport.pre_execute_work_package(wp, [], 0, services)
       assert is_binary(sd.data)
       assert sd.merkle_root == <<4::hash()>>
       {wr, _e} = Task.await(task)
       [work_digest | _] = wr.digests
       assert work_digest.result == {:error, :bad}
+    end
+  end
+
+  describe "pre_execute_work_package integration test" do
+    test "integration test" do
+      wp_bin =
+        "0x00000000f8d86b97d65319a078e5840f1614c296a5254217794dcc910e72ca174e3c2e86167371e8d14a44a8523840a4ebb375a65eee12daa5ac13344e9c6456b35dc57721854cfc1e8b5e3329252889c771a6f1dc467a13e7ee16e69138931aa674f7150000000000000000000000000000000000000000000000000000000000000000668d35423a4dba70062f0a7df498e25e2c168ba2dbecbb91be109bc05720f6fd2f2d54000000000100000000590a2a74e31991304fc628e97219b73410125b2f523218e067340e5064c8cbef00ca9a3b000000008096980000000000000080a4060806a2111844d41615be6eb7760647537b8e3f5a42f96921930913255ab4d1bdc32a040000000000069d1cb38904c66766f636961ca1a04676118e5173353d3867d10198d67c90b4c7bb0411000000000006ca1d4ed6f0f66af8d600db89372d31d703b9a718a2e353ddbf9284680eb2d5e3f8ff3f0000000000061458b94637d0b71df0d2c83d9b7b8de847fcd15e5fffce35c8da311d53885cd851000000000000000000"
+        |> Util.Hex.decode16!()
+
+      {work_package, _} = WorkPackage.decode(wp_bin)
+      {:ok, chainspec} = ChainSpec.from_file("priv/polkajam_chainspec.json")
+      # Load the genesis state
+      {:ok, jam_state} = ChainSpec.get_state(chainspec)
+
+      {[[]], task} =
+        WorkReport.pre_execute_work_package(work_package, [[]], 0, jam_state.services)
+
+      {wr, _} = Task.await(task, :infinity)
+      [wd] = wr.digests
+      {:ok, _} = wd.result
     end
   end
 

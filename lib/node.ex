@@ -1,10 +1,8 @@
 defmodule Jamixir.Node do
   alias Block.Extrinsic.Assurance
-  alias Block.Extrinsic.Preimage
-  alias Util.Crypto
-  alias Util.MerkleTree
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.TicketProof
   alias Block.Extrinsic.WorkPackage
   alias Jamixir.Genesis
@@ -12,8 +10,9 @@ defmodule Jamixir.Node do
   alias Network.ConnectionManager
   alias Storage.PreimageMetadataRecord
   alias System.State
-  alias Util.Hash
+  alias Util.Crypto
   alias Util.Logger
+  alias Util.MerkleTree
   use StoragePrefix
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
@@ -161,7 +160,11 @@ defmodule Jamixir.Node do
 
   @impl true
   def save_preimage(preimage) do
-    Storage.put("#{@p_preimage}#{Hash.default(preimage)}", preimage)
+    Logger.info(
+      "Saving preimage (hash: #{b16(h(preimage.blob))}) for service #{preimage.service}"
+    )
+
+    Storage.put(preimage)
     :ok
   end
 

@@ -23,6 +23,7 @@ defmodule PVM.Refine do
   # https://matrix.to/#/!ddsEwXlCWnreEGuqXZ:polkadot.io/$2BY5KB1iDMI3RxikTBLj0iMYJbf7L5EhZjXl0xRKlBw?via=polkadot.io&via=matrix.org&via=parity.io
   @spec execute(
           non_neg_integer(),
+          non_neg_integer(),
           WorkPackage.t(),
           binary(),
           list(list(binary())),
@@ -32,6 +33,7 @@ defmodule PVM.Refine do
         ) ::
           {binary() | WorkExecutionError.t(), list(binary()), Types.gas()}
   def execute(
+        core,
         work_item_index,
         work_package,
         authorizer_trace,
@@ -45,9 +47,10 @@ defmodule PVM.Refine do
     px = work_package.context
 
     with {:ok, service} <- fetch_service(services, service_id),
-         {:ok, program} <- fetch_lookup(service, px.timeslot, wc),
+         {:ok, program} <- fetch_code(service, px.timeslot, wc),
          :ok <- validate_code_size(program) do
-      args = e({work_item_index, service_id, vs(wy), h(e(work_package))})
+      # let a = E(c,i,w_s,↕w_y,H(p))
+      args = e({core, work_item_index, service_id, vs(wy), h(e(work_package))})
 
       Executor.run(
         program,
@@ -168,10 +171,10 @@ defmodule PVM.Refine do
     end
   end
 
-  defp fetch_lookup(service, timeslot, code) do
-    case ServiceAccount.historical_lookup(service, timeslot, code) do
+  defp fetch_code(service, timeslot, code_hash) do
+    case ServiceAccount.code_lookup(service, timeslot, code_hash) do
       nil -> {:error, :invalid_lookup}
-      lookup -> {:ok, lookup}
+      code -> {:ok, code}
     end
   end
 

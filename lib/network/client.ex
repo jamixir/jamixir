@@ -19,12 +19,12 @@ defmodule Network.Client do
 
   @impl true
   def send(pid, protocol_id, message) when is_integer(protocol_id) do
-    GenServer.call(pid, {:send, protocol_id, message}, 500)
+    GenServer.call(pid, {:send, protocol_id, message}, 5000)
   end
 
   @impl true
   def send(pid, protocol_id, messages) when is_list(messages) do
-    GenServer.call(pid, {:send, protocol_id, messages}, 500)
+    GenServer.call(pid, {:send, protocol_id, messages}, 5000)
   end
 
   @impl true
@@ -200,41 +200,47 @@ defmodule Network.Client do
 
     {stream, updated_state} =
       case Map.get(up_streams, protocol_id) do
-          # Existing stream - reuse it and send only the message
-          %{stream: existing_stream} ->
-            debug("Reusing existing UP stream for block announcement")
-            debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
-            {existing_stream, state}
+        # Existing stream - reuse it and send only the message
+        %{stream: existing_stream} ->
+          debug("Reusing existing UP stream for block announcement")
+          debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+          {existing_stream, state}
 
-          # No stream yet - create new one
-          nil ->
-            case :quicer.start_stream(connection, default_stream_opts()) do
-              {:ok, new_stream} ->
-                log_stream(:debug, "Created new UP stream", new_stream, protocol_id)
-                # Update state with new stream
-                updated_state = put_in(state.up_streams[protocol_id], %{stream: new_stream})
-                updated_state = put_in(updated_state.up_stream_data[new_stream], %{protocol_id: protocol_id, buffer: <<>>})
-                # Send protocol ID first
-                :quicer.send(new_stream, <<protocol_id::8>>, send_flag(:none))
-                debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
-                {new_stream, updated_state}
+        # No stream yet - create new one
+        nil ->
+          case :quicer.start_stream(connection, default_stream_opts()) do
+            {:ok, new_stream} ->
+              log_stream(:debug, "Created new UP stream", new_stream, protocol_id)
+              # Update state with new stream
+              updated_state = put_in(state.up_streams[protocol_id], %{stream: new_stream})
 
-              {:error, reason} ->
-                log(:error, "Failed to create stream for block announcement: #{inspect(reason)}")
-                {nil, state}
-            end
-        end
+              updated_state =
+                put_in(updated_state.up_stream_data[new_stream], %{
+                  protocol_id: protocol_id,
+                  buffer: <<>>
+                })
 
-      # Send message
-      if stream do
-        case :quicer.send(stream, encode_message(message), send_flag(:none)) do
-          {:ok, _} ->
-            :ok
+              # Send protocol ID first
+              :quicer.send(new_stream, <<protocol_id::8>>, send_flag(:none))
+              debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+              {new_stream, updated_state}
 
-          {:error, reason} ->
-            log(:error, "Failed to send QUIC message: #{inspect(reason)}")
-        end
+            {:error, reason} ->
+              log(:error, "Failed to create stream for block announcement: #{inspect(reason)}")
+              {nil, state}
+          end
       end
+
+    # Send message
+    if stream do
+      case :quicer.send(stream, encode_message(message), send_flag(:none)) do
+        {:ok, _} ->
+          :ok
+
+        {:error, reason} ->
+          log(:error, "Failed to send QUIC message: #{inspect(reason)}")
+      end
+    end
 
     {:noreply, updated_state}
   end

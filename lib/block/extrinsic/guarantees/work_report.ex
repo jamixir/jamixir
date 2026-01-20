@@ -259,7 +259,9 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
     {d, e} =
       for j <- 0..(length(wp.work_items) - 1) do
         # (r,u,e) = I(p,j)
-        {result, gas, exports} = process_item(wp, j, o, import_segments, services, extrinsics)
+        {result, gas, exports} =
+          process_item(wp, core, j, o, import_segments, services, extrinsics)
+
         # C(pw [j],r), e)
         {WorkItem.to_work_digest(Enum.at(wp.work_items, j), result, gas), exports}
       end
@@ -286,12 +288,12 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
      }, exports}
   end
 
-  def process_item(%WorkPackage{} = p, j, o, import_segments, services, extrinsics) do
+  def process_item(%WorkPackage{} = p, core, j, o, import_segments, services, extrinsics) do
     w = Enum.at(p.work_items, j)
     # ℓ = ∑k<j pw[k]e
     l = p.work_items |> Enum.take(j) |> Enum.map(& &1.export_count) |> Enum.sum()
     # (r,e) = ΨR(j,p,o,i,ℓ)
-    {r, e, u} = PVM.refine(j, p, o, import_segments, l, services, extrinsics)
+    {r, e, u} = PVM.refine(core, j, p, o, import_segments, l, services, extrinsics)
 
     case {r, e, u} do
       # First, check export count
@@ -312,7 +314,7 @@ defmodule Block.Extrinsic.Guarantee.WorkReport do
             else
               Enum.sum(
                 for k <- 0..(j - 1) do
-                  {r_k, _, _} = process_item(p, k, o, import_segments, services, extrinsics)
+                  {r_k, _, _} = process_item(p, core, k, o, import_segments, services, extrinsics)
                   if is_binary(r_k), do: byte_size(r_k), else: 0
                 end
               )

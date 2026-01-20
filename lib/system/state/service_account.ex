@@ -109,6 +109,17 @@ defmodule System.State.ServiceAccount do
 
   def historical_lookup(nil, _, _), do: nil
 
+  def code_lookup(sa, timeslot, hash) do
+    case ServiceAccount.historical_lookup(sa, timeslot, hash) do
+      nil ->
+        nil
+
+      bin ->
+        {_, code} = VariableSize.decode(bin, :binary)
+        code
+    end
+  end
+
   defp in_storage?(nil, _), do: false
   defp in_storage?([], _), do: false
   defp in_storage?([x], t), do: x <= t

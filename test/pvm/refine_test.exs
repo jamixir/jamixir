@@ -3,16 +3,17 @@ defmodule PVM.RefineIntegrationTest do
   alias Block.Extrinsic.{WorkItem, WorkPackage}
   alias System.State.ServiceAccount
   alias Util.Hash
+  import Codec.Encoder
   import Mox
   use PVM.Instructions
   import PVM.Constants.HostCallId
 
   setup :verify_on_exit!
 
-  def make_executable_work_package(bin, service_account_index \\ 0) do
-    code_hash = Hash.default(bin)
-    auth_code = Hash.two()
-    auth_code_hash = Hash.default(auth_code)
+  def make_executable_work_package(bin, service_id \\ 0) do
+    code_hash = h(bin)
+    auth_code = <<0>> <> Hash.two()
+    auth_code_hash = h(auth_code)
 
     service_account = %ServiceAccount{
       preimage_storage_p: %{code_hash => bin, auth_code_hash => auth_code},
@@ -23,17 +24,13 @@ defmodule PVM.RefineIntegrationTest do
         })
     }
 
-    services = %{service_account_index => service_account}
+    services = %{service_id => service_account}
 
-    work_item = %WorkItem{
-      code_hash: code_hash,
-      service: service_account_index,
-      refine_gas_limit: 1000
-    }
+    work_item = %WorkItem{code_hash: code_hash, service: service_id, refine_gas_limit: 1000}
 
     work_package = %WorkPackage{
       work_items: [work_item],
-      service: service_account_index,
+      service: service_id,
       authorization_code_hash: auth_code_hash
     }
 
@@ -46,9 +43,10 @@ defmodule PVM.RefineIntegrationTest do
         Services.Fibonacci.program()
         |> PVM.Helper.init_bin()
 
-      %{services: services, work_package: work_package} = make_executable_work_package(program)
+      %{services: services, work_package: work_package} =
+        make_executable_work_package(<<0>> <> program)
 
-      assert {<<>>, [], 59} = PVM.refine(0, work_package, <<>>, [], 0, services, %{})
+      assert {<<>>, [], 59} = PVM.refine(0, 0, work_package, <<>>, [], 0, services, %{})
     end
 
     test "test-ecall-1" do
@@ -57,11 +55,11 @@ defmodule PVM.RefineIntegrationTest do
           op(:fallthrough), op(:fallthrough), op(:fallthrough)>>
 
       bitmask = <<183>>
-      binary = PVM.Helper.init(program, bitmask)
+      binary = <<0>> <> PVM.Helper.init(program, bitmask)
 
-      hash = Hash.default(binary)
-      auth_code = Hash.two()
-      auth_code_hash = Hash.default(auth_code)
+      hash = h(binary)
+      auth_code = <<0>> <> Hash.two()
+      auth_code_hash = h(auth_code)
 
       service_account = %ServiceAccount{
         preimage_storage_p: %{hash => binary, auth_code_hash => auth_code},
@@ -74,19 +72,10 @@ defmodule PVM.RefineIntegrationTest do
 
       services = %{1 => service_account}
 
-      w = %WorkItem{
-        service: 1,
-        refine_gas_limit: 1000,
-        code_hash: hash
-      }
+      w = %WorkItem{service: 1, refine_gas_limit: 1000, code_hash: hash}
+      wp = %WorkPackage{work_items: [w], service: 1, authorization_code_hash: auth_code_hash}
 
-      wp = %WorkPackage{
-        work_items: [w],
-        service: 1,
-        authorization_code_hash: auth_code_hash
-      }
-
-      r = PVM.refine(0, wp, <<>>, [], 0, services, %{})
+      r = PVM.refine(0, 0, wp, <<>>, [], 0, services, %{})
 
       assert r == {<<>>, [], 27}
     end
