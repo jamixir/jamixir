@@ -10,4 +10,4 @@ fi
 
 PRIV_DIR=./lib/jamixir-${VERSION}/priv/
 cd _build/tiny/rel/jamixir
-./jamixir run -k ${PRIV_DIR}/keys/$NODE.json ${RPC} ${LOG} ${DUMP} --chainspec=${PRIV_DIR}/polkajam_chainspec.json  --port $PORT --db db/db${NODE} $2
+./jamixir run -k ${PRIV_DIR}/keys/$NODE.json ${RPC} ${LOG} ${DUMP} --chainspec=${PRIV_DIR}/polkajam_chainspec.json  --port $PORT --db db/db${NODE} "$@"

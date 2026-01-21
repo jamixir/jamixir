@@ -20,6 +20,7 @@ defmodule Jamixir.NodeStateServer do
   alias Block.Header
   alias Codec.State.Trie
   alias Jamixir.Genesis
+  alias KeyManager
   alias Network.{Connection, ConnectionManager}
   alias Storage.AvailabilityRecord
   alias System.State
@@ -37,7 +38,8 @@ defmodule Jamixir.NodeStateServer do
 
   defstruct [
     :jam_state,
-    :bandersnatch_keypair
+    :bandersnatch_keypair,
+    block_counter: 0
   ]
 
   def start_link(opts \\ []) do
@@ -48,7 +50,13 @@ defmodule Jamixir.NodeStateServer do
   def init(opts) do
     bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
     Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
-    {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
+
+    {:ok,
+     %__MODULE__{
+       jam_state: opts[:jam_state],
+       bandersnatch_keypair: bandersnatch_keypair,
+       block_counter: 0
+     }}
   end
 
   # ============================================================================
@@ -122,7 +130,7 @@ defmodule Jamixir.NodeStateServer do
   def handle_call(
         {:add_block, block, announce},
         _from,
-        %__MODULE__{jam_state: jam_state} = state
+        %__MODULE__{jam_state: jam_state, block_counter: counter} = state
       ) do
     new_jam_state =
       case Jamixir.Node.add_block(block, jam_state) do
@@ -143,7 +151,6 @@ defmodule Jamixir.NodeStateServer do
           # Telemetry: best block changed
           Jamixir.Telemetry.best_block_changed(block.header.timeslot, header_hash)
 
-          if announce, do: announce_block_to_peers(block)
           new_jam_state
 
         {:error, _, reason} ->
@@ -151,7 +158,13 @@ defmodule Jamixir.NodeStateServer do
           jam_state
       end
 
-    genServerState = %__MODULE__{state | jam_state: new_jam_state}
+    new_counter = if announce, do: counter + 1, else: counter
+
+    if announce do
+      announce_block_to_peers(block, new_counter, new_jam_state)
+    end
+
+    genServerState = %__MODULE__{state | jam_state: new_jam_state, block_counter: new_counter}
 
     {:reply, {:ok, new_jam_state}, genServerState}
   end
@@ -619,16 +632,60 @@ defmodule Jamixir.NodeStateServer do
     for v <- validators, do: {v, ConnectionManager.get_connection(v.ed25519)}
   end
 
-  defp announce_block_to_peers(block) do
+  defp announce_block_to_peers(block, _block_counter, jam_state) do
     client_pids = ConnectionManager.get_connections()
+    skip_node_ids = Application.get_env(:jamixir, :skip_announcements_to, [])
+
     Log.debug("📢 Announcing block to #{map_size(client_pids)} peers")
 
     header_hash = h(e(block.header))
 
+    # Get validator list to map node IDs to ed25519 keys
+    validators = jam_state.curr_validators
+    local_node_id = find_validator_index(KeyManager.get_our_ed25519_key(), validators)
+
+    # Build a set of ed25519 keys to skip based on node IDs
+    peers_to_skip =
+      if Enum.empty?(skip_node_ids) do
+        MapSet.new()
+      else
+        skip_node_ids
+        |> Enum.map(fn node_id ->
+          case Enum.at(validators, node_id) do
+            nil ->
+              Log.warning("⛔ Invalid node ID for skipping: #{node_id} (not in validator list)")
+              nil
+
+            %Validator{ed25519: ed25519_key} ->
+              ed25519_key
+          end
+        end)
+        |> Enum.filter(&(&1 != nil))
+        |> MapSet.new()
+      end
+
+    if not Enum.empty?(peers_to_skip) do
+      Log.info(
+        "⛔ Misbehavior injection: node #{local_node_id} skipping node(s) #{inspect(skip_node_ids)} (validator indices)"
+      )
+    end
+
     for {ed25519_key, pid} <- client_pids do
-      Connection.announce_block(pid, block.header, block.header.timeslot)
-      # Telemetry: block announced (we are the announcer)
-      Jamixir.Telemetry.block_announced(ed25519_key, :local, block.header.timeslot, header_hash)
+      peer_validator_index = find_validator_index(ed25519_key, validators)
+
+      Log.warning(
+        "[SKIP_ANNOUNCE_CHECK] local=#{local_node_id} remote=#{peer_validator_index} skip=#{inspect(skip_node_ids)}"
+      )
+
+      if ed25519_key  in peers_to_skip do
+        Log.info(
+          "⛔ Skipping block announcement to node #{peer_validator_index} (ed25519: #{b16(ed25519_key)}) - misbehavior injection"
+        )
+      else
+        Connection.announce_block(pid, block.header, block.header.timeslot)
+        # Telemetry: block announced (we are the announcer)
+        Jamixir.Telemetry.block_announced(ed25519_key, :local, block.header.timeslot, header_hash)
+      end
     end
   end
 
