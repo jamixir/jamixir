@@ -54,6 +54,7 @@ defmodule Storage do
     key = @p_block <> header_hash
 
     {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
+    SqlStorage.save_block(header_hash, block.header.parent_hash, block.header.timeslot)
 
     {:ok, key}
   end
@@ -262,6 +263,20 @@ defmodule Storage do
   end
 
   def get_state_root(header_hash), do: KVStorage.get(@p_state_root <> header_hash)
+
+  def has_block?(header_hash) when is_binary(header_hash) do
+    case get(header_hash) do
+      nil -> false
+      _header -> true
+    end
+  end
+
+  def has_parent?(%Header{} = header) do
+    case header.parent_hash do
+      nil -> true
+      parent_hash -> has_block?(parent_hash)
+    end
+  end
 
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)

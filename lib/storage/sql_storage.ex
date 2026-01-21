@@ -11,7 +11,8 @@ defmodule Jamixir.SqlStorage do
     AvailabilityRecord,
     GuaranteeRecord,
     JudgementRecord,
-    PreimageMetadataRecord
+    PreimageMetadataRecord,
+    BlockRecord
   }
 
   import Ecto.Query
@@ -74,6 +75,16 @@ defmodule Jamixir.SqlStorage do
       on_conflict: :replace_all,
       conflict_target: :core_index
     )
+  end
+
+  def save_block(header_hash, parent_header_hash, slot) do
+    %BlockRecord{}
+    |> BlockRecord.changeset(%{
+      header_hash: header_hash,
+      parent_header_hash: parent_header_hash,
+      slot: slot
+    })
+    |> Repo.insert(returning: [:header_hash])
   end
 
   def clean(Assurance), do: Repo.delete_all(AssuranceRecord)
