@@ -2,6 +2,7 @@ defmodule Jamixir.InitializationTask do
   alias Jamixir.ChainSpec
   alias Jamixir.Genesis
   alias Network.ConnectionManager
+  alias Storage
   alias Util.Logger, as: Log
 
   def child_spec(_opts) do
@@ -66,7 +67,12 @@ defmodule Jamixir.InitializationTask do
 
   defp load_from_genesis(genesis_file) do
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
-    Storage.put(Genesis.genesis_block_header(), jam_state)
+    genesis_header = Genesis.genesis_block_header()
+
+    # Store genesis header explicitly so Storage.has_block? recognizes it
+    Storage.put(genesis_header)
+
+    Storage.put(genesis_header, jam_state)
     jam_state
   end
 
@@ -83,6 +89,8 @@ defmodule Jamixir.InitializationTask do
         {:ok, jam_state} = ChainSpec.get_state(chainspec)
         Log.debug("📊 Genesis state loaded with #{map_size(chainspec.genesis_state)} entries")
 
+        # Store genesis header explicitly so Storage.has_block? recognizes it
+        Storage.put(genesis_header)
         # Store state with genesis header
         Storage.put(genesis_header, jam_state)
         Storage.put(%Block{header: genesis_header})
