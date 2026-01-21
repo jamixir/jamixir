@@ -1,5 +1,5 @@
 defmodule Jamixir.FuzzerTest do
-  use ExUnit.Case
+  use Jamixir.DBCase
   require Logger
   alias Block.Extrinsic
   alias Block.Header

@@ -533,7 +533,7 @@ defmodule CommsTest do
       for slot <- 1..20 do
         h = %{header | timeslot: slot}
         Connection.announce_block(client, h, slot)
-        Jamixir.NodeAPI.Mock |> expect(:announce_block, fn ^h, _, ^slot -> :ok end)
+        Jamixir.NodeAPI.Mock |> expect(:announce_block, fn ^h, _remote_ed25519_key -> :ok end)
       end
 
       assert Process.alive?(client), "Expected client to be alive after announcements"
