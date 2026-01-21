@@ -49,15 +49,14 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def announce_block(header, _latest_hash, _latest_timeslot) do
-    hash = h(e(header))
-    pid = self()
-
-    Task.start(fn ->
-      Logger.debug("Requesting block #{b16(hash)} back from author")
-      {:ok, [b]} = Network.Connection.request_blocks(pid, hash, 1, 1)
-      NodeStateServer.add_block(b, false)
-    end)
+  def announce_block(header, remote_ed25519_key) do
+    if remote_ed25519_key do
+      Task.start(fn -> Block.Intake.Intake.process_announcement(header, remote_ed25519_key) end)
+    else
+      Logger.warning(
+        "Block announcement received but remote_ed25519_key is nil, cannot request blocks"
+      )
+    end
 
     :ok
   end

@@ -8,7 +8,7 @@ defmodule Jamixir.NodeAPI do
   alias System.Audit.AuditAnnouncement
   alias System.State
   @callback add_block(binary() | Block.t()) :: {:ok, State.t(), binary()} | {:error, any}
-  @callback announce_block(Header.t(), Types.hash(), Types.timeslot()) :: :ok | {:error, any}
+  @callback announce_block(Header.t(), Types.ed25519_key() | nil) :: :ok | {:error, any}
   @callback inspect_state(Types.hash()) :: {:ok, State.t()} | {:error, any}
   @callback inspect_state(Types.hash(), any()) ::
               {:error, :key_not_found | :no_state} | {:ok, any()}
@@ -44,8 +44,8 @@ defmodule Jamixir.NodeAPI do
               {:ok, binary()} | {:error, any}
   def add_block(a), do: impl().add_block(a)
 
-  def announce_block(header, latest_hash, latest_timeslot),
-    do: impl().announce_block(header, latest_hash, latest_timeslot)
+  def announce_block(header, remote_ed25519_key),
+    do: impl().announce_block(header, remote_ed25519_key)
 
   def inspect_state, do: impl().inspect_state()
   def inspect_state(a), do: impl().inspect_state(a)

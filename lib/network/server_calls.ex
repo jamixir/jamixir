@@ -8,19 +8,26 @@ defmodule Network.ServerCalls do
   import Codec.Encoder
   use Sizes
   import RangeMacros
-  import Util.Hex, only: [b16: 1]
 
   @behaviour Network.ServerCallsBehaviour
-  @callback call(protocol_id :: integer(), message :: binary() | [binary()]) :: any
+  @callback call(
+              protocol_id :: integer(),
+              message :: binary() | [binary()],
+              remote_ed25519_key :: binary()
+            ) :: any
 
   @log_context "[QUIC_SERVER_CALLS]"
   use Util.Logger
 
-  def call(protocol_id, [single_message]) do
-    call(protocol_id, single_message)
+  def call(protocol_id, [single_message], remote_ed25519_key) do
+    call(protocol_id, single_message, remote_ed25519_key)
   end
 
-  def call(128, <<hash::b(hash), direction::8, max_blocks::32-little>> = _message) do
+  def call(
+        128,
+        <<hash::b(hash), direction::8, max_blocks::32-little>> = _message,
+        _remote_ed25519_key
+      ) do
     dir = if direction == 0, do: :ascending, else: :descending
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, dir, max_blocks)
     blocks_bin = for b <- blocks, do: Encodable.encode(b)
@@ -30,7 +37,8 @@ defmodule Network.ServerCalls do
   def call(
         129,
         <<block_hash::b(hash), start_key::binary-size(31), end_key::binary-size(31),
-          max_size::32-little>>
+          max_size::32-little>>,
+        _remote_ed25519_key
       ) do
     log("Sending state")
     {:ok, {state_trie, bounderies}} = Jamixir.NodeAPI.get_state_trie(block_hash)
@@ -60,10 +68,10 @@ defmodule Network.ServerCalls do
     [bounderies, trie_bin]
   end
 
-  def call(131, m), do: process_ticket_message(:proxy, m)
-  def call(132, m), do: process_ticket_message(:validator, m)
+  def call(131, m, _remote_ed25519_key), do: process_ticket_message(:proxy, m)
+  def call(132, m, _remote_ed25519_key), do: process_ticket_message(:validator, m)
 
-  def call(133, [wp_and_core, extrinsic_bin]) do
+  def call(133, [wp_and_core, extrinsic_bin], _remote_ed25519_key) do
     <<core_index::16-little, rest::binary>> = wp_and_core
     {wp, _} = WorkPackage.decode(rest)
     log("Received work package for service #{wp.service} core #{core_index}")
@@ -84,7 +92,7 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
-  def call(134, [segments_and_core, bundle_bin]) do
+  def call(134, [segments_and_core, bundle_bin], _remote_ed25519_key) do
     <<core_index::16-little, segments_bin::binary>> = segments_and_core
     {lookup_dict, _} = VariableSize.decode(segments_bin, :map, @hash_size, @hash_size)
     {bundle, _} = WorkPackageBundle.decode(bundle_bin)
@@ -95,14 +103,14 @@ defmodule Network.ServerCalls do
     hash <> sign
   end
 
-  def call(135, message) do
+  def call(135, message, _remote_ed25519_key) do
     log("Received guarantee")
     {g, <<>>} = Guarantee.decode(message)
     :ok = Jamixir.NodeAPI.save_guarantee(g)
     <<>>
   end
 
-  def call(136, message) do
+  def call(136, message, _remote_ed25519_key) do
     log("Requesting work report")
 
     case Jamixir.NodeAPI.get_work_report(message) do
@@ -111,7 +119,11 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(137, <<erasure_root::binary-size(@hash_size), shard_index::16-little>>) do
+  def call(
+        137,
+        <<erasure_root::binary-size(@hash_size), shard_index::16-little>>,
+        _remote_ed25519_key
+      ) do
     log("Requesting Work Report Shard")
 
     case Jamixir.NodeAPI.get_work_package_shard(erasure_root, shard_index) do
@@ -123,7 +135,11 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(138, <<erasure_root::binary-size(@hash_size), segment_index::16-little>>) do
+  def call(
+        138,
+        <<erasure_root::binary-size(@hash_size), segment_index::16-little>>,
+        _remote_ed25519_key
+      ) do
     log("Requesting segment")
 
     case Jamixir.NodeAPI.get_work_package_shard(erasure_root, segment_index) do
@@ -136,7 +152,7 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(139, requests_bin) do
+  def call(139, requests_bin, _remote_ed25519_key) do
     log("Requesting segment shards")
 
     for r <- decode_requests(requests_bin, []) do
@@ -151,7 +167,7 @@ defmodule Network.ServerCalls do
     |> Enum.join(<<>>)
   end
 
-  def call(140, requests_bin) do
+  def call(140, requests_bin, _remote_ed25519_key) do
     log("Requesting segment shards with justification")
 
     {shards_bin, justifications} =
@@ -176,22 +192,28 @@ defmodule Network.ServerCalls do
     [shards_bin | justifications]
   end
 
-  def call(141, <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>) do
-    log("🛡️ Received assurance for parent block #{b16(hash)}")
-
+  def call(
+        141,
+        <<hash::b(hash), bitfield::b(bitfield), signature::b(signature)>>,
+        _remote_ed25519_key
+      ) do
     assurance = %Assurance{hash: hash, bitfield: bitfield, signature: signature}
 
     {:ok, _} = Jamixir.NodeAPI.save_assurance(assurance)
     <<>>
   end
 
-  def call(142, <<service_id::service(), hash::b(hash), length::32-little>> = _message) do
+  def call(
+        142,
+        <<service_id::service(), hash::b(hash), length::32-little>> = _message,
+        _remote_ed25519_key
+      ) do
     log("Receiving Preimage announcement")
     :ok = Jamixir.NodeAPI.receive_preimage(service_id, hash, length)
     <<>>
   end
 
-  def call(143, hash) do
+  def call(143, hash, _remote_ed25519_key) do
     log("Received preimage request")
 
     case Jamixir.NodeAPI.get_preimage(hash) do
@@ -200,7 +222,7 @@ defmodule Network.ServerCalls do
     end
   end
 
-  def call(144, [message1, evidence_bin]) do
+  def call(144, [message1, evidence_bin], _remote_ed25519_key) do
     log("Received audit announcement")
     <<header_hash::b(hash), tranche::8, announcements::binary>> = message1
 
@@ -227,7 +249,8 @@ defmodule Network.ServerCalls do
   def call(
         145,
         <<epoch_index::m(epoch_index), validator_index::m(validator_index), vote::8,
-          hash::b(hash), signature::b(signature)>>
+          hash::b(hash), signature::b(signature)>>,
+        _remote_ed25519_key
       ) do
     judgement = %Judgement{
       vote: vote,
@@ -239,14 +262,22 @@ defmodule Network.ServerCalls do
     <<>>
   end
 
-  def call(0, message) do
+  def call(0, message, remote_ed25519_key) when is_binary(remote_ed25519_key) do
     debug("Processing block announcement")
-    {header, rest} = Header.decode(message)
-    <<hash::b(hash), timeslot::m(timeslot)>> = rest
-    :ok = Jamixir.NodeAPI.announce_block(header, hash, timeslot)
+    {header, _rest} = Header.decode(message)
+
+    :ok = Jamixir.NodeAPI.announce_block(header, remote_ed25519_key)
   end
 
-  def call(protocol_id, messages) when is_list(messages) do
+  def call(0, message, nil) do
+    debug("Processing block announcement (no peer key available)")
+    {header, _rest} = Header.decode(message)
+    # If we don't have the peer key, we can't request blocks from them
+    # Pass nil to announce_block which will handle it gracefully
+    :ok = Jamixir.NodeAPI.announce_block(header, nil)
+  end
+
+  def call(protocol_id, messages, _remote_ed25519_key) when is_list(messages) do
     Logger.warning(
       "Received unknown message #{protocol_id} on server. Ignoring #{inspect(messages)}}"
     )
@@ -254,7 +285,7 @@ defmodule Network.ServerCalls do
     IO.iodata_to_binary(messages)
   end
 
-  def call(protocol_id, message) do
+  def call(protocol_id, message, _remote_ed25519_key) do
     Logger.warning(
       "Received unknown message #{protocol_id} on server. Ignoring #{inspect(message)} of size #{byte_size(message)}"
     )
@@ -293,7 +324,6 @@ defmodule Network.ServerCalls do
        do: process_ticket(mode, epoch, attempt, vrf_proof)
 
   defp process_ticket(mode, epoch, attempt, vrf_proof) do
-    debug("Processing #{mode} ticket")
     ticket = %TicketProof{attempt: attempt, signature: vrf_proof}
     :ok = Jamixir.NodeAPI.process_ticket(mode, epoch, ticket)
     <<>>
