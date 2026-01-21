@@ -7,6 +7,10 @@ defmodule Jamixir.Repo do
     # Handle runtime database path configuration
     config = resolve_database_path(config)
 
+    # Without this we sometimes get "database is locked" errors on startup.
+    # https://github.com/oatpp/oatpp/issues/995#issuecomment-2533270939
+    config = Keyword.put(config, :pool_size, 5)
+
     # Fix startup "database is locked" errors.
     # WAL allows write without locking the db file.
     config =
