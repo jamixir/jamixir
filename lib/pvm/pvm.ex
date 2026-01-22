@@ -18,7 +18,7 @@ defmodule PVM do
             ) :: {ServiceAccount.t(), non_neg_integer()}
 
   @callback do_refine(
-              non_neg_integer(),
+              Types.core_index(),
               non_neg_integer(),
               WorkPackage.t(),
               binary(),
