@@ -36,6 +36,7 @@ defmodule Types do
   # 144 bytes
   @type bls_key :: <<_::1152>>
   @type validator_index :: non_neg_integer()
+  @type core_index :: non_neg_integer()
   @type epoch_index :: non_neg_integer()
   # Formula (4.28) v0.7.2 - should be guarded as <= 2^32
   @type timeslot :: non_neg_integer()
