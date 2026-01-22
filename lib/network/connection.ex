@@ -5,6 +5,7 @@ defmodule Network.Connection do
   """
 
   use GenServer
+  alias Block.Extrinsic.Preimage
   alias Network.{Client, ConnectionManager, ConnectionState, Server}
   import Network.Config
   alias Util.Logger, as: Log
@@ -25,6 +26,10 @@ defmodule Network.Connection do
 
   def announce_block(pid, header, slot) do
     client_module().announce_block(pid, header, slot)
+  end
+
+  def announce_preimage(pid, %Preimage{} = preimage) do
+    client_module().announce_preimage(pid, preimage)
   end
 
   def announce_preimage(pid, service_id, hash, length) do

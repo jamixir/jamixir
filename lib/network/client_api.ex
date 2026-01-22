@@ -13,6 +13,8 @@ defmodule Network.ClientAPI do
   @callback announce_block(pid(), Header.t(), Types.timeslot()) :: :ok | {:error, term()}
   @callback announce_preimage(pid(), Types.service_index(), Types.hash(), integer()) ::
               :ok | {:error, term()}
+  @callback announce_preimage(pid(), Block.Extrinsic.Preimage.t()) :: :ok | {:error, term()}
+
   @callback get_preimage(pid(), Types.hash()) :: {:ok, binary()} | {:error, term()}
   @callback distribute_assurance(pid(), Assurance.t()) :: :ok | {:error, term()}
   @callback distribute_ticket(pid(), atom(), Types.epoch_index(), TicketProof.t()) ::
