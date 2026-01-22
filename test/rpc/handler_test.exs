@@ -1,7 +1,7 @@
 defmodule Jamixir.RPC.HandlerTest do
+  alias Block.Extrinsic
   alias Block.Extrinsic.Preimage
   alias Codec.State.Trie
-  alias Block.Extrinsic
   alias Jamixir.Genesis
   use Jamixir.DBCase
   import Jamixir.Factory
@@ -16,7 +16,8 @@ defmodule Jamixir.RPC.HandlerTest do
     Storage.put(Genesis.genesis_header_hash(), s)
 
     header = build(:decodable_header, timeslot: 42)
-    Storage.put(header)
+    {:ok, header_hash} = Storage.put(header)
+    Storage.set_canonical_tip(header_hash)
     {:ok, state: s}
   end
 
@@ -129,7 +130,13 @@ defmodule Jamixir.RPC.HandlerTest do
 
     test "handles beefyRoot method", %{state: state} do
       # make genesis the last block
-      Storage.put(Genesis.genesis_block_header(), state)
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
 
       %{recent_history: %{blocks: [_, b2]}} = state
       hash = e64(b2.header_hash)

@@ -197,6 +197,16 @@ defmodule Jamixir.NodeTest do
 
       stub(NodeStateServerMock, :assigned_core, fn -> 0 end)
 
+      # Set up genesis block
+      %{state: state} = build(:genesis_state_with_safrole)
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
+
       on_exit(fn ->
         Application.delete_env(:jamixir, :node_state_server)
       end)
@@ -265,8 +275,15 @@ defmodule Jamixir.NodeTest do
     end
 
     test "get_state_trie with existing state", %{state: state} do
-      Storage.put(Genesis.genesis_block_header(), state)
-      {:ok, trie} = get_state_trie(Genesis.genesis_header_hash())
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
+
+      {:ok, trie} = get_state_trie(genesis_header_hash)
       assert trie == Trie.serialize(state)
     end
 
@@ -289,7 +306,13 @@ defmodule Jamixir.NodeTest do
     end
 
     test "forward valid tickets", %{state: state, proof0: proof} do
-      Storage.put(Genesis.genesis_block_header(), state)
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
 
       t1 = build(:ticket_proof, signature: proof, attempt: 0)
 
@@ -308,7 +331,13 @@ defmodule Jamixir.NodeTest do
     end
 
     test "do not forward duplicated ticket", %{state: state, key_pairs: [key | _], proof0: p0} do
-      Storage.put(Genesis.genesis_block_header(), state)
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
 
       {p1, _} = TicketProof.create_proof(state.curr_validators, state.entropy_pool.n1, key, 0, 1)
 
@@ -343,7 +372,13 @@ defmodule Jamixir.NodeTest do
         | safrole: %{state.safrole | ticket_accumulator: [%SealKeyTicket{attempt: 0, id: output}]}
       }
 
-      Storage.put(Genesis.genesis_block_header(), state)
+      genesis_header = Genesis.genesis_block_header()
+      genesis_header_hash = h(e(genesis_header))
+      genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+      Storage.put(genesis_block)
+      Storage.put(genesis_header, state)
+      Storage.mark_applied(genesis_header_hash)
 
       process_ticket(:proxy, 123, t1)
       assert Storage.get_tickets(123) == []
