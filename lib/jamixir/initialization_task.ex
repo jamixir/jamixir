@@ -1,9 +1,11 @@
 defmodule Jamixir.InitializationTask do
+  alias Block
   alias Jamixir.ChainSpec
   alias Jamixir.Genesis
   alias Network.ConnectionManager
   alias Storage
   alias Util.Logger, as: Log
+  import Codec.Encoder
 
   def child_spec(_opts) do
     %{
@@ -68,11 +70,18 @@ defmodule Jamixir.InitializationTask do
   defp load_from_genesis(genesis_file) do
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
     genesis_header = Genesis.genesis_block_header()
+    genesis_header_hash = h(e(genesis_header))
+    genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
 
-    # Store genesis header explicitly so Storage.has_block? recognizes it
-    Storage.put(genesis_header)
+    # Store genesis block so it's in the database
+    Storage.put(genesis_block)
 
+    # Store genesis state
     Storage.put(genesis_header, jam_state)
+
+    # Mark genesis block as applied and set as last applied hash
+    Storage.mark_applied(genesis_header_hash)
+
     jam_state
   end
 
@@ -89,11 +98,20 @@ defmodule Jamixir.InitializationTask do
         {:ok, jam_state} = ChainSpec.get_state(chainspec)
         Log.debug("📊 Genesis state loaded with #{map_size(chainspec.genesis_state)} entries")
 
-        # Store genesis header explicitly so Storage.has_block? recognizes it
-        Storage.put(genesis_header)
+        genesis_header_hash = h(e(genesis_header))
+
+        # Create genesis block with empty extrinsic
+        genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+        # Store genesis block so it's in the database
+        Storage.put(genesis_block)
+
         # Store state with genesis header
         Storage.put(genesis_header, jam_state)
         Storage.put(%Block{header: genesis_header})
+
+        # Mark genesis block as applied and set as last applied hash
+        Storage.mark_applied(genesis_header_hash)
 
         # Store the chainspec for later use (e.g., bootnodes)
         Application.put_env(:jamixir, :loaded_chainspec, chainspec)

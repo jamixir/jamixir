@@ -273,7 +273,6 @@ defmodule Network.ServerCalls do
     debug("Processing block announcement (no peer key available)")
     {header, _rest} = Header.decode(message)
     # If we don't have the peer key, we can't request blocks from them
-    # Pass nil to announce_block which will handle it gracefully
     :ok = Jamixir.NodeAPI.announce_block(header, nil)
   end
 

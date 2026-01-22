@@ -40,7 +40,6 @@ defmodule Jamixir.Node do
     case State.add_block(state, block) do
       {:ok, new_app_state} ->
         state_root = Storage.put(block, new_app_state)
-        Storage.put(block)
         {:ok, new_app_state, state_root}
 
       {:error, pre_state, reason} ->
@@ -194,7 +193,7 @@ defmodule Jamixir.Node do
   # CE 131 - Safrole ticket distribution
   @impl true
   def process_ticket(:proxy, epoch, ticket) do
-    state = get_latest_state()
+    state = get_canonical_state()
 
     case TicketProof.proof_output(ticket, state.entropy_pool.n1, state.safrole.epoch_root) do
       {:error, _} ->
@@ -294,9 +293,9 @@ defmodule Jamixir.Node do
     end
   end
 
-  def get_latest_state do
-    {_ts, header} = Storage.get_latest_header()
-    Storage.get_state(header)
+  def get_canonical_state do
+    canonical_tip_hash = Storage.get_canonical_tip()
+    Storage.get_state(canonical_tip_hash)
   end
 
   def process_work_package(wp, core, extrinsics) do
@@ -306,7 +305,7 @@ defmodule Jamixir.Node do
     core = NodeStateServer.instance().assigned_core()
 
     if NodeStateServer.instance().assigned_core() == core do
-      services = get_latest_state().services
+      services = Storage.get_state(Storage.get_canonical_tip()).services
 
       case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
         :error ->
@@ -420,7 +419,7 @@ defmodule Jamixir.Node do
       # TODO Verify and save all justifications
     end
 
-    services = get_latest_state().services
+    services = Storage.get_state(Storage.get_canonical_tip()).services
 
     case WorkReport.pre_execute_work_package(
            bundle.work_package,

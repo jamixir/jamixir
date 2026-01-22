@@ -84,7 +84,11 @@ defmodule Jamixir.SqlStorage do
       parent_header_hash: parent_header_hash,
       slot: slot
     })
-    |> Repo.insert(returning: [:header_hash])
+    |> Repo.insert(
+      on_conflict: :nothing,
+      conflict_target: :header_hash,
+      returning: [:header_hash]
+    )
   end
 
   def clean(Assurance), do: Repo.delete_all(AssuranceRecord)
@@ -138,5 +142,90 @@ defmodule Jamixir.SqlStorage do
       where: g.work_report_hash in ^guarantee_work_report_hashes
     )
     |> Repo.update_all(set: [status: :included, included_in_block: header_hash])
+  end
+
+  @doc """
+  Get the canonical root hash of the tip and the applied block
+  we walk down the chain, starting from a tip (which is a none applied incoming block)
+  and we stop when we find the first applied block.
+  the first applied block is the canonical root.
+  """
+  def get_canonical_root(tip_hash) do
+    # Encode hash as hex for SQLite binary comparison
+    # SQLite's ? placeholder doesn't properly bind binary data, so we use hex encoding
+    # SQLite's hex() function returns UPPERCASE, so we must use uppercase for comparison
+    tip_hash_hex = Base.encode16(tip_hash, case: :upper)
+
+    sql = """
+    WITH RECURSIVE chain AS (
+      SELECT header_hash, parent_header_hash, applied, 0 AS depth
+      FROM blocks
+      WHERE hex(header_hash) = ?
+
+      UNION ALL
+
+      SELECT b.header_hash, b.parent_header_hash, b.applied, c.depth + 1 AS depth
+      FROM blocks b
+      JOIN chain c
+      ON hex(b.header_hash) = hex(c.parent_header_hash)
+    )
+    SELECT header_hash
+    FROM chain
+    WHERE applied = 1
+    ORDER BY depth ASC
+    LIMIT 1;
+    """
+
+    case Repo.query(sql, [tip_hash_hex]) do
+      {:ok, %{rows: [[header_hash]]}} ->
+        {:ok, header_hash}
+
+      {:ok, %{rows: []}} ->
+        {:error, :not_found}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
+  this is the fork choice rule, the fork that has the most blocks in it, from the canonical root.
+  until the edge of the DAG, is the heaviest
+  this is the fork we need to keep.
+  """
+  def get_heaviest_chain_tip_from_canonical_root(canonical_root) do
+    canonical_root_hex = Base.encode16(canonical_root, case: :upper)
+
+    sql = """
+    WITH RECURSIVE forward AS (
+      SELECT header_hash, parent_header_hash, 0 AS depth
+      FROM blocks
+      WHERE hex(header_hash) = ?
+
+      UNION ALL
+
+      SELECT c.header_hash, c.parent_header_hash, f.depth + 1
+      FROM blocks c
+      JOIN forward f
+        ON hex(c.parent_header_hash) = hex(f.header_hash)
+    )
+    SELECT header_hash
+    FROM forward
+    ORDER BY depth DESC
+    LIMIT 1;
+    """
+
+    case Repo.query(sql, [canonical_root_hex]) do
+      {:ok, %{rows: [[hash]]}} -> {:ok, hash}
+      {:ok, %{rows: []}} -> :not_found
+      error -> error
+    end
+  end
+
+  def mark_applied(header_hash) do
+    from(b in BlockRecord,
+      where: b.header_hash == ^header_hash
+    )
+    |> Repo.update_all(set: [applied: true])
   end
 end
