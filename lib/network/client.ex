@@ -1,6 +1,7 @@
 defmodule Network.Client do
   @behaviour Network.ClientAPI
 
+  alias Block.Extrinsic.Preimage
   alias Network.MessageParsers
   alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
@@ -43,6 +44,11 @@ defmodule Network.Client do
       ) do
     message = block_hash <> start_key <> end_key <> <<max_size::32-little>>
     send(pid, 129, message)
+  end
+
+  @impl true
+  def announce_preimage(pid, %Preimage{blob: bin, service: service_id}) do
+    announce_preimage(pid, service_id, h(bin), byte_size(bin))
   end
 
   @impl true

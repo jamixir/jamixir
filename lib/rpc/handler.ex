@@ -8,6 +8,7 @@ defmodule Jamixir.RPC.Handler do
   alias Codec.State.Trie
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
+  alias Network.Client
   alias Network.ConnectionManager
   import Codec.Encoder
   import Util.Hex
@@ -109,20 +110,24 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("subscribeServiceRequest", [service_id, hash, len, finalized], websocket_pid)
        when websocket_pid != nil do
-    debug(
-      "Creating serviceRequest subscription for service #{service_id}, hash #{b16(hash)}, len #{len}, finalized #{finalized}"
-    )
+    debug("serviceRequest subscription service=#{service_id}, hash=#{b16(d64(hash))}, len=#{len}")
 
     params = [service_id, d64(hash), len, finalized]
 
-    subscription_id =
-      SubscriptionManager.create_subscription(
-        "serviceRequest",
-        params,
-        websocket_pid
-      )
+    id = SubscriptionManager.create_subscription("serviceRequest", params, websocket_pid)
 
-    {:subscription, subscription_id}
+    {:subscription, id}
+  end
+
+  defp handle_method("subscribeServiceValue", [service_id, key, _finalized], websocket_pid)
+       when websocket_pid != nil do
+    debug("serviceValue subscription service=#{service_id}, key=#{b16(d64(key))}")
+
+    params = [service_id, d64(key)]
+
+    id = SubscriptionManager.create_subscription("serviceValue", params, websocket_pid)
+
+    {:subscription, id}
   end
 
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
@@ -156,11 +161,20 @@ defmodule Jamixir.RPC.Handler do
      end}
   end
 
-  defp handle_method("submitPreimage", [service_id, blob, hash], _websocket_pid) do
+  defp handle_method("submitPreimage", [service_id, blob], _websocket_pid) do
     bin = d64(blob)
+    hash = h(bin)
     log("Submitting preimage service #{service_id} hash #{b16(hash)} of size #{byte_size(bin)}")
     preimage = %Preimage{blob: bin, service: service_id}
     :ok = Jamixir.NodeAPI.save_preimage(preimage)
+
+    Task.async(fn ->
+      # TODO announce only to neighbours instead of all
+      for {_, pid} <- ConnectionManager.instance().get_connections() do
+        Network.Connection.announce_preimage(pid, preimage)
+      end
+    end)
+
     {:ok, nil}
   end
 

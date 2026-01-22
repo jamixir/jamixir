@@ -142,14 +142,24 @@ defmodule Jamixir.RPC.HandlerTest do
 
     test "handles submitPreimage method" do
       Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+      Application.put_env(:jamixir, :connection_manager, ConnectionManagerMock)
+      Application.put_env(:jamixir, :network_client, ClientMock)
 
-      request = %{"method" => "submitPreimage", "params" => [7, e64(<<1, 2, 3, 4>>), gen_head()]}
+      on_exit(fn ->
+        Application.delete_env(:jamixir, :connection_manager)
+        Application.delete_env(:jamixir, :network_client)
+      end)
 
-      Jamixir.NodeAPI.Mock
-      |> expect(:save_preimage, 1, fn %Preimage{blob: <<1, 2, 3, 4>>, service: 7} -> :ok end)
+      request = %{"method" => "submitPreimage", "params" => [7, e64(<<1, 2, 3, 4>>)]}
+      preimage = %Preimage{blob: <<1, 2, 3, 4>>, service: 7}
+      expect(Jamixir.NodeAPI.Mock, :save_preimage, 1, fn ^preimage -> :ok end)
+      expect(ConnectionManagerMock, :get_connections, fn -> %{"k1" => 101, "k2" => 102} end)
+      expect(ClientMock, :announce_preimage, fn 101, ^preimage -> :ok end)
+      expect(ClientMock, :announce_preimage, fn 102, ^preimage -> :ok end)
 
       response = response(request)
       assert response.result == nil
+      Process.sleep(20)
       verify!()
     end
 

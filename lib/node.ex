@@ -144,9 +144,7 @@ defmodule Jamixir.Node do
         "Requesting preimage #{b16(hash)} back from client via server #{inspect(server_pid)}"
       )
 
-      blob = Network.Connection.get_preimage(server_pid, hash)
-
-      Storage.put(%Preimage{service: service_id, blob: blob})
+      :ok = Network.Connection.get_preimage(server_pid, hash)
     end)
 
     :ok
@@ -159,12 +157,16 @@ defmodule Jamixir.Node do
   end
 
   @impl true
-  def save_preimage(preimage) do
-    Logger.info(
-      "Saving preimage (hash: #{b16(h(preimage.blob))}) for service #{preimage.service}"
-    )
+  def save_preimage(%Preimage{blob: b, service: s} = p) do
+    Logger.info("Saving preimage (hash: #{b16(h(b))}) for service #{s}")
+    Storage.put(p)
+    :ok
+  end
 
-    Storage.put(preimage)
+  @impl true
+  def save_preimage(blob) when is_binary(blob) do
+    Logger.info("Saving preimage (hash: #{b16(h(blob))})")
+    Storage.put(@p_preimage <> h(blob), blob)
     :ok
   end
 

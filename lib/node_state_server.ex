@@ -18,12 +18,12 @@ defmodule Jamixir.NodeStateServer do
   alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
-  alias Block
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
   alias Storage.AvailabilityRecord
   alias System.State
   alias System.State.{CoreReport, EntropyPool, RotateKeys, Validator}
+  alias System.State.Safrole
   alias Util.Logger, as: Log
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
@@ -58,8 +58,8 @@ defmodule Jamixir.NodeStateServer do
   def current_timeslot, do: GenServer.call(__MODULE__, :current_timeslot)
 
   # Block operations
-  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false})
-  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
+  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false}, 18_000)
+  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true}, 18_000)
 
   # Validator and network information
   @impl true
@@ -130,6 +130,8 @@ defmodule Jamixir.NodeStateServer do
           Log.info(
             "🔄 State Updated successfully. H: #{b16(header_hash)} root: #{b16(state_root)}"
           )
+
+          notify_service_requests(new_jam_state, jam_state, block, header_hash)
 
           #  Notify Subscription Manager, which will notify "bestBlock" subscribers
           Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block})
@@ -422,10 +424,10 @@ defmodule Jamixir.NodeStateServer do
     # =======================================================
 
     Log.info(
-      "New block with #{length(tickets)} 🎟️ tickets, " <>
-        "#{length(assurances)} 🛡️ assurances, " <>
-        "#{length(guarantees_to_include)} 🧩 guarantees, " <>
-        "#{length(preimages_to_include)} 🖼️ preimages"
+      "New block with 🎟️ #{length(tickets)} tickets, " <>
+        "🛡️ #{length(assurances)} assurances, " <>
+        "🧩 #{length(guarantees_to_include)} guarantees, " <>
+        "🖼️ #{length(preimages_to_include)} preimages"
     )
 
     extrinsics = %Block.Extrinsic{
@@ -626,8 +628,57 @@ defmodule Jamixir.NodeStateServer do
     end
   end
 
+  # TODO This function is completely provisory and is here only to make service preimages updates
+  # we should design a proper mechanism for notifying service storage changes
+  # but this "quick and dirty" solution will do for now to test DOOM
+  defp notify_service_requests(new_jam_state, jam_state, block, header_hash) do
+    updated_services = Map.keys(new_jam_state.validator_statistics.service_statistics)
+    new_preimages = for p <- block.extrinsic.preimages, do: p.service
+
+    Log.debug(
+      "updated services: #{inspect(updated_services)}, new_preimages services: #{inspect(new_preimages)}"
+    )
+
+    for service_id <- MapSet.new(updated_services ++ [0]),
+        new_service = new_jam_state.services[service_id],
+        old_service = jam_state.services[service_id] do
+      for key <-
+            MapSet.new(
+              Map.keys(new_service.storage.original_map) ++
+                Map.keys(old_service.storage.original_map)
+            ),
+          old_value = get_in(old_service, [:storage, key]) || :ok,
+          new_value = get_in(new_service, [:storage, key]) || :ok,
+          Log.debug(
+            "key: #{inspect(key)} => old_value: #{inspect(old_value)}, new_value: #{inspect(new_value)}"
+          ),
+          old_value != new_value do
+        csu = %{header_hash: header_hash, timeslot: block.header.timeslot, value: new_value}
+
+        notification =
+          case key do
+            {hash, size} ->
+              {:service_request, [service_id, hash, size], csu}
+
+            _ ->
+              {:service_value, [service_id, key], csu}
+          end
+
+        Task.async(fn ->
+          # we should notify only once, but for unknown reason, jamt subscribes later than we notify here
+          # so we repeat the notification a few times to make sure it is received
+          # it doesn't hurt because if nobody is listening, the notification is simply ignored
+          for _ <- 1..6 do
+            Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", notification)
+            Process.sleep(200)
+          end
+        end)
+      end
+    end
+  end
+
   # Authoring and slot computation
-  defp compute_author_slots_for_epoch(jam_state, epoch, bandersnatch_keypair) do
+  defp compute_author_slots_for_epoch(%State{} = jam_state, epoch, bandersnatch_keypair) do
     epoch_first_slot = epoch * Constants.epoch_length()
 
     header = %Header{timeslot: epoch_first_slot}
@@ -639,7 +690,7 @@ defmodule Jamixir.NodeStateServer do
       RotateKeys.rotate_keys(header, jam_state, %System.State.Judgements{})
 
     next_epoch_slot_sealers =
-      System.State.Safrole.get_epoch_slot_sealers_(
+      Safrole.get_epoch_slot_sealers_(
         header,
         jam_state.timeslot,
         jam_state.safrole,

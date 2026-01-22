@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeAPI do
+  alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.Disputes.Judgement
   alias Block.Extrinsic.{Assurance, TicketProof, WorkPackage}
@@ -18,6 +19,7 @@ defmodule Jamixir.NodeAPI do
               :ok | {:error, any}
   @callback get_preimage(Types.hash()) :: {:ok, binary} | {:error, any}
   @callback save_preimage(binary()) :: :ok | {:error, any}
+  @callback save_preimage(%Preimage{}) :: :ok | {:error, any}
   # CE 131/132 Safrole ticket distribution (epoch index, attempt, proof)
   @callback process_ticket(:proxy | :validator, Types.epoch_index(), TicketProof.t()) ::
               :ok | {:error, any}

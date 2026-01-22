@@ -85,6 +85,7 @@ defmodule Jamixir.InitializationTask do
 
         # Store state with genesis header
         Storage.put(genesis_header, jam_state)
+        Storage.put(%Block{header: genesis_header})
 
         # Store the chainspec for later use (e.g., bootnodes)
         Application.put_env(:jamixir, :loaded_chainspec, chainspec)

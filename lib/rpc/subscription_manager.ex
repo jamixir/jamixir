@@ -89,6 +89,22 @@ defmodule Jamixir.RPC.SubscriptionManager do
     {:noreply, state}
   end
 
+  def handle_info({:service_request, [service_id, hash, size], csu}, state) do
+    %{header_hash: header_hash, timeslot: slot, value: value} = csu
+    message = %{"header_hash" => e64(header_hash), "slot" => slot, "value" => value}
+    debug("Notifying serviceRequest #{service_id}, {#{b16(hash)},#{size}}: #{inspect(value)}")
+    notify_subscribers("serviceRequest", [service_id, hash, size, false], message)
+    {:noreply, state}
+  end
+
+  def handle_info({:service_value, [service_id, key], csu}, state) do
+    %{header_hash: header_hash, timeslot: slot, value: value} = csu
+    message = %{"header_hash" => e64(header_hash), "slot" => slot, "value" => e64(value)}
+    debug("Notifying serviceValue #{service_id}, #{b16(key)}: #{b16(value)}")
+    notify_subscribers("serviceValue", [service_id, key], message)
+    {:noreply, state}
+  end
+
   def handle_info({:clock, :sync_status}, state) do
     debug("Notify sync status")
 
