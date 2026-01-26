@@ -175,10 +175,14 @@ defmodule Jamixir.FuzzerTest do
           if rem(timeslot, 1000) == 0 do
             for table <- :ets.all() do
               size = :ets.info(table, :size)
-              memory = :ets.info(table, :memory) * :erlang.system_info(:wordsize)
+              mem_words = :ets.info(table, :memory)
 
-              if memory > 1_000_000 do
-                IO.puts("ETS #{inspect(table)}: #{size} entries, #{div(memory, 1_000_000)} MB")
+              if is_integer(size) and is_integer(mem_words) do
+                memory = mem_words * :erlang.system_info(:wordsize)
+
+                if memory > 1_000_000 do
+                  IO.puts("ETS #{inspect(table)}: #{size} entries, #{div(memory, 1_000_000)} MB")
+                end
               end
             end
           end
