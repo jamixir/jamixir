@@ -22,10 +22,26 @@ defmodule PersistStorage do
     {:ok, Map.keys(map)}
   end
 
+  @doc """
+  Sync call to ensure all pending writes are processed.
+  This helps prevent the write queue from growing too large.
+  """
+  def sync do
+    if Process.whereis(__MODULE__) do
+      GenServer.call(__MODULE__, :sync, 60_000)
+    end
+
+    :ok
+  end
+
   def get(key) do
     if Process.whereis(__MODULE__) do
-      GenServer.call(__MODULE__, {:get, key})
+      # Longer timeout because writes are async (cast) and can build up a queue
+      # that the read (call) must wait behind
+      GenServer.call(__MODULE__, {:get, key}, 30_000)
     end
+  rescue
+    _ -> nil
   end
 
   def delete(key) do
@@ -172,6 +188,11 @@ defmodule PersistStorage do
   @impl true
   def handle_call({:get, key}, _from, %{db: db, persist: true} = state) do
     {:reply, CubDB.get(db, key), state}
+  end
+
+  def handle_call(:sync, _from, state) do
+    # This call ensures all pending casts have been processed
+    {:reply, :ok, state}
   end
 
   def handle_call(_, _from, %{persist: false} = state) do
