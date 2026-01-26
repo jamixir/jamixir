@@ -171,8 +171,10 @@ defmodule Jamixir.FuzzerTest do
             )
           end
 
-          # Report memory usage periodically (for monitoring only - caches are now auto-managed)
           if rem(timeslot, 1000) == 0 do
+            # Sync PersistStorage to drain the write queue and prevent timeouts
+            PersistStorage.sync()
+
             for table <- :ets.all() do
               size = :ets.info(table, :size)
               mem_words = :ets.info(table, :memory)
