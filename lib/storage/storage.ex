@@ -293,6 +293,10 @@ defmodule Storage do
     set_canonical_tip(header_hash)
   end
 
+  def unmark_between(start_hash, end_hash) do
+    SqlStorage.unmark_between(start_hash, end_hash)
+  end
+
   def set_canonical_tip(header_hash) do
     KVStorage.put(@canonical_tip, header_hash)
   end

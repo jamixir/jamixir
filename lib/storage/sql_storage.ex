@@ -228,4 +228,45 @@ defmodule Jamixir.SqlStorage do
     )
     |> Repo.update_all(set: [applied: true])
   end
+
+  @doc """
+  Unmark blocks between two points in the chain (inclusive of start, exclusive of end).
+  This walks the chain from start_hash backwards to end_hash and marks them as not applied.
+  Used during chain reorganization to unmark the old canonical chain.
+  """
+  def unmark_between(start_hash, end_hash) do
+    start_hash_hex = Base.encode16(start_hash, case: :upper)
+    end_hash_hex = Base.encode16(end_hash, case: :upper)
+
+    sql = """
+    WITH RECURSIVE chain AS (
+      SELECT header_hash, parent_header_hash
+      FROM blocks
+      WHERE hex(header_hash) = ?
+
+      UNION ALL
+
+      SELECT b.header_hash, b.parent_header_hash
+      FROM blocks b
+      JOIN chain c
+      ON hex(b.header_hash) = hex(c.parent_header_hash)
+      WHERE hex(b.header_hash) != ?
+    )
+    UPDATE blocks
+    SET applied = 0
+    WHERE header_hash IN (
+      SELECT header_hash
+      FROM chain
+      WHERE hex(header_hash) != ?
+    );
+    """
+
+    case Repo.query(sql, [start_hash_hex, end_hash_hex, end_hash_hex]) do
+      {:ok, _} ->
+        :ok
+
+      error ->
+        error
+    end
+  end
 end

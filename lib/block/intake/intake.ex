@@ -121,7 +121,7 @@ defmodule Block.Intake.Intake do
       {:ok, canonical_root} ->
         decide_fork_action(canonical_root, canonical_tip, blocks)
 
-      error ->
+      _error ->
         Logger.error("""
         [FORK/INVARIANT_VIOLATION]
         No canonical root found.
@@ -172,9 +172,51 @@ defmodule Block.Intake.Intake do
       #                │
       #   applied ──► canonical_root ──► incoming ──► incoming (= canonical_tip_from_root)
       true ->
-        Logger.error("Reorg required")
-        throw("REORG_REQUIRED")
+        Logger.debug("""
+        [REORG] Chain reorganization required!
+        canonical_root: #{b16(canonical_root)}
+        old_canonical_tip: #{b16(canonical_tip)}
+        new_canonical_tip: #{b16(canonical_tip_from_root)}
+        """)
+
+        perform_reorg(canonical_root, canonical_tip, blocks)
     end
+  end
+
+  defp perform_reorg(canonical_root, old_canonical_tip, incoming_blocks) do
+    # Move state back to canonical root
+    unwind_to_canonical_root(canonical_root, old_canonical_tip)
+    Logger.debug("[REORG] Successfully unwound to canonical root")
+
+    # Apply forward from canonical root
+    # Filter incoming_blocks to exclude canonical_root and any blocks older than it
+    # incoming_blocks are in newest-first order (as fetched from network)
+    blocks_to_apply = take_blocks_after_root(incoming_blocks, canonical_root)
+    Logger.info("[REORG] Applying #{length(blocks_to_apply)} blocks from new chain")
+    apply_forward(blocks_to_apply)
+    Logger.debug("[REORG] Chain reorganization completed successfully")
+    :ok
+  end
+
+  defp take_blocks_after_root(blocks, canonical_root) do
+    Enum.take_while(blocks, fn block ->
+      h(e(block.header)) != canonical_root
+    end)
+  end
+
+  defp unwind_to_canonical_root(canonical_root, old_canonical_tip) do
+    # Load state at canonical root
+    state_at_root = Storage.get_state(canonical_root)
+
+    # Set canonical tip to canonical root
+    Storage.set_canonical_tip(canonical_root)
+
+    # Set state to canonical root state
+    NodeStateServer.set_jam_state(state_at_root)
+
+    # Mark old chain as unapplied
+    :ok = Storage.unmark_between(old_canonical_tip, canonical_root)
+    :ok
   end
 
   defp apply_forward(blocks) do
