@@ -7,7 +7,7 @@ defmodule Jamixir.Fuzzer.Service do
   import Jamixir.Fuzzer.Util
   alias Util.Logger, as: Log
 
-  def accept(socket_path, timeout \\ 600_000) do
+  def accept(socket_path, timeout \\ :infinity) do
     if File.exists?(socket_path), do: File.rm!(socket_path)
 
     {:ok, sock} =
@@ -28,7 +28,7 @@ defmodule Jamixir.Fuzzer.Service do
         loop_acceptor(listener, timeout)
 
       {:error, reason} ->
-        Log.error("Accept error: #{inspect(reason)}")
+        Log.error("Fuzzer Accept error: #{inspect(reason)}")
     end
   end
 

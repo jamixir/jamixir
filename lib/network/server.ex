@@ -19,7 +19,7 @@ defmodule Network.Server do
         {:noreply, %{state | connection: conn}}
 
       error ->
-        log(:error, "Accept error: #{inspect(error)}")
+        log(:error, "Network Accept error: #{inspect(error)}")
         send(self(), :accept_connection)
         {:noreply, state}
     end
