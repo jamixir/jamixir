@@ -41,7 +41,7 @@ defmodule Block do
 
     header = %Header{
       timeslot: timeslot,
-      prior_state_root: Trie.state_root(state),
+      prior_state_root: opts[:state_root] || Trie.state_root(state),
       extrinsic_hash: Extrinsic.calculate_hash(extrinsic),
       parent_hash: parent_hash || Hash.zero(),
       winning_tickets_marker: winning_tickets_marker

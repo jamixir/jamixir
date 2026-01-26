@@ -31,7 +31,7 @@ config :jamixir, Jamixir,
   erasure_coded_piece_size: 4,
   # W_P
   erasure_coded_pieces_per_segment: 1026,
-  storage_persist: false,
+  storage_persist: true,
   erasure_code_recovery_threshold: 2,
   test_env: true
 

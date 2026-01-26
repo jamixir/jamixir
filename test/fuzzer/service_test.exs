@@ -124,6 +124,71 @@ defmodule Jamixir.FuzzerTest do
       assert incoming_state_root == expected_state_root
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
+
+    @tag timeout: :infinity
+    @tag :slow
+    test "1 million blocks", %{client: client} do
+      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+
+      # Clear storage from all services
+      state = %{
+        state
+        | services:
+            for {service_id, service_account} <- state.services, into: %{} do
+              {service_id, %{service_account | storage: HashedKeysMap.new()}}
+            end
+      }
+
+      header = build(:decodable_header)
+      header_hash = h(e(header))
+      Storage.put(header, state)
+
+      assert :ok = Client.send_set_state(client, header, state)
+      assert {:ok, :state_root, state_root} = Client.receive_message(client)
+      initial_time = state.timeslot + 100
+      start_time = System.monotonic_time(:millisecond)
+
+      for timeslot <- initial_time..(initial_time + 1_000_000),
+          reduce: {header_hash, state, state_root} do
+        {parent_hash, state, state_root} ->
+          {:ok, block} =
+            Block.new(%Extrinsic{}, parent_hash, state, timeslot,
+              key_pairs: key_pairs,
+              state_root: state_root
+            )
+
+          next_hash = h(e(block.header))
+          assert :ok = Client.send_message(client, :import_block, e(block))
+          assert {:ok, :state_root, root} = Client.receive_message(client, :infinity)
+
+          if rem(timeslot, 100) == 0 do
+            elapsed_time = System.monotonic_time(:millisecond) - start_time
+
+            blocks_imported = timeslot - initial_time
+
+            IO.puts(
+              "Imported #{blocks_imported} blocks in #{Float.round(elapsed_time / 1000, 1)}s (#{Float.round(blocks_imported / (elapsed_time / 1000), 1)} blocks/s). New root: #{b16(root)}"
+            )
+          end
+
+          # Report memory usage periodically (for monitoring only - caches are now auto-managed)
+          if rem(timeslot, 1000) == 0 do
+            for table <- :ets.all() do
+              size = :ets.info(table, :size)
+              memory = :ets.info(table, :memory) * :erlang.system_info(:wordsize)
+
+              if memory > 1_000_000 do
+                IO.puts("ETS #{inspect(table)}: #{size} entries, #{div(memory, 1_000_000)} MB")
+              end
+            end
+          end
+
+          {:ok, next_state} = State.add_block(state, block)
+          # Storage.put(block.header, next_state)
+
+          {next_hash, next_state, root}
+      end
+    end
   end
 
   describe "test vectors with fuzzer" do
