@@ -92,37 +92,39 @@ defmodule KVStorage do
         :ets.insert(@cache_table, {key, seq, value})
         :ets.insert(@cache_order, {seq, key})
         new_size = :ets.update_counter(@cache_meta, :size, 1)
-        maybe_evict(new_size)
+        maybe_evict_one(new_size)
     end
   end
 
-  defp maybe_evict(current_size) do
+  # Incremental eviction - evict ONE oldest entry per insert when over limit
+  # This spreads the cost evenly, avoiding latency spikes
+  defp maybe_evict_one(current_size) do
     max_entries = max_cache_entries()
 
     if current_size > max_entries do
-      # Evict oldest 20% (FIFO)
-      evict_count = div(max_entries, 5)
-      evict_oldest(evict_count)
+      evict_one()
     end
   end
 
-  defp evict_oldest(count) do
-    # Find the cutoff sequence number (oldest N entries)
-    case :ets.select(@cache_order, [{{:"$1", :_}, [], [:"$1"]}], count) do
-      {seqs, _continuation} when seqs != [] ->
-        max_seq = Enum.max(seqs)
-
-        # Bulk delete from order table: all entries with seq <= max_seq
-        deleted_order =
-          :ets.select_delete(@cache_order, [{{:"$1", :_}, [{:"=<", :"$1", max_seq}], [true]}])
-
-        # Bulk delete from cache table: all entries with seq <= max_seq
-        :ets.select_delete(@cache_table, [{{:_, :"$1", :_}, [{:"=<", :"$1", max_seq}], [true]}])
-
-        update_size(-deleted_order)
-
-      _ ->
+  # Evict the single oldest entry - O(1) operations only
+  defp evict_one do
+    # Get the oldest entry from ordered_set (first key is smallest/oldest seq)
+    case :ets.first(@cache_order) do
+      :"$end_of_table" ->
         :ok
+
+      oldest_seq ->
+        # Get the key for this seq
+        case :ets.lookup(@cache_order, oldest_seq) do
+          [{^oldest_seq, key}] ->
+            # Delete from both tables - O(1) each
+            :ets.delete(@cache_order, oldest_seq)
+            :ets.delete(@cache_table, key)
+            update_size(-1)
+
+          [] ->
+            :ok
+        end
     end
   end
 
