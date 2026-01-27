@@ -137,71 +137,59 @@ defmodule Block.Intake.Intake do
   end
 
   defp decide_fork_action(canonical_root, canonical_tip, blocks) do
-    {:ok, canonical_tip_from_root} =
+    {:ok, winning_tip} =
       Storage.get_heaviest_chain_tip_from_canonical_root(canonical_root)
 
+    incoming_parent = hd(blocks).header.parent_hash
+
     cond do
-      # FORWARD EXTENSION (no fork)
-      #   applied ──► applied ──► applied (= canonical_tip = canonical_root)
+      # SAFE FORWARD EXTENSION - only when incoming directly extends canonical tip
+      #   applied ──► applied ──► applied (= canonical_tip = incoming_parent)
       #                                      │
       #                                      └──► incoming ──► incoming
-      canonical_root == canonical_tip ->
-        Logger.debug("Root of incoming chain is canonical tip, applying all blocks forward")
-
+      incoming_parent == canonical_tip ->
         apply_forward(blocks)
 
       # INCOMING FORK LOSES (tie or lighter)
-      # incoming chain has less or equel block from the canonical root to the tip (is lighter)
+      # incoming chain has less or equal blocks from the canonical root to the tip (is lighter)
       #           applied ──► applied ──► applied (= canonical_tip)
       #                ▲
       #                │
       #   applied ──► canonical_root
       #                │
       #                └──► incoming ──► incoming   (losing fork)
-
-      canonical_tip_from_root == canonical_tip ->
-        Logger.debug(
-          "Incoming chain lost, we are on the best fork, nothing to do (except prune later)"
-        )
-
+      winning_tip == canonical_tip ->
+        Logger.info("[FORK_LOST] Incoming chain lost, we are on the best fork")
         :ok
 
       # REORG REQUIRED (incoming fork wins)
       #             applied ──► applied (= canonical_tip)
       #                ▲
       #                │
-      #   applied ──► canonical_root ──► incoming ──► incoming (= canonical_tip_from_root)
+      #   applied ──► canonical_root ──► incoming ──► incoming (= winning_tip)
       true ->
-        Logger.debug("""
-        [REORG] Chain reorganization required!
-        canonical_root: #{b16(canonical_root)}
-        old_canonical_tip: #{b16(canonical_tip)}
-        new_canonical_tip: #{b16(canonical_tip_from_root)}
+        Logger.info("""
+        [REORG] Chain reorganization required
+        canonical_root=#{b16(canonical_root)}
+        old_tip=#{b16(canonical_tip)}
+        new_tip=#{b16(winning_tip)}
         """)
 
-        perform_reorg(canonical_root, canonical_tip, blocks)
+        perform_reorg(canonical_root, canonical_tip, winning_tip)
     end
   end
 
-  defp perform_reorg(canonical_root, old_canonical_tip, incoming_blocks) do
+  defp perform_reorg(canonical_root, old_canonical_tip, new_tip) do
     # Move state back to canonical root
     unwind_to_canonical_root(canonical_root, old_canonical_tip)
-    Logger.debug("[REORG] Successfully unwound to canonical root")
+    Logger.info("[REORG] Unwound to canonical root")
 
-    # Apply forward from canonical root
-    # Filter incoming_blocks to exclude canonical_root and any blocks older than it
-    # incoming_blocks are in newest-first order (as fetched from network)
-    blocks_to_apply = take_blocks_after_root(incoming_blocks, canonical_root)
+    blocks_to_apply = Storage.get_chain_between(canonical_root, new_tip)
     Logger.info("[REORG] Applying #{length(blocks_to_apply)} blocks from new chain")
-    apply_forward(blocks_to_apply)
-    Logger.debug("[REORG] Chain reorganization completed successfully")
-    :ok
-  end
 
-  defp take_blocks_after_root(blocks, canonical_root) do
-    Enum.take_while(blocks, fn block ->
-      h(e(block.header)) != canonical_root
-    end)
+    apply_forward(blocks_to_apply)
+    Logger.debug("[REORG] Chain reorganization completed")
+    :ok
   end
 
   defp unwind_to_canonical_root(canonical_root, old_canonical_tip) do
@@ -223,13 +211,15 @@ defmodule Block.Intake.Intake do
     blocks
     |> Enum.reverse()
     |> Enum.each(fn block ->
-      case NodeStateServer.add_block(block, false) do
-        {:ok, _new_state} ->
-          :ok
+      if match?({:error, _}, NodeStateServer.add_block(block, false)) do
+        Logger.error("""
+        [APPLY_INVARIANT_VIOLATION]
+        block=#{b16(h(e(block.header)))}
+        parent=#{b16(block.header.parent_hash)}
+        THIS SHOULD NEVER FAIL IF FORK CHOICE IS CORRECT
+        """)
 
-        {:error, reason} ->
-          header_hash = b16(h(e(block.header)))
-          Logger.error("Failed to add block #{header_hash} to state: #{inspect(reason)}")
+        throw("APPLY_INVARIANT_VIOLATION")
       end
     end)
   end

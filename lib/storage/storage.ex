@@ -297,6 +297,18 @@ defmodule Storage do
     SqlStorage.unmark_between(start_hash, end_hash)
   end
 
+
+  def get_chain_between(root_hash, tip_hash) do
+    case SqlStorage.get_chain_hashes(root_hash, tip_hash) do
+      {:error, _} = err ->
+        err
+
+      hashes ->
+        Enum.map(hashes, &get_block/1)
+        |> Enum.reject(&is_nil/1)
+    end
+  end
+
   def set_canonical_tip(header_hash) do
     KVStorage.put(@canonical_tip, header_hash)
   end

@@ -269,4 +269,41 @@ defmodule Jamixir.SqlStorage do
         error
     end
   end
+
+  @doc """
+  Get all header hashes in a chain from root (exclusive) to tip (inclusive).
+  Returns hashes in application order (oldest first, closest to root).
+  """
+  def get_chain_hashes(root_hash, tip_hash) do
+    root_hex = Base.encode16(root_hash, case: :upper)
+    tip_hex = Base.encode16(tip_hash, case: :upper)
+
+    sql = """
+    WITH RECURSIVE chain AS (
+      SELECT header_hash, parent_header_hash, 0 AS depth
+      FROM blocks
+      WHERE hex(header_hash) = ?
+
+      UNION ALL
+
+      SELECT b.header_hash, b.parent_header_hash, c.depth + 1
+      FROM blocks b
+      JOIN chain c
+      ON hex(b.header_hash) = hex(c.parent_header_hash)
+      WHERE hex(b.header_hash) != ?
+    )
+    SELECT header_hash
+    FROM chain
+    WHERE hex(header_hash) != ?
+    ORDER BY depth DESC;
+    """
+
+    case Repo.query(sql, [tip_hex, root_hex, root_hex]) do
+      {:ok, %{rows: rows}} ->
+        Enum.map(rows, fn [hash] -> hash end)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 end
