@@ -154,10 +154,9 @@ defmodule Jamixir.FuzzerTest do
     @tag :fuzzer2
     @tag :slow
     test "single test", %{client: client} do
-      # 1767896003_1257 - 10637 vs 10639 gas on acc
-      # 1767871405_5318 -
-      # 1767889897_2969
-      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1767896003_1257/")
+      # 1768864701 -
+      # 1768945074
+      test_case(client, "../jam-conformance/fuzz-reports/0.7.2/traces/1768945074/")
     end
 
     @tag :perf
@@ -396,7 +395,7 @@ defmodule Jamixir.FuzzerTest do
 
           key = Trie.octet31_to_key(k)
           {exp_obj, _} = Trie.decode_value(key, exp_v)
-          {obj, _} = Trie.decode_value(key, v)
+          {obj, _} = if v == nil, do: {nil, nil}, else: Trie.decode_value(key, v)
           assert %{b16(k) => exp_obj} == %{b16(k) => obj}
         end
       end
