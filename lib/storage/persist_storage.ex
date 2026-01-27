@@ -1,4 +1,5 @@
 defmodule PersistStorage do
+  alias Util.Logger
   use GenServer
   @compact_interval :timer.minutes(5)
 
@@ -76,6 +77,7 @@ defmodule PersistStorage do
       true ->
         db_path = get_db_path()
         File.mkdir_p!(db_path)
+        Logger.info("Using persistent database at #{db_path}")
 
         case CubDB.start_link(
                data_dir: db_path,
@@ -115,6 +117,7 @@ defmodule PersistStorage do
         # Use simple persistent directory for tests
         db_path = Path.join(System.tmp_dir!(), "jamixir_persist_test")
         File.mkdir_p!(db_path)
+        Logger.info("Using persistent database at #{db_path}")
 
         case CubDB.start_link(
                data_dir: db_path,

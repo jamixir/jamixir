@@ -40,3 +40,4 @@ MnesiaCore.nonode*
 db/
 .build.lock
 .build.lock.done
+blocks/
