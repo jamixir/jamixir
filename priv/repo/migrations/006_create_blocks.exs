@@ -12,5 +12,15 @@ defmodule Jamixir.Repo.Migrations.CreateBlocks do
     create index(:blocks, [:parent_header_hash])
     create index(:blocks, [:slot])
     create index(:blocks, [:parent_header_hash, :slot])
+
+    execute """
+    CREATE INDEX IF NOT EXISTS blocks_hex_header_hash_index
+    ON blocks(hex(header_hash))
+    """
+
+    execute """
+    CREATE INDEX IF NOT EXISTS blocks_hex_parent_header_hash_index
+    ON blocks(hex(parent_header_hash))
+    """
   end
 end
