@@ -125,10 +125,20 @@ defmodule Jamixir.FuzzerTest do
       assert Storage.get_state_root(header_hash) == incoming_state_root
     end
 
+    @blocks_dir "blocks"
     @tag timeout: :infinity
     @tag :slow
     test "1 million blocks", %{client: client} do
-      %{state: state, key_pairs: key_pairs} = build(:genesis_state_with_safrole)
+      {:ok, state} = Codec.State.from_genesis(Genesis.default_file())
+      File.mkdir(@blocks_dir)
+
+      key_pairs =
+        for i <- 0..5 do
+          %{bandersnatch: pub, bandersnatch_priv: priv} =
+            JsonDecoder.from_json(JsonReader.read("priv/keys/#{i}.json"))
+
+          {priv, pub}
+        end
 
       # Clear storage from all services
       state = %{
@@ -139,7 +149,7 @@ defmodule Jamixir.FuzzerTest do
             end
       }
 
-      header = build(:decodable_header)
+      header = Genesis.genesis_block_header()
       header_hash = h(e(header))
       Storage.put(header, state)
 
@@ -148,48 +158,44 @@ defmodule Jamixir.FuzzerTest do
       initial_time = state.timeslot + 100
       start_time = System.monotonic_time(:millisecond)
 
-      for timeslot <- initial_time..(initial_time + 1_000_000),
+      for t <- initial_time..(initial_time + 1_000_000),
           reduce: {header_hash, state, state_root} do
         {parent_hash, state, state_root} ->
-          {:ok, block} =
-            Block.new(%Extrinsic{}, parent_hash, state, timeslot,
-              key_pairs: key_pairs,
-              state_root: state_root
-            )
+          block =
+            case File.read("./#{@blocks_dir}/#{t}.bin") do
+              {:ok, bin} ->
+                {block, _} = Block.decode(bin)
+                block
+
+              {:error, _} ->
+                {:ok, block} =
+                  Block.new(%Extrinsic{}, parent_hash, state, t,
+                    key_pairs: key_pairs,
+                    state_root: state_root
+                  )
+
+                File.write!("./#{@blocks_dir}/#{t}.bin", e(block))
+                block
+            end
 
           next_hash = h(e(block.header))
           assert :ok = Client.send_message(client, :import_block, e(block))
           assert {:ok, :state_root, root} = Client.receive_message(client, :infinity)
 
-          if rem(timeslot, 100) == 0 do
-            elapsed_time = System.monotonic_time(:millisecond) - start_time
-
-            blocks_imported = timeslot - initial_time
+          if rem(t, 100) == 0 do
+            elapsed = Float.round((System.monotonic_time(:millisecond) - start_time) / 1000, 1)
+            count = t - initial_time
+            blocks_per_s = if elapsed > 0, do: Float.round(count / elapsed, 1), else: 0
 
             IO.puts(
-              "Imported #{blocks_imported} blocks in #{Float.round(elapsed_time / 1000, 1)}s (#{Float.round(blocks_imported / (elapsed_time / 1000), 1)} blocks/s). New root: #{b16(root)}"
+              "Imported #{count} blocks in #{elapsed}s (#{blocks_per_s} blocks/s). root: #{b16(root)}"
             )
           end
 
-          if rem(timeslot, 1000) == 0 do
-            # Sync PersistStorage to drain the write queue and prevent timeouts
-            PersistStorage.sync()
-
-            for table <- :ets.all() do
-              size = :ets.info(table, :size)
-              mem_words = :ets.info(table, :memory)
-
-              if is_integer(size) and is_integer(mem_words) do
-                memory = mem_words * :erlang.system_info(:wordsize)
-
-                if memory > 1_000_000 do
-                  IO.puts("ETS #{inspect(table)}: #{size} entries, #{div(memory, 1_000_000)} MB")
-                end
-              end
-            end
-          end
+          if rem(t, 1000) == 0, do: print_memory_usage()
 
           {:ok, next_state} = State.add_block(state, block)
+          # This line is commented, but it is needed when running over an external fuzzer target
           # Storage.put(block.header, next_state)
 
           {next_hash, next_state, root}
@@ -536,5 +542,23 @@ defmodule Jamixir.FuzzerTest do
     on_exit(fn ->
       Application.put_env(:jamixir, Jamixir, old_config)
     end)
+  end
+
+  defp print_memory_usage() do
+    # Sync PersistStorage to drain the write queue and prevent timeouts
+    PersistStorage.sync()
+
+    for table <- :ets.all() do
+      size = :ets.info(table, :size)
+      mem_words = :ets.info(table, :memory)
+
+      if is_integer(size) and is_integer(mem_words) do
+        memory = mem_words * :erlang.system_info(:wordsize)
+
+        if memory > 1_000_000 do
+          IO.puts("ETS #{inspect(table)}: #{size} entries, #{div(memory, 1_000_000)} MB")
+        end
+      end
+    end
   end
 end
