@@ -1,23 +1,22 @@
 defmodule Util.Hash do
   use Sizes
-  use Memoize
   import Codec.Encoder
 
-  defmemo blake2b_n(data, n) do
+  def blake2b_n(data, n) do
     binary_part(blake2b_256(data), 0, n)
   end
 
   @doc """
   256 bits Blake2b hash function.
   """
-  defmemo(blake2b_256(data), do: Blake2.Blake2b.hash(data, <<>>, 32))
+  def blake2b_256(data), do: Blake2.Blake2b.hash(data, <<>>, 32)
 
   @doc """
   256 bits keccak hash function.
   """
-  defmemo(keccak_256(data), do: ExKeccak.hash_256(data))
+  def keccak_256(data), do: ExKeccak.hash_256(data)
 
-  defmemo(default(data), do: blake2b_256(data))
+  def default(data), do: blake2b_256(data)
 
   # Generate hash functions for numbers 0 to 5
   # use as Hash.zero(), Hash.one()  etc.

@@ -5,7 +5,6 @@ defmodule Util.Merklization do
   D.2.1. Node Encoding and Trie Identification
 
   """
-  use Memoize
 
   alias Util.Hash
   import Codec.Encoder
@@ -17,11 +16,11 @@ defmodule Util.Merklization do
                       |> List.to_tuple()
   @empty_hash Hash.zero()
 
-  defmemo encode_leaf_cached(key, value) do
+  def encode_leaf_cached(key, value) do
     encode_leaf(key, value)
   end
 
-  defmemo encode_branch_cached(left_hash, right_hash) do
+  def encode_branch_cached(left_hash, right_hash) do
     encode_branch(left_hash, right_hash)
   end
 
@@ -35,8 +34,8 @@ defmodule Util.Merklization do
     end)
   end
 
-  defmemo(empty_leaf_hash(), do: Hash.default(encode_leaf_cached(<<>>, <<>>)))
-  defmemo(empty_branch_hash(), do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash)))
+  def empty_leaf_hash, do: Hash.default(encode_leaf_cached(<<>>, <<>>))
+  def empty_branch_hash, do: Hash.default(encode_branch_cached(@empty_hash, @empty_hash))
 
   @doc """
   Formula (D.3) v0.7.2:
