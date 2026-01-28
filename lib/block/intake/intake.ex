@@ -208,9 +208,8 @@ defmodule Block.Intake.Intake do
   end
 
   defp apply_forward(blocks) do
-    blocks
-    |> Enum.reverse()
-    |> Enum.each(fn block ->
+    # blocks must be in [oldest → newest] order for correct application
+    Enum.each(blocks, fn block ->
       if match?({:error, _}, NodeStateServer.add_block(block, false)) do
         Logger.error("""
         [APPLY_INVARIANT_VIOLATION]
