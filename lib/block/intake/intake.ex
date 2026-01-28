@@ -73,7 +73,7 @@ defmodule Block.Intake.Intake do
           # pruning is still a TODO (probably best done after finality is implemented)
 
           insert_blocks(all_blocks)
-          maybe_advance_chain(header_hash, all_blocks)
+          maybe_advance_chain(header_hash, Enum.reverse(all_blocks))
 
         {:error, reason} ->
           Logger.error("Failed to request ancestor blocks: #{inspect(reason)}")
@@ -140,9 +140,7 @@ defmodule Block.Intake.Intake do
     {:ok, winning_tip} =
       Storage.get_heaviest_chain_tip_from_canonical_root(canonical_root)
 
-    # Get the oldest block in the fetched chain (blocks are in newest-first order)
-    oldest_block = List.last(blocks)
-    incoming_parent = oldest_block.header.parent_hash
+    incoming_parent = hd(blocks).header.parent_hash
 
     cond do
       # SAFE FORWARD EXTENSION - only when incoming directly extends canonical tip
