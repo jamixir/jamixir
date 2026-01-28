@@ -140,7 +140,9 @@ defmodule Block.Intake.Intake do
     {:ok, winning_tip} =
       Storage.get_heaviest_chain_tip_from_canonical_root(canonical_root)
 
-    incoming_parent = hd(blocks).header.parent_hash
+    # Get the oldest block in the fetched chain (blocks are in newest-first order)
+    oldest_block = List.last(blocks)
+    incoming_parent = oldest_block.header.parent_hash
 
     cond do
       # SAFE FORWARD EXTENSION - only when incoming directly extends canonical tip
