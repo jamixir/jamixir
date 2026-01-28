@@ -20,7 +20,18 @@ defmodule KVStorage do
   end
 
   def put(map) when is_map(map) do
-    Enum.each(map, fn {k, v} -> cache_put(k, v) end)
+    # Insert everything without eviction
+    Enum.each(map, fn {k, v} ->
+      cache_put(k, v, false)
+    end)
+
+    # Evict only the excess
+    excess = size() - max_cache_entries()
+
+    if excess > 0 do
+      evict_n(excess)
+    end
+
     PersistStorage.put(map)
     {:ok, Map.keys(map)}
   end
@@ -80,20 +91,26 @@ defmodule KVStorage do
     end
   end
 
-  defp cache_put(key, value) do
+  defp cache_put(key, value, allow_evict? \\ true) do
     case :ets.lookup(@cache_table, key) do
-      [{^key, _old_seq, _old_value}] ->
-        # Update existing - keep same seq (don't change order)
+      [{^key, _seq, _}] ->
         :ets.update_element(@cache_table, key, {3, value})
 
       [] ->
-        # New entry - assign sequence number
         seq = :ets.update_counter(@cache_meta, :seq, 1)
         :ets.insert(@cache_table, {key, seq, value})
         :ets.insert(@cache_order, {seq, key})
         new_size = :ets.update_counter(@cache_meta, :size, 1)
-        maybe_evict_one(new_size)
+        if allow_evict?, do: maybe_evict_one(new_size)
     end
+  end
+
+  defp size do
+    :ets.lookup_element(@cache_meta, :size, 2)
+  end
+
+  defp evict_n(n) do
+    Enum.each(1..n, fn _ -> evict_one() end)
   end
 
   # Incremental eviction - evict ONE oldest entry per insert when over limit
