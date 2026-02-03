@@ -8,7 +8,6 @@ defmodule Jamixir.RPC.Handler do
   alias Codec.State.Trie
   alias Jamixir.Node
   alias Jamixir.RPC.SubscriptionManager
-  alias Network.Client
   alias Network.ConnectionManager
   import Codec.Encoder
   import Util.Hex
@@ -180,6 +179,7 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("submitWorkPackage", [core, blob, extrinsics], _websocket_pid) do
     {wp, _} = WorkPackage.decode(d64(blob))
+    Logger.debug("WP blob: #{b16(d64(blob))}")
     ext_bins = for e <- extrinsics, do: d64(e)
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
