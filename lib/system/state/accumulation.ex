@@ -3,9 +3,11 @@ defmodule System.State.Accumulation do
   Chapter 12 - accumulation
   """
 
+  alias Codec.VariableSize
   alias Util.Collections
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias PVM.Accumulate
+  alias PVM.Accumulate.Operand
   alias System.{AccumulationResult, DeferredTransfer, State}
 
   alias System.State.{
@@ -762,5 +764,16 @@ defmodule System.State.Accumulation do
     m = rem(m, len)
     # Take last m elements and prepend to rest
     Enum.take(list, -m) ++ Enum.drop(list, -m)
+  end
+
+  def decode_inputs(inputs_bin) do
+    VariableSize.decode(inputs_bin, fn bin ->
+      <<type::8, _rest::binary>> = bin
+
+      case type do
+        0 -> Operand.decode(bin)
+        1 -> DeferredTransfer.decode(bin)
+      end
+    end)
   end
 end
