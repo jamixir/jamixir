@@ -2,6 +2,7 @@ defmodule Jamixir.Commands.Run do
   @moduledoc """
   Run a Jamixir node
   """
+  alias Codec.State.Trie
   alias Util.Logger, as: Log
 
   @switches [
@@ -46,6 +47,7 @@ defmodule Jamixir.Commands.Run do
       Log.info("Setting log level to #{log_level}")
 
       Logger.configure(level: :"#{log_level}")
+      Logger.configure(truncate: :infinity)
 
       Logger.configure_backend(:console,
         format: "$date $time [$level] $message $metadata\n",
@@ -82,6 +84,13 @@ defmodule Jamixir.Commands.Run do
 
       if port = opts[:port], do: Application.put_env(:jamixir, :port, port)
 
+      if opts[:dump_stf] do
+        dump_dir = opts[:dump_stf]
+        File.mkdir_p!(dump_dir)
+        Application.put_env(:jamixir, :dump_stf, dump_dir)
+        Log.info("📂 STF dump directory set to: #{dump_dir}")
+      end
+
       # Configure RPC based on flags
       configure_rpc(opts)
 
@@ -109,6 +118,8 @@ defmodule Jamixir.Commands.Run do
 
     # Register this process so we can send it shutdown messages
     Process.register(self(), :shutdown_handler)
+
+    # test_blocks()
 
     # Spawn a simple input listener for  graceful shutdown
     spawn(fn -> input_listener() end)
@@ -409,6 +420,7 @@ defmodule Jamixir.Commands.Run do
           --rpc-port <PORT>          Enable RPC server on specified port
           --telemetry <HOST:PORT>    Enable telemetry reporting (e.g. --telemetry localhost:9090)
           --telemetry-port <PORT>    Enable telemetry on localhost with specified port
+          --dump-stf <DIR>           Saves every STF block and state trie to the specified directory
       -h, --help                     Print help
 
     Examples:
@@ -430,5 +442,39 @@ defmodule Jamixir.Commands.Run do
     Note: --chainspec takes precedence over --genesis if both are specified.
           The system will auto-detect JIP-4 format if using --genesis with a chainspec file.
     """)
+  end
+
+  def test_blocks do
+    files = File.ls!("./_build/tiny/rel/jamixir/stf_dumps/") |> Enum.sort()
+
+    state_ts = filter_prefix(files, "state")
+    block_ts = filter_prefix(files, "block")
+
+    tasks =
+      for {state_ts, block_ts} <- Enum.zip(state_ts, block_ts) do
+        state_bin = File.read!("./_build/tiny/rel/jamixir/stf_dumps/state_#{state_ts}.bin")
+        block_bin = File.read!("./_build/tiny/rel/jamixir/stf_dumps/block_#{block_ts}.bin")
+        {:ok, state_trie, _} = Trie.from_binary(state_bin)
+        state = Trie.deserialize(state_trie)
+
+        {block, _} = Block.decode(block_bin)
+
+        # Task.async(fn ->
+        {:ok, _, state_root} = Jamixir.Node.add_block(block, state)
+        Util.Logger.info("🔄 State Updated successfully. root: #{inspect(state_root)}")
+        # end)
+      end
+
+    # for task <- tasks do
+    #   Task.await(task, :infinity)
+    # end
+  end
+
+  def filter_prefix(files, prefix) do
+    for f <- files,
+        f |> String.starts_with?(prefix),
+        timeslot = String.replace(f, "#{prefix}_", "") |> String.replace(".bin", "") do
+      String.to_integer(timeslot)
+    end
   end
 end

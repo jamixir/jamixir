@@ -18,6 +18,7 @@ defmodule Jamixir.NodeStateServer do
   alias Block.Extrinsic.{Assurance, Guarantee, Guarantee.WorkReport}
   alias Block.Extrinsic.{GuarantorAssignments, TicketProof}
   alias Block.Header
+  alias Codec.State.Trie
   alias Jamixir.Genesis
   alias Network.{Connection, ConnectionManager}
   alias Storage.AvailabilityRecord
@@ -130,6 +131,8 @@ defmodule Jamixir.NodeStateServer do
           Log.info(
             "🔄 State Updated successfully. H: #{b16(header_hash)} root: #{b16(state_root)}"
           )
+
+          dump_stf(block, jam_state)
 
           notify_service_requests(new_jam_state, jam_state, block, header_hash)
 
@@ -710,5 +713,17 @@ defmodule Jamixir.NodeStateServer do
     Log.info("✏️ We are assigned to author #{inspect(authoring_slots)} slots in epoch #{epoch}")
 
     authoring_slots
+  end
+
+  def dump_stf(block, state) do
+    stf_dump_path = Application.get_env(:jamixir, :dump_stf)
+
+    if stf_dump_path != nil do
+      block_file = Path.join(stf_dump_path, "block_#{block.header.timeslot}.bin")
+      File.write(block_file, e(block))
+      state_file = Path.join(stf_dump_path, "state_#{state.timeslot}.bin")
+      File.write(state_file, Trie.to_binary(state))
+      Log.info("💾 Dumped STF to #{block_file} and #{state_file}")
+    end
   end
 end
