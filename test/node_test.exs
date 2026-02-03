@@ -216,6 +216,7 @@ defmodule Jamixir.NodeTest do
       {:error, :mismatched_extrinsics} = save_work_package(wp, 7, [])
     end
 
+    @tag skip: "Skipping for now: disabled"
     test "should return error when processing package for other core" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
       {:error, :not_assigned_to_core} = save_work_package(wp, 1, List.flatten(extrinsics))

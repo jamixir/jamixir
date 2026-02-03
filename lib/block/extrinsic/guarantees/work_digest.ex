@@ -99,16 +99,7 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
     <<service::service(), code_hash::b(hash), payload_hash::b(hash), gas_ratio::m(gas),
       error_code::8, temp_rest::binary>> = bin
 
-    {result, rest} =
-      case error_code do
-        0 ->
-          {result, rest} = VariableSize.decode(temp_rest, :binary)
-          {{:ok, result}, rest}
-
-        _ ->
-          code = WorkExecutionError.code_name(error_code)
-          {{:error, code}, temp_rest}
-      end
+    {result, rest} = decode_result(error_code, temp_rest)
 
     {refine_gas, rest} = de_i(rest)
     {imports, rest} = de_i(rest)
@@ -128,6 +119,18 @@ defmodule Block.Extrinsic.Guarantee.WorkDigest do
        extrinsic_size: extrinsic_size,
        exports: exports
      }, rest}
+  end
+
+  def decode_result(error_code, bin) do
+    case error_code do
+      0 ->
+        {result, rest} = VariableSize.decode(bin, :binary)
+        {{:ok, result}, rest}
+
+      _ ->
+        code = WorkExecutionError.code_name(error_code)
+        {{:error, code}, bin}
+    end
   end
 
   use JsonDecoder

@@ -191,4 +191,10 @@ defmodule Jamixir.ChainSpec do
     end)
     |> Enum.map(fn {:ok, node} -> node end)
   end
+
+  def bootstrap_state do
+    {:ok, chainspec} = from_file("priv/polkajam_chainspec.json")
+    {:ok, state} = get_state(chainspec)
+    state
+  end
 end

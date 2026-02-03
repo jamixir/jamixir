@@ -101,7 +101,6 @@ defmodule Network.Server do
 
   # Protocol ID is nil, parse it from data
   def handle_up_stream(data, stream, state, %{protocol_id: nil, buffer: buffer} = stream_data) do
-    debug("UP STREAM (protocol not set yet): #{inspect(data)}")
     updated_buffer = buffer <> data
 
     case MessageParsers.parse_up_protocol_id(updated_buffer) do
@@ -127,7 +126,6 @@ defmodule Network.Server do
         %{protocol_id: protocol_id, buffer: buffer} = _stream_data
       ) do
     server_calls_impl = Application.get_env(:jamixir, :server_calls, Network.ServerCalls)
-    debug("UP STREAM (protocol known): #{inspect(data)}")
     updated_buffer = buffer <> data
 
     case Codec.decode_messages(updated_buffer) do

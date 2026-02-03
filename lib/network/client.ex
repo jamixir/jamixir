@@ -208,7 +208,6 @@ defmodule Network.Client do
       case Map.get(up_streams, protocol_id) do
         # Existing stream - reuse it and send only the message
         %{stream: existing_stream} ->
-          debug("Reusing existing UP stream for block announcement")
           debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
           {existing_stream, state}
 
@@ -216,7 +215,6 @@ defmodule Network.Client do
         nil ->
           case :quicer.start_stream(connection, default_stream_opts()) do
             {:ok, new_stream} ->
-              log_stream(:debug, "Created new UP stream", new_stream, protocol_id)
               # Update state with new stream
               updated_state = put_in(state.up_streams[protocol_id], %{stream: new_stream})
 

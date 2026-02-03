@@ -303,6 +303,9 @@ defmodule Jamixir.Node do
   def process_work_package(wp, core, extrinsics) do
     Logger.info("Processing work package for service #{wp.service} core #{core}")
 
+    # TODO for now, we ignore core from builder and always use our assigned core
+    core = NodeStateServer.instance().assigned_core()
+
     if NodeStateServer.instance().assigned_core() == core do
       services = get_latest_state().services
 

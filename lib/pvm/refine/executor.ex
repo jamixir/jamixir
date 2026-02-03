@@ -4,7 +4,7 @@ defmodule PVM.Refine.Executor do
   alias PVM.Refine.Runner
   require Logger
 
-  @timeout 2_000
+  @timeout 5_000
   def run(
         service_code,
         refine_context,
@@ -14,7 +14,7 @@ defmodule PVM.Refine.Executor do
         opts \\ []
       ) do
     Logger.debug("Refine.Executor.run: Starting with gas=#{gas}, service_index=#{wp.service}")
-
+    start_time = System.monotonic_time(:millisecond)
     {:ok, pid} = Runner.start(service_code, refine_context, args, gas, refine_params, opts)
 
     Logger.debug(
@@ -23,8 +23,10 @@ defmodule PVM.Refine.Executor do
 
     receive do
       {used_gas, result, %Refine.Context{e: exports}} ->
-        Logger.debug(
-          "Refine.Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(result)}"
+        end_time = System.monotonic_time(:millisecond)
+
+        Logger.info(
+          "Refine.Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(result)} after #{end_time - start_time}ms"
         )
 
         {result, exports, used_gas}
