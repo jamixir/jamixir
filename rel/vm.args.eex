@@ -4,6 +4,14 @@
 ## Async threads (4x CPU cores for I/O intensive operations)
 +A 64
 
+## Dirty schedulers - critical for NIF-heavy workloads (PVM execution)
+## Dirty CPU schedulers: for CPU-bound NIFs (PVM execution, memory ops)
+## Default is equal to normal schedulers, but we need more for parallel PVM execution
++SDcpu 16
+
+## Dirty I/O schedulers: for blocking I/O operations
++SDio 32
+
 ## Memory allocators - optimized for binary allocation
 +MBas aobf
 +MHas aobf

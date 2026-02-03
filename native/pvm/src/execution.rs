@@ -6,7 +6,7 @@ use crate::{
 };
 use pvm_core::vm::tracer::Tracer;
 use pvm_core::{deblob, ExecutionResult, Vm, VmContext, VmState as CoreVmState};
-use rustler::{Binary, Decoder, Encoder, Env, NifResult, Term};
+use rustler::{Binary, Decoder, Encoder, Env, LocalPid, NifResult, Term};
 use std::sync::Arc;
 
 fn execute<'a>(env: Env<'a>, mut vm: Vm, context_token: u64) -> NifResult<ExecuteResult<'a>> {
@@ -56,26 +56,22 @@ fn handle_host_call<'a>(
         let memory_ref = MemoryResource::new_ref();
         let _ = put_owned(&memory_ref, memory);
 
-        // Send message to Elixir with memory reference
-        let pid = env.pid();
+        // Send message to Elixir with memory reference - SYNCHRONOUSLY - no OS thread
+        // to avoid conflicts with QUIC and other async operations
+        let pid: LocalPid = env.pid();
         let state = vm.get_state().clone();
 
-        std::thread::spawn(move || {
-            let mut owned_env = rustler::OwnedEnv::new();
+        let message = (
+            atoms::ecall(),
+            call_id,
+            VmState::from(state),
+            memory_ref,
+            context_token,
+        );
 
-            if let Err(e) = owned_env.send_and_clear(&pid, move |env| {
-                (
-                    atoms::ecall(),
-                    call_id,
-                    VmState::from(state),
-                    memory_ref,
-                    context_token,
-                )
-                    .encode(env)
-            }) {
-                println!("ERROR: Failed to send ecall message: {:?}", e);
-            }
-        });
+        if let Err(e) = env.send(&pid, message) {
+            println!("ERROR: Failed to send ecall message: {:?}", e);
+        }
     }
     Ok(())
 }

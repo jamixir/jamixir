@@ -25,7 +25,7 @@ pub fn resume<'a>(
     resume_execution(env, new_state_term, memory_ref_term, context_token_term)
 }
 
-#[nif]
+#[nif(schedule = "DirtyCpu")]
 pub fn build_memory() -> MemoryRef {
     let memory_ref = MemoryResource::new_ref();
     let memory = CoreMemory::builder().build();
@@ -33,7 +33,7 @@ pub fn build_memory() -> MemoryRef {
     memory_ref
 }
 
-#[nif]
+#[nif(schedule = "DirtyCpu")]
 pub fn memory_read<'a>(
     env: Env<'a>,
     mem_ref: MemoryRef,
@@ -61,7 +61,7 @@ pub fn memory_read<'a>(
     }
 }
 
-#[nif]
+#[nif(schedule = "DirtyCpu")]
 pub fn memory_write<'a>(
     env: Env<'a>,
     mem_ref: MemoryRef,
@@ -82,7 +82,7 @@ pub fn memory_write<'a>(
     }
 }
 
-#[nif]
+#[nif(schedule = "DirtyCpu")]
 pub fn check_memory_access(
     mem_ref: MemoryRef,
     addr: usize,
@@ -100,7 +100,7 @@ pub fn check_memory_access(
     }
 }
 
-#[nif]
+#[nif(schedule = "DirtyCpu")]
 pub fn set_memory_access<'a>(
     mem_ref: MemoryRef,
     addr: usize,
