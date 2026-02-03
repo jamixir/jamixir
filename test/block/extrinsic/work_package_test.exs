@@ -184,12 +184,10 @@ defmodule WorkPackageTest do
         |> Util.Hex.decode16!()
 
       {work_package, _} = WorkPackage.decode(wp_bin)
-      {:ok, chainspec} = ChainSpec.from_file("priv/polkajam_chainspec.json")
-      # Load the genesis state
-      {:ok, jam_state} = ChainSpec.get_state(chainspec)
+      bootstrap_state = ChainSpec.bootstrap_state()
 
       assert WorkPackage.implied_authorizer(work_package) ==
-               Enum.at(jam_state.authorizer_pool, 0) |> Enum.at(0)
+               Enum.at(bootstrap_state.authorizer_pool, 0) |> Enum.at(0)
     end
   end
 

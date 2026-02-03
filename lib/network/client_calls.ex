@@ -11,7 +11,6 @@ defmodule Network.ClientCalls do
   end
 
   def call(128, message) do
-    debug("Received block response")
     {:ok, Block.decode_list(message)}
   rescue
     e ->

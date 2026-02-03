@@ -1,9 +1,11 @@
 defmodule PVM.Accumulate.Executor do
-  alias PVM.Accumulate.{Utils, Runner}
+  alias PVM.Accumulate.{Runner, Utils}
+  import Util.Hex
+  import Codec.Encoder
   require Logger
 
   # high timeout to support PVM_TRACE
-  @timeout 5000
+  @timeout 10_000
   def run(
         service_code,
         initial_context,
@@ -23,6 +25,8 @@ defmodule PVM.Accumulate.Executor do
     if gas == 0 do
       Utils.collapse({0, :out_of_gas, {initial_context, initial_context}})
     else
+      start_time = System.monotonic_time(:millisecond)
+
       {:ok, pid} =
         Runner.start(
           service_code,
@@ -41,8 +45,10 @@ defmodule PVM.Accumulate.Executor do
 
       receive do
         {used_gas, output, final_ctx} ->
-          Logger.debug(
-            "Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}]"
+          end_time = System.monotonic_time(:millisecond)
+
+          Logger.info(
+            "Accumulate.Executor.run: Received result - used_gas=#{used_gas}, output=#{inspect(output)} [id: #{service_index}] after #{end_time - start_time}ms"
           )
 
           Utils.collapse({used_gas, output, final_ctx})

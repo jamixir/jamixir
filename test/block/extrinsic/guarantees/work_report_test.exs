@@ -2,11 +2,11 @@ defmodule WorkReportTest do
   use ExUnit.Case
   import Codec.Encoder
   import Jamixir.Factory
-  alias Jamixir.ChainSpec
   alias Block.Extrinsic.AvailabilitySpecification
   alias Block.Extrinsic.Guarantee.{WorkDigest, WorkReport}
   alias Block.Extrinsic.WorkPackage
   alias Codec.JsonEncoder
+  alias Jamixir.ChainSpec
   alias System.State.Ready
   alias System.State.ServiceAccount
   alias Util.Hash
@@ -557,12 +557,10 @@ defmodule WorkReportTest do
         |> Util.Hex.decode16!()
 
       {work_package, _} = WorkPackage.decode(wp_bin)
-      {:ok, chainspec} = ChainSpec.from_file("priv/polkajam_chainspec.json")
-      # Load the genesis state
-      {:ok, jam_state} = ChainSpec.get_state(chainspec)
+      bootstrap_state = ChainSpec.bootstrap_state()
 
       {[[]], task} =
-        WorkReport.pre_execute_work_package(work_package, [[]], 0, jam_state.services)
+        WorkReport.pre_execute_work_package(work_package, [[]], 0, bootstrap_state.services)
 
       {wr, _} = Task.await(task, :infinity)
       [wd] = wr.digests

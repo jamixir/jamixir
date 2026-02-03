@@ -1,6 +1,5 @@
 defmodule Jamixir.SqlStorageTest do
   alias Block.Extrinsic.Preimage
-  alias Jamixir.DBCase
   alias Block.Extrinsic.Disputes.Judgement
   alias Storage.AvailabilityRecord
   alias Util.Hash
@@ -8,7 +7,7 @@ defmodule Jamixir.SqlStorageTest do
   alias Block.Extrinsic.Assurance
   alias Storage.PreimageMetadataRecord
   use ExUnit.Case, async: true
-  use DBCase
+  use Jamixir.DBCase
   import Jamixir.Factory
 
   describe "assurance operations" do

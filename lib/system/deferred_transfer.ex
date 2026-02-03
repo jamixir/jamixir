@@ -1,6 +1,8 @@
 defmodule System.DeferredTransfer do
-  # Formula (12.14) v0.7.2 - X
+  alias System.DeferredTransfer
+  import Codec.Encoder
 
+  # Formula (12.14) v0.7.2 - X
   @type t :: %__MODULE__{
           # s ∈ ℕ_S
           sender: non_neg_integer(),
@@ -29,5 +31,20 @@ defmodule System.DeferredTransfer do
       <<1::8, t.sender::m(service_id), t.receiver::m(service_id), t.amount::m(balance),
         t.memo::binary, t.gas_limit::m(gas)>>
     end
+  end
+
+  @memo_size Constants.memo_size()
+
+  def decode(bin) do
+    <<_::8, sender::m(service_id), receiver::m(service_id), amount::m(balance),
+      memo::binary-size(@memo_size), gas_limit::m(gas), rest::binary>> = bin
+
+    {%DeferredTransfer{
+       sender: sender,
+       receiver: receiver,
+       amount: amount,
+       memo: memo,
+       gas_limit: gas_limit
+     }, rest}
   end
 end
