@@ -642,7 +642,7 @@ defmodule Jamixir.NodeStateServer do
       "updated services: #{inspect(updated_services)}, new_preimages services: #{inspect(new_preimages)}"
     )
 
-    for service_id <- MapSet.new(updated_services ++ [0]),
+    for service_id <- MapSet.new(updated_services ++ new_preimages),
         new_service = new_jam_state.services[service_id],
         old_service = jam_state.services[service_id] do
       for key <-
