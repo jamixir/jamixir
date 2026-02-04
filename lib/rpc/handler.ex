@@ -30,6 +30,7 @@ defmodule Jamixir.RPC.Handler do
     id = Map.get(request, "id")
 
     debug("🔧 Processing method: #{method}")
+    params = if method =~ ~r/^unsubscribe/, do: params, else: decode_64_params(params)
 
     case handle_method(method, params, websocket_pid) do
       {:ok, result} ->
@@ -76,7 +77,7 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("parent", [header_hash], _) do
     debug("call: parent #{b16(header_hash)}")
-    {:ok, blocks} = Node.get_blocks(d64(header_hash), :descending, 2)
+    {:ok, blocks} = Node.get_blocks(header_hash, :descending, 2)
 
     debug("Found #{length(blocks)} blocks")
 
@@ -88,7 +89,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("stateRoot", [header_hash], _websocket_pid) do
-    state = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    state = Jamixir.NodeAPI.inspect_state(header_hash)
 
     {:ok,
      case state do
@@ -98,20 +99,20 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("statistics", [header_hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
     {:ok, e64(e(state.validator_statistics))}
   end
 
   defp handle_method("serviceData", [header_hash, service_id], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
     {:ok, e64(e(state.services[service_id]))}
   end
 
   defp handle_method("subscribeServiceRequest", [service_id, hash, len, finalized], websocket_pid)
        when websocket_pid != nil do
-    debug("serviceRequest subscription service=#{service_id}, hash=#{b16(d64(hash))}, len=#{len}")
+    debug("serviceRequest subscription service=#{service_id}, hash=#{b16(hash)}, len=#{len}")
 
-    params = [service_id, d64(hash), len, finalized]
+    params = [service_id, hash, len, finalized]
 
     id = SubscriptionManager.create_subscription("serviceRequest", params, websocket_pid)
 
@@ -120,9 +121,9 @@ defmodule Jamixir.RPC.Handler do
 
   defp handle_method("subscribeServiceValue", [service_id, key, _finalized], websocket_pid)
        when websocket_pid != nil do
-    debug("serviceValue subscription service=#{service_id}, key=#{b16(d64(key))}")
+    debug("serviceValue subscription service=#{service_id}, key=#{b16(key)}")
 
-    params = [service_id, d64(key)]
+    params = [service_id, key]
 
     id = SubscriptionManager.create_subscription("serviceValue", params, websocket_pid)
 
@@ -130,18 +131,22 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("servicePreimage", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
 
-    case get_in(state.services, [service_id, :preimage_storage_p, d64(hash)]) do
+    case get_in(state.services, [service_id, :preimage_storage_p, hash]) do
       nil -> {:ok, nil}
       preimage -> {:ok, e64(preimage)}
     end
   end
 
   defp handle_method("serviceRequest", [header_hash, service_id, hash, length], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
 
-    case get_in(state.services, [service_id, :storage, {d64(hash), length}]) do
+    debug(
+      "serviceRequest call for header_hash=#{b16(header_hash)} service_id=#{service_id}, hash=#{b16(hash)}, length=#{length}"
+    )
+
+    case get_in(state.services, [service_id, :storage, {hash, length}]) do
       nil -> {:ok, nil}
       slots -> {:ok, slots}
     end
@@ -151,7 +156,7 @@ defmodule Jamixir.RPC.Handler do
     {_timeslot, header} = Storage.get_latest_header()
     {:ok, state} = Jamixir.NodeAPI.inspect_state(h(e(header)))
 
-    hash = d64(header_hash)
+    hash = header_hash
 
     {:ok,
      case Enum.find(state.recent_history.blocks, fn rb -> rb.header_hash == hash end) do
@@ -161,7 +166,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("submitPreimage", [service_id, blob], _websocket_pid) do
-    bin = d64(blob)
+    bin = blob
     hash = h(bin)
     log("Submitting preimage service #{service_id} hash #{b16(hash)} of size #{byte_size(bin)}")
     preimage = %Preimage{blob: bin, service: service_id}
@@ -178,21 +183,28 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("submitWorkPackage", [core, blob, extrinsics], _websocket_pid) do
-    {wp, _} = WorkPackage.decode(d64(blob))
-    Logger.debug("WP blob: #{b16(d64(blob))}")
-    ext_bins = for e <- extrinsics, do: d64(e)
+    {wp, _} = WorkPackage.decode(blob)
+    Logger.debug("WP blob: #{b16(blob)}")
+    ext_bins = for e <- extrinsics, do: e
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
     {:ok, nil}
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    header_hash = header_hash
+    hash = hash
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
 
-    case get_in(state.services, [service_id, :storage, d64(hash)]) do
-      nil -> {:ok, nil}
-      preimage -> {:ok, e64(preimage)}
-    end
+    {:ok,
+     case get_in(state.services, [service_id, :storage, hash]) do
+       nil ->
+         nil
+
+       value ->
+         debug("serviceValue #{service_id} hash: #{b16(hash)} value: #{b16(value)}")
+         e64(value)
+     end}
   end
 
   defp handle_method("finalizedBlock", [], _websocket_pid) do
@@ -203,7 +215,7 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("listServices", [header_hash], _websocket_pid) do
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(d64(header_hash))
+    {:ok, state} = Jamixir.NodeAPI.inspect_state(header_hash)
     {:ok, Map.keys(state.services)}
   end
 
@@ -226,11 +238,6 @@ defmodule Jamixir.RPC.Handler do
        when method != "" and websocket_pid != nil do
     first = String.first(method)
     method = String.replace_prefix(method, first, String.downcase(first))
-
-    params =
-      for p <- params do
-        if is_binary(p), do: d64(p), else: p
-      end
 
     subscription_id = SubscriptionManager.create_subscription(method, params, websocket_pid)
     {:subscription, subscription_id}
@@ -341,4 +348,10 @@ defmodule Jamixir.RPC.Handler do
 
   # For now, we'll use the same as best block since finalization isn't fully implemented
   defp get_finalized_block, do: get_best_block()
+
+  defp decode_64_params(params) when is_list(params),
+    do: for(p <- params, do: decode_64_params(p))
+
+  defp decode_64_params(param) when is_binary(param), do: d64(param)
+  defp decode_64_params(param), do: param
 end

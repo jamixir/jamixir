@@ -118,8 +118,6 @@ defmodule Jamixir.Commands.Run do
     # Register this process so we can send it shutdown messages
     Process.register(self(), :shutdown_handler)
 
-    # test_blocks()
-
     # Spawn a simple input listener for  graceful shutdown
     spawn(fn -> input_listener() end)
 
