@@ -652,9 +652,6 @@ defmodule Jamixir.NodeStateServer do
             ),
           old_value = get_in(old_service, [:storage, key]) || :ok,
           new_value = get_in(new_service, [:storage, key]) || :ok,
-          Log.debug(
-            "key: #{inspect(key)} => old_value: #{inspect(old_value)}, new_value: #{inspect(new_value)}"
-          ),
           old_value != new_value do
         csu = %{header_hash: header_hash, timeslot: block.header.timeslot, value: new_value}
 
@@ -667,15 +664,7 @@ defmodule Jamixir.NodeStateServer do
               {:service_value, [service_id, key], csu}
           end
 
-        Task.async(fn ->
-          # we should notify only once, but for unknown reason, jamt subscribes later than we notify here
-          # so we repeat the notification a few times to make sure it is received
-          # it doesn't hurt because if nobody is listening, the notification is simply ignored
-          for _ <- 1..6 do
-            Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", notification)
-            Process.sleep(200)
-          end
-        end)
+        Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", notification)
       end
     end
   end

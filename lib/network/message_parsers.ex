@@ -9,30 +9,14 @@ defmodule Network.MessageParsers do
   end
 
   defp parse_ce_messages(<<>>, acc) do
-    debug("Empty binary, returning accumulated messages: #{length(acc)}")
     Enum.reverse(acc)
   end
 
   defp parse_ce_messages(buffer, acc) do
-    log(
-      :debug,
-      "Processing buffer of size #{byte_size(buffer)}, current messages: #{length(acc)}"
-    )
-
     case buffer do
       <<length::32-little, rest::binary>> ->
-        log(
-          :debug,
-          "Message length: #{length}, remaining buffer size: #{byte_size(rest)}"
-        )
-
         case rest do
           <<message::binary-size(length), remaining::binary>> ->
-            log(
-              :debug,
-              "Extracted message of size #{byte_size(message)}, remaining buffer size: #{byte_size(remaining)}"
-            )
-
             parse_ce_messages(remaining, [message | acc])
 
           _ ->
@@ -42,7 +26,6 @@ defmodule Network.MessageParsers do
             )
 
             # Not enough data for a complete message - shouldn't happen with FIN flag
-            debug("Returning accumulated messages: #{length(acc)}")
             Enum.reverse(acc)
         end
 
@@ -99,7 +82,6 @@ defmodule Network.MessageParsers do
       {:need_more, buffer}
     else
       <<protocol_id::8, rest::binary>> = buffer
-      debug("#{log_tag}: Protocol ID #{protocol_id} extracted")
       {:protocol, protocol_id, rest}
     end
   end
@@ -115,7 +97,6 @@ defmodule Network.MessageParsers do
 
       if byte_size(rest) >= length do
         <<message::binary-size(length), remaining::binary>> = rest
-        debug("#{log_tag}: Parsed complete message of size #{length}")
         {:complete, message, remaining}
       else
         log(

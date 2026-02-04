@@ -7,6 +7,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
   import Codec.Encoder
   import Util.Hex
 
+  @buffer_timeout 5_000
   @log_context "[RPC][SUBSCRIPTIONS]"
   use Util.Logger
 
@@ -31,7 +32,7 @@ defmodule Jamixir.RPC.SubscriptionManager do
     log("📡 Starting RPC Subscription Manager")
     Phoenix.PubSub.subscribe(Jamixir.PubSub, "node_events")
 
-    {:ok, %{subscriptions: %{}, next_id: 1}}
+    {:ok, %{subscriptions: %{}, next_id: 1, buffer: []}}
   end
 
   @impl true
@@ -48,7 +49,28 @@ defmodule Jamixir.RPC.SubscriptionManager do
     debug("📡 Created subscription #{subscription_id} for method #{method}")
 
     new_subscriptions = Map.put(state.subscriptions, subscription_id, subscription)
-    new_state = %{state | subscriptions: new_subscriptions, next_id: state.next_id + 1}
+
+    new_buffer =
+      for {method, params, data, timing} <- state.buffer,
+          # filter out old buffer entries
+          timing >= System.monotonic_time(:millisecond) - @buffer_timeout do
+        if subscription.method == method and subscription.params == params do
+          debug(
+            "📡 Sending buffered data to new subscription #{subscription_id}, #{inspect(data)}"
+          )
+
+          send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
+        end
+
+        {method, params, data, timing}
+      end
+
+    new_state = %{
+      state
+      | subscriptions: new_subscriptions,
+        next_id: state.next_id + 1,
+        buffer: new_buffer
+    }
 
     {:reply, subscription_id, new_state}
   end
@@ -63,13 +85,15 @@ defmodule Jamixir.RPC.SubscriptionManager do
   @impl true
   def handle_cast({:notify, method, params, data}, state) do
     # Notify all subscriptions matching the method
-    for {_id, subscription} <- state.subscriptions do
-      if subscription.method == method and subscription.params == params do
-        send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
-      end
+    for {_id, subscription} <- state.subscriptions,
+        subscription.method == method and subscription.params == params do
+      debug("📡 Notifying subscription #{subscription.id} for method #{method}")
+      send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
     end
 
-    {:noreply, state}
+    new_buffer = [{method, params, data, System.monotonic_time(:millisecond)} | state.buffer]
+
+    {:noreply, %{state | buffer: new_buffer}}
   end
 
   # Handle PubSub messages and convert them to subscription notifications

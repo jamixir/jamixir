@@ -6,9 +6,6 @@ VERSION=$(grep -o 'version: "[^"]*"' mix.exs | sed 's/version: "//;s/"//')
 if [ "$NODE" -eq "0" ]; then
   RPC=--rpc
   LOG=--log=debug
-  DUMP=--dump-stf=./stf_dumps
-else
-  RPC=
 fi
 
 PRIV_DIR=./lib/jamixir-${VERSION}/priv/

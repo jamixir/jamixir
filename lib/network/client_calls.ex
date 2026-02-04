@@ -83,8 +83,7 @@ defmodule Network.ClientCalls do
     :ok
   end
 
-  def call(protocol_id, message) do
-    debug("Received protocol #{protocol_id} message")
+  def call(_, message) do
     {:ok, message}
   end
 
