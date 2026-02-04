@@ -1,7 +1,5 @@
 defmodule PVM.Accumulate.Executor do
   alias PVM.Accumulate.{Runner, Utils}
-  import Util.Hex
-  import Codec.Encoder
   require Logger
 
   # high timeout to support PVM_TRACE

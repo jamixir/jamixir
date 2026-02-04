@@ -5,14 +5,14 @@ defmodule Network.Client do
   alias Network.MessageParsers
   alias Quicer.Flags
   alias System.Audit.AuditAnnouncement
-  alias Block.Extrinsic.{Disputes.Judgement, TicketProof}
-  alias Block.Extrinsic.Assurance
+  alias Block.Extrinsic.{Assurance, Disputes.Judgement, TicketProof}
   alias Network.ConnectionState
   import Quicer.Flags
   import Network.{Codec, Config}
   import Codec.Encoder
   use Sizes
   import Bitwise, only: [&&&: 2]
+  import Util.Hex
 
   @log_context "[QUIC_CLIENT]"
 
@@ -208,7 +208,7 @@ defmodule Network.Client do
       case Map.get(up_streams, protocol_id) do
         # Existing stream - reuse it and send only the message
         %{stream: existing_stream} ->
-          debug("Sending block announcement: hash=#{inspect(hash)}, slot=#{slot}")
+          debug("Sending block announcement: hash=#{b16(hash)}, slot=#{slot}")
           {existing_stream, state}
 
         # No stream yet - create new one

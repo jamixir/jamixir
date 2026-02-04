@@ -226,7 +226,7 @@ defmodule Jamixir.Node do
   @impl true
   def process_ticket(:validator, epoch, ticket) do
     Logger.info(
-      "🎟️ Received ticket [#{ticket.attempt}, #{b16(ticket.signature)}]} for epoch #{epoch}"
+      "🎟️ Received ticket [#{ticket.attempt}, #{String.slice(b16(ticket.signature), 0, 16)}...] for epoch #{epoch}"
     )
 
     Storage.put(epoch, ticket)
