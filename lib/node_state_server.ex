@@ -25,6 +25,7 @@ defmodule Jamixir.NodeStateServer do
   alias System.State
   alias System.State.{CoreReport, EntropyPool, RotateKeys, Validator}
   alias System.State.Safrole
+  alias System.State.ServiceAccount
   alias Util.Logger, as: Log
   import Util.Hex, only: [b16: 1]
   import Codec.Encoder
@@ -642,9 +643,11 @@ defmodule Jamixir.NodeStateServer do
       "updated services: #{inspect(updated_services)}, new_preimages services: #{inspect(new_preimages)}"
     )
 
-    for service_id <- MapSet.new(updated_services ++ new_preimages),
-        new_service = new_jam_state.services[service_id],
-        old_service = jam_state.services[service_id] do
+    for service_id <- MapSet.new(updated_services ++ new_preimages) do
+      # if service is new or removed, we use empty ServiceAccount struct to compare
+      new_service = new_jam_state.services[service_id] || %ServiceAccount{}
+      old_service = jam_state.services[service_id] || %ServiceAccount{}
+
       for key <-
             MapSet.new(
               Map.keys(new_service.storage.original_map) ++
@@ -663,6 +666,15 @@ defmodule Jamixir.NodeStateServer do
             _ ->
               {:service_value, [service_id, key], csu}
           end
+
+        if old_value == :ok do
+          null_notification = put_in(notification, [Access.elem(2), :value], nil)
+
+          null_notification =
+            put_in(null_notification, [Access.elem(2), :timeslot], block.header.timeslot - 2)
+
+          Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", null_notification)
+        end
 
         Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", notification)
       end

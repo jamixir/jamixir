@@ -37,7 +37,8 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   @impl true
   def handle_call({:create_subscription, method, params, websocket_pid}, _from, state) do
-    subscription_id = "0x#{Integer.to_string(state.next_id, 16)}"
+    # Use numeric subscription IDs like polkajam does
+    subscription_id = state.next_id
 
     subscription = %{
       id: subscription_id,
@@ -51,18 +52,25 @@ defmodule Jamixir.RPC.SubscriptionManager do
     new_subscriptions = Map.put(state.subscriptions, subscription_id, subscription)
 
     new_buffer =
-      for {method, params, data, timing} <- state.buffer,
+      for {buf_method, params, data, timing} <- state.buffer,
           # filter out old buffer entries
           timing >= System.monotonic_time(:millisecond) - @buffer_timeout do
-        if subscription.method == method and subscription.params == params do
+        if subscription.method == buf_method and subscription.params == params do
           debug(
             "📡 Sending buffered data to new subscription #{subscription_id}, #{inspect(data)}"
           )
 
-          send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
+          notify_method =
+            "subscribe" <>
+              String.capitalize(String.at(buf_method, 0)) <> String.slice(buf_method, 1..-1//1)
+
+          send(
+            subscription.websocket_pid,
+            {:subscription_data, subscription.id, notify_method, data}
+          )
         end
 
-        {method, params, data, timing}
+        {buf_method, params, data, timing}
       end
 
     new_state = %{
@@ -85,10 +93,16 @@ defmodule Jamixir.RPC.SubscriptionManager do
   @impl true
   def handle_cast({:notify, method, params, data}, state) do
     # Notify all subscriptions matching the method
+    # Include the method name in the message for proper notification formatting
     for {_id, subscription} <- state.subscriptions,
         subscription.method == method and subscription.params == params do
       debug("📡 Notifying subscription #{subscription.id} for method #{method}")
-      send(subscription.websocket_pid, {:subscription_data, subscription.id, data})
+
+      # Send method name as "subscribe" + method for notification (e.g., "subscribeFinalizedBlock")
+      notify_method =
+        "subscribe" <> String.capitalize(String.at(method, 0)) <> String.slice(method, 1..-1//1)
+
+      send(subscription.websocket_pid, {:subscription_data, subscription.id, notify_method, data})
     end
 
     new_buffer = [{method, params, data, System.monotonic_time(:millisecond)} | state.buffer]
@@ -104,8 +118,9 @@ defmodule Jamixir.RPC.SubscriptionManager do
     header = block.header
 
     # When we get new_block event, we can notify bestBlock subscribers
+    # Use object format like polkajam: {"header_hash": ..., "slot": ...}
     Task.start(fn ->
-      message = [e64(h(e(header))), header.timeslot]
+      message = %{"header_hash" => e64(h(e(header))), "slot" => header.timeslot}
       notify_subscribers("bestBlock", [], message)
       notify_subscribers("finalizedBlock", [], message)
     end)
@@ -123,8 +138,9 @@ defmodule Jamixir.RPC.SubscriptionManager do
 
   def handle_info({:service_value, [service_id, key], csu}, state) do
     %{header_hash: header_hash, timeslot: slot, value: value} = csu
-    message = %{"header_hash" => e64(header_hash), "slot" => slot, "value" => e64(value)}
-    debug("Notifying serviceValue #{service_id}, #{b16(key)}: #{b16(value)}")
+    json_value = if is_nil(value), do: nil, else: e64(value)
+    message = %{"header_hash" => e64(header_hash), "slot" => slot, "value" => json_value}
+    debug("Notifying serviceValue #{service_id}, #{b16(key)}: #{inspect(value)}")
     notify_subscribers("serviceValue", [service_id, key], message)
     {:noreply, state}
   end

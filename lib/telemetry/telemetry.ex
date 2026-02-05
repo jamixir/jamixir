@@ -10,8 +10,6 @@ defmodule Jamixir.Telemetry do
   Send a telemetry event. Non-blocking.
   """
   def send_event(event) when is_binary(event) do
-    <<_::64, event_id::8, _::binary>> = event
-    Util.Logger.debug("Sending telemetry event with ID #{event_id}")
     Client.send_event(event)
   end
 
