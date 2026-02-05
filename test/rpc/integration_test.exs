@@ -32,7 +32,7 @@ defmodule Jamixir.RPC.IntegrationTest do
 
       assert response["jsonrpc"] == "2.0"
 
-      [hash, timeslot] = response["result"]
+      %{"header_hash" => hash, "slot" => timeslot} = response["result"]
       assert is_binary(hash)
       assert hash == e64(h(e(header)))
       assert timeslot == 123
@@ -45,7 +45,7 @@ defmodule Jamixir.RPC.IntegrationTest do
 
       assert response["jsonrpc"] == "2.0"
 
-      [hash, timeslot] = response["result"]
+      %{"header_hash" => hash, "slot" => timeslot} = response["result"]
       assert is_binary(hash)
       assert hash == e64(h(e(header)))
       assert timeslot == 123

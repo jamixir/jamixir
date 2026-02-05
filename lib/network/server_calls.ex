@@ -21,7 +21,6 @@ defmodule Network.ServerCalls do
   end
 
   def call(128, <<hash::b(hash), direction::8, max_blocks::32-little>> = _message) do
-    debug("Sending #{max_blocks} blocks in direction #{direction}")
     dir = if direction == 0, do: :ascending, else: :descending
     {:ok, blocks} = Jamixir.NodeAPI.get_blocks(hash, dir, max_blocks)
     blocks_bin = for b <- blocks, do: Encodable.encode(b)

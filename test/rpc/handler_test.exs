@@ -47,10 +47,8 @@ defmodule Jamixir.RPC.HandlerTest do
 
       assert response.jsonrpc == "2.0"
       assert response.id == 2
-      assert is_list(response.result)
-      assert length(response.result) == 2
 
-      [hash, timeslot] = response.result
+      %{"header_hash" => hash, "slot" => timeslot} = response.result
       # Hash should be 32 bytes
       assert byte_size(d64(hash)) == 32
       assert timeslot == 42
@@ -62,7 +60,7 @@ defmodule Jamixir.RPC.HandlerTest do
 
       assert response.jsonrpc == "2.0"
       assert response.id == 3
-      assert is_list(response.result)
+      assert is_map(response.result)
     end
 
     test "handles statistics method", %{state: state} do
@@ -198,7 +196,7 @@ defmodule Jamixir.RPC.HandlerTest do
 
       response = response(%{"method" => "parent", "params" => [hash2]})
 
-      [hash, timeslot] = response.result
+      %{"header_hash" => hash, "slot" => timeslot} = response.result
       assert hash == e64(hash1)
       assert timeslot == block1.header.timeslot
     end

@@ -39,11 +39,11 @@ defmodule Jamixir.RPC.WebSocketHandler do
     end
   end
 
-  def handle_info({:subscription_data, subscription_id, data}, state) do
-    # Send subscription notification
+  def handle_info({:subscription_data, subscription_id, method, data}, state) do
+    # Send subscription notification using original method name like polkajam
     notification = %{
       jsonrpc: "2.0",
-      method: "subscription",
+      method: method,
       params: %{
         subscription: subscription_id,
         result: data

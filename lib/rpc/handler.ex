@@ -83,7 +83,7 @@ defmodule Jamixir.RPC.Handler do
 
     {:ok,
      case blocks do
-       [_, %Block{header: h}] -> [e64(h(e(h))), h.timeslot]
+       [_, %Block{header: h}] -> %{"header_hash" => e64(h(e(h))), "slot" => h.timeslot}
        _ -> nil
      end}
   end
@@ -119,9 +119,11 @@ defmodule Jamixir.RPC.Handler do
     {:subscription, id}
   end
 
-  defp handle_method("subscribeServiceValue", [service_id, key, _finalized], websocket_pid)
+  defp handle_method("subscribeServiceValue", [service_id, key, finalized], websocket_pid)
        when websocket_pid != nil do
-    debug("serviceValue subscription service=#{service_id}, key=#{b16(key)}")
+    debug(
+      "serviceValue subscription service=#{service_id}, key=#{b16(key)}, finalized=#{finalized}"
+    )
 
     params = [service_id, key]
 
@@ -252,12 +254,12 @@ defmodule Jamixir.RPC.Handler do
   defp get_parameters do
     # Return JAM chain parameters according to JIP-2 spec
     params = %{
-      # B_S
-      "deposit_per_account" => Constants.service_minimum_balance(),
       # B_I
       "deposit_per_item" => Constants.additional_minimum_balance_per_item(),
       # B_L
       "deposit_per_byte" => Constants.additional_minimum_balance_per_octet(),
+      # B_S
+      "deposit_per_account" => Constants.service_minimum_balance(),
       # C
       "core_count" => Constants.core_count(),
       # D
@@ -310,17 +312,14 @@ defmodule Jamixir.RPC.Handler do
       "max_imports" => Constants.max_imports(),
       # W_P
       "segment_piece_count" => Constants.erasure_coded_pieces_per_segment(),
+      # W_R - max work report size (also used for elective data limit)
+      "max_report_elective_data" => Constants.max_work_report_size(),
       # W_T
       "transfer_memo_size" => Constants.memo_size(),
       # W_X
       "max_exports" => Constants.max_exports(),
-      # max_refine_memory - not in Constants, keeping as hardcoded for now
-      "max_refine_memory" => 1_073_741_824,
-      # max_is_authorized_memory - not in Constants, keeping as hardcoded for now
-      "max_is_authorized_memory" => 1_073_741_824,
-      # UNKNOWN BUT REQUIRED BY jamtop
-      "max_report_elective_data" => 0,
-      "epoch_tail_start" => 0
+      # Y - epoch tail start (ticket submission end)
+      "epoch_tail_start" => Constants.ticket_submission_end()
     }
 
     %{"V1" => params}
@@ -332,14 +331,14 @@ defmodule Jamixir.RPC.Handler do
         {_timeslot, header} ->
           hash = e64(h(e(header)))
 
-          {:ok, [hash, header.timeslot]}
+          {:ok, %{"header_hash" => hash, "slot" => header.timeslot}}
 
         nil ->
           # Return genesis block if no blocks are available
           genesis_header = Jamixir.Genesis.genesis_block_header()
           hash = e64(Jamixir.Genesis.genesis_header_hash())
 
-          {:ok, [hash, genesis_header.timeslot]}
+          {:ok, %{"header_hash" => hash, "slot" => genesis_header.timeslot}}
       end
     catch
       error -> {:error, "Failed to get best block: #{inspect(error)}"}
