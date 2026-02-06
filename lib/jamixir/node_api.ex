@@ -1,4 +1,5 @@
 defmodule Jamixir.NodeAPI do
+  alias System.State.Validator
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.Disputes.Judgement
@@ -34,6 +35,12 @@ defmodule Jamixir.NodeAPI do
               Types.hash() => Types.hash()
             }) ::
               {:ok, {Types.hash(), Types.ed25519_signature()}} | {:error, any}
+  @callback process_wp_bundle(
+              list(Validator.t()),
+              bundle_bin :: binary(),
+              core :: non_neg_integer()
+            ) ::
+              :ok | {:error, any}
   @callback save_audit(AuditAnnouncement.t()) :: :ok | {:error, any}
   @callback get_work_package_shard(Types.hash(), non_neg_integer()) ::
               {:ok, {binary(), list(binary()), binary()}} | {:error, any}
@@ -59,6 +66,10 @@ defmodule Jamixir.NodeAPI do
   def save_guarantee(guarantee), do: impl().save_guarantee(guarantee)
   def get_work_report(hash), do: impl().get_work_report(hash)
   def save_work_package(wp, core, extrinsic), do: impl().save_work_package(wp, core, extrinsic)
+
+  def process_wp_bundle(validators, bundle_bin, core),
+    do: impl().process_wp_bundle(validators, bundle_bin, core)
+
   def save_audit(audit), do: impl().save_audit(audit)
 
   def get_work_package_shard(erasure_root, segment_index),

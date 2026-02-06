@@ -99,6 +99,12 @@ defmodule Storage do
     put(@p_preimage <> hash, preimage.blob)
   end
 
+  def put(%WorkPackage{} = work_package) do
+    hash = h(e(work_package))
+    key = "#{@p_wp}#{hash}"
+    KVStorage.put(%{key => e(work_package)})
+  end
+
   def put(%PreimageMetadataRecord{} = preimage_metadata) do
     SqlStorage.save(preimage_metadata)
   end
@@ -156,11 +162,6 @@ defmodule Storage do
     })
 
     state_root
-  end
-
-  def put(%WorkPackage{} = work_package, core) do
-    key = <<@p_wp, core::m(core_index)>>
-    KVStorage.put(%{key => e(work_package)})
   end
 
   def put(epoch, %TicketProof{} = ticket) do
@@ -241,8 +242,8 @@ defmodule Storage do
     end
   end
 
-  def get_work_package(core) do
-    case KVStorage.get(<<@p_wp, core::m(core_index)>>) do
+  def get_work_package(hash) do
+    case KVStorage.get("#{@p_wp}#{hash}") do
       nil ->
         nil
 

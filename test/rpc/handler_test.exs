@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.HandlerTest do
   alias Block.Extrinsic.Preimage
   alias Codec.State.Trie
   alias Jamixir.Genesis
+  alias Util.Hash
   use Jamixir.DBCase
   import Jamixir.Factory
   import Codec.Encoder
@@ -18,18 +19,16 @@ defmodule Jamixir.RPC.HandlerTest do
     header = build(:decodable_header, timeslot: 42)
     {:ok, header_hash} = Storage.put(header)
     Storage.set_canonical_tip(header_hash)
+    Application.put_env(:jamixir, NodeAPI, Jamixir.Node)
+
+    on_exit(fn ->
+      Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
+    end)
+
     {:ok, state: s}
   end
 
   describe "handle_request/2" do
-    setup do
-      Application.put_env(:jamixir, NodeAPI, Jamixir.Node)
-
-      on_exit(fn ->
-        Application.put_env(:jamixir, NodeAPI, Jamixir.NodeAPI.Mock)
-      end)
-    end
-
     test "handles parameters method" do
       request = %{"method" => "parameters", "id" => 1}
 
@@ -262,6 +261,84 @@ defmodule Jamixir.RPC.HandlerTest do
         assert response.jsonrpc == "2.0"
         assert is_integer(response.id)
       end)
+    end
+  end
+
+  describe "handle_request/2 workPackageStatus" do
+    setup do
+      context = build(:refinement_context, timeslot: 0)
+      work_package = build(:work_package, context: context)
+      Storage.put(work_package)
+
+      {:ok, work_package: work_package}
+    end
+
+    test "no state" do
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [e64(Hash.random()), e64(Hash.random()), e64(Hash.random())]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+      assert response.result == %{"Failed" => "State not found for header hash"}
+    end
+
+    test "no work package" do
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [gen_head(), e64(Hash.random()), e64(Hash.random())]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+      assert response.result == %{"Failed" => "NotFound"}
+    end
+
+    test "reportable work package", %{work_package: work_package} do
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [gen_head(), e64(h(e(work_package))), e64(work_package.context.lookup_anchor)]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+
+      assert response.result == %{
+               "Reportable" => %{"remaining_blocks" => Constants.max_age_lookup_anchor()}
+             }
+    end
+
+    test "expired work package", %{state: state, work_package: work_package} do
+      Storage.put(Genesis.genesis_block_header(), %{state | timeslot: 100})
+
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [gen_head(), e64(h(e(work_package))), e64(work_package.context.lookup_anchor)]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+      assert response.result == %{"Failed" => "Not reported in time"}
+    end
+
+    test "invalid anchor", %{state: state, work_package: work_package} do
+      Storage.put(Genesis.genesis_block_header(), %{state | timeslot: 100})
+
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [gen_head(), e64(h(e(work_package))), e64(Hash.random())]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+
+      assert response.result == %{"Failed" => "Lookup anchor mismatch"}
     end
   end
 

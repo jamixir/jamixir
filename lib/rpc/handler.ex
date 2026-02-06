@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias Jamixir.NodeStateServer
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.WorkPackage
   alias Codec.State.Trie
@@ -202,6 +203,38 @@ defmodule Jamixir.RPC.Handler do
     :ok = Jamixir.NodeAPI.save_work_package(wp, core, ext_bins)
 
     {:ok, nil}
+  end
+
+  defp handle_method("submitWorkPackageBundle", [core, blob], _websocket_pid) do
+    validators = NodeStateServer.guarantors_for_core(core)
+    Jamixir.NodeAPI.process_wp_bundle(validators, blob, core)
+    {:ok, nil}
+  end
+
+  defp handle_method("workPackageStatus", [header_hash, wp_hash, anchor_hash], _websocket_pid) do
+    {:ok,
+     case Jamixir.NodeAPI.inspect_state(header_hash) do
+       {:ok, state} ->
+         case Storage.get_work_package(wp_hash) do
+           nil ->
+             %{"Failed" => "NotFound"}
+
+           %WorkPackage{context: %RefinementContext{lookup_anchor: l}} when l != anchor_hash ->
+             %{"Failed" => "Lookup anchor mismatch"}
+
+           %WorkPackage{context: %RefinementContext{timeslot: t}} ->
+             remaining_blocks = Constants.max_age_lookup_anchor() - (state.timeslot - t)
+
+             if remaining_blocks <= 0 do
+               %{"Failed" => "Not reported in time"}
+             else
+               %{"Reportable" => %{"remaining_blocks" => remaining_blocks}}
+             end
+         end
+
+       {:error, :no_state} ->
+         %{"Failed" => "State not found for header hash"}
+     end}
   end
 
   defp handle_method("serviceValue", [header_hash, service_id, hash], _websocket_pid) do

@@ -214,10 +214,11 @@ defmodule Jamixir.NodeTest do
 
     test "save_work_package with valid work package" do
       {wp, extrinsics} = work_package_and_its_extrinsic_factory()
+      hash = h(e(wp))
       assert {:error, :execution_failed} = save_work_package(wp, 0, List.flatten(extrinsics))
 
-      assert Storage.get_work_package(0) == wp
-      assert Storage.get_work_package(5) == nil
+      assert Storage.get_work_package(hash) == wp
+      assert Storage.get_work_package(Hash.random()) == nil
     end
 
     test "save_work_package with invalid extrinsics" do

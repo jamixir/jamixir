@@ -1,4 +1,5 @@
 defmodule Jamixir.Node do
+  alias Block.Extrinsic.WorkPackageBundle
   alias Block.Extrinsic.Assurance
   alias Block.Extrinsic.Guarantee
   alias Block.Extrinsic.Guarantee.WorkReport
@@ -283,7 +284,7 @@ defmodule Jamixir.Node do
     # this function validates them against the work package and organizes them per work item
     case WorkPackage.organize_extrinsics(wp, extrinsics) do
       {:ok, org_extrinsics} ->
-        Storage.put(wp, core)
+        Storage.put(wp)
         for e <- extrinsics, do: Storage.put(e)
         process_work_package(wp, core, org_extrinsics)
 
@@ -320,23 +321,7 @@ defmodule Jamixir.Node do
 
           validators = NodeStateServer.same_core_guarantors()
 
-          responses =
-            for v <- validators do
-              case ConnectionManager.instance().get_connection(v.ed25519) do
-                {:ok, pid} ->
-                  dict = WorkReport.get_segment_lookup_dict(wp)
-
-                  {v.ed25519,
-                   Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
-
-                {:error, e} ->
-                  Logger.warning(
-                    "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
-                  )
-
-                  {v.ed25519, {:error, e}}
-              end
-            end
+          responses = process_wp_bundle(validators, wp, bundle_bin, core)
 
           {work_report, exports} = Task.await(refine_task)
 
@@ -393,6 +378,29 @@ defmodule Jamixir.Node do
       end
     else
       {:error, :not_assigned_to_core}
+    end
+  end
+
+  def process_wp_bundle(validators, bundle_bin, core) do
+    {bundle, _} = WorkPackageBundle.decode(bundle_bin)
+    process_wp_bundle(validators, bundle.work_package, bundle_bin, core)
+  end
+
+  def process_wp_bundle(validators, work_package, bundle_bin, core) do
+    for v <- validators do
+      case ConnectionManager.instance().get_connection(v.ed25519) do
+        {:ok, pid} ->
+          dict = WorkReport.get_segment_lookup_dict(work_package)
+
+          {v.ed25519, Network.Connection.send_work_package_bundle(pid, bundle_bin, core, dict)}
+
+        {:error, e} ->
+          Logger.warning(
+            "Could not send WP Bundle: no active connection to validator #{b16(v.ed25519)}"
+          )
+
+          {v.ed25519, {:error, e}}
+      end
     end
   end
 

@@ -88,6 +88,9 @@ defmodule Jamixir.NodeStateServer do
   # Guarantor and core assignment functions
   def guarantors, do: GenServer.call(__MODULE__, :guarantors)
 
+  def guarantors_for_core(core_index),
+    do: GenServer.call(__MODULE__, {:guarantors_for_core, core_index})
+
   def same_core_guarantors, do: GenServer.call(__MODULE__, :same_core_guarantors)
 
   @impl true
@@ -188,6 +191,15 @@ defmodule Jamixir.NodeStateServer do
   @impl true
   def handle_call(:guarantors, _from, %__MODULE__{jam_state: jam_state} = state) do
     {:reply, guarantors(jam_state), state}
+  end
+
+  @imp true
+  def handle_call(
+        {:guarantors_for_core, core_index},
+        _from,
+        %__MODULE__{jam_state: jam_state} = state
+      ) do
+    {:reply, guarantors_for_core(jam_state, core_index), state}
   end
 
   @impl true
@@ -618,6 +630,14 @@ defmodule Jamixir.NodeStateServer do
       jam_state.curr_validators,
       MapSet.new()
     )
+  end
+
+  def guarantors_for_core(%State{} = jam_state, core_index) do
+    guarantors_data = guarantors(jam_state)
+
+    Enum.zip(guarantors_data.validators, guarantors_data.assigned_cores)
+    |> Enum.filter(fn {_v, c} -> c == core_index end)
+    |> Enum.map(fn {v, _c} -> v end)
   end
 
   # Network and connection helpers
