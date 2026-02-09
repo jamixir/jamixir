@@ -270,7 +270,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     test "returns error when work package exists in recent history", %{state: state, g1: g1} do
       # Add the work package hash to recent history
       wp_hash = g1.work_report.specification.work_package_hash
-      block = %{hd(state.recent_history.blocks) | work_report_hashes: %{wp_hash => "hash"}}
+      block = %{hd(state.recent_history.blocks) | work_package_hashes: %{wp_hash => "hash"}}
       s = put_in(state.recent_history.blocks, [block])
 
       assert Guarantee.validate([g1], s, %Header{timeslot: 1}) == {:error, :duplicate_package}
@@ -288,7 +288,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       # Add a hash to recent history
       block = %{
         hd(state.recent_history.blocks)
-        | work_report_hashes: %{"hash1" => "correct_export"}
+        | work_package_hashes: %{"hash1" => "correct_export"}
       }
 
       s = put_in(state.recent_history.blocks, [block])
@@ -620,7 +620,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           header_hash: "hash1",
           state_root: "root1",
           beefy_root: "mmr1",
-          work_report_hashes: %{}
+          work_package_hashes: %{}
         }
       ]
 
@@ -634,7 +634,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
     end
 
     test "rejects when hash exists in recent history", context do
-      blocks = [%{hd(context.recent_blocks) | work_report_hashes: %{"wrh" => "export1"}}]
+      blocks = [%{hd(context.recent_blocks) | work_package_hashes: %{"wrh" => "export1"}}]
 
       assert Guarantee.validate_new_work_packages(
                context.work_reports,
@@ -778,7 +778,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root,
               beefy_root: refinement_context.beefy_root,
-              work_report_hashes: %{}
+              work_package_hashes: %{}
             }
           ]
         },
@@ -838,7 +838,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
               header_hash: refinement_context.anchor,
               state_root: refinement_context.state_root,
               beefy_root: refinement_context.beefy_root,
-              work_report_hashes: %{}
+              work_package_hashes: %{}
             }
           ]
         },
@@ -872,7 +872,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         )
 
       recent_blocks = [
-        %RecentBlock{work_report_hashes: %{"some_hash" => "value", "segment_hash1" => "value1"}}
+        %RecentBlock{work_package_hashes: %{"some_hash" => "value", "segment_hash1" => "value1"}}
       ]
 
       {:ok, work_report: work_report, recent_blocks: recent_blocks}
@@ -895,7 +895,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       blocks = [
         %{
           hd(recent_blocks)
-          | work_report_hashes: %{"prereq_hash" => "value", "segment_hash1" => "value1"}
+          | work_package_hashes: %{"prereq_hash" => "value", "segment_hash1" => "value1"}
         }
       ]
 
@@ -910,7 +910,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
       blocks = [
         %{
           hd(recent_blocks)
-          | work_report_hashes: %{
+          | work_package_hashes: %{
               "prereq_hash" => "value",
               "segment_hash1" => "value1",
               "segment_hash2" => "value2"
@@ -937,7 +937,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
           segment_root_lookup: %{}
         )
 
-      blocks = [%{hd(recent_blocks) | work_report_hashes: %{}}]
+      blocks = [%{hd(recent_blocks) | work_package_hashes: %{}}]
 
       assert :ok ==
                Guarantee.validate_prerequisites([dependent_report, other_report], %RecentHistory{
@@ -955,7 +955,7 @@ defmodule Block.Extrinsic.GuaranteeTest do
         )
 
       recent_blocks = [
-        %RecentBlock{work_report_hashes: %{"hash2" => "export2", "hash3" => "export3"}}
+        %RecentBlock{work_package_hashes: %{"hash2" => "export2", "hash3" => "export3"}}
       ]
 
       {:ok, work_report1: work_report1, recent_blocks: recent_blocks}

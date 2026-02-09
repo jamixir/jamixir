@@ -380,7 +380,7 @@ defmodule Block.Extrinsic.Guarantee do
   end
 
   defp recent_block_hashes(blocks) do
-    Enum.flat_map(blocks, &Map.keys(&1.work_report_hashes)) |> MapSet.new()
+    Enum.flat_map(blocks, &Map.keys(&1.work_package_hashes)) |> MapSet.new()
   end
 
   defimpl Encodable do
@@ -453,7 +453,7 @@ defmodule Block.Extrinsic.Guarantee do
     if Enum.all?(work_reports, fn w ->
          map_subset?(
            w.segment_root_lookup,
-           p_map(work_reports) ++ Collections.union(for b <- blocks, do: b.work_report_hashes)
+           p_map(work_reports) ++ Collections.union(for b <- blocks, do: b.work_package_hashes)
          )
        end) do
       :ok

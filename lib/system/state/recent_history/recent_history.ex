@@ -103,7 +103,7 @@ defmodule System.State.RecentHistory do
       header_hash: header_hash,
       beefy_root: super_peak_mmr(beefy_belt_),
       state_root: state_root_,
-      work_report_hashes: wp_hashes
+      work_package_hashes: wp_hashes
     }
 
     RecentHistory.add(recent_history, new_block) |> Map.put(:beefy_belt, beefy_belt_)
@@ -136,7 +136,7 @@ defmodule System.State.RecentHistory do
       e(
         {vs(
            for b <- rh.blocks do
-             {b.header_hash, b.beefy_root, b.state_root, e(b.work_report_hashes)}
+             {b.header_hash, b.beefy_root, b.state_root, e(b.work_package_hashes)}
            end
          ), encode_mmr(rh.beefy_belt)}
       )

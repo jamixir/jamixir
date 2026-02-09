@@ -55,7 +55,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{}
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{}
       assert result.beefy_belt == [Hash.keccak_256(<<1::service(), Hash.one()::binary>>)]
     end
 
@@ -101,7 +101,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 1
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.one() => Hash.zero()}
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{Hash.one() => Hash.zero()}
 
       assert Enum.at(result.blocks, -1).beefy_root ==
                Hash.keccak_256(<<1::service(), Hash.one()::binary>>)
@@ -112,7 +112,7 @@ defmodule RecentHistoryTest do
         header_hash: Hash.one(),
         beefy_root: [Hash.two()],
         state_root: Hash.one(),
-        work_report_hashes: %{Hash.three() => Hash.zero()}
+        work_package_hashes: %{Hash.three() => Hash.zero()}
       }
 
       recent_history = %RecentHistory{blocks: [previous_block]}
@@ -137,7 +137,7 @@ defmodule RecentHistoryTest do
         )
 
       assert length(result.blocks) == 2
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{Hash.four() => Hash.five()}
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{Hash.four() => Hash.five()}
     end
 
     test "verifies work_package_hashes are extracted correctly" do
@@ -170,7 +170,7 @@ defmodule RecentHistoryTest do
           accumulation_outputs
         )
 
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{
                Hash.one() => Hash.two(),
                Hash.two() => Hash.three()
              }
@@ -184,7 +184,7 @@ defmodule RecentHistoryTest do
             header_hash: t(hash),
             beefy_root: [t(hash)],
             state_root: t(hash),
-            work_report_hashes: %{t(hash) => Hash.zero()}
+            work_package_hashes: %{t(hash) => Hash.zero()}
           }
         end
 
@@ -215,11 +215,11 @@ defmodule RecentHistoryTest do
       # Check that the length remains 8
       assert length(result.blocks) == 8
 
-      # Verify that the oldest block was removed (i.e., the block with work_report_hashes == [Hash.one()])
-      assert Enum.at(result.blocks, 0).work_report_hashes == %{Hash.two() => Hash.zero()}
+      # Verify that the oldest block was removed (i.e., the block with work_package_hashes == [Hash.one()])
+      assert Enum.at(result.blocks, 0).work_package_hashes == %{Hash.two() => Hash.zero()}
 
-      # Verify that the newest block was added (i.e., the block with work_report_hashes == [<<9::hash()>>])
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{<<9::hash()>> => Hash.five()}
+      # Verify that the newest block was added (i.e., the block with work_package_hashes == [<<9::hash()>>])
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{<<9::hash()>> => Hash.five()}
     end
 
     test "correctly links inputs to MMR and work_package_hashes" do
@@ -261,7 +261,7 @@ defmodule RecentHistoryTest do
       # Verify that the MMR and work_package_hashes are correctly linked
       assert length(result.blocks) == 1
 
-      assert Enum.at(result.blocks, -1).work_report_hashes == %{
+      assert Enum.at(result.blocks, -1).work_package_hashes == %{
                Hash.one() => Hash.two(),
                Hash.two() => Hash.three()
              }
@@ -364,7 +364,7 @@ defmodule RecentHistoryTest do
                  <<0x8720B97DDD6ACC0F6EB66E095524038675A4E4067ADC10EC39939EAEFC47D842::hash()>>,
                state_root:
                  <<0x1831DDE64E40BFD8639C2D122E5AC00FE133C48CD16E1621CA6D5CF0B8E10D3B::hash()>>,
-               work_report_hashes: %{
+               work_package_hashes: %{
                  <<0x016CB55EB7B84E0D495D40832C7238965BAEB468932C415DC2CEFFE0AFB039E5::hash()>> =>
                    <<0x935F6DFEF36FA06E10A9BA820F933611C05C06A207B07141FE8D87465870C11C::hash()>>,
                  <<0x76BCB24901299C331F0CA7342F4874F19B213EE72DF613D50699E7E25EDB82A6::hash()>> =>
@@ -380,7 +380,7 @@ defmodule RecentHistoryTest do
                  <<0x7076C31882A5953E097AEF8378969945E72807C4705E53A0C5AACC9176F0D56B::hash()>>,
                state_root:
                  <<0x0000000000000000000000000000000000000000000000000000000000000000::hash()>>,
-               work_report_hashes: %{
+               work_package_hashes: %{
                  <<0x3CC8D8C94E7B3EE01E678C63FD6B5DB894FC807DFF7FE10A11AB41E70194894D::hash()>> =>
                    <<0xC0EDFE377D20B9F4ED7D9DF9511EF904C87E24467364F0F7F75F20CFE90DD8FB::hash()>>
                }

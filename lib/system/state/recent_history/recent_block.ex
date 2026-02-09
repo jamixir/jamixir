@@ -9,7 +9,7 @@ defmodule System.State.RecentHistory.RecentBlock do
           # s
           state_root: Types.hash(),
           # p
-          work_report_hashes: %{Types.hash() => Types.hash()}
+          work_package_hashes: %{Types.hash() => Types.hash()}
         }
 
   # Formula (7.2) v0.7.2
@@ -21,13 +21,13 @@ defmodule System.State.RecentHistory.RecentBlock do
             # s
             state_root: Hash.zero(),
             # p
-            work_report_hashes: %{}
+            work_package_hashes: %{}
 
   use JsonDecoder
 
   def json_mapping,
     do: %{
-      work_report_hashes: [&map_reported_hashes/1, :reported]
+      work_package_hashes: [&map_reported_hashes/1, :reported]
     }
 
   defp map_reported_hashes(json) do
@@ -47,7 +47,7 @@ defmodule System.State.RecentHistory.RecentBlock do
     alias System.State.RecentHistory.RecentBlock
 
     def encode(%RecentBlock{} = b) do
-      e({b.header_hash, b.beefy_root, b.state_root, b.work_report_hashes})
+      e({b.header_hash, b.beefy_root, b.state_root, b.work_package_hashes})
     end
   end
 
@@ -58,19 +58,19 @@ defmodule System.State.RecentHistory.RecentBlock do
     <<header_hash::b(hash), rest::binary>> = bin
     <<beefy_root::b(hash), rest::binary>> = rest
     <<state_root::b(hash), rest::binary>> = rest
-    {work_report_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
+    {work_package_hashes, rest} = Codec.VariableSize.decode(rest, :map, @hash_size, @hash_size)
 
     {%__MODULE__{
        header_hash: header_hash,
        beefy_root: beefy_root,
        state_root: state_root,
-       work_report_hashes: work_report_hashes
+       work_package_hashes: work_package_hashes
      }, rest}
   end
 
   def to_json_mapping do
     %{
-      work_report_hashes:
+      work_package_hashes:
         {:reported,
          &for {hash, exports_root} <- &1 do
            %{hash: hash, exports_root: exports_root}

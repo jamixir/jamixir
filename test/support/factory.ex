@@ -553,7 +553,7 @@ defmodule Jamixir.Factory do
       header_hash: Hash.random(),
       state_root: Hash.random(),
       beefy_root: Hash.random(),
-      work_report_hashes: %{Hash.random() => Hash.random()}
+      work_package_hashes: %{Hash.random() => Hash.random()}
     }
   end
 

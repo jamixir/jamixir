@@ -40,7 +40,7 @@ defmodule Codec.JsonEncoderTest do
     test "encodes RecentBlock" do
       block =
         build(:recent_block,
-          work_report_hashes: %{Hash.random() => Hash.random(), Hash.random() => Hash.random()},
+          work_package_hashes: %{Hash.random() => Hash.random(), Hash.random() => Hash.random()},
           beefy_root: Hash.random()
         )
 
@@ -51,7 +51,7 @@ defmodule Codec.JsonEncoderTest do
                state_root: b16(block.state_root),
                beefy_root: b16(block.beefy_root),
                reported:
-                 block.work_report_hashes
+                 block.work_package_hashes
                  |> Enum.map(fn {hash, exports_root} ->
                    %{hash: b16(hash), exports_root: b16(exports_root)}
                  end)

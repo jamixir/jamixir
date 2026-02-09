@@ -4,7 +4,7 @@ defmodule Block.Extrinsic.AvailabilitySpecification do
   import Codec.Encoder
 
   @type t :: %__MODULE__{
-          # h: hash of the work-package
+          # p: hash of the work-package
           work_package_hash: Types.hash(),
           # l: auditable work bundle length
           length: non_neg_integer(),
