@@ -3,6 +3,8 @@ defmodule Jamixir.RPC.HandlerTest do
   alias Block.Extrinsic.Preimage
   alias Codec.State.Trie
   alias Jamixir.Genesis
+  alias Jamixir.RPC.Handler
+  alias System.State.RecentHistory
   alias Util.Hash
   use Jamixir.DBCase
   import Jamixir.Factory
@@ -312,6 +314,46 @@ defmodule Jamixir.RPC.HandlerTest do
              }
     end
 
+    test "guaranteed but not assured work package", %{state: state, work_package: work_package} do
+      work_package = %{work_package | context: %{work_package.context | timeslot: 40}}
+      Storage.put(work_package)
+
+      block = build(:block, header: build(:decodable_header, timeslot: 46))
+      Storage.put(block)
+
+      recent_block =
+        build(:recent_block,
+          header_hash: h(e(block.header)),
+          work_package_hashes: %{h(e(work_package)) => Hash.random()}
+        )
+
+      state = %{
+        state
+        | timeslot: 50,
+          recent_history: %RecentHistory{blocks: [recent_block | state.recent_history.blocks]}
+      }
+
+      Storage.put(Genesis.genesis_block_header(), state)
+
+      request = %{
+        "method" => "workPackageStatus",
+        "params" => [gen_head(), e64(h(e(work_package))), e64(work_package.context.lookup_anchor)]
+      }
+
+      response = response(request)
+
+      assert response.jsonrpc == "2.0"
+
+      assert response.result == %{
+               "Reported" => %{
+                 "reported_in" => %{
+                   "header_hash" => e64(recent_block.header_hash),
+                   "timeslot" => 46
+                 }
+               }
+             }
+    end
+
     test "expired work package", %{state: state, work_package: work_package} do
       Storage.put(Genesis.genesis_block_header(), %{state | timeslot: 100})
 
@@ -345,6 +387,6 @@ defmodule Jamixir.RPC.HandlerTest do
   def gen_head, do: e64(Genesis.genesis_header_hash())
 
   def response(request) do
-    Jamixir.RPC.Handler.handle_request(put_in(request, ["jsonrpc"], "2.0"))
+    Handler.handle_request(put_in(request, ["jsonrpc"], "2.0"))
   end
 end

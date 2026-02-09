@@ -3,6 +3,7 @@ defmodule Jamixir.RPC.Handler do
   Main RPC handler that processes JSON-RPC method calls according to JIP-2 specification.
   """
 
+  alias System.State.RecentHistory.RecentBlock
   alias Jamixir.NodeStateServer
   alias Block.Extrinsic.Preimage
   alias Block.Extrinsic.WorkPackage
@@ -228,7 +229,24 @@ defmodule Jamixir.RPC.Handler do
              if remaining_blocks <= 0 do
                %{"Failed" => "Not reported in time"}
              else
-               %{"Reportable" => %{"remaining_blocks" => remaining_blocks}}
+               case Enum.find(state.recent_history.blocks, fn b ->
+                      Map.has_key?(b.work_package_hashes, wp_hash)
+                    end) do
+                 %RecentBlock{header_hash: h} ->
+                   block = Storage.get_block(h)
+
+                   %{
+                     "Reported" => %{
+                       "reported_in" => %{
+                         "header_hash" => e64(h),
+                         "timeslot" => block.header.timeslot
+                       }
+                     }
+                   }
+
+                 _ ->
+                   %{"Reportable" => %{"remaining_blocks" => remaining_blocks}}
+               end
              end
          end
 
