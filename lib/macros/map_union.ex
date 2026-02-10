@@ -56,21 +56,18 @@ defmodule MapUnion do
              right: map() | MapSet.t() | list()
   defmacro left ++ right do
     quote do
-      case {unquote(left), unquote(right)} do
-        {%MapSet{} = left, %MapSet{} = right} ->
-          MapSet.union(left, right)
-
-        {%{} = left, %{} = right} ->
-          Map.merge(left, right)
-
-        {left, right} when is_list(left) and is_list(right) ->
-          Kernel.++(left, right)
-
-        _ ->
-          raise ArgumentError, "Unsupported types for ++ operator"
-      end
+      MapUnion.union(unquote(left), unquote(right))
     end
   end
+
+  @doc false
+  def union(%MapSet{} = left, %MapSet{} = right), do: MapSet.union(left, right)
+  def union(%{} = left, %{} = right), do: Map.merge(left, right)
+
+  def union(left, right) when is_list(left) and is_list(right),
+    do: Kernel.++(left, right)
+
+  def union(_, _), do: raise(ArgumentError, "Unsupported types for ++ operator")
 
   @doc """
   Performs a difference operation on two collections.
@@ -94,16 +91,12 @@ defmodule MapUnion do
   # credo:disable-for-next-line
   defmacro left \\ right do
     quote do
-      case {unquote(left), unquote(right)} do
-        {%MapSet{} = left, %MapSet{} = right} ->
-          MapSet.difference(left, right)
-
-        {%{} = left, %{} = right} ->
-          Map.drop(left, Map.keys(right))
-
-        _ ->
-          raise ArgumentError, "Unsupported types for \\ operator"
-      end
+      MapUnion.difference(unquote(left), unquote(right))
     end
   end
+
+  @doc false
+  def difference(%MapSet{} = left, %MapSet{} = right), do: MapSet.difference(left, right)
+  def difference(%{} = left, %{} = right), do: Map.drop(left, Map.keys(right))
+  def difference(_, _), do: raise(ArgumentError, "Unsupported types for \\ operator")
 end
