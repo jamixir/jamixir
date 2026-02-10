@@ -112,3 +112,7 @@ mix generate_keypair
  - Elixir 1.17-otp-26
  - Erlang 26.2.5
 
+## Wallet address associated with JAM prize
+
+- Polkadot: 13EYjgxwAuRx4b5BfhWdgHY4dgjroELkoohCgCfnCvPLzYD6
+- Kusama: EosFg3jwVBQNht7UmGgS64uvf2SubboBgoTuZxP8daKZ27r
