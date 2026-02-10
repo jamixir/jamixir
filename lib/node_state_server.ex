@@ -193,7 +193,6 @@ defmodule Jamixir.NodeStateServer do
     {:reply, guarantors(jam_state), state}
   end
 
-  @imp true
   def handle_call(
         {:guarantors_for_core, core_index},
         _from,

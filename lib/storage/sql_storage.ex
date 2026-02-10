@@ -67,6 +67,7 @@ defmodule Jamixir.SqlStorage do
     %GuaranteeRecord{}
     |> GuaranteeRecord.changeset(%{
       work_report_hash: wr_hash,
+      work_package_hash: guarantee.work_report.specification.work_package_hash,
       core_index: guarantee.work_report.core_index,
       timeslot: guarantee.timeslot,
       credentials: Guarantee.encode_credentials(guarantee.credentials)
@@ -117,6 +118,10 @@ defmodule Jamixir.SqlStorage do
     |> Enum.map(&AssuranceRecord.to_assurance/1)
   end
 
+  def get_all(Preimage, status) do
+    Repo.all(from(p in PreimageMetadataRecord, where: p.status == ^status))
+  end
+
   def get_all(Judgement, epoch) do
     Repo.all(from(j in JudgementRecord, where: j.epoch == ^epoch))
     |> Enum.map(&JudgementRecord.to_judgement/1)
@@ -126,8 +131,13 @@ defmodule Jamixir.SqlStorage do
     Repo.all(from(g in GuaranteeRecord, where: g.status == ^status, order_by: g.core_index))
   end
 
-  def get_all(Preimage, status) do
-    Repo.all(from(p in PreimageMetadataRecord, where: p.status == ^status))
+  def get_all_by_work_package_hash(Guarantee, work_package_hash) do
+    Repo.all(
+      from(g in GuaranteeRecord,
+        where: g.work_package_hash == ^work_package_hash,
+        order_by: g.core_index
+      )
+    )
   end
 
   def mark_preimage_included(hash, service_id) do

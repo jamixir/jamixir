@@ -241,6 +241,63 @@ defmodule StorageTest do
     end
   end
 
+  describe "get guarantees by work_package_hash" do
+    test "returns guarantees matching the given work_package_hash" do
+      wp_hash = Hash.random()
+
+      wr1 =
+        build(:work_report,
+          core_index: 0,
+          specification: build(:availability_specification, work_package_hash: wp_hash)
+        )
+
+      wr2 =
+        build(:work_report,
+          core_index: 1,
+          specification: build(:availability_specification, work_package_hash: wp_hash)
+        )
+
+      Storage.put(build(:guarantee, work_report: wr1, timeslot: 100))
+      Storage.put(build(:guarantee, work_report: wr2, timeslot: 101))
+
+      results = Storage.get_guarantees(work_package_hash: wp_hash)
+      assert length(results) == 2
+
+      assert Enum.all?(results, fn g ->
+               g.work_report.specification.work_package_hash == wp_hash
+             end)
+    end
+
+    test "returns empty list when no guarantees match" do
+      results = Storage.get_guarantees(work_package_hash: Hash.random())
+      assert results == []
+    end
+
+    test "does not return guarantees with different work_package_hash" do
+      wp_hash1 = Hash.random()
+      wp_hash2 = Hash.random()
+
+      wr1 =
+        build(:work_report,
+          core_index: 0,
+          specification: build(:availability_specification, work_package_hash: wp_hash1)
+        )
+
+      wr2 =
+        build(:work_report,
+          core_index: 1,
+          specification: build(:availability_specification, work_package_hash: wp_hash2)
+        )
+
+      Storage.put(build(:guarantee, work_report: wr1, timeslot: 100))
+      Storage.put(build(:guarantee, work_report: wr2, timeslot: 101))
+
+      results = Storage.get_guarantees(work_package_hash: wp_hash1)
+      assert length(results) == 1
+      assert hd(results).work_report.specification.work_package_hash == wp_hash1
+    end
+  end
+
   describe "save_preimage_metadata/1" do
     test "saves preimage metadata" do
       data = %PreimageMetadataRecord{service_id: 1, hash: <<1::256>>, length: 123}

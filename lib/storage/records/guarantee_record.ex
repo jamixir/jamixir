@@ -5,6 +5,7 @@ defmodule Storage.GuaranteeRecord do
   @primary_key false
   @castable_fields [
     :work_report_hash,
+    :work_package_hash,
     :core_index,
     :timeslot,
     :credentials,
@@ -18,6 +19,7 @@ defmodule Storage.GuaranteeRecord do
   schema "guarantees" do
     field(:core_index, :integer, primary_key: true)
     field(:work_report_hash, :binary)
+    field(:work_package_hash, :binary)
 
     field(:timeslot, :integer)
     field(:credentials, :binary)

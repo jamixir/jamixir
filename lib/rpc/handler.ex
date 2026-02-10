@@ -13,6 +13,9 @@ defmodule Jamixir.RPC.Handler do
   alias Network.ConnectionManager
   import Codec.Encoder
   import Util.Hex
+  use MapUnion
+
+  @max_age Constants.max_age_lookup_anchor()
 
   @log_context "[RPC]"
   use Util.Logger
@@ -216,6 +219,11 @@ defmodule Jamixir.RPC.Handler do
     {:ok,
      case Jamixir.NodeAPI.inspect_state(header_hash) do
        {:ok, state} ->
+         recent_block =
+           Enum.find(state.recent_history.blocks, fn b ->
+             Map.has_key?(b.work_package_hashes, wp_hash)
+           end)
+
          case Storage.get_work_package(wp_hash) do
            nil ->
              %{"Failed" => "NotFound"}
@@ -223,30 +231,21 @@ defmodule Jamixir.RPC.Handler do
            %WorkPackage{context: %RefinementContext{lookup_anchor: l}} when l != anchor_hash ->
              %{"Failed" => "Lookup anchor mismatch"}
 
+           %WorkPackage{context: %RefinementContext{timeslot: t}}
+           when @max_age - (state.timeslot - t) <= 0 ->
+             %{"Failed" => "Not reported in time"}
+
            %WorkPackage{context: %RefinementContext{timeslot: t}} ->
-             remaining_blocks = Constants.max_age_lookup_anchor() - (state.timeslot - t)
+             case recent_block do
+               %RecentBlock{header_hash: h} ->
+                 block = Storage.get_block(h)
 
-             if remaining_blocks <= 0 do
-               %{"Failed" => "Not reported in time"}
-             else
-               case Enum.find(state.recent_history.blocks, fn b ->
-                      Map.has_key?(b.work_package_hashes, wp_hash)
-                    end) do
-                 %RecentBlock{header_hash: h} ->
-                   block = Storage.get_block(h)
+                 reported_in = %{"header_hash" => e64(h), "timeslot" => block.header.timeslot}
 
-                   %{
-                     "Reported" => %{
-                       "reported_in" => %{
-                         "header_hash" => e64(h),
-                         "timeslot" => block.header.timeslot
-                       }
-                     }
-                   }
+                 %{"Reported" => %{"reported_in" => reported_in} ++ report_info(wp_hash)}
 
-                 _ ->
-                   %{"Reportable" => %{"remaining_blocks" => remaining_blocks}}
-               end
+               nil ->
+                 %{"Reportable" => %{"remaining_blocks" => @max_age - (state.timeslot - t)}}
              end
          end
 
@@ -423,4 +422,17 @@ defmodule Jamixir.RPC.Handler do
 
   defp decode_64_params(param) when is_binary(param), do: d64(param)
   defp decode_64_params(param), do: param
+
+  defp report_info(wp_hash) do
+    case Storage.get_guarantees(work_package_hash: wp_hash) do
+      [] ->
+        %{}
+
+      [guarantee | _] ->
+        %{
+          "core" => guarantee.work_report.core_index,
+          "report_hash" => e64(h(e(guarantee.work_report)))
+        }
+    end
+  end
 end

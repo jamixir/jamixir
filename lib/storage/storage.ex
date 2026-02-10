@@ -418,6 +418,12 @@ defmodule Storage do
     SqlStorage.get_all(Judgement, epoch)
   end
 
+  def get_guarantees(work_package_hash: work_package_hash) do
+    SqlStorage.get_all_by_work_package_hash(Guarantee, work_package_hash)
+    |> Enum.map(&attach_work_report/1)
+    |> Enum.reject(&is_nil/1)
+  end
+
   def get_guarantees(status) do
     SqlStorage.get_all(Guarantee, status)
     |> Enum.map(&attach_work_report/1)

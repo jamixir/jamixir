@@ -335,6 +335,19 @@ defmodule Jamixir.RPC.HandlerTest do
 
       Storage.put(Genesis.genesis_block_header(), state)
 
+      guarantee =
+        build(:guarantee,
+          work_report:
+            build(:work_report,
+              specification:
+                build(:availability_specification, work_package_hash: h(e(work_package))),
+              core_index: 1
+            ),
+          timeslot: 40
+        )
+
+      Storage.put(guarantee)
+
       request = %{
         "method" => "workPackageStatus",
         "params" => [gen_head(), e64(h(e(work_package))), e64(work_package.context.lookup_anchor)]
@@ -349,7 +362,9 @@ defmodule Jamixir.RPC.HandlerTest do
                  "reported_in" => %{
                    "header_hash" => e64(recent_block.header_hash),
                    "timeslot" => 46
-                 }
+                 },
+                 "core" => 1,
+                 "report_hash" => e64(h(e(guarantee.work_report)))
                }
              }
     end

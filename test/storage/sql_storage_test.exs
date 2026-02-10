@@ -1,14 +1,16 @@
 defmodule Jamixir.SqlStorageTest do
-  alias Block.Extrinsic.Preimage
-  alias Block.Extrinsic.Disputes.Judgement
-  alias Storage.AvailabilityRecord
-  alias Util.Hash
-  alias Jamixir.SqlStorage
   alias Block.Extrinsic.Assurance
+  alias Block.Extrinsic.Disputes.Judgement
+  alias Block.Extrinsic.Guarantee
+  alias Block.Extrinsic.Preimage
+  alias Jamixir.SqlStorage
+  alias Storage.AvailabilityRecord
   alias Storage.PreimageMetadataRecord
+  alias Util.Hash
   use ExUnit.Case, async: true
   use Jamixir.DBCase
   import Jamixir.Factory
+  import Codec.Encoder
 
   describe "assurance operations" do
     test "save and retrieve assurance" do
@@ -186,6 +188,63 @@ defmodule Jamixir.SqlStorageTest do
       assert saved.exports_root == <<5::256>>
       assert saved.segment_count == 10
       assert saved.shard_index == 7
+    end
+  end
+
+  describe "guarantee operations" do
+    test "get_all_by_work_package_hash returns matching guarantees" do
+      wp_hash = Hash.random()
+
+      wr1 =
+        build(:work_report,
+          core_index: 0,
+          specification: build(:availability_specification, work_package_hash: wp_hash)
+        )
+
+      wr2 =
+        build(:work_report,
+          core_index: 1,
+          specification: build(:availability_specification, work_package_hash: wp_hash)
+        )
+
+      guarantee1 = build(:guarantee, work_report: wr1, timeslot: 100)
+      guarantee2 = build(:guarantee, work_report: wr2, timeslot: 101)
+
+      SqlStorage.save(guarantee1, h(e(wr1)))
+      SqlStorage.save(guarantee2, h(e(wr2)))
+
+      records = SqlStorage.get_all_by_work_package_hash(Guarantee, wp_hash)
+      assert length(records) == 2
+      assert Enum.all?(records, &(&1.work_package_hash == wp_hash))
+    end
+
+    test "get_all_by_work_package_hash returns empty list when no match" do
+      records = SqlStorage.get_all_by_work_package_hash(Guarantee, Hash.random())
+      assert records == []
+    end
+
+    test "get_all_by_work_package_hash does not return guarantees with different work_package_hash" do
+      wp_hash1 = Hash.random()
+      wp_hash2 = Hash.random()
+
+      wr1 =
+        build(:work_report,
+          core_index: 0,
+          specification: build(:availability_specification, work_package_hash: wp_hash1)
+        )
+
+      wr2 =
+        build(:work_report,
+          core_index: 1,
+          specification: build(:availability_specification, work_package_hash: wp_hash2)
+        )
+
+      SqlStorage.save(build(:guarantee, work_report: wr1, timeslot: 100), h(e(wr1)))
+      SqlStorage.save(build(:guarantee, work_report: wr2, timeslot: 101), h(e(wr2)))
+
+      records = SqlStorage.get_all_by_work_package_hash(Guarantee, wp_hash1)
+      assert length(records) == 1
+      assert hd(records).work_package_hash == wp_hash1
     end
   end
 end
