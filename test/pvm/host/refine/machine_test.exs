@@ -1,8 +1,7 @@
 defmodule PVM.Host.Refine.MachineTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Host.Refine.Context, Integrated, Registers}
-  use PVM.Instructions
+  alias PVM.{Host.Refine.Context, ChildVm, Registers}
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants
   import Pvm.Native
@@ -67,10 +66,32 @@ defmodule PVM.Host.Refine.MachineTest do
       # Verify new machine state
       assert %{0 => machine} = context_.m
 
-      assert %Integrated{
+      assert %ChildVm{
                program: ^test_program,
                counter: 42
              } = machine
+    end
+
+    test "returned ref points to actual machine with valid vm_instance_ref", %{
+      memory_ref: memory_ref,
+      context: context,
+      gas: gas,
+      registers: registers
+    } do
+      assert %{
+               exit_reason: :continue,
+               registers: registers_,
+               context: context_
+             } = Refine.machine(gas, registers, memory_ref, context)
+
+      ref = registers_[7]
+      assert ref >= 0, "ref must be a non-negative machine ID"
+
+      machine = context_.m[ref]
+      assert machine != nil, "ref must point to an entry in context.m"
+
+      assert %ChildVm{vm_instance_ref: vm_ref} = machine
+      assert is_reference(vm_ref), "machine must have a ref pointing to actual VM instance"
     end
 
     test "assigns lowest available ID when machines exist", %{
@@ -82,8 +103,8 @@ defmodule PVM.Host.Refine.MachineTest do
       # Create context with machines 0 and 2
       context = %Context{
         m: %{
-          0 => %Integrated{program: "existing0"},
-          2 => %Integrated{program: "existing2"}
+          0 => %ChildVm{program: "existing0"},
+          2 => %ChildVm{program: "existing2"}
         }
       }
 
@@ -96,9 +117,9 @@ defmodule PVM.Host.Refine.MachineTest do
       assert registers_[7] == 1
 
       assert %{
-               0 => %Integrated{program: "existing0"},
-               2 => %Integrated{program: "existing2"},
-               1 => %Integrated{
+               0 => %ChildVm{program: "existing0"},
+               2 => %ChildVm{program: "existing2"},
+               1 => %ChildVm{
                  program: ^test_program,
                  counter: 42
                }
@@ -114,10 +135,10 @@ defmodule PVM.Host.Refine.MachineTest do
       # Create context with machines 0,1,2,3
       context = %Context{
         m: %{
-          0 => %Integrated{program: "existing0"},
-          1 => %Integrated{program: "existing1"},
-          2 => %Integrated{program: "existing2"},
-          3 => %Integrated{program: "existing3"}
+          0 => %ChildVm{program: "existing0"},
+          1 => %ChildVm{program: "existing1"},
+          2 => %ChildVm{program: "existing2"},
+          3 => %ChildVm{program: "existing3"}
         }
       }
 
@@ -132,11 +153,11 @@ defmodule PVM.Host.Refine.MachineTest do
       assert registers_[7] == 4
 
       assert %{
-               0 => %Integrated{program: "existing0"},
-               1 => %Integrated{program: "existing1"},
-               2 => %Integrated{program: "existing2"},
-               3 => %Integrated{program: "existing3"},
-               4 => %Integrated{
+               0 => %ChildVm{program: "existing0"},
+               1 => %ChildVm{program: "existing1"},
+               2 => %ChildVm{program: "existing2"},
+               3 => %ChildVm{program: "existing3"},
+               4 => %ChildVm{
                  program: ^test_program,
                  counter: 42
                }

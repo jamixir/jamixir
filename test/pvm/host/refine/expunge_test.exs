@@ -1,13 +1,13 @@
 defmodule PVM.Host.Refine.ExpungeTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Host.Refine.Context, Host.Refine.Result, Integrated, Registers}
+  alias PVM.{Host.Refine.Context, Host.Refine.Result, ChildVm, Registers}
   import PVM.Constants.HostCallResult
   import Pvm.Native
 
   describe "expunge/4" do
     setup do
-      machine = %Integrated{program: "program", counter: 42}
+      machine = %ChildVm{program: "program", counter: 42}
       context = %Context{m: %{1 => machine}}
       gas = 100
       {:ok, context: context, machine: machine, gas: gas}
@@ -30,7 +30,7 @@ defmodule PVM.Host.Refine.ExpungeTest do
     } do
       registers = Registers.new(%{7 => 1})
       # add another machine to the context
-      machine2 = %Integrated{program: "program2"}
+      machine2 = %ChildVm{program: "program2"}
       context = %{context | m: Map.put(context.m, 2, machine2)}
 
       %Result{registers: registers_, context: context_} =

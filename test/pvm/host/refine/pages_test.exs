@@ -1,28 +1,17 @@
 defmodule PVM.Host.Refine.PagesTest do
   use ExUnit.Case
   alias PVM.Host.Refine
-  alias PVM.{Host.Refine.Context, Integrated, Registers}
+  alias PVM.{Host.Refine.Context, ChildVm, Registers}
   import PVM.Constants.HostCallResult
   import PVM.Memory.Constants
   import Pvm.Native
+  import PVM.TestHelpers
 
-  @page_size PVM.Memory.Constants.page_size()
-
-  defp a_0, do: min_allowed_address()
+  @page_size page_size()
 
   describe "pages/4" do
     setup do
-      test_data = String.duplicate("A", 256)
-
-      machine_memory_ref = build_memory()
-      set_memory_access(machine_memory_ref, a_0(), @page_size + 2, 3)
-      memory_write(machine_memory_ref, a_0(), test_data)
-
-      machine = %Integrated{
-        memory: machine_memory_ref,
-        program: "program"
-      }
-
+      machine = new_test_machine()
       context = %Context{m: %{1 => machine}}
       gas = 100
 
@@ -37,7 +26,6 @@ defmodule PVM.Host.Refine.PagesTest do
        machine: machine,
        gas: gas,
        registers: registers,
-       test_data: test_data,
        memory_ref: memory_ref}
     end
 
@@ -117,14 +105,9 @@ defmodule PVM.Host.Refine.PagesTest do
         })
 
       # Create a machine with memory that has nil access in the target range
-      # read access for pages 16...+99, the 100th page will have nil access
-      machine_memory_ref = build_memory()
-      set_memory_access(machine_memory_ref, 16 * @page_size, 98 * @page_size + 1, 1)
-
-      machine = %Integrated{
-        memory: machine_memory_ref,
-        program: "program"
-      }
+      # read access for pages 16..114 (99 pages), page 115 will have nil access
+      machine = new_test_machine()
+      :ok = ChildVm.set_memory_access(machine, 16, 99, 1)
 
       context = %Context{m: %{1 => machine}}
       memory_ref = build_memory()
@@ -173,18 +156,13 @@ defmodule PVM.Host.Refine.PagesTest do
       # Page 16 starts at 16 * 4096 = 65536
       start_offset = 16 * @page_size
 
-      machine_memory_ref = build_memory()
+      machine = new_test_machine()
       # Set write access first to allow writing test data
-      set_memory_access(machine_memory_ref, start_offset, 2 * @page_size, 3)
+      :ok = ChildVm.set_memory_access(machine, 16, 2, 3)
       # Write test data at the correct offset
-      memory_write(machine_memory_ref, start_offset, test_data)
+      :ok = ChildVm.write_memory(machine, start_offset, test_data)
       # Then set read access for pages 16-17 (for modes 3/4 tests that require read access)
-      set_memory_access(machine_memory_ref, start_offset, 2 * @page_size, 1)
-
-      machine = %Integrated{
-        memory: machine_memory_ref,
-        program: "program"
-      }
+      :ok = ChildVm.set_memory_access(machine, 16, 2, 1)
 
       context = %Context{m: %{1 => machine}}
       gas = 100
@@ -230,7 +208,7 @@ defmodule PVM.Host.Refine.PagesTest do
       length = registers[9] * @page_size
 
       # Verify pages have nil access (read should fail)
-      assert {:error, _} = memory_read(machine.memory, start_offset, length)
+      assert {:error, _} = ChildVm.read_memory(machine, start_offset, length)
     end
 
     test "r10 = 1 (zeroes and read access pages)", %{
@@ -255,12 +233,12 @@ defmodule PVM.Host.Refine.PagesTest do
       length = registers[9] * @page_size
 
       # Verify pages are zeroed
-      {:ok, zeroed_data} = memory_read(machine.memory, start_offset, length)
+      {:ok, zeroed_data} = ChildVm.read_memory(machine, start_offset, length)
       assert zeroed_data == <<0::size(length * 8)>>
 
       # Verify pages have read access but not write access
       # Write should fail for read-only memory
-      assert {:error, _} = memory_write(machine.memory, start_offset, <<1>>)
+      assert {:error, _} = ChildVm.write_memory(machine, start_offset, <<1>>)
     end
 
     test "r10 = 2 (zeroes and write access pages)", %{
@@ -285,11 +263,11 @@ defmodule PVM.Host.Refine.PagesTest do
       length = registers[9] * @page_size
 
       # Verify pages are zeroed
-      {:ok, zeroed_data} = memory_read(machine.memory, start_offset, length)
+      {:ok, zeroed_data} = ChildVm.read_memory(machine, start_offset, length)
       assert zeroed_data == <<0::size(length * 8)>>
 
       # Verify pages have write access
-      assert {:ok, _} = memory_write(machine.memory, start_offset, <<1>>)
+      assert :ok = ChildVm.write_memory(machine, start_offset, <<1>>)
     end
 
     test "r10 = 3 (memory values did not change, read access pages)", %{
@@ -315,11 +293,11 @@ defmodule PVM.Host.Refine.PagesTest do
       length = byte_size(test_data)
 
       # Verify pages still contain original data (not zeroed)
-      {:ok, unchanged_data} = memory_read(machine.memory, start_offset, length)
+      {:ok, unchanged_data} = ChildVm.read_memory(machine, start_offset, length)
       assert unchanged_data == test_data
 
       # Verify pages have read access but not write access
-      assert {:error, _} = memory_write(machine.memory, start_offset, <<1>>)
+      assert {:error, _} = ChildVm.write_memory(machine, start_offset, <<1>>)
     end
 
     test "r10 = 4 (memory values did not change, write access pages)", %{
@@ -345,11 +323,11 @@ defmodule PVM.Host.Refine.PagesTest do
       length = byte_size(test_data)
 
       # Verify pages still contain original data (not zeroed)
-      {:ok, unchanged_data} = memory_read(machine.memory, start_offset, length)
+      {:ok, unchanged_data} = ChildVm.read_memory(machine, start_offset, length)
       assert unchanged_data == test_data
 
       # Verify pages have write access
-      assert {:ok, _} = memory_write(machine.memory, start_offset, <<1>>)
+      assert :ok = ChildVm.write_memory(machine, start_offset, <<1>>)
     end
   end
 end
