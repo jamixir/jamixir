@@ -257,20 +257,10 @@ defmodule Network.Connection do
   end
 
   @impl GenServer
-  def handle_info({:quic, :peer_send_shutdown, _stream, _props}, state) do
-    {:noreply, state}
-  end
-
-  @impl GenServer
-  def handle_info({:quic, :send_shutdown_complete, _stream, _props}, state) do
-    {:noreply, state}
-  end
-
-  @impl GenServer
   def handle_info({:quic, :new_stream, stream, _props}, state) do
     case :quicer.setopt(stream, :active, true) do
       :ok ->
-        true
+        :ok
 
       {:error, reason} ->
         Log.stream(:error, "Failed to activate new stream - #{inspect(reason)}", stream)

@@ -444,10 +444,7 @@ defmodule System.State.Accumulation do
           else
             {Map.get(results, service_id), %{available: available, results: results}}
           end
-        end,
-        # TODO we have some acc taking more than 5s to run.
-        # Increased timeout for now, but should investigate further.
-        18_000
+        end
       )
     end
 
