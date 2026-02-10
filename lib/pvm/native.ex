@@ -37,6 +37,53 @@ defmodule Pvm.Native do
   def check_memory_access(_memory_ref, _addr, _len, _mode) do
     :erlang.nif_error(:nif_not_loaded)
   end
+
+  def create_child_vm(_program_blob, _pc, _gas, _registers) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def execute_child_vm(_instance_ref, _gas, _registers) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+
+  def child_vm_read_memory(_instance_ref, _addr, _len) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+
+  def child_vm_write_memory(_instance_ref, _addr, _data) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def get_child_vm_state(_instance_ref) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def destroy_child_vm(_instance_ref) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def validate_program_blob(_program_blob) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def set_child_vm_memory_access(_instance_ref, _page_index, _page_count, _permission) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def check_child_vm_memory_access(
+        _instance_ref,
+        _page_index,
+        _page_count,
+        _required_permission
+      ) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
+
+  def child_vm_zero_memory(_instance_ref, _addr, _len) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 end
 
 defmodule Pvm.Native.ExecuteResult do
