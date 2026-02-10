@@ -1,7 +1,7 @@
 defmodule PVM.Host.Refine.Context do
   @type t :: %__MODULE__{
           # m
-          m: %{non_neg_integer() => PVM.Integrated.t()},
+          m: %{non_neg_integer() => PVM.ChildVm.t()},
           # e
           e: list(nonempty_binary())
         }
