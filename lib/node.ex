@@ -50,7 +50,7 @@ defmodule Jamixir.Node do
   @impl true
   def announce_block(header, remote_ed25519_key) do
     if remote_ed25519_key do
-      Task.start(fn -> Block.Intake.Intake.process_announcement(header, remote_ed25519_key) end)
+      Task.start(fn -> Block.Intake.process_announcement(header, remote_ed25519_key) end)
     else
       Logger.warning(
         "Block announcement received but remote_ed25519_key is nil, cannot request blocks"
@@ -305,7 +305,7 @@ defmodule Jamixir.Node do
     core = NodeStateServer.instance().assigned_core()
 
     if NodeStateServer.instance().assigned_core() == core do
-      services = Storage.get_state(Storage.get_canonical_tip()).services
+      services = Storage.get_canonical_state().services
 
       case WorkReport.pre_execute_work_package(wp, extrinsics, core, services) do
         :error ->
@@ -419,7 +419,7 @@ defmodule Jamixir.Node do
       # TODO Verify and save all justifications
     end
 
-    services = Storage.get_state(Storage.get_canonical_tip()).services
+    services = Storage.get_canonical_state().services
 
     case WorkReport.pre_execute_work_package(
            bundle.work_package,

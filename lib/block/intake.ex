@@ -1,4 +1,4 @@
-defmodule Block.Intake.Intake do
+defmodule Block.Intake do
   alias Jamixir.NodeStateServer
   alias Block
   alias Block.Header

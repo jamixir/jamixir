@@ -204,7 +204,9 @@ defmodule Storage do
 
   def get_canonical_header do
     case get_canonical_tip() do
-      nil -> nil
+      nil ->
+        nil
+
       tip_hash ->
         case get(tip_hash) do
           nil -> nil
@@ -264,6 +266,8 @@ defmodule Storage do
     KVStorage.get(@p_state <> header_hash <> to_string(key))
   end
 
+  def get_canonical_state, do: Storage.get_state(Storage.get_canonical_tip())
+
   def get_state_root(header_hash), do: KVStorage.get(@p_state_root <> header_hash)
 
   def has_block?(header_hash) when is_binary(header_hash) do
@@ -296,7 +300,6 @@ defmodule Storage do
   def unmark_between(start_hash, end_hash) do
     SqlStorage.unmark_between(start_hash, end_hash)
   end
-
 
   def get_chain_between(root_hash, tip_hash) do
     case SqlStorage.get_chain_hashes(root_hash, tip_hash) do
