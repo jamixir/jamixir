@@ -3,7 +3,7 @@ defmodule PVM.Accumulate.Executor do
   require Logger
 
   # high timeout to support PVM_TRACE
-  @timeout 10_000
+  @timeout 5_000
   def run(
         service_code,
         initial_context,

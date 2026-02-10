@@ -60,8 +60,8 @@ defmodule Jamixir.NodeStateServer do
   def current_timeslot, do: GenServer.call(__MODULE__, :current_timeslot)
 
   # Block operations
-  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false}, 18_000)
-  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true}, 18_000)
+  def add_block(block, false), do: GenServer.call(__MODULE__, {:add_block, block, false})
+  def add_block(block), do: GenServer.call(__MODULE__, {:add_block, block, true})
 
   # Validator and network information
   @impl true
