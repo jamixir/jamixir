@@ -1,8 +1,11 @@
 defmodule Jamixir.InitializationTask do
+  alias Block
   alias Jamixir.ChainSpec
   alias Jamixir.Genesis
   alias Network.ConnectionManager
+  alias Storage
   alias Util.Logger, as: Log
+  import Codec.Encoder
 
   def child_spec(_opts) do
     %{
@@ -66,8 +69,7 @@ defmodule Jamixir.InitializationTask do
 
   defp load_from_genesis(genesis_file) do
     {:ok, jam_state} = Codec.State.from_genesis(genesis_file)
-    Storage.put(Genesis.genesis_block_header(), jam_state)
-    jam_state
+    storage_and_return_genesis_state(Genesis.genesis_block_header(), jam_state)
   end
 
   defp load_from_chainspec(chainspec_file) do
@@ -83,18 +85,30 @@ defmodule Jamixir.InitializationTask do
         {:ok, jam_state} = ChainSpec.get_state(chainspec)
         Log.debug("📊 Genesis state loaded with #{map_size(chainspec.genesis_state)} entries")
 
-        # Store state with genesis header
-        Storage.put(genesis_header, jam_state)
-        Storage.put(%Block{header: genesis_header})
-
         # Store the chainspec for later use (e.g., bootnodes)
         Application.put_env(:jamixir, :loaded_chainspec, chainspec)
 
-        jam_state
+        storage_and_return_genesis_state(genesis_header, jam_state)
 
       {:error, reason} ->
         Log.error("❌ Failed to load chain spec: #{inspect(reason)}")
         raise "Failed to load chain specification: #{inspect(reason)}"
     end
+  end
+
+  defp storage_and_return_genesis_state(genesis_header, jam_state) do
+    genesis_header_hash = h(e(genesis_header))
+    genesis_block = %Block{header: genesis_header}
+
+    # Store genesis block so it's in the database
+    Storage.put(genesis_block)
+
+    # Store genesis state
+    Storage.put(genesis_header, jam_state)
+
+    # Mark genesis block as applied and set as last applied hash
+    Storage.mark_applied(genesis_header_hash)
+
+    jam_state
   end
 end

@@ -204,6 +204,7 @@ defmodule Network.MessageParsersTest do
   describe "handle_up_stream race condition simulation" do
     test "accumulates protocol byte and parses correctly once full data arrives" do
       initial_state = %{
+        remote_ed25519_key: nil,
         up_stream_data: %{
           123 => %{protocol_id: nil, buffer: <<>>}
         }
@@ -215,7 +216,7 @@ defmodule Network.MessageParsersTest do
       partial_data = <<42::8>>
 
       ServerCallsMock
-      |> expect(:call, fn 42, "hello world" -> :ok end)
+      |> expect(:call, fn 42, "hello world", nil -> :ok end)
 
       {:noreply, state_after_partial} =
         Network.Server.handle_up_stream(

@@ -23,7 +23,7 @@ defmodule Storage do
   use Util.Logger
 
   @latest_timeslot "latest_timeslot"
-
+  @canonical_tip "canonical_tip"
   def latest_timeslot, do: @latest_timeslot
 
   def child_spec(opts) do
@@ -54,6 +54,7 @@ defmodule Storage do
     key = @p_block <> header_hash
 
     {:ok, _} = KVStorage.put(%{key => Encodable.encode(block)})
+    {:ok, _} = SqlStorage.save_block(header_hash, block.header.parent_hash, block.header.timeslot)
 
     {:ok, key}
   end
@@ -131,7 +132,12 @@ defmodule Storage do
     end
   end
 
-  def put(%Block{} = b, %State{} = s), do: put(b.header, s)
+  def put(%Block{} = b, %State{} = s) do
+    # Store the full block first (this also stores the header and creates child relationship)
+    put(b)
+    # Then store the state for this block
+    put(h(e(b.header)), s)
+  end
 
   def put(%Header{} = h, %State{} = s) do
     put(h)
@@ -192,27 +198,26 @@ defmodule Storage do
     SqlStorage.get(AvailabilityRecord, hash)
   end
 
-  def get_latest_header do
-    case KVStorage.get(@latest_timeslot) do
+  def get_latest_timeslot do
+    KVStorage.get(@latest_timeslot)
+  end
+
+  def get_canonical_header do
+    case get_canonical_tip() do
       nil ->
         nil
 
-      timeslot ->
-        case KVStorage.get(@p_timeslot <> t(timeslot)) do
+      tip_hash ->
+        case get(tip_hash) do
           nil -> nil
-          header -> {timeslot, header}
+          header -> {header.timeslot, header}
         end
     end
   end
 
-  def get_latest_state_root do
-    case get_latest_header() do
-      nil ->
-        nil
-
-      {_timeslot, header} ->
-        Storage.get_state_root(h(e(header)))
-    end
+  def get_canonical_state_root do
+    tip = get_canonical_tip()
+    Storage.get_state_root(tip)
   end
 
   def get_block(header_hash) do
@@ -261,7 +266,59 @@ defmodule Storage do
     KVStorage.get(@p_state <> header_hash <> to_string(key))
   end
 
+  def get_canonical_state, do: Storage.get_state(Storage.get_canonical_tip())
+
   def get_state_root(header_hash), do: KVStorage.get(@p_state_root <> header_hash)
+
+  def has_block?(header_hash) when is_binary(header_hash) do
+    case get(header_hash) do
+      nil -> false
+      _header -> true
+    end
+  end
+
+  def has_parent?(%Header{} = header) do
+    case header.parent_hash do
+      nil -> true
+      parent_hash -> has_block?(parent_hash)
+    end
+  end
+
+  def get_canonical_root(header_hash) do
+    SqlStorage.get_canonical_root(header_hash)
+  end
+
+  def get_heaviest_chain_tip_from_canonical_root(canonical_root) do
+    SqlStorage.get_heaviest_chain_tip_from_canonical_root(canonical_root)
+  end
+
+  def mark_applied(header_hash) do
+    SqlStorage.mark_applied(header_hash)
+    set_canonical_tip(header_hash)
+  end
+
+  def unmark_between(start_hash, end_hash) do
+    SqlStorage.unmark_between(start_hash, end_hash)
+  end
+
+  def get_chain_between(root_hash, tip_hash) do
+    case SqlStorage.get_chain_hashes(root_hash, tip_hash) do
+      {:error, _} = err ->
+        err
+
+      hashes ->
+        Enum.map(hashes, &get_block/1)
+        |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  def set_canonical_tip(header_hash) do
+    KVStorage.put(@canonical_tip, header_hash)
+  end
+
+  def get_canonical_tip do
+    KVStorage.get(@canonical_tip)
+  end
 
   def get_segments_root(hash), do: KVStorage.get(@p_segments_root <> hash)
   def put_segments_root(wp_hash, root), do: KVStorage.put(@p_segments_root <> wp_hash, root)

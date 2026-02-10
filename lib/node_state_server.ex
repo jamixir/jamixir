@@ -20,6 +20,7 @@ defmodule Jamixir.NodeStateServer do
   alias Block.Header
   alias Codec.State.Trie
   alias Jamixir.Genesis
+  alias KeyManager
   alias Network.{Connection, ConnectionManager}
   alias Storage.AvailabilityRecord
   alias System.State
@@ -48,7 +49,12 @@ defmodule Jamixir.NodeStateServer do
   def init(opts) do
     bandersnatch_keypair = KeyManager.get_our_bandersnatch_keypair()
     Process.send_after(self(), {:check_jam_state, opts[:jam_state]}, 0)
-    {:ok, %__MODULE__{jam_state: opts[:jam_state], bandersnatch_keypair: bandersnatch_keypair}}
+
+    {:ok,
+     %__MODULE__{
+       jam_state: opts[:jam_state],
+       bandersnatch_keypair: bandersnatch_keypair
+     }}
   end
 
   # ============================================================================
@@ -124,36 +130,33 @@ defmodule Jamixir.NodeStateServer do
         _from,
         %__MODULE__{jam_state: jam_state} = state
       ) do
-    new_jam_state =
-      case Jamixir.Node.add_block(block, jam_state) do
-        {:ok, %State{} = new_jam_state, state_root} ->
-          header_hash = h(e(block.header))
+    header_hash = h(e(block.header))
 
-          Log.info(
-            "🔄 State Updated successfully. H: #{b16(header_hash)} root: #{b16(state_root)}"
-          )
+    case Jamixir.Node.add_block(block, jam_state) do
+      {:ok, %State{} = new_jam_state, state_root} ->
+        Log.info("🔄 State Updated successfully. H: #{b16(header_hash)} root: #{b16(state_root)}")
 
-          dump_stf(block, jam_state)
+        dump_stf(block, jam_state)
 
-          notify_service_requests(new_jam_state, jam_state, block, header_hash)
+        notify_service_requests(new_jam_state, jam_state, block, header_hash)
 
-          #  Notify Subscription Manager, which will notify "bestBlock" subscribers
-          Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block})
+        #  Notify Subscription Manager, which will notify "bestBlock" subscribers
+        Phoenix.PubSub.broadcast(Jamixir.PubSub, "node_events", {:new_block, block})
+        Storage.mark_applied(header_hash)
 
-          # Telemetry: best block changed
-          Jamixir.Telemetry.best_block_changed(block.header.timeslot, header_hash)
+        # Telemetry: best block changed
+        Jamixir.Telemetry.best_block_changed(block.header.timeslot, header_hash)
 
-          if announce, do: announce_block_to_peers(block)
-          new_jam_state
+        updated_state = handle_block_announcement(block, announce, new_jam_state, state)
 
-        {:error, _, reason} ->
-          Log.block(:error, "Failed to add block: #{reason}")
-          jam_state
-      end
+        genServerState = %__MODULE__{updated_state | jam_state: new_jam_state}
 
-    genServerState = %__MODULE__{state | jam_state: new_jam_state}
+        {:reply, {:ok, new_jam_state}, genServerState}
 
-    {:reply, {:ok, new_jam_state}, genServerState}
+      {:error, _pre_state, reason} ->
+        Log.block(:error, "Failed to add block: #{reason}")
+        {:reply, {:error, reason}, state}
+    end
   end
 
   # Validator and network information handlers
@@ -317,8 +320,7 @@ defmodule Jamixir.NodeStateServer do
         %{jam_state: jam_state} = state
       ) do
     Log.info("⏰ Assurance timeout event for slot #{slot}")
-    {_, header} = Storage.get_latest_header()
-    hash = h(e(header))
+    hash = Storage.get_canonical_tip()
     {priv, pub} = KeyManager.get_our_ed25519_keypair()
 
     my_index = find_validator_index(pub, jam_state.curr_validators)
@@ -361,8 +363,8 @@ defmodule Jamixir.NodeStateServer do
       ) do
     Log.info("📨 author_block event for slot #{slot} (epoch #{epoch}, phase #{epoch_phase})")
 
-    {_, parent_header} = Storage.get_latest_header()
-    parent_hash = h(e(parent_header))
+    # Use canonical tip as parent
+    parent_hash = Storage.get_canonical_tip()
 
     # Telemetry: authoring event
     authoring_event_id = Jamixir.Telemetry.authoring(slot, parent_hash)
@@ -402,7 +404,7 @@ defmodule Jamixir.NodeStateServer do
     Log.debug("Guarantee candidates for block inclusion: #{length(guarantee_candidates)}")
 
     Log.info("🧩 Guarantee candidates: #{length(guarantee_candidates)}")
-    latest_state_root = Storage.get_latest_state_root()
+    canonical_state_root = Storage.get_canonical_state_root()
 
     # Note: this may filter some guarantees out, in that case the core_index will have no guarantee assigned.
     # There is no attempt to "re-fetch" new candidates from storage for such core indices.
@@ -413,7 +415,7 @@ defmodule Jamixir.NodeStateServer do
         guarantee_candidates,
         jam_state,
         slot,
-        latest_state_root,
+        canonical_state_root,
         core_reports_2
       )
 
@@ -450,7 +452,11 @@ defmodule Jamixir.NodeStateServer do
         # Telemetry: authored event
         Jamixir.Telemetry.authored(authoring_event_id, block)
 
-        Task.start(fn -> add_block(block) end)
+        Task.start(fn ->
+          #  put block into storage BEFORE adding it to the state
+          {:ok, _} = Storage.put(block)
+          add_block(block)
+        end)
 
       {:error, reason} ->
         Log.consensus(:debug, "Failed to create block: #{reason}")
@@ -619,16 +625,66 @@ defmodule Jamixir.NodeStateServer do
     for v <- validators, do: {v, ConnectionManager.get_connection(v.ed25519)}
   end
 
-  defp announce_block_to_peers(block) do
+  # Handles block announcement
+  defp handle_block_announcement(block, announce, new_jam_state, state) do
+    if announce do
+      announce_block_to_peers(block, new_jam_state)
+      state
+    else
+      state
+    end
+  end
+
+  defp announce_block_to_peers(block, jam_state) do
     client_pids = ConnectionManager.get_connections()
+    skip_node_ids = Application.get_env(:jamixir, :skip_announcements_to, [])
+
     Log.debug("📢 Announcing block to #{map_size(client_pids)} peers")
 
     header_hash = h(e(block.header))
 
+    # Get validator list to map node IDs to ed25519 keys
+    validators = jam_state.curr_validators
+    local_node_id = find_validator_index(KeyManager.get_our_ed25519_key(), validators)
+
+    # Build a set of ed25519 keys to skip based on node IDs
+    peers_to_skip =
+      if Enum.empty?(skip_node_ids) do
+        MapSet.new()
+      else
+        skip_node_ids
+        |> Enum.map(fn node_id ->
+          case Enum.at(validators, node_id) do
+            nil ->
+              Log.warning("⛔ Invalid node ID for skipping: #{node_id} (not in validator list)")
+              nil
+
+            %Validator{ed25519: ed25519_key} ->
+              ed25519_key
+          end
+        end)
+        |> Enum.filter(&(&1 != nil))
+        |> MapSet.new()
+      end
+
+    if not Enum.empty?(peers_to_skip) do
+      Log.info(
+        "⛔ Misbehavior injection: node #{local_node_id} skipping node(s) #{inspect(skip_node_ids)} (validator indices)"
+      )
+    end
+
     for {ed25519_key, pid} <- client_pids do
-      Connection.announce_block(pid, block.header, block.header.timeslot)
-      # Telemetry: block announced (we are the announcer)
-      Jamixir.Telemetry.block_announced(ed25519_key, :local, block.header.timeslot, header_hash)
+      peer_validator_index = find_validator_index(ed25519_key, validators)
+
+      if ed25519_key in peers_to_skip do
+        Log.info(
+          "⛔ Skipping block announcement to node #{peer_validator_index} (ed25519: #{b16(ed25519_key)}) - misbehavior injection"
+        )
+      else
+        Connection.announce_block(pid, block.header, block.header.timeslot)
+        # Telemetry: block announced (we are the announcer)
+        Jamixir.Telemetry.block_announced(ed25519_key, :local, block.header.timeslot, header_hash)
+      end
     end
   end
 

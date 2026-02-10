@@ -155,16 +155,27 @@ defmodule Jamixir.RPC.Handler do
   end
 
   defp handle_method("beefyRoot", [header_hash], _websocket_pid) do
-    {_timeslot, header} = Storage.get_latest_header()
-    {:ok, state} = Jamixir.NodeAPI.inspect_state(h(e(header)))
+    tip = Storage.get_canonical_tip()
 
-    hash = header_hash
+    case tip do
+      nil ->
+        {:ok, nil}
 
-    {:ok,
-     case Enum.find(state.recent_history.blocks, fn rb -> rb.header_hash == hash end) do
-       nil -> nil
-       b -> e64(b.beefy_root)
-     end}
+      _ ->
+        case Jamixir.NodeAPI.inspect_state(tip) do
+          {:ok, state} ->
+            {:ok,
+             case Enum.find(state.recent_history.blocks, fn rb ->
+                    rb.header_hash == header_hash
+                  end) do
+               nil -> nil
+               b -> e64(b.beefy_root)
+             end}
+
+          {:error, _} ->
+            {:ok, nil}
+        end
+    end
   end
 
   defp handle_method("submitPreimage", [service_id, blob], _websocket_pid) do
@@ -326,23 +337,31 @@ defmodule Jamixir.RPC.Handler do
   end
 
   def get_best_block do
-    try do
-      case Storage.get_latest_header() do
-        {_timeslot, header} ->
-          hash = e64(h(e(header)))
+    case Storage.get_canonical_tip() do
+      nil ->
+        # Return genesis block if no blocks are available
+        genesis_header = Jamixir.Genesis.genesis_block_header()
+        hash = e64(Jamixir.Genesis.genesis_header_hash())
 
-          {:ok, %{"header_hash" => hash, "slot" => header.timeslot}}
+        {:ok, %{"header_hash" => hash, "slot" => genesis_header.timeslot}}
 
-        nil ->
-          # Return genesis block if no blocks are available
-          genesis_header = Jamixir.Genesis.genesis_block_header()
-          hash = e64(Jamixir.Genesis.genesis_header_hash())
+      tip_hash ->
+        case Storage.get(tip_hash) do
+          nil ->
+            # Return genesis block if tip hash doesn't resolve to a header
+            genesis_header = Jamixir.Genesis.genesis_block_header()
+            hash = e64(Jamixir.Genesis.genesis_header_hash())
 
-          {:ok, %{"header_hash" => hash, "slot" => genesis_header.timeslot}}
-      end
-    catch
-      error -> {:error, "Failed to get best block: #{inspect(error)}"}
+            {:ok, [hash, genesis_header.timeslot]}
+
+          header ->
+            hash = e64(h(e(header)))
+
+            {:ok, %{"header_hash" => hash, "slot" => header.timeslot}}
+        end
     end
+  catch
+    error -> {:error, "Failed to get best block: #{inspect(error)}"}
   end
 
   # For now, we'll use the same as best block since finalization isn't fully implemented

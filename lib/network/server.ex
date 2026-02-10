@@ -74,7 +74,7 @@ defmodule Network.Server do
         messages = MessageParsers.parse_ce_messages(updated_buffer)
 
         responses =
-          case Network.ServerCalls.call(protocol_id, messages) do
+          case Network.ServerCalls.call(protocol_id, messages, server_state.remote_ed25519_key) do
             m when is_list(m) -> m
             m when is_binary(m) -> [m]
           end
@@ -134,7 +134,7 @@ defmodule Network.Server do
 
       messages when is_list(messages) ->
         Enum.each(messages, fn message ->
-          server_calls_impl.call(protocol_id, message)
+          server_calls_impl.call(protocol_id, message, state.remote_ed25519_key)
         end)
 
         {:noreply, put_in(state.up_stream_data[stream].buffer, <<>>)}

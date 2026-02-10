@@ -8,7 +8,8 @@ defmodule Jamixir.RPC.IntegrationTest do
 
   setup do
     header = build(:decodable_header, timeslot: 123)
-    Storage.put(header)
+    {:ok, header_hash} = Storage.put(header)
+    Storage.set_canonical_tip(header_hash)
     Jamixir.RPC.Server.start_link(port: @rpc_port)
 
     {:ok, header: header}

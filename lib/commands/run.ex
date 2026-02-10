@@ -16,7 +16,8 @@ defmodule Jamixir.Commands.Run do
     rpc_port: :integer,
     telemetry: :string,
     telemetry_port: :integer,
-    db: :string
+    db: :string,
+    skip_announcements_to: :string
   ]
 
   @aliases [
@@ -25,7 +26,8 @@ defmodule Jamixir.Commands.Run do
     k: :keys,
     h: :help,
     c: :chainspec,
-    d: :db
+    d: :db,
+    x: :skip_announcements_to
   ]
 
   def run(args) do
@@ -95,6 +97,9 @@ defmodule Jamixir.Commands.Run do
 
       # Configure telemetry based on flags
       configure_telemetry(opts)
+
+      # Configure misbehavior injection for testing
+      configure_misbehavior_injection(opts)
 
       generate_tls_certificates()
     end
@@ -212,6 +217,26 @@ defmodule Jamixir.Commands.Run do
       # Otherwise, disable telemetry
       true ->
         Application.put_env(:jamixir, :telemetry_enabled, false)
+    end
+  end
+
+  defp configure_misbehavior_injection(opts) do
+    case opts[:skip_announcements_to] do
+      nil ->
+        Application.put_env(:jamixir, :skip_announcements_to, [])
+
+      node_ids_str ->
+        node_ids =
+          node_ids_str
+          |> String.split(",")
+          |> Enum.map(&String.trim/1)
+          |> Enum.map(&String.to_integer/1)
+
+        Log.info(
+          "⛔ Misbehavior injection enabled: will skip announcements to node(s): #{inspect(node_ids)}"
+        )
+
+        Application.put_env(:jamixir, :skip_announcements_to, node_ids)
     end
   end
 
@@ -418,6 +443,7 @@ defmodule Jamixir.Commands.Run do
           --telemetry <HOST:PORT>    Enable telemetry reporting (e.g. --telemetry localhost:9090)
           --telemetry-port <PORT>    Enable telemetry on localhost with specified port
           --dump-stf <DIR>           Saves every STF block and state trie to the specified directory
+      -x, --skip-announcements-to <IDS>  Comma-separated list of node IDs to skip (e.g., "4" or "4,5")
       -h, --help                     Print help
 
     Examples:

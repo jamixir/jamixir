@@ -1,4 +1,5 @@
 defmodule NodeStateServerTest do
+  alias Block
   alias Block.Extrinsic.Assurance
   alias Jamixir.Genesis
   alias Jamixir.NodeStateServer
@@ -14,7 +15,15 @@ defmodule NodeStateServerTest do
   setup do
     KeyManager.load_keys("priv/keys/4.json")
     s = build(:genesis_state)
-    Storage.put(Genesis.genesis_block_header(), s)
+    genesis_header = Genesis.genesis_block_header()
+    genesis_header_hash = h(e(genesis_header))
+    genesis_block = %Block{header: genesis_header, extrinsic: %Block.Extrinsic{}}
+
+    # Store genesis block and state
+    Storage.put(genesis_block)
+    Storage.put(genesis_header, s)
+    Storage.mark_applied(genesis_header_hash)
+
     start_link(jam_state: s)
 
     {:ok, state: s}

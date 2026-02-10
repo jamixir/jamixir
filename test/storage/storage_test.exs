@@ -70,8 +70,9 @@ defmodule StorageTest do
     test "store and retrieve single header" do
       header = build(:decodable_header)
       assert {:ok, hash} = Storage.put(header)
+      Storage.set_canonical_tip(hash)
       assert Storage.get(hash) == header
-      assert {5, ^header} = Storage.get_latest_header()
+      assert {5, ^header} = Storage.get_canonical_header()
     end
 
     test "store and retrieve multiple headers" do
@@ -83,9 +84,13 @@ defmodule StorageTest do
 
       assert {:ok, _hashes} = Storage.put(headers)
 
+      # Set canonical tip to the last header
+      last_header = List.last(headers)
+      last_header_hash = h(e(last_header))
+      Storage.set_canonical_tip(last_header_hash)
+
       # Verify latest header
-      assert {3, last_header} = Storage.get_latest_header()
-      assert last_header == List.last(headers)
+      assert {3, ^last_header} = Storage.get_canonical_header()
 
       # Verify all headers are stored
       Enum.each(headers, fn header ->
@@ -111,8 +116,8 @@ defmodule StorageTest do
     end
 
     test "get latest header when key is empty" do
-      Storage.remove("latest_timeslot")
-      assert Storage.get_latest_header() == nil
+      Storage.remove("canonical_tip")
+      assert Storage.get_canonical_header() == nil
     end
   end
 
