@@ -26,4 +26,7 @@ rustler::atoms! {
     out_of_gas,
     waiting,
     ecall,
+    host_call,
+    oob,
+    invalid_program,
 }

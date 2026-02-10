@@ -145,7 +145,12 @@ fn initialize_vm_context(
     let deblob_result = deblob(&code).ok()?;
 
     let start_set = pvm_core::StartSet::build(&deblob_result.program, &deblob_result.bitmask);
-    let tracer = Tracer::new();
+
+    let tracer = if std::env::var("PVM_TRACE").map(|v| v == "true").unwrap_or(false) {
+        Some(Tracer::new())
+    } else {
+        None
+    };
 
     let context = Arc::new(VmContext {
         program: deblob_result.program,
@@ -156,4 +161,12 @@ fn initialize_vm_context(
     });
 
     Some((context, registers, memory))
+}
+
+/// Validate a program blob by attempting to deblob it.
+pub fn validate_program_blob<'a>(env: Env<'a>, program_blob: Binary<'a>) -> NifResult<Term<'a>> {
+    match deblob(program_blob.as_slice()) {
+        Ok(_) => Ok(atoms::ok().encode(env)),
+        Err(_) => Ok((atoms::error(), atoms::invalid_program()).encode(env)),
+    }
 }
