@@ -185,7 +185,7 @@ defmodule CodecEncoderTest do
     end
 
     test "struct don't implement Encodable" do
-      assert_raise RuntimeError, fn -> e(%PVM.Integrated{}) end
+      assert_raise RuntimeError, fn -> e(%PVM.ChildVm{}) end
     end
   end
 
