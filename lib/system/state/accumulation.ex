@@ -680,7 +680,7 @@ defmodule System.State.Accumulation do
         }
       end
 
-    {total_gas, operands_services ++ transfers}
+    {total_gas, transfers ++ operands_services}
   end
 
   # Formula (12.30) v0.7.2
