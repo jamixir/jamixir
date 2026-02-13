@@ -5,9 +5,7 @@ defmodule Jamixir do
   @impl true
   def start(_type, _args) do
     # Run migrations before starting supervision tree (only in non-test envs and non-fuzzer mode)
-    fuzzer_mode = Application.get_env(:jamixir, :fuzzer_mode, false)
-
-    unless Jamixir.config()[:test_env] || fuzzer_mode do
+    unless Jamixir.config()[:test_env] do
       migrate_database()
     end
 
